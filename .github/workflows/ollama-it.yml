@@ -4,28 +4,58 @@ on:
   schedule:
     - cron: '0 3 * * *'  # 3 AM UTC nightly
   workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Single release/* branch to run against (empty = all release/* branches)'
+        required: false
+        default: ''
 
 permissions:
   contents: read
 
 jobs:
-  ollama-it:
+  # Discover every release/* branch (release-line coverage tracks what ships,
+  # not main). A manual dispatch may pin one branch instead.
+  discover:
     runs-on: ubuntu-latest
+    outputs:
+      branches: ${{ steps.list.outputs.branches }}
     steps:
-      - uses: actions/checkout@v4
+      - name: List release branches
+        id: list
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -n "${{ github.event.inputs.branch }}" ]; then
+            branches='["${{ github.event.inputs.branch }}"]'
+          else
+            branches=$(gh api repos/${{ github.repository }}/branches --paginate \
+              --jq '[.[] | .name | select(startswith("release/"))] | unique')
+          fi
+          echo "branches=$branches" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/setup-java@v4
+  ollama-it:
+    needs: discover
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: ${{ fromJson(needs.discover.outputs.branches) }}
+    steps:
+      - uses: actions/checkout@v6
         with:
-          java-version: '21'
+          ref: ${{ matrix.branch }}
+
+      # No caches in this workflow (neither setup-java's maven cache nor
+      # actions/cache): this job checks out arbitrary release branches in a
+      # default-branch (schedule/dispatch) context, and any cache saved from
+      # untrusted code is the cache-poisoning vector CodeQL flags
+      # (actions/cache-poisoning/poisonable-step). Cold Maven downloads add a
+      # couple of minutes to a nightly job — an acceptable price.
+      - uses: actions/setup-java@v5
+        with:
+          java-version: '25'
           distribution: 'temurin'
-          cache: 'maven'
-
-      - name: Cache Ollama models
-        uses: actions/cache@v4
-        with:
-          path: ~/.ollama/models
-          key: ollama-models-llama3.2-1b
-          restore-keys: ollama-models-
 
       - name: Install Ollama
         run: curl -fsSL https://ollama.ai/install.sh | sh
@@ -45,7 +75,7 @@ jobs:
           OLLAMA_TIMEOUT_SECONDS: 300
         run: >
           mvn -Pintegration-test verify
-          -Dit.test=OllamaSegmentNarrationServiceIT
+          -Dit.groups=ollama
           -Dsurefire.skip=true
           -DrerunFailingTestsCount=2
           --no-transfer-progress

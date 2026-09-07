@@ -32,9 +32,12 @@ import com.github.javydreamercsw.management.domain.feud.FeudScriptBeat;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptStatus;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.dto.feud.AiSuggestedOpponentDTO;
+import com.github.javydreamercsw.management.service.feud.FeudBeatAssistantService;
 import com.github.javydreamercsw.management.service.feud.FeudScriptService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.github.mvysny.kaributesting.v10.HasValueUtilsKt;
+import com.github.mvysny.kaributesting.v10.MockVaadin;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -56,8 +59,10 @@ class AddBeatDialogTest extends AbstractViewTest {
   @BeforeEach
   void setup() {
     wrestler1 = new Wrestler();
+    wrestler1.setId(1L);
     wrestler1.setName("Adam Axe");
     wrestler2 = new Wrestler();
+    wrestler2.setId(2L);
     wrestler2.setName("Bob Boulder");
 
     script = new FeudScript();
@@ -121,5 +126,116 @@ class AddBeatDialogTest extends AbstractViewTest {
     List<Wrestler> participants = AddBeatDialog.participantsOf(rivalry);
     assertEquals(2, participants.size());
     assertTrue(participants.containsAll(List.of(wrestler1, wrestler2)));
+  }
+
+  // ── external participants (ATW-iukb) ─────────────────────────────────────
+
+  @Mock private FeudBeatAssistantService feudBeatAssistantService;
+
+  private Wrestler externalWrestler;
+  private FeudScriptBeat lastSavedBeat;
+
+  @BeforeEach
+  void setupExternals() {
+    externalWrestler = new Wrestler();
+    externalWrestler.setId(30L);
+    externalWrestler.setName("Randy Orton");
+    lastSavedBeat = null;
+  }
+
+  private AddBeatDialog openDialogWithExternals() {
+    AddBeatDialog dialog =
+        new AddBeatDialog(
+            script,
+            List.of(wrestler1, wrestler2),
+            List.of("Singles Match", "Tag Team Match"),
+            List.of("No Disqualification"),
+            feudScriptService,
+            List.of(externalWrestler),
+            feudBeatAssistantService,
+            null);
+    dialog.open();
+    UI.getCurrent().add(dialog);
+    return dialog;
+  }
+
+  @Test
+  @DisplayName("Save with external opponent carries the OPPONENT role onto the beat")
+  void save_withExternalOpponent_beatCarriesOpponentRole() {
+    AddBeatDialog dialog = openDialogWithExternals();
+
+    @SuppressWarnings("unchecked")
+    ComboBox<String> matchType =
+        _get(dialog, ComboBox.class, spec -> spec.withCaption("Match Type"));
+    HasValueUtilsKt._setValue(matchType, "Singles Match", true);
+
+    @SuppressWarnings("unchecked")
+    ComboBox<Wrestler> opponentCombo =
+        _get(dialog, ComboBox.class, spec -> spec.withCaption("External Opponent"));
+    HasValueUtilsKt._setValue(opponentCombo, externalWrestler, true);
+
+    Button saveBtn = _get(dialog, Button.class, spec -> spec.withText("Add Beat"));
+    _click(saveBtn);
+
+    ArgumentCaptor<FeudScriptBeat> captor = ArgumentCaptor.forClass(FeudScriptBeat.class);
+    verify(feudScriptService).addBeat(same(script), captor.capture());
+    lastSavedBeat = captor.getValue();
+    assertEquals(1, lastSavedBeat.getExternalParticipants().size());
+    assertEquals(externalWrestler.getName(), lastSavedBeat.getExternalOpponents().get(0).getName());
+  }
+
+  @Test
+  @DisplayName("AI suggestion populates the opponent combo and rationale")
+  void aiSuggestButton_populatesOpponentComboAndRationale() throws Exception {
+    AddBeatDialog dialog = openDialogWithExternals();
+
+    when(feudBeatAssistantService.suggestOpponent(same(script), any(), any(), any(), any()))
+        .thenReturn(
+            AiSuggestedOpponentDTO.builder()
+                .wrestlerId(30L)
+                .name("Randy Orton")
+                .rationale("Elevates the arc")
+                .build());
+
+    Button suggestBtn = _get(dialog, Button.class, spec -> spec.withText("✨ AI Suggest Opponent"));
+    _click(suggestBtn);
+
+    @SuppressWarnings("unchecked")
+    ComboBox<Wrestler> opponentCombo =
+        _get(dialog, ComboBox.class, spec -> spec.withCaption("External Opponent"));
+    waitForUiUpdates();
+    assertEquals(externalWrestler.getName(), opponentCombo.getValue().getName());
+  }
+
+  @Test
+  @DisplayName("AI failure keeps the manual selection intact")
+  void aiSuggestButton_aiFailure_showsNotificationAndKeepsManualSelection() throws Exception {
+    AddBeatDialog dialog = openDialogWithExternals();
+
+    when(feudBeatAssistantService.suggestOpponent(same(script), any(), any(), any(), any()))
+        .thenThrow(new IllegalStateException("No AI providers available"));
+
+    @SuppressWarnings("unchecked")
+    ComboBox<Wrestler> opponentCombo =
+        _get(dialog, ComboBox.class, spec -> spec.withCaption("External Opponent"));
+    HasValueUtilsKt._setValue(opponentCombo, externalWrestler, true);
+
+    Button suggestBtn = _get(dialog, Button.class, spec -> spec.withText("✨ AI Suggest Opponent"));
+    _click(suggestBtn);
+
+    waitForUiUpdates();
+    assertEquals(externalWrestler.getName(), opponentCombo.getValue().getName());
+  }
+
+  /**
+   * The AI suggestion completes on a ForkJoinPool thread and hands control back via {@code
+   * ui.access(...)}; give the mocked UI a moment to run the pending access task.
+   */
+  private static void waitForUiUpdates() throws InterruptedException {
+    long deadline = System.currentTimeMillis() + 5000;
+    while (System.currentTimeMillis() < deadline) {
+      MockVaadin.clientRoundtrip();
+      Thread.sleep(50);
+    }
   }
 }

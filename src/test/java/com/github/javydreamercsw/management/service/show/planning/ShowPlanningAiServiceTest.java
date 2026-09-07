@@ -821,4 +821,109 @@ class ShowPlanningAiServiceTest {
     assertEquals("Singles Match", proposedShow.getSegments().get(0).getType());
     assertEquals("Promo", proposedShow.getSegments().get(1).getType());
   }
+
+  // ── external beat participants (ATW-iukb) ─────────────────────────────────
+
+  @Test
+  void planShow_beatWithExternalOpponent_beatSegmentHasTwoTeams() {
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    FeudScriptBeatDTO beat = beat("Singles Match", null, "AI_PICKS", null, List.of(11L, 12L));
+    beat.setTeams(List.of(List.of("Shelton Benjamin", "Bobby Lashley"), List.of("Randy Orton")));
+    beat.setTeamIds(List.of(List.of(11L, 12L), List.of(30L)));
+    context.setUpcomingScriptedBeats(List.of(beat));
+
+    when(segmentNarrationService.generateText(anyString())).thenReturn("[]");
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    assertEquals(1, proposedShow.getSegments().size());
+    ProposedSegment beatSegment = proposedShow.getSegments().get(0);
+    assertEquals(
+        List.of(List.of("Shelton Benjamin", "Bobby Lashley"), List.of("Randy Orton")),
+        beatSegment.getTeams());
+    assertEquals(List.of(List.of(11L, 12L), List.of(30L)), beatSegment.getTeamIds());
+  }
+
+  @Test
+  void planShow_beatWithExtras_extrasShareOpponentTeam() {
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    FeudScriptBeatDTO beat = beat("Tag Team Match", null, "AI_PICKS", null, List.of(11L, 12L));
+    beat.setTeams(
+        List.of(List.of("Shelton Benjamin", "Bobby Lashley"), List.of("Randy Orton", "Extra One")));
+    beat.setTeamIds(List.of(List.of(11L, 12L), List.of(30L, 31L)));
+    context.setUpcomingScriptedBeats(List.of(beat));
+
+    when(segmentNarrationService.generateText(anyString())).thenReturn("[]");
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    assertEquals(1, proposedShow.getSegments().size());
+    assertEquals(
+        List.of(List.of(30L, 31L)), proposedShow.getSegments().get(0).getTeamIds().subList(1, 2));
+  }
+
+  @Test
+  void planShow_beatWithoutExternals_teamsUnchanged() {
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    context.setUpcomingScriptedBeats(
+        List.of(beat("Singles Match", null, "AI_PICKS", null, List.of(11L, 12L))));
+
+    when(segmentNarrationService.generateText(anyString())).thenReturn("[]");
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    assertEquals(1, proposedShow.getSegments().size());
+    assertEquals(
+        List.of(List.of(11L), List.of(12L)), proposedShow.getSegments().get(0).getTeamIds());
+  }
+
+  @Test
+  void planShow_aiSegmentCoversOnlyFeudParticipants_beatEvictsIt() {
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    FeudScriptBeatDTO beat = beat("Singles Match", null, "AI_PICKS", null, List.of(11L, 12L));
+    beat.setTeams(List.of(List.of("Shelton Benjamin", "Bobby Lashley"), List.of("Randy Orton")));
+    beat.setTeamIds(List.of(List.of(11L, 12L), List.of(30L)));
+    context.setUpcomingScriptedBeats(List.of(beat));
+
+    // AI booked Shelton vs Randy — covers a feud participant, must be evicted by the beat slot.
+    String aiResponseJson =
+        """
+        [
+          {
+            "segmentId": "seg1",
+            "type": "One on One",
+            "description": "Big fight",
+            "outcome": "Randy Orton wins",
+            "teams": [["Shelton Benjamin"], ["Randy Orton"]],
+            "teamIds": [[11], [30]]
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    assertEquals(1, proposedShow.getSegments().size());
+    assertEquals("Singles Match", proposedShow.getSegments().get(0).getType());
+  }
 }

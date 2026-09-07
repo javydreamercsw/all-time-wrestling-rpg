@@ -23,8 +23,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.management.domain.feud.FeudBeatParticipantRole;
 import com.github.javydreamercsw.management.domain.feud.FeudScript;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptBeat;
+import com.github.javydreamercsw.management.domain.feud.FeudScriptBeatParticipant;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptBeatRepository;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptBeatStatus;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptRepository;
@@ -36,7 +39,9 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
+import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowSegmentReservationService;
+import com.github.javydreamercsw.management.service.show.planning.dto.FeudScriptBeatDTO;
 import com.github.javydreamercsw.management.service.title.ContenderSelectionService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import java.util.List;
@@ -62,6 +67,7 @@ class FeudScriptServiceTest {
   @Mock private GameSettingService gameSettingService;
   @Mock private UniverseContextService universeContextService;
   @Mock private ContenderSelectionService contenderSelectionService;
+  @Mock private SegmentTypeService segmentTypeService;
 
   @InjectMocks private FeudScriptService service;
 
@@ -416,5 +422,259 @@ class FeudScriptServiceTest {
   void getUpcomingBeatsForShow_nullShowId_returnsEmpty() {
     assertThat(service.getUpcomingBeatsForShow(show(null), Set.of())).isEmpty();
     verifyNoInteractions(feudScriptBeatRepository);
+  }
+
+  // ── external participants (ATW-iukb) ─────────────────────────────────────
+
+  private Rivalry rivalry(Wrestler w1, Wrestler w2) {
+    Rivalry rivalry = new Rivalry();
+    rivalry.setWrestler1(w1);
+    rivalry.setWrestler2(w2);
+    return rivalry;
+  }
+
+  private FeudScript rivalryScript(Rivalry rivalry) {
+    FeudScript script = new FeudScript();
+    script.setName("External Arc");
+    script.setStatus(FeudScriptStatus.ACTIVE);
+    script.setRivalry(rivalry);
+    return script;
+  }
+
+  @Test
+  void addBeat_withExternalOpponent_beatCarriesRole() {
+    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
+    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
+    Wrestler external = wrestlerWith(30L, Gender.MALE);
+    FeudScript script = rivalryScript(rivalry(w1, w2));
+    FeudScriptBeat beat = beatWithExternals(script, List.of(external), List.of());
+    when(feudScriptBeatRepository.save(beat)).thenReturn(beat);
+
+    when(gameSettingService.isIntergenderMatchesEnabled()).thenReturn(true);
+
+    FeudScriptBeat saved = service.addBeat(script, beat);
+
+    assertThat(saved.getExternalParticipants()).hasSize(1);
+    assertThat(saved.getExternalOpponents()).containsExactly(external);
+    assertThat(saved.getExternalExtras()).isEmpty();
+  }
+
+  @Test
+  void addBeat_externalAlreadyInFeud_throws() {
+    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
+    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
+    FeudScript script = rivalryScript(rivalry(w1, w2));
+    FeudScriptBeat beat = beatWithExternals(script, List.of(w2), List.of());
+
+    when(gameSettingService.isIntergenderMatchesEnabled()).thenReturn(true);
+
+    assertThatThrownBy(() -> service.addBeat(script, beat))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("part of this arc");
+  }
+
+  @Test
+  void addBeat_sameWrestlerAsOpponentAndExtra_throws() {
+    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
+    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
+    Wrestler external = wrestlerWith(30L, Gender.MALE);
+    FeudScript script = rivalryScript(rivalry(w1, w2));
+    FeudScriptBeat beat = new FeudScriptBeat();
+    beat.setSegmentType("Singles Match");
+    beat.addExternalParticipant(external, FeudBeatParticipantRole.OPPONENT);
+    beat.addExternalParticipant(external, FeudBeatParticipantRole.EXTRA);
+    beat.setScript(script);
+
+    // Upsert by wrestler: the second add flips the role instead of duplicating, so the
+    // duplicate-role case can only arise through direct list manipulation.
+    beat.getExternalParticipants().add(externalRow(external, FeudBeatParticipantRole.EXTRA));
+
+    when(gameSettingService.isIntergenderMatchesEnabled()).thenReturn(true);
+
+    assertThatThrownBy(() -> service.addBeat(script, beat))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("cannot be added more than once");
+  }
+
+  @Test
+  void addBeat_intergenderDisabled_mixedGenderOpponentNonPromo_throws() {
+    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
+    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
+    Wrestler femaleOpponent = wrestlerWith(30L, Gender.FEMALE);
+    FeudScript script = rivalryScript(rivalry(w1, w2));
+    FeudScriptBeat beat = beatWithExternals(script, List.of(femaleOpponent), List.of());
+    beat.setSegmentType("Singles Match");
+
+    when(gameSettingService.isIntergenderMatchesEnabled()).thenReturn(false);
+    when(segmentTypeService.findByName("Singles Match")).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> service.addBeat(script, beat))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Intergender");
+  }
+
+  @Test
+  void addBeat_intergenderDisabled_promoSegment_allowsMixedGender() {
+    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
+    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
+    Wrestler femaleGuest = wrestlerWith(30L, Gender.FEMALE);
+    FeudScript script = rivalryScript(rivalry(w1, w2));
+    FeudScriptBeat beat = beatWithExternals(script, List.of(femaleGuest), List.of());
+    beat.setSegmentType("Promo");
+
+    when(gameSettingService.isIntergenderMatchesEnabled()).thenReturn(false);
+    when(segmentTypeService.findByName("Promo")).thenReturn(Optional.empty());
+    when(feudScriptBeatRepository.save(beat)).thenReturn(beat);
+
+    FeudScriptBeat saved = service.addBeat(script, beat);
+
+    assertThat(saved.getExternalParticipants()).hasSize(1);
+  }
+
+  @Test
+  void addBeat_noExternals_unchanged() {
+    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
+    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
+    FeudScript script = rivalryScript(rivalry(w1, w2));
+    FeudScriptBeat beat = new FeudScriptBeat();
+    beat.setSegmentType("Singles Match");
+    beat.setScript(script);
+    when(feudScriptBeatRepository.save(beat)).thenReturn(beat);
+
+    FeudScriptBeat saved = service.addBeat(script, beat);
+
+    assertThat(saved.getExternalParticipants()).isEmpty();
+  }
+
+  @Test
+  void toDTO_noExternals_teamsFallBackToOnePerWrestler() {
+    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
+    w1.setName("Shelton Benjamin");
+    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
+    w2.setName("Bobby Lashley");
+    FeudScript script = rivalryScript(rivalry(w1, w2));
+    FeudScriptBeat beat = pendingBeat(10L, script);
+    beat.setSegmentType("Singles Match");
+
+    FeudScriptBeatDTO dto = service.toDTOForTest(beat);
+
+    assertThat(dto.getParticipantIds()).containsExactly(1L, 2L);
+    assertThat(dto.getTeamIds()).isNull();
+    assertThat(dto.getTeamIdLists()).containsExactly(List.of(1L), List.of(2L));
+    assertThat(dto.getExternalSummary()).isNull();
+  }
+
+  @Test
+  void toDTO_externalOpponent_landsOnSecondTeam() {
+    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
+    w1.setName("Shelton Benjamin");
+    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
+    w2.setName("Bobby Lashley");
+    Wrestler external = wrestlerWith(30L, Gender.MALE);
+    external.setName("Randy Orton");
+    FeudScript script = rivalryScript(rivalry(w1, w2));
+    FeudScriptBeat beat = beatWithExternals(script, List.of(external), List.of());
+
+    FeudScriptBeatDTO dto = service.toDTOForTest(beat);
+
+    assertThat(dto.getParticipantIds()).containsExactly(1L, 2L);
+    assertThat(dto.getTeamIdLists()).containsExactly(List.of(1L, 2L), List.of(30L));
+    assertThat(dto.getTeamNameLists().get(1)).containsExactly("Randy Orton");
+    assertThat(dto.getExternalSummary()).isEqualTo("Randy Orton (Opponent)");
+  }
+
+  @Test
+  void toDTO_externalExtras_appendedToSecondTeam() {
+    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
+    w1.setName("A");
+    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
+    w2.setName("B");
+    Wrestler opponent = wrestlerWith(30L, Gender.MALE);
+    opponent.setName("Randy Orton");
+    Wrestler extra1 = wrestlerWith(31L, Gender.MALE);
+    extra1.setName("Extra One");
+    Wrestler extra2 = wrestlerWith(32L, Gender.MALE);
+    extra2.setName("Extra Two");
+    FeudScript script = rivalryScript(rivalry(w1, w2));
+    FeudScriptBeat beat = beatWithExternals(script, List.of(opponent), List.of(extra1, extra2));
+
+    FeudScriptBeatDTO dto = service.toDTOForTest(beat);
+
+    assertThat(dto.getTeamIdLists()).containsExactly(List.of(1L, 2L), List.of(30L, 31L, 32L));
+    assertThat(dto.getExternalSummary())
+        .isEqualTo("Randy Orton (Opponent), Extra One (Extra), Extra Two (Extra)");
+  }
+
+  @Test
+  void getUpcomingBeatsForShow_externalNotOnRoster_beatStillIncluded() {
+    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
+    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
+    Wrestler external = wrestlerWith(30L, Gender.MALE);
+    FeudScript script = rivalryScript(rivalry(w1, w2));
+    FeudScriptBeat beat = beatWithExternals(script, List.of(external), List.of());
+    beat.setId(21L);
+
+    when(feudScriptBeatRepository.findPendingBeatsForShow(5L)).thenReturn(List.of());
+    when(feudScriptBeatRepository.findNextPendingBeatPerActiveScript()).thenReturn(List.of(beat));
+
+    // Roster contains the feud pair but NOT the external — the beat must still be injected.
+    List<FeudScriptBeat> result = service.getUpcomingBeatsForShow(show(5L), Set.of(1L, 2L));
+
+    assertThat(result).containsExactly(beat);
+  }
+
+  @Test
+  void autoCompleteBeatForSegment_externalSubstitutedAtShowTime_stillCompletes() {
+    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
+    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
+    Wrestler substitute = wrestlerWith(40L, Gender.MALE);
+    Segment segment = new Segment();
+    segment.setId(80L);
+    segment.addParticipant(w1);
+    segment.addParticipant(w2);
+    segment.addParticipant(substitute); // show-time substitution for the planned external
+
+    FeudScript script = rivalryScript(rivalry(w1, w2));
+    FeudScriptBeat beat =
+        beatWithExternals(script, List.of(wrestlerWith(30L, Gender.MALE)), List.of());
+    beat.setBeatOrder(1);
+    beat.setBeatStatus(FeudScriptBeatStatus.PENDING);
+    script.getBeats().add(beat);
+
+    when(feudScriptBeatRepository.findPendingBeatsForWrestlers(anyList()))
+        .thenReturn(List.of(beat));
+    when(feudScriptBeatRepository.save(beat)).thenReturn(beat);
+    when(feudScriptRepository.save(script)).thenReturn(script);
+
+    Optional<FeudScriptBeat> result = service.autoCompleteBeatForSegment(segment);
+
+    assertThat(result).isPresent();
+    assertThat(result.get().getBeatStatus()).isEqualTo(FeudScriptBeatStatus.COMPLETED);
+  }
+
+  private Wrestler wrestlerWith(Long id, Gender gender) {
+    Wrestler w = new Wrestler();
+    w.setId(id);
+    w.setGender(gender);
+    return w;
+  }
+
+  private FeudScriptBeat beatWithExternals(
+      FeudScript script, List<Wrestler> opponents, List<Wrestler> extras) {
+    FeudScriptBeat beat = new FeudScriptBeat();
+    beat.setBeatOrder(1);
+    beat.setBeatStatus(FeudScriptBeatStatus.PENDING);
+    beat.setSegmentType("Singles Match");
+    opponents.forEach(w -> beat.addExternalParticipant(w, FeudBeatParticipantRole.OPPONENT));
+    extras.forEach(w -> beat.addExternalParticipant(w, FeudBeatParticipantRole.EXTRA));
+    beat.setScript(script);
+    return beat;
+  }
+
+  private FeudScriptBeatParticipant externalRow(Wrestler w, FeudBeatParticipantRole role) {
+    FeudScriptBeatParticipant participant = new FeudScriptBeatParticipant();
+    participant.setWrestler(w);
+    participant.setRole(role);
+    return participant;
   }
 }

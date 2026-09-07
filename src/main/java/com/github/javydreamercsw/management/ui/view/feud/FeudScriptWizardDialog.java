@@ -20,6 +20,7 @@ import com.github.javydreamercsw.management.domain.feud.FeudLength;
 import com.github.javydreamercsw.management.domain.feud.FeudScript;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptBeat;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.feud.FeudBeatAssistantService;
 import com.github.javydreamercsw.management.service.feud.FeudScriptService;
 import com.vaadin.flow.component.ModalityMode;
 import com.vaadin.flow.component.button.Button;
@@ -54,6 +55,7 @@ public class FeudScriptWizardDialog extends Dialog {
   private final List<String> segmentRuleNames;
   private final FeudLength defaultLength;
   private final FeudScriptService feudScriptService;
+  private final FeudBeatAssistantService opponentAssistant;
   private final Runnable onComplete;
 
   private int currentStep = 1;
@@ -82,11 +84,35 @@ public class FeudScriptWizardDialog extends Dialog {
       int defaultMaxPle,
       FeudScriptService feudScriptService,
       Runnable onComplete) {
+    this(
+        allWrestlers,
+        segmentTypeNames,
+        segmentRuleNames,
+        defaultMaxPle,
+        feudScriptService,
+        null,
+        onComplete);
+  }
+
+  /**
+   * Full wizard: {@code opponentAssistant} enables the AI Suggest Opponent button on beat rows
+   * (when non-null). External candidates are derived per beat row from the step-1 wrestler
+   * selection — anyone on the arc becomes a feud participant, everyone else is external.
+   */
+  public FeudScriptWizardDialog(
+      List<Wrestler> allWrestlers,
+      List<String> segmentTypeNames,
+      List<String> segmentRuleNames,
+      int defaultMaxPle,
+      FeudScriptService feudScriptService,
+      FeudBeatAssistantService opponentAssistant,
+      Runnable onComplete) {
     this.allWrestlers = allWrestlers;
     this.segmentTypeNames = segmentTypeNames;
     this.segmentRuleNames = segmentRuleNames;
     this.defaultLength = FeudLength.fromPleCount(defaultMaxPle);
     this.feudScriptService = feudScriptService;
+    this.opponentAssistant = opponentAssistant;
     this.onComplete = onComplete;
 
     setWidth("min(1400px, 98vw)");
@@ -230,6 +256,7 @@ public class FeudScriptWizardDialog extends Dialog {
     try {
       FeudScript script = feudScriptService.createFromWizard(name, wrestlers, maxPle);
       for (BeatEditor editor : beatRows) {
+        editor.bindScriptContext(script, wrestlers);
         FeudScriptBeat beat = editor.toBeat();
         feudScriptService.addBeat(script, beat);
       }
@@ -249,8 +276,21 @@ public class FeudScriptWizardDialog extends Dialog {
 
   private void addBeatRow() {
     List<Wrestler> participants = new ArrayList<>(wrestlerPicker.getValue());
+    // Everyone not on the arc is an external candidate for this row (recomputed so step-1
+    // changes are always reflected).
+    List<Wrestler> externalCandidates =
+        allWrestlers.stream()
+            .filter(w -> participants.stream().noneMatch(p -> p.getId().equals(w.getId())))
+            .collect(Collectors.toList());
     BeatEditor editor =
-        new BeatEditor(participants, segmentTypeNames, segmentRuleNames, true, this::removeBeatRow);
+        new BeatEditor(
+            participants,
+            segmentTypeNames,
+            segmentRuleNames,
+            externalCandidates,
+            true,
+            this::removeBeatRow,
+            opponentAssistant);
     beatRows.add(editor);
     beatContainer.add(editor);
   }
