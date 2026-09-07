@@ -1858,6 +1858,9 @@
       <properties>
         <e2e.skipITs>false</e2e.skipITs>
         <failsafe.exclude>**/*E2ETest.java</failsafe.exclude>
+        <!-- Optional JUnit tag filter, e.g. -Dit.groups=ollama runs only @Tag("ollama") ITs.
+             Empty by default so no group filtering applies to normal runs. -->
+        <it.groups/>
       </properties>
       <build>
         <plugins>
@@ -1873,6 +1876,7 @@
                 <exclude>**/*DockerIT.java</exclude>
                 <exclude>**/Docker*IT.java</exclude>
               </excludes>
+              <groups>${it.groups}</groups>
             </configuration>
           </plugin>
         </plugins>

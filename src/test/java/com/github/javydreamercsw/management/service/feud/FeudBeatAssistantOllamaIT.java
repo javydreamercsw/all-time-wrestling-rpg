@@ -46,6 +46,7 @@ import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -64,6 +65,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
  * </pre>
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Tag("ollama")
 @EnabledIfEnvironmentVariable(named = "OLLAMA_BASE_URL", matches = ".+")
 class FeudBeatAssistantOllamaIT {
 

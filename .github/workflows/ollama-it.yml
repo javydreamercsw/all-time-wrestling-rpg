@@ -77,7 +77,7 @@ jobs:
           OLLAMA_TIMEOUT_SECONDS: 300
         run: >
           mvn -Pintegration-test verify
-          "-Dit.test=OllamaSegmentNarrationServiceIT,FeudBeatAssistantOllamaIT"
+          -Dit.groups=ollama
           -Dsurefire.skip=true
           -DrerunFailingTestsCount=2
           --no-transfer-progress
