@@ -58,7 +58,8 @@ public class FeudScriptBeatParticipant extends AbstractEntity<Long> {
   @JsonIgnoreProperties({"externalParticipants"})
   private FeudScriptBeat beat;
 
-  @ManyToOne(optional = false, fetch = FetchType.LAZY)
+  /** EAGER: the External column and beat-edit dialog read wrestler names on detached grids. */
+  @ManyToOne(optional = false, fetch = FetchType.EAGER)
   @JoinColumn(name = "wrestler_id", nullable = false)
   @JsonIgnoreProperties({"rivalries", "injuries", "deck", "titleReigns", "faction"})
   private Wrestler wrestler;

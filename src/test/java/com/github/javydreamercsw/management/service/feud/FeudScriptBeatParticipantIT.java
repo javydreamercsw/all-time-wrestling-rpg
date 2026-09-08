@@ -149,6 +149,31 @@ class FeudScriptBeatParticipantIT extends ManagementIntegrationTest {
     assertThat(dto.getExternalSummary()).isEqualTo("Randy Orton (Opponent)");
   }
 
+  @Test
+  @WithCustomMockUser(
+      username = "admin",
+      roles = {"ADMIN"})
+  void detachedBeat_externalAndPlannedWinnerNames_renderWithoutSession() {
+    Wrestler w1 = wrestlerRepo.save(wrestler("Shelton Benjamin"));
+    Wrestler w2 = wrestlerRepo.save(wrestler("Bobby Lashley"));
+    Wrestler external = wrestlerRepo.save(wrestler("Randy Orton"));
+
+    Rivalry rivalry = rivalryRepository.save(rivalry(w1, w2));
+    FeudScript script = script(rivalry, "Detached Grid Arc");
+
+    FeudScriptBeat beat = new FeudScriptBeat();
+    beat.setSegmentType("Singles Match");
+    beat.setPlannedWinner(w2);
+    beat.addExternalParticipant(external, FeudBeatParticipantRole.OPPONENT);
+    FeudScriptBeat saved = feudScriptService.addBeat(script, beat);
+
+    // Detached (transaction closed): the rivalry-detail grid and edit dialog read wrestler
+    // names here — the LAZY fetch types caused LazyInitializationException in production.
+    FeudScriptBeat detached = beatRepository.findById(saved.getId()).orElseThrow();
+    assertThat(detached.getExternalOpponents().get(0).getName()).isEqualTo("Randy Orton");
+    assertThat(detached.getPlannedWinner().getName()).isEqualTo("Bobby Lashley");
+  }
+
   private List<Long> reloadedExternalIds(FeudScriptBeatDTO dto) {
     return dto.getTeamIds() != null ? dto.getTeamIds().get(1) : List.of();
   }
