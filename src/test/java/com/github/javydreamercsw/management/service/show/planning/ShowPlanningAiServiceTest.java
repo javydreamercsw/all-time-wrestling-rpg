@@ -623,6 +623,108 @@ class ShowPlanningAiServiceTest {
 
   // ── deterministic scripted-beat enforcement (ATW-k3im) ───────────────────
 
+  @Test
+  void planShow_matchWithoutRules_getsNormalDefault() {
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    SegmentRule normalRule = new SegmentRule();
+    normalRule.setName("Normal");
+    when(segmentRuleService.findByName("Normal")).thenReturn(Optional.of(normalRule));
+
+    // AI omits rules — nondeterministic per prompt guidance
+    String aiResponseJson =
+        """
+        [
+          {
+            "segmentId": "seg1",
+            "type": "One on One",
+            "description": "Big fight",
+            "outcome": "Someone wins",
+            "teams": [["A"], ["B"]],
+            "teamIds": [[11], [12]]
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    assertEquals(1, proposedShow.getSegments().size());
+    assertEquals(List.of("Normal"), proposedShow.getSegments().get(0).getRules());
+  }
+
+  @Test
+  void planShow_promoWithoutRules_getsPromoDefault() {
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(0);
+    showTemplate.setExpectedPromos(1);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    SegmentType promoType = new SegmentType();
+    promoType.setName("Promo");
+    promoType.setCode("promo");
+    when(segmentTypeService.findByName("Promo")).thenReturn(Optional.of(promoType));
+    SegmentRule promoRule = new SegmentRule();
+    promoRule.setName("Promo");
+    when(segmentRuleService.findByName("Promo")).thenReturn(Optional.of(promoRule));
+
+    // The prompt tells the AI to omit rules on promos — the default must come from the server.
+    String aiResponseJson =
+        """
+        [
+          {
+            "segmentId": "seg1",
+            "type": "Promo",
+            "description": "Talking segment",
+            "outcome": "Crowd reacts",
+            "teams": [["A"]],
+            "teamIds": [[11]]
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    assertEquals(1, proposedShow.getSegments().size());
+    assertEquals(List.of("Promo"), proposedShow.getSegments().get(0).getRules());
+  }
+
+  @Test
+  void planShow_explicitRulesAreKept() {
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+
+    String aiResponseJson =
+        """
+        [
+          {
+            "segmentId": "seg1",
+            "type": "One on One",
+            "description": "Big fight",
+            "outcome": "Someone wins",
+            "rules": ["No DQ"],
+            "teams": [["A"], ["B"]],
+            "teamIds": [[11], [12]]
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    assertEquals(List.of("No DQ"), proposedShow.getSegments().get(0).getRules());
+  }
+
   private FeudScriptBeatDTO beat(
       String segmentType,
       String segmentRule,
@@ -679,6 +781,9 @@ class ShowPlanningAiServiceTest {
     assertEquals(List.of(11L), beatSegment.getTeamIds().get(0));
     assertEquals(9L, beatSegment.getRivalryId());
     assertEquals(List.of("Bobby Lashley"), beatSegment.getWinners());
+    // The scripted slot gets a grid-facing summary like the AI's segments have.
+    assertEquals(
+        "Scripted beat: Lashley Arc — planned winner: Bobby Lashley", beatSegment.getSummary());
   }
 
   @Test

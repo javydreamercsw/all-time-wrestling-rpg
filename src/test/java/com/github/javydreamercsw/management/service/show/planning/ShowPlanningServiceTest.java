@@ -326,6 +326,52 @@ class ShowPlanningServiceTest {
   }
 
   @Test
+  void testApproveSegments_teamIdsWinNamesWhenTheyDisagree() {
+    // ATW-978m: the AI emitted teamIds containing OMZ (id 15) while the teams-name array listed
+    // a different wrestler. Approval prefers IDs, so the saved segment differed from what the
+    // grid displayed (names) — the duplicate-participant error then named a wrestler invisible
+    // in the UI. The saved segment must reflect the authoritative (ID) source: OMZ present,
+    // the name-only wrestler absent.
+    ProposedSegment proposedSegment = new ProposedSegment();
+    proposedSegment.setType("One on One");
+    proposedSegment.setTeams(List.of(List.of("Johnny All Time"), List.of("Mukundi Shumba")));
+    proposedSegment.setTeamIds(List.of(List.of(15L), List.of(12L))); // OMZ, not Johnny
+
+    SegmentType matchType = new SegmentType();
+    matchType.setName("One on One");
+    when(segmentTypeService.findByName("One on One")).thenReturn(Optional.of(matchType));
+
+    Wrestler johnny = new Wrestler();
+    johnny.setId(11L);
+    johnny.setName("Johnny All Time");
+    Wrestler omz = new Wrestler();
+    omz.setId(15L);
+    omz.setName("OMZ");
+    Wrestler mukundi = new Wrestler();
+    mukundi.setId(12L);
+    mukundi.setName("Mukundi Shumba");
+    when(wrestlerRepository.findById(11L)).thenReturn(Optional.of(johnny));
+    when(wrestlerRepository.findById(15L)).thenReturn(Optional.of(omz));
+    when(wrestlerRepository.findById(12L)).thenReturn(Optional.of(mukundi));
+
+    showPlanningService.approveSegments(show, List.of(proposedSegment));
+
+    ArgumentCaptor<List<Segment>> captor = ArgumentCaptor.forClass(List.class);
+    verify(segmentRepository).saveAll(captor.capture());
+    Segment saved = captor.getValue().get(0);
+
+    // ID source wins: OMZ (in teamIds only) is on the segment; Johnny (names only) is not.
+    assertTrue(
+        saved.getParticipants().stream().anyMatch(p -> "OMZ".equals(p.getWrestler().getName())));
+    assertFalse(
+        saved.getParticipants().stream()
+            .anyMatch(p -> "Johnny All Time".equals(p.getWrestler().getName())));
+    // And the proposal's display teams are reconciled to the IDs, so the grid now shows OMZ
+    // instead of the stale name — the duplicate is visible before approving.
+    assertEquals(List.of(List.of("OMZ"), List.of("Mukundi Shumba")), proposedSegment.getTeams());
+  }
+
+  @Test
   void testApproveProposedSegments() {
     // Given
     ProposedSegment proposedSegment = new ProposedSegment();

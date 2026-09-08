@@ -462,6 +462,8 @@ public class ShowPlanningService {
               + "because showDate is not set.");
     }
 
+    reconcileTeamsWithIds(proposedSegments);
+
     CardValidationResult validation =
         validateCard(proposedSegments, rivalryService.getActiveRivalries());
     if (!validation.isValid()) {
@@ -568,6 +570,42 @@ public class ShowPlanningService {
     segmentRepository.saveAll(segmentsToSave);
     log.debug("Approved and saved {} segments for show: {}", segmentsToSave.size(), show.getName());
     eventPublisher.publishEvent(new SegmentsApprovedEvent(this, show));
+  }
+
+  /**
+   * Rebuilds each segment's {@code teams} names from its {@code teamIds} when both are present. The
+   * AI can emit inconsistent arrays (a wrestler id present in teamIds but its name missing from
+   * teams); approval persists from IDs while the planning grid and edit dialog display names — the
+   * mismatch made duplicated participants literally invisible in the UI. IDs are the authority;
+   * names are derived. Segments without teamIds are left untouched.
+   */
+  private void reconcileTeamsWithIds(final List<ProposedSegment> proposedSegments) {
+    for (ProposedSegment ps : proposedSegments) {
+      if (ps.getTeamIds() == null || ps.getTeamIds().isEmpty()) {
+        continue;
+      }
+      List<List<String>> names = new ArrayList<>();
+      for (List<Long> team : ps.getTeamIds()) {
+        List<String> teamNames = new ArrayList<>();
+        if (team != null) {
+          for (Long id : team) {
+            String name =
+                wrestlerRepository.findById(id).map(Wrestler::getName).orElse("wrestler#" + id);
+            teamNames.add(name);
+          }
+        }
+        names.add(teamNames);
+      }
+      List<List<String>> current = ps.getTeams() == null ? List.of() : ps.getTeams();
+      if (!current.equals(names)) {
+        log.info(
+            "Reconciled teams from teamIds for a {} segment: {} -> {}",
+            ps.getType(),
+            current,
+            names);
+        ps.setTeams(names);
+      }
+    }
   }
 
   private void validateNoDuplicateParticipants(final List<ProposedSegment> proposedSegments) {

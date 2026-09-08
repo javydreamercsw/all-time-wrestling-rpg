@@ -68,7 +68,35 @@ public class ShowPlanningAiService {
   public ProposedShow planShow(@NonNull final ShowPlanningContextDTO context) {
     ProposedShow proposedShow = planShowWithAi(context);
     applyScriptedBeats(proposedShow, context);
+    applyDefaultRules(proposedShow);
     return proposedShow;
+  }
+
+  /**
+   * Applies deterministic default stipulations where the AI (or a scripted beat) left the rules
+   * empty: matches get the "Normal" rule, promos get the "Promo" rule. The prompt asks the AI to
+   * omit rules on promos, so relying on it would leave the field nondeterministic — every segment
+   * should carry its default rule by the time it reaches the planning grid.
+   */
+  private void applyDefaultRules(ProposedShow proposedShow) {
+    for (ProposedSegment segment : proposedShow.getSegments()) {
+      if (segment.getRules() != null && !segment.getRules().isEmpty()) {
+        continue;
+      }
+      // isMatchSegment false ⇒ promo (or unresolvable type falls back to non-promo "Normal",
+      // matching the intergender-check idiom where only explicit promos skip match semantics).
+      boolean promo = !isMatchSegment(segment);
+      String defaultRule = promo ? "Promo" : "Normal";
+      segmentRuleService
+          .findByName(defaultRule)
+          .ifPresentOrElse(
+              rule -> segment.setRules(List.of(rule.getName())),
+              () ->
+                  log.debug(
+                      "No '{}' segment rule found; segment '{}' left without rules",
+                      defaultRule,
+                      segment.getType()));
+    }
   }
 
   /**
@@ -101,6 +129,9 @@ public class ShowPlanningAiService {
     for (FeudScriptBeatDTO beat : beats) {
       ProposedSegment beatSegment = buildBeatSegment(beat);
       if (beatSegment != null) {
+        // Give the scripted slot a summary in the same shape the AI's segments carry, sourced
+        // from the arc context so the planning grid reads like the rest of the card.
+        beatSegment.setSummary(summarizeBeat(beat));
         beatSegments.add(beatSegment);
       }
     }
@@ -134,6 +165,18 @@ public class ShowPlanningAiService {
       segment.setNotes(beat.getNotes());
     }
     return segment;
+  }
+
+  /** Grid-facing summary for a scripted slot: arc name plus planned-winner intent. */
+  private String summarizeBeat(FeudScriptBeatDTO beat) {
+    StringBuilder sb = new StringBuilder();
+    sb.append("Scripted beat: ").append(beat.getScriptName());
+    if ("BOOKER_PICKS".equals(beat.getWinnerControl())
+        && beat.getPlannedWinnerName() != null
+        && !beat.getPlannedWinnerName().isBlank()) {
+      sb.append(" — planned winner: ").append(beat.getPlannedWinnerName());
+    }
+    return sb.toString();
   }
 
   private boolean isMatchSegment(ProposedSegment segment) {
