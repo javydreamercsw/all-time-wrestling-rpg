@@ -334,7 +334,7 @@ public class CampaignEncounterService {
         .filter(w -> expansionService.isExpansionEnabled(w.getExpansionCode()))
         .filter(
             w ->
-                injuryService.getAllInjuriesForWrestler(w.getId(), universeId).isEmpty()
+                injuryService.getActiveInjuriesForWrestler(w.getId(), universeId).isEmpty()
                     && wrestlerService
                             .getOrCreateState(w.getId(), universeId)
                             .getPhysicalCondition()

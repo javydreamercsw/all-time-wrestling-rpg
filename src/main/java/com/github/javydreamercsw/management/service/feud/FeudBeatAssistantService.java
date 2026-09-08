@@ -121,7 +121,9 @@ public class FeudBeatAssistantService {
     List<Wrestler> candidates =
         wrestlerService.findAllFiltered(null, requiredGender, universeId, null, null).stream()
             .filter(w -> !feudIds.contains(w.getId()))
-            .filter(w -> injuryService.getAllInjuriesForWrestler(w.getId(), universeId).isEmpty())
+            // Active injuries only — healed injuries are history, not unavailability.
+            .filter(
+                w -> injuryService.getActiveInjuriesForWrestler(w.getId(), universeId).isEmpty())
             .toList();
     if (candidates.isEmpty()) {
       throw new IllegalStateException("No eligible external opponents available");

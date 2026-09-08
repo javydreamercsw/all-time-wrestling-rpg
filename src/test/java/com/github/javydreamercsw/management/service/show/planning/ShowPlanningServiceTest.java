@@ -31,6 +31,7 @@ import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.drama.DramaEvent;
 import com.github.javydreamercsw.management.domain.drama.DramaEventSeverity;
 import com.github.javydreamercsw.management.domain.drama.DramaEventType;
+import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -120,7 +121,7 @@ class ShowPlanningServiceTest {
     lenient().when(wrestlerRepository.findByName(any())).thenReturn(Optional.empty());
     lenient().when(segmentTypeService.findByName(any())).thenReturn(Optional.empty());
     lenient()
-        .when(injuryService.getAllInjuriesForWrestler(anyLong(), anyLong()))
+        .when(injuryService.getActiveInjuriesForWrestler(anyLong(), anyLong()))
         .thenReturn(List.of());
     WrestlerState healthyState = new WrestlerState();
     healthyState.setPhysicalCondition(100);
@@ -243,6 +244,52 @@ class ShowPlanningServiceTest {
     ShowPlanningContext capturedContext = showPlanningContextCaptor.getValue();
     assertEquals("Test Show", capturedContext.getShowTemplate().getShowName());
     assertEquals(1, capturedContext.getFullRoster().size());
+  }
+
+  @Test
+  void testGetShowPlanningContext_healedInjuryDoesNotExcludeWrestler() {
+    // ATW-978m: availability checks must consider ACTIVE injuries only. A healed injury is
+    // history — a wrestler fully recovered must be bookable again.
+    Injury healedInjury = new Injury();
+    healedInjury.setId(7L);
+    healedInjury.setHealedDate(Instant.now(clock));
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
+        .thenReturn(List.of(activeWrestler));
+    lenient()
+        .when(injuryService.getAllInjuriesForWrestler(anyLong(), anyLong()))
+        .thenReturn(List.of(healedInjury)); // injury history contains the healed injury
+    lenient()
+        .when(injuryService.getActiveInjuriesForWrestler(anyLong(), anyLong()))
+        .thenReturn(List.of()); // but nothing is active
+    when(mapper.toDto(any(ShowPlanningContext.class))).thenReturn(new ShowPlanningContextDTO());
+
+    ShowPlanningContextDTO result = showPlanningService.getShowPlanningContext(show);
+
+    assertNotNull(result);
+    // The wrestler must survive the availability filter (full roster keeps him).
+    ArgumentCaptor<ShowPlanningContext> captor = ArgumentCaptor.forClass(ShowPlanningContext.class);
+    verify(mapper).toDto(captor.capture());
+    assertEquals(1, captor.getValue().getFullRoster().size());
+  }
+
+  @Test
+  void testGetShowPlanningContext_activeInjuryExcludesWrestler() {
+    Injury activeInjury = new Injury();
+    activeInjury.setId(8L);
+    activeInjury.setHealedDate(null);
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
+        .thenReturn(List.of(activeWrestler));
+    lenient()
+        .when(injuryService.getActiveInjuriesForWrestler(anyLong(), anyLong()))
+        .thenReturn(List.of(activeInjury));
+    when(mapper.toDto(any(ShowPlanningContext.class))).thenReturn(new ShowPlanningContextDTO());
+
+    ShowPlanningContextDTO result = showPlanningService.getShowPlanningContext(show);
+
+    ArgumentCaptor<ShowPlanningContext> captor = ArgumentCaptor.forClass(ShowPlanningContext.class);
+    verify(mapper).toDto(captor.capture());
+    // Active injury → wrestler unavailable → roster empty.
+    assertEquals(0, captor.getValue().getFullRoster().size());
   }
 
   @Test

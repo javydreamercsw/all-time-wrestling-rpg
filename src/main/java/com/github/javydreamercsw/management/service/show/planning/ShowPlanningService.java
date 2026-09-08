@@ -617,7 +617,8 @@ public class ShowPlanningService {
 
   private boolean isUnavailable(
       final Wrestler wrestler, final Long universeId, final int conditionThreshold) {
-    if (!injuryService.getAllInjuriesForWrestler(wrestler.getId(), universeId).isEmpty()) {
+    // Active injuries only — a healed injury is history and must not block availability.
+    if (!injuryService.getActiveInjuriesForWrestler(wrestler.getId(), universeId).isEmpty()) {
       return true;
     }
     WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), universeId);

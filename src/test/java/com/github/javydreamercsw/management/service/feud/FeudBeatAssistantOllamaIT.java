@@ -110,7 +110,8 @@ class FeudBeatAssistantOllamaIT {
     candidates = List.of(w1, w2, wrestler(30L, "Randy Orton", Gender.MALE));
     when(wrestlerService.findAllFiltered(null, null, UNIVERSE_ID, null, null))
         .thenReturn(candidates);
-    when(injuryService.getAllInjuriesForWrestler(anyLong(), eq(UNIVERSE_ID))).thenReturn(List.of());
+    when(injuryService.getActiveInjuriesForWrestler(anyLong(), eq(UNIVERSE_ID)))
+        .thenReturn(List.of());
 
     service =
         new FeudBeatAssistantService(
