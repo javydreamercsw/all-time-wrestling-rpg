@@ -41,7 +41,6 @@ import com.github.javydreamercsw.management.service.title.ContenderSelectionServ
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -616,12 +615,12 @@ public class FeudScriptService {
     dto.setNotes(beat.getNotes());
 
     FeudScript script = beat.getScript();
-    String participants = "";
+    List<String> participantNames = List.of();
     List<Long> participantIds = List.of();
     Long rivalryId = null;
     if (script.getRivalry() != null) {
       Rivalry r = script.getRivalry();
-      participants = r.getWrestler1().getName() + " vs " + r.getWrestler2().getName();
+      participantNames = List.of(r.getWrestler1().getName(), r.getWrestler2().getName());
       participantIds = List.of(r.getWrestler1().getId(), r.getWrestler2().getId());
       rivalryId = r.getId();
     } else if (script.getFeud() != null) {
@@ -630,11 +629,11 @@ public class FeudScriptService {
               .filter(p -> Boolean.TRUE.equals(p.getIsActive()))
               .map(p -> p.getWrestler())
               .collect(Collectors.toList());
-      participants =
-          activeMembers.stream().map(Wrestler::getName).collect(Collectors.joining(", "));
+      participantNames = activeMembers.stream().map(Wrestler::getName).collect(Collectors.toList());
       participantIds = activeMembers.stream().map(Wrestler::getId).collect(Collectors.toList());
     }
-    dto.setParticipantNames(participants);
+    // Display string for prompts/UI hints — NOT a source of structured team data.
+    dto.setParticipantNames(String.join(" vs ", participantNames));
     dto.setParticipantIds(participantIds);
     dto.setRivalryId(rivalryId);
 
@@ -643,11 +642,7 @@ public class FeudScriptService {
     List<Wrestler> extras = beat.getExternalExtras();
     if (!opponents.isEmpty() || !extras.isEmpty()) {
       List<List<String>> teams = new ArrayList<>();
-      teams.add(
-          Arrays.stream(participants.split(","))
-              .map(String::trim)
-              .filter(s -> !s.isEmpty())
-              .collect(Collectors.toList()));
+      teams.add(new ArrayList<>(participantNames));
       List<List<Long>> teamIds = new ArrayList<>();
       teamIds.add(new ArrayList<>(participantIds));
       List<String> team2Names = new ArrayList<>();

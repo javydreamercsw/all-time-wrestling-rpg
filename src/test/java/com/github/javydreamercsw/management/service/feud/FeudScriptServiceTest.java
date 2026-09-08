@@ -588,6 +588,10 @@ class FeudScriptServiceTest {
 
     assertThat(dto.getParticipantIds()).containsExactly(1L, 2L);
     assertThat(dto.getTeamIdLists()).containsExactly(List.of(1L, 2L), List.of(30L));
+    // ATW-978m: team 1 must list each feud wrestler separately — building it by splitting the
+    // "A vs B" display string on commas produced one bogus "A vs B" team entry, which the
+    // planning grid rendered as garbage and the edit dialog silently dropped.
+    assertThat(dto.getTeamNameLists().get(0)).containsExactly("Shelton Benjamin", "Bobby Lashley");
     assertThat(dto.getTeamNameLists().get(1)).containsExactly("Randy Orton");
     assertThat(dto.getExternalSummary()).isEqualTo("Randy Orton (Opponent)");
   }
