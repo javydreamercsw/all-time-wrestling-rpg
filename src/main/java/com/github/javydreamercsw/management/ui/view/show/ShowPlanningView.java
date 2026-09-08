@@ -195,6 +195,11 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
 
     proposedSegmentsGrid = new Grid<>(ProposedSegment.class, false);
     proposedSegmentsGrid.setId("proposed-segments-grid");
+    proposedSegmentsGrid
+        .addColumn(s -> String.valueOf(segments.indexOf(s) + 1))
+        .setHeader("#")
+        .setWidth("4em")
+        .setFlexGrow(0);
     proposedSegmentsGrid.addColumn(ProposedSegment::getType).setHeader("Type").setResizable(true);
     Grid.Column<ProposedSegment> summaryColumn =
         proposedSegmentsGrid

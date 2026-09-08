@@ -293,6 +293,39 @@ class ShowPlanningServiceTest {
   }
 
   @Test
+  void testApproveSegments_duplicateParticipantErrorIdentifiesSegment() {
+    // ATW-978m: the error must identify the offending segment by its grid-visible summary and
+    // participants — a bare "segment 3" is unfindable, and deletions shift the numbering.
+    ProposedSegment good = new ProposedSegment();
+    good.setType("Match");
+    good.setSummary("Opening tag");
+    good.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+
+    ProposedSegment bad = new ProposedSegment();
+    bad.setType("Tag Team");
+    bad.setSummary("Slaughter chaos");
+    bad.setTeams(List.of(List.of("Sgt. Slaughter", "OMZ"), List.of("Sgt. Slaughter")));
+
+    SegmentType matchType = new SegmentType();
+    matchType.setName("Match");
+    when(segmentTypeService.findByName("Match")).thenReturn(Optional.of(matchType));
+    when(segmentTypeService.findByName("Tag Team")).thenReturn(Optional.empty());
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+
+    IllegalArgumentException ex =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> showPlanningService.approveSegments(show, List.of(good, bad)));
+
+    String message = ex.getMessage();
+    assertTrue(message.contains("2nd segment"), () -> "position: " + message);
+    assertTrue(message.contains("Tag Team"), () -> "type: " + message);
+    assertTrue(message.contains("Slaughter chaos"), () -> "summary: " + message);
+    assertTrue(message.contains("Sgt. Slaughter, OMZ"), () -> "participants: " + message);
+    assertFalse(message.contains("segment 3 ("), () -> "old label leaked: " + message);
+  }
+
+  @Test
   void testApproveProposedSegments() {
     // Given
     ProposedSegment proposedSegment = new ProposedSegment();

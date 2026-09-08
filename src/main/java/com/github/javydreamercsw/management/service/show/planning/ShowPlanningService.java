@@ -573,7 +573,7 @@ public class ShowPlanningService {
   private void validateNoDuplicateParticipants(final List<ProposedSegment> proposedSegments) {
     for (int i = 0; i < proposedSegments.size(); i++) {
       ProposedSegment ps = proposedSegments.get(i);
-      String segmentLabel = "segment " + (i + 1) + " (" + ps.getType() + ")";
+      String segmentLabel = describeSegment(i, ps);
 
       if (ps.getTeamIds() != null && !ps.getTeamIds().isEmpty()) {
         Set<Long> seen = new HashSet<>();
@@ -588,7 +588,7 @@ public class ShowPlanningService {
               throw new IllegalArgumentException(
                   "'"
                       + name
-                      + "' appears in multiple teams in "
+                      + "' appears in multiple teams in the "
                       + segmentLabel
                       + ". Edit the segment and remove the duplicate before approving.");
             }
@@ -605,7 +605,7 @@ public class ShowPlanningService {
               throw new IllegalArgumentException(
                   "'"
                       + name
-                      + "' appears in multiple teams in "
+                      + "' appears in multiple teams in the "
                       + segmentLabel
                       + ". Edit the segment and remove the duplicate before approving.");
             }
@@ -613,6 +613,46 @@ public class ShowPlanningService {
         }
       }
     }
+  }
+
+  /**
+   * Grid-position label for a proposed segment in error messages. Names the segment by its summary
+   * (shown in the grid) and participants rather than a bare position number: deletions shift the
+   * numbering, leaving the booker hunting for a row that no longer exists.
+   */
+  private String describeSegment(int index, ProposedSegment ps) {
+    String summary = ps.getSummary();
+    String participants =
+        ps.getTeams() == null
+            ? ""
+            : ps.getTeams().stream().flatMap(List::stream).collect(Collectors.joining(", "));
+    return String.format(
+        "%s segment (%s%s%s)",
+        ordinal(index + 1),
+        ps.getType() == null ? "unknown type" : ps.getType(),
+        summaryPart(summary),
+        participants.isEmpty() ? "" : " — " + participants);
+  }
+
+  private String summaryPart(String summary) {
+    if (summary == null || summary.isBlank()) {
+      return "";
+    }
+    String trimmed = summary.trim();
+    return ", \"" + (trimmed.length() > 60 ? trimmed.substring(0, 60) + "…" : trimmed) + "\"";
+  }
+
+  private String ordinal(int n) {
+    int mod100 = n % 100;
+    if (mod100 >= 11 && mod100 <= 13) {
+      return n + "th";
+    }
+    return switch (n % 10) {
+      case 1 -> n + "st";
+      case 2 -> n + "nd";
+      case 3 -> n + "rd";
+      default -> n + "th";
+    };
   }
 
   private boolean isUnavailable(
