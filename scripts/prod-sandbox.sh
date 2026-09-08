@@ -356,24 +356,6 @@ cmd_promote() {
   cmd_stop
   stop_prod_tomcat
 
-  if [ -n "${TOMCAT_WEBAPPS:-}" ] && ls "${TOMCAT_WEBAPPS}"/*.war >/dev/null 2>&1; then
-    local war_archive="${BACKUP_DIR}/war-$(timestamp)"
-    mkdir -p "$war_archive"
-    cp "${TOMCAT_WEBAPPS}"/*.war "$war_archive/"
-    echo "Archived current WAR(s) -> ${war_archive}/"
-    # Remove the old app so Tomcat comes back up EMPTY: the old WAR cannot run
-    # against the migrated schema. Cargo Deploy publishes the new WAR next.
-    local war base
-    for war in "${TOMCAT_WEBAPPS}"/*.war; do
-      base="${war%.war}"
-      rm -f "$war"
-      [ -d "$base" ] && rm -rf "$base"
-    done
-    echo "Removed old WAR(s) from ${TOMCAT_WEBAPPS}/ (archived above)."
-  else
-    echo "NOTE: TOMCAT_WEBAPPS not set or no WAR found — skipping WAR archive."
-  fi
-
   local pre_promote="${BACKUP_DIR}/pre-promote-$(timestamp).sql"
   echo "Rollback point: dumping '${PROD_DB}' -> ${pre_promote}"
   run_mysqldump "$PROD_DB" > "$pre_promote"
@@ -397,6 +379,24 @@ cmd_promote() {
   local sandbox_dump="${BACKUP_DIR}/sandbox-final-$(timestamp).sql"
   echo "Dumping tested sandbox '${SANDBOX_DB}' -> ${sandbox_dump}"
   run_mysqldump "$SANDBOX_DB" > "$sandbox_dump"
+
+  if [ -n "${TOMCAT_WEBAPPS:-}" ] && ls "${TOMCAT_WEBAPPS}"/*.war >/dev/null 2>&1; then
+    local war_archive="${BACKUP_DIR}/war-$(timestamp)"
+    mkdir -p "$war_archive"
+    cp "${TOMCAT_WEBAPPS}"/*.war "$war_archive/"
+    echo "Archived current WAR(s) -> ${war_archive}/"
+    # Remove the old app so Tomcat comes back up EMPTY: the old WAR cannot run
+    # against the migrated schema. Cargo Deploy publishes the new WAR next.
+    local war base
+    for war in "${TOMCAT_WEBAPPS}"/*.war; do
+      base="${war%.war}"
+      rm -f "$war"
+      [ -d "$base" ] && rm -rf "$base"
+    done
+    echo "Removed old WAR(s) from ${TOMCAT_WEBAPPS}/ (archived above)."
+  else
+    echo "NOTE: TOMCAT_WEBAPPS not set or no WAR found — skipping WAR archive."
+  fi
 
   echo "Replacing '${PROD_DB}' with the tested data..."
   run_mysql -e "DROP DATABASE \`${PROD_DB}\`; CREATE DATABASE \`${PROD_DB}\`"
