@@ -326,31 +326,70 @@ class ShowPlanningServiceTest {
   }
 
   @Test
-  void testApproveSegments_teamIdsWinNamesWhenTheyDisagree() {
-    // ATW-978m: the AI emitted teamIds containing OMZ (id 15) while the teams-name array listed
-    // a different wrestler. Approval prefers IDs, so the saved segment differed from what the
-    // grid displayed (names) — the duplicate-participant error then named a wrestler invisible
-    // in the UI. The saved segment must reflect the authoritative (ID) source: OMZ present,
-    // the name-only wrestler absent.
+  void testApproveSegments_resolvingNamesWinOverHallucinatedTeamIds() {
+    // ATW-978m (day 2): the AI's teamIds referenced nonexistent rows (40, 25) while its teams
+    // names were correct. ID-wins reconciliation replaced good names with "wrestler#40"
+    // placeholders and pulled in a wrong (female) wrestler -> intergender validation failure.
+    // Names that all resolve must win: teamIds are rebuilt from them.
+    ProposedSegment proposedSegment = new ProposedSegment();
+    proposedSegment.setType("Tag Team");
+    proposedSegment.setTeams(List.of(List.of("The British Bulldog"), List.of("Rob Van Dam")));
+    proposedSegment.setTeamIds(List.of(List.of(40L, 25L), List.of(1L, 33L))); // hallucinated
+
+    SegmentType matchType = new SegmentType();
+    matchType.setName("Tag Team");
+    when(segmentTypeService.findByName("Tag Team")).thenReturn(Optional.of(matchType));
+
+    Wrestler bulldog = new Wrestler();
+    bulldog.setId(10L);
+    bulldog.setName("The British Bulldog");
+    bulldog.setGender(Gender.MALE);
+    Wrestler rvd = new Wrestler();
+    rvd.setId(1L);
+    rvd.setName("Rob Van Dam");
+    rvd.setGender(Gender.MALE);
+    when(wrestlerRepository.findByName("The British Bulldog")).thenReturn(Optional.of(bulldog));
+    when(wrestlerRepository.findByName("Rob Van Dam")).thenReturn(Optional.of(rvd));
+    when(wrestlerRepository.findById(anyLong())).thenReturn(Optional.empty());
+
+    showPlanningService.approveSegments(show, List.of(proposedSegment));
+
+    ArgumentCaptor<List<Segment>> captor = ArgumentCaptor.forClass(List.class);
+    verify(segmentRepository).saveAll(captor.capture());
+    Segment saved = captor.getValue().get(0);
+
+    // Names won: both wrestlers persisted by their true IDs; hallucinated ids never touched it.
+    assertTrue(
+        saved.getParticipants().stream()
+            .anyMatch(p -> "The British Bulldog".equals(p.getWrestler().getName())));
+    assertTrue(
+        saved.getParticipants().stream()
+            .anyMatch(p -> "Rob Van Dam".equals(p.getWrestler().getName())));
+    // teamIds rebuilt from the resolving names.
+    assertEquals(List.of(List.of(10L), List.of(1L)), proposedSegment.getTeamIds());
+  }
+
+  @Test
+  void testApproveSegments_unresolvableNamesFallBackToTeamIds() {
+    // Names blank/unresolvable (e.g. beat-DTO team or stale roster entry) -> teamIds are the
+    // authority and names are derived from them; nonexistent ids are dropped with a warning.
     ProposedSegment proposedSegment = new ProposedSegment();
     proposedSegment.setType("One on One");
-    proposedSegment.setTeams(List.of(List.of("Johnny All Time"), List.of("Mukundi Shumba")));
-    proposedSegment.setTeamIds(List.of(List.of(15L), List.of(12L))); // OMZ, not Johnny
+    proposedSegment.setTeams(List.of(List.of("wrestler#40"), List.of()));
+    proposedSegment.setTeamIds(List.of(List.of(15L), List.of(12L)));
 
     SegmentType matchType = new SegmentType();
     matchType.setName("One on One");
     when(segmentTypeService.findByName("One on One")).thenReturn(Optional.of(matchType));
 
-    Wrestler johnny = new Wrestler();
-    johnny.setId(11L);
-    johnny.setName("Johnny All Time");
     Wrestler omz = new Wrestler();
     omz.setId(15L);
     omz.setName("OMZ");
+    omz.setGender(Gender.MALE);
     Wrestler mukundi = new Wrestler();
     mukundi.setId(12L);
     mukundi.setName("Mukundi Shumba");
-    when(wrestlerRepository.findById(11L)).thenReturn(Optional.of(johnny));
+    mukundi.setGender(Gender.MALE);
     when(wrestlerRepository.findById(15L)).thenReturn(Optional.of(omz));
     when(wrestlerRepository.findById(12L)).thenReturn(Optional.of(mukundi));
 
@@ -360,14 +399,12 @@ class ShowPlanningServiceTest {
     verify(segmentRepository).saveAll(captor.capture());
     Segment saved = captor.getValue().get(0);
 
-    // ID source wins: OMZ (in teamIds only) is on the segment; Johnny (names only) is not.
     assertTrue(
         saved.getParticipants().stream().anyMatch(p -> "OMZ".equals(p.getWrestler().getName())));
-    assertFalse(
+    assertTrue(
         saved.getParticipants().stream()
-            .anyMatch(p -> "Johnny All Time".equals(p.getWrestler().getName())));
-    // And the proposal's display teams are reconciled to the IDs, so the grid now shows OMZ
-    // instead of the stale name — the duplicate is visible before approving.
+            .anyMatch(p -> "Mukundi Shumba".equals(p.getWrestler().getName())));
+    // Grid-visible names now match what will be saved.
     assertEquals(List.of(List.of("OMZ"), List.of("Mukundi Shumba")), proposedSegment.getTeams());
   }
 
