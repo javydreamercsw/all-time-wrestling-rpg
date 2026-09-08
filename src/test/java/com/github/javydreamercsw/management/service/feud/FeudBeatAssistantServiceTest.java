@@ -27,6 +27,7 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.feud.FeudScript;
+import com.github.javydreamercsw.management.domain.feud.FeudScriptRepository;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptStatus;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
@@ -53,6 +54,7 @@ import org.mockito.quality.Strictness;
 class FeudBeatAssistantServiceTest {
 
   @Mock private SegmentNarrationServiceFactory aiFactory;
+  @Mock private FeudScriptRepository feudScriptRepository;
   @Mock private WrestlerService wrestlerService;
   @Mock private GameSettingService gameSettingService;
   @Mock private InjuryService injuryService;
@@ -72,6 +74,7 @@ class FeudBeatAssistantServiceTest {
         new FeudBeatAssistantService(
             aiFactory,
             new ObjectMapper(), // real mapper — parses the AI JSON response
+            feudScriptRepository,
             wrestlerService,
             gameSettingService,
             injuryService,
@@ -114,7 +117,8 @@ class FeudBeatAssistantServiceTest {
 
   private void stubNotInjured(Wrestler... wrestlers) {
     for (Wrestler w : wrestlers) {
-      when(injuryService.getAllInjuriesForWrestler(w.getId(), UNIVERSE_ID)).thenReturn(List.of());
+      when(injuryService.getActiveInjuriesForWrestler(w.getId(), UNIVERSE_ID))
+          .thenReturn(List.of());
     }
   }
 
@@ -131,7 +135,7 @@ class FeudBeatAssistantServiceTest {
   void suggestOpponent_validResponse_returnsCandidateWithRationale() {
     Wrestler candidate = wrestler(30L, "Randy Orton", Gender.MALE);
     stubEligibleRoster(candidate);
-    when(injuryService.getAllInjuriesForWrestler(30L, UNIVERSE_ID)).thenReturn(List.of());
+    when(injuryService.getActiveInjuriesForWrestler(30L, UNIVERSE_ID)).thenReturn(List.of());
     when(aiFactory.generateText(anyString()))
         .thenReturn(
             "{\"wrestlerId\": 30, \"name\": \"Randy Orton\", \"rationale\": \"Perfect fit\"}");
@@ -147,7 +151,7 @@ class FeudBeatAssistantServiceTest {
   void suggestOpponent_promptCarriesBeatContextAndCandidates() {
     Wrestler candidate = wrestler(30L, "Randy Orton", Gender.MALE);
     stubEligibleRoster(candidate);
-    when(injuryService.getAllInjuriesForWrestler(30L, UNIVERSE_ID)).thenReturn(List.of());
+    when(injuryService.getActiveInjuriesForWrestler(30L, UNIVERSE_ID)).thenReturn(List.of());
     when(aiFactory.generateText(anyString()))
         .thenReturn("{\"wrestlerId\": 30, \"name\": \"Randy Orton\", \"rationale\": \"r\"}");
 
@@ -166,7 +170,7 @@ class FeudBeatAssistantServiceTest {
   void suggestOpponent_unknownWrestlerId_throws() {
     Wrestler candidate = wrestler(30L, "Randy Orton", Gender.MALE);
     stubEligibleRoster(candidate);
-    when(injuryService.getAllInjuriesForWrestler(30L, UNIVERSE_ID)).thenReturn(List.of());
+    when(injuryService.getActiveInjuriesForWrestler(30L, UNIVERSE_ID)).thenReturn(List.of());
     when(aiFactory.generateText(anyString()))
         .thenReturn("{\"wrestlerId\": 999, \"name\": \"Ghost\", \"rationale\": \"x\"}");
 
@@ -180,7 +184,7 @@ class FeudBeatAssistantServiceTest {
   void suggestOpponent_malformedJson_throws() {
     Wrestler candidate = wrestler(30L, "Randy Orton", Gender.MALE);
     stubEligibleRoster(candidate);
-    when(injuryService.getAllInjuriesForWrestler(30L, UNIVERSE_ID)).thenReturn(List.of());
+    when(injuryService.getActiveInjuriesForWrestler(30L, UNIVERSE_ID)).thenReturn(List.of());
     when(aiFactory.generateText(anyString())).thenReturn("I choose Randy Orton!");
 
     assertThatThrownBy(
@@ -195,7 +199,7 @@ class FeudBeatAssistantServiceTest {
     // the DTO must tolerate both — candidate validation still guards the id.
     Wrestler candidate = wrestler(30L, "Randy Orton", Gender.MALE);
     stubEligibleRoster(candidate);
-    when(injuryService.getAllInjuriesForWrestler(30L, UNIVERSE_ID)).thenReturn(List.of());
+    when(injuryService.getActiveInjuriesForWrestler(30L, UNIVERSE_ID)).thenReturn(List.of());
     when(aiFactory.generateText(anyString()))
         .thenReturn(
             "{\"id\": 30, \"name\": \"Randy Orton\", \"rationale\": \"r\", \"tier\":"
@@ -215,7 +219,7 @@ class FeudBeatAssistantServiceTest {
     when(universeContextService.getCurrentUniverseId()).thenReturn(UNIVERSE_ID);
     when(wrestlerService.findAllFiltered(null, Gender.MALE, UNIVERSE_ID, null, null))
         .thenReturn(List.of(male));
-    when(injuryService.getAllInjuriesForWrestler(30L, UNIVERSE_ID)).thenReturn(List.of());
+    when(injuryService.getActiveInjuriesForWrestler(30L, UNIVERSE_ID)).thenReturn(List.of());
     when(aiFactory.generateText(anyString()))
         .thenReturn("{\"wrestlerId\": 30, \"name\": \"Male Star\", \"rationale\": \"r\"}");
 
@@ -230,7 +234,7 @@ class FeudBeatAssistantServiceTest {
     Wrestler feud2 = wrestler(2L, "Bobby Lashley", Gender.MALE);
     Wrestler injured = wrestler(31L, "Injured Star", Gender.MALE);
     stubEligibleRoster(feud1, feud2, injured);
-    when(injuryService.getAllInjuriesForWrestler(31L, UNIVERSE_ID))
+    when(injuryService.getActiveInjuriesForWrestler(31L, UNIVERSE_ID))
         .thenReturn(List.of(new Injury()));
 
     assertThatThrownBy(
@@ -249,7 +253,7 @@ class FeudBeatAssistantServiceTest {
     when(universeContextService.getCurrentUniverseId()).thenReturn(UNIVERSE_ID);
     when(wrestlerService.findAllFiltered(null, null, UNIVERSE_ID, null, null))
         .thenReturn(List.of(femaleGuest));
-    when(injuryService.getAllInjuriesForWrestler(30L, UNIVERSE_ID)).thenReturn(List.of());
+    when(injuryService.getActiveInjuriesForWrestler(30L, UNIVERSE_ID)).thenReturn(List.of());
     when(aiFactory.generateText(anyString()))
         .thenReturn("{\"wrestlerId\": 30, \"name\": \"Female Guest\", \"rationale\": \"r\"}");
 

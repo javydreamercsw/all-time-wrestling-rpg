@@ -236,6 +236,55 @@ public class BeatEditor extends VerticalLayout {
     this.feudParticipants = feudParticipants != null ? feudParticipants : List.of();
   }
 
+  /**
+   * Pre-fills the editor from an existing (pending) beat — match type, stipulation, winner control,
+   * planned winner, culmination, notes and external participants. The persisted external
+   * opponent/extras are only selectable if they appear in this editor's candidate list (roster may
+   * have changed since the beat was created); anything missing is re-added to the candidate set so
+   * an edit never silently drops an existing external.
+   *
+   * @param beat the pending beat to load
+   * @param additionalCandidates persisted externals of the beat, so they remain selectable
+   */
+  public void setBeat(FeudScriptBeat beat, List<Wrestler> additionalCandidates) {
+    segmentTypeCombo.setValue(beat.getSegmentType());
+    if (beat.getSegmentRule() != null) {
+      segmentRuleCombo.setValue(beat.getSegmentRule());
+    }
+    winnerControlRadio.setValue(toWinnerControlLabel(beat.getWinnerControl()));
+    if (beat.getPlannedWinner() != null) {
+      plannedWinnerCombo.setValue(beat.getPlannedWinner());
+    }
+    culminationCheck.setValue(beat.isCulmination());
+    notesField.setValue(beat.getNotes() != null ? beat.getNotes() : "");
+
+    List<Wrestler> selectable =
+        new ArrayList<>(opponentCombo.getListDataView().getItems().toList());
+    if (additionalCandidates != null) {
+      for (Wrestler candidate : additionalCandidates) {
+        if (selectable.stream().noneMatch(w -> w.getId().equals(candidate.getId()))) {
+          selectable.add(candidate);
+        }
+      }
+      opponentCombo.setItems(selectable);
+      extrasMulti.setItems(selectable);
+    }
+    Wrestler opponent =
+        beat.getExternalOpponents().isEmpty() ? null : beat.getExternalOpponents().get(0);
+    if (opponent != null) {
+      opponentCombo.setValue(opponent);
+    }
+    extrasMulti.setValue(new HashSet<>(beat.getExternalExtras()));
+  }
+
+  private String toWinnerControlLabel(FeudScriptWinnerControl control) {
+    return switch (control) {
+      case BOOKER_PICKS -> BOOKER_PICKS;
+      case SYSTEM_ROLL -> SYSTEM_ROLL;
+      default -> AI_PICKS;
+    };
+  }
+
   private void suggestOpponent() {
     if (opponentAssistant == null || script == null) {
       return;

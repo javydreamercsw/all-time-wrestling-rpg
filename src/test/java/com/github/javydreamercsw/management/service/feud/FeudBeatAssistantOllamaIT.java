@@ -29,6 +29,7 @@ import com.github.javydreamercsw.base.ai.ollama.OllamaSegmentNarrationService;
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.feud.FeudScript;
+import com.github.javydreamercsw.management.domain.feud.FeudScriptRepository;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptStatus;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -109,12 +110,14 @@ class FeudBeatAssistantOllamaIT {
     candidates = List.of(w1, w2, wrestler(30L, "Randy Orton", Gender.MALE));
     when(wrestlerService.findAllFiltered(null, null, UNIVERSE_ID, null, null))
         .thenReturn(candidates);
-    when(injuryService.getAllInjuriesForWrestler(anyLong(), eq(UNIVERSE_ID))).thenReturn(List.of());
+    when(injuryService.getActiveInjuriesForWrestler(anyLong(), eq(UNIVERSE_ID)))
+        .thenReturn(List.of());
 
     service =
         new FeudBeatAssistantService(
             factory,
             new ObjectMapper(),
+            mock(FeudScriptRepository.class),
             wrestlerService,
             gameSettingService,
             injuryService,

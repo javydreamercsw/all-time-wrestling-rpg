@@ -39,8 +39,8 @@ import com.github.javydreamercsw.management.service.show.ShowSegmentReservationS
 import com.github.javydreamercsw.management.service.show.planning.dto.FeudScriptBeatDTO;
 import com.github.javydreamercsw.management.service.title.ContenderSelectionService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -68,6 +68,7 @@ public class FeudScriptService {
   private final UniverseContextService universeContextService;
   private final ContenderSelectionService contenderSelectionService;
   private final SegmentTypeService segmentTypeService;
+  private final WrestlerService wrestlerService;
 
   // ── Query ────────────────────────────────────────────────────────────────
 
@@ -99,10 +100,31 @@ public class FeudScriptService {
     List<FeudScriptBeat> beats =
         new ArrayList<>(feudScriptBeatRepository.findPendingBeatsForShow(show.getId()));
     Set<Long> present = beats.stream().map(FeudScriptBeat::getId).collect(Collectors.toSet());
-    for (FeudScriptBeat next : feudScriptBeatRepository.findNextPendingBeatPerActiveScript()) {
-      if (present.add(next.getId()) && rosterIds.containsAll(participantIdsOf(next))) {
-        beats.add(next);
+    List<FeudScriptBeat> fallback = feudScriptBeatRepository.findNextPendingBeatPerActiveScript();
+    log.info(
+        "Beat injection for show {}: {} targeted beat(s), {} fallback candidate(s), roster of {}"
+            + " available wrestler(s)",
+        show.getId(),
+        beats.size(),
+        fallback.size(),
+        rosterIds.size());
+    for (FeudScriptBeat next : fallback) {
+      if (!present.add(next.getId())) {
+        continue;
       }
+      Set<Long> participantIds = participantIdsOf(next);
+      if (!rosterIds.containsAll(participantIds)) {
+        Set<Long> missing = new HashSet<>(participantIds);
+        missing.removeAll(rosterIds);
+        log.info(
+            "Beat #{} of arc '{}' excluded: feud participant(s) {} not on the available roster"
+                + " (injured, low condition, or filtered by the show's constraints)",
+            next.getBeatOrder(),
+            next.getScript().getName(),
+            missing);
+        continue;
+      }
+      beats.add(next);
     }
     return beats;
   }
@@ -193,6 +215,7 @@ public class FeudScriptService {
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')"
           + " or @universeAuthz.hasRoleInCurrentUniverse('BOOKER')")
   public FeudScriptBeat addBeat(@NonNull FeudScript script, @NonNull FeudScriptBeat beat) {
+    script = reattachScript(script);
     validatePleCap(script, beat);
     beat.setScript(script);
     validateExternals(script, beat);
@@ -325,15 +348,84 @@ public class FeudScriptService {
   }
 
   /**
+   * Updates a PENDING beat's editable fields (match type, stipulation, winner control, planned
+   * winner, culmination, notes, external participants) from {@code edited}. Only pending beats may
+   * be edited — completed/skipped beats are immutable history. Re-runs creation-time external
+   * participant validation and the PLE appearance cap (relevant when the cap was lowered after the
+   * beat was created). The target show and its PLE reservation are preserved: the beat editor has
+   * no show picker, so an edit never moves a beat between shows.
+   *
+   * <p>UI dialogs hold entities detached from the render request's session; the script, existing
+   * beat and every wrestler reference are re-attached by id so LAZY associations resolve inside
+   * this transaction instead of throwing {@code no session}.
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public FeudScriptBeat updateBeat(
+      @NonNull FeudScript script,
+      @NonNull FeudScriptBeat existing,
+      @NonNull FeudScriptBeat edited) {
+    script = reattachScript(script);
+    FeudScriptBeat managed =
+        existing.getId() == null
+            ? existing
+            : feudScriptBeatRepository.findById(existing.getId()).orElse(existing);
+    if (managed.getBeatStatus() != FeudScriptBeatStatus.PENDING) {
+      throw new IllegalStateException(
+          "Only pending beats can be edited (beat #"
+              + managed.getBeatOrder()
+              + " is "
+              + managed.getBeatStatus()
+              + ")");
+    }
+    // The beat editor has no target-show picker: an edit never moves the beat to another
+    // show, so preserve the persisted assignment (and its reservation linkage) as-is.
+    edited.setTargetShow(managed.getTargetShow());
+    edited.setPlannedWinner(reattachWrestler(edited.getPlannedWinner()));
+    for (FeudScriptBeatParticipant external : edited.getExternalParticipants()) {
+      external.setWrestler(reattachWrestler(external.getWrestler()));
+    }
+
+    edited.setScript(script);
+    validateExternals(script, edited);
+    validatePleCapExcluding(script, edited, managed);
+
+    managed.setSegmentType(edited.getSegmentType());
+    managed.setSegmentRule(edited.getSegmentRule());
+    managed.setWinnerControl(edited.getWinnerControl());
+    managed.setPlannedWinner(edited.getPlannedWinner());
+    managed.setCulmination(edited.isCulmination());
+    managed.setNotes(edited.getNotes());
+
+    // Replace external participants wholesale (upsert + removal via orphanRemoval).
+    managed.getExternalParticipants().clear();
+    for (FeudScriptBeatParticipant external : edited.getExternalParticipants()) {
+      managed.addExternalParticipant(external.getWrestler(), external.getRole());
+    }
+
+    FeudScriptBeat saved = feudScriptBeatRepository.save(managed);
+    log.info("Updated beat #{} of arc '{}'", saved.getBeatOrder(), script.getName());
+    return saved;
+  }
+
+  /**
    * Removes a beat and renumbers the remaining beats in order. External participant rows go with it
-   * via the {@code ON DELETE CASCADE} FK and {@code orphanRemoval} on the collection — no explicit
-   * cleanup needed here.
+   * via the {@code ON DELETE CASCADE} FK and {@code orphanRemoval} on the collection; the PLE
+   * reservation, if any, is cancelled so the show's auto-booked segment count recovers. UI-supplied
+   * script and beat are re-attached by id first (they arrive detached; see {@link #updateBeat}).
    */
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public void removeBeat(@NonNull FeudScript script, @NonNull FeudScriptBeat beat) {
+    script = reattachScript(script);
+    if (beat.getId() != null) {
+      beat = feudScriptBeatRepository.findById(beat.getId()).orElse(beat);
+    }
+    if (beat.getReservation() != null) {
+      reservationService.cancelReservation(beat.getReservation());
+      beat.setReservation(null);
+    }
     script.getBeats().remove(beat);
-    feudScriptBeatRepository.delete(beat);
     feudScriptBeatRepository.delete(beat);
     int order = 1;
     for (FeudScriptBeat remaining :
@@ -355,6 +447,27 @@ public class FeudScriptService {
 
   // ── Internal helpers ─────────────────────────────────────────────────────
 
+  /**
+   * Re-attaches a UI-supplied (detached) script to the current transaction. {@code open-in-view} is
+   * off, so a {@link FeudScript} held by a Vaadin dialog carries LAZY proxies (rivalry, feud) bound
+   * to the closed render-request session; touching them throws {@code no session}. Reloading by id
+   * returns a managed instance with fresh proxies. Falls back to the argument when it is transient
+   * (unit tests) or already managed.
+   */
+  private FeudScript reattachScript(FeudScript script) {
+    return script.getId() == null
+        ? script
+        : feudScriptRepository.findById(script.getId()).orElse(script);
+  }
+
+  /** Wrestler variant of {@link #reattachScript}: resolves a detached wrestler by id. */
+  private Wrestler reattachWrestler(Wrestler wrestler) {
+    if (wrestler == null || wrestler.getId() == null) {
+      return wrestler;
+    }
+    return wrestlerService.findById(wrestler.getId()).orElse(wrestler);
+  }
+
   private void validatePleCap(FeudScript script, FeudScriptBeat newBeat) {
     if (newBeat.getTargetShow() == null || !newBeat.getTargetShow().isPremiumLiveEvent()) {
       return;
@@ -362,6 +475,27 @@ public class FeudScriptService {
     long existingPleBeats =
         script.getBeats().stream()
             .filter(b -> b.getTargetShow() != null && b.getTargetShow().isPremiumLiveEvent())
+            .count();
+    if (existingPleBeats >= script.getMaxPleAppearances()) {
+      throw new IllegalStateException(
+          "PLE appearance cap of "
+              + script.getMaxPleAppearances()
+              + " already reached for script '"
+              + script.getName()
+              + "'");
+    }
+  }
+
+  /** PLE-cap validation that skips {@code excluded} (the beat being edited) in the count. */
+  private void validatePleCapExcluding(
+      FeudScript script, FeudScriptBeat newBeat, FeudScriptBeat excluded) {
+    if (newBeat.getTargetShow() == null || !newBeat.getTargetShow().isPremiumLiveEvent()) {
+      return;
+    }
+    long existingPleBeats =
+        script.getBeats().stream()
+            .filter(b -> b.getTargetShow() != null && b.getTargetShow().isPremiumLiveEvent())
+            .filter(b -> !b.getId().equals(excluded.getId()))
             .count();
     if (existingPleBeats >= script.getMaxPleAppearances()) {
       throw new IllegalStateException(
@@ -481,12 +615,12 @@ public class FeudScriptService {
     dto.setNotes(beat.getNotes());
 
     FeudScript script = beat.getScript();
-    String participants = "";
+    List<String> participantNames = List.of();
     List<Long> participantIds = List.of();
     Long rivalryId = null;
     if (script.getRivalry() != null) {
       Rivalry r = script.getRivalry();
-      participants = r.getWrestler1().getName() + " vs " + r.getWrestler2().getName();
+      participantNames = List.of(r.getWrestler1().getName(), r.getWrestler2().getName());
       participantIds = List.of(r.getWrestler1().getId(), r.getWrestler2().getId());
       rivalryId = r.getId();
     } else if (script.getFeud() != null) {
@@ -495,11 +629,11 @@ public class FeudScriptService {
               .filter(p -> Boolean.TRUE.equals(p.getIsActive()))
               .map(p -> p.getWrestler())
               .collect(Collectors.toList());
-      participants =
-          activeMembers.stream().map(Wrestler::getName).collect(Collectors.joining(", "));
+      participantNames = activeMembers.stream().map(Wrestler::getName).collect(Collectors.toList());
       participantIds = activeMembers.stream().map(Wrestler::getId).collect(Collectors.toList());
     }
-    dto.setParticipantNames(participants);
+    // Display string for prompts/UI hints — NOT a source of structured team data.
+    dto.setParticipantNames(String.join(" vs ", participantNames));
     dto.setParticipantIds(participantIds);
     dto.setRivalryId(rivalryId);
 
@@ -508,11 +642,7 @@ public class FeudScriptService {
     List<Wrestler> extras = beat.getExternalExtras();
     if (!opponents.isEmpty() || !extras.isEmpty()) {
       List<List<String>> teams = new ArrayList<>();
-      teams.add(
-          Arrays.stream(participants.split(","))
-              .map(String::trim)
-              .filter(s -> !s.isEmpty())
-              .collect(Collectors.toList()));
+      teams.add(new ArrayList<>(participantNames));
       List<List<Long>> teamIds = new ArrayList<>();
       teamIds.add(new ArrayList<>(participantIds));
       List<String> team2Names = new ArrayList<>();

@@ -90,7 +90,8 @@ public class FeudScriptBeat extends AbstractEntity<Long> {
   @Column(name = "winner_control", nullable = false, length = 16)
   private FeudScriptWinnerControl winnerControl = FeudScriptWinnerControl.AI_PICKS;
 
-  @ManyToOne(fetch = FetchType.LAZY)
+  /** EAGER: the beat-edit dialog's planned-winner combo reads names on detached grids. */
+  @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "planned_winner_id")
   @JsonIgnoreProperties({"rivalries", "injuries", "deck", "titleReigns", "faction"})
   @Nullable private Wrestler plannedWinner;
