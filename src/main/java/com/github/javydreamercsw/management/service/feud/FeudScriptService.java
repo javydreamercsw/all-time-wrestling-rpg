@@ -101,10 +101,31 @@ public class FeudScriptService {
     List<FeudScriptBeat> beats =
         new ArrayList<>(feudScriptBeatRepository.findPendingBeatsForShow(show.getId()));
     Set<Long> present = beats.stream().map(FeudScriptBeat::getId).collect(Collectors.toSet());
-    for (FeudScriptBeat next : feudScriptBeatRepository.findNextPendingBeatPerActiveScript()) {
-      if (present.add(next.getId()) && rosterIds.containsAll(participantIdsOf(next))) {
-        beats.add(next);
+    List<FeudScriptBeat> fallback = feudScriptBeatRepository.findNextPendingBeatPerActiveScript();
+    log.info(
+        "Beat injection for show {}: {} targeted beat(s), {} fallback candidate(s), roster of {}"
+            + " available wrestler(s)",
+        show.getId(),
+        beats.size(),
+        fallback.size(),
+        rosterIds.size());
+    for (FeudScriptBeat next : fallback) {
+      if (!present.add(next.getId())) {
+        continue;
       }
+      Set<Long> participantIds = participantIdsOf(next);
+      if (!rosterIds.containsAll(participantIds)) {
+        Set<Long> missing = new HashSet<>(participantIds);
+        missing.removeAll(rosterIds);
+        log.info(
+            "Beat #{} of arc '{}' excluded: feud participant(s) {} not on the available roster"
+                + " (injured, low condition, or filtered by the show's constraints)",
+            next.getBeatOrder(),
+            next.getScript().getName(),
+            missing);
+        continue;
+      }
+      beats.add(next);
     }
     return beats;
   }

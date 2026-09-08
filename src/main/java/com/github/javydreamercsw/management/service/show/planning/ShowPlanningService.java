@@ -293,7 +293,14 @@ public class ShowPlanningService {
     // Beats without an explicit target show (the common case) fall back to the next pending beat
     // of every active arc — but only when all of the arc's participants are on this roster.
     Set<Long> rosterIds = allWrestlers.stream().map(Wrestler::getId).collect(Collectors.toSet());
-    dto.setUpcomingScriptedBeats(feudScriptService.getUpcomingBeatDTOsForShow(show, rosterIds));
+    var scriptedBeats = feudScriptService.getUpcomingBeatDTOsForShow(show, rosterIds);
+    log.info(
+        "Planning context for show '{}': {} scripted beat(s) injected from an available roster of"
+            + " {}",
+        show.getName(),
+        scriptedBeats.size(),
+        rosterIds.size());
+    dto.setUpcomingScriptedBeats(scriptedBeats);
 
     return dto;
   }
