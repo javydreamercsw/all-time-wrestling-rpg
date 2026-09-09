@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "lastUpdated": "2026-08-21",
+  "lastUpdated": "2026-09-09",
   "packages": [
     {
       "id": "season_1_weekly",
@@ -26,6 +26,10 @@
         {
           "name": "week5.png",
           "url": "https://javydreamercsw.github.io/all-time-wrestling-rpg/challenges/images/week5.png"
+        },
+        {
+          "name": "week6.png",
+          "url": "https://javydreamercsw.github.io/all-time-wrestling-rpg/challenges/images/week6.png"
         }
       ]
     },
