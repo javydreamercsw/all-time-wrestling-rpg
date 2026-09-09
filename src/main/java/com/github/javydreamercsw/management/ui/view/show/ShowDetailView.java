@@ -407,7 +407,7 @@ public class ShowDetailView extends Main
           LumoUtility.FontSize.MEDIUM,
           LumoUtility.FontWeight.SEMIBOLD,
           LumoUtility.Margin.Top.XSMALL);
-      qualityBadge.getStyle().set("color", "#d97706");
+      qualityBadge.getStyle().set("color", "var(--lumo-warning-color)");
       qualityBadge.setTitle("Show quality rating");
       titleInfo.add(qualityBadge);
     }
@@ -661,7 +661,9 @@ public class ShowDetailView extends Main
 
     segmentsGrid = createSegmentsGrid(segments);
     segmentsGrid.setSizeFull();
-    segmentsGrid.setMinWidth("1100px");
+    // Columns merged (15 -> 11 cells); the grid now fits ~900px, still inside the
+    // touch-scroll wrapper for narrower viewports.
+    segmentsGrid.setMinWidth("860px");
     segmentsGrid.setId("segments-grid");
 
     segmentsProgressBar = new ProgressBar();
@@ -672,7 +674,8 @@ public class ShowDetailView extends Main
     segmentsLayout.add(segmentsProgressBar);
 
     Div gridWrapper = new Div(segmentsGrid);
-    gridWrapper.addClassNames(LumoUtility.Overflow.AUTO, LumoUtility.Width.FULL);
+    // .grid-scroll-container adds touch momentum scrolling on top of the overflow behavior
+    gridWrapper.addClassNames("grid-scroll-container", LumoUtility.Width.FULL);
     gridWrapper.setSizeFull();
     gridWrapper.setId("segments-grid-wrapper");
     segmentsLayout.add(gridWrapper);
@@ -793,8 +796,8 @@ public class ShowDetailView extends Main
       Span mainBadge = new Span("★ Main Event");
       mainBadge
           .getStyle()
-          .set("background-color", "#fff3cd")
-          .set("color", "#856404")
+          .set("background-color", "var(--lumo-warning-color-10pct)")
+          .set("color", "var(--lumo-warning-color)")
           .set("border-radius", "4px")
           .set("padding", "2px 8px")
           .set("font-weight", "bold")
@@ -809,8 +812,8 @@ public class ShowDetailView extends Main
         Span titleBadge = new Span("🏆 " + title.getName() + " (c: " + champion + ")");
         titleBadge
             .getStyle()
-            .set("background", "#fff8e1")
-            .set("color", "#c17900")
+            .set("background", "var(--lumo-warning-color-10pct)")
+            .set("color", "var(--lumo-warning-color)")
             .set("border-radius", "4px")
             .set("padding", "2px 8px")
             .set("font-size", "var(--lumo-font-size-s)")
@@ -824,8 +827,8 @@ public class ShowDetailView extends Main
       contenderBadge.setId("contender-match-badge");
       contenderBadge
           .getStyle()
-          .set("background", "#ffd700")
-          .set("color", "#5c4400")
+          .set("background", "var(--lumo-warning-color)")
+          .set("color", "var(--lumo-warning-contrast-color)")
           .set("border-radius", "4px")
           .set("padding", "2px 8px")
           .set("font-size", "var(--lumo-font-size-s)")
@@ -930,20 +933,64 @@ public class ShowDetailView extends Main
                   });
         });
 
-    // Drag handle column — visual affordance for row drag-and-drop
+    // Story arc badge — shown when the segment was produced by a FeudScriptBeat
     grid.addComponentColumn(
             segment -> {
-              Icon handle = new Icon(VaadinIcon.GRID_BEVEL);
-              handle
-                  .getStyle()
-                  .set("cursor", "grab")
-                  .set("color", "var(--lumo-secondary-text-color)");
-              handle.setTooltipText("Drag to reorder");
-              return handle;
+              return feudScriptService
+                  .findBeatForSegment(segment)
+                  .map(
+                      beat -> {
+                        String arcName = beat.getScript().getName();
+                        Span badge = new Span("🎭 " + arcName);
+                        badge.getElement().getThemeList().add("badge contrast");
+                        badge.addClassNames(
+                            LumoUtility.FontSize.XSMALL, LumoUtility.FontWeight.SEMIBOLD);
+                        Tooltip.forComponent(badge)
+                            .setText(
+                                "Story Arc beat #"
+                                    + beat.getBeatOrder()
+                                    + " — "
+                                    + beat.getScript().getName());
+                        return (Component) badge;
+                      })
+                  .orElse(new Span(""));
             })
-        .setWidth("3em")
-        .setFlexGrow(0)
-        .setHeader("");
+        .setHeader("Arc")
+        .setAutoWidth(true)
+        .setFlexGrow(0);
+
+    // Date + segment type merged — one identity column instead of two thin ones
+    grid.addComponentColumn(
+            segment -> {
+              VerticalLayout cell = new VerticalLayout();
+              cell.setPadding(false);
+              cell.setSpacing(false);
+              Span typeSpan = new Span();
+              String typeName =
+                  segment.getSegmentType() != null ? segment.getSegmentType().getName() : "N/A";
+              typeSpan.setText(typeName);
+              if (segment.isContenderMatch()) {
+                Span star = new Span(" ⭐");
+                star.setId("contender-match-badge-" + segment.getId());
+                star.getStyle().set("color", "var(--lumo-warning-color)");
+                Tooltip.forComponent(star)
+                    .setText("#1 Contender Match — the winner becomes the next challenger");
+                typeSpan.add(star);
+              }
+              typeSpan.addClassNames(LumoUtility.FontWeight.SEMIBOLD);
+              Span dateSpan =
+                  new Span(
+                      segment
+                          .getSegmentDate()
+                          .atZone(ZoneId.systemDefault())
+                          .format(DateTimeFormatter.ofPattern("MMM d, yyyy")));
+              dateSpan.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.TextColor.SECONDARY);
+              cell.add(typeSpan, dateSpan);
+              return (Component) cell;
+            })
+        .setHeader("Segment")
+        .setSortable(false)
+        .setFlexGrow(2);
 
     // Story arc badge — shown when the segment was produced by a FeudScriptBeat
     grid.addComponentColumn(
@@ -972,25 +1019,6 @@ public class ShowDetailView extends Main
         .setFlexGrow(0);
 
     // Segment type column — carries a gold star when this is a #1 contender match
-    grid.addComponentColumn(
-            segment -> {
-              String typeName =
-                  segment.getSegmentType() != null ? segment.getSegmentType().getName() : "N/A";
-              Span typeSpan = new Span(typeName);
-              if (segment.isContenderMatch()) {
-                Span star = new Span(" ⭐");
-                star.setId("contender-match-badge-" + segment.getId());
-                star.getStyle().set("color", "#ffd700");
-                Tooltip.forComponent(star)
-                    .setText("#1 Contender Match — the winner becomes the next challenger");
-                typeSpan.add(star);
-              }
-              return typeSpan;
-            })
-        .setHeader("Segment Type")
-        .setSortable(true)
-        .setFlexGrow(1);
-
     // Per-segment quality score column — shown as stars matching the show header
     grid.addComponentColumn(
             segment -> {
@@ -1001,7 +1029,7 @@ public class ShowDetailView extends Main
               double stars = Math.round(Math.max(1.0, Math.min(5.0, raw / 20.0)) * 2.0) / 2.0;
               Span badge = new Span(renderStars(stars));
               badge.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.FontWeight.SEMIBOLD);
-              badge.getStyle().set("color", "#d97706");
+              badge.getStyle().set("color", "var(--lumo-warning-color)");
               Tooltip.forComponent(badge).setText(raw + "/100");
               return badge;
             })
@@ -1010,37 +1038,63 @@ public class ShowDetailView extends Main
         .setAutoWidth(true)
         .setFlexGrow(0);
 
-    // Segment rules column
-    grid.addColumn(
+    // Stakes column — rules and titles merged; both were thin "N/A"-heavy columns
+    grid.addComponentColumn(
             segment -> {
+              VerticalLayout cell = new VerticalLayout();
+              cell.setPadding(false);
+              cell.setSpacing(false);
               List<String> ruleNames =
                   segment.getSegmentRules().stream().map(SegmentRule::getName).toList();
-              return String.join(", ", ruleNames);
-            })
-        .setHeader("Segment Rule(s)")
-        .setSortable(true)
-        .setFlexGrow(1);
-
-    // Titles column
-    grid.addColumn(
-            segment -> {
-              if (segment.getIsTitleSegment() && !segment.getTitles().isEmpty()) {
-                return segment.getTitles().stream()
-                    .map(Title::getName)
-                    .collect(Collectors.joining(", "));
-              } else {
-                return "N/A";
+              if (!ruleNames.isEmpty()) {
+                Span rules = new Span(String.join(", ", ruleNames));
+                rules.addClassNames(LumoUtility.FontSize.SMALL);
+                cell.add(rules);
               }
+              if (segment.getIsTitleSegment() && !segment.getTitles().isEmpty()) {
+                Span titles =
+                    new Span(
+                        segment.getTitles().stream()
+                            .map(Title::getName)
+                            .collect(Collectors.joining(", ")));
+                titles.addClassNames(
+                    LumoUtility.FontSize.SMALL,
+                    LumoUtility.TextColor.PRIMARY,
+                    LumoUtility.FontWeight.SEMIBOLD);
+                cell.add(titles);
+              }
+              if (cell.getComponentCount() == 0) {
+                Span none = new Span("—");
+                none.addClassNames(LumoUtility.TextColor.SECONDARY);
+                cell.add(none);
+              }
+              return (Component) cell;
             })
-        .setHeader("Titles")
+        .setHeader("Stakes")
         .setSortable(false)
-        .setFlexGrow(1);
+        .setFlexGrow(2);
 
-    // Summary column
-    grid.addColumn(Segment::getSummary).setHeader("Summary").setSortable(true).setFlexGrow(3);
-
-    // Narration column
-    grid.addColumn(Segment::getNarration).setHeader("Narration").setSortable(true).setFlexGrow(6);
+    // Summary column with the narration beneath — the full narration text stays
+    // reachable in the grid (tests assert on it); the dialog remains the editor.
+    grid.addComponentColumn(
+            segment -> {
+              VerticalLayout cell = new VerticalLayout();
+              cell.setPadding(false);
+              cell.setSpacing(false);
+              Span summary = new Span(segment.getSummary() != null ? segment.getSummary() : "—");
+              summary.addClassNames(LumoUtility.FontSize.SMALL);
+              cell.add(summary);
+              if (segment.getNarration() != null && !segment.getNarration().isBlank()) {
+                Span narration = new Span(segment.getNarration());
+                narration.addClassNames(
+                    LumoUtility.FontSize.XSMALL, LumoUtility.TextColor.SECONDARY);
+                cell.add(narration);
+              }
+              return (Component) cell;
+            })
+        .setHeader("Summary")
+        .setSortable(true)
+        .setFlexGrow(4);
 
     // Participants column
     grid.addColumn(
@@ -1071,19 +1125,9 @@ public class ShowDetailView extends Main
                     .findBySegment(segment)
                     .map(f -> f.getStatus().toString())
                     .orElse("N/A"))
-        .setHeader("League Status")
-        .setFlexGrow(1);
-
-    // Segment date column
-    grid.addColumn(
-            segment ->
-                segment
-                    .getSegmentDate()
-                    .atZone(ZoneId.systemDefault())
-                    .format(DateTimeFormatter.ofPattern("MMM d, yyyy")))
-        .setHeader("Date")
-        .setSortable(true)
-        .setFlexGrow(1);
+        .setHeader("League")
+        .setAutoWidth(true)
+        .setFlexGrow(0);
 
     grid.addComponentColumn(this::createActionButtons).setHeader("Actions").setFlexGrow(1);
 
@@ -1108,8 +1152,8 @@ public class ShowDetailView extends Main
                 Span badge = new Span("★ Main Event");
                 badge
                     .getStyle()
-                    .set("background-color", "#fff3cd")
-                    .set("color", "#856404")
+                    .set("background-color", "var(--lumo-warning-color-10pct)")
+                    .set("color", "var(--lumo-warning-color)")
                     .set("border-radius", "4px")
                     .set("padding", "2px 6px")
                     .set("font-weight", "bold")

@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.ui.view.holiday;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.Holiday;
 import com.github.javydreamercsw.management.domain.HolidayType;
 import com.github.javydreamercsw.management.service.HolidayService;
@@ -29,8 +30,6 @@ import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
@@ -60,6 +59,7 @@ public class HolidayListView extends Main {
 
   private final HolidayService holidayService;
   private final SecurityUtils securityUtils;
+  private final NotificationService notificationService;
   private final Grid<Holiday> grid;
   private final TextField searchField;
   private final Button createButton;
@@ -69,9 +69,12 @@ public class HolidayListView extends Main {
   private HolidayFormDialog holidayFormDialog;
 
   public HolidayListView(
-      @NonNull final HolidayService holidayService, @NonNull final SecurityUtils securityUtils) {
+      @NonNull final HolidayService holidayService,
+      @NonNull final SecurityUtils securityUtils,
+      @NonNull final NotificationService notificationService) {
     this.holidayService = holidayService;
     this.securityUtils = securityUtils;
+    this.notificationService = notificationService;
     this.grid = new Grid<>(Holiday.class, false);
     grid.setId("holiday-grid");
     this.searchField = new TextField();
@@ -289,13 +292,11 @@ public class HolidayListView extends Main {
     }
   }
 
-  private void showSuccessNotification(@NonNull final String message) {
-    Notification notification = Notification.show(message, 3000, Notification.Position.TOP_END);
-    notification.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+  private void showSuccessNotification(final String message) {
+    notificationService.showSuccess(message);
   }
 
-  private void showErrorNotification(@NonNull final String message) {
-    Notification notification = Notification.show(message, 5000, Notification.Position.TOP_END);
-    notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
+  private void showErrorNotification(final String message) {
+    notificationService.showError(message);
   }
 }

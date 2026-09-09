@@ -464,7 +464,8 @@ class CampaignEncounterServiceTest {
     when(wrestlerRepository.findAll()).thenReturn(List.of(npc));
     when(expansionService.isExpansionEnabled(any())).thenReturn(true);
     when(gameSettingService.getConditionRestThreshold()).thenReturn(75);
-    when(injuryService.getAllInjuriesForWrestler(eq(99L), any())).thenReturn(List.of(new Injury()));
+    when(injuryService.getActiveInjuriesForWrestler(eq(99L), any()))
+        .thenReturn(List.of(new Injury()));
     when(campaignService.getCurrentChapter(campaign)).thenReturn(Optional.of(chapter));
     when(encounterRepository.findByCampaignOrderByEncounterDateAsc(campaign))
         .thenReturn(new ArrayList<>());
@@ -489,7 +490,7 @@ class CampaignEncounterServiceTest {
     when(wrestlerRepository.findAll()).thenReturn(List.of(npc));
     when(expansionService.isExpansionEnabled(any())).thenReturn(true);
     when(gameSettingService.getConditionRestThreshold()).thenReturn(75);
-    when(injuryService.getAllInjuriesForWrestler(eq(98L), any())).thenReturn(List.of());
+    when(injuryService.getActiveInjuriesForWrestler(eq(98L), any())).thenReturn(List.of());
     when(wrestlerService.getOrCreateState(eq(98L), any())).thenReturn(lowState);
     when(campaignService.getCurrentChapter(campaign)).thenReturn(Optional.of(chapter));
     when(encounterRepository.findByCampaignOrderByEncounterDateAsc(campaign))

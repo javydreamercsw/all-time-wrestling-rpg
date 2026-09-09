@@ -20,15 +20,12 @@ import com.github.javydreamercsw.base.ai.image.ImageStorageService;
 import com.github.javydreamercsw.base.ui.component.ImageUploadComponent;
 import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.service.world.LocationService;
+import com.github.javydreamercsw.management.ui.component.AtwDialog;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.dialog.Dialog;
-import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
@@ -42,7 +39,7 @@ import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class LocationFormDialog extends Dialog {
+public class LocationFormDialog extends AtwDialog {
 
   private final LocationService service;
   private Location location;
@@ -61,6 +58,7 @@ public class LocationFormDialog extends Dialog {
       ImageStorageService storageService,
       Location location,
       Runnable onSave) {
+    super();
     setId("location-form-dialog");
     this.service = service;
     this.location = location;
@@ -74,6 +72,11 @@ public class LocationFormDialog extends Dialog {
     configureBinder();
     initUI(storageService);
     populateForm();
+
+    getFormLayout().add(name, description, culturalTags);
+    getFormLayout().setColspan(name, 2);
+    getFormLayout().setColspan(description, 2);
+    getFormLayout().setColspan(culturalTags, 2);
   }
 
   private void configureBinder() {
@@ -106,7 +109,6 @@ public class LocationFormDialog extends Dialog {
 
   private void initUI(final ImageStorageService storageService) {
     setHeaderTitle(location == null ? "Add New Location" : "Edit Location");
-    setWidth("800px");
 
     name.setWidthFull();
     name.setMaxLength(Location.DESCRIPTION_MAX_LENGTH);
@@ -139,34 +141,18 @@ public class LocationFormDialog extends Dialog {
     imageLayout.setSpacing(true);
     imageLayout.setPadding(false);
 
-    FormLayout formLayout = new FormLayout();
-    formLayout.add(name, description, culturalTags);
-    formLayout.setColspan(name, 2);
-    formLayout.setColspan(description, 2);
-    formLayout.setColspan(culturalTags, 2);
+    Button saveButton =
+        createPrimaryButton(
+            "location-save-button", location == null ? "Add" : "Save", this::saveLocation);
+    bindSaveEnabled(saveButton, binder);
 
-    Button saveButton = new Button(location == null ? "Add" : "Save", e -> saveLocation());
-    saveButton.setId("location-save-button");
-    saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-    saveButton.setEnabled(false); // Disable initially
-    binder.addStatusChangeListener(e -> saveButton.setEnabled(binder.isValid()));
-
-    Button deleteButton = new Button("Delete", e -> deleteLocation());
-    deleteButton.setId("location-delete-button");
-    deleteButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
+    Button deleteButton =
+        createDeleteButton("location-delete-button", "Delete", this::deleteLocation);
     deleteButton.setVisible(location != null && location.getId() != null);
 
-    Button cancelButton = new Button("Cancel", e -> close());
-    cancelButton.setId("location-cancel-button");
+    createCancelButton("location-cancel-button");
 
-    HorizontalLayout buttons = new HorizontalLayout(saveButton, deleteButton, cancelButton);
-    buttons.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
-    buttons.setWidthFull();
-
-    VerticalLayout dialogLayout = new VerticalLayout(formLayout, imageLayout, buttons);
-    dialogLayout.setPadding(true);
-    dialogLayout.setSpacing(true);
-    add(dialogLayout);
+    addBelowForm(imageLayout);
   }
 
   private void updateImagePreview(final String url) {

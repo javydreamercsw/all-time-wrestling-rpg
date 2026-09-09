@@ -149,10 +149,12 @@ public class WrestlerCareerView extends Main implements BeforeEnterObserver {
     HorizontalLayout cards = new HorizontalLayout();
     cards.setSpacing(true);
     cards.add(
-        statCard("Wins", String.valueOf(stats.getWins()), "#16a34a"),
-        statCard("Losses", String.valueOf(stats.getLosses()), "#dc2626"),
-        statCard("Win Rate", String.format("%.1f%%", stats.getWinRate()), "#2563eb"),
-        statCard("Titles Held", String.valueOf(stats.getTitlesHeld()), "#d97706"));
+        statCard("Wins", String.valueOf(stats.getWins()), "var(--lumo-success-color)"),
+        statCard("Losses", String.valueOf(stats.getLosses()), "var(--lumo-error-color)"),
+        statCard(
+            "Win Rate", String.format("%.1f%%", stats.getWinRate()), "var(--lumo-primary-color)"),
+        statCard(
+            "Titles Held", String.valueOf(stats.getTitlesHeld()), "var(--lumo-warning-color)"));
 
     section.add(cards);
     return section;

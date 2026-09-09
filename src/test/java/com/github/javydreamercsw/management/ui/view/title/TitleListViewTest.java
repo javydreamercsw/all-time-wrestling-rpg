@@ -39,10 +39,14 @@ import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
+import com.github.mvysny.kaributesting.v10.LocatorJ;
+import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.provider.Query;
@@ -338,5 +342,129 @@ class TitleListViewTest extends AbstractViewTest {
               assertEquals(
                   2, championItems.size()); // All wrestlers are eligible for a rookie title
             });
+  }
+
+  @Test
+  void searchFiltersTitlesByName() {
+    Title matching = new Title();
+    matching.setId(2L);
+    matching.setName("Intercontinental Championship");
+    matching.setIsActive(true);
+    when(titleService.findByUniverse(any())).thenReturn(List.of(testTitle, matching));
+
+    titleListView.searchForTest("inter");
+
+    List<Title> items = titleListView.grid.getGenericDataView().getItems().toList();
+    assertEquals(1, items.size(), "Only the name-matching title should remain");
+    assertEquals("Intercontinental Championship", items.get(0).getName());
+  }
+
+  @Test
+  void searchWithoutMatchesClearsTheGrid() {
+    titleListView.searchForTest("zzz-no-match");
+
+    List<Title> items = titleListView.grid.getGenericDataView().getItems().toList();
+    assertEquals(0, items.size(), "No title matches the search term");
+  }
+
+  @Test
+  void actionsColumnToggleDeactivatesTitle() {
+    // Find the Actions column and render the cell for the test title.
+    Grid.Column<Title> actionsColumn =
+        titleListView.grid.getColumns().stream()
+            .filter(col -> "Actions".equals(col.getHeaderText()))
+            .findFirst()
+            .orElseThrow();
+
+    @SuppressWarnings("unchecked")
+    ComponentRenderer<Component, Title> renderer =
+        (ComponentRenderer<Component, Title>) actionsColumn.getRenderer();
+    Component cell = renderer.createComponent(testTitle);
+
+    // The toggle button is the second button in the actions row.
+    Button toggle =
+        cell.getChildren()
+            .filter(Button.class::isInstance)
+            .map(Button.class::cast)
+            .skip(1)
+            .findFirst()
+            .orElseThrow();
+
+    when(titleService.findByUniverse(any())).thenReturn(new ArrayList<>());
+    toggle.click();
+
+    verify(titleService).setActive(1L, false);
+  }
+
+  @Test
+  void actionsColumnToggleActivatesInactiveTitle() {
+    testTitle.setIsActive(false);
+
+    Grid.Column<Title> actionsColumn =
+        titleListView.grid.getColumns().stream()
+            .filter(col -> "Actions".equals(col.getHeaderText()))
+            .findFirst()
+            .orElseThrow();
+
+    @SuppressWarnings("unchecked")
+    ComponentRenderer<Component, Title> renderer =
+        (ComponentRenderer<Component, Title>) actionsColumn.getRenderer();
+    Component cell = renderer.createComponent(testTitle);
+
+    Button toggle =
+        cell.getChildren()
+            .filter(Button.class::isInstance)
+            .map(Button.class::cast)
+            .skip(1)
+            .findFirst()
+            .orElseThrow();
+
+    when(titleService.findByUniverse(any())).thenReturn(new ArrayList<>());
+    toggle.click();
+
+    verify(titleService).setActive(1L, true);
+  }
+
+  @Test
+  void deleteConfirmDialogDeletesTitle() {
+    // Render the actions cell and click Delete.
+    Grid.Column<Title> actionsColumn =
+        titleListView.grid.getColumns().stream()
+            .filter(col -> "Actions".equals(col.getHeaderText()))
+            .findFirst()
+            .orElseThrow();
+
+    @SuppressWarnings("unchecked")
+    ComponentRenderer<Component, Title> renderer =
+        (ComponentRenderer<Component, Title>) actionsColumn.getRenderer();
+    Component cell = renderer.createComponent(testTitle);
+
+    Button delete =
+        cell.getChildren()
+            .filter(Button.class::isInstance)
+            .map(Button.class::cast)
+            .skip(2)
+            .findFirst()
+            .orElseThrow();
+
+    when(titleService.findByUniverse(any())).thenReturn(new ArrayList<>());
+    delete.click();
+
+    // ConfirmDialog opens on the UI; fire its confirm event.
+    ConfirmDialog confirmDialog = LocatorJ._get(UI.getCurrent(), ConfirmDialog.class);
+    try {
+      Class<?> eventClass =
+          Class.forName("com.vaadin.flow.component.confirmdialog.ConfirmDialog$ConfirmEvent");
+      var ctor = eventClass.getDeclaredConstructor(ConfirmDialog.class, boolean.class);
+      ctor.setAccessible(true);
+      var event = ctor.newInstance(confirmDialog, true);
+      var method = Component.class.getDeclaredMethod("fireEvent", ComponentEvent.class);
+      method.setAccessible(true);
+      method.invoke(confirmDialog, event);
+    } catch (ReflectiveOperationException e) {
+      throw new IllegalStateException("Failed to fire confirm event", e);
+    }
+
+    verify(titleService).deleteTitle(1L);
   }
 }

@@ -148,6 +148,7 @@ public class LocationListView extends Main {
     Button toggleButton = new Button(toggleIcon);
     toggleButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     toggleButton.setTooltipText(location.isActive() ? "Deactivate" : "Activate");
+    toggleButton.setAriaLabel(location.isActive() ? "Deactivate" : "Activate");
     toggleButton.addClickListener(
         e -> {
           service.setActive(location.getId(), !location.isActive());

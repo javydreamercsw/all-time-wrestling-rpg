@@ -31,6 +31,7 @@ import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.drama.DramaEvent;
 import com.github.javydreamercsw.management.domain.drama.DramaEventSeverity;
 import com.github.javydreamercsw.management.domain.drama.DramaEventType;
+import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -120,7 +121,7 @@ class ShowPlanningServiceTest {
     lenient().when(wrestlerRepository.findByName(any())).thenReturn(Optional.empty());
     lenient().when(segmentTypeService.findByName(any())).thenReturn(Optional.empty());
     lenient()
-        .when(injuryService.getAllInjuriesForWrestler(anyLong(), anyLong()))
+        .when(injuryService.getActiveInjuriesForWrestler(anyLong(), anyLong()))
         .thenReturn(List.of());
     WrestlerState healthyState = new WrestlerState();
     healthyState.setPhysicalCondition(100);
@@ -243,6 +244,168 @@ class ShowPlanningServiceTest {
     ShowPlanningContext capturedContext = showPlanningContextCaptor.getValue();
     assertEquals("Test Show", capturedContext.getShowTemplate().getShowName());
     assertEquals(1, capturedContext.getFullRoster().size());
+  }
+
+  @Test
+  void testGetShowPlanningContext_healedInjuryDoesNotExcludeWrestler() {
+    // ATW-978m: availability checks must consider ACTIVE injuries only. A healed injury is
+    // history — a wrestler fully recovered must be bookable again.
+    Injury healedInjury = new Injury();
+    healedInjury.setId(7L);
+    healedInjury.setHealedDate(Instant.now(clock));
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
+        .thenReturn(List.of(activeWrestler));
+    lenient()
+        .when(injuryService.getAllInjuriesForWrestler(anyLong(), anyLong()))
+        .thenReturn(List.of(healedInjury)); // injury history contains the healed injury
+    lenient()
+        .when(injuryService.getActiveInjuriesForWrestler(anyLong(), anyLong()))
+        .thenReturn(List.of()); // but nothing is active
+    when(mapper.toDto(any(ShowPlanningContext.class))).thenReturn(new ShowPlanningContextDTO());
+
+    ShowPlanningContextDTO result = showPlanningService.getShowPlanningContext(show);
+
+    assertNotNull(result);
+    // The wrestler must survive the availability filter (full roster keeps him).
+    ArgumentCaptor<ShowPlanningContext> captor = ArgumentCaptor.forClass(ShowPlanningContext.class);
+    verify(mapper).toDto(captor.capture());
+    assertEquals(1, captor.getValue().getFullRoster().size());
+  }
+
+  @Test
+  void testGetShowPlanningContext_activeInjuryExcludesWrestler() {
+    Injury activeInjury = new Injury();
+    activeInjury.setId(8L);
+    activeInjury.setHealedDate(null);
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
+        .thenReturn(List.of(activeWrestler));
+    lenient()
+        .when(injuryService.getActiveInjuriesForWrestler(anyLong(), anyLong()))
+        .thenReturn(List.of(activeInjury));
+    when(mapper.toDto(any(ShowPlanningContext.class))).thenReturn(new ShowPlanningContextDTO());
+
+    ShowPlanningContextDTO result = showPlanningService.getShowPlanningContext(show);
+
+    ArgumentCaptor<ShowPlanningContext> captor = ArgumentCaptor.forClass(ShowPlanningContext.class);
+    verify(mapper).toDto(captor.capture());
+    // Active injury → wrestler unavailable → roster empty.
+    assertEquals(0, captor.getValue().getFullRoster().size());
+  }
+
+  @Test
+  void testApproveSegments_duplicateParticipantErrorIdentifiesSegment() {
+    // ATW-978m: the error must identify the offending segment by its grid-visible summary and
+    // participants — a bare "segment 3" is unfindable, and deletions shift the numbering.
+    ProposedSegment good = new ProposedSegment();
+    good.setType("Match");
+    good.setSummary("Opening tag");
+    good.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+
+    ProposedSegment bad = new ProposedSegment();
+    bad.setType("Tag Team");
+    bad.setSummary("Slaughter chaos");
+    bad.setTeams(List.of(List.of("Sgt. Slaughter", "OMZ"), List.of("Sgt. Slaughter")));
+
+    SegmentType matchType = new SegmentType();
+    matchType.setName("Match");
+    when(segmentTypeService.findByName("Match")).thenReturn(Optional.of(matchType));
+    when(segmentTypeService.findByName("Tag Team")).thenReturn(Optional.empty());
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+
+    IllegalArgumentException ex =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> showPlanningService.approveSegments(show, List.of(good, bad)));
+
+    String message = ex.getMessage();
+    assertTrue(message.contains("2nd segment"), () -> "position: " + message);
+    assertTrue(message.contains("Tag Team"), () -> "type: " + message);
+    assertTrue(message.contains("Slaughter chaos"), () -> "summary: " + message);
+    assertTrue(message.contains("Sgt. Slaughter, OMZ"), () -> "participants: " + message);
+    assertFalse(message.contains("segment 3 ("), () -> "old label leaked: " + message);
+  }
+
+  @Test
+  void testApproveSegments_resolvingNamesWinOverHallucinatedTeamIds() {
+    // ATW-978m (day 2): the AI's teamIds referenced nonexistent rows (40, 25) while its teams
+    // names were correct. ID-wins reconciliation replaced good names with "wrestler#40"
+    // placeholders and pulled in a wrong (female) wrestler -> intergender validation failure.
+    // Names that all resolve must win: teamIds are rebuilt from them.
+    ProposedSegment proposedSegment = new ProposedSegment();
+    proposedSegment.setType("Tag Team");
+    proposedSegment.setTeams(List.of(List.of("The British Bulldog"), List.of("Rob Van Dam")));
+    proposedSegment.setTeamIds(List.of(List.of(40L, 25L), List.of(1L, 33L))); // hallucinated
+
+    SegmentType matchType = new SegmentType();
+    matchType.setName("Tag Team");
+    when(segmentTypeService.findByName("Tag Team")).thenReturn(Optional.of(matchType));
+
+    Wrestler bulldog = new Wrestler();
+    bulldog.setId(10L);
+    bulldog.setName("The British Bulldog");
+    bulldog.setGender(Gender.MALE);
+    Wrestler rvd = new Wrestler();
+    rvd.setId(1L);
+    rvd.setName("Rob Van Dam");
+    rvd.setGender(Gender.MALE);
+    when(wrestlerRepository.findByName("The British Bulldog")).thenReturn(Optional.of(bulldog));
+    when(wrestlerRepository.findByName("Rob Van Dam")).thenReturn(Optional.of(rvd));
+    when(wrestlerRepository.findById(anyLong())).thenReturn(Optional.empty());
+
+    showPlanningService.approveSegments(show, List.of(proposedSegment));
+
+    ArgumentCaptor<List<Segment>> captor = ArgumentCaptor.forClass(List.class);
+    verify(segmentRepository).saveAll(captor.capture());
+    Segment saved = captor.getValue().get(0);
+
+    // Names won: both wrestlers persisted by their true IDs; hallucinated ids never touched it.
+    assertTrue(
+        saved.getParticipants().stream()
+            .anyMatch(p -> "The British Bulldog".equals(p.getWrestler().getName())));
+    assertTrue(
+        saved.getParticipants().stream()
+            .anyMatch(p -> "Rob Van Dam".equals(p.getWrestler().getName())));
+    // teamIds rebuilt from the resolving names.
+    assertEquals(List.of(List.of(10L), List.of(1L)), proposedSegment.getTeamIds());
+  }
+
+  @Test
+  void testApproveSegments_unresolvableNamesFallBackToTeamIds() {
+    // Names blank/unresolvable (e.g. beat-DTO team or stale roster entry) -> teamIds are the
+    // authority and names are derived from them; nonexistent ids are dropped with a warning.
+    ProposedSegment proposedSegment = new ProposedSegment();
+    proposedSegment.setType("One on One");
+    proposedSegment.setTeams(List.of(List.of("wrestler#40"), List.of()));
+    proposedSegment.setTeamIds(List.of(List.of(15L), List.of(12L)));
+
+    SegmentType matchType = new SegmentType();
+    matchType.setName("One on One");
+    when(segmentTypeService.findByName("One on One")).thenReturn(Optional.of(matchType));
+
+    Wrestler omz = new Wrestler();
+    omz.setId(15L);
+    omz.setName("OMZ");
+    omz.setGender(Gender.MALE);
+    Wrestler mukundi = new Wrestler();
+    mukundi.setId(12L);
+    mukundi.setName("Mukundi Shumba");
+    mukundi.setGender(Gender.MALE);
+    when(wrestlerRepository.findById(15L)).thenReturn(Optional.of(omz));
+    when(wrestlerRepository.findById(12L)).thenReturn(Optional.of(mukundi));
+
+    showPlanningService.approveSegments(show, List.of(proposedSegment));
+
+    ArgumentCaptor<List<Segment>> captor = ArgumentCaptor.forClass(List.class);
+    verify(segmentRepository).saveAll(captor.capture());
+    Segment saved = captor.getValue().get(0);
+
+    assertTrue(
+        saved.getParticipants().stream().anyMatch(p -> "OMZ".equals(p.getWrestler().getName())));
+    assertTrue(
+        saved.getParticipants().stream()
+            .anyMatch(p -> "Mukundi Shumba".equals(p.getWrestler().getName())));
+    // Grid-visible names now match what will be saved.
+    assertEquals(List.of(List.of("OMZ"), List.of("Mukundi Shumba")), proposedSegment.getTeams());
   }
 
   @Test

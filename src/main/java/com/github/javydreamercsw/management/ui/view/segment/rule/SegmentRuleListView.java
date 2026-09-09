@@ -166,6 +166,7 @@ public class SegmentRuleListView extends Main {
     Button toggleButton = new Button(toggleIcon);
     toggleButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     toggleButton.setTooltipText(segmentRule.isActive() ? "Deactivate" : "Activate");
+    toggleButton.setAriaLabel(segmentRule.isActive() ? "Deactivate" : "Activate");
     toggleButton.setVisible(securityUtils.canEdit());
     toggleButton.addClickListener(
         e -> {

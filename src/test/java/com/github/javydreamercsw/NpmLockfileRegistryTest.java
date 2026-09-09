@@ -59,4 +59,24 @@ class NpmLockfileRegistryTest {
                 + " git checkout -- package.json package-lock.json")
         .isEmpty();
   }
+
+  /**
+   * The project-level {@code .npmrc} pins every npm invocation inside this directory — including
+   * Vaadin's dev-mode {@code npm install}, which runs its own node/npm toolchain — to the public
+   * registry, overriding a corporate default in {@code ~/.npmrc}. If this file is deleted, local
+   * dev mode fails with "Npm install has exited with non zero status" (after a long hang) and the
+   * lockfile drifts to corporate URLs.
+   */
+  @Test
+  void projectNpmrcPinsPublicRegistry() throws IOException {
+    Path npmrc = Path.of(".npmrc");
+    assertThat(npmrc).exists();
+
+    String content = Files.readString(npmrc);
+    assertThat(content)
+        .as(
+            ".npmrc must set registry=https://registry.npmjs.org/ so local dev mode and CI do not"
+                + " inherit a corporate registry from ~/.npmrc")
+        .contains("registry=https://registry.npmjs.org/");
+  }
 }

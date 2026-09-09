@@ -18,9 +18,11 @@ package com.github.javydreamercsw.management.ui.view.holiday;
 
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.service.HolidayService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
@@ -43,7 +45,7 @@ class HolidayListViewTest extends AbstractViewTest {
   void setup() {
     when(holidayService.findAll()).thenReturn(Collections.emptyList());
     when(securityUtils.canCreate()).thenReturn(true);
-    view = new HolidayListView(holidayService, securityUtils);
+    view = new HolidayListView(holidayService, securityUtils, mock(NotificationService.class));
     UI.getCurrent().add(view);
   }
 

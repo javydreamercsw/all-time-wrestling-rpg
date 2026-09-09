@@ -12,7 +12,8 @@
 #   rollback   restore the pre-promote dump and archived WAR (post-promote escape hatch)
 #   status     show schemas, dumps, and candidate state
 #
-# Configuration (environment, or ~/.atwrpg/sandbox.env which is sourced if present):
+# Configuration (environment, or ~/.atwrpg/sandbox.env which is sourced if present;
+#   variables already set in the environment take precedence over the config file):
 #   PROD_DB        (required) production schema name
 #   SANDBOX_DB     sandbox schema name       (default: ${PROD_DB}_sandbox)
 #   BACKUP_DIR     dump/WAR archive dir      (default: ~/.atwrpg/sandbox-backups)
@@ -43,8 +44,28 @@
 set -euo pipefail
 
 CONFIG_FILE="${HOME}/.atwrpg/sandbox.env"
-# shellcheck disable=SC1090
-[ -f "$CONFIG_FILE" ] && source "$CONFIG_FILE"
+# Load the config file WITHOUT letting it clobber variables already set in the
+# environment (that bit a test dry-run: inline PROD_DB was overwritten by the
+# file's PROD_DB and the run touched real production). Keys are renamed CFG_*
+# before sourcing, then applied only when not already set.
+if [ -f "$CONFIG_FILE" ]; then
+  # shellcheck disable=SC1090
+  source <(sed -E 's/^([A-Za-z_][A-Za-z0-9_]*)=/CFG_\1=/' "$CONFIG_FILE")
+  for key in PROD_DB SANDBOX_DB BACKUP_DIR CANDIDATE_PORT MYSQL_HOST MYSQL_USER \
+             MYSQL_PWD TOMCAT_WEBAPPS TOMCAT_SERVICE CATALINA_BIN PROD_PORT \
+             TOMCAT_LAUNCHD_LABEL TOMCAT_LAUNCHD_PLIST; do
+    var="CFG_${key}"
+    cfg_val="${!var:-}"
+    # Environment wins even when set (empty env values count as set, so an
+    # explicit 'MYSQL_PWD=' clears the file's password).
+    if [ -n "$cfg_val" ] && [ -z "${!key+x}" ]; then
+      # shellcheck disable=SC2163  # key is from the fixed list above
+      export "${key}=${cfg_val}"
+    fi
+    unset "$var"
+  done
+  unset var cfg_val key
+fi
 
 : "${PROD_DB:?PROD_DB is required (set it in the environment or ${CONFIG_FILE})}"
 SANDBOX_DB="${SANDBOX_DB:-${PROD_DB}_sandbox}"
@@ -356,24 +377,6 @@ cmd_promote() {
   cmd_stop
   stop_prod_tomcat
 
-  if [ -n "${TOMCAT_WEBAPPS:-}" ] && ls "${TOMCAT_WEBAPPS}"/*.war >/dev/null 2>&1; then
-    local war_archive="${BACKUP_DIR}/war-$(timestamp)"
-    mkdir -p "$war_archive"
-    cp "${TOMCAT_WEBAPPS}"/*.war "$war_archive/"
-    echo "Archived current WAR(s) -> ${war_archive}/"
-    # Remove the old app so Tomcat comes back up EMPTY: the old WAR cannot run
-    # against the migrated schema. Cargo Deploy publishes the new WAR next.
-    local war base
-    for war in "${TOMCAT_WEBAPPS}"/*.war; do
-      base="${war%.war}"
-      rm -f "$war"
-      [ -d "$base" ] && rm -rf "$base"
-    done
-    echo "Removed old WAR(s) from ${TOMCAT_WEBAPPS}/ (archived above)."
-  else
-    echo "NOTE: TOMCAT_WEBAPPS not set or no WAR found — skipping WAR archive."
-  fi
-
   local pre_promote="${BACKUP_DIR}/pre-promote-$(timestamp).sql"
   echo "Rollback point: dumping '${PROD_DB}' -> ${pre_promote}"
   run_mysqldump "$PROD_DB" > "$pre_promote"
@@ -397,6 +400,24 @@ cmd_promote() {
   local sandbox_dump="${BACKUP_DIR}/sandbox-final-$(timestamp).sql"
   echo "Dumping tested sandbox '${SANDBOX_DB}' -> ${sandbox_dump}"
   run_mysqldump "$SANDBOX_DB" > "$sandbox_dump"
+
+  if [ -n "${TOMCAT_WEBAPPS:-}" ] && ls "${TOMCAT_WEBAPPS}"/*.war >/dev/null 2>&1; then
+    local war_archive="${BACKUP_DIR}/war-$(timestamp)"
+    mkdir -p "$war_archive"
+    cp "${TOMCAT_WEBAPPS}"/*.war "$war_archive/"
+    echo "Archived current WAR(s) -> ${war_archive}/"
+    # Remove the old app so Tomcat comes back up EMPTY: the old WAR cannot run
+    # against the migrated schema. Cargo Deploy publishes the new WAR next.
+    local war base
+    for war in "${TOMCAT_WEBAPPS}"/*.war; do
+      base="${war%.war}"
+      rm -f "$war"
+      [ -d "$base" ] && rm -rf "$base"
+    done
+    echo "Removed old WAR(s) from ${TOMCAT_WEBAPPS}/ (archived above)."
+  else
+    echo "NOTE: TOMCAT_WEBAPPS not set or no WAR found — skipping WAR archive."
+  fi
 
   echo "Replacing '${PROD_DB}' with the tested data..."
   run_mysql -e "DROP DATABASE \`${PROD_DB}\`; CREATE DATABASE \`${PROD_DB}\`"

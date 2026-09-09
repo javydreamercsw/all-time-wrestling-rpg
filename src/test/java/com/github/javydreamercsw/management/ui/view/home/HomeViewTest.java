@@ -35,6 +35,7 @@ import com.github.javydreamercsw.management.service.home.LandingPageSummaryProvi
 import com.github.javydreamercsw.management.service.news.NewsService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
@@ -230,5 +231,70 @@ class HomeViewTest extends AbstractViewTest {
                     .publishDate(Instant.now())
                     .build())
         .toList();
+  }
+
+  @Test
+  @DisplayName("Player sees the My Dashboard primary CTA")
+  void playerSeesDashboardCta() {
+    when(securityUtils.isPlayer()).thenReturn(true);
+    HomeView view = buildView(Collections.emptyList());
+
+    Button cta = _get(view, Button.class, spec -> spec.withId("home-cta-player"));
+    assertTrue(cta.isEnabled());
+  }
+
+  @Test
+  @DisplayName("Booker-only user gets the primary styling on the booker CTA")
+  void bookerOnlyPrimaryCta() {
+    when(securityUtils.isBooker()).thenReturn(true);
+    HomeView view = buildView(Collections.emptyList());
+
+    var booker = _get(view, Button.class, spec -> spec.withId("home-cta-booker"));
+    assertTrue(
+        booker.getThemeNames().contains("primary"),
+        "Booker-only user should get the primary booker CTA");
+  }
+
+  @Test
+  @DisplayName("Player+booker gets primary on the player CTA, not the booker one")
+  void playerAndBookerPrimaryGoesToPlayer() {
+    when(securityUtils.isPlayer()).thenReturn(true);
+    when(securityUtils.isBooker()).thenReturn(true);
+    HomeView view = buildView(Collections.emptyList());
+
+    var player = _get(view, Button.class, spec -> spec.withId("home-cta-player"));
+    var booker = _get(view, Button.class, spec -> spec.withId("home-cta-booker"));
+    assertTrue(player.getThemeNames().contains("primary"));
+    assertFalse(booker.getThemeNames().contains("primary"));
+  }
+
+  @Test
+  @DisplayName("Admin sees the Manage Wrestlers CTA; primary only when no other persona")
+  void adminWrestlersCta() {
+    HomeView view = buildView(Collections.emptyList());
+    var wrestlers = _get(view, Button.class, spec -> spec.withId("home-cta-wrestlers"));
+    assertTrue(wrestlers.getThemeNames().contains("primary"));
+  }
+
+  @Test
+  @DisplayName("Admin+player primary goes to the player CTA, wrestlers CTA is secondary")
+  void adminPlusPlayerPrimaryOrdering() {
+    when(securityUtils.isPlayer()).thenReturn(true);
+    HomeView view = buildView(Collections.emptyList());
+
+    var player = _get(view, Button.class, spec -> spec.withId("home-cta-player"));
+    var wrestlers = _get(view, Button.class, spec -> spec.withId("home-cta-wrestlers"));
+    assertTrue(player.getThemeNames().contains("primary"));
+    assertFalse(wrestlers.getThemeNames().contains("primary"));
+  }
+
+  @Test
+  @DisplayName("Viewer with no persona sees the Open Inbox fallback CTA")
+  void viewerGetsInboxFallback() {
+    when(securityUtils.isAdmin()).thenReturn(false);
+    HomeView view = buildView(Collections.emptyList());
+
+    var inbox = _get(view, Button.class, spec -> spec.withId("home-cta-inbox"));
+    assertTrue(inbox.getThemeNames().contains("primary"));
   }
 }

@@ -23,6 +23,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -64,7 +65,9 @@ public class AccountListView extends Main {
     add(new ViewToolbar("Account List", ViewToolbar.group(createButton)));
 
     setupGrid();
-    add(grid);
+    Div gridWrapper = new Div(grid);
+    gridWrapper.addClassName("grid-scroll-container");
+    add(gridWrapper);
     refreshGrid();
   }
 
@@ -89,6 +92,7 @@ public class AccountListView extends Main {
               Button editButton = new Button(VaadinIcon.EDIT.create());
               editButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
               editButton.setTooltipText("Edit");
+              editButton.setAriaLabel("Edit account");
               editButton.setId("edit-button-" + account.getId());
               editButton.addClickListener(
                   e -> {
@@ -110,6 +114,7 @@ public class AccountListView extends Main {
                     ButtonVariant.LUMO_TERTIARY,
                     ButtonVariant.LUMO_ERROR);
                 toggleButton.setTooltipText("Disable");
+                toggleButton.setAriaLabel("Disable account");
                 toggleButton.setId("disable-button-" + account.getId());
                 toggleButton.addClickListener(
                     e -> {
@@ -135,6 +140,7 @@ public class AccountListView extends Main {
                     ButtonVariant.LUMO_TERTIARY,
                     ButtonVariant.LUMO_SUCCESS);
                 toggleButton.setTooltipText("Enable");
+                toggleButton.setAriaLabel("Enable account");
                 toggleButton.setId("enable-button-" + account.getId());
                 toggleButton.addClickListener(
                     e -> {
@@ -151,6 +157,7 @@ public class AccountListView extends Main {
                     ButtonVariant.LUMO_TERTIARY,
                     ButtonVariant.LUMO_ERROR);
                 deleteButton.setTooltipText("Delete");
+                deleteButton.setAriaLabel("Delete account");
                 deleteButton.setId("delete-button-" + account.getId());
                 deleteButton.addClickListener(
                     e -> {

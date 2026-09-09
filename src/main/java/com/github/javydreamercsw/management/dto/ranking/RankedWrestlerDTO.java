@@ -34,4 +34,6 @@ public class RankedWrestlerDTO {
   private Long fans;
   private int rank;
   private WrestlerTier tier;
+  private boolean onCooldown;
+  private long defensesUntilEligible;
 }

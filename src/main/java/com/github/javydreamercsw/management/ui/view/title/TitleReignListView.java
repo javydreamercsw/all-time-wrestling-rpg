@@ -161,7 +161,7 @@ public class TitleReignListView extends Main {
   private Dialog openEditDialog(@NonNull final TitleReign reign) {
     Dialog dialog = new Dialog();
     dialog.setHeaderTitle("Edit Title Reign");
-    dialog.setWidth("500px");
+    dialog.setWidth("min(500px, 95vw)");
 
     ComboBox<Title> titleField = new ComboBox<>("Title");
     titleField.setItems(titleRepository.findAll());

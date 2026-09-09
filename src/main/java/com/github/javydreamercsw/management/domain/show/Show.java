@@ -116,6 +116,19 @@ public class Show extends AbstractEntity<Long> {
   @Column(name = "quality_score")
   private Double qualityScore;
 
+  /**
+   * Star rating in the range [1.0, 5.0] (clamped by {@code ShowQualityService}). Rejects
+   * out-of-range values so rendering (StarRenderer) and achievement logic never see an invalid
+   * score.
+   */
+  public void setQualityScore(final Double qualityScore) {
+    if (qualityScore != null && (qualityScore < 1.0 || qualityScore > 5.0)) {
+      throw new IllegalArgumentException(
+          "Quality score must be between 1.0 and 5.0, got: " + qualityScore);
+    }
+    this.qualityScore = qualityScore;
+  }
+
   @Enumerated(EnumType.STRING)
   @Column(name = "booking_mode", nullable = false)
   private BookingMode bookingMode = BookingMode.STANDARD;

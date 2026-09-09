@@ -84,7 +84,7 @@ Live tournament view shows completed round results and the pending next round. T
 
 ## Story Arc Wizard
 
-Three-step wizard for scripting a feud arc: select wrestlers, name the arc and choose its length, then add ordered beats (match type, stipulation, winner control).
+Three-step wizard for scripting a feud arc: select wrestlers, name the arc and choose its length, then add ordered beats (match type, stipulation, winner control). Each beat can also involve wrestlers from outside the feud — an External Opponent and run-in Extras — and the ✨ AI Suggest Opponent button picks a fitting candidate from the eligible roster for you to confirm or override.
 
 ![Story Arc Wizard](/screenshots/booker-story-arc-wizard.png)
 
@@ -92,7 +92,7 @@ Three-step wizard for scripting a feud arc: select wrestlers, name the arc and c
 
 ## Rivalry Detail
 
-View rivalry details including heat, storyline notes, and dates. Use the Story Arc button to script a multi-beat feud arc for this rivalry.
+View rivalry details including heat, storyline notes, and dates. Use the Story Arc button to script a multi-beat feud arc for this rivalry. Pending beats on an arc can be edited (✎) or removed (✕) after creation — completed and skipped beats are locked as history.
 
 ![Rivalry Detail](/screenshots/booker-rivalry-detail.png)
 

@@ -822,36 +822,54 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     log.info("Selecting item '{}' from MultiSelectComboBox", itemText);
     JavascriptExecutor js = (JavascriptExecutor) driver;
 
-    // Open the dropdown via JS property
+    scrollIntoView(comboBox);
+    waitForVaadinClientToLoad();
+
+    // Open the overlay so Vaadin renders and populates the item list.
     js.executeScript("arguments[0].opened = true;", comboBox);
 
-    // Wait for an item that is both present AND visible (non-zero bounding box).
-    // Checking visibility avoids matching items in previously-closed overlays
-    // that are still in the DOM but hidden.
+    // Wait until a visible overlay item whose text matches the target appears.
+    // This ensures the item data is loaded before we read its .item property.
     WebDriverWait wait = new WebDriverWait(driver, getWaitTimeout());
-    WebElement item =
-        wait.until(
-            d -> {
-              Object found =
-                  js.executeScript(
-                      """
-                      const items=Array.from(document.querySelectorAll(\
-                      'vaadin-multi-select-combo-box-item'));\
-                      return items.find(el=>{\
-                      const r=el.getBoundingClientRect();\
-                      return r.width>0&&r.height>0\
-                      &&(el.innerText||el.textContent).trim().includes(arguments[0]);\
-                      })||null;\
-                      """,
-                      itemText);
-              return found instanceof WebElement ? (WebElement) found : null;
-            });
+    wait.until(
+        d ->
+            js.executeScript(
+                """
+                const items=Array.from(document.querySelectorAll(\
+                'vaadin-multi-select-combo-box-item'));\
+                return items.some(el=>{\
+                const r=el.getBoundingClientRect();\
+                return r.width>0&&r.height>0\
+                &&(el.innerText||el.textContent).trim().includes(arguments[0]);\
+                });\
+                """,
+                itemText));
 
-    // Use native Selenium click so Vaadin's event handlers fire properly
-    scrollIntoView(item);
-    item.click();
+    // Native Selenium click on overlay items fails (ElementNotInteractableException).
+    // The actual click path in Vaadin 25 is:
+    //   item click → scroller.__onItemClick → scroller fires 'selection-changed' (no bubble)
+    //              → combo box listener (registered on the scroller) calls __selectItem
+    // The scroller is appended as a direct child of the combo box element (slot="overlay").
+    // Items are queried globally because the overlay teleports the scroller's display
+    // into the overlay shadow DOM, but the item elements remain in document.querySelectorAll.
+    js.executeScript(
+        """
+        const comboBox=arguments[0];
+        const text=arguments[1];
+        const scroller=comboBox.querySelector('vaadin-multi-select-combo-box-scroller');
+        if(!scroller){throw new Error('Scroller not found in combo box');}\
+        const items=Array.from(document.querySelectorAll(\
+        'vaadin-multi-select-combo-box-item'));\
+        const match=items.find(el=>\
+        (el.innerText||el.textContent).trim().includes(text));\
+        if(!match){throw new Error('Item not found: '+text);}\
+        scroller.dispatchEvent(new CustomEvent('selection-changed',{\
+        detail:{item:match.item}\
+        }));\
+        """,
+        comboBox,
+        itemText);
 
-    // Close the overlay
     js.executeScript("arguments[0].opened = false;", comboBox);
   }
 

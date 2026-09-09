@@ -153,6 +153,14 @@ public class TitleService {
     return titleRepository.findByName(name);
   }
 
+  /** Case-insensitive name search backing the title list view's search box. */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public Page<Title> searchTitles(
+      @NonNull final String searchTerm, @NonNull final Pageable pageable) {
+    return titleRepository.findByNameContainingIgnoreCase(searchTerm, pageable);
+  }
+
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @CacheEvict(value = CacheConfig.TITLES_CACHE, allEntries = true)

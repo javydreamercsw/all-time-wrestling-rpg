@@ -329,10 +329,12 @@ public class CampaignDashboardView extends VerticalLayout {
       add(new AlignmentTrackComponent(alignment));
     }
 
-    // 2. Main Split Layout
+    // 2. Main Split Layout — flex columns that stack on narrow viewports
+    // (audit: "broken on phone — 50/50 columns with no wrap").
     HorizontalLayout mainLayout = new HorizontalLayout();
     mainLayout.setWidthFull();
     mainLayout.addClassNames(LumoUtility.Gap.XLARGE, LumoUtility.AlignItems.START);
+    mainLayout.getStyle().set("flex-wrap", "wrap");
 
     // 3. Tournament Tracker/Bracket (Top, Full Width, below Alignment)
     if (isTournament) {
@@ -362,11 +364,12 @@ public class CampaignDashboardView extends VerticalLayout {
       add(continueMatchButton);
     }
 
-    // Left Column
+    // Left Column — flex-basis instead of hard 50% so the pair wraps to a
+    // single column when the viewport is narrower than their combined basis.
     VerticalLayout leftColumn = new VerticalLayout();
     leftColumn.setPadding(false);
     leftColumn.setSpacing(true);
-    leftColumn.setWidth("50%");
+    leftColumn.getStyle().set("flex", "1 1 380px").set("min-width", "0");
 
     // Storyline Section
     addStorylineSection(state, leftColumn);
@@ -375,7 +378,7 @@ public class CampaignDashboardView extends VerticalLayout {
     VerticalLayout rightColumn = new VerticalLayout();
     rightColumn.setPadding(false);
     rightColumn.setSpacing(true);
-    rightColumn.setWidth("50%");
+    rightColumn.getStyle().set("flex", "1 1 380px").set("min-width", "0");
 
     mainLayout.add(leftColumn, rightColumn);
     add(mainLayout);
@@ -454,35 +457,10 @@ public class CampaignDashboardView extends VerticalLayout {
     }
 
     HorizontalLayout actionsLayout = new HorizontalLayout();
-    actionsLayout.add(
-        new Button("Backstage Actions", e -> UI.getCurrent().navigate(BackstageActionView.class)));
-    actionsLayout.add(
-        new Button(
-            "Story Narrative",
-            e -> {
-              if (state.getActionsTaken() < 2
-                  && state.getCurrentPhase() == CampaignPhase.BACKSTAGE) {
-                ConfirmDialog dialog = new ConfirmDialog();
-                dialog.setHeader("Unused Actions");
-                dialog.setText(
-                    "You still have "
-                        + (2 - state.getActionsTaken())
-                        + " actions remaining for today. Proceeding to the story will skip these"
-                        + " actions. Are you sure?");
-                dialog.setCancelable(true);
-                dialog.setConfirmText("Proceed Anyway");
-                dialog.setConfirmButtonTheme("error primary");
-                dialog.addConfirmListener(event -> UI.getCurrent().navigate("campaign/narrative"));
-                dialog.open();
-              } else {
-                if (state.getCurrentPhase() == CampaignPhase.POST_MATCH) {
-                  log.debug("Navigating to post-match narrative.");
-                }
-                UI.getCurrent().navigate("campaign/narrative");
-              }
-            }));
+    // One primary CTA per phase (audit: "3 competing primary CTAs"); the
+    // secondary actions stay tertiary so they read as options, not rivals.
+    actionsLayout.addClassNames(LumoUtility.FlexWrap.WRAP, LumoUtility.Gap.SMALL);
 
-    // Only show "Next Show" if they are in POST_MATCH
     if (state.getCurrentPhase() == CampaignPhase.POST_MATCH) {
       Button nextShowButton =
           new Button(
@@ -491,8 +469,48 @@ public class CampaignDashboardView extends VerticalLayout {
                 campaignService.completePostMatch(currentCampaign);
                 refreshUI();
               });
-      nextShowButton.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
+      nextShowButton.addThemeVariants(ButtonVariant.LUMO_SUCCESS, ButtonVariant.LUMO_PRIMARY);
+      nextShowButton.setId("next-day-cta");
       actionsLayout.add(nextShowButton);
+    } else if (state.getCurrentPhase() == CampaignPhase.MATCH) {
+      Button backToMatch = new Button("Back to Match", e -> UI.getCurrent().navigate("player"));
+      backToMatch.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+      actionsLayout.add(backToMatch);
+    } else {
+      Button storyButton =
+          new Button(
+              "Story Narrative",
+              e -> {
+                if (state.getActionsTaken() < 2
+                    && state.getCurrentPhase() == CampaignPhase.BACKSTAGE) {
+                  ConfirmDialog dialog = new ConfirmDialog();
+                  dialog.setHeader("Unused Actions");
+                  dialog.setText(
+                      "You still have "
+                          + (2 - state.getActionsTaken())
+                          + " actions remaining for today. Proceeding to the story will skip"
+                          + " these actions. Are you sure?");
+                  dialog.setCancelable(true);
+                  dialog.setConfirmText("Proceed Anyway");
+                  dialog.setConfirmButtonTheme("error primary");
+                  dialog.addConfirmListener(
+                      event -> UI.getCurrent().navigate("campaign/narrative"));
+                  dialog.open();
+                } else {
+                  UI.getCurrent().navigate("campaign/narrative");
+                }
+              });
+      storyButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+      storyButton.setId("story-narrative-cta");
+      actionsLayout.add(storyButton);
+
+      if (state.getCurrentPhase() == CampaignPhase.BACKSTAGE) {
+        Button backstageButton =
+            new Button(
+                "Backstage Actions", e -> UI.getCurrent().navigate(BackstageActionView.class));
+        backstageButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+        actionsLayout.add(backstageButton);
+      }
     }
 
     Button abandonButton =
@@ -835,7 +853,7 @@ public class CampaignDashboardView extends VerticalLayout {
   private void openChapterSelectionDialog(List<CampaignChapterDTO> options) {
     Dialog dialog = new Dialog();
     dialog.setHeaderTitle("Choose Your Next Path");
-    dialog.setWidth("600px");
+    dialog.setWidth("min(600px, 95vw)");
     dialog.setCloseOnOutsideClick(false);
 
     VerticalLayout content = new VerticalLayout();
@@ -915,9 +933,20 @@ public class CampaignDashboardView extends VerticalLayout {
   }
 
   private void refreshUI() {
+    // Preserve the scroll position across the rebuild — in-place actions
+    // (picks, upgrades, next-day) would otherwise throw the user back to
+    // the top of a tall dashboard.
+    getUI().ifPresent(ui -> ui.getPage().executeJs("window.__atwScrollY = window.scrollY"));
     removeAll();
     loadCampaign();
     initUI();
+    getUI()
+        .ifPresent(
+            ui ->
+                ui.getPage()
+                    .executeJs(
+                        "if (window.__atwScrollY != null) window.scrollTo(0, window.__atwScrollY);"
+                            + " window.__atwScrollY = null;"));
   }
 
   private void addGlobalCardLibrary() {

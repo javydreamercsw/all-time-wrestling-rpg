@@ -54,6 +54,9 @@ public interface WrestlerRepository
       countQuery = "SELECT count(DISTINCT w) FROM Wrestler w")
   Page<Wrestler> findAllBy(Pageable pageable);
 
+  /** Case-insensitive name search for the wrestler list view's search box. */
+  Page<Wrestler> findByNameContainingIgnoreCase(String searchTerm, Pageable pageable);
+
   @Query(
       """
       SELECT DISTINCT w FROM Wrestler w LEFT JOIN FETCH w.decks LEFT JOIN FETCH w.alignments LEFT\

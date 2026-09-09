@@ -55,7 +55,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -289,8 +291,18 @@ public class ShowPlanningService {
             .toList();
     dto.setRecentDramaEvents(dramaLines);
 
-    // Inject scripted beat slots so the AI honours pre-planned match types and winner intent
-    dto.setUpcomingScriptedBeats(feudScriptService.getUpcomingBeatDTOsForShow(show));
+    // Inject scripted beat slots so the AI honours pre-planned match types and winner intent.
+    // Beats without an explicit target show (the common case) fall back to the next pending beat
+    // of every active arc — but only when all of the arc's participants are on this roster.
+    Set<Long> rosterIds = allWrestlers.stream().map(Wrestler::getId).collect(Collectors.toSet());
+    var scriptedBeats = feudScriptService.getUpcomingBeatDTOsForShow(show, rosterIds);
+    log.info(
+        "Planning context for show '{}': {} scripted beat(s) injected from an available roster of"
+            + " {}",
+        show.getName(),
+        scriptedBeats.size(),
+        rosterIds.size());
+    dto.setUpcomingScriptedBeats(scriptedBeats);
 
     return dto;
   }
@@ -452,6 +464,8 @@ public class ShowPlanningService {
               + "because showDate is not set.");
     }
 
+    reconcileTeamsWithIds(proposedSegments);
+
     CardValidationResult validation =
         validateCard(proposedSegments, rivalryService.getActiveRivalries());
     if (!validation.isValid()) {
@@ -502,35 +516,42 @@ public class ShowPlanningService {
       // First, clear existing participants if any, to re-sync
       segment.getParticipants().clear();
 
-      // Add participants with team assignments when available.
-      // Prefer ID-based lookup; fall back to name if IDs are absent (e.g. manual/UI-created).
+      // Add participants with team assignments when available. Reconciliation (above) has already
+      // made teams/teamIds agree; resolve per wrestler — id first, name as fallback — so a stale
+      // or hallucinated id cannot drop a wrestler whose name resolves.
       List<Wrestler> actualParticipants = new ArrayList<>();
-      if (proposedSegment.getTeamIds() != null && !proposedSegment.getTeamIds().isEmpty()) {
-        List<List<Long>> teamIds = proposedSegment.getTeamIds();
-        for (int teamIndex = 0; teamIndex < teamIds.size(); teamIndex++) {
-          int teamNumber = teamIndex + 1;
-          for (Long wrestlerId : teamIds.get(teamIndex)) {
-            wrestlerRepository
-                .findById(wrestlerId)
-                .ifPresent(
-                    wrestler -> {
-                      segment.addParticipant(wrestler, teamNumber);
-                      actualParticipants.add(wrestler);
-                    });
+      List<List<String>> teams =
+          proposedSegment.getTeams() != null ? proposedSegment.getTeams() : List.of();
+      List<List<Long>> teamIds =
+          proposedSegment.getTeamIds() != null ? proposedSegment.getTeamIds() : List.of();
+      int teamCount = Math.max(teams.size(), teamIds.size());
+      for (int teamIndex = 0; teamIndex < teamCount; teamIndex++) {
+        int teamNumber = teamIndex + 1;
+        List<String> nameTeam = teamIndex < teams.size() ? teams.get(teamIndex) : List.of();
+        List<Long> idTeam = teamIndex < teamIds.size() ? teamIds.get(teamIndex) : List.of();
+        Set<String> unresolvedNames = new LinkedHashSet<>();
+        nameTeam.stream().filter(n -> n != null && !n.isBlank()).forEach(unresolvedNames::add);
+        for (int slot = 0; slot < Math.max(nameTeam.size(), idTeam.size()); slot++) {
+          if (slot < idTeam.size()) {
+            Optional<Wrestler> byId = wrestlerRepository.findById(idTeam.get(slot));
+            if (byId.isPresent()) {
+              segment.addParticipant(byId.get(), teamNumber);
+              actualParticipants.add(byId.get());
+              unresolvedNames.remove(byId.get().getName());
+              continue;
+            }
           }
-        }
-      } else if (proposedSegment.getTeams() != null && !proposedSegment.getTeams().isEmpty()) {
-        List<List<String>> teams = proposedSegment.getTeams();
-        for (int teamIndex = 0; teamIndex < teams.size(); teamIndex++) {
-          int teamNumber = teamIndex + 1;
-          for (String participantName : teams.get(teamIndex)) {
-            wrestlerRepository
-                .findByName(participantName)
-                .ifPresent(
-                    wrestler -> {
-                      segment.addParticipant(wrestler, teamNumber);
-                      actualParticipants.add(wrestler);
-                    });
+          if (slot < nameTeam.size()) {
+            String name = nameTeam.get(slot);
+            if (name != null && !name.isBlank()) {
+              wrestlerRepository
+                  .findByName(name.trim())
+                  .ifPresent(
+                      wrestler -> {
+                        segment.addParticipant(wrestler, teamNumber);
+                        actualParticipants.add(wrestler);
+                      });
+            }
           }
         }
       }
@@ -560,10 +581,108 @@ public class ShowPlanningService {
     eventPublisher.publishEvent(new SegmentsApprovedEvent(this, show));
   }
 
+  /**
+   * Makes each segment's {@code teams} (names) and {@code teamIds} consistent before validation and
+   * persistence, because the AI can emit arrays that disagree — and approval persists from IDs
+   * while the planning grid and edit dialog display names, so a mismatch makes phantom participants
+   * appear or real ones vanish.
+   *
+   * <p>Precedence: names win when every name resolves to a real wrestler (models copy roster names
+   * reliably but hallucinate id numbers — observed: teamIds referencing nonexistent rows and
+   * pulling in the wrong wrestler, which intergender validation then rejected). Otherwise — blank
+   * or unresolvable names — teamIds are the fallback and names are derived from them.
+   */
+  private void reconcileTeamsWithIds(final List<ProposedSegment> proposedSegments) {
+    for (ProposedSegment ps : proposedSegments) {
+      boolean hasNames = ps.getTeams() != null && !ps.getTeams().isEmpty();
+      boolean hasIds = ps.getTeamIds() != null && !ps.getTeamIds().isEmpty();
+      if (!hasNames && !hasIds) {
+        continue;
+      }
+      if (hasNames && allNamesResolve(ps.getTeams())) {
+        List<List<Long>> ids = idsFromNames(ps.getTeams());
+        if (ids == null) {
+          // A resolved wrestler has no id (not yet persisted) — names must stay authoritative,
+          // so drop the AI's ids entirely and let approval resolve from names.
+          log.info("Cleared teamIds for a {} segment: a named participant has no id", ps.getType());
+          ps.setTeamIds(null);
+        } else if (!ids.equals(ps.getTeamIds())) {
+          log.info(
+              "Rebuilt teamIds from names for a {} segment: {} -> {}",
+              ps.getType(),
+              ps.getTeamIds(),
+              ids);
+          ps.setTeamIds(ids);
+        }
+      } else if (hasIds) {
+        List<List<String>> names = namesFromIds(ps.getTeamIds());
+        List<List<String>> current = ps.getTeams() == null ? List.of() : ps.getTeams();
+        if (!current.equals(names)) {
+          log.info(
+              "Rebuilt teams from teamIds for a {} segment: {} -> {}",
+              ps.getType(),
+              current,
+              names);
+          ps.setTeams(names);
+        }
+      }
+    }
+  }
+
+  /** True when every entry is non-blank and resolves to a wrestler by name. */
+  private boolean allNamesResolve(final List<List<String>> teams) {
+    return teams.stream()
+        .filter(Objects::nonNull)
+        .flatMap(List::stream)
+        .allMatch(
+            name ->
+                name != null
+                    && !name.isBlank()
+                    && wrestlerRepository.findByName(name.trim()).isPresent());
+  }
+
+  /** Team ids resolved from names; null when any named wrestler has no id (not persisted). */
+  private List<List<Long>> idsFromNames(final List<List<String>> teams) {
+    List<List<Long>> ids = new ArrayList<>();
+    for (List<String> team : teams) {
+      List<Long> teamIds = new ArrayList<>();
+      if (team != null) {
+        for (String name : team) {
+          Optional<Wrestler> wrestler = wrestlerRepository.findByName(name.trim());
+          if (wrestler.isEmpty() || wrestler.get().getId() == null) {
+            return null;
+          }
+          teamIds.add(wrestler.get().getId());
+        }
+      }
+      ids.add(teamIds);
+    }
+    return ids;
+  }
+
+  private List<List<String>> namesFromIds(final List<List<Long>> teamIds) {
+    List<List<String>> names = new ArrayList<>();
+    for (List<Long> team : teamIds) {
+      List<String> teamNames = new ArrayList<>();
+      if (team != null) {
+        for (Long id : team) {
+          String name = wrestlerRepository.findById(id).map(Wrestler::getName).orElse(null);
+          if (name != null) {
+            teamNames.add(name);
+          } else {
+            log.warn("teamIds reference wrestler id {} which does not exist; dropping it", id);
+          }
+        }
+      }
+      names.add(teamNames);
+    }
+    return names;
+  }
+
   private void validateNoDuplicateParticipants(final List<ProposedSegment> proposedSegments) {
     for (int i = 0; i < proposedSegments.size(); i++) {
       ProposedSegment ps = proposedSegments.get(i);
-      String segmentLabel = "segment " + (i + 1) + " (" + ps.getType() + ")";
+      String segmentLabel = describeSegment(i, ps);
 
       if (ps.getTeamIds() != null && !ps.getTeamIds().isEmpty()) {
         Set<Long> seen = new HashSet<>();
@@ -578,7 +697,7 @@ public class ShowPlanningService {
               throw new IllegalArgumentException(
                   "'"
                       + name
-                      + "' appears in multiple teams in "
+                      + "' appears in multiple teams in the "
                       + segmentLabel
                       + ". Edit the segment and remove the duplicate before approving.");
             }
@@ -595,7 +714,7 @@ public class ShowPlanningService {
               throw new IllegalArgumentException(
                   "'"
                       + name
-                      + "' appears in multiple teams in "
+                      + "' appears in multiple teams in the "
                       + segmentLabel
                       + ". Edit the segment and remove the duplicate before approving.");
             }
@@ -605,9 +724,50 @@ public class ShowPlanningService {
     }
   }
 
+  /**
+   * Grid-position label for a proposed segment in error messages. Names the segment by its summary
+   * (shown in the grid) and participants rather than a bare position number: deletions shift the
+   * numbering, leaving the booker hunting for a row that no longer exists.
+   */
+  private String describeSegment(int index, ProposedSegment ps) {
+    String summary = ps.getSummary();
+    String participants =
+        ps.getTeams() == null
+            ? ""
+            : ps.getTeams().stream().flatMap(List::stream).collect(Collectors.joining(", "));
+    return String.format(
+        "%s segment (%s%s%s)",
+        ordinal(index + 1),
+        ps.getType() == null ? "unknown type" : ps.getType(),
+        summaryPart(summary),
+        participants.isEmpty() ? "" : " — " + participants);
+  }
+
+  private String summaryPart(String summary) {
+    if (summary == null || summary.isBlank()) {
+      return "";
+    }
+    String trimmed = summary.trim();
+    return ", \"" + (trimmed.length() > 60 ? trimmed.substring(0, 60) + "…" : trimmed) + "\"";
+  }
+
+  private String ordinal(int n) {
+    int mod100 = n % 100;
+    if (mod100 >= 11 && mod100 <= 13) {
+      return n + "th";
+    }
+    return switch (n % 10) {
+      case 1 -> n + "st";
+      case 2 -> n + "nd";
+      case 3 -> n + "rd";
+      default -> n + "th";
+    };
+  }
+
   private boolean isUnavailable(
       final Wrestler wrestler, final Long universeId, final int conditionThreshold) {
-    if (!injuryService.getAllInjuriesForWrestler(wrestler.getId(), universeId).isEmpty()) {
+    // Active injuries only — a healed injury is history and must not block availability.
+    if (!injuryService.getActiveInjuriesForWrestler(wrestler.getId(), universeId).isEmpty()) {
       return true;
     }
     WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), universeId);

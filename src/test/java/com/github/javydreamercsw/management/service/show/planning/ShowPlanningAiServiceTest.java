@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.service.HolidayService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
+import com.github.javydreamercsw.management.service.show.planning.dto.FeudScriptBeatDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningPleDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRivalryDTO;
@@ -50,6 +51,7 @@ class ShowPlanningAiServiceTest {
   private SegmentNarrationService segmentNarrationService;
   private SegmentRuleService segmentRuleService;
   private HolidayService holidayService;
+  private SegmentTypeService segmentTypeService;
 
   @BeforeEach
   public void setUp() {
@@ -58,7 +60,7 @@ class ShowPlanningAiServiceTest {
     segmentRuleService = mock(SegmentRuleService.class);
     holidayService = mock(HolidayService.class);
     ObjectMapper objectMapper = new ObjectMapper(); // Use real ObjectMapper for JSON parsing
-    SegmentTypeService segmentTypeService = mock(SegmentTypeService.class);
+    segmentTypeService = mock(SegmentTypeService.class);
 
     // Mock the factory to return the service
     when(narrationServiceFactory.getBestAvailableService()).thenReturn(segmentNarrationService);
@@ -73,6 +75,7 @@ class ShowPlanningAiServiceTest {
     segmentType.setName("One on One");
     segmentType.setDescription("A standard wrestling match between two competitors.");
     when(segmentTypeService.findAll()).thenReturn(List.of(segmentType));
+    when(segmentTypeService.findByName(anyString())).thenReturn(Optional.of(segmentType));
 
     showPlanningAiService =
         new ShowPlanningAiService(
@@ -616,5 +619,416 @@ class ShowPlanningAiServiceTest {
     verify(narrationServiceFactory, times(1)).generateText(promptCaptor.capture());
     String prompt = promptCaptor.getValue();
     assertFalse(prompt.contains("Recent Promos"));
+  }
+
+  // ── deterministic scripted-beat enforcement (ATW-k3im) ───────────────────
+
+  @Test
+  void planShow_matchWithoutRules_getsNormalDefault() {
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    SegmentRule normalRule = new SegmentRule();
+    normalRule.setName("Normal");
+    when(segmentRuleService.findByName("Normal")).thenReturn(Optional.of(normalRule));
+
+    // AI omits rules — nondeterministic per prompt guidance
+    String aiResponseJson =
+        """
+        [
+          {
+            "segmentId": "seg1",
+            "type": "One on One",
+            "description": "Big fight",
+            "outcome": "Someone wins",
+            "teams": [["A"], ["B"]],
+            "teamIds": [[11], [12]]
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    assertEquals(1, proposedShow.getSegments().size());
+    assertEquals(List.of("Normal"), proposedShow.getSegments().get(0).getRules());
+  }
+
+  @Test
+  void planShow_promoWithoutRules_getsPromoDefault() {
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(0);
+    showTemplate.setExpectedPromos(1);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    SegmentType promoType = new SegmentType();
+    promoType.setName("Promo");
+    promoType.setCode("promo");
+    when(segmentTypeService.findByName("Promo")).thenReturn(Optional.of(promoType));
+    SegmentRule promoRule = new SegmentRule();
+    promoRule.setName("Promo");
+    when(segmentRuleService.findByName("Promo")).thenReturn(Optional.of(promoRule));
+
+    // The prompt tells the AI to omit rules on promos — the default must come from the server.
+    String aiResponseJson =
+        """
+        [
+          {
+            "segmentId": "seg1",
+            "type": "Promo",
+            "description": "Talking segment",
+            "outcome": "Crowd reacts",
+            "teams": [["A"]],
+            "teamIds": [[11]]
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    assertEquals(1, proposedShow.getSegments().size());
+    assertEquals(List.of("Promo"), proposedShow.getSegments().get(0).getRules());
+  }
+
+  @Test
+  void planShow_explicitRulesAreKept() {
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+
+    String aiResponseJson =
+        """
+        [
+          {
+            "segmentId": "seg1",
+            "type": "One on One",
+            "description": "Big fight",
+            "outcome": "Someone wins",
+            "rules": ["No DQ"],
+            "teams": [["A"], ["B"]],
+            "teamIds": [[11], [12]]
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    assertEquals(List.of("No DQ"), proposedShow.getSegments().get(0).getRules());
+  }
+
+  private FeudScriptBeatDTO beat(
+      String segmentType,
+      String segmentRule,
+      String winnerControl,
+      String plannedWinner,
+      List<Long> participantIds) {
+    FeudScriptBeatDTO dto = new FeudScriptBeatDTO();
+    dto.setBeatId(1L);
+    dto.setScriptName("Lashley Arc");
+    dto.setSegmentType(segmentType);
+    dto.setSegmentRule(segmentRule);
+    dto.setWinnerControl(winnerControl);
+    dto.setPlannedWinnerName(plannedWinner);
+    dto.setParticipantNames("Shelton Benjamin, Bobby Lashley");
+    dto.setParticipantIds(participantIds);
+    dto.setRivalryId(9L);
+    return dto;
+  }
+
+  @Test
+  void planShow_aiBooksPromoForScriptedSlot_beatSegmentReplacesItWithMatchType() {
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    context.setUpcomingScriptedBeats(
+        List.of(beat("Singles Match", null, "BOOKER_PICKS", "Bobby Lashley", List.of(11L, 12L))));
+
+    // AI ignored the scripted slot and booked a promo for the arc's wrestlers
+    String aiResponseJson =
+        """
+        [
+          {
+            "segmentId": "seg1",
+            "type": "Promo",
+            "description": "Shelton Benjamin and Bobby Lashley have words",
+            "outcome": "Tension rises",
+            "teams": [["Shelton Benjamin"], ["Bobby Lashley"]],
+            "teamIds": [[11], [12]]
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    // Beat segment replaces the AI's promo: exact match type, stipulation, winner, rivalry
+    assertEquals(1, proposedShow.getSegments().size());
+    ProposedSegment beatSegment = proposedShow.getSegments().get(0);
+    assertEquals("Singles Match", beatSegment.getType());
+    assertEquals(List.of("Shelton Benjamin"), beatSegment.getTeams().get(0));
+    assertEquals(List.of(11L), beatSegment.getTeamIds().get(0));
+    assertEquals(9L, beatSegment.getRivalryId());
+    assertEquals(List.of("Bobby Lashley"), beatSegment.getWinners());
+    // The scripted slot gets a grid-facing summary like the AI's segments have.
+    assertEquals(
+        "Scripted beat: Lashley Arc — planned winner: Bobby Lashley", beatSegment.getSummary());
+  }
+
+  @Test
+  void planShow_aiBooksWrongMatchTypeForScriptedSlot_beatSegmentStillWins() {
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    context.setUpcomingScriptedBeats(
+        List.of(beat("Singles Match", "Steel Cage", "AI_PICKS", null, List.of(11L, 12L))));
+
+    // AI booked the right participants but the wrong match type
+    String aiResponseJson =
+        """
+        [
+          {
+            "segmentId": "seg1",
+            "type": "One on One",
+            "description": "Standard match",
+            "outcome": "Someone wins",
+            "teams": [["Shelton Benjamin"], ["Bobby Lashley"]],
+            "teamIds": [[11], [12]]
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    assertEquals(1, proposedShow.getSegments().size());
+    ProposedSegment beatSegment = proposedShow.getSegments().get(0);
+    assertEquals("Singles Match", beatSegment.getType());
+    assertEquals(List.of("Steel Cage"), beatSegment.getRules());
+  }
+
+  @Test
+  void planShow_aiPicksWinnerForScriptedSlot_bookerPicksOverridden() {
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    context.setUpcomingScriptedBeats(
+        List.of(
+            beat("Singles Match", null, "BOOKER_PICKS", "Shelton Benjamin", List.of(11L, 12L))));
+
+    // AI agreed on a match but picked the wrong winner
+    String aiResponseJson =
+        """
+        [
+          {
+            "segmentId": "seg1",
+            "type": "One on One",
+            "description": "Big fight",
+            "outcome": "Bobby Lashley wins",
+            "teams": [["Shelton Benjamin"], ["Bobby Lashley"]],
+            "teamIds": [[11], [12]]
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    assertEquals(1, proposedShow.getSegments().size());
+    assertEquals(List.of("Shelton Benjamin"), proposedShow.getSegments().get(0).getWinners());
+  }
+
+  @Test
+  void planShow_noScriptedBeats_cardUnchanged() {
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+
+    String aiResponseJson =
+        """
+        [
+          {
+            "segmentId": "seg1",
+            "type": "One on One",
+            "description": "A match",
+            "outcome": "A wins",
+            "teams": [["A"], ["B"]],
+            "teamIds": [[1], [2]]
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    assertEquals(1, proposedShow.getSegments().size());
+    assertEquals("One on One", proposedShow.getSegments().get(0).getType());
+  }
+
+  @Test
+  void planShow_aiPutsBeatWrestlersInUnrelatedPromo_promoKept() {
+    // A promo mentioning the arc's wrestlers is NOT a match slot — it must survive
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(1);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    SegmentType promoType = new SegmentType();
+    promoType.setName("Promo");
+    promoType.setCode("promo");
+    promoType.setDescription("A talking segment.");
+    when(segmentTypeService.findByName("Promo")).thenReturn(Optional.of(promoType));
+    when(segmentTypeService.findByName("Singles Match")).thenReturn(Optional.empty());
+
+    context.setUpcomingScriptedBeats(
+        List.of(beat("Singles Match", null, "AI_PICKS", null, List.of(11L, 12L))));
+
+    String aiResponseJson =
+        """
+        [
+          {
+            "segmentId": "seg1",
+            "type": "Promo",
+            "description": "Shelton Benjamin cuts a promo",
+            "outcome": "Crowd reacts",
+            "teams": [["Shelton Benjamin"]],
+            "teamIds": [[11]]
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    // Promo kept + beat segment added
+    assertEquals(2, proposedShow.getSegments().size());
+    assertEquals("Singles Match", proposedShow.getSegments().get(0).getType());
+    assertEquals("Promo", proposedShow.getSegments().get(1).getType());
+  }
+
+  // ── external beat participants (ATW-iukb) ─────────────────────────────────
+
+  @Test
+  void planShow_beatWithExternalOpponent_beatSegmentHasTwoTeams() {
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    FeudScriptBeatDTO beat = beat("Singles Match", null, "AI_PICKS", null, List.of(11L, 12L));
+    beat.setTeams(List.of(List.of("Shelton Benjamin", "Bobby Lashley"), List.of("Randy Orton")));
+    beat.setTeamIds(List.of(List.of(11L, 12L), List.of(30L)));
+    context.setUpcomingScriptedBeats(List.of(beat));
+
+    when(segmentNarrationService.generateText(anyString())).thenReturn("[]");
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    assertEquals(1, proposedShow.getSegments().size());
+    ProposedSegment beatSegment = proposedShow.getSegments().get(0);
+    assertEquals(
+        List.of(List.of("Shelton Benjamin", "Bobby Lashley"), List.of("Randy Orton")),
+        beatSegment.getTeams());
+    assertEquals(List.of(List.of(11L, 12L), List.of(30L)), beatSegment.getTeamIds());
+  }
+
+  @Test
+  void planShow_beatWithExtras_extrasShareOpponentTeam() {
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    FeudScriptBeatDTO beat = beat("Tag Team Match", null, "AI_PICKS", null, List.of(11L, 12L));
+    beat.setTeams(
+        List.of(List.of("Shelton Benjamin", "Bobby Lashley"), List.of("Randy Orton", "Extra One")));
+    beat.setTeamIds(List.of(List.of(11L, 12L), List.of(30L, 31L)));
+    context.setUpcomingScriptedBeats(List.of(beat));
+
+    when(segmentNarrationService.generateText(anyString())).thenReturn("[]");
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    assertEquals(1, proposedShow.getSegments().size());
+    assertEquals(
+        List.of(List.of(30L, 31L)), proposedShow.getSegments().get(0).getTeamIds().subList(1, 2));
+  }
+
+  @Test
+  void planShow_beatWithoutExternals_teamsUnchanged() {
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    context.setUpcomingScriptedBeats(
+        List.of(beat("Singles Match", null, "AI_PICKS", null, List.of(11L, 12L))));
+
+    when(segmentNarrationService.generateText(anyString())).thenReturn("[]");
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    assertEquals(1, proposedShow.getSegments().size());
+    assertEquals(
+        List.of(List.of(11L), List.of(12L)), proposedShow.getSegments().get(0).getTeamIds());
+  }
+
+  @Test
+  void planShow_aiSegmentCoversOnlyFeudParticipants_beatEvictsIt() {
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    FeudScriptBeatDTO beat = beat("Singles Match", null, "AI_PICKS", null, List.of(11L, 12L));
+    beat.setTeams(List.of(List.of("Shelton Benjamin", "Bobby Lashley"), List.of("Randy Orton")));
+    beat.setTeamIds(List.of(List.of(11L, 12L), List.of(30L)));
+    context.setUpcomingScriptedBeats(List.of(beat));
+
+    // AI booked Shelton vs Randy — covers a feud participant, must be evicted by the beat slot.
+    String aiResponseJson =
+        """
+        [
+          {
+            "segmentId": "seg1",
+            "type": "One on One",
+            "description": "Big fight",
+            "outcome": "Randy Orton wins",
+            "teams": [["Shelton Benjamin"], ["Randy Orton"]],
+            "teamIds": [[11], [30]]
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    assertEquals(1, proposedShow.getSegments().size());
+    assertEquals("Singles Match", proposedShow.getSegments().get(0).getType());
   }
 }

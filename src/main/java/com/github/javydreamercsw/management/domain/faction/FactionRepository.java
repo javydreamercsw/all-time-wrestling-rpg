@@ -52,6 +52,9 @@ public interface FactionRepository
   /** Find faction by name. */
   Optional<Faction> findByName(String name);
 
+  /** Case-insensitive name search for the faction list view's search box. */
+  Page<Faction> findByNameContainingIgnoreCase(String searchTerm, Pageable pageable);
+
   /** Check if faction name exists. */
   boolean existsByName(String name);
 

@@ -23,11 +23,10 @@ import com.github.javydreamercsw.management.domain.world.Arena.AlignmentBias;
 import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.world.LocationService;
+import com.github.javydreamercsw.management.ui.component.AtwDialog;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.dialog.Dialog;
-import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
@@ -47,7 +46,7 @@ import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class ArenaFormDialog extends Dialog {
+public class ArenaFormDialog extends AtwDialog {
 
   private final ArenaService arenaService;
   private final LocationService locationService;
@@ -71,6 +70,7 @@ public class ArenaFormDialog extends Dialog {
       ImageStorageService storageService,
       Arena arena,
       Runnable onSave) {
+    super();
     setId("arena-form-dialog");
     this.arenaService = arenaService;
     this.locationService = locationService;
@@ -88,6 +88,12 @@ public class ArenaFormDialog extends Dialog {
     configureBinder();
     initUI(storageService);
     populateForm();
+
+    getFormLayout()
+        .add(name, locationCombo, description, capacity, alignmentBias, environmentalTraits);
+    getFormLayout().setColspan(name, 2);
+    getFormLayout().setColspan(description, 2);
+    getFormLayout().setColspan(environmentalTraits, 2);
   }
 
   private void configureBinder() {
@@ -132,7 +138,7 @@ public class ArenaFormDialog extends Dialog {
 
   private void initUI(final ImageStorageService storageService) {
     setHeaderTitle(arena == null ? "Add New Arena" : "Edit Arena");
-    setWidth("800px");
+    setWidth(AtwDialog.WIDTH_FORM);
 
     name.setWidthFull();
     name.setMaxLength(Arena.DESCRIPTION_MAX_LENGTH);
@@ -186,34 +192,16 @@ public class ArenaFormDialog extends Dialog {
     imageLayout.setSpacing(true);
     imageLayout.setPadding(false);
 
-    FormLayout formLayout = new FormLayout();
-    formLayout.add(name, locationCombo, description, capacity, alignmentBias, environmentalTraits);
-    formLayout.setColspan(name, 2);
-    formLayout.setColspan(description, 2);
-    formLayout.setColspan(environmentalTraits, 2);
+    Button saveButton =
+        createPrimaryButton("arena-save-button", arena == null ? "Add" : "Save", this::saveArena);
+    bindSaveEnabled(saveButton, binder);
 
-    Button saveButton = new Button(arena == null ? "Add" : "Save", e -> saveArena());
-    saveButton.setId("arena-save-button");
-    saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-    saveButton.setEnabled(false); // Disable initially
-    binder.addStatusChangeListener(e -> saveButton.setEnabled(binder.isValid()));
-
-    Button deleteButton = new Button("Delete", e -> deleteArena());
-    deleteButton.setId("arena-delete-button");
-    deleteButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
+    Button deleteButton = createDeleteButton("arena-delete-button", "Delete", this::deleteArena);
     deleteButton.setVisible(arena != null && arena.getId() != null);
 
-    Button cancelButton = new Button("Cancel", e -> close());
-    cancelButton.setId("arena-cancel-button");
+    createCancelButton("arena-cancel-button");
 
-    HorizontalLayout buttons = new HorizontalLayout(saveButton, deleteButton, cancelButton);
-    buttons.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
-    buttons.setWidthFull();
-
-    VerticalLayout dialogLayout = new VerticalLayout(formLayout, imageLayout, buttons);
-    dialogLayout.setPadding(true);
-    dialogLayout.setSpacing(true);
-    add(dialogLayout);
+    addBelowForm(imageLayout);
   }
 
   private void populateForm() {

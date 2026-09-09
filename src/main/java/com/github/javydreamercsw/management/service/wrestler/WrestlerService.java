@@ -51,6 +51,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -239,6 +240,14 @@ public class WrestlerService {
     return wrestlerRepository.findAll();
   }
 
+  /** Case-insensitive name search backing the wrestler list view's search box. */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public Page<Wrestler> searchWrestlers(
+      @NonNull final String searchTerm, @NonNull final Pageable pageable) {
+    return wrestlerRepository.findByNameContainingIgnoreCase(searchTerm, pageable);
+  }
+
   // ==================== ATW RPG METHODS ====================
 
   @Transactional(readOnly = true)
@@ -259,17 +268,17 @@ public class WrestlerService {
       @Nullable final Collection<String> enabledExpansionCodes,
       @Nullable final Collection<Long> excludedIds,
       final Pageable pageable) {
-    Specification<Wrestler> spec =
-        (root, query, cb) -> {
-          List<Predicate> predicates = new ArrayList<>();
-          if (enabledExpansionCodes != null && !enabledExpansionCodes.isEmpty()) {
-            predicates.add(root.get("expansionCode").in(enabledExpansionCodes));
-          }
-          if (excludedIds != null && !excludedIds.isEmpty()) {
-            predicates.add(root.get("id").in(excludedIds).not());
-          }
-          return cb.and(predicates.toArray(new Predicate[0]));
-        };
+    return findPageFiltered(enabledExpansionCodes, excludedIds, null, pageable);
+  }
+
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public Page<Wrestler> findPageFiltered(
+      @Nullable final Collection<String> enabledExpansionCodes,
+      @Nullable final Collection<Long> excludedIds,
+      @Nullable final String searchTerm,
+      final Pageable pageable) {
+    Specification<Wrestler> spec = filteredSpec(enabledExpansionCodes, excludedIds, searchTerm);
     return wrestlerRepository.findAll(spec, pageable);
   }
 
@@ -278,6 +287,22 @@ public class WrestlerService {
   public long countFiltered(
       @Nullable final Collection<String> enabledExpansionCodes,
       @Nullable final Collection<Long> excludedIds) {
+    return countFiltered(enabledExpansionCodes, excludedIds, null);
+  }
+
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public long countFiltered(
+      @Nullable final Collection<String> enabledExpansionCodes,
+      @Nullable final Collection<Long> excludedIds,
+      @Nullable final String searchTerm) {
+    return wrestlerRepository.count(filteredSpec(enabledExpansionCodes, excludedIds, searchTerm));
+  }
+
+  private Specification<Wrestler> filteredSpec(
+      @Nullable final Collection<String> enabledExpansionCodes,
+      @Nullable final Collection<Long> excludedIds,
+      @Nullable final String searchTerm) {
     Specification<Wrestler> spec =
         (root, query, cb) -> {
           List<Predicate> predicates = new ArrayList<>();
@@ -287,9 +312,15 @@ public class WrestlerService {
           if (excludedIds != null && !excludedIds.isEmpty()) {
             predicates.add(root.get("id").in(excludedIds).not());
           }
+          if (searchTerm != null && !searchTerm.trim().isEmpty()) {
+            predicates.add(
+                cb.like(
+                    cb.lower(root.get("name")),
+                    "%" + searchTerm.trim().toLowerCase(Locale.ROOT) + "%"));
+          }
           return cb.and(predicates.toArray(new Predicate[0]));
         };
-    return wrestlerRepository.count(spec);
+    return spec;
   }
 
   @Transactional(readOnly = true)

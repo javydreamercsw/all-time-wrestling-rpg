@@ -43,14 +43,22 @@ import com.github.javydreamercsw.management.service.league.MatchFulfillmentServi
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.github.mvysny.kaributesting.v10.GridKt;
 import com.github.mvysny.kaributesting.v10.LocatorJ;
+import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.splitlayout.SplitLayout;
+import com.vaadin.flow.data.provider.Query;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -196,6 +204,42 @@ class InboxViewTest extends AbstractViewTest {
     GridKt._clickItem(grid, 0, 1, false, false, false, false);
 
     verify(inboxService).toggleReadStatus(unreadItem);
+  }
+
+  @Test
+  @DisplayName("Opening a message shows the detail pane; clearing it hides it again")
+  void splitLayout_emptyDetailPane_classTogglesOnSelection() {
+    InboxEventType eventType = new InboxEventType("MATCH_REQUEST", "Match Request");
+    InboxItem unreadItem = new InboxItem();
+    unreadItem.setId(12L);
+    unreadItem.setEventType(eventType);
+    unreadItem.setRead(false);
+    unreadItem.setDescription("Test description");
+
+    when(inboxService.search(any(), any(), any(), any(), any())).thenReturn(List.of(unreadItem));
+    when(inboxService.toggleReadStatus(any())).thenReturn(unreadItem);
+    when(securityUtils.canEdit(any())).thenReturn(true);
+
+    InboxView freshView =
+        new InboxView(
+            inboxService,
+            eventTypeRegistry,
+            wrestlerRepository,
+            matchFulfillmentService,
+            securityUtils,
+            objectMapper,
+            openProfileDrawerBroadcaster,
+            directMessageService);
+    UI.getCurrent().add(freshView);
+
+    // No selection: the empty hint pane is hidden (saves phone screen space).
+    SplitLayout splitLayout = _get(freshView, SplitLayout.class);
+    assertTrue(splitLayout.hasClassName("inbox-detail-empty"));
+
+    // Selecting a message reveals the detail pane.
+    Grid<InboxItem> grid = _get(freshView, Grid.class);
+    GridKt._clickItem(grid, 0, 1, false, false, false, false);
+    assertFalse(splitLayout.hasClassName("inbox-detail-empty"));
   }
 
   @Test
@@ -456,5 +500,98 @@ class InboxViewTest extends AbstractViewTest {
             Span.class,
             spec -> spec.withPredicate(s -> s.getText().startsWith("From:")));
     assertThat(fromSpans).isEmpty();
+  }
+
+  @Test
+  @DisplayName("Bulk delete requires confirmation and calls deleteSelected on confirm")
+  @SuppressWarnings("unchecked")
+  void bulkDeleteRequiresConfirmation() {
+    when(securityUtils.canDelete()).thenReturn(true);
+    when(securityUtils.canEdit()).thenReturn(true);
+    InboxItem item = new InboxItem();
+    item.setId(1L);
+    when(inboxService.search(any(), any(), any(), any(), any())).thenReturn(List.of(item));
+
+    InboxView adminView =
+        new InboxView(
+            inboxService,
+            eventTypeRegistry,
+            wrestlerRepository,
+            matchFulfillmentService,
+            securityUtils,
+            objectMapper,
+            openProfileDrawerBroadcaster,
+            directMessageService);
+    UI.getCurrent().add(adminView);
+
+    // Force the grid to render the item and select it through the selection model.
+    Grid<InboxItem> grid = (Grid<InboxItem>) _get(adminView, Grid.class);
+    grid.getDataProvider().fetch(new Query<>());
+    // Select through the UI's own select-all control (grid.select's listener
+    // interacts with the select-all checkbox in ways that clear selectedItems).
+    Checkbox selectAll =
+        _get(adminView, Checkbox.class, spec -> spec.withId("select-all-checkbox"));
+    selectAll.setValue(true);
+    Assertions.assertTrue(
+        _get(adminView, Button.class, spec -> spec.withText("Delete Selected")).isEnabled(),
+        "Selection must enable Delete Selected");
+
+    Button deleteButton = _get(adminView, Button.class, spec -> spec.withText("Delete Selected"));
+    deleteButton.click();
+
+    ConfirmDialog confirm = _get(UI.getCurrent(), ConfirmDialog.class);
+    assertTrue(confirm.isOpened(), "Bulk delete must confirm first");
+    verify(inboxService, Mockito.never()).deleteSelected(any());
+
+    // Confirm via reflection — ConfirmDialog's buttons live in shadow DOM.
+    try {
+      var event = new ConfirmDialog.ConfirmEvent(confirm, true);
+      var fireEvent = Component.class.getDeclaredMethod("fireEvent", ComponentEvent.class);
+      fireEvent.setAccessible(true);
+      fireEvent.invoke(confirm, event);
+    } catch (ReflectiveOperationException e) {
+      throw new IllegalStateException("Failed to fire confirm", e);
+    }
+
+    // The handler passes the live selectedItems set; the karibu mock's
+    // re-entrant select-all chain empties it before the confirm fires, so
+    // assert the call wiring (gated + invoked) rather than the payload here.
+    verify(inboxService).deleteSelected(any());
+  }
+
+  @Test
+  @DisplayName("Delete Selected is hidden for users without delete permission")
+  void deleteButtonHiddenWithoutPermission() {
+    when(securityUtils.canDelete()).thenReturn(false);
+    InboxView readOnlyView =
+        new InboxView(
+            inboxService,
+            eventTypeRegistry,
+            wrestlerRepository,
+            matchFulfillmentService,
+            securityUtils,
+            objectMapper,
+            openProfileDrawerBroadcaster,
+            directMessageService);
+    UI.getCurrent().add(readOnlyView);
+
+    // karibu's locator only returns effectively-visible components, and the
+    // button is hidden — walk the tree directly to reach it.
+    Button deleteButton =
+        InboxViewTest.findAllButtons(readOnlyView).stream()
+            .filter(b -> "Delete Selected".equals(b.getText()))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Delete Selected button should exist"));
+    assertFalse(deleteButton.isVisible(), "Delete Selected must hide without canDelete");
+  }
+
+  /** Walks all descendants regardless of visibility (karibu's locator hides INVIS ones). */
+  private static List<Button> findAllButtons(Component root) {
+    List<Button> found = new ArrayList<>();
+    if (root instanceof Button b) {
+      found.add(b);
+    }
+    root.getChildren().forEach(child -> found.addAll(findAllButtons(child)));
+    return found;
   }
 }
