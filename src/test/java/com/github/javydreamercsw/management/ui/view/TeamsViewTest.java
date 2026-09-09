@@ -22,6 +22,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.grid.Grid;
@@ -29,6 +30,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.springframework.data.domain.Page;
 
 class TeamsViewTest extends AbstractViewTest {
@@ -44,7 +46,9 @@ class TeamsViewTest extends AbstractViewTest {
   void setup() {
     when(teamService.getAllTeams(any())).thenReturn(Page.empty());
 
-    view = new TeamsView(teamService, teamFormDialog, securityUtils);
+    view =
+        new TeamsView(
+            teamService, teamFormDialog, securityUtils, Mockito.mock(NotificationService.class));
     UI.getCurrent().add(view);
   }
 

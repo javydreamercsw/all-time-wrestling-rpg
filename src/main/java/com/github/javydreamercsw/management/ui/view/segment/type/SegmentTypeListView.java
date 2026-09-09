@@ -141,6 +141,7 @@ public class SegmentTypeListView extends Main {
     Button toggleButton = new Button(toggleIcon);
     toggleButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     toggleButton.setTooltipText(segmentType.isActive() ? "Deactivate" : "Activate");
+    toggleButton.setAriaLabel(segmentType.isActive() ? "Deactivate" : "Activate");
     toggleButton.setVisible(securityUtils.canEdit());
     toggleButton.addClickListener(
         e -> {

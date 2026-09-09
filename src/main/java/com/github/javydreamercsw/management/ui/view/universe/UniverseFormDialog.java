@@ -32,6 +32,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
@@ -177,13 +178,27 @@ public class UniverseFormDialog extends Dialog {
               remove.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR);
               remove.addClickListener(
                   e -> {
-                    try {
-                      membershipService.removeMember(universe, m.getAccount());
-                      refreshMembersGrid(grid, membershipService);
-                    } catch (IllegalStateException ex) {
-                      Notification.show(ex.getMessage(), 4000, Notification.Position.BOTTOM_END)
-                          .addThemeVariants(NotificationVariant.LUMO_ERROR);
-                    }
+                    ConfirmDialog confirmDialog = new ConfirmDialog();
+                    confirmDialog.setHeader("Remove member");
+                    confirmDialog.setText(
+                        "Remove "
+                            + m.getAccount().getUsername()
+                            + " from this universe? They will lose access immediately.");
+                    confirmDialog.setCancelable(true);
+                    confirmDialog.setConfirmText("Remove");
+                    confirmDialog.setConfirmButtonTheme("error primary");
+                    confirmDialog.addConfirmListener(
+                        ev -> {
+                          try {
+                            membershipService.removeMember(universe, m.getAccount());
+                            refreshMembersGrid(grid, membershipService);
+                          } catch (IllegalStateException ex) {
+                            Notification.show(
+                                    ex.getMessage(), 4000, Notification.Position.BOTTOM_END)
+                                .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                          }
+                        });
+                    confirmDialog.open();
                   });
               return remove;
             })
@@ -273,8 +288,18 @@ public class UniverseFormDialog extends Dialog {
               include.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR);
               include.addClickListener(
                   e -> {
-                    settingsService.includeWrestler(universe, w);
-                    refreshExclusionGrid(exclusionGrid, settingsService);
+                    ConfirmDialog confirmDialog = new ConfirmDialog();
+                    confirmDialog.setHeader("Remove exclusion");
+                    confirmDialog.setText("Allow " + w.getName() + " in this universe again?");
+                    confirmDialog.setCancelable(true);
+                    confirmDialog.setConfirmText("Remove");
+                    confirmDialog.setConfirmButtonTheme("error primary");
+                    confirmDialog.addConfirmListener(
+                        ev -> {
+                          settingsService.includeWrestler(universe, w);
+                          refreshExclusionGrid(exclusionGrid, settingsService);
+                        });
+                    confirmDialog.open();
                   });
               return include;
             })

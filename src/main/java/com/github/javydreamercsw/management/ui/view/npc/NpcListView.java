@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
@@ -146,6 +147,7 @@ public class NpcListView extends Main {
                 Button toggleButton = new Button(toggleIcon);
                 toggleButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
                 toggleButton.setTooltipText(npc.isActive() ? "Deactivate" : "Activate");
+                toggleButton.setAriaLabel(npc.isActive() ? "Deactivate" : "Activate");
                 toggleButton.addClickListener(
                     e -> {
                       npcService.setActive(npc.getId(), !npc.isActive());
@@ -202,7 +204,9 @@ public class NpcListView extends Main {
         LumoUtility.Gap.SMALL);
 
     add(new ViewToolbar("NPC List", ViewToolbar.group(createBtn)));
-    add(npcGrid);
+    Div gridWrapper = new Div(npcGrid);
+    gridWrapper.addClassName("grid-scroll-container");
+    add(gridWrapper);
   }
 
   private void refreshGrid() {

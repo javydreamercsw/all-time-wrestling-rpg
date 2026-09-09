@@ -59,6 +59,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -401,5 +405,78 @@ class WrestlerServiceTest {
 
     // Then
     assertEquals(2, result.size());
+  }
+
+  @Test
+  void searchWrestlersDelegatesToRepository() {
+    Pageable pageable = PageRequest.of(0, 10);
+    wrestlerService.searchWrestlers("rey", pageable);
+    verify(wrestlerRepository).findByNameContainingIgnoreCase("rey", pageable);
+  }
+
+  @Test
+  void findPageFilteredWithSearchTermBuildsLikePredicate() {
+    Pageable pageable = PageRequest.of(0, 10);
+    Page<Wrestler> expected = Page.empty();
+    when(wrestlerRepository.findAll(any(Specification.class), any(Pageable.class)))
+        .thenReturn(expected);
+
+    Page<Wrestler> result =
+        wrestlerService.findPageFiltered(List.of("BASE_GAME"), null, "rey", pageable);
+
+    assertEquals(expected, result);
+    verify(wrestlerRepository).findAll(any(Specification.class), any(Pageable.class));
+  }
+
+  @Test
+  void findPageFilteredWithExcludedIdsBuildsNotInPredicate() {
+    Pageable pageable = PageRequest.of(0, 10);
+    when(wrestlerRepository.findAll(any(Specification.class), any(Pageable.class)))
+        .thenReturn(Page.empty());
+
+    wrestlerService.findPageFiltered(null, Set.of(5L, 7L), null, pageable);
+
+    verify(wrestlerRepository).findAll(any(Specification.class), any(Pageable.class));
+  }
+
+  @Test
+  void countFilteredUsesSameSpecification() {
+    when(wrestlerRepository.count(any(Specification.class))).thenReturn(3L);
+
+    long count = wrestlerService.countFiltered(List.of("BASE_GAME"), null, null);
+
+    assertEquals(3L, count);
+    verify(wrestlerRepository).count(any(Specification.class));
+  }
+
+  @Test
+  void findPageFilteredThreeArgOverloadDefaultsToNullSearch() {
+    Pageable pageable = PageRequest.of(0, 10);
+    when(wrestlerRepository.findAll(any(Specification.class), any(Pageable.class)))
+        .thenReturn(Page.empty());
+
+    wrestlerService.findPageFiltered(List.of("BASE_GAME"), null, pageable);
+
+    verify(wrestlerRepository).findAll(any(Specification.class), any(Pageable.class));
+  }
+
+  @Test
+  void countFilteredThreeArgOverloadDefaultsToNullSearch() {
+    when(wrestlerRepository.count(any(Specification.class))).thenReturn(7L);
+
+    long count = wrestlerService.countFiltered(List.of("BASE_GAME"), Set.of(9L));
+
+    assertEquals(7L, count);
+    verify(wrestlerRepository).count(any(Specification.class));
+  }
+
+  @Test
+  void countFilteredWithSearchTermBuildsLikePredicate() {
+    when(wrestlerRepository.count(any(Specification.class))).thenReturn(2L);
+
+    long count = wrestlerService.countFiltered(List.of("BASE_GAME"), null, "rey");
+
+    assertEquals(2L, count);
+    verify(wrestlerRepository).count(any(Specification.class));
   }
 }

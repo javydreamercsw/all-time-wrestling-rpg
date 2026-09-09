@@ -37,6 +37,7 @@ import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerTitleCooldownRepository;
 import com.github.javydreamercsw.management.dto.ranking.ChampionDTO;
 import com.github.javydreamercsw.management.dto.ranking.ChampionshipDTO;
 import com.github.javydreamercsw.management.dto.ranking.RankedTeamDTO;
@@ -68,6 +69,7 @@ class RankingServiceTest {
   @Mock private WrestlerService wrestlerService;
   @Mock private DefaultImageService imageService;
   @Mock private GameSettingService gameSettingService;
+  @Mock private WrestlerTitleCooldownRepository cooldownRepository;
   @InjectMocks private RankingService rankingService;
 
   private Title title;

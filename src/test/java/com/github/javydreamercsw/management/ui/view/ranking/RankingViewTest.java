@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.event.inbox.InboxUpdateBroadcaster;
 import com.github.javydreamercsw.management.service.ranking.RankingService;
 import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -38,6 +39,7 @@ import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.data.provider.Query;
 import java.util.ArrayList;
 import java.util.List;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -62,8 +64,22 @@ class RankingViewTest extends AbstractViewTest {
             List.of(
                 ChampionDTO.builder().id(1L).name("Champion").fans(1000L).reignDays(1L).build()));
     List<RankedWrestlerDTO> contenders = new ArrayList<>();
-    contenders.add(new RankedWrestlerDTO(2L, "Contender 2", 700L, 1, WrestlerTier.MIDCARDER));
-    contenders.add(new RankedWrestlerDTO(3L, "Contender 1", 500L, 2, WrestlerTier.ROOKIE));
+    contenders.add(
+        RankedWrestlerDTO.builder()
+            .id(2L)
+            .name("Contender 2")
+            .fans(700L)
+            .rank(1)
+            .tier(WrestlerTier.MIDCARDER)
+            .build());
+    contenders.add(
+        RankedWrestlerDTO.builder()
+            .id(3L)
+            .name("Contender 1")
+            .fans(500L)
+            .rank(2)
+            .tier(WrestlerTier.ROOKIE)
+            .build());
     when(rankingService.getRankedContenders(championshipDTO.getId()))
         .thenAnswer(invocation -> contenders);
   }
@@ -137,5 +153,47 @@ class RankingViewTest extends AbstractViewTest {
     assertNotNull(button);
     button.click();
     assertNotNull(_get(Dialog.class));
+  }
+
+  @Test
+  void contenderOnCooldownShowsClockIconWithTooltip() {
+    List<RankedWrestlerDTO> extended = new ArrayList<>();
+    extended.add(
+        RankedWrestlerDTO.builder()
+            .id(2L)
+            .name("Contender 2")
+            .fans(700L)
+            .rank(1)
+            .tier(WrestlerTier.MIDCARDER)
+            .build());
+    extended.add(
+        RankedWrestlerDTO.builder()
+            .id(4L)
+            .name("Cooling Down")
+            .fans(400L)
+            .rank(3)
+            .tier(WrestlerTier.ROOKIE)
+            .onCooldown(true)
+            .defensesUntilEligible(2)
+            .build());
+    when(rankingService.getRankedContenders(championshipDTO.getId()))
+        .thenAnswer(invocation -> extended);
+
+    RankingView view = new RankingView(rankingService, tierBoundaryService);
+    UI.getCurrent().add(view);
+    ComboBox<ChampionshipDTO> comboBox = _get(view, ComboBox.class);
+    comboBox.setValue(championshipDTO);
+
+    Grid<RankedWrestlerDTO> grid =
+        _get(view, Grid.class, spec -> spec.withId("wrestler-contenders-grid"));
+    grid.getDataProvider().fetch(new Query<>());
+
+    // Component-column content is rendered per row; verify the data contract
+    // the renderer relies on: the cooldown flags ride through to the rows.
+    RankedWrestlerDTO cooling =
+        ((List<RankedWrestlerDTO>) grid.getGenericDataView().getItems().toList())
+            .stream().filter(w -> "Cooling Down".equals(w.getName())).findFirst().orElseThrow();
+    Assertions.assertTrue(cooling.isOnCooldown());
+    Assertions.assertEquals(2, cooling.getDefensesUntilEligible());
   }
 }

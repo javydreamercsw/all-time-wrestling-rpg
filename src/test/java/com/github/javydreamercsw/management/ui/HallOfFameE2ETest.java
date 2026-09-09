@@ -43,15 +43,11 @@ public class HallOfFameE2ETest extends AbstractE2ETest {
   void testHallOfFameVisibility() {
     login("admin", "admin123");
 
-    // Navigate to Hall of Fame
-    navigateTo("hall-of-fame");
+    // Navigate to Hall of Fame (retry handles transient route-init failures)
+    navigateToAndWaitForElement("hall-of-fame", By.id("hall-of-fame-grid"));
 
     // Wait for grid to load
     waitForPageSourceToContain("Hall of Fame");
-
-    // Verify grid exists and has headers
-    WebElement grid = driver.findElement(By.id("hall-of-fame-grid"));
-    Assertions.assertNotNull(grid);
 
     // Verify some players are listed (at least the default ones from DataInitializer)
     new WebDriverWait(driver, Duration.ofSeconds(30))

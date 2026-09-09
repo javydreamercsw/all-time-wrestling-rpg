@@ -19,9 +19,11 @@ package com.github.javydreamercsw.management.ui.view.season;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
@@ -43,7 +45,7 @@ class SeasonListViewTest extends AbstractViewTest {
   @BeforeEach
   void setup() {
     when(seasonService.getAllSeasons(any(Pageable.class))).thenReturn(Page.empty());
-    view = new SeasonListView(seasonService, securityUtils);
+    view = new SeasonListView(seasonService, securityUtils, mock(NotificationService.class));
     UI.getCurrent().add(view);
   }
 

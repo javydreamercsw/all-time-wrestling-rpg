@@ -69,6 +69,7 @@ import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.AbilityReminderTextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
+import com.github.javydreamercsw.management.ui.component.AdjudicationTable;
 import com.github.javydreamercsw.management.ui.component.CommentaryComponent;
 import com.github.javydreamercsw.management.ui.component.DashboardCard;
 import com.github.javydreamercsw.management.ui.component.RingsideActionComponent;
@@ -838,85 +839,50 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     boolean hasPlayerWrestler =
         wrestlers.stream().filter(Objects::nonNull).anyMatch(w -> w.getAccount() != null);
     if (!isPromo && canSubmitResult && hasPlayerWrestler) {
-      VerticalLayout momentumLayout = new VerticalLayout();
-      momentumLayout.setPadding(false);
-      momentumLayout.setSpacing(false);
-      momentumLayout.add(new Span("Final Momentum per Wrestler"));
+      // One compact row per player wrestler: momentum / stamina / health side
+      // by side (the old three stacked field groups scrolled for screenfuls).
+      Span statsHeader = new Span("Final Stats per Wrestler");
+      statsHeader.addClassNames(FontSize.SMALL, FontWeight.SEMIBOLD, Margin.Bottom.XSMALL);
+      winnersCard.add(statsHeader);
       for (Wrestler w :
           wrestlers.stream()
               .filter(Objects::nonNull)
               .filter(w -> w.getAccount() != null)
               .toList()) {
-        IntegerField field = new IntegerField(w.getName());
-        field.setId("final-momentum-" + w.getId());
-        field.setPlaceholder("e.g. 3");
-        field.setWidthFull();
-        Integer existing =
+        Integer existingMomentum =
             segment.getParticipants().stream()
                 .filter(p -> w.getId().equals(p.getWrestler().getId()))
                 .map(SegmentParticipant::getFinalMomentum)
                 .filter(Objects::nonNull)
                 .findFirst()
                 .orElse(null);
-        field.setValue(existing);
-        momentumFields.put(w.getId(), field);
-        momentumLayout.add(field);
-      }
-      winnersCard.add(momentumLayout);
-
-      VerticalLayout staminaLayout = new VerticalLayout();
-      staminaLayout.setPadding(false);
-      staminaLayout.setSpacing(false);
-      staminaLayout.add(new Span("Final Stamina per Wrestler"));
-      for (Wrestler w :
-          wrestlers.stream()
-              .filter(Objects::nonNull)
-              .filter(w -> w.getAccount() != null)
-              .toList()) {
-        IntegerField field = new IntegerField(w.getName());
-        field.setId("final-stamina-" + w.getId());
-        field.setPlaceholder("e.g. 3");
-        field.setWidthFull();
-        Integer existing =
+        Integer existingStamina =
             segment.getParticipants().stream()
                 .filter(p -> w.getId().equals(p.getWrestler().getId()))
                 .map(SegmentParticipant::getFinalStamina)
                 .filter(Objects::nonNull)
                 .findFirst()
                 .orElse(null);
-        field.setValue(existing);
-        staminaFields.put(w.getId(), field);
-        staminaLayout.add(field);
-      }
-      winnersCard.add(staminaLayout);
-
-      VerticalLayout healthLayout = new VerticalLayout();
-      healthLayout.setPadding(false);
-      healthLayout.setSpacing(false);
-      healthLayout.add(new Span("Final Health per Wrestler"));
-      for (Wrestler w :
-          wrestlers.stream()
-              .filter(Objects::nonNull)
-              .filter(w -> w.getAccount() != null)
-              .toList()) {
-        IntegerField field = new IntegerField(w.getName());
-        field.setId("final-health-" + w.getId());
-        field.setPlaceholder("Starting: " + w.getStartingHealth());
-        field.setMin(0);
-        field.setMax(w.getStartingHealth());
-        field.setWidthFull();
-        Integer existing =
+        Integer existingHealth =
             segment.getParticipants().stream()
                 .filter(p -> w.getId().equals(p.getWrestler().getId()))
                 .map(SegmentParticipant::getFinalHealth)
                 .filter(Objects::nonNull)
                 .findFirst()
                 .orElse(null);
-        field.setValue(existing);
-        healthFields.put(w.getId(), field);
-        healthLayout.add(field);
+        var built =
+            AdjudicationTable.wrestlerRow(
+                w.getName(),
+                w.getId(),
+                w.getStartingHealth(),
+                existingMomentum,
+                existingStamina,
+                existingHealth);
+        momentumFields.put(w.getId(), built.momentum());
+        staminaFields.put(w.getId(), built.stamina());
+        healthFields.put(w.getId(), built.health());
+        winnersCard.add(built.row());
       }
-      winnersCard.add(healthLayout);
 
       // Bonus match data — shown for campaign matches to enable bonus VP evaluation
       var activeCampaign =

@@ -48,7 +48,9 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @Route(value = "booker", layout = MainLayout.class)
@@ -120,6 +122,8 @@ public class BookerView extends VerticalLayout {
 
     HorizontalLayout buttons = new HorizontalLayout(createShow, createWrestler, createRivalry);
     buttons.setSpacing(true);
+    // Wrap instead of overflowing on narrow (phone) viewports.
+    buttons.addClassNames(LumoUtility.FlexWrap.WRAP);
 
     VerticalLayout card = new VerticalLayout(title, buttons);
     card.addClassNames(
@@ -146,16 +150,24 @@ public class BookerView extends VerticalLayout {
     Grid<Show> showsGrid = createUpcomingShowsGrid();
     Grid<Rivalry> rivalriesGrid = createActiveRivalriesGrid();
 
-    Div pages = new Div(rosterGrid, showsGrid, rivalriesGrid);
+    // Wrap each tab grid in the touch-scroll container so wide grids scroll on phones
+    Div rosterWrapper = new Div(rosterGrid);
+    rosterWrapper.addClassName("grid-scroll-container");
+    Div showsWrapper = new Div(showsGrid);
+    showsWrapper.addClassName("grid-scroll-container");
+    Div rivalriesWrapper = new Div(rivalriesGrid);
+    rivalriesWrapper.addClassName("grid-scroll-container");
+
+    Div pages = new Div(rosterWrapper, showsWrapper, rivalriesWrapper);
     pages.setSizeFull();
-    showsGrid.setVisible(false);
-    rivalriesGrid.setVisible(false);
+    showsWrapper.setVisible(false);
+    rivalriesWrapper.setVisible(false);
 
     Map<Tab, Component> tabsToPages =
         Map.of(
-            tabs.getTabAt(0), rosterGrid,
-            tabs.getTabAt(1), showsGrid,
-            tabs.getTabAt(2), rivalriesGrid);
+            tabs.getTabAt(0), rosterWrapper,
+            tabs.getTabAt(1), showsWrapper,
+            tabs.getTabAt(2), rivalriesWrapper);
 
     tabs.addSelectedChangeListener(
         event -> {
@@ -175,12 +187,22 @@ public class BookerView extends VerticalLayout {
     Grid.Column<Wrestler> nameColumn =
         grid.addColumn(Wrestler::getName).setHeader("Name").setSortable(true);
 
+    // Resolve tiers once per render pass instead of a per-row service call
+    // (the N+1 the audit flagged); rows without a state fall back to UNKNOWN.
+    List<Wrestler> roster = wrestlerService.findAll();
+    Map<Long, WrestlerState> statesByWrestler =
+        roster.stream()
+            .collect(
+                Collectors.toMap(
+                    Wrestler::getId,
+                    w ->
+                        wrestlerService.getOrCreateState(
+                            w.getId(), universeContextService.getCurrentUniverseId())));
+
     grid.addColumn(
             wrestler -> {
-              WrestlerState state =
-                  wrestlerService.getOrCreateState(
-                      wrestler.getId(), universeContextService.getCurrentUniverseId());
-              return state.getTier().getDisplayWithEmoji();
+              WrestlerState state = statesByWrestler.get(wrestler.getId());
+              return state != null ? state.getTier().getDisplayWithEmoji() : "—";
             })
         .setHeader("Tier")
         .setSortable(true);
@@ -188,7 +210,7 @@ public class BookerView extends VerticalLayout {
     grid.addColumn(Wrestler::getGender).setHeader("Gender").setSortable(true);
     grid.addColumn(Wrestler::getIsPlayer).setHeader("Is Player?").setSortable(true);
 
-    grid.setItems(wrestlerService.findAll());
+    grid.setItems(roster);
     grid.setSizeFull();
 
     // Default sorting by Name

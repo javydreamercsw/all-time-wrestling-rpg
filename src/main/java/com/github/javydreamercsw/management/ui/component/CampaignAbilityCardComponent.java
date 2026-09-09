@@ -42,11 +42,11 @@ public class CampaignAbilityCardComponent extends Div {
 
     // Alignment-based colors
     if (card.getAlignmentType() == AlignmentType.HEEL) {
-      getStyle().set("background-color", "#fff5f5"); // Very light red
-      getStyle().set("border-left", "5px solid #ffcdd2"); // Light red border
+      getStyle().set("background-color", "var(--lumo-error-color-10pct)"); // Light error tint
+      getStyle().set("border-left", "5px solid var(--lumo-error-color)"); // Error border
     } else {
-      getStyle().set("background-color", "#f1f8e9"); // Very light green
-      getStyle().set("border-left", "5px solid #c8e6c9"); // Light green border
+      getStyle().set("background-color", "var(--lumo-success-color-10pct)"); // Light success tint
+      getStyle().set("border-left", "5px solid var(--lumo-success-color)"); // Success border
     }
 
     // Title and Level
@@ -56,11 +56,11 @@ public class CampaignAbilityCardComponent extends Div {
     Span levelBadge = new Span("LVL " + card.getLevel());
     levelBadge.getElement().getThemeList().add("badge pill small");
     if (card.getAlignmentType() == AlignmentType.HEEL) {
-      levelBadge.getStyle().set("background-color", "#ef9a9a");
-      levelBadge.getStyle().set("color", "white");
+      levelBadge.getStyle().set("background-color", "var(--lumo-error-color)");
+      levelBadge.getStyle().set("color", "var(--lumo-error-contrast-color)");
     } else {
-      levelBadge.getStyle().set("background-color", "#a5d6a7");
-      levelBadge.getStyle().set("color", "white");
+      levelBadge.getStyle().set("background-color", "var(--lumo-success-color)");
+      levelBadge.getStyle().set("color", "var(--lumo-success-contrast-color)");
     }
 
     Div header = new Div(title, levelBadge);

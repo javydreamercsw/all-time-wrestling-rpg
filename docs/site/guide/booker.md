@@ -106,6 +106,14 @@ Browse all active rivalries between wrestlers. Click any row to open the rivalry
 
 ---
 
+## Add Beat to Story Arc
+
+Append new beats to an existing story arc after it has been saved. The Add Beat dialog offers the same match type, stipulation, winner control and notes fields as the creation wizard, plus external participants — an opponent and run-in extras from outside the feud, with an AI-assisted opponent suggestion.
+
+![Add Beat to Story Arc](/screenshots/booker-story-arc-add-beat.png)
+
+---
+
 ## Dashboard with News Ticker
 
 Latest headlines and rumors are visible directly on the booker dashboard.

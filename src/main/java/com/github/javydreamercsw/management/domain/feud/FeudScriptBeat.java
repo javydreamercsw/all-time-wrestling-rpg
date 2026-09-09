@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.domain.show.reservation.ShowSegmentR
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -35,10 +36,17 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import org.jspecify.annotations.Nullable;
@@ -82,7 +90,8 @@ public class FeudScriptBeat extends AbstractEntity<Long> {
   @Column(name = "winner_control", nullable = false, length = 16)
   private FeudScriptWinnerControl winnerControl = FeudScriptWinnerControl.AI_PICKS;
 
-  @ManyToOne(fetch = FetchType.LAZY)
+  /** EAGER: the beat-edit dialog's planned-winner combo reads names on detached grids. */
+  @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "planned_winner_id")
   @JsonIgnoreProperties({"rivalries", "injuries", "deck", "titleReigns", "faction"})
   @Nullable private Wrestler plannedWinner;
@@ -109,6 +118,58 @@ public class FeudScriptBeat extends AbstractEntity<Long> {
   @JoinColumn(name = "contender_title_id")
   @JsonIgnoreProperties({"titleReigns", "challengers"})
   @Nullable private Title contenderTitle;
+
+  /**
+   * External (non-feud) wrestlers involved in this beat only. EAGER because beats render in
+   * detached grids and are loaded via a native query that cannot carry an {@code @EntityGraph};
+   * cardinality is tiny (a few externals per beat).
+   */
+  @OneToMany(
+      mappedBy = "beat",
+      cascade = CascadeType.ALL,
+      orphanRemoval = true,
+      fetch = FetchType.EAGER)
+  @OrderBy("id ASC")
+  private List<FeudScriptBeatParticipant> externalParticipants = new ArrayList<>();
+
+  /** Adds (or updates the role of) an external participant; no-op when already present. */
+  public void addExternalParticipant(Wrestler wrestler, FeudBeatParticipantRole role) {
+    for (FeudScriptBeatParticipant existing : externalParticipants) {
+      if (Objects.equals(existing.getWrestler().getId(), wrestler.getId())) {
+        existing.setRole(role);
+        return;
+      }
+    }
+    FeudScriptBeatParticipant participant = new FeudScriptBeatParticipant();
+    participant.setBeat(this);
+    participant.setWrestler(wrestler);
+    participant.setRole(role);
+    externalParticipants.add(participant);
+  }
+
+  public List<Wrestler> getExternalOpponents() {
+    return externalParticipants.stream()
+        .filter(p -> p.getRole() == FeudBeatParticipantRole.OPPONENT)
+        .map(FeudScriptBeatParticipant::getWrestler)
+        .collect(Collectors.toList());
+  }
+
+  public List<Wrestler> getExternalExtras() {
+    return externalParticipants.stream()
+        .filter(p -> p.getRole() == FeudBeatParticipantRole.EXTRA)
+        .map(FeudScriptBeatParticipant::getWrestler)
+        .collect(Collectors.toList());
+  }
+
+  public Set<Long> getExternalParticipantIds() {
+    return externalParticipants.stream()
+        .map(p -> p.getWrestler().getId())
+        .collect(Collectors.toSet());
+  }
+
+  public boolean hasExternals() {
+    return !externalParticipants.isEmpty();
+  }
 
   /** Formats this beat as a one-line AI instruction. */
   public String toAiInstruction() {

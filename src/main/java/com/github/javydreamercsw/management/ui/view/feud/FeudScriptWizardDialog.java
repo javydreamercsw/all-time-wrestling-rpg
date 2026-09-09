@@ -19,14 +19,12 @@ package com.github.javydreamercsw.management.ui.view.feud;
 import com.github.javydreamercsw.management.domain.feud.FeudLength;
 import com.github.javydreamercsw.management.domain.feud.FeudScript;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptBeat;
-import com.github.javydreamercsw.management.domain.feud.FeudScriptBeatStatus;
-import com.github.javydreamercsw.management.domain.feud.FeudScriptWinnerControl;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.feud.FeudBeatAssistantService;
 import com.github.javydreamercsw.management.service.feud.FeudScriptService;
+import com.vaadin.flow.component.ModalityMode;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.checkbox.Checkbox;
-import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.H3;
@@ -37,7 +35,6 @@ import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
-import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,15 +50,12 @@ import java.util.stream.Collectors;
  */
 public class FeudScriptWizardDialog extends Dialog {
 
-  private static final String BOOKER_PICKS = "Booker Picks";
-  private static final String AI_PICKS = "AI Picks";
-  private static final String SYSTEM_ROLL = "System Roll";
-
   private final List<Wrestler> allWrestlers;
   private final List<String> segmentTypeNames;
   private final List<String> segmentRuleNames;
   private final FeudLength defaultLength;
   private final FeudScriptService feudScriptService;
+  private final FeudBeatAssistantService opponentAssistant;
   private final Runnable onComplete;
 
   private int currentStep = 1;
@@ -75,14 +69,13 @@ public class FeudScriptWizardDialog extends Dialog {
   private RadioButtonGroup<FeudLength> lengthGroup;
 
   // Step 3
-  private final List<BeatRow> beatRows = new ArrayList<>();
+  private final List<BeatEditor> beatRows = new ArrayList<>();
   private VerticalLayout beatContainer;
 
   // Nav
-  private Button backButton;
-  private Button nextButton;
-  private Button cancelButton;
-  private H3 stepTitle;
+  private final Button backButton;
+  private final Button nextButton;
+  private final H3 stepTitle;
 
   public FeudScriptWizardDialog(
       List<Wrestler> allWrestlers,
@@ -91,18 +84,42 @@ public class FeudScriptWizardDialog extends Dialog {
       int defaultMaxPle,
       FeudScriptService feudScriptService,
       Runnable onComplete) {
+    this(
+        allWrestlers,
+        segmentTypeNames,
+        segmentRuleNames,
+        defaultMaxPle,
+        feudScriptService,
+        null,
+        onComplete);
+  }
+
+  /**
+   * Full wizard: {@code opponentAssistant} enables the AI Suggest Opponent button on beat rows
+   * (when non-null). External candidates are derived per beat row from the step-1 wrestler
+   * selection — anyone on the arc becomes a feud participant, everyone else is external.
+   */
+  public FeudScriptWizardDialog(
+      List<Wrestler> allWrestlers,
+      List<String> segmentTypeNames,
+      List<String> segmentRuleNames,
+      int defaultMaxPle,
+      FeudScriptService feudScriptService,
+      FeudBeatAssistantService opponentAssistant,
+      Runnable onComplete) {
     this.allWrestlers = allWrestlers;
     this.segmentTypeNames = segmentTypeNames;
     this.segmentRuleNames = segmentRuleNames;
     this.defaultLength = FeudLength.fromPleCount(defaultMaxPle);
     this.feudScriptService = feudScriptService;
+    this.opponentAssistant = opponentAssistant;
     this.onComplete = onComplete;
 
     setWidth("min(1400px, 98vw)");
     setHeight("min(90vh, 90vh)");
     setDraggable(true);
     setResizable(true);
-    setModal(false);
+    setModality(ModalityMode.STRICT);
     setCloseOnEsc(true);
     setCloseOnOutsideClick(false);
 
@@ -111,7 +128,7 @@ public class FeudScriptWizardDialog extends Dialog {
     nextButton = new Button("Next", e -> navigateForward());
     nextButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     backButton.setVisible(false);
-    cancelButton = new Button("Cancel", e -> close());
+    Button cancelButton = new Button("Cancel", e -> close());
     cancelButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
 
     content.setPadding(false);
@@ -191,7 +208,7 @@ public class FeudScriptWizardDialog extends Dialog {
     if (beatRows.isEmpty()) {
       addBeatRow();
     } else {
-      beatRows.forEach(row -> beatContainer.add(row.layout()));
+      beatRows.forEach(beatContainer::add);
     }
   }
 
@@ -238,8 +255,9 @@ public class FeudScriptWizardDialog extends Dialog {
 
     try {
       FeudScript script = feudScriptService.createFromWizard(name, wrestlers, maxPle);
-      for (BeatRow row : beatRows) {
-        FeudScriptBeat beat = row.toBeat();
+      for (BeatEditor editor : beatRows) {
+        editor.bindScriptContext(script, wrestlers);
+        FeudScriptBeat beat = editor.toBeat();
         feudScriptService.addBeat(script, beat);
       }
       Notification.show("Story arc created!", 3000, Notification.Position.BOTTOM_END)
@@ -258,104 +276,27 @@ public class FeudScriptWizardDialog extends Dialog {
 
   private void addBeatRow() {
     List<Wrestler> participants = new ArrayList<>(wrestlerPicker.getValue());
-    BeatRow row = new BeatRow(participants, segmentTypeNames, segmentRuleNames);
-    beatRows.add(row);
-    beatContainer.add(row.layout());
+    // Everyone not on the arc is an external candidate for this row (recomputed so step-1
+    // changes are always reflected).
+    List<Wrestler> externalCandidates =
+        allWrestlers.stream()
+            .filter(w -> participants.stream().noneMatch(p -> p.getId().equals(w.getId())))
+            .collect(Collectors.toList());
+    BeatEditor editor =
+        new BeatEditor(
+            participants,
+            segmentTypeNames,
+            segmentRuleNames,
+            externalCandidates,
+            true,
+            this::removeBeatRow,
+            opponentAssistant);
+    beatRows.add(editor);
+    beatContainer.add(editor);
   }
 
-  /** One row in the beats editor — holds all fields for a single FeudScriptBeat. */
-  private class BeatRow {
-    private final ComboBox<String> segmentTypeCombo;
-    private final ComboBox<String> segmentRuleCombo;
-    private final RadioButtonGroup<String> winnerControlRadio;
-    private final ComboBox<Wrestler> plannedWinnerCombo;
-    private final Checkbox culminationCheck;
-    private final TextArea notesField;
-    private final VerticalLayout rowLayout;
-
-    BeatRow(List<Wrestler> participants, List<String> types, List<String> rules) {
-      segmentTypeCombo = new ComboBox<>("Match Type");
-      segmentTypeCombo.setItems(types);
-      segmentTypeCombo.setRequired(true);
-      segmentTypeCombo.setWidth("250px");
-
-      segmentRuleCombo = new ComboBox<>("Stipulation");
-      segmentRuleCombo.setItems(rules);
-      segmentRuleCombo.setPlaceholder("None");
-      segmentRuleCombo.setWidth("220px");
-      segmentRuleCombo.setClearButtonVisible(true);
-
-      winnerControlRadio = new RadioButtonGroup<>("Winner");
-      winnerControlRadio.setItems(BOOKER_PICKS, AI_PICKS, SYSTEM_ROLL);
-      winnerControlRadio.setValue(AI_PICKS);
-
-      plannedWinnerCombo = new ComboBox<>("Planned Winner");
-      plannedWinnerCombo.setItems(participants);
-      plannedWinnerCombo.setItemLabelGenerator(Wrestler::getName);
-      plannedWinnerCombo.setVisible(false);
-      plannedWinnerCombo.setWidth("180px");
-
-      winnerControlRadio.addValueChangeListener(
-          e -> plannedWinnerCombo.setVisible(BOOKER_PICKS.equals(e.getValue())));
-
-      culminationCheck = new Checkbox("Culmination / Blowoff");
-      notesField = new TextArea("Story Notes");
-      notesField.setPlaceholder("Context for the AI narrator…");
-      notesField.setWidthFull();
-      notesField.setMaxHeight("120px");
-
-      Button removeBtn = new Button("Remove", ev -> removeRow(this));
-      removeBtn.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY);
-      removeBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
-
-      HorizontalLayout topRow =
-          new HorizontalLayout(
-              segmentTypeCombo,
-              segmentRuleCombo,
-              winnerControlRadio,
-              plannedWinnerCombo,
-              culminationCheck,
-              removeBtn);
-      topRow.setAlignItems(FlexComponent.Alignment.END);
-      topRow.setWidthFull();
-
-      rowLayout = new VerticalLayout(topRow, notesField);
-      rowLayout.setPadding(true);
-      rowLayout.setSpacing(false);
-      rowLayout.getStyle().set("border", "1px solid var(--lumo-contrast-20pct)");
-      rowLayout.getStyle().set("border-radius", "var(--lumo-border-radius-m)");
-      rowLayout.getStyle().set("margin-bottom", "var(--lumo-space-s)");
-    }
-
-    VerticalLayout layout() {
-      return rowLayout;
-    }
-
-    FeudScriptBeat toBeat() {
-      FeudScriptBeat beat = new FeudScriptBeat();
-      beat.setSegmentType(segmentTypeCombo.getValue());
-      beat.setSegmentRule(segmentRuleCombo.getValue());
-      beat.setWinnerControl(toWinnerControl(winnerControlRadio.getValue()));
-      if (BOOKER_PICKS.equals(winnerControlRadio.getValue())) {
-        beat.setPlannedWinner(plannedWinnerCombo.getValue());
-      }
-      beat.setCulmination(culminationCheck.getValue());
-      beat.setNotes(notesField.getValue());
-      beat.setBeatStatus(FeudScriptBeatStatus.PENDING);
-      return beat;
-    }
-
-    private FeudScriptWinnerControl toWinnerControl(String label) {
-      return switch (label) {
-        case BOOKER_PICKS -> FeudScriptWinnerControl.BOOKER_PICKS;
-        case SYSTEM_ROLL -> FeudScriptWinnerControl.SYSTEM_ROLL;
-        default -> FeudScriptWinnerControl.AI_PICKS;
-      };
-    }
-  }
-
-  private void removeRow(BeatRow row) {
+  private void removeBeatRow(BeatEditor row) {
     beatRows.remove(row);
-    beatContainer.remove(row.layout());
+    beatContainer.remove(row);
   }
 }

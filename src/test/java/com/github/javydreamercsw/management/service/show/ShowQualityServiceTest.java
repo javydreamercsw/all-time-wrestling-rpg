@@ -39,6 +39,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateReposit
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.*;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -423,5 +424,30 @@ class ShowQualityServiceTest {
     p.setIsWinner(false);
     p.setCardsPlayed(new HashMap<>());
     return p;
+  }
+
+  @Test
+  void setQualityScoreAcceptsFullRangeAndNull() {
+    Show s = new Show();
+    s.setQualityScore(1.0);
+    Assertions.assertThat(s.getQualityScore()).isEqualTo(1.0);
+    s.setQualityScore(5.0);
+    Assertions.assertThat(s.getQualityScore()).isEqualTo(5.0);
+    s.setQualityScore(3.5);
+    Assertions.assertThat(s.getQualityScore()).isEqualTo(3.5);
+    s.setQualityScore(null);
+    Assertions.assertThat(s.getQualityScore()).isNull();
+  }
+
+  @Test
+  void setQualityScoreRejectsOutOfRangeValues() {
+    Show s = new Show();
+    Assertions.assertThatIllegalArgumentException()
+        .isThrownBy(() -> s.setQualityScore(5.5))
+        .withMessageContaining("between 1.0 and 5.0");
+    Assertions.assertThatThrownBy(() -> s.setQualityScore(0.9))
+        .isInstanceOf(IllegalArgumentException.class);
+    Assertions.assertThatThrownBy(() -> s.setQualityScore(100.0))
+        .isInstanceOf(IllegalArgumentException.class);
   }
 }

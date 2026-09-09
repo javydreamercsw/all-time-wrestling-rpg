@@ -92,11 +92,8 @@ class ShowPlanningValidationDocsE2ETest extends AbstractE2ETest {
     rivalry.setStartedDate(Instant.now());
     rivalryRepository.saveAndFlush(rivalry);
 
-    driver.get(
-        "http://localhost:" + serverPort + getContextPath() + "/show-planning/" + testShow.getId());
-    waitForVaadinClientToLoad();
-
-    waitForVaadinElement(driver, By.id("show-planning-context-area"));
+    navigateToAndWaitForElement(
+        "show-planning/" + testShow.getId(), By.id("show-planning-context-area"));
     waitForNonEmptyText(By.id("show-planning-context-area"));
 
     // Propose segments via Mock AI (won't cover the rivalry above)
@@ -142,11 +139,8 @@ class ShowPlanningValidationDocsE2ETest extends AbstractE2ETest {
     hotRivalry.setStartedDate(Instant.now());
     rivalryRepository.saveAndFlush(hotRivalry);
 
-    driver.get(
-        "http://localhost:" + serverPort + getContextPath() + "/show-planning/" + testShow.getId());
-    waitForVaadinClientToLoad();
-
-    waitForVaadinElement(driver, By.id("show-planning-context-area"));
+    navigateToAndWaitForElement(
+        "show-planning/" + testShow.getId(), By.id("show-planning-context-area"));
     waitForNonEmptyText(By.id("show-planning-context-area"));
 
     // Load context and propose segments

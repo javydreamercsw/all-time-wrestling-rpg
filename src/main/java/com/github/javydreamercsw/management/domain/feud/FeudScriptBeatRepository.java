@@ -47,4 +47,20 @@ public interface FeudScriptBeatRepository extends JpaRepository<FeudScriptBeat, 
           + " AND r.wrestler2.id IN :wrestlerIds"
           + " ORDER BY b.beatOrder ASC")
   List<FeudScriptBeat> findPendingBeatsForWrestlers(@Param("wrestlerIds") List<Long> wrestlerIds);
+
+  /**
+   * Next pending beat (lowest beatOrder) of every ACTIVE script, regardless of target show. Beats
+   * without a targetShow never match {@link #findPendingBeatsForShow}, so planning falls back to
+   * this to keep arcs moving.
+   */
+  @Query(
+      value =
+          "SELECT b.* FROM feud_script_beat b"
+              + " JOIN feud_script s ON s.feud_script_id = b.script_id"
+              + " WHERE s.status = 'ACTIVE'"
+              + " AND b.beat_status = 'PENDING'"
+              + " AND b.beat_order = (SELECT MIN(b2.beat_order) FROM feud_script_beat b2"
+              + "   WHERE b2.script_id = b.script_id AND b2.beat_status = 'PENDING')",
+      nativeQuery = true)
+  List<FeudScriptBeat> findNextPendingBeatPerActiveScript();
 }
