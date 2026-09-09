@@ -84,7 +84,7 @@ Live tournament view shows completed round results and the pending next round. T
 
 ## Story Arc Wizard
 
-Three-step wizard for scripting a feud arc: select wrestlers, name the arc and choose its length, then add ordered beats (match type, stipulation, winner control). Each beat can also involve wrestlers from outside the feud — an External Opponent and run-in Extras — and the ✨ AI Suggest Opponent button picks a fitting candidate from the eligible roster for you to confirm or override.
+Three-step wizard for scripting a feud arc: select wrestlers, name the arc and choose its length, then add ordered beats (match type, stipulation, winner control).
 
 ![Story Arc Wizard](/screenshots/booker-story-arc-wizard.png)
 
@@ -92,7 +92,7 @@ Three-step wizard for scripting a feud arc: select wrestlers, name the arc and c
 
 ## Rivalry Detail
 
-View rivalry details including heat, storyline notes, and dates. Use the Story Arc button to script a multi-beat feud arc for this rivalry. Pending beats on an arc can be edited (✎) or removed (✕) after creation — completed and skipped beats are locked as history.
+View rivalry details including heat, storyline notes, and dates. Use the Story Arc button to script a multi-beat feud arc for this rivalry.
 
 ![Rivalry Detail](/screenshots/booker-rivalry-detail.png)
 
@@ -103,6 +103,14 @@ View rivalry details including heat, storyline notes, and dates. Use the Story A
 Browse all active rivalries between wrestlers. Click any row to open the rivalry detail view where you can manage story arc scripts.
 
 ![Rivalry List](/screenshots/booker-rivalry-list.png)
+
+---
+
+## Add Beat to Story Arc
+
+Append new beats to an existing story arc after it has been saved. The Add Beat dialog offers the same match type, stipulation, winner control and notes fields as the creation wizard, plus external participants — an opponent and run-in extras from outside the feud, with an AI-assisted opponent suggestion.
+
+![Add Beat to Story Arc](/screenshots/booker-story-arc-add-beat.png)
 
 ---
 

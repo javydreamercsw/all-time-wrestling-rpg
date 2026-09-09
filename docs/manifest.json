@@ -908,7 +908,7 @@
     "id": "booker-booker-story-arc-add-beat",
     "category": "Booker",
     "title": "Add Beat to Story Arc",
-    "description": "Append new beats to an existing story arc after it has been saved. The Add Beat dialog offers the same match type, stipulation, winner control and notes fields as the creation wizard.",
+    "description": "Append new beats to an existing story arc after it has been saved. The Add Beat dialog offers the same match type, stipulation, winner control and notes fields as the creation wizard, plus external participants — an opponent and run-in extras from outside the feud, with an AI-assisted opponent suggestion.",
     "imagePath": "screenshots/booker-story-arc-add-beat.png",
     "order": 0
   } ]
