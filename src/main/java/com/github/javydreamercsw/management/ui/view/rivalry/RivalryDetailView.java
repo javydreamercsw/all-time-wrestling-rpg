@@ -18,8 +18,6 @@ package com.github.javydreamercsw.management.ui.view.rivalry;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.feud.FeudScript;
-import com.github.javydreamercsw.management.domain.feud.FeudScriptBeat;
-import com.github.javydreamercsw.management.domain.feud.FeudScriptBeatStatus;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
@@ -29,15 +27,15 @@ import com.github.javydreamercsw.management.service.feud.FeudScriptService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
+import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import com.github.javydreamercsw.management.ui.view.feud.AddBeatDialog;
-import com.github.javydreamercsw.management.ui.view.feud.EditBeatDialog;
+import com.github.javydreamercsw.management.ui.view.feud.FeudScriptCard;
 import com.github.javydreamercsw.management.ui.view.feud.FeudScriptWizardDialog;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dialog.Dialog;
-import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Main;
@@ -73,6 +71,8 @@ public class RivalryDetailView extends Main implements HasUrlParameter<Long> {
   private final SegmentRuleService segmentRuleService;
   private final FeudBeatAssistantService feudBeatAssistantService;
   private final SecurityUtils securityUtils;
+  private final ShowService showService;
+  private final TitleService titleService;
 
   private final VerticalLayout content = new VerticalLayout();
   private Long currentRivalryId;
@@ -84,7 +84,9 @@ public class RivalryDetailView extends Main implements HasUrlParameter<Long> {
       @NonNull final SegmentTypeService segmentTypeService,
       @NonNull final SegmentRuleService segmentRuleService,
       @NonNull final FeudBeatAssistantService feudBeatAssistantService,
-      @NonNull final SecurityUtils securityUtils) {
+      @NonNull final SecurityUtils securityUtils,
+      @NonNull final ShowService showService,
+      @NonNull final TitleService titleService) {
     this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
     this.feudScriptService = feudScriptService;
@@ -92,6 +94,8 @@ public class RivalryDetailView extends Main implements HasUrlParameter<Long> {
     this.segmentRuleService = segmentRuleService;
     this.feudBeatAssistantService = feudBeatAssistantService;
     this.securityUtils = securityUtils;
+    this.showService = showService;
+    this.titleService = titleService;
 
     setSizeFull();
     addClassNames(
@@ -166,196 +170,22 @@ public class RivalryDetailView extends Main implements HasUrlParameter<Long> {
       H3 arcsHeader = new H3("Story Arcs");
       arcsHeader.addClassNames(LumoUtility.Margin.Top.MEDIUM);
       content.add(arcsHeader);
-      scripts.forEach(script -> content.add(buildScriptCard(rivalry, script)));
+      FeudScriptCard.EditorServices services =
+          new FeudScriptCard.EditorServices(
+              feudScriptService,
+              segmentTypeService,
+              segmentRuleService,
+              feudBeatAssistantService,
+              securityUtils,
+              wrestlerService,
+              showService,
+              titleService);
+      scripts.forEach(
+          script ->
+              content.add(
+                  new FeudScriptCard(
+                      script, FeudScriptCard.participantsOf(script), services, this::reload)));
     }
-  }
-
-  private VerticalLayout buildScriptCard(Rivalry rivalry, FeudScript script) {
-    VerticalLayout card = new VerticalLayout();
-    card.setPadding(true);
-    card.setSpacing(true);
-    card.addClassNames(
-        LumoUtility.Border.ALL, LumoUtility.BorderRadius.MEDIUM, LumoUtility.Margin.Bottom.SMALL);
-
-    Span nameSpan = new Span(script.getName());
-    nameSpan.addClassNames(LumoUtility.FontSize.LARGE, LumoUtility.FontWeight.SEMIBOLD);
-
-    Span statusBadge = new Span(script.getStatus().name());
-    statusBadge.getElement().getThemeList().add("badge");
-    if ("COMPLETED".equals(script.getStatus().name())) {
-      statusBadge.getElement().getThemeList().add("success");
-    } else if ("CANCELLED".equals(script.getStatus().name())) {
-      statusBadge.getElement().getThemeList().add("error");
-    } else {
-      statusBadge.getElement().getThemeList().add("contrast");
-    }
-
-    HorizontalLayout header = new HorizontalLayout(nameSpan, statusBadge);
-    header.setAlignItems(FlexComponent.Alignment.CENTER);
-    header.setFlexGrow(1, nameSpan);
-
-    boolean editable =
-        securityUtils.canCreate()
-            && !"COMPLETED".equals(script.getStatus().name())
-            && !"CANCELLED".equals(script.getStatus().name());
-
-    if (editable) {
-      Button editButton = new Button("Edit");
-      editButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
-      editButton.addClickListener(e -> openEditDialog(script));
-
-      Button cancelButton = new Button("Cancel Arc");
-      cancelButton.addThemeVariants(
-          ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_ERROR);
-      cancelButton.addClickListener(e -> confirmCancelScript(script));
-
-      Button addBeatButton = new Button("+ Add Beat");
-      addBeatButton.addThemeVariants(
-          ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SUCCESS);
-      addBeatButton.addClickListener(e -> openAddBeatDialog(rivalry, script));
-
-      header.add(addBeatButton, editButton, cancelButton);
-    }
-
-    List<FeudScriptBeat> beats =
-        script.getBeats().stream()
-            .sorted(Comparator.comparing(FeudScriptBeat::getBeatOrder))
-            .collect(Collectors.toList());
-
-    if (beats.isEmpty()) {
-      card.add(header, new Paragraph("No beats defined."));
-      return card;
-    }
-
-    Grid<FeudScriptBeat> beatGrid = new Grid<>(FeudScriptBeat.class, false);
-    beatGrid.addColumn(FeudScriptBeat::getBeatOrder).setHeader("#").setWidth("4em").setFlexGrow(0);
-    beatGrid.addColumn(FeudScriptBeat::getSegmentType).setHeader("Match Type").setFlexGrow(1);
-    beatGrid
-        .addColumn(b -> b.getSegmentRule() != null ? b.getSegmentRule() : "—")
-        .setHeader("Stipulation")
-        .setFlexGrow(1);
-    beatGrid
-        .addColumn(
-            b ->
-                b.getExternalParticipants().isEmpty()
-                    ? "—"
-                    : b.getExternalParticipants().stream()
-                        .map(
-                            p ->
-                                p.getWrestler().getName()
-                                    + " ("
-                                    + p.getRole().getDisplayName()
-                                    + ")")
-                        .collect(Collectors.joining(", ")))
-        .setHeader("External")
-        .setFlexGrow(1);
-    beatGrid.addColumn(b -> b.getWinnerControl().name()).setHeader("Winner Control").setFlexGrow(1);
-    beatGrid
-        .addColumn(b -> b.isCulmination() ? "★ Blowoff" : "")
-        .setHeader("")
-        .setWidth("6em")
-        .setFlexGrow(0);
-    beatGrid.addColumn(b -> b.getBeatStatus().name()).setHeader("Status").setFlexGrow(1);
-
-    if (editable) {
-      beatGrid
-          .addComponentColumn(
-              beat -> {
-                if (beat.getBeatStatus() == FeudScriptBeatStatus.PENDING) {
-                  HorizontalLayout actions = new HorizontalLayout();
-                  actions.setSpacing(false);
-                  actions.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
-
-                  Button editBtn = new Button("✎");
-                  editBtn.addThemeVariants(
-                      ButtonVariant.LUMO_SMALL,
-                      ButtonVariant.LUMO_TERTIARY,
-                      ButtonVariant.LUMO_CONTRAST);
-                  editBtn.addClickListener(e -> openEditBeatDialog(rivalry, script, beat));
-                  actions.add(editBtn);
-
-                  Button removeBtn = new Button("✕");
-                  removeBtn.addThemeVariants(
-                      ButtonVariant.LUMO_SMALL,
-                      ButtonVariant.LUMO_TERTIARY,
-                      ButtonVariant.LUMO_ERROR);
-                  removeBtn.addClickListener(e -> confirmRemoveBeat(script, beat));
-                  actions.add(removeBtn);
-                  return actions;
-                }
-                return new Span();
-              })
-          .setWidth("6em")
-          .setFlexGrow(0);
-    }
-
-    beatGrid.setItems(beats);
-    beatGrid.setAllRowsVisible(true);
-
-    card.add(header, beatGrid);
-    return card;
-  }
-
-  private void openAddBeatDialog(Rivalry rivalry, FeudScript script) {
-    List<Wrestler> participants = AddBeatDialog.participantsOf(rivalry);
-
-    List<String> typeNames =
-        segmentTypeService.findAll().stream()
-            .map(SegmentType::getName)
-            .sorted()
-            .collect(Collectors.toList());
-
-    List<String> ruleNames =
-        segmentRuleService.findAll().stream()
-            .map(SegmentRule::getName)
-            .sorted()
-            .collect(Collectors.toList());
-
-    AddBeatDialog dialog =
-        new AddBeatDialog(
-            script,
-            participants,
-            typeNames,
-            ruleNames,
-            feudScriptService,
-            externalCandidates(),
-            feudBeatAssistantService,
-            this::reload);
-    dialog.open();
-  }
-
-  /** Roster eligible for external participation: active/universe-filtered, any wrestler. */
-  private List<Wrestler> externalCandidates() {
-    return wrestlerService.findAllFiltered(null, null, null, null, null);
-  }
-
-  private void openEditBeatDialog(Rivalry rivalry, FeudScript script, FeudScriptBeat beat) {
-    List<Wrestler> participants = AddBeatDialog.participantsOf(rivalry);
-
-    List<String> typeNames =
-        segmentTypeService.findAll().stream()
-            .map(SegmentType::getName)
-            .sorted()
-            .collect(Collectors.toList());
-
-    List<String> ruleNames =
-        segmentRuleService.findAll().stream()
-            .map(SegmentRule::getName)
-            .sorted()
-            .collect(Collectors.toList());
-
-    EditBeatDialog dialog =
-        new EditBeatDialog(
-            script,
-            beat,
-            participants,
-            typeNames,
-            ruleNames,
-            feudScriptService,
-            externalCandidates(),
-            feudBeatAssistantService,
-            this::reload);
-    dialog.open();
   }
 
   private void openEditDialog(FeudScript script) {
@@ -426,34 +256,6 @@ public class RivalryDetailView extends Main implements HasUrlParameter<Long> {
     dialog.open();
   }
 
-  private void confirmRemoveBeat(FeudScript script, FeudScriptBeat beat) {
-    Dialog dialog = new Dialog();
-    dialog.setHeaderTitle("Remove Beat");
-    dialog.add(
-        new Paragraph(
-            "Remove beat #"
-                + beat.getBeatOrder()
-                + " ("
-                + beat.getSegmentType()
-                + ")? Remaining beats will be renumbered."));
-
-    Button confirmBtn =
-        new Button(
-            "Remove",
-            e -> {
-              feudScriptService.removeBeat(script, beat);
-              dialog.close();
-              reload();
-            });
-    confirmBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
-
-    Button cancelBtn = new Button("Keep Beat", e -> dialog.close());
-    cancelBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
-
-    dialog.getFooter().add(cancelBtn, confirmBtn);
-    dialog.open();
-  }
-
   private void openWizard(Rivalry rivalry) {
     List<Wrestler> allWrestlers =
         wrestlerService.getAllWrestlers().stream()
@@ -485,6 +287,8 @@ public class RivalryDetailView extends Main implements HasUrlParameter<Long> {
             feudScriptService.getDefaultMaxPleAppearances(),
             feudScriptService,
             feudBeatAssistantService,
+            showService.getUpcomingShows(20),
+            titleService.getActiveTitles(),
             this::reload);
     dialog.preSelectWrestlers(participants);
     dialog.open();

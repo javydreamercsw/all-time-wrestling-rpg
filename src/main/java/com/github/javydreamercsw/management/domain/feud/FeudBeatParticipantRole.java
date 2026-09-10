@@ -19,11 +19,15 @@ package com.github.javydreamercsw.management.domain.feud;
 import lombok.Getter;
 
 /**
- * Role of an external (non-feud) wrestler on a story arc beat. Team semantics: feud wrestlers are
- * always team 1; externals land on the opposing side (team 2). Mirrors the {@link FeudRole} display
- * style but carries team placement instead of allegiance.
+ * Role of a participant row on a story arc beat. Team semantics: without a custom team layout, feud
+ * wrestlers are implicit team 1 and externals land on the opposing side (team 2). With a custom
+ * layout, every participant — feud member or external — is stored explicitly with a team number.
+ * Mirrors the {@link FeudRole} display style but carries team placement instead of allegiance.
  */
 public enum FeudBeatParticipantRole {
+  /** The arc's own wrestler, stored explicitly under a custom per-beat team layout. */
+  FEUD_MEMBER("Feud Member", "The arc's own wrestler under an explicit per-beat team layout"),
+
   /** Faces the feud's wrestlers — the surprise opponent. */
   OPPONENT("Opponent", "Faces the feud's wrestlers on the opposing side"),
 

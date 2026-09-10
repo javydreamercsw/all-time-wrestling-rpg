@@ -103,8 +103,7 @@ class AddBeatDialogTest extends AbstractViewTest {
     AddBeatDialog dialog = openDialog();
 
     @SuppressWarnings("unchecked")
-    ComboBox<String> matchType =
-        _get(dialog, ComboBox.class, spec -> spec.withCaption("Match Type"));
+    ComboBox<String> matchType = _get(dialog, ComboBox.class, spec -> spec.withLabel("Match Type"));
     HasValueUtilsKt._setValue(matchType, "Singles Match", true);
 
     Button saveBtn = _get(dialog, Button.class, spec -> spec.withText("Add Beat"));
@@ -153,6 +152,8 @@ class AddBeatDialogTest extends AbstractViewTest {
             feudScriptService,
             List.of(externalWrestler),
             feudBeatAssistantService,
+            List.of(),
+            List.of(),
             null);
     dialog.open();
     UI.getCurrent().add(dialog);
@@ -165,13 +166,12 @@ class AddBeatDialogTest extends AbstractViewTest {
     AddBeatDialog dialog = openDialogWithExternals();
 
     @SuppressWarnings("unchecked")
-    ComboBox<String> matchType =
-        _get(dialog, ComboBox.class, spec -> spec.withCaption("Match Type"));
+    ComboBox<String> matchType = _get(dialog, ComboBox.class, spec -> spec.withLabel("Match Type"));
     HasValueUtilsKt._setValue(matchType, "Singles Match", true);
 
     @SuppressWarnings("unchecked")
     ComboBox<Wrestler> opponentCombo =
-        _get(dialog, ComboBox.class, spec -> spec.withCaption("External Opponent"));
+        _get(dialog, ComboBox.class, spec -> spec.withLabel("External Opponent"));
     HasValueUtilsKt._setValue(opponentCombo, externalWrestler, true);
 
     Button saveBtn = _get(dialog, Button.class, spec -> spec.withText("Add Beat"));
@@ -181,7 +181,7 @@ class AddBeatDialogTest extends AbstractViewTest {
     verify(feudScriptService).addBeat(same(script), captor.capture());
     lastSavedBeat = captor.getValue();
     assertEquals(1, lastSavedBeat.getExternalParticipants().size());
-    assertEquals(externalWrestler.getName(), lastSavedBeat.getExternalOpponents().get(0).getName());
+    assertEquals(externalWrestler.getName(), lastSavedBeat.getExternalOpponents().getFirst().getName());
   }
 
   @Test
@@ -202,7 +202,7 @@ class AddBeatDialogTest extends AbstractViewTest {
 
     @SuppressWarnings("unchecked")
     ComboBox<Wrestler> opponentCombo =
-        _get(dialog, ComboBox.class, spec -> spec.withCaption("External Opponent"));
+        _get(dialog, ComboBox.class, spec -> spec.withLabel("External Opponent"));
     waitForUiUpdates();
     assertEquals(externalWrestler.getName(), opponentCombo.getValue().getName());
   }
@@ -217,7 +217,7 @@ class AddBeatDialogTest extends AbstractViewTest {
 
     @SuppressWarnings("unchecked")
     ComboBox<Wrestler> opponentCombo =
-        _get(dialog, ComboBox.class, spec -> spec.withCaption("External Opponent"));
+        _get(dialog, ComboBox.class, spec -> spec.withLabel("External Opponent"));
     HasValueUtilsKt._setValue(opponentCombo, externalWrestler, true);
 
     Button suggestBtn = _get(dialog, Button.class, spec -> spec.withText("✨ AI Suggest Opponent"));

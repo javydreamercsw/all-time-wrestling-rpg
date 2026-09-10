@@ -35,11 +35,12 @@ import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
+import org.jspecify.annotations.Nullable;
 
 /**
- * An external (non-feud) wrestler involved in a single {@link FeudScriptBeat} — a surprise opponent
- * or run-in extra. The beat's feud wrestlers are implicit (rivalry pair / active feud members) and
- * are never stored here.
+ * A participant row on a single {@link FeudScriptBeat}: an external wrestler (surprise opponent or
+ * run-in extra) or — under a custom per-beat team layout — one of the arc's own wrestlers ({@link
+ * FeudBeatParticipantRole#FEUD_MEMBER}) with an explicit team number.
  */
 @Entity
 @Table(
@@ -67,6 +68,13 @@ public class FeudScriptBeatParticipant extends AbstractEntity<Long> {
   @Enumerated(EnumType.STRING)
   @Column(name = "role", nullable = false, length = 16)
   private FeudBeatParticipantRole role;
+
+  /**
+   * 1-based team assignment when the beat uses a custom team layout; {@code null} on legacy
+   * quick-path rows (feud wrestlers = team 1, externals = team 2, derived at read time).
+   */
+  @Column(name = "team_number")
+  @Nullable private Integer teamNumber;
 
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
