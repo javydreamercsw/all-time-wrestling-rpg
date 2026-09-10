@@ -19,17 +19,21 @@ package com.github.javydreamercsw.management.ui.view;
 import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.management.domain.feud.FeudScript;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptBeat;
+import com.github.javydreamercsw.management.domain.feud.FeudScriptWinnerControl;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.feud.FeudScriptService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.springframework.beans.factory.annotation.Autowired;
 
 class FeudScriptDocsE2ETest extends AbstractDocsE2ETest {
+
+  private static final AtomicInteger COUNTER = new AtomicInteger();
 
   @Autowired private RivalryService rivalryService;
   @Autowired private WrestlerRepository wrestlerRepository;
@@ -53,6 +57,25 @@ class FeudScriptDocsE2ETest extends AbstractDocsE2ETest {
         wrestlers.size() > 1
             ? wrestlers.get(1)
             : wrestlerRepository.saveAndFlush(TestUtils.createWrestler("Feud Wrestler 2"));
+    Rivalry rivalry =
+        rivalryService
+            .createRivalry(
+                wrestler1.getId(), wrestler2.getId(), "A grudge that has boiled over for months.")
+            .orElseThrow();
+    rivalryService.addHeat(rivalry.getId(), 40, "Docs seed heat");
+    return rivalry;
+  }
+
+  /**
+   * Creates a rivalry that no other test has touched, so arc-creating captures see exactly the arcs
+   * they create themselves instead of whatever earlier tests left on the shared rivalry.
+   */
+  private Rivalry ensureFreshRivalry(String label) {
+    int n = COUNTER.incrementAndGet();
+    Wrestler wrestler1 =
+        wrestlerRepository.saveAndFlush(TestUtils.createWrestler(label + " Wrestler " + n + "A"));
+    Wrestler wrestler2 =
+        wrestlerRepository.saveAndFlush(TestUtils.createWrestler(label + " Wrestler " + n + "B"));
     Rivalry rivalry =
         rivalryService
             .createRivalry(
@@ -107,8 +130,123 @@ class FeudScriptDocsE2ETest extends AbstractDocsE2ETest {
   }
 
   @Test
-  void captureAddBeatToArc() {
+  void captureStoryArcWizardStep2() {
     Rivalry rivalry = ensureRivalry();
+    navigateTo("rivalry/" + rivalry.getId());
+
+    waitForVaadinElement(driver, By.xpath("//vaadin-button[normalize-space()='Story Arc']"));
+    clickElement(By.xpath("//vaadin-button[normalize-space()='Story Arc']"));
+
+    waitForVaadinElement(driver, By.xpath("//*[contains(.,'Step 1')]"));
+    // Step 1 pre-selects the rivalry's two wrestlers; advance to step 2.
+    clickElement(By.xpath("//vaadin-button[normalize-space()='Next']"));
+
+    waitForVaadinElement(driver, By.xpath("//*[contains(.,'Step 2')]"));
+    documentFeature(
+        "Booker",
+        "Story Arc Details",
+        "Step 2 names the arc (pre-filled from the selected wrestlers) and picks its length:"
+            + " Short spans 1 PLE, Medium 2, Long 3. The PLE count is a hard ceiling — once a"
+            + " feud has appeared on that many premium live events, it must culminate.",
+        "booker-story-arc-details");
+  }
+
+  @Test
+  void captureStoryArcWizardStep3() {
+    Rivalry rivalry = ensureRivalry();
+    navigateTo("rivalry/" + rivalry.getId());
+
+    waitForVaadinElement(driver, By.xpath("//vaadin-button[normalize-space()='Story Arc']"));
+    clickElement(By.xpath("//vaadin-button[normalize-space()='Story Arc']"));
+
+    waitForVaadinElement(driver, By.xpath("//*[contains(.,'Step 1')]"));
+    clickElement(By.xpath("//vaadin-button[normalize-space()='Next']"));
+    waitForVaadinElement(driver, By.xpath("//*[contains(.,'Step 2')]"));
+    clickElement(By.xpath("//vaadin-button[normalize-space()='Next']"));
+
+    waitForVaadinElement(driver, By.xpath("//*[contains(.,'Step 3')]"));
+    waitForVaadinElement(driver, By.xpath("//*[contains(.,'Winner')]"));
+    documentFeature(
+        "Booker",
+        "Story Arc Beats",
+        "Step 3 defines the match sequence. Each beat picks a match type and optional"
+            + " stipulation, and decides who controls the outcome: the booker names the planned"
+            + " winner, the AI picks based on story notes, or the system rolls. Mark a beat as"
+            + " the Culmination / Blowoff to close the feud. Roster wrestlers outside the arc can"
+            + " join a beat as an external opponent or run-in extra.",
+        "booker-story-arc-beats");
+  }
+
+  @Test
+  void captureStoryArcCard() {
+    Rivalry rivalry = ensureFreshRivalry("Showcase");
+
+    FeudScript script =
+        feudScriptService.createFromWizard(
+            "Docs Showcase Arc", List.of(rivalry.getWrestler1(), rivalry.getWrestler2()), 3);
+    FeudScriptBeat opener = new FeudScriptBeat();
+    opener.setSegmentType("One on One");
+    opener.setSegmentRule("Ladder Match");
+    opener.setNotes("The rivalry boils over — both want the briefcase as leverage.");
+    feudScriptService.addBeat(script, opener);
+    FeudScriptBeat blowoff = new FeudScriptBeat();
+    blowoff.setSegmentType("One on One");
+    blowoff.setSegmentRule("Cage");
+    blowoff.setWinnerControl(FeudScriptWinnerControl.BOOKER_PICKS);
+    blowoff.setPlannedWinner(rivalry.getWrestler1());
+    blowoff.setCulmination(true);
+    blowoff.setNotes("Career vs. career — the loser leaves the promotion.");
+    feudScriptService.addBeat(script, blowoff);
+
+    navigateTo("rivalry/" + rivalry.getId());
+
+    waitForVaadinElement(driver, By.xpath("//*[contains(.,'Story Arcs')]"));
+    waitForVaadinElement(driver, By.tagName("vaadin-grid"));
+    documentFeature(
+        "Booker",
+        "Story Arc Management",
+        "Every saved arc lives on the rivalry detail as a card with a status badge (Active,"
+            + " Completed, Cancelled). The beat grid lists each beat in order — match type,"
+            + " stipulation, external participants, winner control, blowoff marker and status."
+            + " Pending beats can be edited or removed and renumber automatically; the arc"
+            + " itself can be renamed, extended with more beats, or cancelled before its"
+            + " culmination.",
+        "booker-story-arc-card");
+  }
+
+  @Test
+  void captureEditBeatDialog() {
+    Rivalry rivalry = ensureFreshRivalry("Edit-Beat");
+
+    FeudScript script =
+        feudScriptService.createFromWizard(
+            "Docs Edit-Beat Arc", List.of(rivalry.getWrestler1(), rivalry.getWrestler2()), 2);
+    FeudScriptBeat opener = new FeudScriptBeat();
+    opener.setSegmentType("One on One");
+    opener.setSegmentRule("Submission");
+    opener.setNotes("Originally planned as a technical showcase.");
+    feudScriptService.addBeat(script, opener);
+
+    navigateTo("rivalry/" + rivalry.getId());
+
+    waitForVaadinElement(driver, By.xpath("//vaadin-button[normalize-space()='✎']"));
+    clickElement(By.xpath("//vaadin-button[normalize-space()='✎']"));
+
+    waitForVaadinElement(driver, By.xpath("//*[contains(.,'Edit Beat #1 — Docs Edit-Beat Arc')]"));
+    documentFeature(
+        "Booker",
+        "Edit Story Arc Beat",
+        "Pending beats can be retooled at any time before they play out. The edit dialog loads"
+            + " the beat's current match type, stipulation, winner control, planned winner,"
+            + " blowoff flag, notes and external participants — saving re-runs the same"
+            + " validation as creation and keeps any show or PLE reservation attached to the"
+            + " beat.",
+        "booker-story-arc-edit-beat");
+  }
+
+  @Test
+  void captureAddBeatToArc() {
+    Rivalry rivalry = ensureFreshRivalry("Add-Beat");
 
     FeudScript script =
         feudScriptService.createFromWizard(
