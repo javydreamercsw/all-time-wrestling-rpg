@@ -181,7 +181,8 @@ class AddBeatDialogTest extends AbstractViewTest {
     verify(feudScriptService).addBeat(same(script), captor.capture());
     lastSavedBeat = captor.getValue();
     assertEquals(1, lastSavedBeat.getExternalParticipants().size());
-    assertEquals(externalWrestler.getName(), lastSavedBeat.getExternalOpponents().getFirst().getName());
+    assertEquals(
+        externalWrestler.getName(), lastSavedBeat.getExternalOpponents().getFirst().getName());
   }
 
   @Test
