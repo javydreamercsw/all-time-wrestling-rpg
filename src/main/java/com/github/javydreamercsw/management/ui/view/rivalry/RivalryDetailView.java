@@ -35,7 +35,6 @@ import com.github.javydreamercsw.management.ui.view.feud.FeudScriptWizardDialog;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Main;
@@ -46,8 +45,6 @@ import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.IntegerField;
-import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.HasUrlParameter;
 import com.vaadin.flow.router.PageTitle;
@@ -186,74 +183,6 @@ public class RivalryDetailView extends Main implements HasUrlParameter<Long> {
                   new FeudScriptCard(
                       script, FeudScriptCard.participantsOf(script), services, this::reload)));
     }
-  }
-
-  private void openEditDialog(FeudScript script) {
-    TextField nameField = new TextField("Arc Name");
-    nameField.setValue(script.getName());
-    nameField.setWidthFull();
-    nameField.setRequired(true);
-
-    IntegerField pleField = new IntegerField("Max PLE Appearances (1–3)");
-    pleField.setValue(script.getMaxPleAppearances());
-    pleField.setMin(1);
-    pleField.setMax(3);
-    pleField.setStepButtonsVisible(true);
-
-    Dialog dialog = new Dialog();
-    dialog.setHeaderTitle("Edit Story Arc");
-
-    Button saveBtn =
-        new Button(
-            "Save",
-            e -> {
-              if (nameField.getValue().isBlank()) {
-                nameField.setInvalid(true);
-                return;
-              }
-              feudScriptService.updateScript(
-                  script,
-                  nameField.getValue(),
-                  pleField.getValue() != null
-                      ? pleField.getValue()
-                      : script.getMaxPleAppearances());
-              dialog.close();
-              reload();
-            });
-    saveBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-
-    Button cancelBtn = new Button("Cancel", e -> dialog.close());
-    cancelBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
-
-    dialog.add(new VerticalLayout(nameField, pleField));
-    dialog.getFooter().add(cancelBtn, saveBtn);
-    dialog.open();
-  }
-
-  private void confirmCancelScript(FeudScript script) {
-    Dialog dialog = new Dialog();
-    dialog.setHeaderTitle("Cancel Story Arc");
-    dialog.add(
-        new Paragraph(
-            "Cancel arc \""
-                + script.getName()
-                + "\"? Completed beats are kept for reference, but no new beats can be added."));
-
-    Button confirmBtn =
-        new Button(
-            "Cancel Arc",
-            e -> {
-              feudScriptService.cancelScript(script);
-              dialog.close();
-              reload();
-            });
-    confirmBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
-
-    Button backBtn = new Button("Keep Arc", e -> dialog.close());
-    backBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
-
-    dialog.getFooter().add(backBtn, confirmBtn);
-    dialog.open();
   }
 
   private void openWizard(Rivalry rivalry) {

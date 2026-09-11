@@ -42,7 +42,10 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.IntegerField;
+import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.theme.lumo.LumoUtility;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -207,7 +210,7 @@ public class FeudScriptCard extends VerticalLayout {
     beatGrid
         .addColumn(
             b -> {
-              List<String> stakes = new java.util.ArrayList<>();
+              List<String> stakes = new ArrayList<>();
               if (b.isTitleStakes()) {
                 b.getTitles().stream().map(Title::getName).forEach(n -> stakes.add("★ " + n));
               }
@@ -344,14 +347,12 @@ public class FeudScriptCard extends VerticalLayout {
   }
 
   private void openEditDialog() {
-    com.vaadin.flow.component.textfield.TextField nameField =
-        new com.vaadin.flow.component.textfield.TextField("Arc Name");
+    TextField nameField = new TextField("Arc Name");
     nameField.setValue(script.getName());
     nameField.setWidthFull();
     nameField.setRequired(true);
 
-    com.vaadin.flow.component.textfield.IntegerField pleField =
-        new com.vaadin.flow.component.textfield.IntegerField("Max PLE Appearances (1–3)");
+    IntegerField pleField = new IntegerField("Max PLE Appearances (1–3)");
     pleField.setValue(script.getMaxPleAppearances());
     pleField.setMin(1);
     pleField.setMax(3);

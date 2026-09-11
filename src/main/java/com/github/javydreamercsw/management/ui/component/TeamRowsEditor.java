@@ -20,6 +20,8 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
+import com.vaadin.flow.component.combobox.MultiSelectComboBoxVariant;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import java.util.ArrayList;
@@ -75,19 +77,16 @@ public class TeamRowsEditor extends VerticalLayout {
     combo.setItems(candidates);
     combo.setItemLabelGenerator(Wrestler::getName);
     combo.setWidthFull();
-    combo.addThemeVariants(
-        com.vaadin.flow.component.combobox.MultiSelectComboBoxVariant.LUMO_SMALL);
+    combo.addThemeVariants(MultiSelectComboBoxVariant.LUMO_SMALL);
     combo.addValueChangeListener(e -> notifyChanged());
     teamCombos.add(combo);
 
     HorizontalLayout row = new HorizontalLayout();
     row.setWidthFull();
-    row.setAlignItems(com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.END);
+    row.setAlignItems(FlexComponent.Alignment.END);
     Button removeButton = new Button("−", ev -> removeTeamRow(combo));
     removeButton.addThemeVariants(
-        com.vaadin.flow.component.button.ButtonVariant.LUMO_ERROR,
-        com.vaadin.flow.component.button.ButtonVariant.LUMO_TERTIARY,
-        com.vaadin.flow.component.button.ButtonVariant.LUMO_SMALL);
+        ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
     removeButton.getElement().setAttribute("aria-label", "Remove team");
     row.add(combo, removeButton);
     row.setFlexGrow(1, combo);

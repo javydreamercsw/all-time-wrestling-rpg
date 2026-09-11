@@ -27,6 +27,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.feud.FeudBeatParticipantRole;
 import com.github.javydreamercsw.management.domain.feud.FeudParticipant;
 import com.github.javydreamercsw.management.domain.feud.FeudScript;
@@ -49,10 +50,13 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
+import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowSegmentReservationService;
+import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.dto.FeudScriptBeatDTO;
 import com.github.javydreamercsw.management.service.title.ContenderSelectionService;
+import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
@@ -65,6 +69,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -80,10 +85,10 @@ class FeudScriptServiceTest {
   @Mock private ContenderSelectionService contenderSelectionService;
   @Mock private SegmentTypeService segmentTypeService;
   @Mock private WrestlerService wrestlerService;
-  @Mock private com.github.javydreamercsw.management.service.segment.SegmentService segmentService;
-  @Mock private com.github.javydreamercsw.management.service.show.ShowService showService;
-  @Mock private com.github.javydreamercsw.management.service.title.TitleService titleService;
-  @Mock private org.springframework.context.ApplicationEventPublisher eventPublisher;
+  @Mock private SegmentService segmentService;
+  @Mock private ShowService showService;
+  @Mock private TitleService titleService;
+  @Mock private ApplicationEventPublisher eventPublisher;
 
   @InjectMocks private FeudScriptService service;
 
@@ -283,8 +288,7 @@ class FeudScriptServiceTest {
   void autoCompleteBeatForSegment_adjudicatedSegment_fallsBackToDirectDesignation() {
     Segment segment = new Segment();
     segment.setId(87L);
-    segment.setAdjudicationStatus(
-        com.github.javydreamercsw.management.domain.AdjudicationStatus.ADJUDICATED);
+    segment.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
     Wrestler w1 = new Wrestler();
     w1.setId(1L);
     w1.setName("Winner");
