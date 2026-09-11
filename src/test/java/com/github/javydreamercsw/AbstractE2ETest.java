@@ -1177,7 +1177,7 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
     // non-empty route always means the race happened. Callers that need stricter
     // guarantees can use navigateToAndWaitForElement(route, selector) to also verify view
     // content rendered.
-    for (int attempt = 1; attempt <= 3; attempt++) {
+    for (int attempt = 1; attempt < 3 + 1; attempt++) {
       driver.get(url);
       waitForVaadinClientToLoad();
       String currentUrl = driver.getCurrentUrl();
