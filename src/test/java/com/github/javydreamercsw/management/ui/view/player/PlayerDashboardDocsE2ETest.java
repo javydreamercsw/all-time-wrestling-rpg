@@ -237,9 +237,8 @@ public class PlayerDashboardDocsE2ETest extends AbstractDocsE2ETest {
   void testCaptureSeasonSummary() {
     login("player", "player123");
 
-    // 1. Navigate to Player Dashboard
-    navigateTo("player");
-    waitForVaadinToLoad();
+    // 1. Navigate to Player Dashboard (retry on transient Vaadin route-init failures)
+    navigateToAndWaitForElement("player", By.id("season-summary-title"));
 
     assertDoesNotThrow(
         () -> {
@@ -325,8 +324,7 @@ public class PlayerDashboardDocsE2ETest extends AbstractDocsE2ETest {
     wrestlerStatusRepository.save(status);
 
     login("player", "player123");
-    navigateTo("player");
-    waitForVaadinToLoad();
+    navigateToAndWaitForElement("player", By.id("effective-stats-section"));
 
     assertDoesNotThrow(
         () -> {

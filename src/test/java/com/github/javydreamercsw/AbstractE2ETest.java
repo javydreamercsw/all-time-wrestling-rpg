@@ -1169,8 +1169,32 @@ public abstract class AbstractE2ETest extends AbstractIntegrationTest {
   }
 
   protected void navigateTo(@NonNull final String route) {
-    driver.get("http://localhost:" + serverPort + getContextPath() + "/" + route);
-    waitForVaadinClientToLoad();
+    String root = "http://localhost:" + serverPort + getContextPath() + "/";
+    String url = root + route;
+    // A cold page load of a deep route is occasionally bounced to the app root (transient
+    // Vaadin route-initialization failure — ATW-cp59). Detect the bounce and retry; the
+    // app itself never redirects to the app root, so landing there after requesting a
+    // non-empty route always means the race happened. Callers that need stricter
+    // guarantees can use navigateToAndWaitForElement(route, selector) to also verify view
+    // content rendered.
+    for (int attempt = 1; attempt < 3 + 1; attempt++) {
+      driver.get(url);
+      waitForVaadinClientToLoad();
+      String currentUrl = driver.getCurrentUrl();
+      boolean bounced = !route.isEmpty() && root.equals(currentUrl);
+      if (!bounced) {
+        return;
+      }
+      log.warn(
+          "Route '{}' was bounced to the app root on attempt {}/{} (URL: {}) — retrying",
+          route,
+          attempt,
+          3,
+          currentUrl);
+      if (attempt < 3) {
+        sleep(500);
+      }
+    }
   }
 
   /** Navigates to a route and retries transient Vaadin route initialization failures. */

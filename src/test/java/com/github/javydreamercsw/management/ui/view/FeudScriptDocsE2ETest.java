@@ -88,8 +88,7 @@ class FeudScriptDocsE2ETest extends AbstractDocsE2ETest {
   @Test
   void captureRivalryListView() {
     ensureRivalry();
-    navigateTo("rivalry-list");
-    waitForVaadinElement(driver, By.tagName("vaadin-grid"));
+    navigateToAndWaitForElement("rivalry-list", By.tagName("vaadin-grid"));
     documentFeature(
         "Booker",
         "Rivalry List",
@@ -101,9 +100,8 @@ class FeudScriptDocsE2ETest extends AbstractDocsE2ETest {
   @Test
   void captureRivalryDetailView() {
     Rivalry rivalry = ensureRivalry();
-    navigateTo("rivalry/" + rivalry.getId());
-
-    waitForVaadinElement(driver, By.xpath("//h2[contains(text(),' vs ')]"));
+    navigateToAndWaitForElement(
+        "rivalry/" + rivalry.getId(), By.xpath("//h2[contains(text(),' vs ')]"));
     documentFeature(
         "Booker",
         "Rivalry Detail",
@@ -115,10 +113,10 @@ class FeudScriptDocsE2ETest extends AbstractDocsE2ETest {
   @Test
   void captureStoryArcWizard() {
     Rivalry rivalry = ensureRivalry();
-    navigateTo("rivalry/" + rivalry.getId());
-
-    waitForVaadinElement(driver, By.xpath("//vaadin-button[normalize-space()='Story Arc']"));
-    clickElement(By.xpath("//vaadin-button[normalize-space()='Story Arc']"));
+    clickElement(
+        navigateToAndWaitForElement(
+            "rivalry/" + rivalry.getId(),
+            By.xpath("//vaadin-button[normalize-space()='Story Arc']")));
 
     waitForVaadinElement(driver, By.xpath("//*[contains(.,'Step 1')]"));
     documentFeature(
@@ -132,10 +130,10 @@ class FeudScriptDocsE2ETest extends AbstractDocsE2ETest {
   @Test
   void captureStoryArcWizardStep2() {
     Rivalry rivalry = ensureRivalry();
-    navigateTo("rivalry/" + rivalry.getId());
-
-    waitForVaadinElement(driver, By.xpath("//vaadin-button[normalize-space()='Story Arc']"));
-    clickElement(By.xpath("//vaadin-button[normalize-space()='Story Arc']"));
+    clickElement(
+        navigateToAndWaitForElement(
+            "rivalry/" + rivalry.getId(),
+            By.xpath("//vaadin-button[normalize-space()='Story Arc']")));
 
     waitForVaadinElement(driver, By.xpath("//*[contains(.,'Step 1')]"));
     // Step 1 pre-selects the rivalry's two wrestlers; advance to step 2.
@@ -154,10 +152,10 @@ class FeudScriptDocsE2ETest extends AbstractDocsE2ETest {
   @Test
   void captureStoryArcWizardStep3() {
     Rivalry rivalry = ensureRivalry();
-    navigateTo("rivalry/" + rivalry.getId());
-
-    waitForVaadinElement(driver, By.xpath("//vaadin-button[normalize-space()='Story Arc']"));
-    clickElement(By.xpath("//vaadin-button[normalize-space()='Story Arc']"));
+    clickElement(
+        navigateToAndWaitForElement(
+            "rivalry/" + rivalry.getId(),
+            By.xpath("//vaadin-button[normalize-space()='Story Arc']")));
 
     waitForVaadinElement(driver, By.xpath("//*[contains(.,'Step 1')]"));
     clickElement(By.xpath("//vaadin-button[normalize-space()='Next']"));
@@ -198,9 +196,8 @@ class FeudScriptDocsE2ETest extends AbstractDocsE2ETest {
     blowoff.setNotes("Career vs. career — the loser leaves the promotion.");
     feudScriptService.addBeat(script, blowoff);
 
-    navigateTo("rivalry/" + rivalry.getId());
-
-    waitForVaadinElement(driver, By.xpath("//*[contains(.,'Story Arcs')]"));
+    navigateToAndWaitForElement(
+        "rivalry/" + rivalry.getId(), By.xpath("//*[contains(.,'Story Arcs')]"));
     waitForVaadinElement(driver, By.tagName("vaadin-grid"));
     documentFeature(
         "Booker",
@@ -227,10 +224,9 @@ class FeudScriptDocsE2ETest extends AbstractDocsE2ETest {
     opener.setNotes("Originally planned as a technical showcase.");
     feudScriptService.addBeat(script, opener);
 
-    navigateTo("rivalry/" + rivalry.getId());
-
-    waitForVaadinElement(driver, By.xpath("//vaadin-button[normalize-space()='✎']"));
-    clickElement(By.xpath("//vaadin-button[normalize-space()='✎']"));
+    clickElement(
+        navigateToAndWaitForElement(
+            "rivalry/" + rivalry.getId(), By.xpath("//vaadin-button[normalize-space()='✎']")));
 
     waitForVaadinElement(driver, By.xpath("//*[contains(.,'Edit Beat #1 — Docs Edit-Beat Arc')]"));
     documentFeature(
@@ -255,10 +251,10 @@ class FeudScriptDocsE2ETest extends AbstractDocsE2ETest {
     opener.setSegmentType("Singles Match");
     feudScriptService.addBeat(script, opener);
 
-    navigateTo("rivalry/" + rivalry.getId());
-
-    waitForVaadinElement(driver, By.xpath("//vaadin-button[normalize-space()='+ Add Beat']"));
-    clickElement(By.xpath("//vaadin-button[normalize-space()='+ Add Beat']"));
+    clickElement(
+        navigateToAndWaitForElement(
+            "rivalry/" + rivalry.getId(),
+            By.xpath("//vaadin-button[normalize-space()='+ Add Beat']")));
 
     waitForVaadinElement(driver, By.xpath("//*[contains(.,'Add Beat — Docs Add-Beat Arc')]"));
     documentFeature(

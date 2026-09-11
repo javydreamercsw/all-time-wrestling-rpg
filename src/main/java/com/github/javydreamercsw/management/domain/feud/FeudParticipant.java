@@ -47,7 +47,8 @@ public class FeudParticipant extends AbstractEntity<Long> {
   @JsonIgnoreProperties({"participants", "heatEvents"})
   private MultiWrestlerFeud feud;
 
-  @ManyToOne(optional = false, fetch = FetchType.LAZY)
+  /** EAGER: arc cards and beat grids render feud member names on detached grids. */
+  @ManyToOne(optional = false, fetch = FetchType.EAGER)
   @JoinColumn(name = "wrestler_id", nullable = false)
   @JsonIgnoreProperties({"rivalries", "injuries", "deck", "titleReigns", "faction"})
   private Wrestler wrestler;

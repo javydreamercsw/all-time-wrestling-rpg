@@ -738,7 +738,7 @@ class ShowPlanningAiServiceTest {
     dto.setSegmentRule(segmentRule);
     dto.setWinnerControl(winnerControl);
     dto.setPlannedWinnerName(plannedWinner);
-    dto.setParticipantNames("Shelton Benjamin, Bobby Lashley");
+    dto.setParticipantNames("Shelton Benjamin vs Bobby Lashley");
     dto.setParticipantIds(participantIds);
     dto.setRivalryId(9L);
     return dto;
