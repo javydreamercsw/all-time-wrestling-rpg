@@ -146,9 +146,7 @@ class TournamentDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void captureTournamentListView() {
-    navigateTo("tournament-list");
-    waitForVaadinClientToLoad();
-    waitForVaadinElement(driver, By.tagName("vaadin-grid"));
+    navigateToAndWaitForElement("tournament-list", By.tagName("vaadin-grid"));
     documentFeature(
         "Booker",
         "Tournament Bracket Generator",
@@ -160,9 +158,8 @@ class TournamentDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void captureTournamentDetailScheduled() {
-    navigateTo("tournament-detail/" + scheduledId);
-    waitForVaadinClientToLoad();
-    waitForVaadinElement(driver, By.xpath("//*[contains(., 'Grand Prix Tournament')]"));
+    navigateToAndWaitForElement(
+        "tournament-detail/" + scheduledId, By.xpath("//*[contains(., 'Grand Prix Tournament')]"));
     documentFeature(
         "Booker",
         "Tournament Detail — Scheduled",
@@ -174,9 +171,8 @@ class TournamentDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void captureTournamentDetailInProgress() {
-    navigateTo("tournament-detail/" + inProgressId);
-    waitForVaadinClientToLoad();
-    waitForVaadinElement(driver, By.xpath("//*[contains(., 'King of the Ring')]"));
+    navigateToAndWaitForElement(
+        "tournament-detail/" + inProgressId, By.xpath("//*[contains(., 'King of the Ring')]"));
     documentFeature(
         "Booker",
         "Tournament Detail — In Progress",
