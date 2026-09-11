@@ -64,10 +64,10 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     boundary.setMinFans(originalMinFans + 100);
     tierBoundaryRepository.saveAndFlush(boundary);
 
-    navigateTo("admin");
-
-    // Click the tab
-    click("vaadin-tab", "Season Settings");
+    // Click the tab (retry on transient Vaadin route initialization failures — ATW-yv9d)
+    WebElement seasonSettingsTab =
+        navigateToAndWaitForElement("admin", By.xpath("//vaadin-tab[text()='Season Settings']"));
+    clickElement(seasonSettingsTab);
 
     // Wait for view to load
     WebElement resetBoundariesButton =
@@ -128,10 +128,10 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     state.setFans(tier.getMinFans() + 100);
     wrestlerStateRepository.saveAndFlush(state);
 
-    navigateTo("admin");
-
-    // Click the tab
-    click("vaadin-tab", "Season Settings");
+    // Click the tab (retry on transient Vaadin route initialization failures — ATW-yv9d)
+    WebElement seasonSettingsTab =
+        navigateToAndWaitForElement("admin", By.xpath("//vaadin-tab[text()='Season Settings']"));
+    clickElement(seasonSettingsTab);
 
     // Wait for view to load
     WebElement recalibrateFansButton =
@@ -180,10 +180,10 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     state.setFans(WrestlerTier.ICON.getMinFans());
     wrestlerStateRepository.saveAndFlush(state);
 
-    navigateTo("admin");
-
-    // Click the tab
-    click("vaadin-tab", "Season Settings");
+    // Click the tab (retry on transient Vaadin route initialization failures — ATW-yv9d)
+    WebElement seasonSettingsTab =
+        navigateToAndWaitForElement("admin", By.xpath("//vaadin-tab[text()='Season Settings']"));
+    clickElement(seasonSettingsTab);
 
     // Wait for view to load
     WebElement recalibrateFansButton =
@@ -221,10 +221,10 @@ public class SeasonSettingsViewE2ETest extends AbstractE2ETest {
     state.setFans(WrestlerTier.ICON.getMinFans());
     wrestlerStateRepository.saveAndFlush(state);
 
-    navigateTo("admin");
-
-    // Click the tab
-    click("vaadin-tab", "Season Settings");
+    // Click the tab (retry on transient Vaadin route initialization failures — ATW-yv9d)
+    WebElement seasonSettingsTab =
+        navigateToAndWaitForElement("admin", By.xpath("//vaadin-tab[text()='Season Settings']"));
+    clickElement(seasonSettingsTab);
 
     // Wait for view to load
     WebElement fullResetButton = waitForVaadinElement(driver, By.id("full-reset-button"));
