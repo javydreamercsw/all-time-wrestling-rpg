@@ -271,7 +271,8 @@ public class FeudScriptCard extends VerticalLayout {
                 return new Span();
               })
           .setWidth("9em")
-          .setFlexGrow(0);
+          .setFlexGrow(0)
+          .setKey("actions");
     }
 
     beatGrid.setItems(beats);
