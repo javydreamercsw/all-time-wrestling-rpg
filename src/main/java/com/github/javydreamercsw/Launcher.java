@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw;
 
+import java.awt.GraphicsEnvironment;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -52,6 +53,14 @@ public final class Launcher {
   private static final Duration STALE_TMP_THRESHOLD = Duration.ofHours(1);
 
   public static void main(final String[] args) throws Exception {
+    System.exit(run(args));
+  }
+
+  /**
+   * Launcher flow; returns the process exit code (0 = the app JAR ran, 1 = fatal). Visible for
+   * testing — {@link #main} turns the return value into {@code System.exit}.
+   */
+  static int run(final String[] args) throws Exception {
     Path appDir = resolveAppDir();
     Files.createDirectories(appDir);
 
@@ -69,12 +78,11 @@ public final class Launcher {
         showError(
             "Could not connect to GitHub to download the application.\n"
                 + "Check your network and try again.");
-        System.exit(1);
+        return 1;
       }
       System.out.println(
           "[Launcher] Update check failed — launching existing version " + currentVersion);
-      launchApp(currentJar, args);
-      return;
+      return launchApp(currentJar, args);
     }
 
     boolean needsDownload = currentJar == null || isNewer(release.version(), currentVersion);
@@ -91,10 +99,10 @@ public final class Launcher {
 
     if (currentJar == null) {
       showError("No application JAR found. Download failed.\nCheck your network and try again.");
-      System.exit(1);
+      return 1;
     }
 
-    launchApp(currentJar, args);
+    return launchApp(currentJar, args);
   }
 
   // -------------------------------------------------------------------------
@@ -299,7 +307,12 @@ public final class Launcher {
   // Launch the app JAR as a child process; wait briefly to detect a crash
   // -------------------------------------------------------------------------
 
-  private static void launchApp(final Path jar, final String[] extraArgs) throws Exception {
+  /**
+   * Spawns the app JAR as a child process and returns its exit code. Waits up to 5 s to detect an
+   * immediate crash (bad JAR, wrong Java version, etc.); a still-running child keeps waiting
+   * normally.
+   */
+  static int launchApp(final Path jar, final String[] extraArgs) throws Exception {
     String javaExe = resolveJavaExecutable();
 
     List<String> cmd = new ArrayList<>();
@@ -330,16 +343,21 @@ public final class Launcher {
               + process.exitValue()
               + ").\n"
               + "The previous version has been restored. Please try again.");
-      System.exit(process.exitValue());
+      return process.exitValue();
     }
 
-    // Normal case: app is running; wait for it to finish then exit with its code
-    System.exit(process.waitFor());
+    // Normal case: app is running; wait for it to finish then propagate its code
+    return process.waitFor();
   }
 
   // -------------------------------------------------------------------------
   // Cleanup helpers
   // -------------------------------------------------------------------------
+
+  /** {@code java.exe} on Windows, {@code java} everywhere else. */
+  static String javaBinaryName(final String osName) {
+    return osName != null && osName.toLowerCase().contains("win") ? "java.exe" : "java";
+  }
 
   /**
    * Resolves a real {@code java} executable for the child-process launch. The packaged runtime
@@ -350,13 +368,7 @@ public final class Launcher {
   static String resolveJavaExecutable() {
     String javaHome = System.getProperty("java.home");
     if (javaHome != null) {
-      Path packaged =
-          Path.of(
-              javaHome,
-              "bin",
-              System.getProperty("os.name", "").toLowerCase().contains("win")
-                  ? "java.exe"
-                  : "java");
+      Path packaged = Path.of(javaHome, "bin", javaBinaryName(System.getProperty("os.name", "")));
       if (Files.isRegularFile(packaged)) {
         return packaged.toString();
       }
@@ -418,11 +430,25 @@ public final class Launcher {
   // UI helpers
   // -------------------------------------------------------------------------
 
-  private static boolean promptUser(final String newVersion) {
+  /**
+   * Whether a modal Swing dialog can be shown. False when headless (CI, servers) or when the {@code
+   * atw.launcher.headless} system property is set — the property is the deterministic seam tests
+   * use, since {@link GraphicsEnvironment#isHeadless()} caches its answer per JVM.
+   */
+  static boolean isGuiAvailable() {
+    return !GraphicsEnvironment.isHeadless() && !Boolean.getBoolean("atw.launcher.headless");
+  }
+
+  static boolean promptUser(final String newVersion) {
     if (System.console() != null) {
       System.out.print("[Launcher] Update v" + newVersion + " available. Apply now? [y/N] ");
       String response = System.console().readLine();
       return response != null && response.trim().equalsIgnoreCase("y");
+    }
+    if (!isGuiAvailable()) {
+      // No display to attach a modal to (CI, tests); refuse the update so the existing JAR keeps
+      // launching instead of dying with HeadlessException.
+      return false;
     }
     // GUI prompt for desktop installs
     int choice =
@@ -435,8 +461,12 @@ public final class Launcher {
     return choice == JOptionPane.YES_OPTION;
   }
 
-  private static void showError(final String message) {
+  static void showError(final String message) {
     System.err.println("[Launcher] " + message);
+    if (!isGuiAvailable()) {
+      // stderr above carries the message when no dialog can be shown.
+      return;
+    }
     try {
       JOptionPane.showMessageDialog(null, message, "Launcher Error", JOptionPane.ERROR_MESSAGE);
     } catch (Exception ignored) {
