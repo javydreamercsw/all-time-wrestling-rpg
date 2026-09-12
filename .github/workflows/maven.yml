@@ -55,6 +55,7 @@ jobs:
       service_changed: ${{ steps.filter.outputs.service_changed }}
       db_changed: ${{ steps.filter.outputs.db_changed }}
       docs_changed: ${{ steps.filter.outputs.docs_changed }}
+      installer_changed: ${{ steps.filter.outputs.installer_changed }}
     steps:
       - uses: actions/checkout@v6
         with:
