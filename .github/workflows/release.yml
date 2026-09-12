@@ -434,13 +434,16 @@ jobs:
         run: npm install --legacy-peer-deps
 
       - name: Build JAR with Maven
-        run: mvn -B package -DskipTests --file pom.xml
+        # Production mode is mandatory for release artifacts: a dev-mode JAR records the CI
+        # project folder in flow-build-info.json and fails on user machines with
+        # "Running project in development mode with no access to folder ..." (ATW-mcwe).
+        run: mvn -B package -Pproduction -DskipTests --file pom.xml
 
       - name: Build WAR with Maven
-        run: mvn -B war:war -Pwar -DskipTests --file pom.xml
+        run: mvn -B war:war -Pwar,production -DskipTests --file pom.xml
 
       - name: Build Portable ZIP
-        run: mvn -B package -Pportable -DskipTests --file pom.xml
+        run: mvn -B package -Pportable,production -DskipTests --file pom.xml
 
       - name: Guard against accidental release discard
         env:
@@ -539,6 +542,28 @@ jobs:
             -Djpackage.type=${{ matrix.type }} \
             -Djpackage.icon=${{ matrix.icon }} \
             -DskipTests --file pom.xml
+
+      # jpackage wraps target/jpackage-input verbatim into the DMG/MSI/DEB, so the
+      # launcher JAR that is about to ship must contain every compiled Launcher*.class
+      # (nested records/classes are separate class files — ATW-mcwe). Uses jar tf
+      # (not unzip) so the step also works in Git Bash on the Windows runner.
+      - name: Verify packaged launcher JAR completeness
+        shell: bash
+        run: |
+          LAUNCHER_JAR="$(find target/jpackage-input -name 'atw-launcher-*.jar' | head -1)"
+          if [ -z "$LAUNCHER_JAR" ]; then
+            echo "FAIL: no atw-launcher-*.jar in jpackage-input" >&2
+            exit 1
+          fi
+          EXPECTED="$(find target/classes/com/github/javydreamercsw -maxdepth 1 -name 'Launcher*.class' -exec basename {} \; | sort)"
+          PACKAGED="$(jar tf "$LAUNCHER_JAR" | grep 'com/github/javydreamercsw/Launcher.*\.class' | sed 's|.*/||' | sort)"
+          if [ "$EXPECTED" != "$PACKAGED" ]; then
+            echo "FAIL: launcher JAR missing compiled classes" >&2
+            echo "compiled: $EXPECTED" >&2
+            echo "packaged: $PACKAGED" >&2
+            exit 1
+          fi
+          echo "OK: $(echo "$EXPECTED" | wc -l | tr -d ' ') Launcher classes packaged"
 
       - name: Rename Installers
         shell: bash
