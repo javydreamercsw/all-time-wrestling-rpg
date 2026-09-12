@@ -44,6 +44,7 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
+import com.github.mvysny.kaributesting.v10.GridKt;
 import com.github.mvysny.kaributesting.v10.HasValueUtilsKt;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
@@ -253,8 +254,7 @@ class FeudScriptCardTest extends AbstractViewTest {
 
     _click(_get(card, Button.class, spec -> spec.withText("Edit")));
     Dialog dialog = _get(Dialog.class);
-    com.vaadin.flow.component.textfield.TextField nameField =
-        _get(dialog, com.vaadin.flow.component.textfield.TextField.class);
+    TextField nameField = _get(dialog, TextField.class);
     HasValueUtilsKt._setValue(nameField, " ", true);
     _click(_get(dialog, Button.class, spec -> spec.withText("Save")));
 
@@ -333,7 +333,7 @@ class FeudScriptCardTest extends AbstractViewTest {
    */
   private static Component cellButton(FeudScriptCard card, int row) {
     Grid<?> grid = _get(card, Grid.class);
-    return com.github.mvysny.kaributesting.v10.GridKt._getCellComponent(grid, 0, "actions");
+    return GridKt._getCellComponent(grid, 0, "actions");
   }
 
   private static FeudScriptBeat beat(int order, String segmentType) {

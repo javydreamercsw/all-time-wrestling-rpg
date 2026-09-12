@@ -34,6 +34,7 @@ import com.github.javydreamercsw.management.domain.feud.FeudScriptStatus;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptWinnerControl;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
+import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -41,11 +42,13 @@ import com.github.javydreamercsw.management.dto.feud.AiSuggestedOpponentDTO;
 import com.github.javydreamercsw.management.service.feud.FeudBeatAssistantService;
 import com.github.javydreamercsw.management.ui.component.TeamRowsEditor;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
+import com.github.mvysny.kaributesting.v10.MockVaadin;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
 import com.vaadin.flow.component.textfield.TextArea;
 import java.time.LocalDate;
@@ -99,7 +102,7 @@ class BeatEditorTest extends AbstractViewTest {
     if (ple) {
       ShowType pleType = new ShowType();
       pleType.setName("Premium Live Event");
-      pleType.setCategory(com.github.javydreamercsw.management.domain.show.type.ShowCategory.PLE);
+      pleType.setCategory(ShowCategory.PLE);
       ShowTemplate template = new ShowTemplate();
       template.setShowType(pleType);
       show.setTemplate(template);
@@ -341,7 +344,7 @@ class BeatEditorTest extends AbstractViewTest {
   private static void waitForUiUpdates() throws InterruptedException {
     long deadline = System.currentTimeMillis() + 5000;
     while (System.currentTimeMillis() < deadline) {
-      com.github.mvysny.kaributesting.v10.MockVaadin.clientRoundtrip();
+      MockVaadin.clientRoundtrip();
       Thread.sleep(50);
     }
   }
@@ -465,8 +468,7 @@ class BeatEditorTest extends AbstractViewTest {
   @SuppressWarnings("unchecked")
   private static MultiSelectComboBox<Wrestler> teamRowCombo(BeatEditor editor, int row) {
     TeamRowsEditor rows = teamRows(editor);
-    com.vaadin.flow.component.orderedlayout.VerticalLayout rowsContainer =
-        (com.vaadin.flow.component.orderedlayout.VerticalLayout) rows.getComponentAt(0);
+    VerticalLayout rowsContainer = (VerticalLayout) rows.getComponentAt(0);
     return (MultiSelectComboBox<Wrestler>)
         rowsContainer.getComponentAt(row).getChildren().findFirst().orElseThrow();
   }

@@ -29,6 +29,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.management.domain.feud.FeudLength;
 import com.github.javydreamercsw.management.domain.feud.FeudScript;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptBeat;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -37,11 +38,13 @@ import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.github.mvysny.kaributesting.v10.HasValueUtilsKt;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
 import com.vaadin.flow.component.textfield.TextField;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -115,7 +118,7 @@ class FeudScriptWizardDialogTest extends AbstractViewTest {
             wizard,
             MultiSelectComboBox.class,
             spec -> spec.withLabel("Wrestlers (2 for rivalry, 3+ for multi-feud)"));
-    HasValueUtilsKt._setValue(picker, java.util.Set.of(wrestler1), true);
+    HasValueUtilsKt._setValue(picker, Set.of(wrestler1), true);
 
     next(wizard);
     assertEquals("Step 1 of 3 — Select Wrestlers", stepTitle(wizard).getText());
@@ -134,7 +137,7 @@ class FeudScriptWizardDialogTest extends AbstractViewTest {
             wizard,
             MultiSelectComboBox.class,
             spec -> spec.withLabel("Wrestlers (2 for rivalry, 3+ for multi-feud)"));
-    HasValueUtilsKt._setValue(picker, java.util.Set.of(wrestler1, wrestler2), true);
+    HasValueUtilsKt._setValue(picker, Set.of(wrestler1, wrestler2), true);
     next(wizard);
 
     assertEquals("Step 2 of 3 — Arc Details", stepTitle(wizard).getText());
@@ -156,7 +159,7 @@ class FeudScriptWizardDialogTest extends AbstractViewTest {
             wizard,
             MultiSelectComboBox.class,
             spec -> spec.withLabel("Wrestlers (2 for rivalry, 3+ for multi-feud)"));
-    HasValueUtilsKt._setValue(picker, java.util.Set.of(wrestler1, wrestler2), true);
+    HasValueUtilsKt._setValue(picker, Set.of(wrestler1, wrestler2), true);
     next(wizard);
 
     TextField nameField = _get(wizard, TextField.class, spec -> spec.withLabel("Arc Name"));
@@ -181,7 +184,7 @@ class FeudScriptWizardDialogTest extends AbstractViewTest {
             wizard,
             MultiSelectComboBox.class,
             spec -> spec.withLabel("Wrestlers (2 for rivalry, 3+ for multi-feud)"));
-    HasValueUtilsKt._setValue(picker, java.util.Set.of(wrestler1, wrestler2), true);
+    HasValueUtilsKt._setValue(picker, Set.of(wrestler1, wrestler2), true);
     next(wizard);
 
     TextField nameField = _get(wizard, TextField.class, spec -> spec.withLabel("Arc Name"));
@@ -203,17 +206,13 @@ class FeudScriptWizardDialogTest extends AbstractViewTest {
             wizard,
             MultiSelectComboBox.class,
             spec -> spec.withLabel("Wrestlers (2 for rivalry, 3+ for multi-feud)"));
-    HasValueUtilsKt._setValue(picker, java.util.Set.of(wrestler1, wrestler2), true);
+    HasValueUtilsKt._setValue(picker, Set.of(wrestler1, wrestler2), true);
     next(wizard);
     next(wizard); // default name is fine
 
     // Step 3 starts with one beat row; give it a match type.
     BeatEditor beatRow = _get(wizard, BeatEditor.class);
-    _get(
-            beatRow,
-            com.vaadin.flow.component.combobox.ComboBox.class,
-            spec -> spec.withLabel("Match Type"))
-        .setValue("Singles Match");
+    _get(beatRow, ComboBox.class, spec -> spec.withLabel("Match Type")).setValue("Singles Match");
     _click(_get(wizard, Button.class, spec -> spec.withText("Finish")));
 
     @SuppressWarnings("unchecked")
@@ -236,7 +235,7 @@ class FeudScriptWizardDialogTest extends AbstractViewTest {
             wizard,
             MultiSelectComboBox.class,
             spec -> spec.withLabel("Wrestlers (2 for rivalry, 3+ for multi-feud)"));
-    HasValueUtilsKt._setValue(picker, java.util.Set.of(wrestler1, wrestler2), true);
+    HasValueUtilsKt._setValue(picker, Set.of(wrestler1, wrestler2), true);
     next(wizard);
     next(wizard);
 
@@ -261,16 +260,12 @@ class FeudScriptWizardDialogTest extends AbstractViewTest {
             wizard,
             MultiSelectComboBox.class,
             spec -> spec.withLabel("Wrestlers (2 for rivalry, 3+ for multi-feud)"));
-    HasValueUtilsKt._setValue(picker, java.util.Set.of(wrestler1, wrestler2), true);
+    HasValueUtilsKt._setValue(picker, Set.of(wrestler1, wrestler2), true);
     next(wizard);
     next(wizard);
 
     BeatEditor beatRow = _get(wizard, BeatEditor.class);
-    _get(
-            beatRow,
-            com.vaadin.flow.component.combobox.ComboBox.class,
-            spec -> spec.withLabel("Match Type"))
-        .setValue("Singles Match");
+    _get(beatRow, ComboBox.class, spec -> spec.withLabel("Match Type")).setValue("Singles Match");
     _click(_get(wizard, Button.class, spec -> spec.withText("Finish")));
 
     assertTrue(wizard.isOpened());
@@ -287,22 +282,17 @@ class FeudScriptWizardDialogTest extends AbstractViewTest {
             wizard,
             MultiSelectComboBox.class,
             spec -> spec.withLabel("Wrestlers (2 for rivalry, 3+ for multi-feud)"));
-    HasValueUtilsKt._setValue(picker, java.util.Set.of(wrestler1, wrestler2), true);
+    HasValueUtilsKt._setValue(picker, Set.of(wrestler1, wrestler2), true);
     next(wizard);
 
     @SuppressWarnings("unchecked")
-    RadioButtonGroup<com.github.javydreamercsw.management.domain.feud.FeudLength> length =
+    RadioButtonGroup<FeudLength> length =
         _get(wizard, RadioButtonGroup.class, spec -> spec.withLabel("Feud Length"));
-    HasValueUtilsKt._setValue(
-        length, com.github.javydreamercsw.management.domain.feud.FeudLength.LONG, true);
+    HasValueUtilsKt._setValue(length, FeudLength.LONG, true);
     next(wizard);
 
     BeatEditor beatRow = _get(wizard, BeatEditor.class);
-    _get(
-            beatRow,
-            com.vaadin.flow.component.combobox.ComboBox.class,
-            spec -> spec.withLabel("Match Type"))
-        .setValue("Singles Match");
+    _get(beatRow, ComboBox.class, spec -> spec.withLabel("Match Type")).setValue("Singles Match");
     _click(_get(wizard, Button.class, spec -> spec.withText("Finish")));
 
     verify(feudScriptService).createScriptWithBeats(anyString(), anyList(), same(3), anyList());

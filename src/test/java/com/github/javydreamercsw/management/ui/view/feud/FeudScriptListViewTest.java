@@ -36,6 +36,8 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.html.Paragraph;
+import com.vaadin.flow.component.html.Span;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -101,10 +103,10 @@ class FeudScriptListViewTest extends AbstractViewTest {
   }
 
   private static void collectTexts(Component c, List<String> texts) {
-    if (c instanceof com.vaadin.flow.component.html.Span span && span.getText() != null) {
+    if (c instanceof Span span && span.getText() != null) {
       texts.add(span.getText());
     }
-    if (c instanceof com.vaadin.flow.component.html.Paragraph p && p.getText() != null) {
+    if (c instanceof Paragraph p && p.getText() != null) {
       texts.add(p.getText());
     }
     c.getChildren().forEach(child -> collectTexts(child, texts));
@@ -139,7 +141,7 @@ class FeudScriptListViewTest extends AbstractViewTest {
   @DisplayName("New Story Arc button is visible for users who can create")
   void newArcButton_visibleWhenCanCreate() {
     FeudScriptListView view = newView(List.of());
-    assertTrue(_get(view, com.vaadin.flow.component.button.Button.class).isVisible());
+    assertTrue(_get(view, Button.class).isVisible());
   }
 
   @Test

@@ -26,7 +26,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.mvysny.kaributesting.v10.MockVaadin;
 import com.github.mvysny.kaributesting.v10.Routes;
 import com.github.mvysny.kaributesting.v10.mock.MockedUI;
-import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -68,12 +68,6 @@ class TeamRowsEditorTest {
     return wrestler;
   }
 
-  private static TeamRowsEditor newEditor() {
-    TeamRowsEditor editor = new TeamRowsEditor(List.of(), null);
-    UI.getCurrent().add(editor);
-    return editor;
-  }
-
   /** The multi-select combo of the i-th team row (rows live in the inner rows container). */
   @SuppressWarnings("unchecked")
   private static MultiSelectComboBox<Wrestler> teamCombo(TeamRowsEditor editor, int row) {
@@ -110,8 +104,7 @@ class TeamRowsEditorTest {
 
     // Click the "−" button of the first row.
     VerticalLayout rowsContainer = (VerticalLayout) editor.getComponentAt(0);
-    Button removeFirst =
-        _get((com.vaadin.flow.component.Component) rowsContainer.getComponentAt(0), Button.class);
+    Button removeFirst = _get((Component) rowsContainer.getComponentAt(0), Button.class);
     _click(removeFirst);
 
     Map<Integer, List<Wrestler>> teams = editor.getTeams();
@@ -127,8 +120,7 @@ class TeamRowsEditorTest {
     editor.addTeamRow(List.of(wrestler1));
 
     VerticalLayout rowsContainer = (VerticalLayout) editor.getComponentAt(0);
-    Button removeOnly =
-        _get((com.vaadin.flow.component.Component) rowsContainer.getComponentAt(0), Button.class);
+    Button removeOnly = _get((Component) rowsContainer.getComponentAt(0), Button.class);
     _click(removeOnly);
 
     assertEquals(1, editor.getTeams().size());
