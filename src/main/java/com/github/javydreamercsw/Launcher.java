@@ -71,7 +71,7 @@ public final class Launcher {
     String currentVersion =
         currentJar == null ? null : extractVersion(currentJar.getFileName().toString());
 
-    ReleaseInfo release = fetchLatestRelease();
+    ReleaseInfo release = fetchLatestRelease(currentVersion);
 
     if (release == null) {
       if (currentJar == null) {
@@ -152,7 +152,78 @@ public final class Launcher {
     return override != null ? override : RELEASES_API;
   }
 
+  private static String releasesListApiUrl() {
+    String override = System.getProperty("atw.launcher.releases-api");
+    if (override != null) {
+      // Tests and CI point the override at a single-release JSON document; keep it.
+      return override;
+    }
+    // /releases returns the list including prereleases (newest first), unlike
+    // /releases/latest which by GitHub's definition excludes them.
+    return "https://api.github.com/repos/" + REPO + "/releases?per_page=10";
+  }
+
+  /** Prerelease channel: forced by property, or implicit when the install itself is an RC. */
+  static boolean allowPreRelease(final String currentVersion) {
+    return Boolean.getBoolean("atw.launcher.allow-prerelease") || isPreRelease(currentVersion);
+  }
+
+  /**
+   * Picks the newest release from a GitHub releases-list JSON array. Pre-releases are only eligible
+   * when the channel allows them; otherwise the newest stable release wins. Falls back to the
+   * newest stable when a pre-release carries no JAR asset.
+   */
+  static ReleaseInfo newestReleaseFromList(final String json, final String currentVersion) {
+    // The list is sorted newest-first by GitHub; walk it in order.
+    Pattern tagPattern = Pattern.compile("\"tag_name\"\\s*:\\s*\"([^\"]+)\"");
+    Matcher tagMatcher = tagPattern.matcher(json);
+    ReleaseInfo best = null;
+    int bestRank = Integer.MIN_VALUE;
+    int cursor = 0;
+    while (tagMatcher.find()) {
+      int start = tagMatcher.start();
+      int end =
+          json.indexOf("\"tag_name\"", tagMatcher.end()) == -1
+              ? json.length()
+              : json.indexOf("\"tag_name\"", tagMatcher.end());
+      String body = json.substring(cursor, Math.max(end, start));
+      cursor = Math.max(end, start);
+
+      String tag = tagMatcher.group(1);
+      String version = tag.startsWith("v") ? tag.substring(1) : tag;
+      String jarUrl = findJarAssetUrl(body);
+      if (jarUrl == null) {
+        continue;
+      }
+      boolean allowed = !isPreRelease(version) || allowPreRelease(currentVersion);
+      if (!allowed) {
+        continue;
+      }
+      int rank = 0;
+      try {
+        int[] s = semver(version);
+        rank = s[0] * 1_000_000 + s[1] * 1_000 + s[2];
+      } catch (Exception e) {
+        continue;
+      }
+      // Two-digit pre-release slot: finals get 99, RCn gets min(n, 98). A finals
+      // rank of Integer.MAX_VALUE would overflow the *100 fold and flip the order.
+      int slot =
+          preReleaseRank(version) == Integer.MAX_VALUE ? 99 : Math.min(preReleaseRank(version), 98);
+      rank = rank * 100 + slot;
+      if (best == null || rank > bestRank) {
+        best = new ReleaseInfo(version, jarUrl);
+        bestRank = rank;
+      }
+    }
+    return best;
+  }
+
   static ReleaseInfo fetchLatestRelease() {
+    return fetchLatestRelease(null);
+  }
+
+  static ReleaseInfo fetchLatestRelease(final String currentVersion) {
     try {
       HttpClient client =
           HttpClient.newBuilder()
@@ -160,9 +231,17 @@ public final class Launcher {
               // GitHub API and asset URLs redirect (302); default policy NEVER fails them.
               .followRedirects(HttpClient.Redirect.NORMAL)
               .build();
+      // The prerelease channel must hit the LIST endpoint: /releases/latest
+      // never returns prereleases, so an RC install could otherwise only ever
+      // discover final releases.
+      boolean preChannel = allowPreRelease(currentVersion);
+      String apiUrl =
+          preChannel && System.getProperty("atw.launcher.releases-api") == null
+              ? releasesListApiUrl()
+              : releasesApiUrl();
       HttpRequest req =
           HttpRequest.newBuilder()
-              .uri(URI.create(releasesApiUrl()))
+              .uri(URI.create(apiUrl))
               .header("Accept", "application/vnd.github+json")
               .header("User-Agent", "all-time-wrestling-rpg-launcher")
               .timeout(Duration.ofSeconds(15))
@@ -175,6 +254,12 @@ public final class Launcher {
       }
 
       String body = resp.body();
+      if (preChannel) {
+        // List endpoint returns an array; the single-release override returns one object.
+        String listBody = body.trim().startsWith("[") ? body : "[" + body + "]";
+        return newestReleaseFromList(listBody, currentVersion);
+      }
+
       String tag = extractJsonString(body, "tag_name");
       String version = tag != null && tag.startsWith("v") ? tag.substring(1) : tag;
       String jarUrl = findJarAssetUrl(body);
@@ -209,21 +294,17 @@ public final class Launcher {
   // Version comparison
   // -------------------------------------------------------------------------
 
-  static boolean isNewer(final String candidate, final String current) {
-    try {
-      int[] c = semver(candidate);
-      int[] r = semver(current);
-      for (int i = 0; i < 3; i++) {
-        if (c[i] != r[i]) {
-          return c[i] > r[i];
-        }
-      }
-      return false;
-    } catch (Exception e) {
-      return false;
-    }
+  /**
+   * True when the version carries a pre-release suffix (RC, beta, snapshot...). The stable channel
+   * must never see pre-release builds, and RC installs must be able to update to a higher RC of
+   * themselves, so suffix ordering matters ({@code 2.10.0-RC2 > 2.10.0-RC1}, both {@code <
+   * 2.10.0}).
+   */
+  static boolean isPreRelease(final String version) {
+    return version != null && version.matches(".*-(?i)(rc|beta|alpha|snapshot|milestone).*");
   }
 
+  /** Numeric part only — the ordering key for release comparison. */
   static int[] semver(final String v) {
     String numeric = v.replaceAll("[^0-9.].*$", "");
     if (numeric.isBlank()) {
@@ -235,6 +316,35 @@ public final class Launcher {
       result[i] = parts[i].isBlank() ? 0 : Integer.parseInt(parts[i]);
     }
     return result;
+  }
+
+  /**
+   * Ordering weight: any numeric version (final {@code 2.10.0}) outranks a pre-release of the same
+   * numeric ({@code 2.10.0-RC1}); higher RC numbers outrank lower ones. -1 marks a version too
+   * malformed to compare.
+   */
+  static int preReleaseRank(final String version) {
+    if (!isPreRelease(version)) {
+      return Integer.MAX_VALUE;
+    }
+    Matcher m = Pattern.compile("(?i)-rc[\\s_-]?(\\d+)").matcher(version);
+    return m.find() ? Integer.parseInt(m.group(1)) : -1;
+  }
+
+  static boolean isNewer(final String candidate, final String current) {
+    try {
+      int[] c = semver(candidate);
+      int[] r = semver(current);
+      for (int i = 0; i < 3; i++) {
+        if (c[i] != r[i]) {
+          return c[i] > r[i];
+        }
+      }
+      // Same numeric version: a final beats an RC, a higher RC beats a lower one.
+      return preReleaseRank(candidate) > preReleaseRank(current);
+    } catch (Exception e) {
+      return false;
+    }
   }
 
   // -------------------------------------------------------------------------

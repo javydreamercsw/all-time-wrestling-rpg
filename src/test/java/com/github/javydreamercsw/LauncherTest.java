@@ -97,6 +97,127 @@ class LauncherTest {
     assertThat(Launcher.isNewer("2.6.0", "not-a-version")).isFalse();
   }
 
+  // ── release candidate ordering + channel (ATW-rgxy) ───────────────────────
+
+  @Test
+  void isPreRelease_detectsPrereleaseSuffixes() {
+    assertThat(Launcher.isPreRelease("2.10.0-RC1")).isTrue();
+    assertThat(Launcher.isPreRelease("2.10.0-rc2")).isTrue();
+    assertThat(Launcher.isPreRelease("2.10.0-BETA1")).isTrue();
+    assertThat(Launcher.isPreRelease("2.10.0-SNAPSHOT")).isTrue();
+    assertThat(Launcher.isPreRelease("2.10.0")).isFalse();
+    assertThat(Launcher.isPreRelease(null)).isFalse();
+  }
+
+  @Test
+  void isNewer_ordersRcVersionsWithinTheSameNumeric() {
+    // RC install updating RC1 -> RC2 was impossible before suffix-aware ordering.
+    assertThat(Launcher.isNewer("2.10.0-RC2", "2.10.0-RC1")).isTrue();
+    assertThat(Launcher.isNewer("2.10.0-RC1", "2.10.0-RC2")).isFalse();
+    // Final beats any RC of the same numeric; RC never shadows the final.
+    assertThat(Launcher.isNewer("2.10.0", "2.10.0-RC1")).isTrue();
+    assertThat(Launcher.isNewer("2.10.0-RC1", "2.10.0")).isFalse();
+    // Higher numeric always wins regardless of suffix.
+    assertThat(Launcher.isNewer("2.10.1-RC1", "2.10.0")).isTrue();
+    assertThat(Launcher.isNewer("2.11.0-RC1", "2.10.0-RC9")).isTrue();
+  }
+
+  @Test
+  void allowPreRelease_isImplicitForRcInstallsAndOptInForStable() {
+    System.clearProperty("atw.launcher.allow-prerelease");
+    try {
+      // An RC install is on the prerelease channel by definition — it must be
+      // able to discover RC2 and the final without any property.
+      assertThat(Launcher.allowPreRelease("2.10.0-RC1")).isTrue();
+      // Stable installs never see prereleases unless the property forces them.
+      assertThat(Launcher.allowPreRelease("2.10.0")).isFalse();
+      assertThat(Launcher.allowPreRelease(null)).isFalse();
+    } finally {
+      System.clearProperty("atw.launcher.allow-prerelease");
+    }
+
+    System.setProperty("atw.launcher.allow-prerelease", "true");
+    try {
+      assertThat(Launcher.allowPreRelease("2.10.0")).isTrue();
+    } finally {
+      System.clearProperty("atw.launcher.allow-prerelease");
+    }
+  }
+
+  @Test
+  void newestReleaseFromList_picksNewestStableWhenChannelClosed() {
+    String json =
+        """
+        [
+          {"tag_name": "v2.10.0-RC1", "assets": [{"browser_download_url": "https://x/rc1.jar"}]},
+          {"tag_name": "v2.9.0", "assets": [{"browser_download_url": "https://x/2.9.0.jar"}]}
+        ]
+        """;
+    // Stable install (no property): RC must be skipped, 2.9.0 wins.
+    System.clearProperty("atw.launcher.allow-prerelease");
+    try {
+      Launcher.ReleaseInfo info = Launcher.newestReleaseFromList(json, "2.9.0");
+      assertThat(info.version()).isEqualTo("2.9.0");
+    } finally {
+      System.clearProperty("atw.launcher.allow-prerelease");
+    }
+  }
+
+  @Test
+  void newestReleaseFromList_letsRcInstallsSeeRcsAndFinals() {
+    String json =
+        """
+        [
+          {"tag_name": "v2.10.0-RC2", "assets": [{"browser_download_url": "https://x/rc2.jar"}]},
+          {"tag_name": "v2.10.0-RC1", "assets": [{"browser_download_url": "https://x/rc1.jar"}]}
+        ]
+        """;
+    System.clearProperty("atw.launcher.allow-prerelease");
+    try {
+      // RC1 install: RC2 is eligible and newest — this is the reporter's update path.
+      Launcher.ReleaseInfo info = Launcher.newestReleaseFromList(json, "2.10.0-RC1");
+      assertThat(info.version()).isEqualTo("2.10.0-RC2");
+    } finally {
+      System.clearProperty("atw.launcher.allow-prerelease");
+    }
+  }
+
+  @Test
+  void newestReleaseFromList_prefersFinalOverRcOfSameNumeric() {
+    String json =
+        """
+        [
+          {"tag_name": "v2.10.0", "assets": [{"browser_download_url": "https://x/final.jar"}]},
+          {"tag_name": "v2.10.0-RC2", "assets": [{"browser_download_url": "https://x/rc2.jar"}]}
+        ]
+        """;
+    System.clearProperty("atw.launcher.allow-prerelease");
+    try {
+      Launcher.ReleaseInfo info = Launcher.newestReleaseFromList(json, "2.10.0-RC1");
+      assertThat(info.version()).isEqualTo("2.10.0");
+    } finally {
+      System.clearProperty("atw.launcher.allow-prerelease");
+    }
+  }
+
+  @Test
+  void newestReleaseFromList_skipsReleasesWithoutJarAssets() {
+    String json =
+        """
+        [
+          {"tag_name": "v2.10.0", "assets": [{"browser_download_url": "https://x/app.war"}]},
+          {"tag_name": "v2.9.0", "assets": [{"browser_download_url": "https://x/2.9.0.jar"}]}
+        ]
+        """;
+    System.clearProperty("atw.launcher.allow-prerelease");
+    try {
+      Launcher.ReleaseInfo info = Launcher.newestReleaseFromList(json, "2.9.0");
+      assertThat(info.version()).isEqualTo("2.9.0");
+    } finally {
+      System.clearProperty("atw.launcher.allow-prerelease");
+    }
+  }
+
   // ── GitHub API parsing ────────────────────────────────────────────────────
 
   @Test
