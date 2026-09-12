@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'The release version (e.g., 1.2.0)'
+        description: 'The release version (e.g., 1.2.0 — or 1.2.0-RC1 for a release candidate)'
         required: true
       discard_existing_release:
         description: 'Allow discarding an existing release that already has assets. Default: false — pipeline stops with an error if assets already exist.'
@@ -100,6 +100,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       is_patch: ${{ steps.release_type.outputs.is_patch }}
+      is_rc: ${{ steps.release_type.outputs.is_rc }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -119,6 +120,16 @@ jobs:
           else
             echo "is_patch=false" >> "$GITHUB_OUTPUT"
             echo "Non-patch release detected ($VERSION) — screenshots and videos will be generated."
+          fi
+          # Release candidate (e.g. 2.10.0-RC1): a pre-release build for testers.
+          # RCs skip the docs ceremony and never merge back to main; the release
+          # stays flagged prerelease so /releases/latest (the stable launcher
+          # channel) never hands it to regular users.
+          if echo "$VERSION" | grep -iqE '\-rc[0-9]*$'; then
+            echo "is_rc=true" >> "$GITHUB_OUTPUT"
+            echo "Release candidate detected ($VERSION) — docs ceremony and merge_to_main will be skipped."
+          else
+            echo "is_rc=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Set up JDK 25
@@ -215,7 +226,7 @@ jobs:
   # ---------------------------------------------------------------------------
   generate_screenshots:
     needs: setup_release
-    if: needs.setup_release.outputs.is_patch != 'true'
+    if: needs.setup_release.outputs.is_patch != 'true' && needs.setup_release.outputs.is_rc != 'true'
     runs-on: ubuntu-latest
     env:
       HEADLESS: 'true'
@@ -262,7 +273,7 @@ jobs:
   # ---------------------------------------------------------------------------
   generate_videos:
     needs: setup_release
-    if: needs.setup_release.outputs.is_patch != 'true'
+    if: needs.setup_release.outputs.is_patch != 'true' && needs.setup_release.outputs.is_rc != 'true'
     runs-on: ubuntu-latest
     env:
       HEADLESS: 'true'
@@ -472,7 +483,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: v${{ github.event.inputs.version }}
-          name: Release v${{ github.event.inputs.version }}
+          name: ${{ needs.setup_release.outputs.is_rc == 'true' && 'Release Candidate' || 'Release' }} v${{ github.event.inputs.version }}
           body_path: RELEASE_NOTES.md
           draft: false
           prerelease: true
@@ -590,8 +601,9 @@ jobs:
     # Pages artifact was uploaded by assemble_docs; the GitHub Release must
     # exist (build_and_release) but we do NOT need to wait for desktop
     # installers — deploying pages in parallel with installer builds saves ~15 min.
-    needs: [build_and_release]
-    if: always() && needs.build_and_release.result == 'success'
+    # Release candidates skip pages entirely (no docs ceremony for test builds).
+    needs: [setup_release, build_and_release]
+    if: always() && needs.build_and_release.result == 'success' && needs.setup_release.outputs.is_rc != 'true'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -606,7 +618,7 @@ jobs:
     if: |
       always() &&
       needs.build_desktop_installers.result == 'success' &&
-      needs.deploy_pages.result == 'success'
+      (needs.deploy_pages.result == 'success' || needs.deploy_pages.result == 'skipped')
     runs-on: ubuntu-latest
     environment:
       name: release-approval
@@ -628,11 +640,14 @@ jobs:
         run: |
           VERSION="${{ github.event.inputs.version }}"
           if echo "$VERSION" | grep -iqE '\-rc[0-9]*$'; then
-            # Release candidate (e.g. 2.0.0-RC1, 2.0.0-RC2): remove prerelease
-            # flag so it appears as a normal release, but do NOT mark it latest.
-            gh release edit "v${VERSION}" --prerelease=false
+            # Release candidate: KEEP the prerelease flag. GitHub's /releases/latest
+            # only returns non-prerelease releases, so an unflagged RC would become
+            # the auto-update target for every stable desktop install (the launcher
+            # queries /releases/latest). RC testers receive RC updates through the
+            # launcher's prerelease channel (atw.launcher.allow-prerelease).
+            echo "Release candidate — keeping prerelease flag (never the stable update target)."
           else
-            # Final release (e.g. 2.0.0): remove prerelease flag and mark latest.
+            # Final release: remove prerelease flag and mark latest.
             gh release edit "v${VERSION}" --prerelease=false --latest
           fi
 
@@ -667,7 +682,10 @@ jobs:
 
   merge_to_main:
     needs: build_and_publish_docker
-    if: always() && needs.build_and_publish_docker.result == 'success'
+    # Release candidates never merge back to main: main would otherwise carry
+    # the RC version in pom.xml and a parallel release/<X>-rcN branch until the
+    # final release untangles it. Only final releases sync to main.
+    if: always() && needs.build_and_publish_docker.result == 'success' && needs.setup_release.outputs.is_rc != 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
