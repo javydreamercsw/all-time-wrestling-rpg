@@ -146,7 +146,12 @@ public final class Launcher {
 
   static ReleaseInfo fetchLatestRelease() {
     try {
-      HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
+      HttpClient client =
+          HttpClient.newBuilder()
+              .connectTimeout(Duration.ofSeconds(10))
+              // GitHub API and asset URLs redirect (302); default policy NEVER fails them.
+              .followRedirects(HttpClient.Redirect.NORMAL)
+              .build();
       HttpRequest req =
           HttpRequest.newBuilder()
               .uri(URI.create(releasesApiUrl()))
@@ -236,7 +241,12 @@ public final class Launcher {
 
     System.out.println("[Launcher] Downloading v" + release.version() + "...");
     try {
-      HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
+      HttpClient client =
+          HttpClient.newBuilder()
+              .connectTimeout(Duration.ofSeconds(15))
+              // GitHub asset URLs redirect to release-assets.githubusercontent.com.
+              .followRedirects(HttpClient.Redirect.NORMAL)
+              .build();
       HttpRequest req =
           HttpRequest.newBuilder()
               .uri(URI.create(release.jarUrl()))
@@ -290,11 +300,7 @@ public final class Launcher {
   // -------------------------------------------------------------------------
 
   private static void launchApp(final Path jar, final String[] extraArgs) throws Exception {
-    String javaExe =
-        ProcessHandle.current()
-            .info()
-            .command()
-            .orElse(Path.of(System.getProperty("java.home"), "bin", "java").toString());
+    String javaExe = resolveJavaExecutable();
 
     List<String> cmd = new ArrayList<>();
     cmd.add(javaExe);
@@ -334,6 +340,33 @@ public final class Launcher {
   // -------------------------------------------------------------------------
   // Cleanup helpers
   // -------------------------------------------------------------------------
+
+  /**
+   * Resolves a real {@code java} executable for the child-process launch. The packaged runtime
+   * (java.home) is preferred — it is the JVM this process is already running on. The current
+   * process command is only used when it actually is a java executable; under jpackage it is the
+   * app launcher binary, which does not accept {@code -jar} (ATW-mcwe).
+   */
+  static String resolveJavaExecutable() {
+    String javaHome = System.getProperty("java.home");
+    if (javaHome != null) {
+      Path packaged =
+          Path.of(
+              javaHome,
+              "bin",
+              System.getProperty("os.name", "").toLowerCase().contains("win")
+                  ? "java.exe"
+                  : "java");
+      if (Files.isRegularFile(packaged)) {
+        return packaged.toString();
+      }
+    }
+    return ProcessHandle.current()
+        .info()
+        .command()
+        .filter(cmd -> cmd.endsWith("java") || cmd.endsWith("java.exe"))
+        .orElse("java");
+  }
 
   static void cleanStaleTmp(final Path dir) throws IOException {
     if (!Files.exists(dir)) {

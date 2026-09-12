@@ -434,13 +434,16 @@ jobs:
         run: npm install --legacy-peer-deps
 
       - name: Build JAR with Maven
-        run: mvn -B package -DskipTests --file pom.xml
+        # Production mode is mandatory for release artifacts: a dev-mode JAR records the CI
+        # project folder in flow-build-info.json and fails on user machines with
+        # "Running project in development mode with no access to folder ..." (ATW-mcwe).
+        run: mvn -B package -Pproduction -DskipTests --file pom.xml
 
       - name: Build WAR with Maven
-        run: mvn -B war:war -Pwar -DskipTests --file pom.xml
+        run: mvn -B war:war -Pwar,production -DskipTests --file pom.xml
 
       - name: Build Portable ZIP
-        run: mvn -B package -Pportable -DskipTests --file pom.xml
+        run: mvn -B package -Pportable,production -DskipTests --file pom.xml
 
       - name: Guard against accidental release discard
         env:

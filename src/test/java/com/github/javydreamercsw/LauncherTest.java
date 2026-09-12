@@ -28,8 +28,10 @@ import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -175,6 +177,91 @@ class LauncherTest {
       assertThat(tempDir.resolve("all-time-wrestling-rpg-2.6.0.jar")).doesNotExist();
     } finally {
       server.stop(0);
+    }
+  }
+
+  /**
+   * GitHub release-asset URLs respond with HTTP 302 to release-assets.githubusercontent.com
+   * (ATW-mcwe). With the default NEVER redirect policy every fresh-install download failed with
+   * "Download failed with HTTP 302". The launcher must follow redirects.
+   */
+  @Test
+  void download_followsRedirects(@TempDir Path tempDir) throws Exception {
+    HttpServer target = startJarServer(minimalJarBytes());
+    int targetPort = target.getAddress().getPort();
+
+    HttpServer redirector = HttpServer.create(new InetSocketAddress(0), 0);
+    redirector.createContext(
+        "/app.jar",
+        exchange -> {
+          exchange
+              .getResponseHeaders()
+              .add("Location", "http://127.0.0.1:" + targetPort + "/app.jar");
+          exchange.sendResponseHeaders(302, -1);
+          exchange.close();
+        });
+    redirector.start();
+    try {
+      Launcher.ReleaseInfo release =
+          new Launcher.ReleaseInfo(
+              "2.6.0", "http://127.0.0.1:" + redirector.getAddress().getPort() + "/app.jar");
+
+      Path result = Launcher.download(release, tempDir, null);
+
+      assertThat(result).isNotNull();
+      assertThat(tempDir.resolve("all-time-wrestling-rpg-2.6.0.jar")).exists();
+    } finally {
+      redirector.stop(0);
+      target.stop(0);
+    }
+  }
+
+  /**
+   * The launcher JAR must carry every Launcher*.class — nested classes are separate class files
+   * (ATW-mcwe). The pre-fix include pattern shipped only Launcher.class, so fetchLatestRelease
+   * crashed with NoClassDefFoundError: Launcher$ReleaseInfo the moment the update check ran. Skips
+   * when the packaged launcher JAR is absent (plain mvn test without the package phase).
+   */
+  @Test
+  void packagedLauncherJar_containsAllLauncherClasses() throws Exception {
+    Path launcherJar = Path.of("target", "all-time-wrestling-rpg-2.10.0-SNAPSHOT-launcher.jar");
+    if (!Files.isRegularFile(launcherJar)) {
+      // Glob across versions so the test survives version bumps without edits.
+      try (var stream = Files.list(Path.of("target"))) {
+        launcherJar =
+            stream
+                .filter(
+                    p ->
+                        p.getFileName()
+                            .toString()
+                            .matches("all-time-wrestling-rpg-.*-launcher\\.jar"))
+                .findFirst()
+                .orElse(null);
+      }
+    }
+    if (launcherJar == null || !Files.isRegularFile(launcherJar)) {
+      System.out.println(
+          "[LauncherTest] No packaged launcher JAR found — skipping packaged-jar check.");
+      return;
+    }
+
+    // Every Launcher*.class compiled from the main sources must be in the packaged JAR.
+    try (var compiled =
+        Files.list(Path.of("target", "classes", "com", "github", "javydreamercsw"))) {
+      List<String> expected =
+          compiled
+              .map(p -> p.getFileName().toString())
+              .filter(n -> n.startsWith("Launcher") && n.endsWith(".class"))
+              .toList();
+      assertThat(expected).isNotEmpty();
+
+      try (ZipFile zip = new ZipFile(launcherJar.toFile())) {
+        for (String classFile : expected) {
+          assertThat(zip.getEntry("com/github/javydreamercsw/" + classFile))
+              .as("launcher JAR must contain %s", classFile)
+              .isNotNull();
+        }
+      }
     }
   }
 
@@ -479,5 +566,13 @@ class LauncherTest {
         });
     server.start();
     return server;
+  }
+
+  @Test
+  void resolveJavaExecutable_prefersPackagedRuntime() {
+    String resolved = Launcher.resolveJavaExecutable();
+    // java.home is always set in a JVM, and a JDK/JRE image always carries bin/java.
+    assertThat(resolved).contains("bin");
+    assertThat(Path.of(resolved).getFileName().toString()).startsWith("java");
   }
 }

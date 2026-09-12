@@ -1471,7 +1471,8 @@
                 <configuration>
                   <classifier>launcher</classifier>
                   <includes>
-                    <include>com/github/javydreamercsw/Launcher.class</include>
+                    <!-- Launcher$ReleaseInfo etc.: nested classes are separate class files. -->
+                    <include>com/github/javydreamercsw/Launcher*.class</include>
                   </includes>
                   <archive>
                     <manifest>
@@ -1533,6 +1534,15 @@
                   <winMenuGroup>All Time Wrestling</winMenuGroup>
                   <!-- Stable UUID ensures MSI upgrades replace the existing install -->
                   <winUpgradeUuid>3b8e2f1a-4c7d-4e9b-a2f0-8d6c5e3b1a9f</winUpgradeUuid>
+                  <!-- Keep bin/java in the bundled runtime: the Launcher execs the app JAR as a
+                       child process of the packaged runtime (ATW-mcwe). The plugin default
+                       (stripNativeCommands=true) removes it and breaks that launch path. -->
+                  <jLink>
+                    <noHeaderFiles>true</noHeaderFiles>
+                    <noManPages>true</noManPages>
+                    <stripDebug>true</stripDebug>
+                    <stripNativeCommands>false</stripNativeCommands>
+                  </jLink>
                 </configuration>
               </execution>
             </executions>
@@ -1590,7 +1600,8 @@
                 <configuration>
                   <classifier>launcher</classifier>
                   <includes>
-                    <include>com/github/javydreamercsw/Launcher.class</include>
+                    <!-- Launcher$ReleaseInfo etc.: nested classes are separate class files. -->
+                    <include>com/github/javydreamercsw/Launcher*.class</include>
                   </includes>
                   <archive>
                     <manifest>
