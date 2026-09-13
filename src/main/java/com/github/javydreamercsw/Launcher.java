@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw;
 
+import java.awt.GraphicsEnvironment;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -52,32 +53,60 @@ public final class Launcher {
   private static final Duration STALE_TMP_THRESHOLD = Duration.ofHours(1);
 
   public static void main(final String[] args) throws Exception {
+    System.exit(run(args));
+  }
+
+  /**
+   * Launcher flow; returns the process exit code (0 = the app JAR ran, 1 = fatal). Visible for
+   * testing — {@link #main} turns the return value into {@code System.exit}.
+   */
+  static int run(final String[] args) throws Exception {
     Path appDir = resolveAppDir();
     Files.createDirectories(appDir);
 
     cleanStaleTmp(appDir);
     restoreBackupIfNeeded(appDir);
+    seedBundledJar(appDir);
 
     Path currentJar = findCurrentJar(appDir).orElse(null);
     String currentVersion =
         currentJar == null ? null : extractVersion(currentJar.getFileName().toString());
 
-    ReleaseInfo release = fetchLatestRelease();
+    ReleaseInfo release = fetchLatestRelease(currentVersion);
 
     if (release == null) {
       if (currentJar == null) {
         showError(
             "Could not connect to GitHub to download the application.\n"
                 + "Check your network and try again.");
-        System.exit(1);
+        return 1;
       }
       System.out.println(
           "[Launcher] Update check failed — launching existing version " + currentVersion);
-      launchApp(currentJar, args);
-      return;
+      return launchApp(currentJar, args);
     }
 
     boolean needsDownload = currentJar == null || isNewer(release.version(), currentVersion);
+
+    // Floor: prefer the bundled/local version over a release older than the installer that
+    // shipped this launcher — /releases/latest can lag the installer (e.g. RC installed while
+    // latest stable is older). The floor NEVER blocks the only path to a runnable app: with no
+    // local JAR at all, downloading something older beats failing (ATW-ykmu).
+    String installerVersion = installerVersion();
+    boolean floorBlocks =
+        needsDownload
+            && currentJar != null
+            && installerVersion != null
+            && isNewer(installerVersion, release.version());
+    if (floorBlocks) {
+      System.out.println(
+          "[Launcher] Release v"
+              + release.version()
+              + " is older than this installer (v"
+              + installerVersion
+              + ") — keeping the bundled/local version.");
+      needsDownload = false;
+    }
 
     if (needsDownload) {
       boolean doUpdate = currentJar == null || promptUser(release.version());
@@ -91,10 +120,10 @@ public final class Launcher {
 
     if (currentJar == null) {
       showError("No application JAR found. Download failed.\nCheck your network and try again.");
-      System.exit(1);
+      return 1;
     }
 
-    launchApp(currentJar, args);
+    return launchApp(currentJar, args);
   }
 
   // -------------------------------------------------------------------------
@@ -144,12 +173,127 @@ public final class Launcher {
     return override != null ? override : RELEASES_API;
   }
 
-  static ReleaseInfo fetchLatestRelease() {
+  private static String releasesListApiUrl() {
+    String override = System.getProperty("atw.launcher.releases-api");
+    if (override != null) {
+      // Tests and CI point the override at a single-release JSON document; keep it.
+      return override;
+    }
+    // /releases returns the list including prereleases (newest first), unlike
+    // /releases/latest which by GitHub's definition excludes them.
+    return "https://api.github.com/repos/" + REPO + "/releases?per_page=10";
+  }
+
+  /**
+   * Prerelease channel: forced by property, implicit when the install itself is an RC, or implicit
+   * when the *installer* that placed this launcher is a prerelease (first run — no app JAR yet).
+   */
+  static boolean allowPreRelease(final String currentVersion) {
+    return Boolean.getBoolean("atw.launcher.allow-prerelease")
+        || isPreRelease(currentVersion)
+        || isPreRelease(installerVersion());
+  }
+
+  /**
+   * The version of the installer that shipped this launcher, parsed from the launcher JAR's own
+   * filename ({@code atw-launcher-2.10.0-RC2.jar} in the jpackage app dir). Null when unknown —
+   * bare runs during development. {@code atw.launcher.self} overrides the launcher location
+   * (tests); production never sets it.
+   */
+  static String installerVersion() {
     try {
-      HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
+      Path launcher = selfLocation();
+      Matcher m =
+          Pattern.compile("atw-launcher-(.+)\\.jar").matcher(launcher.getFileName().toString());
+      return m.matches() ? m.group(1) : null;
+    } catch (Exception e) {
+      return null;
+    }
+  }
+
+  /** Where this launcher JAR lives; {@code atw.launcher.self} property overrides (tests). */
+  private static Path selfLocation() throws Exception {
+    String override = System.getProperty("atw.launcher.self");
+    if (override != null) {
+      return Path.of(override);
+    }
+    return Path.of(Launcher.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+  }
+
+  /**
+   * Picks the newest release from a GitHub releases-list JSON array. Pre-releases are only eligible
+   * when the channel allows them; otherwise the newest stable release wins. Falls back to the
+   * newest stable when a pre-release carries no JAR asset.
+   */
+  static ReleaseInfo newestReleaseFromList(final String json, final String currentVersion) {
+    // The list is sorted newest-first by GitHub; walk it in order.
+    Pattern tagPattern = Pattern.compile("\"tag_name\"\\s*:\\s*\"([^\"]+)\"");
+    Matcher tagMatcher = tagPattern.matcher(json);
+    ReleaseInfo best = null;
+    int bestRank = Integer.MIN_VALUE;
+    int cursor = 0;
+    while (tagMatcher.find()) {
+      int start = tagMatcher.start();
+      int end =
+          json.indexOf("\"tag_name\"", tagMatcher.end()) == -1
+              ? json.length()
+              : json.indexOf("\"tag_name\"", tagMatcher.end());
+      String body = json.substring(cursor, Math.max(end, start));
+      cursor = Math.max(end, start);
+
+      String tag = tagMatcher.group(1);
+      String version = tag.startsWith("v") ? tag.substring(1) : tag;
+      String jarUrl = findJarAssetUrl(body);
+      if (jarUrl == null) {
+        continue;
+      }
+      boolean allowed = !isPreRelease(version) || allowPreRelease(currentVersion);
+      if (!allowed) {
+        continue;
+      }
+      int rank = 0;
+      try {
+        int[] s = semver(version);
+        rank = s[0] * 1_000_000 + s[1] * 1_000 + s[2];
+      } catch (Exception e) {
+        continue;
+      }
+      // Two-digit pre-release slot: finals get 99, RCn gets min(n, 98). A finals
+      // rank of Integer.MAX_VALUE would overflow the *100 fold and flip the order.
+      int slot =
+          preReleaseRank(version) == Integer.MAX_VALUE ? 99 : Math.min(preReleaseRank(version), 98);
+      rank = rank * 100 + slot;
+      if (best == null || rank > bestRank) {
+        best = new ReleaseInfo(version, jarUrl);
+        bestRank = rank;
+      }
+    }
+    return best;
+  }
+
+  static ReleaseInfo fetchLatestRelease() {
+    return fetchLatestRelease(null);
+  }
+
+  static ReleaseInfo fetchLatestRelease(final String currentVersion) {
+    try {
+      HttpClient client =
+          HttpClient.newBuilder()
+              .connectTimeout(Duration.ofSeconds(10))
+              // GitHub API and asset URLs redirect (302); default policy NEVER fails them.
+              .followRedirects(HttpClient.Redirect.NORMAL)
+              .build();
+      // The prerelease channel must hit the LIST endpoint: /releases/latest
+      // never returns prereleases, so an RC install could otherwise only ever
+      // discover final releases.
+      boolean preChannel = allowPreRelease(currentVersion);
+      String apiUrl =
+          preChannel && System.getProperty("atw.launcher.releases-api") == null
+              ? releasesListApiUrl()
+              : releasesApiUrl();
       HttpRequest req =
           HttpRequest.newBuilder()
-              .uri(URI.create(releasesApiUrl()))
+              .uri(URI.create(apiUrl))
               .header("Accept", "application/vnd.github+json")
               .header("User-Agent", "all-time-wrestling-rpg-launcher")
               .timeout(Duration.ofSeconds(15))
@@ -162,6 +306,12 @@ public final class Launcher {
       }
 
       String body = resp.body();
+      if (preChannel) {
+        // List endpoint returns an array; the single-release override returns one object.
+        String listBody = body.trim().startsWith("[") ? body : "[" + body + "]";
+        return newestReleaseFromList(listBody, currentVersion);
+      }
+
       String tag = extractJsonString(body, "tag_name");
       String version = tag != null && tag.startsWith("v") ? tag.substring(1) : tag;
       String jarUrl = findJarAssetUrl(body);
@@ -196,21 +346,17 @@ public final class Launcher {
   // Version comparison
   // -------------------------------------------------------------------------
 
-  static boolean isNewer(final String candidate, final String current) {
-    try {
-      int[] c = semver(candidate);
-      int[] r = semver(current);
-      for (int i = 0; i < 3; i++) {
-        if (c[i] != r[i]) {
-          return c[i] > r[i];
-        }
-      }
-      return false;
-    } catch (Exception e) {
-      return false;
-    }
+  /**
+   * True when the version carries a pre-release suffix (RC, beta, snapshot...). The stable channel
+   * must never see pre-release builds, and RC installs must be able to update to a higher RC of
+   * themselves, so suffix ordering matters ({@code 2.10.0-RC2 > 2.10.0-RC1}, both {@code <
+   * 2.10.0}).
+   */
+  static boolean isPreRelease(final String version) {
+    return version != null && version.matches(".*-(?i)(rc|beta|alpha|snapshot|milestone).*");
   }
 
+  /** Numeric part only — the ordering key for release comparison. */
   static int[] semver(final String v) {
     String numeric = v.replaceAll("[^0-9.].*$", "");
     if (numeric.isBlank()) {
@@ -222,6 +368,35 @@ public final class Launcher {
       result[i] = parts[i].isBlank() ? 0 : Integer.parseInt(parts[i]);
     }
     return result;
+  }
+
+  /**
+   * Ordering weight: any numeric version (final {@code 2.10.0}) outranks a pre-release of the same
+   * numeric ({@code 2.10.0-RC1}); higher RC numbers outrank lower ones. -1 marks a version too
+   * malformed to compare.
+   */
+  static int preReleaseRank(final String version) {
+    if (!isPreRelease(version)) {
+      return Integer.MAX_VALUE;
+    }
+    Matcher m = Pattern.compile("(?i)-rc[\\s_-]?(\\d+)").matcher(version);
+    return m.find() ? Integer.parseInt(m.group(1)) : -1;
+  }
+
+  static boolean isNewer(final String candidate, final String current) {
+    try {
+      int[] c = semver(candidate);
+      int[] r = semver(current);
+      for (int i = 0; i < 3; i++) {
+        if (c[i] != r[i]) {
+          return c[i] > r[i];
+        }
+      }
+      // Same numeric version: a final beats an RC, a higher RC beats a lower one.
+      return preReleaseRank(candidate) > preReleaseRank(current);
+    } catch (Exception e) {
+      return false;
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -236,7 +411,12 @@ public final class Launcher {
 
     System.out.println("[Launcher] Downloading v" + release.version() + "...");
     try {
-      HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
+      HttpClient client =
+          HttpClient.newBuilder()
+              .connectTimeout(Duration.ofSeconds(15))
+              // GitHub asset URLs redirect to release-assets.githubusercontent.com.
+              .followRedirects(HttpClient.Redirect.NORMAL)
+              .build();
       HttpRequest req =
           HttpRequest.newBuilder()
               .uri(URI.create(release.jarUrl()))
@@ -289,12 +469,13 @@ public final class Launcher {
   // Launch the app JAR as a child process; wait briefly to detect a crash
   // -------------------------------------------------------------------------
 
-  private static void launchApp(final Path jar, final String[] extraArgs) throws Exception {
-    String javaExe =
-        ProcessHandle.current()
-            .info()
-            .command()
-            .orElse(Path.of(System.getProperty("java.home"), "bin", "java").toString());
+  /**
+   * Spawns the app JAR as a child process and returns its exit code. Waits up to 5 s to detect an
+   * immediate crash (bad JAR, wrong Java version, etc.); a still-running child keeps waiting
+   * normally.
+   */
+  static int launchApp(final Path jar, final String[] extraArgs) throws Exception {
+    String javaExe = resolveJavaExecutable();
 
     List<String> cmd = new ArrayList<>();
     cmd.add(javaExe);
@@ -324,16 +505,110 @@ public final class Launcher {
               + process.exitValue()
               + ").\n"
               + "The previous version has been restored. Please try again.");
-      System.exit(process.exitValue());
+      return process.exitValue();
     }
 
-    // Normal case: app is running; wait for it to finish then exit with its code
-    System.exit(process.waitFor());
+    // Normal case: app is running; wait for it to finish then propagate its code
+    return process.waitFor();
   }
 
   // -------------------------------------------------------------------------
   // Cleanup helpers
   // -------------------------------------------------------------------------
+
+  /**
+   * Seeds the app dir from the bundled JAR that ships inside the installer (ATW-ykmu). jpackage
+   * wraps {@code atw-app-VERSION.jar} into the same directory as the launcher, so first run works
+   * offline and is version-exact — never whatever {@code /releases/latest} happens to return. The
+   * bundled JAR is copied in when the app dir has no JAR, or when the bundled one is newer than
+   * what is there (e.g. the installer was reinstalled/upgraded without the launcher downloading
+   * yet). Returns the version of the seeded JAR, or null when nothing was seeded.
+   */
+  static String seedBundledJar(final Path appDir) throws IOException {
+    Path bundled = findBundledAppJar();
+    if (bundled == null) {
+      return null;
+    }
+    // Version comes from the bundled file's own name (atw-app-2.10.0-RC2.jar) — the
+    // app JAR pattern does not match this filename, so extractVersion cannot be used.
+    Matcher bundledMatcher =
+        Pattern.compile("atw-app-(.+)\\.jar").matcher(bundled.getFileName().toString());
+    if (!bundledMatcher.matches()) {
+      return null;
+    }
+    String bundledVersion = bundledMatcher.group(1);
+
+    Optional<Path> existing = findCurrentJar(appDir);
+    if (existing.isPresent()) {
+      String existingVersion = extractVersion(existing.get().getFileName().toString());
+      // Newer numeric version always wins; a bundled prerelease of the same numeric does NOT
+      // overwrite an installed final (2.10.0-RC2 bundled vs 2.10.0 installed → keep installed).
+      boolean bundledStrictlyNewer;
+      try {
+        bundledStrictlyNewer = isNewer(bundledVersion, existingVersion);
+      } catch (Exception e) {
+        bundledStrictlyNewer = false;
+      }
+      if (!bundledStrictlyNewer) {
+        return null;
+      }
+      // Keep the old JAR as a backup before replacing it with the bundled one.
+      Path backup = appDir.resolve(existing.get().getFileName().toString() + ".old");
+      Files.move(existing.get(), backup, StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    String targetName = "all-time-wrestling-rpg-" + bundledVersion + ".jar";
+    Files.copy(bundled, appDir.resolve(targetName), StandardCopyOption.REPLACE_EXISTING);
+    System.out.println("[Launcher] Seeded app dir from bundled JAR: " + targetName);
+    return bundledVersion;
+  }
+
+  /** The {@code atw-app-*.jar} bundled next to this launcher by jpackage, or null. */
+  static Path findBundledAppJar() {
+    try {
+      Path dir = selfLocation().getParent();
+      if (dir == null || !Files.isDirectory(dir)) {
+        return null;
+      }
+      try (var stream = Files.list(dir)) {
+        return stream
+            .filter(
+                p ->
+                    p.getFileName().toString().startsWith("atw-app-")
+                        && p.getFileName().toString().endsWith(".jar"))
+            .findFirst()
+            .orElse(null);
+      }
+    } catch (Exception e) {
+      return null;
+    }
+  }
+
+  /** {@code java.exe} on Windows, {@code java} everywhere else. */
+  static String javaBinaryName(final String osName) {
+    return osName != null && osName.toLowerCase().contains("win") ? "java.exe" : "java";
+  }
+
+  /**
+   * Resolves a real {@code java} executable for the child-process launch. The packaged runtime
+   * (java.home) is preferred — it is the JVM this process is already running on. The current
+   * process command is only used when it actually is a java executable; under jpackage it is the
+   * app launcher binary, which does not accept {@code -jar} (ATW-mcwe).
+   */
+  static String resolveJavaExecutable() {
+    String javaHome = System.getProperty("java.home");
+    if (javaHome != null) {
+      Path packaged = Path.of(javaHome, "bin", javaBinaryName(System.getProperty("os.name", "")));
+      if (Files.isRegularFile(packaged)) {
+        return packaged.toString();
+      }
+    }
+    return ProcessHandle.current()
+        .info()
+        .command()
+        .filter(cmd -> cmd.endsWith("java") || cmd.endsWith("java.exe"))
+        .orElse("java");
+  }
 
   static void cleanStaleTmp(final Path dir) throws IOException {
     if (!Files.exists(dir)) {
@@ -385,11 +660,25 @@ public final class Launcher {
   // UI helpers
   // -------------------------------------------------------------------------
 
-  private static boolean promptUser(final String newVersion) {
+  /**
+   * Whether a modal Swing dialog can be shown. False when headless (CI, servers) or when the {@code
+   * atw.launcher.headless} system property is set — the property is the deterministic seam tests
+   * use, since {@link GraphicsEnvironment#isHeadless()} caches its answer per JVM.
+   */
+  static boolean isGuiAvailable() {
+    return !GraphicsEnvironment.isHeadless() && !Boolean.getBoolean("atw.launcher.headless");
+  }
+
+  static boolean promptUser(final String newVersion) {
     if (System.console() != null) {
       System.out.print("[Launcher] Update v" + newVersion + " available. Apply now? [y/N] ");
       String response = System.console().readLine();
       return response != null && response.trim().equalsIgnoreCase("y");
+    }
+    if (!isGuiAvailable()) {
+      // No display to attach a modal to (CI, tests); refuse the update so the existing JAR keeps
+      // launching instead of dying with HeadlessException.
+      return false;
     }
     // GUI prompt for desktop installs
     int choice =
@@ -402,8 +691,12 @@ public final class Launcher {
     return choice == JOptionPane.YES_OPTION;
   }
 
-  private static void showError(final String message) {
+  static void showError(final String message) {
     System.err.println("[Launcher] " + message);
+    if (!isGuiAvailable()) {
+      // stderr above carries the message when no dialog can be shown.
+      return;
+    }
     try {
       JOptionPane.showMessageDialog(null, message, "Launcher Error", JOptionPane.ERROR_MESSAGE);
     } catch (Exception ignored) {

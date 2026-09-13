@@ -1,6 +1,7 @@
-# Graphify knowledge graph (cache and temp files — commit graph.html/json/GRAPH_REPORT.md manually)
-graphify-out/cache/
-graphify-out/.graphify_*
+# Graphify knowledge graph — fully ignored: the auto-generated graph artifacts are
+# multi-megabyte and hooks (format-on-push) must never sweep them into a commit.
+# The graph regenerates with `graphify update .` and serves the local code queries.
+graphify-out/
 
 # Project specific
 /target/

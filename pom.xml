@@ -11,7 +11,7 @@
 
   <groupId>com.github.javydreamercsw</groupId>
   <artifactId>all-time-wrestling-rpg</artifactId>
-  <version>2.9.0</version>
+  <version>2.10.0-SNAPSHOT</version>
 
   <packaging>jar</packaging>
   <name>All Time Wrestling RPG</name>
@@ -1471,7 +1471,8 @@
                 <configuration>
                   <classifier>launcher</classifier>
                   <includes>
-                    <include>com/github/javydreamercsw/Launcher.class</include>
+                    <!-- Launcher$ReleaseInfo etc.: nested classes are separate class files. -->
+                    <include>com/github/javydreamercsw/Launcher*.class</include>
                   </includes>
                   <archive>
                     <manifest>
@@ -1492,11 +1493,17 @@
                 <goals>
                   <goal>run</goal>
                 </goals>
+                <!-- Must run at package: copies the launcher and fat JARs built
+                     earlier in the phase; default phase runs before they exist. -->
                 <phase>package</phase>
                 <configuration>
                   <target>
                     <mkdir dir="${project.build.directory}/jpackage-input"/>
                     <copy file="${project.build.directory}/${project.artifactId}-${project.version}-launcher.jar" tofile="${project.build.directory}/jpackage-input/atw-launcher-${project.version}.jar"/>
+                    <!-- Bundle the app JAR itself (ATW-ykmu): the launcher seeds the app
+                         dir from it on first run, so first launch works offline and is
+                         version-exact — never whatever /releases/latest happens to return. -->
+                    <copy file="${project.build.directory}/${project.artifactId}-${project.version}.jar" tofile="${project.build.directory}/jpackage-input/atw-app-${project.version}.jar"/>
                   </target>
                 </configuration>
               </execution>
@@ -1533,6 +1540,15 @@
                   <winMenuGroup>All Time Wrestling</winMenuGroup>
                   <!-- Stable UUID ensures MSI upgrades replace the existing install -->
                   <winUpgradeUuid>3b8e2f1a-4c7d-4e9b-a2f0-8d6c5e3b1a9f</winUpgradeUuid>
+                  <!-- Keep bin/java in the bundled runtime: the Launcher execs the app JAR as a
+                       child process of the packaged runtime (ATW-mcwe). The plugin default
+                       (stripNativeCommands=true) removes it and breaks that launch path. -->
+                  <jLink>
+                    <noHeaderFiles>true</noHeaderFiles>
+                    <noManPages>true</noManPages>
+                    <stripDebug>true</stripDebug>
+                    <stripNativeCommands>false</stripNativeCommands>
+                  </jLink>
                 </configuration>
               </execution>
             </executions>
@@ -1590,7 +1606,8 @@
                 <configuration>
                   <classifier>launcher</classifier>
                   <includes>
-                    <include>com/github/javydreamercsw/Launcher.class</include>
+                    <!-- Launcher$ReleaseInfo etc.: nested classes are separate class files. -->
+                    <include>com/github/javydreamercsw/Launcher*.class</include>
                   </includes>
                   <archive>
                     <manifest>

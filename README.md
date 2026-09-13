@@ -11,7 +11,6 @@ All Time Wrestling (ATW) RPG is a web-based wrestling RPG simulator that allows 
 	- [AI Narration](#ai-narration)
 - [Segment Rules](#segment-rules)
 	- [Bump Addition](#bump-addition)
-- [Notion Synchronization](#notion-synchronization)
 - [Development](#development)
 - [Running the Application](#running-the-application)
 - [Executable JAR](#executable-jar)
@@ -143,34 +142,6 @@ You can now configure segment rules to automatically add bumps to participants. 
 
 When a segment with the configured rule is adjudicated, bumps will be added to the participants according to the selected option.
 
-### Notion Synchronization
-
-The application can synchronize data from Notion databases to local JSON files and the application's database. This feature is highly configurable and includes a user interface for managing and monitoring the synchronization process.
-
-**Features:**
-
-- **High Performance:** Optimized for performance with parallel processing and batch operations.
-- **Configurable:** Enable or disable synchronization, select which entities to sync, and configure the sync interval.
-- **REST API:** A complete REST API for triggering and monitoring synchronization.
-- **UI for Sync Management:** An interactive UI to manage and monitor Notion synchronization with real-time progress tracking.
-
-**Configuration:**
-
-The Notion synchronization feature is configured in the `application.properties` file.
-
-```properties
-# Notion Sync Configuration
-notion.sync.enabled=false
-notion.sync.scheduler.enabled=false
-notion.sync.scheduler.interval=3600000
-notion.sync.entities=shows,wrestlers,teams,matches
-notion.sync.backup.enabled=true
-```
-
-To enable the feature, you need to provide a Notion API token via the `NOTION_TOKEN` environment variable.
-
-For troubleshooting assistance, please refer to the [Notion Sync Troubleshooting Guide](./docs/SYNC_TROUBLESHOOTING.md).
-
 ## Development
 
 This section contains information for developers contributing to the project.
@@ -263,7 +234,6 @@ To run the application using Docker, you need to provide the required environmen
 	```bash
 	docker run -p 9090:9090 \
 	-v /path/to/your/data:/data \
-	-e NOTION_TOKEN="your_notion_token" \
 	-e AI_GEMINI_API_KEY="your_gemini_key" \
 	-e AI_OPENAI_API_KEY="your_openai_key" \
 	-e AI_CLAUDE_API_KEY="your_claude_key" \
@@ -272,8 +242,8 @@ To run the application using Docker, you need to provide the required environmen
 
 	*   `-p 9090:9090`: Maps the container's port 9090 to the host's port 9090.
 	*   `-v /path/to/your/data:/data`: Mounts a directory from your host machine to the `/data` directory inside the container. This is where the H2 database file will be stored, ensuring data persistence. Replace `/path/to/your/data` with the absolute path on your host machine.
-	*   `-e`: Sets the environment variables required for Notion integration and AI services. **Mandatory Security Note:** Sensitive values (API keys, tokens) are not stored in the Docker image and must be provided at runtime using this flag or an `--env-file`.
-	*   AI settings can be configured via environment variables or in-application in the AI Settings view.
+	*   `-e`: Sets the environment variables required for the AI services. **Mandatory Security Note:** Sensitive values (API keys, tokens) are not stored in the Docker image and must be provided at runtime using this flag or an `--env-file`.
+	*   AI settings can be configured via environment variables or in-application in the AI Settings view. Keys set there are stored in the database and survive restarts.
 
 #### AI Environment Variables
 The following environment variables can be used to configure AI services:
@@ -324,7 +294,6 @@ export SPRING_DATASOURCE_URL="jdbc:mysql://localhost:3306/atw"
 export SPRING_DATASOURCE_USERNAME="root"
 export SPRING_DATASOURCE_PASSWORD="your_password"
 export SPRING_FLYWAY_LOCATIONS="classpath:db/migration/mysql"
-export NOTION_TOKEN="your_notion_token"
 export SPRING_PROFILES_ACTIVE="mysql,prod"
 export TOMCAT_USERNAME="your_manager_user"
 export TOMCAT_PASSWORD="your_manager_password"
@@ -333,22 +302,37 @@ EOF
 	chmod +x /opt/homebrew/etc/tomcat/setenv.sh
 
 	# 3. Create the relink script to handle upgrades automatically
+	#    It must be idempotent: if you wire it to a launchd WatchPath on
+	#    /opt/homebrew/opt/tomcat, the path fires on ANY file change in that tree
+	#    (even transient app temp files), so only restart when a symlink changed.
 	cat <<EOF > /opt/homebrew/etc/tomcat/relink.sh
 #!/bin/bash
 # Re-establish symlinks after a Homebrew upgrade
 
+setenv_link=/opt/homebrew/opt/tomcat/libexec/bin/setenv.sh
+webapps_link=/opt/homebrew/opt/tomcat/libexec/webapps
+changed=0
+
 # Symlink setenv.sh
-ln -sf /opt/homebrew/etc/tomcat/setenv.sh /opt/homebrew/opt/tomcat/libexec/bin/setenv.sh
+if [ "\$(readlink "\$setenv_link" 2>/dev/null)" != "/opt/homebrew/etc/tomcat/setenv.sh" ]; then
+	ln -sf /opt/homebrew/etc/tomcat/setenv.sh "\$setenv_link"
+	changed=1
+fi
 
 # Symlink webapps directory
 # Remove the default webapps directory first if it's not a symlink
-if [ ! -L /opt/homebrew/opt/tomcat/libexec/webapps ]; then
-	rm -rf /opt/homebrew/opt/tomcat/libexec/webapps
+if [ ! -L "\$webapps_link" ]; then
+	rm -rf "\$webapps_link"
 fi
-ln -sfn /opt/homebrew/etc/tomcat/webapps /opt/homebrew/opt/tomcat/libexec/webapps
+if [ "\$(readlink "\$webapps_link" 2>/dev/null)" != "/opt/homebrew/etc/tomcat/webapps" ]; then
+	ln -sfn /opt/homebrew/etc/tomcat/webapps "\$webapps_link"
+	changed=1
+fi
 
-# Restart the service to apply changes
-/opt/homebrew/bin/brew services restart tomcat
+# Restart the service only if something actually changed
+if [ "\$changed" -eq 1 ]; then
+	/opt/homebrew/bin/brew services restart tomcat
+fi
 EOF
 	chmod +x /opt/homebrew/etc/tomcat/relink.sh
 

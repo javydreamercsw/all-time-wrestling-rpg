@@ -508,6 +508,14 @@ public class ShowPlanningService {
       if (proposedSegment.getTitles() != null && !proposedSegment.getTitles().isEmpty()) {
         segment.setTitles(proposedSegment.getTitles());
       }
+      if (Boolean.TRUE.equals(proposedSegment.getIsContenderMatch())) {
+        segment.setContenderMatch(true);
+        if (proposedSegment.getContenderTitleId() != null) {
+          titleService
+              .getTitleById(proposedSegment.getContenderTitleId())
+              .ifPresent(title -> segment.getTitles().add(title));
+        }
+      }
 
       if (proposedSegment.getRefereeName() != null) {
         segment.setReferee(npcService.findByName(proposedSegment.getRefereeName()));
@@ -578,6 +586,9 @@ public class ShowPlanningService {
     }
     segmentRepository.saveAll(segmentsToSave);
     log.debug("Approved and saved {} segments for show: {}", segmentsToSave.size(), show.getName());
+    // Booked beats drop out of AI planning queries (PENDING-only) so the slot cannot be
+    // double-booked, while remaining visible/editable on the arc card.
+    feudScriptService.markBeatsBookedForShow(show);
     eventPublisher.publishEvent(new SegmentsApprovedEvent(this, show));
   }
 

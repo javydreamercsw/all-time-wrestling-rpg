@@ -2161,9 +2161,14 @@ public class ShowDetailView extends Main
       if (segment.getId() != null) {
         segmentService.updateSegment(segment);
         notificationService.showSuccess("Segment updated successfully!");
+        // A manually edited segment can resolve a pending arc beat (title stakes copied onto
+        // the segment before adjudication runs).
+        feudScriptService.autoCompleteBeatForSegment(segment);
       } else {
         segmentService.saveSegment(segment);
         notificationService.showSuccess("Segment added successfully!");
+        // Manual segments can complete a beat too — previously only the edit path did.
+        feudScriptService.autoCompleteBeatForSegment(segment);
       }
       log.info("Segment saved successfully: {}", segment.getId());
       return true;

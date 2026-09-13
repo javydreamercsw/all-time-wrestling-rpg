@@ -911,5 +911,33 @@
     "description": "Append new beats to an existing story arc after it has been saved. The Add Beat dialog offers the same match type, stipulation, winner control and notes fields as the creation wizard, plus external participants — an opponent and run-in extras from outside the feud, with an AI-assisted opponent suggestion.",
     "imagePath": "screenshots/booker-story-arc-add-beat.png",
     "order": 0
+  }, {
+    "id": "booker-booker-story-arc-details",
+    "category": "Booker",
+    "title": "Story Arc Details",
+    "description": "Step 2 names the arc (pre-filled from the selected wrestlers) and picks its length: Short spans 1 PLE, Medium 2, Long 3. The PLE count is a hard ceiling — once a feud has appeared on that many premium live events, it must culminate.",
+    "imagePath": "screenshots/booker-story-arc-details.png",
+    "order": 0
+  }, {
+    "id": "booker-booker-story-arc-beats",
+    "category": "Booker",
+    "title": "Story Arc Beats",
+    "description": "Step 3 defines the match sequence. Each beat picks a match type and optional stipulation, and decides who controls the outcome: the booker names the planned winner, the AI picks based on story notes, or the system rolls. Mark a beat as the Culmination / Blowoff to close the feud. Roster wrestlers outside the arc can join a beat as an external opponent or run-in extra.",
+    "imagePath": "screenshots/booker-story-arc-beats.png",
+    "order": 0
+  }, {
+    "id": "booker-booker-story-arc-edit-beat",
+    "category": "Booker",
+    "title": "Edit Story Arc Beat",
+    "description": "Pending beats can be retooled at any time before they play out. The edit dialog loads the beat's current match type, stipulation, winner control, planned winner, blowoff flag, notes and external participants — saving re-runs the same validation as creation and keeps any show or PLE reservation attached to the beat.",
+    "imagePath": "screenshots/booker-story-arc-edit-beat.png",
+    "order": 0
+  }, {
+    "id": "booker-booker-story-arc-card",
+    "category": "Booker",
+    "title": "Story Arc Management",
+    "description": "Every saved arc lives on the rivalry detail as a card with a status badge (Active, Completed, Cancelled). The beat grid lists each beat in order — match type, stipulation, external participants, winner control, blowoff marker and status. Pending beats can be edited or removed and renumber automatically; the arc itself can be renamed, extended with more beats, or cancelled before its culmination.",
+    "imagePath": "screenshots/booker-story-arc-card.png",
+    "order": 0
   } ]
 }

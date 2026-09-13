@@ -162,12 +162,8 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev
 The application can be configured using environment variables. These variables will populate the database settings on every startup.
 
 > ⚠️ **Security Note:** Sensitive values (API keys, tokens, passwords) are not stored in the Docker image for security reasons. When using Docker, you **must** provide these values at runtime using the `-e` flag or an `--env-file`.
-
-### Notion Configuration
-
-|    Variable    |            Description            |
-|----------------|-----------------------------------|
-| `NOTION_TOKEN` | Your Notion API integration token |
+>
+> 💡 AI provider keys can also be managed at runtime in the **AI Settings** view (stored in the database, survives restarts). Environment variables with the same `AI_*` names act as bootstrap values — the database keeps its value once set.
 
 ### AI Configuration
 

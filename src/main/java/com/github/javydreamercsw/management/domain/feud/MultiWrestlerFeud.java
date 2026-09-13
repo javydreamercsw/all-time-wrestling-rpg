@@ -71,8 +71,11 @@ public class MultiWrestlerFeud extends AbstractEntity<Long> {
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
 
-  // Feud participants
-  @OneToMany(mappedBy = "feud", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+  /**
+   * Feud members. EAGER: arc cards, beat grids and the DTO mapper read member names on detached
+   * grids (open-in-view is off); cardinality is small (a handful of members per feud).
+   */
+  @OneToMany(mappedBy = "feud", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
   @JsonIgnoreProperties({"feud"})
   private List<FeudParticipant> participants = new ArrayList<>();
 
