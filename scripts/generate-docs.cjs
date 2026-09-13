@@ -34,35 +34,13 @@ if (fs.existsSync(videoManifestPath)) {
 // Override via GITHUB_PAGES_BASE env var (set automatically in release.yml).
 const githubPagesBase = (process.env.GITHUB_PAGES_BASE || 'https://javydreamercsw.github.io/all-time-wrestling-rpg').replace(/\/$/, '');
 
-// 1. Prepare Markdown directory — clear stale GENERATED pages so old video-only
-// categories don't leave orphaned .md files with broken <video> references.
-// Hand-written tutorial pages (ATW-aqwr/ATW-rwoz) live in the same directory but are
-// NOT manifest categories; they must survive the regeneration (a previous version
-// wiped them on every deploy, 404ing their sidebar links — ATW-w9ie follow-up).
-const manifestCategories = new Set(
-  (JSON.parse(fs.readFileSync(manifestPath, 'utf8')).features || [])
-    .map(f => f.category.toLowerCase().replace(/ /g, '-'))
-    .concat((videoFeatures || []).map(v => v.category.toLowerCase().replace(/ /g, '-')))
-);
-const handWrittenPages = [];
-if (fs.existsSync(outputDir)) {
-  const existing = fs.readdirSync(outputDir).filter(f => f.endsWith('.md'));
-  existing.forEach(f => {
-    const base = f.replace(/\.md$/, '');
-    if (manifestCategories.has(base)) {
-      fs.rmSync(path.join(outputDir, f));
-    } else {
-      handWrittenPages.push(f);
-    }
-  });
-  const cleared = existing.length - handWrittenPages.length;
-  if (cleared > 0) {
-    console.log(`Cleared ${cleared} stale generated guide file(s) from ${outputDir}`);
-  }
-  if (handWrittenPages.length > 0) {
-    console.log(`Preserved ${handWrittenPages.length} hand-written guide page(s): ${handWrittenPages.join(', ')}`);
-  }
-} else {
+// 1. Prepare Markdown directory — stale GENERATED pages are removed just before
+// writing (step 3b, after the fresh manifest's category set is known), so we only
+// ever delete a file we are about to regenerate. Hand-written pages (tutorials,
+// ATW-aqwr/ATW-rwoz) and pages whose category vanished from the manifest are left
+// alone — the earlier upfront-wipe deleted committed pages the fresh manifest no
+// longer listed (booker-journey.md), breaking links into them (ATW-w9ie).
+if (!fs.existsSync(outputDir)) {
   fs.mkdirSync(outputDir, { recursive: true });
 }
 
@@ -181,6 +159,25 @@ if (allCategories.size === 0) {
 }
 
 console.log('Generating Markdown files...');
+// 3b. Remove only the pages this run will regenerate (see step 1 comment).
+let clearedCount = 0;
+Array.from(allCategories).forEach(category => {
+  const stale = path.join(outputDir, category.toLowerCase().replace(/ /g, '-') + '.md');
+  if (fs.existsSync(stale)) {
+    fs.rmSync(stale);
+    clearedCount++;
+  }
+});
+if (clearedCount > 0) {
+  console.log(`Cleared ${clearedCount} stale generated guide file(s) from ${outputDir}`);
+}
+const preserved =
+  fs.existsSync(outputDir)
+    ? fs.readdirSync(outputDir).filter(f => f.endsWith('.md'))
+    : [];
+if (preserved.length > 0) {
+  console.log(`Preserved ${preserved.length} existing guide page(s) outside the fresh manifest: ${preserved.join(', ')}`);
+}
 Array.from(allCategories).sort().forEach(category => {
   const catFeatures = categories[category] || [];
   const catVideos = videosByCategory[category] || [];
