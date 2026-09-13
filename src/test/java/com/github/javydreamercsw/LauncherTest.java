@@ -882,7 +882,183 @@ class LauncherTest {
     }
   }
 
+  // ── bundled-JAR seeding + installer floor (ATW-ykmu) ──────────────────────
+
+  @Test
+  void seedBundledJar_copiesBundledJarIntoEmptyAppDir(
+      @TempDir Path appDir, @TempDir Path launcherHome) throws Exception {
+    Path bundled = launcherHome.resolve("atw-app-2.10.0.jar");
+    Files.write(bundled, minimalJarBytes());
+    copySelfTo(launcherHome.resolve("atw-launcher-2.10.0.jar"));
+
+    String seeded =
+        withLauncherAt(
+            launcherHome.resolve("atw-launcher-2.10.0.jar"), () -> Launcher.seedBundledJar(appDir));
+
+    assertThat(seeded).isEqualTo("2.10.0");
+    assertThat(appDir.resolve("all-time-wrestling-rpg-2.10.0.jar")).exists();
+  }
+
+  @Test
+  void seedBundledJar_doesNothingWhenAppDirHasSameOrNewerJar(
+      @TempDir Path appDir, @TempDir Path launcherHome) throws Exception {
+    Files.write(appDir.resolve("all-time-wrestling-rpg-2.11.0.jar"), minimalJarBytes());
+    Path bundled = launcherHome.resolve("atw-app-2.10.0.jar");
+    Files.write(bundled, minimalJarBytes());
+    copySelfTo(launcherHome.resolve("atw-launcher-2.10.0.jar"));
+
+    String seeded =
+        withLauncherAt(
+            launcherHome.resolve("atw-launcher-2.10.0.jar"), () -> Launcher.seedBundledJar(appDir));
+
+    assertThat(seeded).isNull();
+    assertThat(appDir.resolve("all-time-wrestling-rpg-2.11.0.jar")).exists();
+    assertThat(appDir.resolve("all-time-wrestling-rpg-2.10.0.jar")).doesNotExist();
+  }
+
+  @Test
+  void seedBundledJar_upgradesOlderInstalledJarAndKeepsBackup(
+      @TempDir Path appDir, @TempDir Path launcherHome) throws Exception {
+    Files.write(appDir.resolve("all-time-wrestling-rpg-2.9.0.jar"), minimalJarBytes());
+    Path bundled = launcherHome.resolve("atw-app-2.10.0.jar");
+    Files.write(bundled, minimalJarBytes());
+    copySelfTo(launcherHome.resolve("atw-launcher-2.10.0.jar"));
+
+    String seeded =
+        withLauncherAt(
+            launcherHome.resolve("atw-launcher-2.10.0.jar"), () -> Launcher.seedBundledJar(appDir));
+
+    assertThat(seeded).isEqualTo("2.10.0");
+    assertThat(appDir.resolve("all-time-wrestling-rpg-2.10.0.jar")).exists();
+    // Old JAR preserved as a backup, matching the download safe-swap convention.
+    assertThat(appDir.resolve("all-time-wrestling-rpg-2.9.0.jar.old")).exists();
+    assertThat(appDir.resolve("all-time-wrestling-rpg-2.9.0.jar")).doesNotExist();
+  }
+
+  @Test
+  void seedBundledJar_bundledPrereleaseDoesNotOverwriteInstalledFinal(
+      @TempDir Path appDir, @TempDir Path launcherHome) throws Exception {
+    // Reinstalling an RC installer on a machine that already runs the final must not
+    // downgrade it: 2.10.0-RC2 bundled vs 2.10.0 installed → keep the final.
+    Files.write(appDir.resolve("all-time-wrestling-rpg-2.10.0.jar"), minimalJarBytes());
+    Path bundled = launcherHome.resolve("atw-app-2.10.0-RC2.jar");
+    Files.write(bundled, minimalJarBytes());
+    copySelfTo(launcherHome.resolve("atw-launcher-2.10.0-RC2.jar"));
+
+    String seeded =
+        withLauncherAt(
+            launcherHome.resolve("atw-launcher-2.10.0-RC2.jar"),
+            () -> Launcher.seedBundledJar(appDir));
+
+    assertThat(seeded).isNull();
+    assertThat(appDir.resolve("all-time-wrestling-rpg-2.10.0.jar")).exists();
+  }
+
+  @Test
+  void installerVersion_parsesFromLauncherJarFilename(@TempDir Path launcherHome) throws Exception {
+    copySelfTo(launcherHome.resolve("atw-launcher-2.10.0-RC2.jar"));
+    String version =
+        withLauncherAt(
+            launcherHome.resolve("atw-launcher-2.10.0-RC2.jar"), Launcher::installerVersion);
+    assertThat(version).isEqualTo("2.10.0-RC2");
+  }
+
+  @Test
+  void allowPreRelease_usesInstallerChannelOnFirstRun(@TempDir Path launcherHome) throws Exception {
+    System.clearProperty("atw.launcher.allow-prerelease");
+    try {
+      // RC installer + no app JAR yet (first run): prerelease channel must open so the
+      // launcher can discover its own RC — the ATW-66k8 first-run trap.
+      copySelfTo(launcherHome.resolve("atw-launcher-2.10.0-RC2.jar"));
+      boolean allowed =
+          withLauncherAt(
+              launcherHome.resolve("atw-launcher-2.10.0-RC2.jar"),
+              () -> Launcher.allowPreRelease(null));
+      assertThat(allowed).isTrue();
+
+      // Stable installer: channel stays closed on first run.
+      copySelfTo(launcherHome.resolve("atw-launcher-2.10.0.jar"));
+      boolean stableAllowed =
+          withLauncherAt(
+              launcherHome.resolve("atw-launcher-2.10.0.jar"),
+              () -> Launcher.allowPreRelease(null));
+      assertThat(stableAllowed).isFalse();
+    } finally {
+      System.clearProperty("atw.launcher.allow-prerelease");
+    }
+  }
+
+  @Test
+  void run_downloadsOlderReleaseWhenNoLocalJarExists_evenWithNewerInstaller(
+      @TempDir Path tempDir, @TempDir Path launcherHome) throws Exception {
+    // The installer floor must NEVER block the only path to a runnable app: empty app
+    // dir + release older than installer → download anyway rather than fail.
+    withIsolatedHome(
+        tempDir,
+        () -> {
+          copySelfTo(launcherHome.resolve("atw-launcher-99.0.0.jar"));
+          withLauncherAt(
+              launcherHome.resolve("atw-launcher-99.0.0.jar"),
+              () -> {
+                // No bundled JAR next to the launcher (findBundledAppJar finds nothing).
+                HttpServer asset = startJarServer(minimalJarBytes());
+                int assetPort = asset.getAddress().getPort();
+                String json =
+                    """
+                    {"tag_name": "v2.6.0",
+                     "assets": [{"browser_download_url": "http://127.0.0.1:%d/app.jar"}]}
+                    """
+                        .formatted(assetPort);
+                HttpServer api = startJsonServer("/releases", json);
+                int port = api.getAddress().getPort();
+                System.setProperty(
+                    "atw.launcher.releases-api", "http://127.0.0.1:" + port + "/releases");
+                try {
+                  assertThat(Launcher.run(new String[0]))
+                      .isNotZero(); // bare JAR child exits non-zero
+                  assertThat(appJar(tempDir, "2.6.0")).exists(); // download happened despite floor
+                } finally {
+                  System.clearProperty("atw.launcher.releases-api");
+                  api.stop(0);
+                  asset.stop(0);
+                }
+                return null;
+              });
+        });
+  }
+
   // ── helpers ───────────────────────────────────────────────────────────────
+
+  /**
+   * Runs {@code body} while {@link Launcher#installerVersion()}/{@code findBundledAppJar} resolve
+   * against a fake launcher location via the {@code atw.launcher.self} property seam (production
+   * never sets it; it exists for exactly this).
+   */
+  private static <T> T withLauncherAt(Path fakeLauncherJar, LauncherThrowingSupplier<T> body)
+      throws Exception {
+    String real = System.getProperty("atw.launcher.self");
+    System.setProperty("atw.launcher.self", fakeLauncherJar.toString());
+    try {
+      return body.get();
+    } finally {
+      if (real == null) {
+        System.clearProperty("atw.launcher.self");
+      } else {
+        System.setProperty("atw.launcher.self", real);
+      }
+    }
+  }
+
+  @FunctionalInterface
+  private interface LauncherThrowingSupplier<T> {
+    T get() throws Exception;
+  }
+
+  /** Creates a placeholder launcher JAR file (the parent dir is the fake jpackage app dir). */
+  private static void copySelfTo(Path target) throws Exception {
+    Files.createDirectories(target.getParent());
+    Files.writeString(target, "placeholder-launcher-jar");
+  }
 
   /**
    * Points the launcher at a localhost port that was bound and immediately released: every request
