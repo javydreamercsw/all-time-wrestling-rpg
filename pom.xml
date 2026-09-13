@@ -1502,8 +1502,11 @@
                     <copy file="${project.build.directory}/${project.artifactId}-${project.version}-launcher.jar" tofile="${project.build.directory}/jpackage-input/atw-launcher-${project.version}.jar"/>
                     <!-- Bundle the app JAR itself (ATW-ykmu): the launcher seeds the app
                          dir from it on first run, so first launch works offline and is
-                         version-exact — never whatever /releases/latest happens to return. -->
-                    <copy file="${project.build.directory}/${project.artifactId}-${project.version}.jar" tofile="${project.build.directory}/jpackage-input/atw-app-${project.version}.jar"/>
+                         version-exact — never whatever /releases/latest happens to return.
+                         The EXEC classifier carries the runnable Spring Boot fat JAR: the
+                         desktop profile repackages with classifier=exec, so the plain .jar
+                         has no Main-Class and would die with "no main manifest attribute". -->
+                    <copy file="${project.build.directory}/${project.artifactId}-${project.version}-exec.jar" tofile="${project.build.directory}/jpackage-input/atw-app-${project.version}.jar"/>
                   </target>
                 </configuration>
               </execution>

@@ -92,6 +92,16 @@ echo "$FLOW_INFO" | grep -q '"productionMode" *: *true' \
   || fail "packaged JAR has productionMode != true — release artifacts must build with -Pproduction (ATW-mcwe)"
 echo "  productionMode: true"
 
+echo "== Assertion 3b: bundled atw-app JAR is production mode (ATW-ykmu) =="
+BUNDLED_JAR="$(find "$APP_DIR" -name 'atw-app-*.jar' | head -1)"
+if [ -z "$BUNDLED_JAR" ]; then
+  fail "no atw-app-*.jar bundled in the app image (ATW-ykmu)"
+fi
+BUNDLED_FLOW="$(unzip -p "$BUNDLED_JAR" META-INF/VAADIN/config/flow-build-info.json 2>/dev/null || echo '')"
+echo "$BUNDLED_FLOW" | grep -q '"productionMode" *: *true' \
+  || fail "bundled atw-app JAR has productionMode != true — installers must bundle the production fat JAR (ATW-ykmu)"
+echo "  bundled JAR: $(basename "$BUNDLED_JAR") productionMode: true"
+
 echo "== Assertion 4: launcher downloads via 302 and starts the app =="
 # Mock a GitHub release: the API points at a redirector host (302, mirroring
 # github.com -> release-assets.githubusercontent.com) which forwards to the
@@ -102,6 +112,13 @@ SMOKE_HOME="$(mktemp -d)"
 export ATW_LAUNCHER_TEST_HOME="$SMOKE_HOME"
 PORT_FILE="$SMOKE_HOME/ports"
 MARKER_JAR="$SMOKE_HOME/smoke-asset.jar"
+
+# Run the launcher from a bare copy of its own JAR (NOT from the app image):
+# seedBundledJar (ATW-ykmu) would otherwise copy the bundled production JAR
+# into the smoke home, which would short-circuit the download path the smoke
+# test exists to exercise.
+SMOKE_LAUNCHER_DIR="$(mktemp -d)"
+cp "$LAUNCHER_JAR" "$SMOKE_LAUNCHER_DIR/"
 
 # Compile the marker JAR the launcher will download and run.
 cat > "$SMOKE_HOME/SmokeApp.java" <<'JAVA'
@@ -166,7 +183,8 @@ LOG="$SMOKE_HOME/launcher.log"
 if ! "$JAVA_HOME/bin/java" \
   -Duser.home="$SMOKE_HOME" \
   "-Datw.launcher.releases-api=http://127.0.0.1:$API_PORT/api/releases/latest" \
-  -cp "$LAUNCHER_JAR" com.github.javydreamercsw.Launcher > "$LOG" 2>&1; then
+  -Datw.launcher.headless=true \
+  -cp "$SMOKE_LAUNCHER_DIR/$(basename "$LAUNCHER_JAR")" com.github.javydreamercsw.Launcher > "$LOG" 2>&1; then
   echo "  launcher exited non-zero:"
   sed 's/^/    /' "$LOG" | tail -20
   fail "launcher process failed (see $LOG)"
@@ -183,6 +201,6 @@ grep -q "SMOKE_APP_STARTED" "$LOG" \
   || fail "downloaded JAR was not executed by the resolved java executable"
 grep -q "NoClassDefFoundError" "$LOG" \
   && fail "launcher crashed with NoClassDefFoundError (ATW-mcwe)"
-rm -rf "$SMOKE_HOME"
+rm -rf "$SMOKE_HOME" "$SMOKE_LAUNCHER_DIR"
 
 echo "PASS: all installer E2E assertions succeeded"

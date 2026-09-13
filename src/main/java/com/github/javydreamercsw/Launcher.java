@@ -17,15 +17,19 @@
 package com.github.javydreamercsw;
 
 import java.awt.GraphicsEnvironment;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -35,6 +39,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import javax.swing.JOptionPane;
 
@@ -51,6 +56,9 @@ public final class Launcher {
   private static final Pattern JAR_PATTERN =
       Pattern.compile("all-time-wrestling-rpg-([0-9]+(?:\\.[0-9]+){0,2}(?:-[^.]+)?)\\.jar");
   private static final Duration STALE_TMP_THRESHOLD = Duration.ofHours(1);
+  private static final String DEV_MODE_ENTRY = "META-INF/VAADIN/config/flow-build-info.json";
+  private static final Pattern DEV_MODE_PRODUCTION_FALSE =
+      Pattern.compile("\"productionMode\"\\s*:\\s*false");
 
   public static void main(final String[] args) throws Exception {
     System.exit(run(args));
@@ -63,6 +71,7 @@ public final class Launcher {
   static int run(final String[] args) throws Exception {
     Path appDir = resolveAppDir();
     Files.createDirectories(appDir);
+    log("Launcher starting; app dir " + appDir);
 
     cleanStaleTmp(appDir);
     restoreBackupIfNeeded(appDir);
@@ -81,8 +90,7 @@ public final class Launcher {
                 + "Check your network and try again.");
         return 1;
       }
-      System.out.println(
-          "[Launcher] Update check failed — launching existing version " + currentVersion);
+      log("Update check failed — launching existing version " + currentVersion);
       return launchApp(currentJar, args);
     }
 
@@ -99,8 +107,8 @@ public final class Launcher {
             && installerVersion != null
             && isNewer(installerVersion, release.version());
     if (floorBlocks) {
-      System.out.println(
-          "[Launcher] Release v"
+      log(
+          "Release v"
               + release.version()
               + " is older than this installer (v"
               + installerVersion
@@ -123,7 +131,68 @@ public final class Launcher {
       return 1;
     }
 
-    return launchApp(currentJar, args);
+    return launchApp(guardAgainstDevModeJar(currentJar, appDir), args);
+  }
+
+  // -------------------------------------------------------------------------
+  // Dev-mode JAR gate (ATW-66k8 option b)
+  // -------------------------------------------------------------------------
+
+  /**
+   * A JAR built without {@code -Pproduction} ships Vaadin dev-mode metadata and dies shortly after
+   * startup on an end-user machine (no node/npm to connect to) — exactly the v2.9.0 failure behind
+   * "double-click does nothing" (ATW-66k8). The launcher must refuse to launch such a JAR when a
+   * usable alternative exists, because its failure comes too late for the 5-second crash window and
+   * shows no window at all. Returns the JAR to launch: the candidate, or the best other JAR in the
+   * dir, or null when nothing usable remains.
+   */
+  static Path guardAgainstDevModeJar(final Path candidate, final Path appDir) throws IOException {
+    if (candidate == null || !isDevModeJar(candidate)) {
+      return candidate;
+    }
+    log(
+        "JAR "
+            + candidate.getFileName()
+            + " was built in Vaadin DEV MODE (missing production build). "
+            + "Launching it would crash with no visible error — looking for a production JAR.");
+
+    Optional<Path> alternative =
+        Files.list(appDir)
+            .filter(p -> JAR_PATTERN.matcher(p.getFileName().toString()).matches())
+            .filter(p -> !p.equals(candidate))
+            .filter(
+                p -> {
+                  try {
+                    return !isDevModeJar(p);
+                  } catch (IOException e) {
+                    return false;
+                  }
+                })
+            .max(Comparator.comparing(Launcher::versionOrderKey));
+    if (alternative.isPresent()) {
+      log("Falling back to " + alternative.get().getFileName() + " instead.");
+      return alternative.get();
+    }
+    log("No production-mode JAR available — will attempt the dev-mode JAR anyway.");
+    return candidate;
+  }
+
+  /**
+   * True when the JAR carries Vaadin dev-mode build metadata ({@code productionMode: false}). JARs
+   * without the entry at all are assumed production builds (e.g. plain test JARs).
+   */
+  static boolean isDevModeJar(final Path jar) throws IOException {
+    try (ZipFile zf = new ZipFile(jar.toFile())) {
+      ZipEntry entry = zf.getEntry(DEV_MODE_ENTRY);
+      if (entry == null) {
+        return false;
+      }
+      try (InputStream in = zf.getInputStream(entry)) {
+        return DEV_MODE_PRODUCTION_FALSE
+            .matcher(new String(in.readAllBytes(), StandardCharsets.UTF_8))
+            .find();
+      }
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -152,9 +221,28 @@ public final class Launcher {
     if (!Files.exists(dir)) {
       return Optional.empty();
     }
+    // Order by version, not by filename string: lexicographic compare ranks
+    // "2.9.0" above "2.10.0-RC1" (ATW-6y2y) and would keep launching the stale JAR.
     return Files.list(dir)
         .filter(p -> JAR_PATTERN.matcher(p.getFileName().toString()).matches())
-        .max(Comparator.comparing(p -> extractVersion(p.getFileName().toString())));
+        .max(Comparator.comparing(Launcher::versionOrderKey));
+  }
+
+  /**
+   * Total ordering over version strings for JAR selection: numeric triple first, then the
+   * pre-release slot (final 99, RCn ≤ 98). Mirrors {@link #isNewer} without its boolean-only
+   * contract; unparseable names sort lowest.
+   */
+  static long versionOrderKey(final Path jar) {
+    String version = extractVersion(jar.getFileName().toString());
+    try {
+      int[] s = semver(version);
+      int slot =
+          preReleaseRank(version) == Integer.MAX_VALUE ? 99 : Math.min(preReleaseRank(version), 98);
+      return s[0] * 1_000_000_00L + s[1] * 100_000L + s[2] * 100L + slot;
+    } catch (Exception e) {
+      return Long.MIN_VALUE;
+    }
   }
 
   static String extractVersion(final String filename) {
@@ -318,7 +406,7 @@ public final class Launcher {
 
       return version != null && jarUrl != null ? new ReleaseInfo(version, jarUrl) : null;
     } catch (Exception e) {
-      System.err.println("[Launcher] Could not fetch release info: " + e.getMessage());
+      log("Could not fetch release info: " + e.getMessage());
       return null;
     }
   }
@@ -409,7 +497,7 @@ public final class Launcher {
     Path oldBackup =
         oldJar != null ? appDir.resolve(oldJar.getFileName().toString() + ".old") : null;
 
-    System.out.println("[Launcher] Downloading v" + release.version() + "...");
+    log("Downloading v" + release.version() + "...");
     try {
       HttpClient client =
           HttpClient.newBuilder()
@@ -427,7 +515,7 @@ public final class Launcher {
 
       HttpResponse<InputStream> resp = client.send(req, HttpResponse.BodyHandlers.ofInputStream());
       if (resp.statusCode() != 200) {
-        System.err.println("[Launcher] Download failed with HTTP " + resp.statusCode());
+        log("Download failed with HTTP " + resp.statusCode());
         return null;
       }
 
@@ -441,7 +529,7 @@ public final class Launcher {
           throw new IOException("Empty ZIP");
         }
       } catch (IOException e) {
-        System.err.println("[Launcher] Downloaded file is corrupt — aborting update.");
+        log("Downloaded file is corrupt — aborting update.");
         Files.deleteIfExists(tmpPath);
         return null;
       }
@@ -452,11 +540,11 @@ public final class Launcher {
       }
       Files.move(tmpPath, newJarName, StandardCopyOption.REPLACE_EXISTING);
 
-      System.out.println("[Launcher] Download complete: " + newJarName.getFileName());
+      log("Download complete: " + newJarName.getFileName());
       return newJarName;
 
     } catch (Exception e) {
-      System.err.println("[Launcher] Download error: " + e.getMessage());
+      log("Download error: " + e.getMessage());
       try {
         Files.deleteIfExists(tmpPath);
       } catch (IOException ignored) {
@@ -473,6 +561,10 @@ public final class Launcher {
    * Spawns the app JAR as a child process and returns its exit code. Waits up to 5 s to detect an
    * immediate crash (bad JAR, wrong Java version, etc.); a still-running child keeps waiting
    * normally.
+   *
+   * <p>The child's combined output is teed to a log file (option a, ATW-66k8): when the app is
+   * started from Explorer/Finder there is no console, so a silent exit would otherwise leave
+   * nothing to diagnose. The log lives beside the JARs in the app dir ({@code launcher.log}).
    */
   static int launchApp(final Path jar, final String[] extraArgs) throws Exception {
     String javaExe = resolveJavaExecutable();
@@ -487,18 +579,46 @@ public final class Launcher {
       cmd.add(arg);
     }
 
-    System.out.println("[Launcher] Starting " + jar.getFileName());
+    // The launch log lives beside the JARs so it survives silent failures and is
+    // trivial to find from a support request ("send me %APPDATA%\ATW\launcher.log").
+    Path logFile = jar.getParent() == null ? null : jar.getParent().resolve("launcher.log");
+    appendLog(logFile, "[Launcher] Starting " + jar.getFileName() + " with " + javaExe);
+    log("Starting " + jar.getFileName() + " with " + javaExe);
     ProcessBuilder pb = new ProcessBuilder(cmd);
-    pb.inheritIO();
+    pb.redirectErrorStream(true);
     Process process = pb.start();
+
+    // Tee the child's output into the launcher log so a silent failure still leaves
+    // evidence. Reading concurrently avoids the pipe filling up and blocking the child.
+    Thread tee;
+    if (logFile != null) {
+      BufferedReader reader =
+          new BufferedReader(
+              new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
+      tee =
+          new Thread(
+              () -> {
+                try {
+                  String line;
+                  while ((line = reader.readLine()) != null) {
+                    System.out.println("[app] " + line);
+                    appendLog(logFile, "[app] " + line);
+                  }
+                } catch (IOException ignored) {
+                  // Log best-effort; never let log I/O affect the launch itself.
+                }
+              });
+      tee.setDaemon(true);
+      tee.start();
+    } else {
+      tee = null;
+    }
 
     // Wait up to 5 s to catch an immediate crash (bad JAR, wrong Java version, etc.)
     boolean exited = process.waitFor(5, TimeUnit.SECONDS);
     if (exited && process.exitValue() != 0) {
-      System.err.println(
-          "[Launcher] Application exited immediately with code "
-              + process.exitValue()
-              + " — restoring previous version if available.");
+      appendLog(
+          logFile, "[Launcher] Application exited immediately with code " + process.exitValue());
       restoreBackupIfNeeded(jar.getParent());
       showError(
           "The application failed to start (exit code "
@@ -509,7 +629,12 @@ public final class Launcher {
     }
 
     // Normal case: app is running; wait for it to finish then propagate its code
-    return process.waitFor();
+    int code = process.waitFor();
+    if (tee != null) {
+      tee.join(TimeUnit.SECONDS.toMillis(5));
+    }
+    appendLog(logFile, "[Launcher] Application exited with code " + code);
+    return code;
   }
 
   // -------------------------------------------------------------------------
@@ -559,7 +684,7 @@ public final class Launcher {
 
     String targetName = "all-time-wrestling-rpg-" + bundledVersion + ".jar";
     Files.copy(bundled, appDir.resolve(targetName), StandardCopyOption.REPLACE_EXISTING);
-    System.out.println("[Launcher] Seeded app dir from bundled JAR: " + targetName);
+    log("Seeded app dir from bundled JAR: " + targetName);
     return bundledVersion;
   }
 
@@ -649,10 +774,50 @@ public final class Launcher {
     if (current.isEmpty()) {
       String name = backup.get().getFileName().toString().replace(".old", "");
       Files.move(backup.get(), dir.resolve(name), StandardCopyOption.REPLACE_EXISTING);
-      System.out.println("[Launcher] Restored backup JAR: " + name);
+      log("Restored backup JAR: " + name);
     } else {
       // Current JAR exists and appears healthy — safe to remove old backup
       Files.deleteIfExists(backup.get());
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Logging (option a, ATW-66k8)
+  // -------------------------------------------------------------------------
+
+  /**
+   * Logs one line to stderr and to {@code launcher.log} in the app dir. When the app is started
+   * from Explorer/Finder there is no console — this file is the only diagnostic that survives a
+   * silent failure ("double-click does nothing", ATW-66k8). Logging must never break the launch:
+   * all file errors are swallowed.
+   */
+  static void log(final String message) {
+    String line = "[Launcher] " + message;
+    System.out.println(line);
+    try {
+      Path appDir = resolveAppDir();
+      Files.createDirectories(appDir);
+      appendLog(appDir.resolve("launcher.log"), line);
+    } catch (Exception ignored) {
+      // No app dir (broken APPDATA etc.) — stderr above still carries the message.
+    }
+  }
+
+  /** Appends one timestamped line to the log file, best-effort. Package-visible for tests. */
+  static void appendLog(final Path logFile, final String line) {
+    if (logFile == null) {
+      return;
+    }
+    try {
+      String stamped = Instant.now() + " " + line + System.lineSeparator();
+      Files.writeString(
+          logFile,
+          stamped,
+          StandardCharsets.UTF_8,
+          StandardOpenOption.CREATE,
+          StandardOpenOption.APPEND);
+    } catch (IOException ignored) {
+      // Best-effort: a read-only app dir must not stop the launch.
     }
   }
 

@@ -576,6 +576,34 @@ jobs:
           fi
           echo "OK: $(echo "$EXPECTED" | wc -l | tr -d ' ') Launcher classes packaged"
 
+      # ATW-ykmu: the installer bundles the runnable app JAR (atw-app-VERSION.jar).
+      # Shipping a dev-mode or non-executable JAR would recreate the ATW-66k8 silent
+      # failure on every first launch — assert both properties here, before upload.
+      - name: Verify bundled app JAR is runnable and production
+        shell: bash
+        run: |
+          APP_JAR="$(find target/jpackage-input -name 'atw-app-*.jar' | head -1)"
+          if [ -z "$APP_JAR" ]; then
+            echo "FAIL: no atw-app-*.jar in jpackage-input" >&2
+            exit 1
+          fi
+          SIZE=$(stat -c %s "$APP_JAR" 2>/dev/null || stat -f %z "$APP_JAR")
+          if [ "$SIZE" -lt 50000000 ]; then
+            echo "FAIL: bundled app JAR is only $SIZE bytes — expected the ~250MB executable fat JAR, not the thin/classifier JAR" >&2
+            exit 1
+          fi
+          MAIN_CLASS="$(unzip -p "$APP_JAR" META-INF/MANIFEST.MF | grep -i 'Main-Class' || true)"
+          if [ -z "$MAIN_CLASS" ]; then
+            echo "FAIL: bundled app JAR has no Main-Class (thin JAR bundled instead of -exec fat JAR)" >&2
+            exit 1
+          fi
+          FLOW="$(unzip -p "$APP_JAR" META-INF/VAADIN/config/flow-build-info.json || true)"
+          echo "$FLOW" | grep -q '"productionMode" *: *true' || {
+            echo "FAIL: bundled app JAR productionMode != true (ATW-mcwe)" >&2
+            exit 1
+          }
+          echo "OK: $(basename "$APP_JAR") is $(printf '%.0f' "$(echo "$SIZE/1048576" | bc -l)")MB, Main-Class present, productionMode true"
+
       - name: Rename Installers
         shell: bash
         run: |

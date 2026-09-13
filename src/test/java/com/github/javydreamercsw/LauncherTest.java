@@ -576,6 +576,19 @@ class LauncherTest {
     assertThat(Launcher.findCurrentJar(parent.resolve("missing"))).isEmpty();
   }
 
+  @Test
+  void findCurrentJar_ordersSemanticallyNotLexicographically(@TempDir Path dir) throws Exception {
+    // Lexicographic max() picks "2.9.0" over "2.10.0-RC1" (ATW-6y2y): the stale JAR
+    // wins the string compare and keeps launching forever.
+    Files.write(dir.resolve("all-time-wrestling-rpg-2.9.0.jar"), minimalJarBytes());
+    Files.write(dir.resolve("all-time-wrestling-rpg-2.10.0-RC1.jar"), minimalJarBytes());
+
+    Optional<Path> result = Launcher.findCurrentJar(dir);
+    assertThat(result).isPresent();
+    assertThat(result.get().getFileName().toString())
+        .isEqualTo("all-time-wrestling-rpg-2.10.0-RC1.jar");
+  }
+
   // ── cleanStaleTmp ─────────────────────────────────────────────────────────
 
   @Test
@@ -770,6 +783,57 @@ class LauncherTest {
   }
 
   @Test
+  void launchApp_teesChildOutputIntoLauncherLog(@TempDir Path tempDir) throws Exception {
+    // Option a (ATW-66k8): when started from Explorer/Finder there is no console —
+    // the launcher.log file is the only evidence of what the child printed before
+    // dying. The tee must capture it.
+    Path smokeJar = buildExecutableJar(tempDir, "SmokeApp", "SmokeApp");
+
+    assertThat(Launcher.launchApp(smokeJar, new String[0])).isZero();
+
+    Path logFile = tempDir.resolve("launcher.log");
+    assertThat(logFile).exists();
+    String log = Files.readString(logFile);
+    assertThat(log).contains("[Launcher] Starting SmokeApp.jar");
+    assertThat(log).contains("[app] started");
+  }
+
+  @Test
+  void launchApp_capturesCrashOutputInLauncherLog(@TempDir Path tempDir) throws Exception {
+    // A child that exits within the crash window must leave its dying words in the log.
+    Path crashJar = buildExecutableJar(tempDir, "CrashApp", "CrashApp");
+
+    assertThat(Launcher.launchApp(crashJar, new String[0])).isEqualTo(3);
+
+    String log = Files.readString(tempDir.resolve("launcher.log"));
+    assertThat(log).contains("[app] crashing");
+    assertThat(log).contains("Application exited immediately with code 3");
+  }
+
+  @Test
+  void appendLog_writesTimestampedLinesAndAppends(@TempDir Path tempDir) throws Exception {
+    Path logFile = tempDir.resolve("launcher.log");
+    Launcher.appendLog(logFile, "first line");
+    Launcher.appendLog(logFile, "second line");
+
+    String log = Files.readString(logFile);
+    assertThat(log).contains("first line");
+    assertThat(log).contains("second line");
+    // Each line carries an ISO-8601 timestamp prefix for correlate-across-runs debugging.
+    assertThat(log).containsPattern("\\d{4}-\\d{2}-\\d{2}T");
+  }
+
+  @Test
+  void appendLog_isBestEffortWhenTargetIsADirectory(@TempDir Path tempDir) throws Exception {
+    // A directory where the log file should land must not throw — logging can
+    // never break the launch itself.
+    Path logDir = tempDir.resolve("launcher.log");
+    Files.createDirectories(logDir);
+
+    Launcher.appendLog(logDir, "should not throw");
+  }
+
+  @Test
   void download_rejectsValidButEmptyZip(@TempDir Path tempDir) throws Exception {
     // A ZIP with zero entries is structurally valid but carries no application —
     // the launcher must treat it as corrupt rather than swap it in.
@@ -787,6 +851,100 @@ class LauncherTest {
     } finally {
       server.stop(0);
     }
+  }
+
+  // ── dev-mode JAR gate (ATW-66k8 option b) ────────────────────────────────
+
+  @Test
+  void isDevModeJar_detectsProductionFalseMetadata(@TempDir Path tempDir) throws Exception {
+    Path devJar = tempDir.resolve("dev.jar");
+    Files.write(devJar, devModeJarBytes(false));
+    assertThat(Launcher.isDevModeJar(devJar)).isTrue();
+  }
+
+  @Test
+  void isDevModeJar_acceptsProductionJarAndJarsWithoutMetadata(@TempDir Path tempDir)
+      throws Exception {
+    Path prodJar = tempDir.resolve("prod.jar");
+    Files.write(prodJar, devModeJarBytes(true));
+    assertThat(Launcher.isDevModeJar(prodJar)).isFalse();
+
+    // JARs without the flow-build entry at all (plain manifests, test JARs) are
+    // assumed production — the gate must not reject them.
+    Path bareJar = tempDir.resolve("bare.jar");
+    Files.write(bareJar, minimalJarBytes());
+    assertThat(Launcher.isDevModeJar(bareJar)).isFalse();
+  }
+
+  @Test
+  void guardAgainstDevModeJar_fallsBackToNewestProductionJar(@TempDir Path appDir)
+      throws Exception {
+    // The v2.9.0 scenario: a dev-mode JAR sits in the app dir beside a working
+    // production build — the gate must hand back the production JAR.
+    Path devJar = appDir.resolve("all-time-wrestling-rpg-2.9.0.jar");
+    Files.write(devJar, devModeJarBytes(false));
+    Path prodJar = appDir.resolve("all-time-wrestling-rpg-2.10.0.jar");
+    Files.write(prodJar, devModeJarBytes(true));
+
+    Path chosen = Launcher.guardAgainstDevModeJar(devJar, appDir);
+
+    assertThat(chosen).isEqualTo(prodJar);
+  }
+
+  @Test
+  void guardAgainstDevModeJar_prefersNewerProductionOverOlderProduction(@TempDir Path appDir)
+      throws Exception {
+    Path devJar = appDir.resolve("all-time-wrestling-rpg-2.10.0.jar");
+    Files.write(devJar, devModeJarBytes(false));
+    Path olderProd = appDir.resolve("all-time-wrestling-rpg-2.9.0.jar");
+    Files.write(olderProd, devModeJarBytes(true));
+    Path newestProd = appDir.resolve("all-time-wrestling-rpg-2.10.1.jar");
+    Files.write(newestProd, devModeJarBytes(true));
+
+    Path chosen = Launcher.guardAgainstDevModeJar(devJar, appDir);
+
+    assertThat(chosen).isEqualTo(newestProd);
+  }
+
+  @Test
+  void guardAgainstDevModeJar_launchesDevModeJarWhenItIsTheOnlyOption(@TempDir Path appDir)
+      throws Exception {
+    // Never block the only path: with no production JAR available, the dev-mode
+    // JAR is still better than nothing.
+    Path devJar = appDir.resolve("all-time-wrestling-rpg-2.9.0.jar");
+    Files.write(devJar, devModeJarBytes(false));
+
+    Path chosen = Launcher.guardAgainstDevModeJar(devJar, appDir);
+
+    assertThat(chosen).isEqualTo(devJar);
+  }
+
+  @Test
+  void guardAgainstDevModeJar_passesProductionJarThrough(@TempDir Path appDir) throws Exception {
+    Path prodJar = appDir.resolve("all-time-wrestling-rpg-2.10.0.jar");
+    Files.write(prodJar, devModeJarBytes(true));
+
+    Path chosen = Launcher.guardAgainstDevModeJar(prodJar, appDir);
+
+    assertThat(chosen).isEqualTo(prodJar);
+  }
+
+  /** Builds minimal JAR bytes with (or without) a {@code productionMode: false} Vaadin entry. */
+  private static byte[] devModeJarBytes(boolean production) throws IOException {
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+      zos.putNextEntry(new ZipEntry("META-INF/MANIFEST.MF"));
+      zos.write("Manifest-Version: 1.0\n".getBytes());
+      zos.closeEntry();
+      zos.putNextEntry(new ZipEntry("META-INF/VAADIN/config/flow-build-info.json"));
+      zos.write(
+          (production
+                  ? "{\"productionMode\" : true}"
+                  : "{\"productionMode\" : false, \"npmFolder\": \"/builder\"}")
+              .getBytes());
+      zos.closeEntry();
+    }
+    return baos.toByteArray();
   }
 
   @Test
@@ -1122,7 +1280,7 @@ class LauncherTest {
             .formatted(
                 className,
                 "CrashApp".equals(className)
-                    ? "System.exit(3);"
+                    ? "System.out.println(\"crashing\"); System.exit(3);"
                     : "System.out.println(\"started\");");
     Path src = dir.resolve(className + ".java");
     Files.writeString(src, source);
