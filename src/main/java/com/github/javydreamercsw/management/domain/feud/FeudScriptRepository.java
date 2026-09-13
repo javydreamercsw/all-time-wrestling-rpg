@@ -29,11 +29,27 @@ public interface FeudScriptRepository extends JpaRepository<FeudScript, Long> {
   List<FeudScript> findByRivalryAndStatus(Rivalry rivalry, FeudScriptStatus status);
 
   @Query(
-      "SELECT DISTINCT s FROM FeudScript s LEFT JOIN FETCH s.beats"
+      "SELECT DISTINCT s FROM FeudScript s"
+          + " LEFT JOIN FETCH s.beats"
+          + " LEFT JOIN FETCH s.rivalry r"
+          + " LEFT JOIN FETCH s.feud f"
           + " WHERE s.rivalry = :rivalry ORDER BY s.id")
   List<FeudScript> findByRivalryWithBeats(@Param("rivalry") Rivalry rivalry);
 
   List<FeudScript> findByFeudAndStatus(MultiWrestlerFeud feud, FeudScriptStatus status);
 
   List<FeudScript> findByStatus(FeudScriptStatus status);
+
+  /**
+   * Every script with beats and link graph eagerly loaded (arc list view). Wrestler-level
+   * associations (rivalry wrestlers, feud members, externals, planned winners) are EAGER on the
+   * entities themselves, so the detached grids read them safely.
+   */
+  @Query(
+      "SELECT DISTINCT s FROM FeudScript s"
+          + " LEFT JOIN FETCH s.beats"
+          + " LEFT JOIN FETCH s.rivalry"
+          + " LEFT JOIN FETCH s.feud"
+          + " ORDER BY s.id DESC")
+  List<FeudScript> findAllWithBeats();
 }

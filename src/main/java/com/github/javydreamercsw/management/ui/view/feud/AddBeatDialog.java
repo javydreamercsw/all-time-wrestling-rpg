@@ -19,6 +19,8 @@ package com.github.javydreamercsw.management.ui.view.feud;
 import com.github.javydreamercsw.management.domain.feud.FeudScript;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptBeat;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
+import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.feud.FeudBeatAssistantService;
 import com.github.javydreamercsw.management.service.feud.FeudScriptService;
@@ -61,13 +63,16 @@ public class AddBeatDialog extends Dialog {
         feudScriptService,
         List.of(),
         null,
+        List.of(),
+        List.of(),
         onComplete);
   }
 
   /**
    * Full dialog: {@code externalCandidates} (active roster minus the feud's wrestlers) enables
    * external opponent/extras selection; {@code opponentAssistant} enables the AI suggestion button
-   * when non-null.
+   * when non-null; {@code upcomingShows}/{@code activeTitles} power the target-show picker and the
+   * title-stakes section.
    */
   public AddBeatDialog(
       FeudScript script,
@@ -77,6 +82,8 @@ public class AddBeatDialog extends Dialog {
       FeudScriptService feudScriptService,
       List<Wrestler> externalCandidates,
       FeudBeatAssistantService opponentAssistant,
+      List<Show> upcomingShows,
+      List<Title> activeTitles,
       Runnable onComplete) {
     this.script = script;
     this.feudScriptService = feudScriptService;
@@ -89,13 +96,16 @@ public class AddBeatDialog extends Dialog {
 
     beatEditor =
         new BeatEditor(
-            sortParticipants(participants),
-            segmentTypeNames,
-            segmentRuleNames,
-            externalCandidates != null ? externalCandidates : List.of(),
-            false,
-            null,
-            opponentAssistant);
+            new BeatEditor.BeatEditorContext(
+                sortParticipants(participants),
+                externalCandidates != null ? externalCandidates : List.of(),
+                upcomingShows != null ? upcomingShows : List.of(),
+                activeTitles != null ? activeTitles : List.of(),
+                segmentTypeNames,
+                segmentRuleNames,
+                false,
+                null,
+                opponentAssistant));
     beatEditor.bindScriptContext(script, participants);
 
     Button saveBtn =

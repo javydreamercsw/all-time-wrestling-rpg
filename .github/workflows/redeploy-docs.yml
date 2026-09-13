@@ -1,14 +1,16 @@
 name: Redeploy Docs
 
-# Rebuilds and redeploys the GitHub Pages docs site from an existing
-# docs-videos artifact without re-running any E2E or screenshot tests.
-# Screenshots are committed to the repo; only videos need to be supplied
-# from a prior release run.
+# Rebuilds and redeploys the GitHub Pages docs site without re-running any
+# E2E or screenshot tests. Both screenshots and videos are gitignored, so
+# each must be supplied from a prior release run's artifacts — otherwise
+# VitePress fails on unresolved /screenshots/*.png imports (screenshots) or
+# the site deploys without walkthrough videos (videos).
 #
 # Usage:
-#   1. Find the release workflow run ID that produced the docs-videos artifact
-#      (Actions tab → Create Release → copy the run ID from the URL).
-#   2. Trigger this workflow with the ref and run ID.
+#   Trigger this workflow with the ref to deploy. Artifact run IDs are
+#   optional: when left blank, the most recent successful "Create Release"
+#   run that produced each artifact is used automatically. Pass an explicit
+#   run ID only to pin an older release's screenshots/videos.
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -21,7 +23,11 @@ on:
         required: true
         default: 'main'
       videos_run_id:
-        description: 'Release workflow run ID whose docs-videos artifact to use (leave blank to skip videos)'
+        description: 'Release run ID for docs-videos (blank = latest successful release run with that artifact)'
+        required: false
+        default: ''
+      screenshots_run_id:
+        description: 'Release run ID for docs-screenshots (blank = latest successful release run with that artifact)'
         required: false
         default: ''
 
@@ -55,19 +61,54 @@ jobs:
         run: npm ci
         working-directory: docs/site
 
+      - name: "Resolve artifact run IDs (default: latest successful release run)"
+        id: artifact_runs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          latest_with_artifact() {
+            local artifact="$1"
+            local explicit="$2"
+            if [ -n "$explicit" ]; then
+              echo "$explicit"
+              return
+            fi
+            # Newest successful Create Release runs first; pick the first whose
+            # named artifact still exists (artifacts expire after ~90 days).
+            # A for-loop (not `while read`) — the pipeline subshell would swallow
+            # the return and could echo multiple IDs.
+            local run_ids
+            mapfile -t run_ids < <(gh api --paginate "repos/${{ github.repository }}/actions/workflows/release.yml/runs?status=success&per_page=30" --jq '.workflow_runs[].id')
+            local run_id
+            for run_id in "${run_ids[@]}"; do
+              if gh api "repos/${{ github.repository }}/actions/runs/${run_id}/artifacts" \
+                  --jq ".artifacts[] | select(.name == \"${artifact}\") | .name" | grep -q .; then
+                echo "$run_id"
+                return
+              fi
+            done
+          }
+
+          VIDEOS_RUN="$(latest_with_artifact docs-videos "${{ github.event.inputs.videos_run_id }}")"
+          SCREENS_RUN="$(latest_with_artifact docs-screenshots "${{ github.event.inputs.screenshots_run_id }}")"
+          echo "videos_run=$VIDEOS_RUN" >> "$GITHUB_OUTPUT"
+          echo "screens_run=$SCREENS_RUN" >> "$GITHUB_OUTPUT"
+          echo "docs-videos from run:    ${VIDEOS_RUN:-<none found>}"
+          echo "docs-screenshots from run: ${SCREENS_RUN:-<none found>}"
+
       - name: Download docs-videos artifact from release run
-        if: ${{ github.event.inputs.videos_run_id != '' }}
+        if: ${{ steps.artifact_runs.outputs.videos_run != '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Download to a temp dir to avoid conflicts with any existing files
           # in the workspace (e.g. git-committed videos/).
-          gh run download ${{ github.event.inputs.videos_run_id }} \
+          gh run download ${{ steps.artifact_runs.outputs.videos_run }} \
             --name docs-videos \
             --dir /tmp/videos-artifact
 
       - name: Normalize video artifact structure
-        if: ${{ github.event.inputs.videos_run_id != '' }}
+        if: ${{ steps.artifact_runs.outputs.videos_run != '' }}
         run: |
           mkdir -p docs/videos
           # Artifact structure varies by when the release ran:
@@ -85,6 +126,39 @@ jobs:
             echo "No MP4s found in artifact — deploying without videos"
           fi
           echo "Videos in docs/videos/: $(find docs/videos -name '*.mp4' | wc -l)"
+
+      # Screenshots are gitignored (/docs/screenshots/), so a redeploy from a clean
+      # checkout has none and VitePress fails with unresolved /screenshots/*.png
+      # imports on the guide pages. Pull them from a release run's artifact — the
+      # same place the release pipeline itself generated them.
+      - name: Download docs-screenshots artifact from release run
+        if: ${{ steps.artifact_runs.outputs.screens_run != '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh run download ${{ steps.artifact_runs.outputs.screens_run }} \
+            --name docs-screenshots \
+            --dir /tmp/screens-artifact
+
+      - name: Normalize screenshot artifact structure
+        if: ${{ steps.artifact_runs.outputs.screens_run != '' }}
+        run: |
+          mkdir -p docs/screenshots
+          # Artifact structure varies by when the release ran:
+          #   pre-fix:  /tmp/screens-artifact/screenshots/<file>.png + manifest.json
+          #   post-fix: /tmp/screens-artifact/docs/screenshots/<file>.png
+          if find /tmp/screens-artifact/docs/screenshots -name '*.png' -maxdepth 1 | grep -q .; then
+            echo "Post-fix artifact: copying from docs/screenshots/"
+            find /tmp/screens-artifact/docs/screenshots -name '*.png' -maxdepth 1 -exec cp {} docs/screenshots/ \;
+            [ -f /tmp/screens-artifact/docs/manifest.json ] && cp /tmp/screens-artifact/docs/manifest.json docs/
+          elif find /tmp/screens-artifact/screenshots -name '*.png' -maxdepth 1 | grep -q .; then
+            echo "Pre-fix artifact: copying from screenshots/"
+            find /tmp/screens-artifact/screenshots -name '*.png' -maxdepth 1 -exec cp {} docs/screenshots/ \;
+            [ -f /tmp/screens-artifact/manifest.json ] && cp /tmp/screens-artifact/manifest.json docs/
+          else
+            echo "No PNGs found in artifact — deploying without screenshots"
+          fi
+          echo "Screenshots in docs/screenshots/: $(find docs/screenshots -name '*.png' | wc -l)"
 
       - name: Sync challenge content from src to docs
         run: node scripts/sync-challenge-content.cjs

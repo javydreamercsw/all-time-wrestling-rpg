@@ -54,12 +54,16 @@ public class Rivalry extends AbstractEntity<Long> {
   @Column(name = "rivalry_id")
   private Long id;
 
-  @ManyToOne(optional = false, fetch = FetchType.LAZY)
+  /**
+   * EAGER: rivalry detail/arc cards render wrestler names on detached grids (open-in-view is off).
+   */
+  @ManyToOne(optional = false, fetch = FetchType.EAGER)
   @JoinColumn(name = "wrestler1_id", nullable = false)
   @JsonIgnoreProperties({"rivalries", "injuries", "deck", "titleReigns"})
   private Wrestler wrestler1;
 
-  @ManyToOne(optional = false, fetch = FetchType.LAZY)
+  /** EAGER: rivalry detail/arc cards render wrestler names on detached grids. */
+  @ManyToOne(optional = false, fetch = FetchType.EAGER)
   @JoinColumn(name = "wrestler2_id", nullable = false)
   @JsonIgnoreProperties({"rivalries", "injuries", "deck", "titleReigns"})
   private Wrestler wrestler2;

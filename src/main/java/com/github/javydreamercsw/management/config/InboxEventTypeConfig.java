@@ -60,6 +60,11 @@ public class InboxEventTypeConfig {
   }
 
   @Bean
+  public InboxEventType feudScriptCompleted() {
+    return new InboxEventType("FEUD_SCRIPT_COMPLETED", "Story Arc Completed");
+  }
+
+  @Bean
   public InboxEventType adjudicationCompleted() {
     return new InboxEventType("ADJUDICATION_COMPLETED", "Adjudication Completed");
   }

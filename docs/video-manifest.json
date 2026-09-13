@@ -398,5 +398,12 @@
     "description": "The tournament engine supports Single Elimination and Round Robin formats. Single Elimination generates one round at a time, perfect for big multi-week events. Round Robin pre-builds all match-ups so every entrant faces every other entrant before a winner is determined.",
     "videoPath": "videos/booker-tournament-bracket-workflow.mp4",
     "order": 0
+  }, {
+    "id": "booker-booker-story-arc-workflow",
+    "category": "Booker",
+    "title": "Story Arc Scripting",
+    "description": "Back on the arc card, beats remain editable until they play out on a show. When a scripted segment completes, its beat is marked completed automatically — once every beat is done, the arc completes itself and the feud is over.",
+    "videoPath": "videos/booker-story-arc-workflow.mp4",
+    "order": 0
   } ]
 }
