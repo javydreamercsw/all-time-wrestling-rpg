@@ -34,13 +34,33 @@ if (fs.existsSync(videoManifestPath)) {
 // Override via GITHUB_PAGES_BASE env var (set automatically in release.yml).
 const githubPagesBase = (process.env.GITHUB_PAGES_BASE || 'https://javydreamercsw.github.io/all-time-wrestling-rpg').replace(/\/$/, '');
 
-// 1. Prepare Markdown directory — clear stale files first so old video-only
+// 1. Prepare Markdown directory — clear stale GENERATED pages so old video-only
 // categories don't leave orphaned .md files with broken <video> references.
+// Hand-written tutorial pages (ATW-aqwr/ATW-rwoz) live in the same directory but are
+// NOT manifest categories; they must survive the regeneration (a previous version
+// wiped them on every deploy, 404ing their sidebar links — ATW-w9ie follow-up).
+const manifestCategories = new Set(
+  (JSON.parse(fs.readFileSync(manifestPath, 'utf8')).features || [])
+    .map(f => f.category.toLowerCase().replace(/ /g, '-'))
+    .concat((videoFeatures || []).map(v => v.category.toLowerCase().replace(/ /g, '-')))
+);
+const handWrittenPages = [];
 if (fs.existsSync(outputDir)) {
   const existing = fs.readdirSync(outputDir).filter(f => f.endsWith('.md'));
-  existing.forEach(f => fs.rmSync(path.join(outputDir, f)));
-  if (existing.length > 0) {
-    console.log(`Cleared ${existing.length} stale guide file(s) from ${outputDir}`);
+  existing.forEach(f => {
+    const base = f.replace(/\.md$/, '');
+    if (manifestCategories.has(base)) {
+      fs.rmSync(path.join(outputDir, f));
+    } else {
+      handWrittenPages.push(f);
+    }
+  });
+  const cleared = existing.length - handWrittenPages.length;
+  if (cleared > 0) {
+    console.log(`Cleared ${cleared} stale generated guide file(s) from ${outputDir}`);
+  }
+  if (handWrittenPages.length > 0) {
+    console.log(`Preserved ${handWrittenPages.length} hand-written guide page(s): ${handWrittenPages.join(', ')}`);
   }
 } else {
   fs.mkdirSync(outputDir, { recursive: true });
