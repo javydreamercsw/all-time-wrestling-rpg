@@ -66,6 +66,7 @@ public final class Launcher {
 
     cleanStaleTmp(appDir);
     restoreBackupIfNeeded(appDir);
+    seedBundledJar(appDir);
 
     Path currentJar = findCurrentJar(appDir).orElse(null);
     String currentVersion =
@@ -86,6 +87,26 @@ public final class Launcher {
     }
 
     boolean needsDownload = currentJar == null || isNewer(release.version(), currentVersion);
+
+    // Floor: prefer the bundled/local version over a release older than the installer that
+    // shipped this launcher — /releases/latest can lag the installer (e.g. RC installed while
+    // latest stable is older). The floor NEVER blocks the only path to a runnable app: with no
+    // local JAR at all, downloading something older beats failing (ATW-ykmu).
+    String installerVersion = installerVersion();
+    boolean floorBlocks =
+        needsDownload
+            && currentJar != null
+            && installerVersion != null
+            && isNewer(installerVersion, release.version());
+    if (floorBlocks) {
+      System.out.println(
+          "[Launcher] Release v"
+              + release.version()
+              + " is older than this installer (v"
+              + installerVersion
+              + ") — keeping the bundled/local version.");
+      needsDownload = false;
+    }
 
     if (needsDownload) {
       boolean doUpdate = currentJar == null || promptUser(release.version());
@@ -163,9 +184,40 @@ public final class Launcher {
     return "https://api.github.com/repos/" + REPO + "/releases?per_page=10";
   }
 
-  /** Prerelease channel: forced by property, or implicit when the install itself is an RC. */
+  /**
+   * Prerelease channel: forced by property, implicit when the install itself is an RC, or implicit
+   * when the *installer* that placed this launcher is a prerelease (first run — no app JAR yet).
+   */
   static boolean allowPreRelease(final String currentVersion) {
-    return Boolean.getBoolean("atw.launcher.allow-prerelease") || isPreRelease(currentVersion);
+    return Boolean.getBoolean("atw.launcher.allow-prerelease")
+        || isPreRelease(currentVersion)
+        || isPreRelease(installerVersion());
+  }
+
+  /**
+   * The version of the installer that shipped this launcher, parsed from the launcher JAR's own
+   * filename ({@code atw-launcher-2.10.0-RC2.jar} in the jpackage app dir). Null when unknown —
+   * bare runs during development. {@code atw.launcher.self} overrides the launcher location
+   * (tests); production never sets it.
+   */
+  static String installerVersion() {
+    try {
+      Path launcher = selfLocation();
+      Matcher m =
+          Pattern.compile("atw-launcher-(.+)\\.jar").matcher(launcher.getFileName().toString());
+      return m.matches() ? m.group(1) : null;
+    } catch (Exception e) {
+      return null;
+    }
+  }
+
+  /** Where this launcher JAR lives; {@code atw.launcher.self} property overrides (tests). */
+  private static Path selfLocation() throws Exception {
+    String override = System.getProperty("atw.launcher.self");
+    if (override != null) {
+      return Path.of(override);
+    }
+    return Path.of(Launcher.class.getProtectionDomain().getCodeSource().getLocation().toURI());
   }
 
   /**
@@ -463,6 +515,74 @@ public final class Launcher {
   // -------------------------------------------------------------------------
   // Cleanup helpers
   // -------------------------------------------------------------------------
+
+  /**
+   * Seeds the app dir from the bundled JAR that ships inside the installer (ATW-ykmu). jpackage
+   * wraps {@code atw-app-VERSION.jar} into the same directory as the launcher, so first run works
+   * offline and is version-exact — never whatever {@code /releases/latest} happens to return. The
+   * bundled JAR is copied in when the app dir has no JAR, or when the bundled one is newer than
+   * what is there (e.g. the installer was reinstalled/upgraded without the launcher downloading
+   * yet). Returns the version of the seeded JAR, or null when nothing was seeded.
+   */
+  static String seedBundledJar(final Path appDir) throws IOException {
+    Path bundled = findBundledAppJar();
+    if (bundled == null) {
+      return null;
+    }
+    // Version comes from the bundled file's own name (atw-app-2.10.0-RC2.jar) — the
+    // app JAR pattern does not match this filename, so extractVersion cannot be used.
+    Matcher bundledMatcher =
+        Pattern.compile("atw-app-(.+)\\.jar").matcher(bundled.getFileName().toString());
+    if (!bundledMatcher.matches()) {
+      return null;
+    }
+    String bundledVersion = bundledMatcher.group(1);
+
+    Optional<Path> existing = findCurrentJar(appDir);
+    if (existing.isPresent()) {
+      String existingVersion = extractVersion(existing.get().getFileName().toString());
+      // Newer numeric version always wins; a bundled prerelease of the same numeric does NOT
+      // overwrite an installed final (2.10.0-RC2 bundled vs 2.10.0 installed → keep installed).
+      boolean bundledStrictlyNewer;
+      try {
+        bundledStrictlyNewer = isNewer(bundledVersion, existingVersion);
+      } catch (Exception e) {
+        bundledStrictlyNewer = false;
+      }
+      if (!bundledStrictlyNewer) {
+        return null;
+      }
+      // Keep the old JAR as a backup before replacing it with the bundled one.
+      Path backup = appDir.resolve(existing.get().getFileName().toString() + ".old");
+      Files.move(existing.get(), backup, StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    String targetName = "all-time-wrestling-rpg-" + bundledVersion + ".jar";
+    Files.copy(bundled, appDir.resolve(targetName), StandardCopyOption.REPLACE_EXISTING);
+    System.out.println("[Launcher] Seeded app dir from bundled JAR: " + targetName);
+    return bundledVersion;
+  }
+
+  /** The {@code atw-app-*.jar} bundled next to this launcher by jpackage, or null. */
+  static Path findBundledAppJar() {
+    try {
+      Path dir = selfLocation().getParent();
+      if (dir == null || !Files.isDirectory(dir)) {
+        return null;
+      }
+      try (var stream = Files.list(dir)) {
+        return stream
+            .filter(
+                p ->
+                    p.getFileName().toString().startsWith("atw-app-")
+                        && p.getFileName().toString().endsWith(".jar"))
+            .findFirst()
+            .orElse(null);
+      }
+    } catch (Exception e) {
+      return null;
+    }
+  }
 
   /** {@code java.exe} on Windows, {@code java} everywhere else. */
   static String javaBinaryName(final String osName) {
