@@ -29,15 +29,23 @@ fail() {
 # The node mock server below is started in the background; without this trap it
 # outlives the script and holds callers' stdout pipes open forever (locally there
 # is nothing to reap orphans — the CI runner only cleans up between jobs).
+# Variables are pre-set because the trap can fire before assignment (set -u).
 MOCK_SERVER_PID=""
+SMOKE_HOME=""
+SMOKE_LAUNCHER_DIR=""
 cleanup() {
   [ -n "$MOCK_SERVER_PID" ] && kill "$MOCK_SERVER_PID" 2>/dev/null
-  rm -rf "$SMOKE_HOME" "$SMOKE_LAUNCHER_DIR" 2>/dev/null
+  [ -n "$SMOKE_HOME" ] && rm -rf "$SMOKE_HOME" 2>/dev/null
+  [ -n "$SMOKE_LAUNCHER_DIR" ] && rm -rf "$SMOKE_LAUNCHER_DIR" 2>/dev/null
 }
 trap cleanup EXIT
 
 echo "== Building production app-image (this takes a few minutes) =="
 rm -rf "target/dist/All Time Wrestling.app" target/dist/all-time-wrestling/ 2>/dev/null || true
+# Stale classifier JARs from earlier builds mask packaging bugs: an old -exec.jar
+# in target/ once let a broken antrun copy succeed locally while CI failed
+# (run 34757998592). A smoke run must verify THIS tree's output, not history's.
+rm -f target/all-time-wrestling-rpg-*.jar target/all-time-wrestling-rpg-*.jar.original 2>/dev/null || true
 mvn -B -q package -Pproduction,desktop -DskipTests -Dsurefire.skip=true -Djpackage.type=APP_IMAGE
 
 # ── Locate the app bundle (macOS .app vs linux directory) ────────────────────
@@ -143,7 +151,6 @@ mkdir -p "$SMOKE_HOME/classes"
 "$JAVA_HOME/bin/jar" cfe "$MARKER_JAR" SmokeApp -C "$SMOKE_HOME/classes" SmokeApp.class
 
 node - "$PORT_FILE" "$MARKER_JAR" <<'NODE' &
-MOCK_SERVER_PID=$!
 const http = require('http');
 const fs = require('fs');
 const portFile = process.argv[2];
@@ -178,6 +185,8 @@ api.listen(0, '127.0.0.1', () => {
   });
 });
 NODE
+# $! still refers to the backgrounded node here (heredocs do not reset it).
+MOCK_SERVER_PID=$!
 for _ in $(seq 1 50); do
   [ -s "$PORT_FILE" ] && break
   sleep 0.2

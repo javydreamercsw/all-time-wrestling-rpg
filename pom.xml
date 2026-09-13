@@ -1484,6 +1484,14 @@
             </executions>
           </plugin>
           <plugin>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-maven-plugin</artifactId>
+            <configuration>
+              <jvmArguments>-Djava.awt.headless=false -Datw.desktop.enabled=true -Dserver.port=0</jvmArguments>
+              <classifier>exec</classifier>
+            </configuration>
+          </plugin>
+          <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-antrun-plugin</artifactId>
             <version>3.2.0</version>
@@ -1494,7 +1502,11 @@
                   <goal>run</goal>
                 </goals>
                 <!-- Must run at package: copies the launcher and fat JARs built
-                     earlier in the phase; default phase runs before they exist. -->
+                     earlier in the phase; default phase runs before they exist.
+                     DECLARATION ORDER MATTERS within the phase: this plugin sits
+                     after spring-boot-maven-plugin so repackage has already
+                     produced the -exec fat JAR when this copy runs (CI run
+                     34757998592 failed exactly on that ordering). -->
                 <phase>package</phase>
                 <configuration>
                   <target>
@@ -1555,14 +1567,6 @@
                 </configuration>
               </execution>
             </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-maven-plugin</artifactId>
-            <configuration>
-              <jvmArguments>-Djava.awt.headless=false -Datw.desktop.enabled=true -Dserver.port=0</jvmArguments>
-              <classifier>exec</classifier>
-            </configuration>
           </plugin>
         </plugins>
       </build>
