@@ -1493,6 +1493,9 @@
                 <goals>
                   <goal>run</goal>
                 </goals>
+                <!-- Must run at package: copies the launcher and fat JARs built
+                     earlier in the phase; default phase runs before they exist. -->
+                <phase>package</phase>
                 <configuration>
                   <target>
                     <mkdir dir="${project.build.directory}/jpackage-input"/>
