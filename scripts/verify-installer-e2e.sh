@@ -26,6 +26,16 @@ fail() {
   exit 1
 }
 
+# The node mock server below is started in the background; without this trap it
+# outlives the script and holds callers' stdout pipes open forever (locally there
+# is nothing to reap orphans — the CI runner only cleans up between jobs).
+MOCK_SERVER_PID=""
+cleanup() {
+  [ -n "$MOCK_SERVER_PID" ] && kill "$MOCK_SERVER_PID" 2>/dev/null
+  rm -rf "$SMOKE_HOME" "$SMOKE_LAUNCHER_DIR" 2>/dev/null
+}
+trap cleanup EXIT
+
 echo "== Building production app-image (this takes a few minutes) =="
 rm -rf "target/dist/All Time Wrestling.app" target/dist/all-time-wrestling/ 2>/dev/null || true
 mvn -B -q package -Pproduction,desktop -DskipTests -Dsurefire.skip=true -Djpackage.type=APP_IMAGE
@@ -133,6 +143,7 @@ mkdir -p "$SMOKE_HOME/classes"
 "$JAVA_HOME/bin/jar" cfe "$MARKER_JAR" SmokeApp -C "$SMOKE_HOME/classes" SmokeApp.class
 
 node - "$PORT_FILE" "$MARKER_JAR" <<'NODE' &
+MOCK_SERVER_PID=$!
 const http = require('http');
 const fs = require('fs');
 const portFile = process.argv[2];
@@ -201,6 +212,5 @@ grep -q "SMOKE_APP_STARTED" "$LOG" \
   || fail "downloaded JAR was not executed by the resolved java executable"
 grep -q "NoClassDefFoundError" "$LOG" \
   && fail "launcher crashed with NoClassDefFoundError (ATW-mcwe)"
-rm -rf "$SMOKE_HOME" "$SMOKE_LAUNCHER_DIR"
 
 echo "PASS: all installer E2E assertions succeeded"
