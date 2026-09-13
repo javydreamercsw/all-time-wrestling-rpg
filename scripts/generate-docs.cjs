@@ -147,6 +147,19 @@ Object.keys(videosByCategory).forEach(cat => {
 // Merge screenshot categories and video-only categories into one set
 const allCategories = new Set([...Object.keys(categories), ...Object.keys(videosByCategory)]);
 
+// ATW-w9ie: a run with no screenshots (and no videos) would wipe every guide page above,
+// generate nothing, and publish an index-only site whose hero links 404. Refuse to build
+// that site so the deploy fails loudly instead of silently replacing the real docs.
+if (allCategories.size === 0) {
+  console.error(
+    'FATAL: 0 documentation categories after filtering — the docs-screenshots artifact is ' +
+      'missing (screenshots are gitignored and must come from a release run) and no video ' +
+      'manifest entries survived. Refusing to build an index-only site; fix the artifact ' +
+      'inputs and retry (see redeploy-docs.yml).'
+  );
+  process.exit(1);
+}
+
 console.log('Generating Markdown files...');
 Array.from(allCategories).sort().forEach(category => {
   const catFeatures = categories[category] || [];
