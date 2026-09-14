@@ -1,0 +1,1 @@
+var e=`/all-time-wrestling-rpg/screenshots/admin-ai-settings.png`,t=`/all-time-wrestling-rpg/screenshots/admin-expansion-management.png`;export{e as n,t};

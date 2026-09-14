@@ -36,16 +36,17 @@ public interface FeudScriptBeatRepository extends JpaRepository<FeudScriptBeat, 
 
   Optional<FeudScriptBeat> findByActualSegment(Segment segment);
 
-  /** Find the first pending beat whose rivalry wrestlers are both present in the given ID set. */
+  /**
+   * Find pending beats whose arc wrestlers appear in the given ID set — rivalry arcs (both
+   * wrestlers present) and multi-wrestler feud arcs (any active member present; the service layer
+   * filters for full coverage). Ordered by beat order so the first match is the arc's next beat.
+   */
   @Query(
-      "SELECT b FROM FeudScriptBeat b"
-          + " JOIN b.script s"
-          + " JOIN s.rivalry r"
-          + " WHERE b.beatStatus = 'PENDING'"
-          + " AND s.status = 'ACTIVE'"
-          + " AND r.wrestler1.id IN :wrestlerIds"
-          + " AND r.wrestler2.id IN :wrestlerIds"
-          + " ORDER BY b.beatOrder ASC")
+      "SELECT DISTINCT b FROM FeudScriptBeat b JOIN b.script s LEFT JOIN s.rivalry r LEFT JOIN"
+          + " s.feud f LEFT JOIN f.participants fp WHERE b.beatStatus = 'PENDING' AND s.status ="
+          + " 'ACTIVE' AND (   (r IS NOT NULL AND r.wrestler1.id IN :wrestlerIds AND r.wrestler2.id"
+          + " IN :wrestlerIds)   OR (f IS NOT NULL AND fp.isActive = true AND fp.wrestler.id IN"
+          + " :wrestlerIds)) ORDER BY b.beatOrder ASC")
   List<FeudScriptBeat> findPendingBeatsForWrestlers(@Param("wrestlerIds") List<Long> wrestlerIds);
 
   /**

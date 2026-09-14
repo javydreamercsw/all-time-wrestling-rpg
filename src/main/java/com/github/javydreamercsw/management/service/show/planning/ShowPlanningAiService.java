@@ -164,6 +164,15 @@ public class ShowPlanningAiService {
     if (beat.getNotes() != null && !beat.getNotes().isBlank()) {
       segment.setNotes(beat.getNotes());
     }
+    if (beat.isTitleSegment() && beat.getTitles() != null && !beat.getTitles().isEmpty()) {
+      // setTitles flips isTitleSegment on the proposal.
+      segment.setTitles(new HashSet<>(beat.getTitles()));
+    }
+    if (beat.getContenderTitleId() != null && !beat.isTitleSegment()) {
+      // The contender title itself is resolved (by id) when the proposal is approved.
+      segment.setIsContenderMatch(true);
+      segment.setContenderTitleId(beat.getContenderTitleId());
+    }
     return segment;
   }
 

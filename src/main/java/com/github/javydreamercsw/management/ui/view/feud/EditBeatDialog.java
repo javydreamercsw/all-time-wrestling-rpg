@@ -19,6 +19,8 @@ package com.github.javydreamercsw.management.ui.view.feud;
 import com.github.javydreamercsw.management.domain.feud.FeudScript;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptBeat;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptBeatParticipant;
+import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.feud.FeudBeatAssistantService;
 import com.github.javydreamercsw.management.service.feud.FeudScriptService;
@@ -56,6 +58,8 @@ public class EditBeatDialog extends Dialog {
       FeudScriptService feudScriptService,
       List<Wrestler> externalCandidates,
       FeudBeatAssistantService opponentAssistant,
+      List<Show> upcomingShows,
+      List<Title> activeTitles,
       Runnable onComplete) {
     this.script = script;
     this.beat = beat;
@@ -69,13 +73,16 @@ public class EditBeatDialog extends Dialog {
 
     beatEditor =
         new BeatEditor(
-            sortParticipants(participants),
-            segmentTypeNames,
-            segmentRuleNames,
-            externalCandidates != null ? externalCandidates : List.of(),
-            false,
-            null,
-            opponentAssistant);
+            new BeatEditor.BeatEditorContext(
+                sortParticipants(participants),
+                externalCandidates != null ? externalCandidates : List.of(),
+                upcomingShows != null ? upcomingShows : List.of(),
+                activeTitles != null ? activeTitles : List.of(),
+                segmentTypeNames,
+                segmentRuleNames,
+                false,
+                null,
+                opponentAssistant));
     beatEditor.bindScriptContext(script, participants);
     // Persisted externals stay selectable even if they left the candidate roster since creation.
     List<Wrestler> persistedExternals =

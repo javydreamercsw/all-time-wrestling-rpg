@@ -48,9 +48,14 @@ CONFIG_FILE="${HOME}/.atwrpg/sandbox.env"
 # environment (that bit a test dry-run: inline PROD_DB was overwritten by the
 # file's PROD_DB and the run touched real production). Keys are renamed CFG_*
 # before sourcing, then applied only when not already set.
+# NOTE: sourced via a temp file, not `source <(sed ...)` — macOS's /bin/bash 3.2
+# silently reads nothing from a process substitution passed to `source`.
 if [ -f "$CONFIG_FILE" ]; then
+  CFG_TMP="$(mktemp -t sandbox-env)"
+  trap 'rm -f "$CFG_TMP"' EXIT
+  sed -E 's/^([A-Za-z_][A-Za-z0-9_]*)=/CFG_\1=/' "$CONFIG_FILE" >"$CFG_TMP"
   # shellcheck disable=SC1090
-  source <(sed -E 's/^([A-Za-z_][A-Za-z0-9_]*)=/CFG_\1=/' "$CONFIG_FILE")
+  source "$CFG_TMP"
   for key in PROD_DB SANDBOX_DB BACKUP_DIR CANDIDATE_PORT MYSQL_HOST MYSQL_USER \
              MYSQL_PWD TOMCAT_WEBAPPS TOMCAT_SERVICE CATALINA_BIN PROD_PORT \
              TOMCAT_LAUNCHD_LABEL TOMCAT_LAUNCHD_PLIST; do

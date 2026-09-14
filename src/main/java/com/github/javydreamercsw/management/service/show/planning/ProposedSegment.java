@@ -33,6 +33,11 @@ public class ProposedSegment {
   private Long rivalryId;
   private List<String> winners;
   private Boolean isTitleSegment = false;
+  private Boolean isContenderMatch = false;
+
+  /** Title id whose #1 contender is decided by this segment (resolved at approval time). */
+  private Long contenderTitleId;
+
   private Set<Title> titles = new HashSet<>();
   private List<String> rules;
   private String refereeName;

@@ -93,8 +93,7 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureCardListView() {
-    navigateTo("card-list");
-    waitForText("Card List");
+    navigateToAndWaitForElement("card-list", By.xpath("//*[contains(., 'Card List')]"));
 
     documentFeature(
         "Game Mechanics",
@@ -108,8 +107,7 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureDeckListView() {
-    navigateTo("deck-list");
-    waitForText("Deck List");
+    navigateToAndWaitForElement("deck-list", By.xpath("//*[contains(., 'Deck List')]"));
 
     documentFeature(
         "Game Mechanics",
@@ -123,8 +121,7 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureWrestlerRankingsView() {
-    navigateTo("wrestler-rankings");
-    waitForText("Rankings");
+    navigateToAndWaitForElement("wrestler-rankings", By.xpath("//*[contains(., 'Rankings')]"));
 
     documentFeature(
         "Dashboards",
@@ -138,8 +135,7 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureShowCalendarView() {
-    navigateTo("show-calendar");
-    waitForText("Show Calendar");
+    navigateToAndWaitForElement("show-calendar", By.xpath("//*[contains(., 'Show Calendar')]"));
 
     documentFeature(
         "Dashboards",
@@ -153,8 +149,7 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureFactionSynergy() {
-    navigateTo("faction-list");
-    waitForText("Synergy");
+    navigateToAndWaitForElement("faction-list", By.xpath("//*[contains(., 'Synergy')]"));
 
     documentFeature(
         "Game Mechanics",
@@ -180,8 +175,8 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
             .findFirst()
             .orElse(null);
     if (segment != null) {
-      navigateTo("match/" + segment.getId());
-      waitForText("Ringside Actions");
+      navigateToAndWaitForElement(
+          "match/" + segment.getId(), By.xpath("//*[contains(., 'Ringside Actions')]"));
 
       documentFeature(
           "Game Mechanics",
@@ -200,14 +195,9 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
     // Navigate to a wrestler profile to show the physical condition.
     Wrestler wrestler = wrestlerRepository.findAll().stream().findFirst().orElse(null);
     if (wrestler != null) {
-      driver.get(
-          "http://localhost:"
-              + serverPort
-              + getContextPath()
-              + "/wrestler-profile/"
-              + wrestler.getId());
-      waitForVaadinClientToLoad();
-      waitForText("Physical Condition");
+      navigateToAndWaitForElement(
+          "wrestler-profile/" + wrestler.getId(),
+          By.xpath("//*[contains(., 'Physical Condition')]"));
 
       documentFeature(
           "Game Mechanics",
@@ -224,11 +214,9 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
 
   @Test
   void testCaptureExpansionPacks() {
-    navigateTo("admin");
-
     WebElement tab =
-        waitForVaadinElement(
-            driver, By.xpath("//vaadin-tab[contains(text(), 'Expansion Management')]"));
+        navigateToAndWaitForElement(
+            "admin", By.xpath("//vaadin-tab[contains(text(), 'Expansion Management')]"));
     clickElement(tab);
 
     try {
@@ -258,8 +246,8 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
       return;
     }
 
-    navigateTo("match-info/" + normalRule.getId());
-    waitForText("Solo Play");
+    navigateToAndWaitForElement(
+        "match-info/" + normalRule.getId(), By.xpath("//*[contains(., 'Solo Play')]"));
 
     documentFeature(
         "Game Mechanics",
@@ -333,8 +321,8 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
     segment.addParticipant(opponent);
     segment = segmentRepository.saveAndFlush(segment);
 
-    navigateTo("match/" + segment.getId());
-    waitForText("Your Abilities");
+    navigateToAndWaitForElement(
+        "match/" + segment.getId(), By.xpath("//*[contains(., 'Your Abilities')]"));
 
     // Expand the abilities panel so it is visible in the screenshot.
     WebElement abilitiesToggle =
@@ -357,9 +345,5 @@ class GameMechanicsDocsE2ETest extends AbstractDocsE2ETest {
          — no need to leave the match to look something up.\
         """,
         "mechanic-match-abilities");
-  }
-
-  private void waitForText(final String text) {
-    waitForVaadinElement(driver, By.xpath("//*[contains(., '" + text + "')]"));
   }
 }

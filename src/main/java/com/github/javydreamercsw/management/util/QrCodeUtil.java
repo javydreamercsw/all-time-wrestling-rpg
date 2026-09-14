@@ -26,6 +26,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Base64;
 import javax.imageio.ImageIO;
+import javax.imageio.stream.MemoryCacheImageOutputStream;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
@@ -38,7 +39,14 @@ public final class QrCodeUtil {
     BitMatrix matrix = writer.encode(content, BarcodeFormat.QR_CODE, size, size);
     BufferedImage image = MatrixToImageWriter.toBufferedImage(matrix);
     ByteArrayOutputStream out = new ByteArrayOutputStream();
-    ImageIO.write(image, "PNG", out);
+    // Use a MemoryCacheImageOutputStream instead of ImageIO.write(OutputStream): the latter wraps
+    // the stream in a FileCacheImageOutputStream that creates a transient imageio*.tmp file in
+    // java.io.tmpdir. On the production Tomcat install that directory lives under the launchd
+    // WatchPaths of com.atwrpg.relink-tomcat, so every QR generation would restart the whole
+    // server (ATW-sevh).
+    MemoryCacheImageOutputStream ios = new MemoryCacheImageOutputStream(out);
+    ImageIO.write(image, "png", ios);
+    ios.flush();
     return Base64.getEncoder().encodeToString(out.toByteArray());
   }
 }

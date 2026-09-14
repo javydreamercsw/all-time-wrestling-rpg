@@ -106,6 +106,8 @@ class EditBeatDialogTest extends AbstractViewTest {
             feudScriptService,
             List.of(externalWrestler),
             null,
+            List.of(),
+            List.of(),
             null);
     dialog.open();
     UI.getCurrent().add(dialog);
@@ -118,13 +120,12 @@ class EditBeatDialogTest extends AbstractViewTest {
     EditBeatDialog dialog = openDialog();
 
     @SuppressWarnings("unchecked")
-    ComboBox<String> matchType =
-        _get(dialog, ComboBox.class, spec -> spec.withCaption("Match Type"));
+    ComboBox<String> matchType = _get(dialog, ComboBox.class, spec -> spec.withLabel("Match Type"));
     assertEquals("Singles Match", matchType.getValue());
 
     @SuppressWarnings("unchecked")
     RadioButtonGroup<String> winnerControl =
-        _get(dialog, RadioButtonGroup.class, spec -> spec.withCaption("Winner"));
+        _get(dialog, RadioButtonGroup.class, spec -> spec.withLabel("Winner"));
     assertEquals("AI Picks", winnerControl.getValue());
   }
 
@@ -134,18 +135,17 @@ class EditBeatDialogTest extends AbstractViewTest {
     EditBeatDialog dialog = openDialog();
 
     @SuppressWarnings("unchecked")
-    ComboBox<String> matchType =
-        _get(dialog, ComboBox.class, spec -> spec.withCaption("Match Type"));
+    ComboBox<String> matchType = _get(dialog, ComboBox.class, spec -> spec.withLabel("Match Type"));
     HasValueUtilsKt._setValue(matchType, "Ladder Match", true);
 
     @SuppressWarnings("unchecked")
     RadioButtonGroup<String> winnerControl =
-        _get(dialog, RadioButtonGroup.class, spec -> spec.withCaption("Winner"));
+        _get(dialog, RadioButtonGroup.class, spec -> spec.withLabel("Winner"));
     HasValueUtilsKt._setValue(winnerControl, "Booker Picks", true);
 
     @SuppressWarnings("unchecked")
     ComboBox<Wrestler> plannedWinner =
-        _get(dialog, ComboBox.class, spec -> spec.withCaption("Planned Winner"));
+        _get(dialog, ComboBox.class, spec -> spec.withLabel("Planned Winner"));
     HasValueUtilsKt._setValue(plannedWinner, wrestler2, true);
 
     Button saveBtn = _get(dialog, Button.class, spec -> spec.withText("Save Changes"));
@@ -167,8 +167,7 @@ class EditBeatDialogTest extends AbstractViewTest {
     EditBeatDialog dialog = openDialog();
 
     @SuppressWarnings("unchecked")
-    ComboBox<String> matchType =
-        _get(dialog, ComboBox.class, spec -> spec.withCaption("Match Type"));
+    ComboBox<String> matchType = _get(dialog, ComboBox.class, spec -> spec.withLabel("Match Type"));
     HasValueUtilsKt._setValue(matchType, null, true);
 
     Button saveBtn = _get(dialog, Button.class, spec -> spec.withText("Save Changes"));
@@ -185,12 +184,11 @@ class EditBeatDialogTest extends AbstractViewTest {
 
     @SuppressWarnings("unchecked")
     ComboBox<Wrestler> opponentCombo =
-        _get(dialog, ComboBox.class, spec -> spec.withCaption("External Opponent"));
+        _get(dialog, ComboBox.class, spec -> spec.withLabel("External Opponent"));
     assertEquals(externalWrestler, opponentCombo.getValue());
 
     @SuppressWarnings("unchecked")
-    ComboBox<String> matchType =
-        _get(dialog, ComboBox.class, spec -> spec.withCaption("Match Type"));
+    ComboBox<String> matchType = _get(dialog, ComboBox.class, spec -> spec.withLabel("Match Type"));
     HasValueUtilsKt._setValue(matchType, "Ladder Match", true);
 
     Button saveBtn = _get(dialog, Button.class, spec -> spec.withText("Save Changes"));
@@ -211,7 +209,7 @@ class EditBeatDialogTest extends AbstractViewTest {
 
     @SuppressWarnings("unchecked")
     MultiSelectComboBox<Wrestler> extrasMulti =
-        _get(dialog, MultiSelectComboBox.class, spec -> spec.withCaption("External Extras"));
+        _get(dialog, MultiSelectComboBox.class, spec -> spec.withLabel("External Extras"));
     assertTrue(extrasMulti.getValue().contains(externalWrestler));
     assertFalse(
         extrasMulti.getListDataView().getItems().noneMatch(w -> w.equals(externalWrestler)));

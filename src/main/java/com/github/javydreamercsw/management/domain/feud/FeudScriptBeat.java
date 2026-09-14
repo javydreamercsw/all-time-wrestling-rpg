@@ -35,6 +35,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
@@ -43,9 +45,12 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
@@ -77,7 +82,8 @@ public class FeudScriptBeat extends AbstractEntity<Long> {
   @Size(max = 128) @Column(name = "segment_rule", length = 128)
   @Nullable private String segmentRule;
 
-  @ManyToOne(fetch = FetchType.LAZY)
+  /** EAGER: the Target Show column renders show names on detached arc grids. */
+  @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "target_show_id")
   @JsonIgnoreProperties({"segments", "reservations"})
   @Nullable private Show targetShow;
@@ -112,12 +118,26 @@ public class FeudScriptBeat extends AbstractEntity<Long> {
 
   /**
    * CONTENDER_DESIGNATION outcome: when set, the winner of this beat's segment is designated as the
-   * #1 contender for this title once the beat completes.
+   * #1 contender for this title once the beat completes. EAGER: the Title Stakes column renders the
+   * title name on detached arc grids.
    */
-  @ManyToOne(fetch = FetchType.LAZY)
+  @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "contender_title_id")
   @JsonIgnoreProperties({"titleReigns", "challengers"})
   @Nullable private Title contenderTitle;
+
+  /** True when the beat is contested for the titles in {@link #titles} (winner wins/retains). */
+  @Column(name = "is_title_segment", nullable = false)
+  private boolean titleStakes = false;
+
+  /** Titles at stake when this beat is a title match. EAGER: rendered on detached arc grids. */
+  @ManyToMany(fetch = FetchType.EAGER)
+  @JoinTable(
+      name = "feud_script_beat_title",
+      joinColumns = @JoinColumn(name = "beat_id"),
+      inverseJoinColumns = @JoinColumn(name = "title_id"))
+  @JsonIgnoreProperties({"titleReigns", "challengers"})
+  private Set<Title> titles = new HashSet<>();
 
   /**
    * External (non-feud) wrestlers involved in this beat only. EAGER because beats render in
@@ -134,9 +154,19 @@ public class FeudScriptBeat extends AbstractEntity<Long> {
 
   /** Adds (or updates the role of) an external participant; no-op when already present. */
   public void addExternalParticipant(Wrestler wrestler, FeudBeatParticipantRole role) {
+    addExternalParticipant(wrestler, role, null);
+  }
+
+  /**
+   * Adds (or updates the role and team number of) a participant row; no-op when the wrestler is
+   * already present (the row's role/team are then left as-is for existing entries).
+   */
+  public void addExternalParticipant(
+      Wrestler wrestler, FeudBeatParticipantRole role, Integer teamNumber) {
     for (FeudScriptBeatParticipant existing : externalParticipants) {
       if (Objects.equals(existing.getWrestler().getId(), wrestler.getId())) {
         existing.setRole(role);
+        existing.setTeamNumber(teamNumber);
         return;
       }
     }
@@ -144,7 +174,28 @@ public class FeudScriptBeat extends AbstractEntity<Long> {
     participant.setBeat(this);
     participant.setWrestler(wrestler);
     participant.setRole(role);
+    participant.setTeamNumber(teamNumber);
     externalParticipants.add(participant);
+  }
+
+  /** True when this beat stores an explicit per-beat team layout (FEUD_MEMBER rows present). */
+  public boolean hasCustomTeams() {
+    return externalParticipants.stream()
+        .anyMatch(p -> p.getRole() == FeudBeatParticipantRole.FEUD_MEMBER);
+  }
+
+  /**
+   * The explicit team layout (team number → wrestlers) for custom-layout beats. Rows without a team
+   * number are excluded; returns an empty map when the beat uses the quick-path.
+   */
+  public Map<Integer, List<Wrestler>> getExplicitTeamLayout() {
+    return externalParticipants.stream()
+        .filter(p -> p.getTeamNumber() != null)
+        .collect(
+            Collectors.groupingBy(
+                FeudScriptBeatParticipant::getTeamNumber,
+                TreeMap::new,
+                Collectors.mapping(FeudScriptBeatParticipant::getWrestler, Collectors.toList())));
   }
 
   public List<Wrestler> getExternalOpponents() {
@@ -179,6 +230,16 @@ public class FeudScriptBeat extends AbstractEntity<Long> {
       sb.append(" - ").append(segmentRule);
     }
     sb.append("]");
+    if (titleStakes && !titles.isEmpty()) {
+      sb.append(
+          " — Title"
+              + (titles.size() > 1 ? "s" : "")
+              + ": "
+              + titles.stream().map(Title::getName).collect(Collectors.joining(", ")));
+    }
+    if (contenderTitle != null) {
+      sb.append(" — Winner becomes #1 contender for ").append(contenderTitle.getName());
+    }
     if (culmination) {
       sb.append(" (Culmination/Blowoff)");
     }
@@ -191,6 +252,9 @@ public class FeudScriptBeat extends AbstractEntity<Long> {
     }
     if (notes != null && !notes.isBlank()) {
       sb.append(" — \"").append(notes).append("\"");
+    }
+    if (targetShow != null) {
+      sb.append(" — Target show: ").append(targetShow.getName());
     }
     return sb.toString();
   }
