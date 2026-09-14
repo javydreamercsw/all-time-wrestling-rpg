@@ -65,15 +65,3 @@ Manage powerful wrestling groups. Factions bring together multiple wrestlers und
 ![Factions](/screenshots/entity-factions.png)
 
 ---
-
-## Video Walkthroughs
-
-### Championship Titles Walkthrough
-
-The Create Title dialog — Name and Tier are required. Tier controls which wrestlers are eligible to compete for it, and Championship Type determines whether it is a singles, tag team, or trios title.
-
-<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/title-list-walkthrough.mp4" type="video/mp4">
-</video>
-
----

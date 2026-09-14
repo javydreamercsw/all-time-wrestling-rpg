@@ -30,16 +30,6 @@
     ]
   },
   {
-    "text": "Booker Journey",
-    "collapsed": false,
-    "items": [
-      {
-        "text": "Overview",
-        "link": "/guide/booker-journey"
-      }
-    ]
-  },
-  {
     "text": "Campaign",
     "collapsed": false,
     "items": [
@@ -140,40 +130,12 @@
     ]
   },
   {
-    "text": "Roster Management",
-    "collapsed": false,
-    "items": [
-      {
-        "text": "Overview",
-        "link": "/guide/roster-management"
-      }
-    ]
-  },
-  {
-    "text": "Season Management",
-    "collapsed": false,
-    "items": [
-      {
-        "text": "Overview",
-        "link": "/guide/season-management"
-      }
-    ]
-  },
-  {
     "text": "Tutorial",
     "collapsed": false,
     "items": [
       {
         "text": "Overview",
         "link": "/guide/tutorial"
-      },
-      {
-        "text": "Admin Getting Started",
-        "link": "/guide/admin-getting-started"
-      },
-      {
-        "text": "Book Your First Show",
-        "link": "/guide/book-your-first-show"
       }
     ]
   },
