@@ -386,8 +386,8 @@ class ShowQualityServiceTest {
   void mainEventNeverScoresBelowHighStakesFloor() {
     Segment mainEvent = makeSegment("One on One", false);
     mainEvent.setMainEvent(true);
-    // Poor dice night: adjudication rolled a 1-star match (score 10).
-    mainEvent.setSegmentRating(10);
+    // Poor dice night: adjudication recorded crowd noise 10 (rating ± 5).
+    mainEvent.setCrowdNoiseLevel(10);
 
     when(promoBookingService.isPromoSegment(mainEvent)).thenReturn(false);
     when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(anyLong(), anyLong()))
@@ -403,7 +403,6 @@ class ShowQualityServiceTest {
   void titleMatchNeverScoresBelowHighStakesFloor() {
     Segment titleMatch = makeSegment("One on One", false);
     titleMatch.setIsTitleSegment(true);
-    titleMatch.setSegmentRating(0);
 
     when(promoBookingService.isPromoSegment(titleMatch)).thenReturn(false);
     when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(anyLong(), anyLong()))
@@ -419,7 +418,7 @@ class ShowQualityServiceTest {
   void hotRivalryNeverScoresBelowHighStakesFloor() {
     Segment hotFeud = makeSegment("One on One", false);
     hotFeud.setRivalryId(99L);
-    hotFeud.setSegmentRating(15);
+    hotFeud.setCrowdNoiseLevel(15);
 
     Rivalry rivalry = new Rivalry();
     rivalry.setHeat(40); // ≥ 30 → high-stakes
@@ -437,7 +436,7 @@ class ShowQualityServiceTest {
   @Test
   void lowStakesBareMatchKeepsDiceVariance() {
     Segment bare = makeSegment("One on One", false);
-    bare.setSegmentRating(10); // bad roll, no stakes — must stay low
+    bare.setCrowdNoiseLevel(10); // bad roll, no stakes — must stay low
 
     when(promoBookingService.isPromoSegment(bare)).thenReturn(false);
     when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(anyLong(), anyLong()))
@@ -456,7 +455,7 @@ class ShowQualityServiceTest {
     segment.setIsTitleSegment(true);
     segment.setMainEvent(true);
     segment.setRivalryId(99L);
-    segment.setSegmentRating(90);
+    segment.setCrowdNoiseLevel(90);
 
     Rivalry rivalry = new Rivalry();
     rivalry.setHeat(50); // max → +20
@@ -467,16 +466,16 @@ class ShowQualityServiceTest {
 
     service.computeAndPersist(show, List.of(segment));
 
-    // 20 heat + 10 title + 10 main event + 36 performance = 76 → 3.8★. Rating 100 → 80 → 4.0★.
+    // 20 heat + 10 title + 10 main event + 36 performance = 76 → 3.8★. Noise 100 → 40 → 4.0★.
     assertThat(segment.getSegmentRating()).isEqualTo(76);
   }
 
   @Test
   void adjudicatedRatingFoldsIntoScore() {
     Segment withRoll = makeSegment("One on One", false);
-    withRoll.setSegmentRating(50);
+    withRoll.setCrowdNoiseLevel(50);
     Segment withoutRoll = makeSegment("One on One", false);
-    withoutRoll.setSegmentRating(null);
+    withoutRoll.setCrowdNoiseLevel(0); // never adjudicated → no performance points
 
     when(promoBookingService.isPromoSegment(any())).thenReturn(false);
     when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(anyLong(), anyLong()))
@@ -492,6 +491,32 @@ class ShowQualityServiceTest {
     // 50 * 0.40 = 20 points from the match's own ring performance.
     assertThat(withRating).isEqualTo(20);
     assertThat(withoutRating).isEqualTo(0);
+  }
+
+  @Test
+  void rescoringSameSegmentsIsIdempotent() {
+    // Re-finalization (or the one-time backfill re-running computeAndPersist) must not compound
+    // the performance factor: the score source is crowd noise, not the stored segmentRating.
+    Segment segment = makeSegment("One on One", false);
+    segment.setRivalryId(99L);
+    segment.setCrowdNoiseLevel(70);
+
+    Rivalry rivalry = new Rivalry();
+    rivalry.setHeat(20); // +8 — below the 30 high-stakes heat threshold, so no floor applies
+    when(rivalryService.getRivalryById(99L)).thenReturn(Optional.of(rivalry));
+    when(promoBookingService.isPromoSegment(segment)).thenReturn(false);
+    when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(anyLong(), anyLong()))
+        .thenReturn(Optional.empty());
+
+    service.computeAndPersist(show, List.of(segment));
+    int firstPass = segment.getSegmentRating();
+
+    service.computeAndPersist(show, List.of(segment));
+    int secondPass = segment.getSegmentRating();
+
+    // 8 heat + 70*0.40=28 performance = 36, stable across passes (no compounding).
+    assertThat(firstPass).isEqualTo(36);
+    assertThat(secondPass).isEqualTo(firstPass);
   }
 
   // ---------- helpers ----------
