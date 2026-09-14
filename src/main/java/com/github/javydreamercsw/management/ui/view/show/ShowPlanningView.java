@@ -76,6 +76,7 @@ import jakarta.annotation.security.RolesAllowed;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -383,11 +384,10 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   /**
    * Renders one warning line per arc beat withheld from the planning context (participants
    * unavailable), so the booker knows the feud is arc-reserved and absent from the card on purpose.
-   * Empty list hides the block.
+   * Empty list hides the block. Must be called on the UI thread.
    */
-  private void showExcludedBeatWarnings(final ShowPlanningContextDTO context) {
+  private void showExcludedBeatWarnings(final List<String> warnings) {
     excludedBeatsWarnings.removeAll();
-    List<String> warnings = context.getExcludedBeatWarnings();
     if (warnings == null || warnings.isEmpty()) {
       excludedBeatsWarnings.setVisible(false);
       return;
@@ -443,7 +443,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
                             objectMapper
                                 .writerWithDefaultPrettyPrinter()
                                 .writeValueAsString(context));
-                        showExcludedBeatWarnings(context);
+                        showExcludedBeatWarnings(context.getExcludedBeatWarnings());
                         proposeSegmentsButton.setEnabled(true);
                         notificationService.showSuccess("Planning context loaded from database.");
                       } catch (Exception e) {
@@ -490,14 +490,16 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     return GeneralSecurityUtils.runAsAdminAsync(
             () -> {
               ShowPlanningContextDTO context = showPlanningService.getShowPlanningContext(show);
-              showExcludedBeatWarnings(context);
-              return showPlanningAiService.planShow(context);
+              // Capture plain data (not components) off-thread; rendering happens in ui.access.
+              List<String> beatWarnings = List.copyOf(context.getExcludedBeatWarnings());
+              return Map.entry(showPlanningAiService.planShow(context), beatWarnings);
             })
         .thenAccept(
-            proposedShow ->
+            applied ->
                 ui.access(
                     () -> {
-                      segments = proposedShow.getSegments();
+                      showExcludedBeatWarnings(applied.getValue());
+                      segments = applied.getKey().getSegments();
                       proposedSegmentsGrid.setItems(segments);
                       approveButton.setEnabled(!segments.isEmpty());
                       notificationService.showSuccess(
