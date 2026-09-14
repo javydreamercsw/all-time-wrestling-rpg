@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.ui.view;
 
 import com.github.javydreamercsw.TestUtils;
+import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.feud.FeudScript;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptBeat;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptWinnerControl;
@@ -33,6 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
 
 class FeudScriptDocsE2ETest extends AbstractDocsE2ETest {
 
@@ -108,12 +110,10 @@ class FeudScriptDocsE2ETest extends AbstractDocsE2ETest {
   void captureFactionRivalryListView() {
     // Seed two factions and an active rivalry between them so the grid is not empty
     // (the docs data initializer does not seed faction rivalries).
-    List<com.github.javydreamercsw.management.domain.faction.Faction> factions =
-        factionService.getAllFactions(org.springframework.data.domain.Pageable.unpaged()).stream()
-            .limit(2)
-            .toList();
-    com.github.javydreamercsw.management.domain.faction.Faction faction1;
-    com.github.javydreamercsw.management.domain.faction.Faction faction2;
+    List<Faction> factions =
+        factionService.getAllFactions(Pageable.unpaged()).stream().limit(2).toList();
+    Faction faction1;
+    Faction faction2;
     if (factions.size() >= 2) {
       faction1 = factions.get(0);
       faction2 = factions.get(1);
