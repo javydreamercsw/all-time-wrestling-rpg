@@ -60,7 +60,7 @@ public class BookerViewE2ETest extends AbstractE2ETest {
     // Create several wrestlers so the roster grid has multiple rows
     Wrestler wrestler1 = null;
     Wrestler wrestler3 = null;
-    for (int i = 1; i <= 3; i++) {
+    for (int i = 1; i < 3 + 1; i++) {
       Wrestler wrestler =
           Wrestler.builder().name("Test Wrestler " + i).isPlayer(true).gender(Gender.MALE).build();
       wrestler = wrestlerService.save(wrestler);
