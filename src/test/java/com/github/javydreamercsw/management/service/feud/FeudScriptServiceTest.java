@@ -147,6 +147,44 @@ class FeudScriptServiceTest {
         .hasMessageContaining("at least 2");
   }
 
+  @Test
+  void createFromWizard_swappedWrestlerOrder_reusesExistingRivalry() {
+    // Existing rivalry is stored as w1 vs w2; the wizard submits w2, w1 (ATW-9o4g).
+    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
+    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
+    Rivalry stored = rivalry(w1, w2);
+    when(rivalryService.getRivalryBetweenWrestlers(1L, 2L)).thenReturn(Optional.empty());
+    when(rivalryService.getRivalryBetweenWrestlers(2L, 1L)).thenReturn(Optional.of(stored));
+    FeudScript persisted = rivalryScript(stored);
+    when(feudScriptRepository.save(any())).thenReturn(persisted);
+
+    FeudScript result = service.createFromWizard("Reversed Arc", List.of(w2, w1), 2);
+
+    assertThat(result.getRivalry()).isSameAs(stored);
+    verify(rivalryService, never()).createRivalry(any(), any(), any(), any());
+  }
+
+  @Test
+  void createFromWizard_noExistingRivalry_createsBothOrderProbe() {
+    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
+    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
+    when(rivalryService.getRivalryBetweenWrestlers(1L, 2L)).thenReturn(Optional.empty());
+    when(rivalryService.getRivalryBetweenWrestlers(2L, 1L)).thenReturn(Optional.empty());
+    Rivalry created = rivalry(w1, w2);
+    when(rivalryService.createRivalry(1L, 2L, "Script-driven feud", 1L))
+        .thenReturn(Optional.of(created));
+    when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
+    FeudScript persisted = rivalryScript(created);
+    when(feudScriptRepository.save(any())).thenReturn(persisted);
+
+    FeudScript result = service.createFromWizard("Fresh Arc", List.of(w1, w2), 2);
+
+    assertThat(result.getRivalry()).isSameAs(created);
+    // Both orderings probed before falling back to creation.
+    verify(rivalryService).getRivalryBetweenWrestlers(1L, 2L);
+    verify(rivalryService).getRivalryBetweenWrestlers(2L, 1L);
+  }
+
   // ── autoCompleteBeatForSegment ────────────────────────────────────────────
 
   @Test

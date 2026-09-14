@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -132,6 +133,74 @@ class RivalryServiceTest {
     // Then
     assertThat(result).isPresent();
     assertThat(result.get()).isEqualTo(existingRivalry);
+  }
+
+  @Test
+  @DisplayName("Should not duplicate rivalry when wrestler order is swapped (ATW-9o4g)")
+  void shouldRejectDuplicateRivalryWhenOrderIsSwapped() {
+    // Given: an active rivalry stored as A vs B
+    Wrestler wrestler1 = createWrestler("Wrestler A", 1L);
+    Wrestler wrestler2 = createWrestler("Wrestler B", 2L);
+    Rivalry existingRivalry = createRivalry(wrestler1, wrestler2, 10);
+
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler1));
+    when(wrestlerRepository.findById(2L)).thenReturn(Optional.of(wrestler2));
+    // Repository only matches its stored positional ordering (wrestler1, wrestler2).
+    when(rivalryRepository.findActiveRivalryBetween(wrestler1, wrestler2))
+        .thenReturn(Optional.of(existingRivalry));
+    when(rivalryRepository.findActiveRivalryBetween(wrestler2, wrestler1))
+        .thenReturn(Optional.empty());
+
+    // When: the booker tries to create the same feud as B vs A
+    Optional<Rivalry> result = rivalryService.createRivalry(2L, 1L, "Swapped storyline");
+
+    // Then: the existing rivalry is returned instead of a duplicate
+    assertThat(result).isPresent();
+    assertThat(result.get()).isEqualTo(existingRivalry);
+    verify(rivalryRepository, never()).saveAndFlush(any(Rivalry.class));
+  }
+
+  @Test
+  @DisplayName("Should probe both orderings before creating a new rivalry (ATW-9o4g)")
+  void shouldProbeBothOrderingsBeforeCreating() {
+    // Given: an active rivalry stored as B vs A while the request is A vs B
+    Wrestler wrestler1 = createWrestler("Wrestler A", 1L);
+    Wrestler wrestler2 = createWrestler("Wrestler B", 2L);
+    Rivalry existingRivalry = createRivalry(wrestler2, wrestler1, 10);
+
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler1));
+    when(wrestlerRepository.findById(2L)).thenReturn(Optional.of(wrestler2));
+    // First (positional) lookup misses the reversed stored row.
+    when(rivalryRepository.findActiveRivalryBetween(wrestler1, wrestler2))
+        .thenReturn(Optional.empty());
+    // Reverse-ordered lookup finds it.
+    when(rivalryRepository.findActiveRivalryBetween(wrestler2, wrestler1))
+        .thenReturn(Optional.of(existingRivalry));
+
+    // When
+    Optional<Rivalry> result = rivalryService.createRivalry(1L, 2L, "Same feud, fresh order");
+
+    // Then: found via the reversed probe, nothing saved
+    assertThat(result).isPresent();
+    assertThat(result.get()).isEqualTo(existingRivalry);
+    verify(rivalryRepository, never()).saveAndFlush(any(Rivalry.class));
+  }
+
+  @Test
+  @DisplayName("Should refuse to create a rivalry of a wrestler against themselves")
+  void shouldRefuseSelfRivalry() {
+    // Given
+    Wrestler wrestler = createWrestler("Narcissist", 1L);
+
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
+
+    // When
+    Optional<Rivalry> result = rivalryService.createRivalry(1L, 1L, "Self feud");
+
+    // Then
+    assertThat(result).isEmpty();
+    verify(rivalryRepository, never()).findActiveRivalryBetween(any(), any());
+    verify(rivalryRepository, never()).saveAndFlush(any(Rivalry.class));
   }
 
   @Test

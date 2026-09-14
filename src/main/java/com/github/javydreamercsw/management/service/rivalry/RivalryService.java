@@ -100,9 +100,19 @@ public class RivalryService {
     Wrestler wrestler1 = wrestler1Opt.get();
     Wrestler wrestler2 = wrestler2Opt.get();
 
-    // Check if rivalry already exists
+    if (wrestler1.equals(wrestler2)) {
+      log.warn("Refusing to create a rivalry of wrestler {} against themselves", wrestler1Id);
+      return Optional.empty();
+    }
+
+    // A rivalry pair is unordered: an active rivalry between the same two
+    // wrestlers must block creation no matter which order the ids were passed
+    // in. The repository query already matches both orderings; the second
+    // lookup guards against a positional-only repository regression (ATW-9o4g).
     Optional<Rivalry> existingRivalry =
-        rivalryRepository.findActiveRivalryBetween(wrestler1, wrestler2);
+        rivalryRepository
+            .findActiveRivalryBetween(wrestler1, wrestler2)
+            .or(() -> rivalryRepository.findActiveRivalryBetween(wrestler2, wrestler1));
     if (existingRivalry.isPresent()) {
       return existingRivalry;
     }

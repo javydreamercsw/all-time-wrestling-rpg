@@ -840,8 +840,13 @@ public class FeudScriptService {
 
   private Rivalry findOrCreateRivalry(Wrestler w1, Wrestler w2) {
     Long universeId = universeContextService.getCurrentUniverseId();
+    // A rivalry pair is unordered: a wizard submission with the wrestlers
+    // swapped must still find the existing feud instead of creating a
+    // duplicate (ATW-9o4g). Probe both orderings before falling back to
+    // creation, which runs the same both-order check itself.
     return rivalryService
         .getRivalryBetweenWrestlers(w1.getId(), w2.getId())
+        .or(() -> rivalryService.getRivalryBetweenWrestlers(w2.getId(), w1.getId()))
         .orElseGet(
             () ->
                 rivalryService
