@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -38,6 +39,7 @@ import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -91,5 +93,17 @@ class RivalryListViewTest extends AbstractViewTest {
     view.statusFilter.setValue(RivalryListView.RivalryStatusFilter.ALL);
     view.rivalryGrid.getDataProvider().fetch(new Query<>());
     verify(rivalryService).getAllRivalriesWithWrestlers(any(Pageable.class), isNull());
+
+    // ENDED -> isActive=false. Setting the value also fires the value-change
+    // listener (codecov gap) and exercises the ENDED label arm.
+    view.statusFilter.setValue(RivalryListView.RivalryStatusFilter.ENDED);
+    assertEquals(
+        "Ended",
+        view.statusFilter.getItemLabelGenerator().apply(RivalryListView.RivalryStatusFilter.ENDED));
+    view.rivalryGrid.getDataProvider().fetch(new Query<>());
+    ArgumentCaptor<Boolean> active = ArgumentCaptor.forClass(Boolean.class);
+    verify(rivalryService, times(3))
+        .getAllRivalriesWithWrestlers(any(Pageable.class), active.capture());
+    assertEquals(Boolean.FALSE, active.getValue());
   }
 }

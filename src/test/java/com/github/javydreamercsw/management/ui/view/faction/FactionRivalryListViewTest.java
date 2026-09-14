@@ -89,4 +89,19 @@ class FactionRivalryListViewTest extends AbstractViewTest {
     view.factionRivalryGrid.getDataProvider().fetch(new Query<>());
     verify(factionRivalryService).getAllFactionRivalriesWithFactions(any(Pageable.class), isNull());
   }
+
+  // ENDED -> isActive=false. Setting the value also fires the value-change
+  // listener (codecov gap) and exercises the ENDED label arm.
+  @Test
+  @DisplayName("ENDED filter maps to isActive=false and its label renders (ATW-aeib)")
+  void statusFilterEndedArm() {
+    view.statusFilter.setValue(FactionRivalryListView.FactionRivalryStatusFilter.ENDED);
+    assertEquals(
+        "Ended",
+        view.statusFilter
+            .getItemLabelGenerator()
+            .apply(FactionRivalryListView.FactionRivalryStatusFilter.ENDED));
+    view.factionRivalryGrid.getDataProvider().fetch(new Query<>());
+    verify(factionRivalryService).getAllFactionRivalriesWithFactions(any(Pageable.class), any());
+  }
 }
