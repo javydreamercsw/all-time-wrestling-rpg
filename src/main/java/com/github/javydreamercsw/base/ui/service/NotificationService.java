@@ -81,7 +81,13 @@ public class NotificationService {
     }
   }
 
-  private AIServiceException findAIServiceException(final Throwable t) {
+  /**
+   * Finds an {@link AIServiceException} anywhere in the exception chain of the given throwable.
+   *
+   * @param t the throwable to inspect, may be null
+   * @return the first {@link AIServiceException} in the cause chain, or null when none is present
+   */
+  public AIServiceException findAIServiceException(final Throwable t) {
     if (t == null) {
       return null;
     }
