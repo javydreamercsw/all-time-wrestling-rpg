@@ -114,6 +114,38 @@ Append new beats to an existing story arc after it has been saved. The Add Beat 
 
 ---
 
+## Story Arc Details
+
+Step 2 names the arc (pre-filled from the selected wrestlers) and picks its length: Short spans 1 PLE, Medium 2, Long 3. The PLE count is a hard ceiling — once a feud has appeared on that many premium live events, it must culminate.
+
+![Story Arc Details](/screenshots/booker-story-arc-details.png)
+
+---
+
+## Story Arc Beats
+
+Step 3 defines the match sequence. Each beat picks a match type and optional stipulation, and decides who controls the outcome: the booker names the planned winner, the AI picks based on story notes, or the system rolls. Mark a beat as the Culmination / Blowoff to close the feud. Roster wrestlers outside the arc can join a beat as an external opponent or run-in extra.
+
+![Story Arc Beats](/screenshots/booker-story-arc-beats.png)
+
+---
+
+## Edit Story Arc Beat
+
+Pending beats can be retooled at any time before they play out. The edit dialog loads the beat's current match type, stipulation, winner control, planned winner, blowoff flag, notes and external participants — saving re-runs the same validation as creation and keeps any show or PLE reservation attached to the beat.
+
+![Edit Story Arc Beat](/screenshots/booker-story-arc-edit-beat.png)
+
+---
+
+## Story Arc Management
+
+Every saved arc lives on the rivalry detail as a card with a status badge (Active, Completed, Cancelled). The beat grid lists each beat in order — match type, stipulation, external participants, winner control, blowoff marker and status. Pending beats can be edited or removed and renumber automatically; the arc itself can be renamed, extended with more beats, or cancelled before its culmination.
+
+![Story Arc Management](/screenshots/booker-story-arc-card.png)
+
+---
+
 ## Dashboard with News Ticker
 
 Latest headlines and rumors are visible directly on the booker dashboard.
@@ -143,47 +175,5 @@ Bring your matches to life with AI-generated or manual narration. The Story Dire
 View a complete history of all booked shows. Click on any show to view its detailed results, ratings, and match history.
 
 ![Show History](/screenshots/booker-show-history.png)
-
----
-
-## Video Walkthroughs
-
-### Show Card Validation Walkthrough
-
-After the booker confirms, the segments are saved to the show. Each approved segment enters the adjudication pipeline — the match engine resolves outcomes, updates wrestler stats, and the AI generates narration ready for broadcast.
-
-<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/booker-show-planning-card-validation-walkthrough.mp4" type="video/mp4">
-</video>
-
----
-
-### Show Calendar Walkthrough
-
-Shows scheduled in future months appear here as soon as they're created in the Show List. Plan your entire PPV season at a glance — weekly shows, special events, and pay-per-view dates all land on the same calendar.
-
-<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/show-calendar-walkthrough.mp4" type="video/mp4">
-</video>
-
----
-
-### Season Awards Ceremony
-
-The Awards Ceremony section lists each award winner: Wrestler of the Year (most wins), Most Improved (highest fan growth), and Most Decorated (most title reigns). Winners automatically receive fan bonuses when the season ends.
-
-<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/booker-season-awards-workflow.mp4" type="video/mp4">
-</video>
-
----
-
-### Tournament Bracket Generator
-
-The tournament engine supports Single Elimination and Round Robin formats. Single Elimination generates one round at a time, perfect for big multi-week events. Round Robin pre-builds all match-ups so every entrant faces every other entrant before a winner is determined.
-
-<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
-  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/booker-tournament-bracket-workflow.mp4" type="video/mp4">
-</video>
 
 ---
