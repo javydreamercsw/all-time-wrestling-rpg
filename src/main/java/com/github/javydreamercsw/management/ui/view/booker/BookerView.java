@@ -159,6 +159,9 @@ public class BookerView extends VerticalLayout {
     rivalriesWrapper.addClassName("grid-scroll-container");
 
     Div pages = new Div(rosterWrapper, showsWrapper, rivalriesWrapper);
+    // Flex column so each wrapper's .grid-scroll-container flex-grow:1/min-height:0 governs its
+    // height — as a plain block the wrappers collapse and their grids render one row tall.
+    pages.addClassNames(LumoUtility.Display.FLEX, LumoUtility.FlexDirection.COLUMN);
     pages.setSizeFull();
     showsWrapper.setVisible(false);
     rivalriesWrapper.setVisible(false);
