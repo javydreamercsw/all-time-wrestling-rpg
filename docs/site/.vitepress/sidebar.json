@@ -30,16 +30,6 @@
     ]
   },
   {
-    "text": "Booker Journey",
-    "collapsed": false,
-    "items": [
-      {
-        "text": "Overview",
-        "link": "/guide/booker-journey"
-      }
-    ]
-  },
-  {
     "text": "Campaign",
     "collapsed": false,
     "items": [
@@ -136,26 +126,6 @@
       {
         "text": "Overview",
         "link": "/guide/player-dashboard"
-      }
-    ]
-  },
-  {
-    "text": "Roster Management",
-    "collapsed": false,
-    "items": [
-      {
-        "text": "Overview",
-        "link": "/guide/roster-management"
-      }
-    ]
-  },
-  {
-    "text": "Season Management",
-    "collapsed": false,
-    "items": [
-      {
-        "text": "Overview",
-        "link": "/guide/season-management"
       }
     ]
   },

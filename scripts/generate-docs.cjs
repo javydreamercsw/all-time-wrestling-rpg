@@ -34,15 +34,13 @@ if (fs.existsSync(videoManifestPath)) {
 // Override via GITHUB_PAGES_BASE env var (set automatically in release.yml).
 const githubPagesBase = (process.env.GITHUB_PAGES_BASE || 'https://javydreamercsw.github.io/all-time-wrestling-rpg').replace(/\/$/, '');
 
-// 1. Prepare Markdown directory — clear stale files first so old video-only
-// categories don't leave orphaned .md files with broken <video> references.
-if (fs.existsSync(outputDir)) {
-  const existing = fs.readdirSync(outputDir).filter(f => f.endsWith('.md'));
-  existing.forEach(f => fs.rmSync(path.join(outputDir, f)));
-  if (existing.length > 0) {
-    console.log(`Cleared ${existing.length} stale guide file(s) from ${outputDir}`);
-  }
-} else {
+// 1. Prepare Markdown directory — stale GENERATED pages are removed just before
+// writing (step 3b, after the fresh manifest's category set is known), so we only
+// ever delete a file we are about to regenerate. Hand-written pages (tutorials,
+// ATW-aqwr/ATW-rwoz) and pages whose category vanished from the manifest are left
+// alone — the earlier upfront-wipe deleted committed pages the fresh manifest no
+// longer listed (booker-journey.md), breaking links into them (ATW-w9ie).
+if (!fs.existsSync(outputDir)) {
   fs.mkdirSync(outputDir, { recursive: true });
 }
 
@@ -147,7 +145,39 @@ Object.keys(videosByCategory).forEach(cat => {
 // Merge screenshot categories and video-only categories into one set
 const allCategories = new Set([...Object.keys(categories), ...Object.keys(videosByCategory)]);
 
+// ATW-w9ie: a run with no screenshots (and no videos) would wipe every guide page above,
+// generate nothing, and publish an index-only site whose hero links 404. Refuse to build
+// that site so the deploy fails loudly instead of silently replacing the real docs.
+if (allCategories.size === 0) {
+  console.error(
+    'FATAL: 0 documentation categories after filtering — the docs-screenshots artifact is ' +
+      'missing (screenshots are gitignored and must come from a release run) and no video ' +
+      'manifest entries survived. Refusing to build an index-only site; fix the artifact ' +
+      'inputs and retry (see redeploy-docs.yml).'
+  );
+  process.exit(1);
+}
+
 console.log('Generating Markdown files...');
+// 3b. Remove only the pages this run will regenerate (see step 1 comment).
+let clearedCount = 0;
+Array.from(allCategories).forEach(category => {
+  const stale = path.join(outputDir, category.toLowerCase().replace(/ /g, '-') + '.md');
+  if (fs.existsSync(stale)) {
+    fs.rmSync(stale);
+    clearedCount++;
+  }
+});
+if (clearedCount > 0) {
+  console.log(`Cleared ${clearedCount} stale generated guide file(s) from ${outputDir}`);
+}
+const preserved =
+  fs.existsSync(outputDir)
+    ? fs.readdirSync(outputDir).filter(f => f.endsWith('.md'))
+    : [];
+if (preserved.length > 0) {
+  console.log(`Preserved ${preserved.length} existing guide page(s) outside the fresh manifest: ${preserved.join(', ')}`);
+}
 Array.from(allCategories).sort().forEach(category => {
   const catFeatures = categories[category] || [];
   const catVideos = videosByCategory[category] || [];

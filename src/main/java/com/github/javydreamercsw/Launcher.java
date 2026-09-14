@@ -571,6 +571,10 @@ public final class Launcher {
 
     List<String> cmd = new ArrayList<>();
     cmd.add(javaExe);
+    // SpringApplication enables AWT headless mode by default, which makes
+    // DesktopIntegration skip the tray icon and browser launch (ATW-z358). The flag
+    // must precede -jar so it reaches the app JVM as a system property.
+    cmd.add("-Djava.awt.headless=false");
     cmd.add("-jar");
     cmd.add(jar.toAbsolutePath().toString());
     cmd.add("--atw.desktop.enabled=true");

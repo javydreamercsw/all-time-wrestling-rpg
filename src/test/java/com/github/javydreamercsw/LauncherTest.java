@@ -811,6 +811,20 @@ class LauncherTest {
   }
 
   @Test
+  void launchApp_startsChildWithHeadlessDisabled(@TempDir Path tempDir) throws Exception {
+    // ATW-z358: SpringApplication enables AWT headless mode by default, which made
+    // DesktopIntegration skip the tray icon and browser launch. The launcher must
+    // pass -Djava.awt.headless=false to the child so the app JVM never sees headless.
+    Path probeJar = buildExecutableJar(tempDir, "HeadlessProbeApp", "HeadlessProbeApp");
+
+    assertThat(Launcher.launchApp(probeJar, new String[0])).isZero();
+
+    // The child prints the property value it actually saw; the tee lands it in the log.
+    String log = Files.readString(tempDir.resolve("launcher.log"));
+    assertThat(log).contains("[app] headless=false");
+  }
+
+  @Test
   void appendLog_writesTimestampedLinesAndAppends(@TempDir Path tempDir) throws Exception {
     Path logFile = tempDir.resolve("launcher.log");
     Launcher.appendLog(logFile, "first line");
@@ -1279,9 +1293,14 @@ class LauncherTest {
         """
             .formatted(
                 className,
-                "CrashApp".equals(className)
-                    ? "System.out.println(\"crashing\"); System.exit(3);"
-                    : "System.out.println(\"started\");");
+                switch (className) {
+                  case "CrashApp" -> "System.out.println(\"crashing\"); System.exit(3);";
+                  // Prints the AWT headless state of the JVM the launcher actually spawned.
+                  case "HeadlessProbeApp" ->
+                      "System.out.println(\"headless=\" +"
+                          + " Boolean.getBoolean(\"java.awt.headless\"));";
+                  default -> "System.out.println(\"started\");";
+                });
     Path src = dir.resolve(className + ".java");
     Files.writeString(src, source);
     Path classes = dir.resolve("classes");

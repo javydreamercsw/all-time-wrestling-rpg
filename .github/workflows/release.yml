@@ -370,6 +370,40 @@ jobs:
           name: docs-screenshots
           path: docs
 
+      - name: Fall back to latest release's screenshots artifact (RC builds)
+        # RC builds skip generate_screenshots by design, so without this fallback
+        # generate-docs.cjs filters away every manifest feature and the ATW-w9ie
+        # guard correctly refuses to build an empty docs site (RC3 run 34783840191).
+        # Reuse the newest successful Create Release run that produced the artifact.
+        if: needs.generate_screenshots.result != 'success'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RUN_ID=""
+          for id in $(gh api --paginate "repos/${{ github.repository }}/actions/workflows/release.yml/runs?status=success&per_page=30" --jq '.workflow_runs[].id'); do
+            if gh api "repos/${{ github.repository }}/actions/runs/${id}/artifacts" \
+                --jq '.artifacts[] | select(.name == "docs-screenshots") | .name' | grep -q .; then
+              RUN_ID="$id"
+              break
+            fi
+          done
+          if [ -z "$RUN_ID" ]; then
+            echo "::error::No successful release run with a docs-screenshots artifact found."
+            exit 1
+          fi
+          echo "Downloading docs-screenshots from release run $RUN_ID"
+          gh run download "$RUN_ID" --name docs-screenshots --dir /tmp/screens-fallback
+          # Both artifact layouts seen historically (trailing-slash upload stripped docs/).
+          mkdir -p docs/screenshots
+          if [ -d /tmp/screens-fallback/docs/screenshots ]; then
+            cp /tmp/screens-fallback/docs/screenshots/*.png docs/screenshots/
+            [ -f /tmp/screens-fallback/docs/manifest.json ] && cp /tmp/screens-fallback/docs/manifest.json docs/
+          else
+            cp /tmp/screens-fallback/screenshots/*.png docs/screenshots/ 2>/dev/null || true
+            [ -f /tmp/screens-fallback/manifest.json ] && cp /tmp/screens-fallback/manifest.json docs/
+          fi
+          echo "Screenshots: $(find docs/screenshots -name '*.png' | wc -l)"
+
       - name: Download videos artifact
         if: needs.generate_videos.result == 'success'
         uses: actions/download-artifact@v8
@@ -483,6 +517,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: v${{ github.event.inputs.version }}
+          # Without this the tag is created on the workflow's default branch (main), so RC
+          # tags pointed at the 2.9.0 merge commit instead of the release branch the
+          # assets were built from (ATW-hm95).
+          target_commitish: release/${{ github.event.inputs.version }}
           name: ${{ needs.setup_release.outputs.is_rc == 'true' && 'Release Candidate' || 'Release' }} v${{ github.event.inputs.version }}
           body_path: RELEASE_NOTES.md
           draft: false
