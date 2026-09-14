@@ -53,12 +53,30 @@ import lombok.NonNull;
 @PermitAll
 public class RivalryListView extends Main {
 
+  /** Status filter options for the rivalry grid (ATW-aeib): active feuds first by default. */
+  enum RivalryStatusFilter {
+    ACTIVE(Boolean.TRUE),
+    ALL(null),
+    ENDED(Boolean.FALSE);
+
+    private final Boolean isActive;
+
+    RivalryStatusFilter(final Boolean isActive) {
+      this.isActive = isActive;
+    }
+
+    Boolean toIsActive() {
+      return isActive;
+    }
+  }
+
   private final RivalryService rivalryService;
   private final RivalryRepository rivalryRepository;
   private final WrestlerService wrestlerService;
   private final SecurityUtils securityUtils;
 
   final Grid<RivalryDTO> rivalryGrid;
+  final ComboBox<RivalryStatusFilter> statusFilter;
 
   public RivalryListView(
       @NonNull final RivalryService rivalryService,
@@ -76,6 +94,19 @@ public class RivalryListView extends Main {
             .toList();
 
     rivalryGrid = new Grid<>();
+
+    statusFilter = new ComboBox<>("Status");
+    statusFilter.setItems(RivalryStatusFilter.values());
+    statusFilter.setItemLabelGenerator(
+        filter ->
+            switch (filter) {
+              case ACTIVE -> "Active";
+              case ALL -> "All";
+              case ENDED -> "Ended";
+            });
+    statusFilter.setValue(RivalryStatusFilter.ACTIVE);
+    statusFilter.setWidth("140px");
+    statusFilter.addValueChangeListener(e -> rivalryGrid.getDataProvider().refreshAll());
 
     Button newRivalryButton =
         new Button(
@@ -119,7 +150,8 @@ public class RivalryListView extends Main {
     rivalryGrid.setItems(
         query ->
             rivalryService
-                .getAllRivalriesWithWrestlers(toSpringPageRequest(query))
+                .getAllRivalriesWithWrestlers(
+                    toSpringPageRequest(query), statusFilter.getValue().toIsActive())
                 .map(rivalryService.getRivalryMapper()::toRivalryDTO)
                 .stream());
     rivalryGrid
@@ -209,9 +241,9 @@ public class RivalryListView extends Main {
         LumoUtility.Gap.SMALL);
 
     if (securityUtils.canCreate()) {
-      add(new ViewToolbar("Rivalry List", ViewToolbar.group(newRivalryButton)));
+      add(new ViewToolbar("Rivalry List", ViewToolbar.group(statusFilter, newRivalryButton)));
     } else {
-      add(new ViewToolbar("Rivalry List"));
+      add(new ViewToolbar("Rivalry List", ViewToolbar.group(statusFilter)));
     }
     Div gridWrapper = new Div(rivalryGrid);
     gridWrapper.addClassName("grid-scroll-container");

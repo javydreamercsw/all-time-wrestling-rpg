@@ -69,6 +69,18 @@ public class FactionRivalryService {
     return factionRivalryRepository.findAllWithFactions(pageable);
   }
 
+  /**
+   * Paged faction rivalries with factions, optionally filtered by status (ATW-aeib). {@code active}
+   * is a tri-state: {@code null} = all rivalries, {@code true} = active only, {@code false} = ended
+   * only.
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public Page<FactionRivalry> getAllFactionRivalriesWithFactions(
+      final Pageable pageable, @NonNull final Boolean active) {
+    return factionRivalryRepository.findAllWithFactions(pageable, active);
+  }
+
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public Optional<FactionRivalry> getFactionRivalryById(final Long id) {

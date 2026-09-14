@@ -371,6 +371,18 @@ public class RivalryService {
     return rivalryRepository.findAllWithWrestlers(pageable);
   }
 
+  /**
+   * Paged rivalries with wrestlers, optionally filtered by status (ATW-aeib). {@code active} is a
+   * tri-state: {@code null} = all rivalries, {@code true} = active only, {@code false} = ended
+   * only.
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public Page<Rivalry> getAllRivalriesWithWrestlers(
+      @NonNull final Pageable pageable, @NonNull final Boolean active) {
+    return rivalryRepository.findAllWithWrestlers(pageable, active);
+  }
+
   /** Get active rivalries. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
