@@ -43,6 +43,8 @@ import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.reservation.ShowSegmentReservation;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentStatus;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -77,6 +79,7 @@ class FeudScriptServiceTest {
 
   @Mock private FeudScriptRepository feudScriptRepository;
   @Mock private FeudScriptBeatRepository feudScriptBeatRepository;
+  @Mock private SegmentRepository segmentRepository;
   @Mock private RivalryService rivalryService;
   @Mock private MultiWrestlerFeudService multiWrestlerFeudService;
   @Mock private ShowSegmentReservationService reservationService;
@@ -193,6 +196,121 @@ class FeudScriptServiceTest {
 
     assertThat(service.autoCompleteBeatForSegment(segment)).isEmpty();
     verifyNoInteractions(feudScriptBeatRepository);
+  }
+
+  // ── arc-creation backfill (ATW-1csz) ──────────────────────────────────────
+
+  @Test
+  void createScriptWithBeats_existingCompletedSegment_completesLeadingPendingBeat() {
+    // Beat 1 of a newly created arc must complete from an already-adjudicated segment for the
+    // same rivalry — the match ran before the arc existed (ATW-1csz production repro).
+    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
+    w1.setName("Bobby Lashley");
+    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
+    w2.setName("Shelton Benjamin");
+    Rivalry rivalry = rivalry(w1, w2);
+    rivalry.setId(731L);
+    FeudScriptBeat beat1 = new FeudScriptBeat();
+    beat1.setSegmentType("Tag Team");
+    beat1.setBeatStatus(FeudScriptBeatStatus.PENDING);
+
+    when(gameSettingService.isIntergenderMatchesEnabled()).thenReturn(true);
+    when(rivalryService.getRivalryBetweenWrestlers(1L, 2L)).thenReturn(Optional.of(rivalry));
+    FeudScript persisted = rivalryScript(rivalry);
+    when(feudScriptRepository.save(any())).thenReturn(persisted);
+    when(feudScriptBeatRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    Segment ran = new Segment();
+    ran.setId(1177L);
+    ran.setStatus(SegmentStatus.COMPLETED);
+    ran.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
+    ran.addParticipant(w1);
+    ran.addParticipant(w2);
+    when(segmentRepository.findCompletedByRivalryId(731L)).thenReturn(List.of(ran));
+
+    service.createScriptWithBeats("Late Arc", List.of(w1, w2), 2, List.of(beat1));
+
+    verify(feudScriptBeatRepository, times(2)).save(beat1); // addBeat + completion
+    assertThat(beat1.getBeatStatus()).isEqualTo(FeudScriptBeatStatus.COMPLETED);
+    assertThat(beat1.getActualSegment()).isSameAs(ran);
+  }
+
+  @Test
+  void createScriptWithBeats_noMatchingSegment_beatsStayPending() {
+    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
+    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
+    Rivalry rivalry = rivalry(w1, w2);
+    rivalry.setId(777L);
+    FeudScriptBeat beat1 = new FeudScriptBeat();
+    beat1.setSegmentType("Singles Match");
+    beat1.setBeatStatus(FeudScriptBeatStatus.PENDING);
+
+    when(gameSettingService.isIntergenderMatchesEnabled()).thenReturn(true);
+    when(rivalryService.getRivalryBetweenWrestlers(1L, 2L)).thenReturn(Optional.of(rivalry));
+    FeudScript persisted = rivalryScript(rivalry);
+    persisted.getBeats().add(beat1);
+    when(feudScriptRepository.save(any())).thenReturn(persisted);
+    when(feudScriptBeatRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    when(segmentRepository.findCompletedByRivalryId(777L)).thenReturn(List.of());
+
+    service.createScriptWithBeats("Fresh Arc", List.of(w1, w2), 2, List.of(beat1));
+
+    assertThat(beat1.getBeatStatus()).isEqualTo(FeudScriptBeatStatus.PENDING);
+    assertThat(beat1.getActualSegment()).isNull();
+  }
+
+  @Test
+  void completedBeat_notReProposed_onlyPendingBeatInjected() {
+    // ATW-1csz: after beat 1 completed (actual segment linked), planning must only see the next
+    // PENDING beat — the completed one never re-enters the AI's card as a phantom match.
+    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
+    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
+    FeudScript script = rivalryScript(rivalry(w1, w2));
+
+    FeudScriptBeat completed = pendingBeat(30L, script);
+    completed.setBeatStatus(FeudScriptBeatStatus.COMPLETED);
+    FeudScriptBeat nextPending = pendingBeat(31L, script);
+
+    when(feudScriptBeatRepository.findPendingBeatsForShow(5L)).thenReturn(List.of());
+    // PENDING-only repository contract: the completed beat is not among the candidates.
+    when(feudScriptBeatRepository.findNextPendingBeatPerActiveScript())
+        .thenReturn(List.of(nextPending));
+
+    List<FeudScriptBeat> injected = service.getUpcomingBeatsForShow(show(5L), Set.of(1L, 2L));
+
+    assertThat(injected).containsExactly(nextPending);
+    assertThat(injected).doesNotContain(completed);
+  }
+
+  @Test
+  void createScriptWithBeats_outOfOrderMatch_doesNotSkipAhead() {
+    // Beat 1 has no completed segment but beat 2's does — completion must stay in order:
+    // beat 1 stays PENDING, beat 2 is NOT completed ahead of it.
+    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
+    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
+    Rivalry rivalry = rivalry(w1, w2);
+    rivalry.setId(778L);
+    FeudScriptBeat beat1 = new FeudScriptBeat();
+    beat1.setSegmentType("Singles Match");
+    beat1.setBeatStatus(FeudScriptBeatStatus.PENDING);
+    beat1.setBeatOrder(1);
+    FeudScriptBeat beat2 = new FeudScriptBeat();
+    beat2.setSegmentType("Singles Match");
+    beat2.setBeatStatus(FeudScriptBeatStatus.PENDING);
+    beat2.setBeatOrder(2);
+
+    when(gameSettingService.isIntergenderMatchesEnabled()).thenReturn(true);
+    when(rivalryService.getRivalryBetweenWrestlers(1L, 2L)).thenReturn(Optional.of(rivalry));
+    FeudScript persisted = rivalryScript(rivalry);
+    persisted.getBeats().add(beat1);
+    when(feudScriptRepository.save(any())).thenReturn(persisted);
+    when(feudScriptBeatRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    when(segmentRepository.findCompletedByRivalryId(778L)).thenReturn(List.of());
+
+    service.createScriptWithBeats("Gap Arc", List.of(w1, w2), 2, List.of(beat1, beat2));
+
+    assertThat(beat1.getBeatStatus()).isEqualTo(FeudScriptBeatStatus.PENDING);
+    assertThat(beat2.getBeatStatus()).isEqualTo(FeudScriptBeatStatus.PENDING);
   }
 
   @Test

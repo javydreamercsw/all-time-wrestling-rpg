@@ -615,8 +615,17 @@ public class ShowPlanningService {
     }
     segmentRepository.saveAll(segmentsToSave);
     log.debug("Approved and saved {} segments for show: {}", segmentsToSave.size(), show.getName());
+    // Auto-complete any pending arc beat whose participants match a saved card segment — this is
+    // the primary completion path for beats with no target show (ATW-1csz). Runs BEFORE
+    // markBeatsBookedForShow so participant matching sees the still-PENDING state and the beat
+    // ends COMPLETED (linked to its segment), not merely BOOKED.
+    for (Segment segment : segmentsToSave) {
+      feudScriptService.autoCompleteBeatForSegment(segment);
+    }
     // Booked beats drop out of AI planning queries (PENDING-only) so the slot cannot be
-    // double-booked, while remaining visible/editable on the arc card.
+    // double-booked, while remaining visible/editable on the arc card. Only beats that actually
+    // target this show flip to BOOKED; beats without a target show stay completable by
+    // participant matching.
     feudScriptService.markBeatsBookedForShow(show);
     eventPublisher.publishEvent(new SegmentsApprovedEvent(this, show));
   }

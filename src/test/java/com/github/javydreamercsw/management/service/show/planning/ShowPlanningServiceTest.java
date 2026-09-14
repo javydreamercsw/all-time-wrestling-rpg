@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -77,6 +78,7 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -444,6 +446,40 @@ class ShowPlanningServiceTest {
     ArgumentCaptor<List<Segment>> captor = ArgumentCaptor.forClass(List.class);
     verify(segmentRepository).saveAll(captor.capture());
     assertEquals(2, captor.getValue().get(0).getParticipants().size());
+  }
+
+  @Test
+  void approveSegments_pendingBeatParticipantsMatch_autoCompletesBeat() {
+    // ATW-1csz: approval is the primary beat-completion path for beats with no target show.
+    ProposedSegment match = new ProposedSegment();
+    match.setType("Singles Match");
+    match.setSummary("Arc beat");
+    match.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+
+    SegmentType matchType = new SegmentType();
+    matchType.setName("Singles Match");
+    when(segmentTypeService.findByName("Singles Match")).thenReturn(Optional.of(matchType));
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+    when(rivalryService.getActiveRivalries()).thenReturn(List.of());
+    Wrestler a = new Wrestler();
+    a.setId(1L);
+    a.setName("Wrestler A");
+    Wrestler b = new Wrestler();
+    b.setId(2L);
+    b.setName("Wrestler B");
+    when(wrestlerRepository.findByName("Wrestler A")).thenReturn(Optional.of(a));
+    when(wrestlerRepository.findByName("Wrestler B")).thenReturn(Optional.of(b));
+
+    showPlanningService.approveSegments(show, List.of(match));
+
+    // Each saved card segment is offered to the beat auto-completion path, BEFORE the
+    // target-show BOOKED flip.
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Segment>> saved = ArgumentCaptor.forClass(List.class);
+    verify(segmentRepository).saveAll(saved.capture());
+    InOrder inOrder = inOrder(feudScriptService);
+    inOrder.verify(feudScriptService).autoCompleteBeatForSegment(saved.getValue().get(0));
+    inOrder.verify(feudScriptService).markBeatsBookedForShow(show);
   }
 
   @Test

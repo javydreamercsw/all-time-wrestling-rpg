@@ -32,6 +32,7 @@ import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.reservation.ShowSegmentReservationPurpose;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -72,6 +73,7 @@ public class FeudScriptService {
 
   private final FeudScriptRepository feudScriptRepository;
   private final FeudScriptBeatRepository feudScriptBeatRepository;
+  private final SegmentRepository segmentRepository;
   private final RivalryService rivalryService;
   private final MultiWrestlerFeudService multiWrestlerFeudService;
   private final ShowSegmentReservationService reservationService;
@@ -321,7 +323,82 @@ public class FeudScriptService {
     for (FeudScriptBeat beat : beats) {
       addBeat(script, beat);
     }
-    return script;
+    backfillBeatsFromCompletedSegments(script);
+    return feudScriptRepository.save(script);
+  }
+
+  /**
+   * Completes an arc's leading pending beats from matches that already ran before the arc was
+   * created: completed segments covering the arc's rivalry (or its full participant set), most
+   * recent first, are matched against pending beats strictly in beat order. Out-of-order completion
+   * is never done — a pending beat whose participants match nothing stays open (ATW-1csz).
+   */
+  private void backfillBeatsFromCompletedSegments(FeudScript script) {
+    List<FeudScriptBeat> pending =
+        script.getBeats().stream()
+            .filter(b -> b.getBeatStatus() == FeudScriptBeatStatus.PENDING)
+            .sorted(Comparator.comparingInt(FeudScriptBeat::getBeatOrder))
+            .toList();
+    if (pending.isEmpty()) {
+      return;
+    }
+    List<Segment> candidates = completedSegmentsFor(script);
+    for (FeudScriptBeat beat : pending) {
+      Set<Long> participants = participantIdsOf(beat);
+      Segment match =
+          candidates.stream()
+              .filter(segment -> coversParticipants(segment, participants))
+              .findFirst()
+              .orElse(null);
+      if (match == null) {
+        // Keep beats in order: stop at the first one without a completed segment.
+        break;
+      }
+      resolveAndCompleteBeat(script, beat, match);
+    }
+  }
+
+  /** Completed segments matching the arc's rivalry or its full participant set, newest first. */
+  private List<Segment> completedSegmentsFor(FeudScript script) {
+    List<Segment> candidates = new ArrayList<>();
+    if (script.getRivalry() != null && script.getRivalry().getId() != null) {
+      candidates = segmentRepository.findCompletedByRivalryId(script.getRivalry().getId());
+    }
+    if (candidates.isEmpty()) {
+      Set<Long> ids = activeScriptParticipantIds(script);
+      if (!ids.isEmpty()) {
+        candidates = segmentRepository.findCompletedByAllParticipants(ids, ids.size());
+      }
+    }
+    return candidates;
+  }
+
+  /** True when the segment's participant ids cover the beat's participant set. */
+  private boolean coversParticipants(Segment segment, Set<Long> participantIds) {
+    if (participantIds.isEmpty() || segment.getWrestlers() == null) {
+      return false;
+    }
+    Set<Long> segmentIds =
+        segment.getWrestlers().stream().map(Wrestler::getId).collect(Collectors.toSet());
+    return segmentIds.containsAll(participantIds);
+  }
+
+  /** Wrestler ids the arc involves (rivalry pair or active feud members). */
+  private Set<Long> activeScriptParticipantIds(FeudScript script) {
+    FeudScript managed = script;
+    if (script.getRivalry() != null) {
+      Rivalry rivalry = script.getRivalry();
+      if (rivalry.getWrestler1() != null && rivalry.getWrestler2() != null) {
+        return Set.of(rivalry.getWrestler1().getId(), rivalry.getWrestler2().getId());
+      }
+    }
+    if (managed.getFeud() != null) {
+      return managed.getFeud().getParticipants().stream()
+          .filter(p -> Boolean.TRUE.equals(p.getIsActive()))
+          .map(p -> p.getWrestler().getId())
+          .collect(Collectors.toSet());
+    }
+    return Set.of();
   }
 
   // ── Beat management ──────────────────────────────────────────────────────
