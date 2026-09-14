@@ -495,6 +495,52 @@ class FeudScriptServiceTest {
   }
 
   @Test
+  void getUpcomingBeatsForShowWithExclusions_reportsExcludedBeatWithNames() {
+    // ATW-978m: an injured participant must not silently swallow the arc's reserved beat.
+    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
+    w1.setName("Bobby Lashley");
+    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
+    w2.setName("Shelton Benjamin");
+    FeudScript script = rivalryScript(rivalry(w1, w2));
+    script.setName("Lashley vs Shelton Arc");
+    script.getRivalry().setId(731L);
+    FeudScriptBeat beat = pendingBeat(11L, script);
+    beat.setBeatOrder(1);
+
+    when(feudScriptBeatRepository.findPendingBeatsForShow(5L)).thenReturn(List.of());
+    when(feudScriptBeatRepository.findNextPendingBeatPerActiveScript()).thenReturn(List.of(beat));
+
+    FeudScriptService.UpcomingBeats result =
+        service.getUpcomingBeatsForShowWithExclusions(show(5L), Set.of(2L));
+
+    assertThat(result.beats()).isEmpty();
+    assertThat(result.exclusions()).hasSize(1);
+    FeudScriptService.BeatExclusion exclusion = result.exclusions().get(0);
+    assertThat(exclusion.rivalryId()).isEqualTo(731L);
+    assertThat(exclusion.unavailableParticipants()).containsExactly("Bobby Lashley");
+    assertThat(exclusion.toWarning())
+        .contains("Beat #1")
+        .contains("Lashley vs Shelton Arc")
+        .contains("Bobby Lashley")
+        .contains("unavailable");
+  }
+
+  @Test
+  void getUpcomingBeatsForShowWithExclusions_healthyRoster_hasNoExclusions() {
+    FeudScript script =
+        rivalryScript(rivalry(wrestlerWith(1L, Gender.MALE), wrestlerWith(2L, Gender.MALE)));
+    when(feudScriptBeatRepository.findPendingBeatsForShow(5L)).thenReturn(List.of());
+    when(feudScriptBeatRepository.findNextPendingBeatPerActiveScript())
+        .thenReturn(List.of(pendingBeat(12L, script)));
+
+    FeudScriptService.UpcomingBeats result =
+        service.getUpcomingBeatsForShowWithExclusions(show(5L), Set.of(1L, 2L));
+
+    assertThat(result.beats()).hasSize(1);
+    assertThat(result.exclusions()).isEmpty();
+  }
+
+  @Test
   void getUpcomingBeatsForShow_showTargetedBeat_takesPrecedenceAndDeduplicates() {
     FeudScript script = new FeudScript();
     script.setName("Targeted Arc");

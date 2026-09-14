@@ -50,6 +50,7 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -114,8 +115,20 @@ public class FeudScriptService {
   @Transactional(readOnly = true)
   public List<FeudScriptBeat> getUpcomingBeatsForShow(
       @NonNull Show show, @NonNull Set<Long> rosterIds) {
+    return getUpcomingBeatsForShowWithExclusions(show, rosterIds).beats();
+  }
+
+  /**
+   * Returns the injectable beats plus every arc beat that was withheld because its participants are
+   * not on the available roster (injured, low condition, or filtered by the show's constraints).
+   * The exclusions are booker-facing: a reserved-but-withheld beat would otherwise vanish silently
+   * and the planning AI would improvise its own match for the same feud.
+   */
+  @Transactional(readOnly = true)
+  public UpcomingBeats getUpcomingBeatsForShowWithExclusions(
+      @NonNull Show show, @NonNull Set<Long> rosterIds) {
     if (show.getId() == null) {
-      return List.of();
+      return new UpcomingBeats(List.of(), List.of());
     }
     List<FeudScriptBeat> beats =
         new ArrayList<>(feudScriptBeatRepository.findPendingBeatsForShow(show.getId()));
@@ -128,41 +141,84 @@ public class FeudScriptService {
         beats.size(),
         fallback.size(),
         rosterIds.size());
+    List<BeatExclusion> exclusions = new ArrayList<>();
     for (FeudScriptBeat next : fallback) {
       if (!present.add(next.getId())) {
         continue;
       }
-      Set<Long> participantIds = participantIdsOf(next);
-      if (!rosterIds.containsAll(participantIds)) {
-        Set<Long> missing = new HashSet<>(participantIds);
-        missing.removeAll(rosterIds);
+      Map<Long, String> participants = participantsOf(next);
+      if (!rosterIds.containsAll(participants.keySet())) {
+        List<String> missingNames =
+            participants.entrySet().stream()
+                .filter(e -> !rosterIds.contains(e.getKey()))
+                .map(Map.Entry::getValue)
+                .toList();
         log.info(
             "Beat #{} of arc '{}' excluded: feud participant(s) {} not on the available roster"
                 + " (injured, low condition, or filtered by the show's constraints)",
             next.getBeatOrder(),
             next.getScript().getName(),
-            missing);
+            participants.keySet().stream().filter(id -> !rosterIds.contains(id)).toList());
+        exclusions.add(
+            new BeatExclusion(
+                next.getBeatOrder(),
+                next.getScript().getName(),
+                missingNames,
+                next.getScript().getRivalry() != null
+                    ? next.getScript().getRivalry().getId()
+                    : null));
         continue;
       }
       beats.add(next);
     }
-    return beats;
+    return new UpcomingBeats(List.copyOf(beats), List.copyOf(exclusions));
+  }
+
+  /** A pending arc beat that could not be injected into a show's planning context. */
+  public record BeatExclusion(
+      int beatOrder, String arcName, List<String> unavailableParticipants, Long rivalryId) {
+
+    /** Booker-facing explanation of why the beat is missing from the planned card. */
+    public String toWarning() {
+      String who =
+          unavailableParticipants.isEmpty()
+              ? "a feud participant"
+              : String.join(", ", unavailableParticipants);
+      String verb = unavailableParticipants.size() == 1 ? "is" : "are";
+      return ("Beat #%d of arc '%s' was NOT injected because %s %s unavailable (injury, low"
+              + " condition, or filtered by the show's constraints)")
+          .formatted(beatOrder, arcName, who, verb);
+    }
+  }
+
+  /** Beats injected into a show's planning context plus the arc beats withheld from it. */
+  public record UpcomingBeats(List<FeudScriptBeat> beats, List<BeatExclusion> exclusions) {}
+
+  /** Participants (id → name) of the beat's script: rivalry pair or active feud members. */
+  private Map<Long, String> participantsOf(@NonNull FeudScriptBeat beat) {
+    FeudScript script = beat.getScript();
+    Map<Long, String> participants = new LinkedHashMap<>();
+    if (script.getRivalry() != null) {
+      Rivalry rivalry = script.getRivalry();
+      if (rivalry.getWrestler1() != null) {
+        participants.put(rivalry.getWrestler1().getId(), rivalry.getWrestler1().getName());
+      }
+      if (rivalry.getWrestler2() != null) {
+        participants.put(rivalry.getWrestler2().getId(), rivalry.getWrestler2().getName());
+      }
+      return participants;
+    }
+    if (script.getFeud() != null) {
+      script.getFeud().getParticipants().stream()
+          .filter(p -> Boolean.TRUE.equals(p.getIsActive()))
+          .forEach(p -> participants.put(p.getWrestler().getId(), p.getWrestler().getName()));
+    }
+    return participants;
   }
 
   /** Wrestler IDs the beat's script involves (rivalry pair or active feud members). */
   private Set<Long> participantIdsOf(@NonNull FeudScriptBeat beat) {
-    FeudScript script = beat.getScript();
-    if (script.getRivalry() != null) {
-      Rivalry rivalry = script.getRivalry();
-      return Set.of(rivalry.getWrestler1().getId(), rivalry.getWrestler2().getId());
-    }
-    if (script.getFeud() != null) {
-      return script.getFeud().getParticipants().stream()
-          .filter(p -> Boolean.TRUE.equals(p.getIsActive()))
-          .map(p -> p.getWrestler().getId())
-          .collect(Collectors.toSet());
-    }
-    return Set.of();
+    return participantsOf(beat).keySet();
   }
 
   /** Maps pending beats for a show to DTOs suitable for the AI prompt. */
@@ -172,6 +228,22 @@ public class FeudScriptService {
         .map(this::toDTO)
         .collect(Collectors.toList());
   }
+
+  /**
+   * Beat DTOs for the AI prompt together with the booker-facing exclusions, so the planning context
+   * can warn the booker about withheld beats and keep their feuds out of the AI's improvised-match
+   * hints.
+   */
+  public UpcomingBeatDTOs getUpcomingBeatDTOsWithExclusionsForShow(
+      @NonNull Show show, @NonNull Set<Long> rosterIds) {
+    UpcomingBeats injection = getUpcomingBeatsForShowWithExclusions(show, rosterIds);
+    return new UpcomingBeatDTOs(
+        injection.beats().stream().map(this::toDTO).collect(Collectors.toList()),
+        injection.exclusions());
+  }
+
+  /** Beat DTOs for the AI prompt plus the booker-facing exclusions behind them. */
+  public record UpcomingBeatDTOs(List<FeudScriptBeatDTO> beats, List<BeatExclusion> exclusions) {}
 
   /** Test-visible DTO mapping (toDTO is shared with the show-planning context builder). */
   FeudScriptBeatDTO toDTOForTest(FeudScriptBeat beat) {

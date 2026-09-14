@@ -37,4 +37,12 @@ public class ShowPlanningContextDTO {
   private boolean intergenderAllowed;
   private List<String> recentDramaEvents = new ArrayList<>();
   private List<FeudScriptBeatDTO> upcomingScriptedBeats;
+
+  /**
+   * Booker-facing warnings for pending arc beats that were withheld from the planning context
+   * because their participants are unavailable (injury, low condition, or show constraints).
+   * Show-planning UIs render these next to the unbooked-rivalry warnings so a reserved beat missing
+   * from the card is visible instead of silent.
+   */
+  private List<String> excludedBeatWarnings = new ArrayList<>();
 }
