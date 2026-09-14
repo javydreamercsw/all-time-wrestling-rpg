@@ -23,8 +23,11 @@ import com.github.javydreamercsw.management.domain.feud.FeudScriptWinnerControl;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.faction.FactionRivalryService;
+import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.feud.FeudScriptService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
@@ -38,6 +41,9 @@ class FeudScriptDocsE2ETest extends AbstractDocsE2ETest {
   @Autowired private RivalryService rivalryService;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private FeudScriptService feudScriptService;
+  @Autowired private FactionService factionService;
+  @Autowired private FactionRivalryService factionRivalryService;
+  @Autowired private UniverseContextService universeContextService;
 
   /**
    * The docs data initializer does not seed rivalries, so each capture creates (or reuses) one
@@ -92,9 +98,47 @@ class FeudScriptDocsE2ETest extends AbstractDocsE2ETest {
     documentFeature(
         "Booker",
         "Rivalry List",
-        "Browse all active rivalries between wrestlers. Click any row to open the rivalry detail"
-            + " view where you can manage story arc scripts.",
+        "Browse active rivalries between wrestlers — ended feuds are filtered out by default;"
+            + " switch the Status filter to All or Ended to see them. Click any row to open the"
+            + " rivalry detail view where you can manage story arc scripts.",
         "booker-rivalry-list");
+  }
+
+  @Test
+  void captureFactionRivalryListView() {
+    // Seed two factions and an active rivalry between them so the grid is not empty
+    // (the docs data initializer does not seed faction rivalries).
+    List<com.github.javydreamercsw.management.domain.faction.Faction> factions =
+        factionService.getAllFactions(org.springframework.data.domain.Pageable.unpaged()).stream()
+            .limit(2)
+            .toList();
+    com.github.javydreamercsw.management.domain.faction.Faction faction1;
+    com.github.javydreamercsw.management.domain.faction.Faction faction2;
+    if (factions.size() >= 2) {
+      faction1 = factions.get(0);
+      faction2 = factions.get(1);
+    } else {
+      Long universeId = universeContextService.getCurrentUniverseId();
+      String suffix = String.valueOf(COUNTER.incrementAndGet());
+      faction1 =
+          factionService
+              .createFaction("Docs Faction One " + suffix, "Docs seed faction", null, universeId)
+              .orElseThrow();
+      faction2 =
+          factionService
+              .createFaction("Docs Faction Two " + suffix, "Docs seed faction", null, universeId)
+              .orElseThrow();
+    }
+    factionRivalryService.createFactionRivalry(
+        faction1.getId(), faction2.getId(), "Territory war over the tag titles.");
+    navigateToAndWaitForElement("faction-rivalry-list", By.tagName("vaadin-grid"));
+    documentFeature(
+        "Booker",
+        "Faction Rivalry List",
+        "Track active feuds between factions — the Status filter defaults to Active and can"
+            + " show All or Ended faction rivalries. Add heat to escalate a faction feud toward"
+            + " a war match.",
+        "booker-faction-rivalry-list");
   }
 
   @Test
