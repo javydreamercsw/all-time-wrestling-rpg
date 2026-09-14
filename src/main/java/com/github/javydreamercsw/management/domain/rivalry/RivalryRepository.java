@@ -48,6 +48,18 @@ public interface RivalryRepository
   @Query("SELECT r FROM Rivalry r JOIN FETCH r.wrestler1 JOIN FETCH r.wrestler2")
   Page<Rivalry> findAllWithWrestlers(Pageable pageable);
 
+  /**
+   * Paged rivalries with wrestlers, optionally filtered by status (ATW-aeib). {@code active} is a
+   * tri-state: {@code null} = all rivalries, {@code true} = active only, {@code false} = ended
+   * only.
+   */
+  @Query(
+      """
+      SELECT r FROM Rivalry r JOIN FETCH r.wrestler1 JOIN FETCH r.wrestler2
+      WHERE (:active IS NULL OR r.isActive = :active)
+      """)
+  Page<Rivalry> findAllWithWrestlers(Pageable pageable, @Param("active") Boolean active);
+
   @Query("SELECT r FROM Rivalry r JOIN FETCH r.wrestler1 JOIN FETCH r.wrestler2 WHERE r.id = :id")
   Optional<Rivalry> findByIdWithWrestlers(@Param("id") Long id);
 

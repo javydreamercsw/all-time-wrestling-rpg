@@ -17,8 +17,11 @@
 package com.github.javydreamercsw.management.ui.view.faction;
 
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
@@ -28,11 +31,13 @@ import com.github.javydreamercsw.management.service.faction.FactionRivalryServic
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.data.provider.Query;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 class FactionRivalryListViewTest extends AbstractViewTest {
 
@@ -47,7 +52,10 @@ class FactionRivalryListViewTest extends AbstractViewTest {
   @BeforeEach
   void setup() {
     when(factionService.getAllFactions(any())).thenReturn(Page.empty());
-    when(factionRivalryService.getAllFactionRivalriesWithFactions(any())).thenReturn(Page.empty());
+    when(factionRivalryService.getAllFactionRivalriesWithFactions(any(Pageable.class), any()))
+        .thenReturn(Page.empty());
+    when(factionRivalryService.getAllFactionRivalriesWithFactions(any(Pageable.class), isNull()))
+        .thenReturn(Page.empty());
 
     view =
         new FactionRivalryListView(
@@ -60,5 +68,25 @@ class FactionRivalryListViewTest extends AbstractViewTest {
   void shouldRenderToolbar() {
     ViewToolbar toolbar = _get(view, ViewToolbar.class);
     assertTrue(toolbar.isVisible());
+  }
+
+  @Test
+  @DisplayName("Status filter defaults to Active (ATW-aeib)")
+  void statusFilterDefaultsToActive() {
+    assertEquals(
+        FactionRivalryListView.FactionRivalryStatusFilter.ACTIVE, view.statusFilter.getValue());
+  }
+
+  @Test
+  @DisplayName("Switching the status filter queries with the matching tri-state (ATW-aeib)")
+  void statusFilterDrivesQuery() {
+    // Fetching from the provider exercises the grid's items callback directly.
+    view.factionRivalryGrid.getDataProvider().fetch(new Query<>());
+    verify(factionRivalryService).getAllFactionRivalriesWithFactions(any(Pageable.class), any());
+
+    // ALL -> null tri-state reaches the service.
+    view.statusFilter.setValue(FactionRivalryListView.FactionRivalryStatusFilter.ALL);
+    view.factionRivalryGrid.getDataProvider().fetch(new Query<>());
+    verify(factionRivalryService).getAllFactionRivalriesWithFactions(any(Pageable.class), isNull());
   }
 }

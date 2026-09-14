@@ -17,9 +17,12 @@
 package com.github.javydreamercsw.management.ui.view.rivalry;
 
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
@@ -30,12 +33,14 @@ import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.data.provider.Query;
 import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 class RivalryListViewTest extends AbstractViewTest {
 
@@ -51,7 +56,10 @@ class RivalryListViewTest extends AbstractViewTest {
   @BeforeEach
   void setup() {
     doReturn(Collections.emptyList()).when(wrestlerService).getAllWrestlers();
-    when(rivalryService.getAllRivalriesWithWrestlers(any())).thenReturn(Page.empty());
+    when(rivalryService.getAllRivalriesWithWrestlers(any(Pageable.class), any()))
+        .thenReturn(Page.empty());
+    when(rivalryService.getAllRivalriesWithWrestlers(any(Pageable.class), isNull()))
+        .thenReturn(Page.empty());
     when(rivalryService.getRivalryMapper()).thenReturn(rivalryMapper);
 
     view = new RivalryListView(rivalryService, rivalryRepository, wrestlerService, securityUtils);
@@ -63,5 +71,25 @@ class RivalryListViewTest extends AbstractViewTest {
   void shouldRenderToolbar() {
     ViewToolbar toolbar = _get(view, ViewToolbar.class);
     assertTrue(toolbar.isVisible());
+  }
+
+  @Test
+  @DisplayName("Status filter defaults to Active (ATW-aeib)")
+  void statusFilterDefaultsToActive() {
+    assertEquals(RivalryListView.RivalryStatusFilter.ACTIVE, view.statusFilter.getValue());
+  }
+
+  @Test
+  @DisplayName("Switching the status filter queries with the matching tri-state (ATW-aeib)")
+  void statusFilterDrivesQuery() {
+    // Fetching from the provider exercises the grid's items callback directly —
+    // refreshAll() alone does not pull pages without an attached UI render.
+    view.rivalryGrid.getDataProvider().fetch(new Query<>());
+    verify(rivalryService).getAllRivalriesWithWrestlers(any(Pageable.class), any());
+
+    // ALL -> null tri-state.
+    view.statusFilter.setValue(RivalryListView.RivalryStatusFilter.ALL);
+    view.rivalryGrid.getDataProvider().fetch(new Query<>());
+    verify(rivalryService).getAllRivalriesWithWrestlers(any(Pageable.class), isNull());
   }
 }
