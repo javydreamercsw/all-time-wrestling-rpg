@@ -35,6 +35,18 @@ public interface FactionRivalryRepository
   @Query("SELECT fr FROM FactionRivalry fr JOIN FETCH fr.faction1 JOIN FETCH fr.faction2")
   Page<FactionRivalry> findAllWithFactions(Pageable pageable);
 
+  /**
+   * Paged faction rivalries with factions, optionally filtered by status (ATW-aeib). {@code active}
+   * is a tri-state: {@code null} = all rivalries, {@code true} = active only, {@code false} = ended
+   * only.
+   */
+  @Query(
+      """
+      SELECT fr FROM FactionRivalry fr JOIN FETCH fr.faction1 JOIN FETCH fr.faction2
+      WHERE (:active IS NULL OR fr.isActive = :active)
+      """)
+  Page<FactionRivalry> findAllWithFactions(Pageable pageable, @Param("active") Boolean active);
+
   /** Find active faction rivalries. */
   List<FactionRivalry> findByIsActiveTrue();
 
