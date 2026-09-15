@@ -20,8 +20,9 @@ import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.vaadin.flow.component.checkbox.Checkbox;
+import com.vaadin.flow.component.details.Details;
+import com.vaadin.flow.component.details.DetailsVariant;
 import com.vaadin.flow.component.formlayout.FormLayout;
-import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.PasswordField;
@@ -81,7 +82,6 @@ public class AiSettingsView extends VerticalLayout {
   }
 
   private void init() {
-    add(new H3("Common AI Settings"));
     FormLayout commonSettingsLayout = new FormLayout();
     aiProviderAuto = new Checkbox("Auto Select Provider", aiSettingsService.isAiProviderAuto());
     aiProviderAuto.addValueChangeListener(
@@ -99,9 +99,7 @@ public class AiSettingsView extends VerticalLayout {
           }
         });
     commonSettingsLayout.add(aiProviderAuto, aiTimeout);
-    add(commonSettingsLayout);
 
-    add(new H3("OpenAI Settings"));
     FormLayout openAISettingsLayout = new FormLayout();
     openAIEnabled = new Checkbox("Enabled", aiSettingsService.isOpenAIEnabled());
     openAIEnabled.addValueChangeListener(
@@ -174,9 +172,7 @@ public class AiSettingsView extends VerticalLayout {
         openAIImageModel,
         openAIMaxTokens,
         openAITemperature);
-    add(openAISettingsLayout);
 
-    add(new H3("Claude Settings"));
     FormLayout claudeSettingsLayout = new FormLayout();
     claudeEnabled = new Checkbox("Enabled", aiSettingsService.isClaudeEnabled());
     claudeEnabled.addValueChangeListener(
@@ -209,9 +205,7 @@ public class AiSettingsView extends VerticalLayout {
           }
         });
     claudeSettingsLayout.add(claudeEnabled, claudeApiUrl, claudeApiKey, claudeModelName);
-    add(claudeSettingsLayout);
 
-    add(new H3("Gemini Settings"));
     FormLayout geminiSettingsLayout = new FormLayout();
     geminiEnabled = new Checkbox("Enabled", aiSettingsService.isGeminiEnabled());
     geminiEnabled.addValueChangeListener(
@@ -244,9 +238,7 @@ public class AiSettingsView extends VerticalLayout {
           }
         });
     geminiSettingsLayout.add(geminiEnabled, geminiApiUrl, geminiApiKey, geminiModelName);
-    add(geminiSettingsLayout);
 
-    add(new H3("Pollinations Settings"));
     FormLayout pollinationsSettingsLayout = new FormLayout();
 
     Checkbox pollinationsEnabled =
@@ -269,9 +261,7 @@ public class AiSettingsView extends VerticalLayout {
             });
 
     pollinationsSettingsLayout.add(pollinationsEnabled, pollinationsApiKey);
-    add(pollinationsSettingsLayout);
 
-    add(new H3("Ollama Settings (Local AI)"));
     FormLayout ollamaSettingsLayout = new FormLayout();
 
     TextField ollamaBaseUrl =
@@ -298,7 +288,37 @@ public class AiSettingsView extends VerticalLayout {
         });
 
     ollamaSettingsLayout.add(ollamaBaseUrl, ollamaModel);
-    add(ollamaSettingsLayout);
+
+    // ── Collapsible sections ─────────────────────────────────────────────────
+    add(
+        section("Common AI Settings", "settings-section-common", true, commonSettingsLayout),
+        section(
+            "Pollinations Settings",
+            "settings-section-pollinations",
+            false,
+            pollinationsSettingsLayout),
+        section(
+            "Ollama Settings (Local AI)", "settings-section-ollama", false, ollamaSettingsLayout),
+        section("OpenAI Settings", "settings-section-openai", false, openAISettingsLayout),
+        section("Claude Settings", "settings-section-claude", false, claudeSettingsLayout),
+        section("Gemini Settings", "settings-section-gemini", false, geminiSettingsLayout));
+  }
+
+  /** Builds a collapsible settings group. */
+  private Details section(
+      final String title,
+      final String id,
+      final boolean opened,
+      final com.vaadin.flow.component.Component... content) {
+    VerticalLayout layout = new VerticalLayout(content);
+    layout.setPadding(false);
+    layout.setSpacing(false);
+    Details details = new Details(title, layout);
+    details.setId(id);
+    details.setOpened(opened);
+    details.addThemeVariants(DetailsVariant.FILLED);
+    details.setWidthFull();
+    return details;
   }
 
   private void saveSetting(final String key, final String value) {
