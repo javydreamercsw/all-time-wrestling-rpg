@@ -42,14 +42,21 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <ul>
  *   <li>All segments: rivalry heat (0–20) + tier spread (0–10) + stipulation variety (0–10) + title
- *       on the line (+10) + main event (+10) + in-match performance (0–40, the adjudication roll
- *       this match already earned, folded in at 40%).
+ *       on the line (+10) + main event (+10) + in-match performance (0–40, the match's adjudication
+ *       rating folded in at 40%).
  *   <li>Player segments (any participant with {@code wrestler.isPlayer=true}): adds grueling factor
  *       for stamina burned (0–10) + HP burned (0–10) + signatures hit (0–10) + finisher used (+10)
  *       + winner momentum (0–5). Player max = 100.
  *   <li>High-stakes floor: a main event, title match, or match with heat ≥ 30 never scores below 60
  *       (3.0★) — high stakes guarantee a solid show even on a poor dice roll (ATW-gegc).
  * </ul>
+ *
+ * <p><b>Adjudication rating source:</b> the performance factor reads {@link
+ * Segment#getCrowdNoiseLevel()}, which adjudication writes once as {@code rating ± 5} and nothing
+ * else ever modifies. {@link Segment#getSegmentRating()} is NOT used — it is this method's own
+ * output, so re-finalization (or the one-time {@code SegmentRatingRebalanceSync} backfill) would
+ * compound it. Reading crowd noise instead makes scoring idempotent: re-running {@code
+ * computeAndPersist} on the same segments yields the same ratings.
  *
  * <p><b>Grueling factor</b> takes the minimum of both participants' burn percentages so squash
  * matches (one wrestler untouched) don't score high on this dimension.
@@ -204,11 +211,13 @@ public class ShowQualityService {
       score += 10;
     }
 
-    // --- In-match performance (0–40): the adjudication roll this match already earned, folded
-    // in at 40%. Keeps the dice in the game (variance night to night) while context moves the
-    // needle — a match the ring adjudicator rated 90 contributes +36 here (ATW-gegc).
-    Integer adjudicated = segment.getSegmentRating();
-    if (adjudicated != null) {
+    // --- In-match performance (0–40): the adjudication rating this match earned, folded in at
+    // 40%. Read from crowd noise (adjudication writes it once as rating ± 5 and nothing else
+    // modifies it) rather than segmentRating, which is this method's own output — using it would
+    // compound on re-finalization and in the one-time backfill. Keeps the dice in the game while
+    // context moves the needle (ATW-gegc).
+    Integer adjudicated = segment.getCrowdNoiseLevel();
+    if (adjudicated != null && adjudicated > 0) {
       score += (int) Math.round(adjudicated * 0.40);
     }
 
