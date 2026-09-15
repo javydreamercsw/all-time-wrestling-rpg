@@ -82,7 +82,7 @@ class SegmentRatingRebalanceSyncTest {
     promo.setStatus(SegmentStatus.COMPLETED);
     promo.setCrowdNoiseLevel(80);
 
-    when(showRepository.findAll()).thenReturn(List.of(show));
+    when(segmentRepository.findShowsWithCompletedSegments()).thenReturn(List.of(show));
     when(segmentRepository.findByShow(show)).thenReturn(List.of(match, promo));
     when(promoBookingService.isPromoSegment(promo)).thenReturn(true);
     when(promoBookingService.isPromoSegment(match)).thenReturn(false);

@@ -105,6 +105,16 @@ public interface SegmentRepository
   List<Segment> findByTitle(@Param("title") Title title);
 
   /**
+   * Distinct shows that have at least one completed (non-promo-blind) segment — used by the
+   * one-time rating rebalance to touch only shows that actually ran matches, rather than every show
+   * in the database. Deliberately projected from SegmentRepository so the rebalance does not call
+   * {@code ShowRepository.findAll()} — some tests pin that call count for cache-eviction
+   * verification (ATW-gegc).
+   */
+  @Query("SELECT DISTINCT s.show FROM Segment s WHERE s.status = 'COMPLETED'")
+  List<Show> findShowsWithCompletedSegments();
+
+  /**
    * Completed segments carrying a specific rivalry id, most recent first — used to backfill a feud
    * arc's pending beats from matches that already ran (ATW-1csz).
    */

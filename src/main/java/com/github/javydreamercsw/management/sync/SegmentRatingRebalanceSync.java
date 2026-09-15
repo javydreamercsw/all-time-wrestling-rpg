@@ -65,7 +65,9 @@ public class SegmentRatingRebalanceSync implements DataSyncContributor {
       return;
     }
 
-    List<Show> shows = showRepository.findAll();
+    // Shows projected from completed segments — never ShowRepository.findAll(), whose call count
+    // some cache-eviction tests pin (ShowServiceIT.testCreateShowEvictsCache).
+    List<Show> shows = segmentRepository.findShowsWithCompletedSegments();
     int segmentsRescored = 0;
     int showsRescored = 0;
     for (Show show : shows) {
@@ -78,8 +80,9 @@ public class SegmentRatingRebalanceSync implements DataSyncContributor {
         continue;
       }
 
-      // Rescore through the same code path new shows use — one formula, no drift. This also
-      // recomputes show.qualityScore from the rescored segments; the save persists both.
+      // Rescore through the same code path new shows use — one formula, no drift. computeAndPersist
+      // also sets show.qualityScore; the save persists it (shows from the projection are detached
+      // outside a transaction, and computeAndPersist only saves segments).
       showQualityService.computeAndPersist(show, matches);
       segmentsRescored += matches.size();
       showsRescored++;
