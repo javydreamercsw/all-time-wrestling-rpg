@@ -380,6 +380,145 @@ class ShowQualityServiceTest {
     assertThat(playerRating).isGreaterThan(npcRating);
   }
 
+  // ---------- high-stakes floor + in-match performance (ATW-gegc) ----------
+
+  @Test
+  void mainEventNeverScoresBelowHighStakesFloor() {
+    Segment mainEvent = makeSegment("One on One", false);
+    mainEvent.setMainEvent(true);
+    // Poor dice night: adjudication recorded crowd noise 10 (rating ± 5).
+    mainEvent.setCrowdNoiseLevel(10);
+
+    when(promoBookingService.isPromoSegment(mainEvent)).thenReturn(false);
+    when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(anyLong(), anyLong()))
+        .thenReturn(Optional.empty());
+
+    service.computeAndPersist(show, List.of(mainEvent));
+
+    // Main event (+10) + performance 10*0.40=4 = 14, but the floor lifts it to 60 (3.0★).
+    assertThat(mainEvent.getSegmentRating()).isEqualTo(60);
+  }
+
+  @Test
+  void titleMatchNeverScoresBelowHighStakesFloor() {
+    Segment titleMatch = makeSegment("One on One", false);
+    titleMatch.setIsTitleSegment(true);
+
+    when(promoBookingService.isPromoSegment(titleMatch)).thenReturn(false);
+    when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(anyLong(), anyLong()))
+        .thenReturn(Optional.empty());
+
+    service.computeAndPersist(show, List.of(titleMatch));
+
+    // Title (+10) alone is below the floor; the floor lifts it to 60.
+    assertThat(titleMatch.getSegmentRating()).isEqualTo(60);
+  }
+
+  @Test
+  void hotRivalryNeverScoresBelowHighStakesFloor() {
+    Segment hotFeud = makeSegment("One on One", false);
+    hotFeud.setRivalryId(99L);
+    hotFeud.setCrowdNoiseLevel(15);
+
+    Rivalry rivalry = new Rivalry();
+    rivalry.setHeat(40); // ≥ 30 → high-stakes
+    when(rivalryService.getRivalryById(99L)).thenReturn(Optional.of(rivalry));
+    when(promoBookingService.isPromoSegment(hotFeud)).thenReturn(false);
+    when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(anyLong(), anyLong()))
+        .thenReturn(Optional.empty());
+
+    service.computeAndPersist(show, List.of(hotFeud));
+
+    // Heat 40 → +16, performance 15*0.40=6 → 22, floor lifts to 60.
+    assertThat(hotFeud.getSegmentRating()).isEqualTo(60);
+  }
+
+  @Test
+  void lowStakesBareMatchKeepsDiceVariance() {
+    Segment bare = makeSegment("One on One", false);
+    bare.setCrowdNoiseLevel(10); // bad roll, no stakes — must stay low
+
+    when(promoBookingService.isPromoSegment(bare)).thenReturn(false);
+    when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(anyLong(), anyLong()))
+        .thenReturn(Optional.empty());
+
+    service.computeAndPersist(show, List.of(bare));
+
+    // Only the performance factor (10*0.40=4) — no floor for a bare midcard match.
+    assertThat(bare.getSegmentRating()).isEqualTo(4);
+  }
+
+  @Test
+  void npcMatchCanReachFourPlusStars() {
+    // A well-booked NPC title main event with heat and a hot ring performance.
+    Segment segment = makeSegment("One on One", false);
+    segment.setIsTitleSegment(true);
+    segment.setMainEvent(true);
+    segment.setRivalryId(99L);
+    segment.setCrowdNoiseLevel(90);
+
+    Rivalry rivalry = new Rivalry();
+    rivalry.setHeat(50); // max → +20
+    when(rivalryService.getRivalryById(99L)).thenReturn(Optional.of(rivalry));
+    when(promoBookingService.isPromoSegment(segment)).thenReturn(false);
+    when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(anyLong(), anyLong()))
+        .thenReturn(Optional.empty());
+
+    service.computeAndPersist(show, List.of(segment));
+
+    // 20 heat + 10 title + 10 main event + 36 performance = 76 → 3.8★. Noise 100 → 40 → 4.0★.
+    assertThat(segment.getSegmentRating()).isEqualTo(76);
+  }
+
+  @Test
+  void adjudicatedRatingFoldsIntoScore() {
+    Segment withRoll = makeSegment("One on One", false);
+    withRoll.setCrowdNoiseLevel(50);
+    Segment withoutRoll = makeSegment("One on One", false);
+    withoutRoll.setCrowdNoiseLevel(0); // never adjudicated → no performance points
+
+    when(promoBookingService.isPromoSegment(any())).thenReturn(false);
+    when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(anyLong(), anyLong()))
+        .thenReturn(Optional.empty());
+
+    service.computeAndPersist(show, List.of(withRoll));
+    int withRating = withRoll.getSegmentRating();
+
+    show.setQualityScore(null);
+    service.computeAndPersist(show, List.of(withoutRoll));
+    int withoutRating = withoutRoll.getSegmentRating();
+
+    // 50 * 0.40 = 20 points from the match's own ring performance.
+    assertThat(withRating).isEqualTo(20);
+    assertThat(withoutRating).isEqualTo(0);
+  }
+
+  @Test
+  void rescoringSameSegmentsIsIdempotent() {
+    // Re-finalization (or the one-time backfill re-running computeAndPersist) must not compound
+    // the performance factor: the score source is crowd noise, not the stored segmentRating.
+    Segment segment = makeSegment("One on One", false);
+    segment.setRivalryId(99L);
+    segment.setCrowdNoiseLevel(70);
+
+    Rivalry rivalry = new Rivalry();
+    rivalry.setHeat(20); // +8 — below the 30 high-stakes heat threshold, so no floor applies
+    when(rivalryService.getRivalryById(99L)).thenReturn(Optional.of(rivalry));
+    when(promoBookingService.isPromoSegment(segment)).thenReturn(false);
+    when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(anyLong(), anyLong()))
+        .thenReturn(Optional.empty());
+
+    service.computeAndPersist(show, List.of(segment));
+    int firstPass = segment.getSegmentRating();
+
+    service.computeAndPersist(show, List.of(segment));
+    int secondPass = segment.getSegmentRating();
+
+    // 8 heat + 70*0.40=28 performance = 36, stable across passes (no compounding).
+    assertThat(firstPass).isEqualTo(36);
+    assertThat(secondPass).isEqualTo(firstPass);
+  }
+
   // ---------- helpers ----------
 
   private Segment makeSegment(final String typeName, final boolean playerInvolved) {

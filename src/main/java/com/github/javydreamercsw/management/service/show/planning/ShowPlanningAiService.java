@@ -113,15 +113,18 @@ public class ShowPlanningAiService {
     }
     List<ProposedSegment> segments = proposedShow.getSegments();
 
-    // Drop AI match segments that cover a scripted slot (by participant overlap), so the beat
-    // segment replaces them rather than duplicating the rivalry on the card.
+    // Drop AI segments that cover a scripted slot (by rivalry id or participant overlap), so the
+    // beat segment replaces them rather than duplicating the arc on the card. Match segments are
+    // evicted on ANY participant overlap (the beat claims its wrestlers' slot); other segments
+    // (promos) only when they cover the beat's full participant set or rivalry — a promo
+    // mentioning one arc wrestler stays legitimate (ATW-978m).
     for (FeudScriptBeatDTO beat : beats) {
       Set<Long> beatIds = participantIdsOf(beat);
-      if (beatIds.isEmpty()) {
+      Set<String> beatNames = participantNamesOf(beat);
+      if (beatIds.isEmpty() && beatNames.isEmpty() && beat.getRivalryId() == null) {
         continue;
       }
-      segments.removeIf(
-          segment -> isMatchSegment(segment) && coversAnyParticipant(segment, beatIds));
+      segments.removeIf(segment -> isBeatSlotCovered(segment, beat, beatIds, beatNames));
     }
 
     // Insert locally-built beat segments ahead of the AI's card.
@@ -180,6 +183,9 @@ public class ShowPlanningAiService {
   private String summarizeBeat(FeudScriptBeatDTO beat) {
     StringBuilder sb = new StringBuilder();
     sb.append("Scripted beat: ").append(beat.getScriptName());
+    if (beat.getSegmentType() != null && !beat.getSegmentType().isBlank()) {
+      sb.append(" (").append(beat.getSegmentType()).append(")");
+    }
     if ("BOOKER_PICKS".equals(beat.getWinnerControl())
         && beat.getPlannedWinnerName() != null
         && !beat.getPlannedWinnerName().isBlank()) {
@@ -203,12 +209,58 @@ public class ShowPlanningAiService {
         && segment.getTeamIds().stream().flatMap(List::stream).anyMatch(beatIds::contains);
   }
 
+  /**
+   * True when an AI segment occupies a scripted beat's slot. Signals, in order: the segment carries
+   * the beat's rivalry id (any segment kind — that rivalry is arc-reserved); a match segment
+   * overlaps the beat's participants by id (a wrestler cannot be double-booked into two matches —
+   * established ATW-iukb behavior); or the segment covers the beat's full participant set
+   * case-insensitively by name — AI proposals often carry names only, with teamIds reconciled later
+   * at approval. Scoped to the beat's own rivalry and participant set: an AI promo sharing one
+   * wrestler with the beat is legitimate (participation goal) and must survive.
+   */
+  private boolean isBeatSlotCovered(
+      ProposedSegment segment, FeudScriptBeatDTO beat, Set<Long> beatIds, Set<String> beatNames) {
+    if (beat.getRivalryId() != null && beat.getRivalryId().equals(segment.getRivalryId())) {
+      return true;
+    }
+    if (isMatchSegment(segment) && coversAnyParticipant(segment, beatIds)) {
+      return true;
+    }
+    return coversAllParticipantsByName(segment, beatNames);
+  }
+
+  /** Case-insensitive full-coverage check of the beat's participant names on a segment. */
+  private boolean coversAllParticipantsByName(ProposedSegment segment, Set<String> beatNames) {
+    if (beatNames.isEmpty() || segment.getTeams() == null) {
+      return false;
+    }
+    Set<String> segmentNames =
+        segment.getTeams().stream()
+            .flatMap(List::stream)
+            .filter(name -> name != null)
+            .map(name -> name.trim().toLowerCase())
+            .collect(Collectors.toSet());
+    return segmentNames.containsAll(beatNames);
+  }
+
   private Set<Long> participantIdsOf(FeudScriptBeatDTO beat) {
     Set<Long> ids = new HashSet<>();
     if (beat.getParticipantIdLists() != null) {
       beat.getParticipantIdLists().stream().flatMap(List::stream).forEach(ids::add);
     }
     return ids;
+  }
+
+  /** Beat participant names in canonical lowercase form, for name-only AI duplicates. */
+  private Set<String> participantNamesOf(FeudScriptBeatDTO beat) {
+    Set<String> names = new HashSet<>();
+    if (beat.getTeamNameLists() != null) {
+      beat.getTeamNameLists().stream()
+          .flatMap(List::stream)
+          .filter(name -> name != null && !name.isBlank())
+          .forEach(name -> names.add(name.trim().toLowerCase()));
+    }
+    return names;
   }
 
   private ProposedShow planShowWithAi(@NonNull final ShowPlanningContextDTO context) {

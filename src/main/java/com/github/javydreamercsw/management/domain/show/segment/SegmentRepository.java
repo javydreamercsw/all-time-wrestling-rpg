@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -102,6 +103,47 @@ public interface SegmentRepository
   /** Find segments involving a specific title. */
   @Query("SELECT s FROM Segment s JOIN s.titles t WHERE t = :title AND s.isTitleSegment = true")
   List<Segment> findByTitle(@Param("title") Title title);
+
+  /**
+   * Distinct shows that have at least one completed (non-promo-blind) segment — used by the
+   * one-time rating rebalance to touch only shows that actually ran matches, rather than every show
+   * in the database. Deliberately projected from SegmentRepository so the rebalance does not call
+   * {@code ShowRepository.findAll()} — some tests pin that call count for cache-eviction
+   * verification (ATW-gegc).
+   */
+  @Query("SELECT DISTINCT s.show FROM Segment s WHERE s.status = 'COMPLETED'")
+  List<Show> findShowsWithCompletedSegments();
+
+  /**
+   * Completed segments carrying a specific rivalry id, most recent first — used to backfill a feud
+   * arc's pending beats from matches that already ran (ATW-1csz).
+   */
+  @Query(
+      """
+      SELECT s FROM Segment s
+      WHERE s.rivalryId = :rivalryId
+      AND s.status = 'COMPLETED'
+      ORDER BY s.segmentDate DESC, s.id DESC
+      """)
+  List<Segment> findCompletedByRivalryId(@Param("rivalryId") Long rivalryId);
+
+  /**
+   * Completed segments where every given wrestler participates (JOIN semantics: all ids must be
+   * present among the segment's participants), most recent first — rivalry-less backfill path when
+   * the arc has no rivalry id to query by (ATW-1csz).
+   */
+  @Query(
+      """
+      SELECT s FROM Segment s JOIN s.participants p
+      WHERE p.wrestler.id IN :wrestlerIds
+      AND s.status = 'COMPLETED'
+      GROUP BY s.id
+      HAVING COUNT(DISTINCT p.wrestler.id) = :wrestlerCount
+      ORDER BY MAX(s.segmentDate) DESC
+      """)
+  List<Segment> findCompletedByAllParticipants(
+      @Param("wrestlerIds") Collection<Long> wrestlerIds,
+      @Param("wrestlerCount") long wrestlerCount);
 
   /** Find all segments for a title ordered chronologically — used by the reign rebuild repair. */
   @Query(

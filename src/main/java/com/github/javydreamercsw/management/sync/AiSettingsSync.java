@@ -102,11 +102,7 @@ public class AiSettingsSync implements DataSyncContributor {
         toSave);
     syncSetting("AI_GEMINI_API_KEY", null, existingSettings, forceOverride, toSave);
     syncSetting(
-        "AI_GEMINI_MODEL_NAME",
-        "gemini-3.1-flash-lite-preview",
-        existingSettings,
-        forceOverride,
-        toSave);
+        "AI_GEMINI_MODEL_NAME", "gemini-3.5-flash-lite", existingSettings, forceOverride, toSave);
 
     if (!toSave.isEmpty()) {
       gameSettingRepository.saveAll(toSave);

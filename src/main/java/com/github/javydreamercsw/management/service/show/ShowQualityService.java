@@ -42,11 +42,21 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <ul>
  *   <li>All segments: rivalry heat (0–20) + tier spread (0–10) + stipulation variety (0–10) + title
- *       on the line (+10) + main event (+5). NPC max = 55.
+ *       on the line (+10) + main event (+10) + in-match performance (0–40, the match's adjudication
+ *       rating folded in at 40%).
  *   <li>Player segments (any participant with {@code wrestler.isPlayer=true}): adds grueling factor
  *       for stamina burned (0–10) + HP burned (0–10) + signatures hit (0–10) + finisher used (+10)
  *       + winner momentum (0–5). Player max = 100.
+ *   <li>High-stakes floor: a main event, title match, or match with heat ≥ 30 never scores below 60
+ *       (3.0★) — high stakes guarantee a solid show even on a poor dice roll (ATW-gegc).
  * </ul>
+ *
+ * <p><b>Adjudication rating source:</b> the performance factor reads {@link
+ * Segment#getCrowdNoiseLevel()}, which adjudication writes once as {@code rating ± 5} and nothing
+ * else ever modifies. {@link Segment#getSegmentRating()} is NOT used — it is this method's own
+ * output, so re-finalization (or the one-time {@code SegmentRatingRebalanceSync} backfill) would
+ * compound it. Reading crowd noise instead makes scoring idempotent: re-running {@code
+ * computeAndPersist} on the same segments yields the same ratings.
  *
  * <p><b>Grueling factor</b> takes the minimum of both participants' burn percentages so squash
  * matches (one wrestler untouched) don't score high on this dimension.
@@ -60,6 +70,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class ShowQualityService {
 
   private static final int HEAT_CAP = 50;
+  private static final int HIGH_STAKES_HEAT = 30;
+  private static final int HIGH_STAKES_FLOOR = 60;
   private static final int MAX_MOMENTUM = 100;
   private static final double STAR_DIVISOR = 20.0;
   private static final double MIN_STARS = 1.0;
@@ -170,9 +182,9 @@ public class ShowQualityService {
     int score = 0;
 
     // --- Heat (0–20) ---
+    int heat = 0;
     if (segment.getRivalryId() != null) {
-      int heat =
-          rivalryService.getRivalryById(segment.getRivalryId()).map(r -> r.getHeat()).orElse(0);
+      heat = rivalryService.getRivalryById(segment.getRivalryId()).map(r -> r.getHeat()).orElse(0);
       score += (int) (Math.min(heat, HEAT_CAP) / (double) HEAT_CAP * 20);
     }
 
@@ -194,9 +206,19 @@ public class ShowQualityService {
       score += 10;
     }
 
-    // --- Main event (+5) ---
+    // --- Main event (+10) ---
     if (segment.isMainEvent()) {
-      score += 5;
+      score += 10;
+    }
+
+    // --- In-match performance (0–40): the adjudication rating this match earned, folded in at
+    // 40%. Read from crowd noise (adjudication writes it once as rating ± 5 and nothing else
+    // modifies it) rather than segmentRating, which is this method's own output — using it would
+    // compound on re-finalization and in the one-time backfill. Keeps the dice in the game while
+    // context moves the needle (ATW-gegc).
+    Integer adjudicated = segment.getCrowdNoiseLevel();
+    if (adjudicated != null && adjudicated > 0) {
+      score += (int) Math.round(adjudicated * 0.40);
     }
 
     // --- Player-match bonus factors ---
@@ -204,6 +226,15 @@ public class ShowQualityService {
         segment.getWrestlers().stream().anyMatch(w -> Boolean.TRUE.equals(w.getIsPlayer()));
     if (hasPlayer) {
       score += scorePlayerFactors(segment);
+    }
+
+    // --- High-stakes floor: main event, title match, or a hot rivalry never bombs (ATW-gegc).
+    boolean highStakes = segment.isMainEvent() || Boolean.TRUE.equals(segment.getIsTitleSegment());
+    if (!highStakes && segment.getRivalryId() != null && heat >= HIGH_STAKES_HEAT) {
+      highStakes = true;
+    }
+    if (highStakes) {
+      score = Math.max(score, HIGH_STAKES_FLOOR);
     }
 
     return Math.min(100, score);
