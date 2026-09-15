@@ -17,7 +17,9 @@
 package com.github.javydreamercsw.management.ui.view.show;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -70,6 +72,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.router.BeforeEvent;
 import com.vaadin.flow.router.QueryParameters;
@@ -191,6 +194,73 @@ class ShowPlanningViewTest extends AbstractViewTest {
     assertEquals(
         objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(context),
         contextArea.getValue());
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void loadContext_excludedBeatWarnings_renderedInWarningArea() {
+    // ATW-978m: withheld beats must surface to the booker, not vanish silently.
+    Show show = new Show();
+    show.setId(1L);
+    show.setName("Test Show");
+    show.setShowDate(LocalDate.now());
+
+    ComboBox<Show> showComboBox =
+        (ComboBox<Show>) ReflectionTestUtils.getField(showPlanningView, "showComboBox");
+    showComboBox.setValue(show);
+
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    context.setExcludedBeatWarnings(
+        List.of(
+            "Beat #1 of arc 'Lashley vs Shelton Arc' was NOT injected because Bobby Lashley is"
+                + " unavailable (injury, low condition, or filtered by the show's constraints)"));
+    when(showPlanningService.getShowPlanningContext(show)).thenReturn(context);
+
+    ObjectMapper objectMapper = new ObjectMapper();
+    ReflectionTestUtils.setField(showPlanningView, "objectMapper", objectMapper);
+
+    ((CompletableFuture<Void>)
+            Objects.requireNonNull(
+                ReflectionTestUtils.invokeMethod(showPlanningView, "loadContext")))
+        .join();
+    MockVaadin.runUIQueue();
+
+    VerticalLayout warnings =
+        (VerticalLayout) ReflectionTestUtils.getField(showPlanningView, "excludedBeatsWarnings");
+    assertNotNull(warnings);
+    assertTrue(warnings.isVisible());
+    // Header + one warning line
+    assertEquals(2, warnings.getComponentCount());
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void loadContext_noExcludedBeats_warningAreaHidden() {
+    Show show = new Show();
+    show.setId(1L);
+    show.setName("Test Show");
+    show.setShowDate(LocalDate.now());
+
+    ComboBox<Show> showComboBox =
+        (ComboBox<Show>) ReflectionTestUtils.getField(showPlanningView, "showComboBox");
+    showComboBox.setValue(show);
+
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    when(showPlanningService.getShowPlanningContext(show)).thenReturn(context);
+
+    ObjectMapper objectMapper = new ObjectMapper();
+    ReflectionTestUtils.setField(showPlanningView, "objectMapper", objectMapper);
+
+    ((CompletableFuture<Void>)
+            Objects.requireNonNull(
+                ReflectionTestUtils.invokeMethod(showPlanningView, "loadContext")))
+        .join();
+    MockVaadin.runUIQueue();
+
+    VerticalLayout warnings =
+        (VerticalLayout) ReflectionTestUtils.getField(showPlanningView, "excludedBeatsWarnings");
+    assertNotNull(warnings);
+    assertFalse(warnings.isVisible());
   }
 
   @Test

@@ -47,6 +47,7 @@ import com.github.javydreamercsw.management.service.segment.type.SegmentTypeServ
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningDtoMapper;
+import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRivalryDTO;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
@@ -295,14 +296,41 @@ public class ShowPlanningService {
     // Beats without an explicit target show (the common case) fall back to the next pending beat
     // of every active arc — but only when all of the arc's participants are on this roster.
     Set<Long> rosterIds = allWrestlers.stream().map(Wrestler::getId).collect(Collectors.toSet());
-    var scriptedBeats = feudScriptService.getUpcomingBeatDTOsForShow(show, rosterIds);
+    var beatInjection = feudScriptService.getUpcomingBeatDTOsWithExclusionsForShow(show, rosterIds);
+    var scriptedBeats = beatInjection.beats();
     log.info(
-        "Planning context for show '{}': {} scripted beat(s) injected from an available roster of"
-            + " {}",
+        "Planning context for show '{}': {} scripted beat(s) injected, {} withheld (participants"
+            + " unavailable), from an available roster of {}",
         show.getName(),
         scriptedBeats.size(),
+        beatInjection.exclusions().size(),
         rosterIds.size());
     dto.setUpcomingScriptedBeats(scriptedBeats);
+    // Booker-facing warnings for beats that were withheld — mirrors the MUST_BOOK warning style.
+    dto.setExcludedBeatWarnings(
+        beatInjection.exclusions().stream()
+            .map(FeudScriptService.BeatExclusion::toWarning)
+            .toList());
+    // A rivalry whose arc still has a pending beat is reserved for that scripted slot. Keep it
+    // out of the "unbooked rivalry" hints so the AI cannot improvise a phantom match for it —
+    // including beats withheld above (the arc will pick them up when the participant returns).
+    List<Long> reservedRivalryIds =
+        beatInjection.exclusions().stream()
+            .map(FeudScriptService.BeatExclusion::rivalryId)
+            .filter(Objects::nonNull)
+            .toList();
+    if (!reservedRivalryIds.isEmpty()) {
+      List<ShowPlanningRivalryDTO> visible =
+          dto.getCurrentRivalries() == null
+              ? List.of()
+              : dto.getCurrentRivalries().stream()
+                  .filter(r -> !reservedRivalryIds.contains(r.getId()))
+                  .toList();
+      dto.setCurrentRivalries(visible);
+      log.info(
+          "Suppressed {} arc-reserved rivalry hint(s) from the planning prompt",
+          reservedRivalryIds.size());
+    }
 
     return dto;
   }
@@ -483,6 +511,7 @@ public class ShowPlanningService {
     }
 
     validateNoDuplicateParticipants(proposedSegments);
+    validateTeamLayouts(proposedSegments);
 
     List<Segment> segmentsToSave = new ArrayList<>();
     int currentSegmentCount = segmentRepository.findByShow(show).size();
@@ -586,8 +615,17 @@ public class ShowPlanningService {
     }
     segmentRepository.saveAll(segmentsToSave);
     log.debug("Approved and saved {} segments for show: {}", segmentsToSave.size(), show.getName());
+    // Auto-complete any pending arc beat whose participants match a saved card segment — this is
+    // the primary completion path for beats with no target show (ATW-1csz). Runs BEFORE
+    // markBeatsBookedForShow so participant matching sees the still-PENDING state and the beat
+    // ends COMPLETED (linked to its segment), not merely BOOKED.
+    for (Segment segment : segmentsToSave) {
+      feudScriptService.autoCompleteBeatForSegment(segment);
+    }
     // Booked beats drop out of AI planning queries (PENDING-only) so the slot cannot be
-    // double-booked, while remaining visible/editable on the arc card.
+    // double-booked, while remaining visible/editable on the arc card. Only beats that actually
+    // target this show flip to BOOKED; beats without a target show stay completable by
+    // participant matching.
     feudScriptService.markBeatsBookedForShow(show);
     eventPublisher.publishEvent(new SegmentsApprovedEvent(this, show));
   }
@@ -733,6 +771,57 @@ public class ShowPlanningService {
         }
       }
     }
+  }
+
+  /**
+   * Rejects team-type segments whose team layout does not match the type's participant shape — e.g.
+   * a "Tag Team" proposal with team 1 filled and team 2 empty. Participants are modeled as flat
+   * {@code teams} lists (team index → member names/ids); a tag layout needs at least two teams of
+   * at least one wrestler each, so a single-team (or empty-second-team) proposal would otherwise
+   * persist as a phantom match with one side missing.
+   */
+  private void validateTeamLayouts(final List<ProposedSegment> proposedSegments) {
+    for (int i = 0; i < proposedSegments.size(); i++) {
+      ProposedSegment ps = proposedSegments.get(i);
+      if (ps.getType() == null || isPromoSegment(ps) || !isTagTeamSegment(ps)) {
+        continue;
+      }
+      int nameTeams = filledTeams(ps.getTeams());
+      int idTeams = filledTeams(ps.getTeamIds());
+      if (Math.max(nameTeams, idTeams) < 2) {
+        throw new IllegalArgumentException(
+            describeSegment(i, ps)
+                + " needs two teams for a Tag Team match — team 2 is missing or empty."
+                + " Edit the segment and assign wrestlers to both teams before approving.");
+      }
+    }
+  }
+
+  /**
+   * True when the proposal's type resolves to the well-known Tag Team type — by the AI's display
+   * name ("Tag Team") normalized to the code, or via the {@link SegmentType} entity looked up by
+   * name (which carries the authoritative code).
+   */
+  private boolean isTagTeamSegment(ProposedSegment ps) {
+    if (ps.getType() == null) {
+      return false;
+    }
+    String normalized = ps.getType().trim().toLowerCase().replace(' ', '_').replace('-', '_');
+    if (WellKnownSegmentType.TAG_TEAM.getCode().equals(normalized)) {
+      return true;
+    }
+    return segmentTypeService
+        .findByName(ps.getType())
+        .map(WellKnownSegmentType.TAG_TEAM::matches)
+        .orElse(false);
+  }
+
+  /** Number of non-empty teams in a team layout (names or ids); null-safe. */
+  private static int filledTeams(List<?> teams) {
+    if (teams == null) {
+      return 0;
+    }
+    return (int) teams.stream().filter(team -> team instanceof List<?> l && !l.isEmpty()).count();
   }
 
   /**

@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.base.ui.view;
 
+import com.github.javydreamercsw.base.ai.AIServiceException;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.server.VaadinServiceInitListener;
@@ -46,11 +47,23 @@ class MainErrorHandler {
                               errorEvent
                                   .getComponent()
                                   .flatMap(Component::getUI)
-                                  .ifPresent(
-                                      ui -> {
-                                        notificationService.showAIServiceError(
-                                            errorEvent.getThrowable());
-                                      });
+                                  .ifPresent(ui -> showError(errorEvent.getThrowable()));
                             }));
+  }
+
+  /**
+   * Routes a session error to the right notification: the rich AI error dialog only when the
+   * exception chain actually contains an {@link AIServiceException}, a generic error notification
+   * otherwise. Any render-time crash used to surface as "AI Service Error: ...", which misled
+   * bookers on non-AI failures (ATW-w9qd).
+   *
+   * @param throwable the session error to display
+   */
+  void showError(Throwable throwable) {
+    if (notificationService.findAIServiceException(throwable) != null) {
+      notificationService.showAIServiceError(throwable);
+    } else {
+      notificationService.showError("An unexpected error occurred: " + throwable.getMessage());
+    }
   }
 }
