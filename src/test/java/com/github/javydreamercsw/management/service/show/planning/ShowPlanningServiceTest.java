@@ -23,6 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -62,6 +64,7 @@ import com.github.javydreamercsw.management.service.segment.type.SegmentTypeServ
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningDtoMapper;
+import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRivalryDTO;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
@@ -75,6 +78,7 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -117,6 +121,10 @@ class ShowPlanningServiceTest {
 
     lenient().when(dramaEventService.getRecentEvents()).thenReturn(List.of());
     lenient().when(gameSettingService.getConditionRestThreshold()).thenReturn(0);
+    // Default beat injection: nothing injected, nothing withheld
+    lenient()
+        .when(feudScriptService.getUpcomingBeatDTOsWithExclusionsForShow(any(), anySet()))
+        .thenReturn(new FeudScriptService.UpcomingBeatDTOs(List.of(), List.of()));
     // Intergender validation collaborators — default: unknown wrestlers/types resolve empty
     lenient().when(wrestlerRepository.findByName(any())).thenReturn(Optional.empty());
     lenient().when(segmentTypeService.findByName(any())).thenReturn(Optional.empty());
@@ -290,6 +298,188 @@ class ShowPlanningServiceTest {
     verify(mapper).toDto(captor.capture());
     // Active injury → wrestler unavailable → roster empty.
     assertEquals(0, captor.getValue().getFullRoster().size());
+  }
+
+  @Test
+  void getShowPlanningContext_excludedBeat_surfacesWarningAndSuppressesRivalryHint() {
+    // ATW-978m: a withheld beat must reach the booker (warning) and its rivalry must leave the
+    // AI's unbooked-rivalry hints so no phantom match gets improvised for it.
+    ShowPlanningRivalryDTO reserved = new ShowPlanningRivalryDTO();
+    reserved.setId(731L);
+    reserved.setName("Lashley vs Shelton");
+    reserved.setHeat(25);
+    reserved.setParticipants(List.of("Bobby Lashley", "Shelton Benjamin"));
+    ShowPlanningRivalryDTO free = new ShowPlanningRivalryDTO();
+    free.setId(42L);
+    free.setName("Open challenge");
+    free.setHeat(15);
+    free.setParticipants(List.of("Randy Orton", "Kevin Owens"));
+
+    FeudScriptService.BeatExclusion exclusion =
+        new FeudScriptService.BeatExclusion(
+            1, "Lashley vs Shelton Arc", List.of("Bobby Lashley"), 731L);
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
+        .thenReturn(List.of(activeWrestler));
+    when(rivalryService.getActiveRivalries()).thenReturn(new ArrayList<>());
+    when(titleService.getActiveTitles()).thenReturn(new ArrayList<>());
+    when(factionService.findAll()).thenReturn(new ArrayList<>());
+    when(showService.getUpcomingShows(10)).thenReturn(new ArrayList<>());
+    ShowPlanningContextDTO dto = new ShowPlanningContextDTO();
+    dto.setCurrentRivalries(new ArrayList<>(List.of(reserved, free)));
+    when(mapper.toDto(any(ShowPlanningContext.class))).thenReturn(dto);
+    when(feudScriptService.getUpcomingBeatDTOsWithExclusionsForShow(any(), anySet()))
+        .thenReturn(new FeudScriptService.UpcomingBeatDTOs(List.of(), List.of(exclusion)));
+    when(segmentRepository.findBySegmentDateBetween(any(), any())).thenReturn(new ArrayList<>());
+
+    ShowPlanningContextDTO result = showPlanningService.getShowPlanningContext(show);
+
+    assertEquals(1, result.getExcludedBeatWarnings().size());
+    assertTrue(result.getExcludedBeatWarnings().get(0).contains("Bobby Lashley"));
+    // Reserved rivalry removed from the AI hints; the unrelated one stays.
+    assertEquals(1, result.getCurrentRivalries().size());
+    assertEquals(42L, result.getCurrentRivalries().get(0).getId());
+  }
+
+  @Test
+  void getShowPlanningContext_noExcludedBeats_noWarnings() {
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
+        .thenReturn(List.of(activeWrestler));
+    when(rivalryService.getActiveRivalries()).thenReturn(new ArrayList<>());
+    when(titleService.getActiveTitles()).thenReturn(new ArrayList<>());
+    when(factionService.findAll()).thenReturn(new ArrayList<>());
+    when(showService.getUpcomingShows(10)).thenReturn(new ArrayList<>());
+    when(mapper.toDto(any(ShowPlanningContext.class))).thenReturn(new ShowPlanningContextDTO());
+    when(segmentRepository.findBySegmentDateBetween(any(), any())).thenReturn(new ArrayList<>());
+
+    ShowPlanningContextDTO result = showPlanningService.getShowPlanningContext(show);
+
+    assertTrue(result.getExcludedBeatWarnings().isEmpty());
+  }
+
+  @Test
+  void approveSegments_tagTeamWithEmptySecondTeam_rejected() {
+    // ATW-978m: a team-type proposal with team 1 filled and team 2 empty would persist as a
+    // phantom match with one side missing.
+    ProposedSegment tag = new ProposedSegment();
+    tag.setType("Tag Team");
+    tag.setSummary("Main event tag");
+    tag.setTeams(List.of(List.of("Wrestler A", "Wrestler B")));
+
+    SegmentType tagType = new SegmentType();
+    tagType.setName("Tag Team");
+    tagType.setCode("tag_team");
+    when(segmentTypeService.findByName("Tag Team")).thenReturn(Optional.of(tagType));
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+    when(rivalryService.getActiveRivalries()).thenReturn(List.of());
+
+    IllegalArgumentException ex =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> showPlanningService.approveSegments(show, List.of(tag)));
+    assertTrue(ex.getMessage().contains("two teams"));
+  }
+
+  @Test
+  void approveSegments_tagTeamWithBothTeamsFilled_approved() {
+    ProposedSegment tag = new ProposedSegment();
+    tag.setType("Tag Team");
+    tag.setSummary("Main event tag");
+    tag.setTeams(List.of(List.of("Wrestler A", "Wrestler B"), List.of("Wrestler C", "Wrestler D")));
+
+    SegmentType tagType = new SegmentType();
+    tagType.setName("Tag Team");
+    tagType.setCode("tag_team");
+    when(segmentTypeService.findByName("Tag Team")).thenReturn(Optional.of(tagType));
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+    when(rivalryService.getActiveRivalries()).thenReturn(List.of());
+    Wrestler a = new Wrestler();
+    a.setId(1L);
+    a.setName("Wrestler A");
+    Wrestler b = new Wrestler();
+    b.setId(2L);
+    b.setName("Wrestler B");
+    Wrestler c = new Wrestler();
+    c.setId(3L);
+    c.setName("Wrestler C");
+    Wrestler d = new Wrestler();
+    d.setId(4L);
+    d.setName("Wrestler D");
+    when(wrestlerRepository.findByName("Wrestler A")).thenReturn(Optional.of(a));
+    when(wrestlerRepository.findByName("Wrestler B")).thenReturn(Optional.of(b));
+    when(wrestlerRepository.findByName("Wrestler C")).thenReturn(Optional.of(c));
+    when(wrestlerRepository.findByName("Wrestler D")).thenReturn(Optional.of(d));
+
+    showPlanningService.approveSegments(show, List.of(tag));
+
+    ArgumentCaptor<List<Segment>> captor = ArgumentCaptor.forClass(List.class);
+    verify(segmentRepository).saveAll(captor.capture());
+    assertEquals(4, captor.getValue().get(0).getParticipants().size());
+  }
+
+  @Test
+  void approveSegments_tagTeamNamesOnlyResolvedViaEntityCode_approved() {
+    // The AI sends display names ("Tag Team"); the check must resolve the type via the
+    // SegmentType entity's authoritative code ("tag_team"), not just the raw string.
+    ProposedSegment tag = new ProposedSegment();
+    tag.setType("Tag Team");
+    tag.setSummary("By the book");
+    tag.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+    tag.setTeamIds(List.of(List.of(1L), List.of(2L)));
+
+    SegmentType tagType = new SegmentType();
+    tagType.setName("Tag Team");
+    tagType.setCode("tag_team");
+    when(segmentTypeService.findByName("Tag Team")).thenReturn(Optional.of(tagType));
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+    when(rivalryService.getActiveRivalries()).thenReturn(List.of());
+    Wrestler a = new Wrestler();
+    a.setId(1L);
+    a.setName("Wrestler A");
+    Wrestler b = new Wrestler();
+    b.setId(2L);
+    b.setName("Wrestler B");
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(a));
+    when(wrestlerRepository.findById(2L)).thenReturn(Optional.of(b));
+
+    showPlanningService.approveSegments(show, List.of(tag));
+
+    ArgumentCaptor<List<Segment>> captor = ArgumentCaptor.forClass(List.class);
+    verify(segmentRepository).saveAll(captor.capture());
+    assertEquals(2, captor.getValue().get(0).getParticipants().size());
+  }
+
+  @Test
+  void approveSegments_pendingBeatParticipantsMatch_autoCompletesBeat() {
+    // ATW-1csz: approval is the primary beat-completion path for beats with no target show.
+    ProposedSegment match = new ProposedSegment();
+    match.setType("Singles Match");
+    match.setSummary("Arc beat");
+    match.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+
+    SegmentType matchType = new SegmentType();
+    matchType.setName("Singles Match");
+    when(segmentTypeService.findByName("Singles Match")).thenReturn(Optional.of(matchType));
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+    when(rivalryService.getActiveRivalries()).thenReturn(List.of());
+    Wrestler a = new Wrestler();
+    a.setId(1L);
+    a.setName("Wrestler A");
+    Wrestler b = new Wrestler();
+    b.setId(2L);
+    b.setName("Wrestler B");
+    when(wrestlerRepository.findByName("Wrestler A")).thenReturn(Optional.of(a));
+    when(wrestlerRepository.findByName("Wrestler B")).thenReturn(Optional.of(b));
+
+    showPlanningService.approveSegments(show, List.of(match));
+
+    // Each saved card segment is offered to the beat auto-completion path, BEFORE the
+    // target-show BOOKED flip.
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Segment>> saved = ArgumentCaptor.forClass(List.class);
+    verify(segmentRepository).saveAll(saved.capture());
+    InOrder inOrder = inOrder(feudScriptService);
+    inOrder.verify(feudScriptService).autoCompleteBeatForSegment(saved.getValue().get(0));
+    inOrder.verify(feudScriptService).markBeatsBookedForShow(show);
   }
 
   @Test

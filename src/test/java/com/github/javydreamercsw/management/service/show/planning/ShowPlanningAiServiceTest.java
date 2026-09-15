@@ -783,7 +783,8 @@ class ShowPlanningAiServiceTest {
     assertEquals(List.of("Bobby Lashley"), beatSegment.getWinners());
     // The scripted slot gets a grid-facing summary like the AI's segments have.
     assertEquals(
-        "Scripted beat: Lashley Arc — planned winner: Bobby Lashley", beatSegment.getSummary());
+        "Scripted beat: Lashley Arc (Singles Match) — planned winner: Bobby Lashley",
+        beatSegment.getSummary());
   }
 
   @Test
@@ -922,6 +923,136 @@ class ShowPlanningAiServiceTest {
     ProposedShow proposedShow = showPlanningAiService.planShow(context);
 
     // Promo kept + beat segment added
+    assertEquals(2, proposedShow.getSegments().size());
+    assertEquals("Singles Match", proposedShow.getSegments().get(0).getType());
+    assertEquals("Promo", proposedShow.getSegments().get(1).getType());
+  }
+
+  @Test
+  void planShow_aiPromoDuplicateOfScriptedPromoBeat_duplicateDroppedBeatSurvivesOnce() {
+    // ATW-978m addendum: the AI echoed a scripted PROMO beat as its own promo — the dedup pass
+    // previously only dropped match segments, so the card ended up with the beat twice.
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(0);
+    showTemplate.setExpectedPromos(1);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    SegmentType promoType = new SegmentType();
+    promoType.setName("Promo");
+    promoType.setCode("promo");
+    promoType.setDescription("A talking segment.");
+    when(segmentTypeService.findByName("Promo")).thenReturn(Optional.of(promoType));
+
+    context.setUpcomingScriptedBeats(
+        List.of(beat("Promo", null, "AI_PICKS", null, List.of(11L, 12L))));
+
+    String aiResponseJson =
+        """
+        [
+          {
+            "segmentId": "seg1",
+            "type": "Promo",
+            "description": "Pre-scripted match slot mandatory inclusion.",
+            "outcome": "Tension rises",
+            "teams": [["Shelton Benjamin"], ["Bobby Lashley"]],
+            "teamIds": [[11], [12]]
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    // The AI duplicate is dropped; the local beat segment survives exactly once.
+    assertEquals(1, proposedShow.getSegments().size());
+    assertEquals("Promo", proposedShow.getSegments().get(0).getType());
+    assertEquals(
+        "Scripted beat: Lashley Arc (Promo)", proposedShow.getSegments().get(0).getSummary());
+  }
+
+  @Test
+  void planShow_aiDuplicateNamesOnly_teamIdsNull_stillDropped() {
+    // AI duplicates often carry participant NAMES with teamIds null (ids reconcile at approval).
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    context.setUpcomingScriptedBeats(
+        List.of(beat("Singles Match", null, "AI_PICKS", null, List.of(11L, 12L))));
+
+    String aiResponseJson =
+        """
+        [
+          {
+            "segmentId": "seg1",
+            "type": "One on One",
+            "description": "Big fight",
+            "outcome": "Someone wins",
+            "teams": [["Shelton Benjamin"], ["Bobby Lashley"]]
+          },
+          {
+            "segmentId": "seg2",
+            "type": "One on One",
+            "description": "Unrelated match",
+            "outcome": "Unrelated win",
+            "teams": [["Randy Orton"], ["Kevin Owens"]]
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    // Name-only duplicate dropped; unrelated segment kept; beat segment survives once.
+    assertEquals(2, proposedShow.getSegments().size());
+    assertEquals(
+        "Scripted beat: Lashley Arc (Singles Match)",
+        proposedShow.getSegments().get(0).getSummary());
+    assertEquals("One on One", proposedShow.getSegments().get(1).getType());
+    assertEquals(
+        List.of(List.of("Randy Orton"), List.of("Kevin Owens")),
+        proposedShow.getSegments().get(1).getTeams());
+  }
+
+  @Test
+  void planShow_aiSegmentSharesOneWrestlerWithBeat_notDropped() {
+    // Single-wrestler overlap is legitimate (participation goal) — only the beat's FULL
+    // participant set (or rivalry) claims a non-match slot.
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(1);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    SegmentType promoType = new SegmentType();
+    promoType.setName("Promo");
+    promoType.setCode("promo");
+    promoType.setDescription("A talking segment.");
+    when(segmentTypeService.findByName("Promo")).thenReturn(Optional.of(promoType));
+    context.setUpcomingScriptedBeats(
+        List.of(beat("Singles Match", null, "AI_PICKS", null, List.of(11L, 12L))));
+
+    String aiResponseJson =
+        """
+        [
+          {
+            "segmentId": "seg1",
+            "type": "Promo",
+            "description": "Bobby Lashley cuts a promo",
+            "outcome": "Crowd reacts",
+            "teams": [["Bobby Lashley"]],
+            "teamIds": [[12]]
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    // Beat segment + the AI's unrelated Lashley promo both survive.
     assertEquals(2, proposedShow.getSegments().size());
     assertEquals("Singles Match", proposedShow.getSegments().get(0).getType());
     assertEquals("Promo", proposedShow.getSegments().get(1).getType());
