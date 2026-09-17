@@ -215,8 +215,12 @@ public class SegmentTypeListView extends Main {
   private void saveSegmentType() {
     if (binder.writeBeanIfValid(editingSegmentType)) {
       try {
+        // New types created through this dialog are custom content; edits preserve the row's
+        // existing expansion code (the service overwrites it unconditionally on update).
         segmentTypeService.createOrUpdateSegmentType(
-            editingSegmentType.getName(), editingSegmentType.getDescription());
+            editingSegmentType.getName(),
+            editingSegmentType.getDescription(),
+            editingSegmentType.getId() == null ? "CUSTOM" : editingSegmentType.getExpansionCode());
         Notification.show(
                 "Segment type saved successfully!", 3000, Notification.Position.BOTTOM_START)
             .addThemeVariants(NotificationVariant.LUMO_SUCCESS);

@@ -36,6 +36,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.openqa.selenium.By;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -505,6 +506,48 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
          ready to print on A4 paper — no external tools required.\
         """,
         "campaign-card-export");
+  }
+
+  @Test
+  @Order(16)
+  void testCaptureCustomContentCardExport() {
+    // The seeded DB contains six CUSTOM NPCs (referees, commissioner, announcer), so the
+    // Custom Content category renders NPC cards without extra setup.
+    login();
+    navigateToAndWaitForElement(
+        "campaign-card-export", By.xpath("//*[contains(., 'The Extreme Path')]"));
+
+    // Switch to the Custom Content category, then the NPCs kind.
+    WebElement categoryCombo =
+        new WebDriverWait(driver, Duration.ofSeconds(10))
+            .until(
+                ExpectedConditions.elementToBeClickable(
+                    By.xpath("//vaadin-combo-box[@label='Category']")));
+    categoryCombo.sendKeys("Custom");
+    categoryCombo.sendKeys(Keys.ENTER);
+
+    WebElement kindCombo =
+        new WebDriverWait(driver, Duration.ofSeconds(10))
+            .until(
+                ExpectedConditions.elementToBeClickable(
+                    By.xpath("//vaadin-combo-box[@label='Custom Content Kind']")));
+    kindCombo.sendKeys("NPCs");
+    kindCombo.sendKeys(Keys.ENTER);
+
+    new WebDriverWait(driver, Duration.ofSeconds(15))
+        .until(
+            ExpectedConditions.textToBePresentInElementLocated(
+                By.id("campaign-card-print-area"), "Samuel Winters"));
+
+    documentFeature(
+        "Campaign",
+        "Custom Content Card Export",
+        """
+        Everything the user creates is tagged with the CUSTOM expansion and can be printed as\
+         poker-size cards: segment types, segment rules, NPCs, and championships. Custom content\
+         prints regardless of whether the CUSTOM expansion is toggled on in game settings.\
+        """,
+        "campaign-card-export-custom-content");
   }
 
   private Wrestler getOrCreateWrestler(@NonNull final Account account) {
