@@ -473,6 +473,50 @@ class ShowPlanningViewTest extends AbstractViewTest {
 
   @Test
   @SuppressWarnings("unchecked")
+  void setParameter_alreadySelectedShow_reloadsContext() throws Exception {
+    // setParameter() must explicitly reload when navigating to the already-selected show's URL:
+    // setValue() on an unchanged value fires no ValueChangeEvent, so without the explicit
+    // loadContext() there the deep-link refresh would silently do nothing.
+    Show show = new Show();
+    show.setId(2L);
+    show.setName("Already Selected");
+    show.setShowDate(LocalDate.now());
+
+    when(showService.getShowById(2L)).thenReturn(Optional.of(show));
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    when(showPlanningService.getShowPlanningContext(show)).thenReturn(context);
+    ObjectMapper objectMapper = new ObjectMapper();
+    ReflectionTestUtils.setField(showPlanningView, "objectMapper", objectMapper);
+
+    // First navigation selects the show and auto-loads.
+    showPlanningView.setParameter(mock(BeforeEvent.class), 2L);
+    CompletableFuture<Void> firstLoad =
+        (CompletableFuture<Void>)
+            ReflectionTestUtils.getField(showPlanningView, "pendingAutoLoadForTest");
+    if (firstLoad != null) {
+      firstLoad.join();
+    }
+    MockVaadin.runUIQueue();
+
+    // Second navigation to the same show: setValue() is a no-op, so the explicit reload in
+    // setParameter must fire its own loadContext() (pendingAutoLoadForTest is reassigned).
+    showPlanningView.setParameter(mock(BeforeEvent.class), 2L);
+    CompletableFuture<Void> secondLoad =
+        (CompletableFuture<Void>)
+            ReflectionTestUtils.getField(showPlanningView, "pendingAutoLoadForTest");
+    assertNotNull(secondLoad, "Re-navigating to the selected show must trigger a fresh load");
+    secondLoad.join();
+    MockVaadin.runUIQueue();
+
+    TextArea contextArea = (TextArea) ReflectionTestUtils.getField(showPlanningView, "contextArea");
+    assertEquals(
+        objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(context),
+        contextArea.getValue());
+    verify(showPlanningService, org.mockito.Mockito.times(2)).getShowPlanningContext(show);
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
   void approvePlanning_withValidCard_callsApproveSegments() {
     Show show = new Show();
     show.setId(1L);
