@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
+import com.github.javydreamercsw.management.domain.campaign.CampaignPhase;
 import com.github.javydreamercsw.management.domain.campaign.Difficulty;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
@@ -49,6 +50,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.html.Div;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -114,7 +116,7 @@ class CampaignCardExportViewUiTest {
             .text("You step into the light.")
             .vpReward(2)
             .alignmentShift(1)
-            .nextPhase(com.github.javydreamercsw.management.domain.campaign.CampaignPhase.MATCH)
+            .nextPhase(CampaignPhase.MATCH)
             .segmentRules(List.of("No DQ"))
             .build();
     StaticEncounterDTO.StaticChoiceDTO bareChoice =
@@ -136,7 +138,7 @@ class CampaignCardExportViewUiTest {
         .allowedWrestlerNames(List.of("Docs Wrestler"))
         .requiredExpansions(List.of("CUSTOM"))
         .mode(CampaignChapterMode.STATIC_ONLY)
-        .staticEncounters(new java.util.ArrayList<>(List.of(encounter)))
+        .staticEncounters(new ArrayList<>(List.of(encounter)))
         .build();
   }
 

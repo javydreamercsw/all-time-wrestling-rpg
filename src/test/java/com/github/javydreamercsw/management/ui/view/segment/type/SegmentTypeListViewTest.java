@@ -38,6 +38,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 
 class SegmentTypeListViewTest extends AbstractViewTest {
 
@@ -133,8 +134,7 @@ class SegmentTypeListViewTest extends AbstractViewTest {
 
     _get(UI.getCurrent(), Button.class, spec -> spec.withText("Save")).click();
 
-    verify(segmentTypeService, org.mockito.Mockito.never())
-        .createOrUpdateSegmentType(any(), any(), any());
+    verify(segmentTypeService, Mockito.never()).createOrUpdateSegmentType(any(), any(), any());
     Dialog dialog = _get(UI.getCurrent(), Dialog.class);
     assertTrue(dialog.isOpened(), "Dialog should stay open on validation failure");
   }
