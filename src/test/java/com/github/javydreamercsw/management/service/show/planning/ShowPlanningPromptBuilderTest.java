@@ -104,6 +104,34 @@ class ShowPlanningPromptBuilderTest {
   }
 
   @Test
+  void build_listsRegularSegmentTypes() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    String prompt = builder.build(ctx);
+    assertTrue(
+        prompt.contains("Available Segment Types: Match (A wrestling match.)"),
+        "Regular segment types must appear in the prompt's available list");
+  }
+
+  @Test
+  void build_eventOnlyType_excludedFromAvailableTypes() {
+    SegmentType eventOnly = new SegmentType();
+    eventOnly.setName("Abu Dhabi Rumble");
+    eventOnly.setDescription("Large-scale elimination match with timed entries");
+    eventOnly.setEventOnly(true);
+    SegmentType regular = new SegmentType();
+    regular.setName("Match");
+    regular.setDescription("A wrestling match.");
+    when(segmentTypeService.findAll()).thenReturn(List.of(regular, eventOnly));
+
+    String prompt = builder.build(contextWithTemplate(1, 0));
+
+    assertFalse(
+        prompt.contains("Abu Dhabi Rumble"),
+        "Event-only types must never be proposed as ordinary segments (ATW-0331)");
+    assertTrue(prompt.contains("Match (A wrestling match.)"));
+  }
+
+  @Test
   void build_pleFlag_addsPleSection() {
     ShowPlanningContextDTO ctx = contextWithTemplate(2, 0);
     ctx.setPremiumLiveEvent(true);
@@ -478,6 +506,49 @@ class ShowPlanningPromptBuilderTest {
     assertFalse(
         prompt.contains("{override:system}"), "Injection in drama event text must be sanitized");
     assertTrue(prompt.contains("Betrayal"), "Event type must survive sanitization");
+  }
+
+  @Test
+  void build_templateEventSegmentTypes_listedAsEventOnly() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ShowTemplate template = ctx.getShowTemplate();
+    template.setEventSegmentTypes(List.of("Abu Dhabi Rumble"));
+
+    String prompt = builder.build(ctx);
+
+    assertTrue(
+        prompt.contains("Event Segment Types (special formats allowed ONLY on this show):"),
+        "Template-assigned event types must be surfaced separately (ATW-0331)");
+    assertTrue(prompt.contains("Abu Dhabi Rumble"));
+  }
+
+  @Test
+  void build_noTemplateEventTypes_omitsEventSection() {
+    String prompt = builder.build(contextWithTemplate(1, 0));
+
+    assertFalse(
+        prompt.contains("Event Segment Types"),
+        "Event section must be absent when the template assigns none");
+  }
+
+  @Test
+  void build_templateEncouragedRules_listedAsPreference() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ctx.getShowTemplate().setEncouragedRules(List.of("Exploding Barbed Wire"));
+
+    String prompt = builder.build(ctx);
+
+    assertTrue(
+        prompt.contains("Encouraged Stipulation Matches (prefer these where appropriate):"),
+        "Encouraged rules must be surfaced as an AI preference (ATW-0331)");
+    assertTrue(prompt.contains("Exploding Barbed Wire"));
+  }
+
+  @Test
+  void build_noEncouragedRules_omitsEncouragedSection() {
+    String prompt = builder.build(contextWithTemplate(1, 0));
+
+    assertFalse(prompt.contains("Encouraged Stipulation Matches"));
   }
 
   private ShowPlanningRivalryDTO rivalryWithHeat(int heat) {

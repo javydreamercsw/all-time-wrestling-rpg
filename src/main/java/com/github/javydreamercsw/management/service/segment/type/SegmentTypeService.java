@@ -238,16 +238,32 @@ public class SegmentTypeService {
       final String expansionCode,
       final SegmentRulePlayGuide guide,
       final String code) {
+    return createOrUpdateSegmentType(name, description, expansionCode, guide, code, null);
+  }
+
+  @Transactional
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  @CacheEvict(value = CacheConfig.SEGMENT_TYPES_CACHE, allEntries = true)
+  public SegmentType createOrUpdateSegmentType(
+      @NonNull final String name,
+      @NonNull final String description,
+      final String expansionCode,
+      final SegmentRulePlayGuide guide,
+      final String code,
+      final Boolean eventOnly) {
     String incomingHash = computeGuideHash(guide);
     Optional<SegmentType> existingOpt = segmentTypeRepository.findByName(name);
     if (existingOpt.isPresent()) {
       SegmentType st = existingOpt.get();
       boolean guideChanged = !Objects.equals(st.getGuideHash(), incomingHash);
       boolean codeChanged = code != null && !Objects.equals(st.getCode(), code);
+      boolean eventOnlyChanged = eventOnly != null && st.isEventOnly() != eventOnly;
       if (Objects.equals(st.getDescription(), description)
           && Objects.equals(st.getExpansionCode(), expansionCode)
           && !guideChanged
-          && !codeChanged) {
+          && !codeChanged
+          && !eventOnlyChanged) {
         return st;
       }
       st.setDescription(description);
@@ -258,6 +274,9 @@ public class SegmentTypeService {
       }
       if (codeChanged) {
         st.setCode(code);
+      }
+      if (eventOnlyChanged) {
+        st.setEventOnly(eventOnly);
       }
       log.debug("Updating existing segment type: {}", name);
       return segmentTypeRepository.save(st);
@@ -271,6 +290,9 @@ public class SegmentTypeService {
     segmentType.setGuide(guide);
     segmentType.setGuideHash(incomingHash);
     segmentType.setCode(code);
+    if (eventOnly != null) {
+      segmentType.setEventOnly(eventOnly);
+    }
     return segmentTypeRepository.save(segmentType);
   }
 

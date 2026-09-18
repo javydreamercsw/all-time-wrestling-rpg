@@ -21,6 +21,7 @@ import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
 import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -31,6 +32,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
@@ -38,6 +40,8 @@ import jakarta.validation.constraints.Size;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.Month;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import org.jspecify.annotations.Nullable;
@@ -111,6 +115,54 @@ public class ShowTemplate extends AbstractEntity<Long> {
 
   @Column(name = "is_active", nullable = false)
   private boolean isActive = true;
+
+  /**
+   * Segment type/rule assignments for this template (ATW-0331): event-only types the AI may use on
+   * this template's shows, encouraged rules (AI preference) and auto-attach rules (deterministic
+   * merge at proposal approval). Edited in the template admin view.
+   */
+  @OneToMany(mappedBy = "template", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<ShowTemplateSegmentAssignment> segmentAssignments = new ArrayList<>();
+
+  /** Assigned event-only segment types offered to the AI for this template's shows. */
+  public List<ShowTemplateSegmentAssignment> getAssignedEventTypes() {
+    return segmentAssignments.stream()
+        .filter(a -> a.getSegmentType() != null && a.isValid())
+        .toList();
+  }
+
+  /** Rule-only assignments with AUTO_ATTACH mode: attach to every approved match segment. */
+  public List<ShowTemplateSegmentAssignment> getRuleAutoAttachAssignments() {
+    return segmentAssignments.stream()
+        .filter(
+            a ->
+                a.getSegmentRule() != null
+                    && a.getSegmentType() == null
+                    && a.getMode() == ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH)
+        .toList();
+  }
+
+  /** Type-paired AUTO_ATTACH assignments: attach the rule whenever its paired type is used. */
+  public List<ShowTemplateSegmentAssignment> getTypePairedAutoAttachAssignments() {
+    return segmentAssignments.stream()
+        .filter(
+            a ->
+                a.getSegmentType() != null
+                    && a.getSegmentRule() != null
+                    && a.getMode() == ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH)
+        .toList();
+  }
+
+  /** Rule-only assignments with ENCOURAGED mode: AI preference only. */
+  public List<ShowTemplateSegmentAssignment> getEncouragedRuleAssignments() {
+    return segmentAssignments.stream()
+        .filter(
+            a ->
+                a.getSegmentRule() != null
+                    && a.getSegmentType() == null
+                    && a.getMode() == ShowTemplateSegmentAssignment.AssignmentMode.ENCOURAGED)
+        .toList();
+  }
 
   /**
    * Check if this is a Premium Live Event (PLE) template.

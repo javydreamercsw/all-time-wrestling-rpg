@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
@@ -94,6 +95,7 @@ public class ShowPlanningService {
   private final GameSettingService gameSettingService;
   private final DramaEventService dramaEventService;
   private final FeudScriptService feudScriptService;
+  private final ShowTemplateRepository showTemplateRepository;
 
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
@@ -186,6 +188,26 @@ public class ShowPlanningService {
     }
     if (show.getTemplate() != null) {
       template.setGenderConstraint(show.getTemplate().getGenderConstraint());
+      // Template assignments (ATW-0331): event-only types the AI may use plus encouraged and
+      // auto-attach rules. show.getTemplate() may be a detached reference (e.g. loaded by an
+      // earlier request into a combo box) whose segmentAssignments lazy collection is bound to
+      // an already-closed session — re-fetch it fresh, attached to this transaction, instead.
+      com.github.javydreamercsw.management.domain.show.template.ShowTemplate managedTemplate =
+          showTemplateRepository
+              .findByIdWithAssignments(show.getTemplate().getId())
+              .orElse(show.getTemplate());
+      template.setEventSegmentTypes(
+          managedTemplate.getAssignedEventTypes().stream()
+              .map(a -> a.getSegmentType().getName())
+              .toList());
+      template.setEncouragedRules(
+          managedTemplate.getEncouragedRuleAssignments().stream()
+              .map(a -> a.getSegmentRule().getName())
+              .toList());
+      template.setAutoAttachRules(
+          managedTemplate.getRuleAutoAttachAssignments().stream()
+              .map(a -> a.getSegmentRule().getName())
+              .toList());
     }
     context.setShowTemplate(template);
 
@@ -515,6 +537,15 @@ public class ShowPlanningService {
 
     List<Segment> segmentsToSave = new ArrayList<>();
     int currentSegmentCount = segmentRepository.findByShow(show).size();
+    // Re-fetch the template (if any) attached to this transaction, once, before the loop —
+    // show.getTemplate() may be a detached reference whose segmentAssignments lazy collection
+    // is bound to an already-closed session (ATW-0331).
+    com.github.javydreamercsw.management.domain.show.template.ShowTemplate managedTemplate =
+        show.getTemplate() != null
+            ? showTemplateRepository
+                .findByIdWithAssignments(show.getTemplate().getId())
+                .orElse(show.getTemplate())
+            : null;
     for (int i = 0; i < proposedSegments.size(); i++) {
       ProposedSegment proposedSegment = proposedSegments.get(i);
       log.debug("Processing segment: {}", proposedSegment);
@@ -610,6 +641,40 @@ public class ShowPlanningService {
                 .map(Optional::get)
                 .collect(Collectors.toList());
         segment.syncSegmentRules(newSegmentRules);
+      }
+
+      // Template AUTO_ATTACH rules (ATW-0331): deterministically merge rules assigned to the
+      // show's template — type-paired rows when this segment's type matches, rule-only rows on
+      // every match segment. Runs after the AI-proposed rules so it is visible on approval.
+      if (managedTemplate != null
+          && !WellKnownSegmentType.PROMO.matches(segment.getSegmentType())) {
+        List<SegmentRule> merged = new ArrayList<>(segment.getSegmentRules());
+        managedTemplate
+            .getTypePairedAutoAttachAssignments()
+            .forEach(
+                a -> {
+                  if (a.getSegmentType().getId().equals(segment.getSegmentType().getId())
+                      && merged.stream()
+                          .noneMatch(r -> r.getId().equals(a.getSegmentRule().getId()))) {
+                    merged.add(a.getSegmentRule());
+                  }
+                });
+        managedTemplate
+            .getRuleAutoAttachAssignments()
+            .forEach(
+                a -> {
+                  if (merged.stream()
+                      .noneMatch(r -> r.getId().equals(a.getSegmentRule().getId()))) {
+                    merged.add(a.getSegmentRule());
+                  }
+                });
+        if (merged.size() != segment.getSegmentRules().size()) {
+          log.debug(
+              "Auto-attached {} template rule(s) to segment of type {}",
+              merged.size() - segment.getSegmentRules().size(),
+              segment.getSegmentType().getName());
+          segment.syncSegmentRules(merged);
+        }
       }
       segmentsToSave.add(segment);
     }
