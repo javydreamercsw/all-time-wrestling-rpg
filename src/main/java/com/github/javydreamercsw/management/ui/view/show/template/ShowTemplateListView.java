@@ -785,19 +785,23 @@ public class ShowTemplateListView extends Main {
 
   private void openEditDialog(final ShowTemplate template) {
     editingTemplate = template;
-    // Edit a detached copy so cancelling doesn't mutate the live entity (orphanRemoval deletes
-    // only rows actually removed on save).
+    // Eagerly fetch the assignments (they are lazy and this handler runs outside a session);
+    // edit detached copies so cancelling doesn't mutate the live rows.
     dialogAssignments = new ArrayList<>();
-    template
-        .getSegmentAssignments()
-        .forEach(
-            a -> {
-              ShowTemplateSegmentAssignment copy = new ShowTemplateSegmentAssignment();
-              copy.setSegmentType(a.getSegmentType());
-              copy.setSegmentRule(a.getSegmentRule());
-              copy.setMode(a.getMode());
-              dialogAssignments.add(copy);
-            });
+    showTemplateService
+        .getTemplateWithAssignments(template.getId())
+        .ifPresent(
+            fetched ->
+                fetched
+                    .getSegmentAssignments()
+                    .forEach(
+                        a -> {
+                          ShowTemplateSegmentAssignment copy = new ShowTemplateSegmentAssignment();
+                          copy.setSegmentType(a.getSegmentType());
+                          copy.setSegmentRule(a.getSegmentRule());
+                          copy.setMode(a.getMode());
+                          dialogAssignments.add(copy);
+                        }));
     // Rebind: dialogAssignments was reassigned to a fresh list above.
     assignmentGrid.setItems(dialogAssignments);
     editDialog.setHeaderTitle("Edit Show Template");
@@ -831,9 +835,7 @@ public class ShowTemplateListView extends Main {
                 editingTemplate.getGenderConstraint());
 
         if (savedTemplate != null) {
-          showTemplateService
-              .getTemplateById(savedTemplate.getId())
-              .ifPresent(this::syncAssignmentsToTemplate);
+          showTemplateService.syncSegmentAssignments(savedTemplate.getId(), dialogAssignments);
           Notification.show("Template created successfully", 3000, Notification.Position.BOTTOM_END)
               .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         } else {
@@ -861,11 +863,9 @@ public class ShowTemplateListView extends Main {
             editingTemplate.getWeekOfMonth(),
             editingTemplate.getMonth(),
             editingTemplate.getGenderConstraint());
-        // updateTemplate rebuilds from primitives; assignments must be re-applied to the managed
-        // entity afterward (orphanRemoval drops rows removed in the dialog).
-        showTemplateService
-            .getTemplateById(editingTemplate.getId())
-            .ifPresent(this::syncAssignmentsToTemplate);
+        // Assignments sync through the transactional service (updateTemplate rebuilds from
+        // primitives); orphanRemoval drops rows removed in the dialog.
+        showTemplateService.syncSegmentAssignments(editingTemplate.getId(), dialogAssignments);
 
         Notification.show("Template updated successfully", 3000, Notification.Position.BOTTOM_END)
             .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
@@ -878,24 +878,6 @@ public class ShowTemplateListView extends Main {
       Notification.show("Please fix validation errors", 3000, Notification.Position.BOTTOM_END)
           .addThemeVariants(NotificationVariant.LUMO_ERROR);
     }
-  }
-
-  /**
-   * Replaces the template's assignment rows with the dialog state and saves (cascade persists new
-   * rows; orphanRemoval drops removed ones). ATW-0331.
-   */
-  private void syncAssignmentsToTemplate(final ShowTemplate managedTemplate) {
-    managedTemplate.getSegmentAssignments().clear();
-    dialogAssignments.forEach(
-        row -> {
-          ShowTemplateSegmentAssignment copy = new ShowTemplateSegmentAssignment();
-          copy.setTemplate(managedTemplate);
-          copy.setSegmentType(row.getSegmentType());
-          copy.setSegmentRule(row.getSegmentRule());
-          copy.setMode(row.getMode());
-          managedTemplate.getSegmentAssignments().add(copy);
-        });
-    showTemplateService.save(managedTemplate);
   }
 
   // --- Test-visible delegates (package-private) for ShowTemplateListViewTest ---

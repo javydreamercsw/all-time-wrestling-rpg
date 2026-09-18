@@ -137,6 +137,7 @@ class ShowTemplateListViewTest extends AbstractViewTest {
     assignment.setSegmentRule(rumbleRules);
     assignment.setMode(ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH);
     template.getSegmentAssignments().add(assignment);
+    when(showTemplateService.getTemplateWithAssignments(1L)).thenReturn(Optional.of(template));
 
     view.openEditDialogForTest(template);
 
@@ -151,18 +152,22 @@ class ShowTemplateListViewTest extends AbstractViewTest {
     template.setId(3L);
     template.setName("Big PLE");
     template.setShowType(showType("PLE"));
-    when(showTemplateService.getTemplateById(3L)).thenReturn(Optional.of(template));
-    when(showTemplateService.save(template)).thenReturn(template);
+    when(showTemplateService.getTemplateWithAssignments(3L)).thenReturn(Optional.of(template));
 
     view.openEditDialogForTest(template);
     view.addAssignmentForTest(
         null, rule("Rumble Rules"), ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH);
     view.saveTemplateForTest();
 
-    assertEquals(
-        1,
-        template.getSegmentAssignments().size(),
-        "Dialog assignment rows must sync onto the template");
+    org.mockito.Mockito.verify(showTemplateService)
+        .syncSegmentAssignments(
+            org.mockito.ArgumentMatchers.eq(3L),
+            org.mockito.ArgumentMatchers.argThat(
+                rows ->
+                    rows.size() == 1
+                        && "Rumble Rules".equals(rows.get(0).getSegmentRule().getName())
+                        && rows.get(0).getMode()
+                            == ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH));
   }
 
   private static SegmentRule rule(String name) {

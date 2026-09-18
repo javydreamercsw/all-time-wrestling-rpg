@@ -97,4 +97,14 @@ public interface ShowTemplateRepository extends JpaRepository<ShowTemplate, Long
    */
   @Query("SELECT st FROM ShowTemplate st JOIN FETCH st.showType")
   List<ShowTemplate> findAllWithShowType();
+
+  /**
+   * Find a template with its segment assignments eagerly fetched — needed when the UI reads or
+   * replaces {@code segmentAssignments} outside a persistence session (ATW-0331).
+   *
+   * @param id The template ID
+   * @return Optional containing the template with assignments initialized
+   */
+  @Query("SELECT st FROM ShowTemplate st LEFT JOIN FETCH st.segmentAssignments WHERE st.id = :id")
+  Optional<ShowTemplate> findByIdWithAssignments(@Param("id") Long id);
 }
