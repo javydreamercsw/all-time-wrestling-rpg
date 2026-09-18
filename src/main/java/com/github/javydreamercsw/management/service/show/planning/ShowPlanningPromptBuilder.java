@@ -450,7 +450,10 @@ public class ShowPlanningPromptBuilder {
           """);
     }
 
-    List<SegmentType> segmentTypes = segmentTypeService.findAll();
+    // Event-only types (e.g. Abu Dhabi Rumble) are special PLE formats the AI must never
+    // propose as an ordinary segment; a Booker/Admin can still pick them manually (ATW-0331).
+    List<SegmentType> segmentTypes =
+        segmentTypeService.findAll().stream().filter(type -> !type.isEventOnly()).toList();
     List<String> segmentTypeDescriptions =
         segmentTypes.stream()
             .map(

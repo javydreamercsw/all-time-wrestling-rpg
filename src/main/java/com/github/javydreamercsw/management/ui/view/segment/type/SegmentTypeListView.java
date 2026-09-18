@@ -22,6 +22,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
@@ -187,6 +188,8 @@ public class SegmentTypeListView extends Main {
     editName.setWidthFull();
     editDescription = new TextArea("Description");
     editDescription.setWidthFull();
+    Checkbox editEventOnly =
+        new Checkbox("Event-only (special PLE event format, excluded from AI proposals)");
 
     binder = new Binder<>(SegmentType.class);
     binder
@@ -194,6 +197,7 @@ public class SegmentTypeListView extends Main {
         .asRequired("Name cannot be empty")
         .bind(SegmentType::getName, SegmentType::setName);
     binder.forField(editDescription).bind(SegmentType::getDescription, SegmentType::setDescription);
+    binder.forField(editEventOnly).bind(SegmentType::isEventOnly, SegmentType::setEventOnly);
 
     Button saveButton = new Button("Save", e -> saveSegmentType());
     saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -205,7 +209,8 @@ public class SegmentTypeListView extends Main {
     buttons.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
     buttons.setWidthFull();
 
-    VerticalLayout dialogLayout = new VerticalLayout(editName, editDescription, buttons);
+    VerticalLayout dialogLayout =
+        new VerticalLayout(editName, editDescription, editEventOnly, buttons);
     dialogLayout.setPadding(false);
     dialogLayout.setSpacing(true);
 
@@ -217,10 +222,14 @@ public class SegmentTypeListView extends Main {
       try {
         // New types created through this dialog are custom content; edits preserve the row's
         // existing expansion code (the service overwrites it unconditionally on update).
+        // eventOnly always round-trips from the binder (ATW-0331).
         segmentTypeService.createOrUpdateSegmentType(
             editingSegmentType.getName(),
             editingSegmentType.getDescription(),
-            editingSegmentType.getId() == null ? "CUSTOM" : editingSegmentType.getExpansionCode());
+            editingSegmentType.getId() == null ? "CUSTOM" : editingSegmentType.getExpansionCode(),
+            null,
+            editingSegmentType.getCode(),
+            editingSegmentType.isEventOnly());
         Notification.show(
                 "Segment type saved successfully!", 3000, Notification.Position.BOTTOM_START)
             .addThemeVariants(NotificationVariant.LUMO_SUCCESS);

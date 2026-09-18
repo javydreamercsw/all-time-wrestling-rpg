@@ -104,6 +104,34 @@ class ShowPlanningPromptBuilderTest {
   }
 
   @Test
+  void build_listsRegularSegmentTypes() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    String prompt = builder.build(ctx);
+    assertTrue(
+        prompt.contains("Available Segment Types: Match (A wrestling match.)"),
+        "Regular segment types must appear in the prompt's available list");
+  }
+
+  @Test
+  void build_eventOnlyType_excludedFromAvailableTypes() {
+    SegmentType eventOnly = new SegmentType();
+    eventOnly.setName("Abu Dhabi Rumble");
+    eventOnly.setDescription("Large-scale elimination match with timed entries");
+    eventOnly.setEventOnly(true);
+    SegmentType regular = new SegmentType();
+    regular.setName("Match");
+    regular.setDescription("A wrestling match.");
+    when(segmentTypeService.findAll()).thenReturn(List.of(regular, eventOnly));
+
+    String prompt = builder.build(contextWithTemplate(1, 0));
+
+    assertFalse(
+        prompt.contains("Abu Dhabi Rumble"),
+        "Event-only types must never be proposed as ordinary segments (ATW-0331)");
+    assertTrue(prompt.contains("Match (A wrestling match.)"));
+  }
+
+  @Test
   void build_pleFlag_addsPleSection() {
     ShowPlanningContextDTO ctx = contextWithTemplate(2, 0);
     ctx.setPremiumLiveEvent(true);
