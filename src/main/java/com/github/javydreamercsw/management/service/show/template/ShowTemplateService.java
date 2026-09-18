@@ -371,7 +371,7 @@ public class ShowTemplateService {
       copy.setMode(row.getMode());
       if (!copy.isValid()) {
         throw new IllegalArgumentException(
-            "Assignment row must target exactly one of segment type / segment rule");
+            "Assignment row must target a segment type and/or a segment rule");
       }
       template.getSegmentAssignments().add(copy);
     }

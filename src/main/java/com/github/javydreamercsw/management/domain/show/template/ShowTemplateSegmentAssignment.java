@@ -78,9 +78,12 @@ public class ShowTemplateSegmentAssignment extends AbstractEntity<Long> {
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
 
-  /** An assignment must target exactly one of segmentType/segmentRule. */
+  /**
+   * An assignment must target at least one of segmentType/segmentRule. Both set is the type+rule
+   * AUTO_ATTACH pairing (rule attaches whenever that type is used).
+   */
   public boolean isValid() {
-    return (segmentType == null) != (segmentRule == null);
+    return segmentType != null || segmentRule != null;
   }
 
   @jakarta.persistence.PrePersist
