@@ -186,6 +186,20 @@ public class ShowPlanningService {
     }
     if (show.getTemplate() != null) {
       template.setGenderConstraint(show.getTemplate().getGenderConstraint());
+      // Template assignments (ATW-0331): event-only types the AI may use plus encouraged and
+      // auto-attach rules.
+      template.setEventSegmentTypes(
+          show.getTemplate().getAssignedEventTypes().stream()
+              .map(a -> a.getSegmentType().getName())
+              .toList());
+      template.setEncouragedRules(
+          show.getTemplate().getEncouragedRuleAssignments().stream()
+              .map(a -> a.getSegmentRule().getName())
+              .toList());
+      template.setAutoAttachRules(
+          show.getTemplate().getRuleAutoAttachAssignments().stream()
+              .map(a -> a.getSegmentRule().getName())
+              .toList());
     }
     context.setShowTemplate(template);
 
@@ -610,6 +624,40 @@ public class ShowPlanningService {
                 .map(Optional::get)
                 .collect(Collectors.toList());
         segment.syncSegmentRules(newSegmentRules);
+      }
+
+      // Template AUTO_ATTACH rules (ATW-0331): deterministically merge rules assigned to the
+      // show's template — type-paired rows when this segment's type matches, rule-only rows on
+      // every match segment. Runs after the AI-proposed rules so it is visible on approval.
+      if (show.getTemplate() != null
+          && !WellKnownSegmentType.PROMO.matches(segment.getSegmentType())) {
+        List<SegmentRule> merged = new ArrayList<>(segment.getSegmentRules());
+        show.getTemplate()
+            .getTypePairedAutoAttachAssignments()
+            .forEach(
+                a -> {
+                  if (a.getSegmentType().getId().equals(segment.getSegmentType().getId())
+                      && merged.stream()
+                          .noneMatch(r -> r.getId().equals(a.getSegmentRule().getId()))) {
+                    merged.add(a.getSegmentRule());
+                  }
+                });
+        show.getTemplate()
+            .getRuleAutoAttachAssignments()
+            .forEach(
+                a -> {
+                  if (merged.stream()
+                      .noneMatch(r -> r.getId().equals(a.getSegmentRule().getId()))) {
+                    merged.add(a.getSegmentRule());
+                  }
+                });
+        if (merged.size() != segment.getSegmentRules().size()) {
+          log.debug(
+              "Auto-attached {} template rule(s) to segment of type {}",
+              merged.size() - segment.getSegmentRules().size(),
+              segment.getSegmentType().getName());
+          segment.syncSegmentRules(merged);
+        }
       }
       segmentsToSave.add(segment);
     }

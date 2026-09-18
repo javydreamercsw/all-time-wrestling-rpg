@@ -26,9 +26,14 @@ import com.github.javydreamercsw.base.ui.component.ImageUploadComponent;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.template.RecurrenceType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
+import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.vaadin.flow.component.button.Button;
@@ -89,6 +94,8 @@ public class ShowTemplateListView extends Main {
   private final ImageGenerationServiceFactory imageGenerationServiceFactory;
   private final ImageStorageService imageStorageService;
   private final AiSettingsService aiSettingsService;
+  private final SegmentTypeService segmentTypeService;
+  private final SegmentRuleService segmentRuleService;
 
   private Dialog editDialog;
   private TextField editName;
@@ -107,6 +114,11 @@ public class ShowTemplateListView extends Main {
   private ComboBox<Gender> editGenderConstraint;
   private ShowTemplate editingTemplate;
   private Binder<ShowTemplate> binder;
+  private Grid<ShowTemplateSegmentAssignment> assignmentGrid;
+  private List<ShowTemplateSegmentAssignment> dialogAssignments;
+  private ComboBox<SegmentType> assignmentTypeCombo;
+  private ComboBox<SegmentRule> assignmentRuleCombo;
+  private ComboBox<ShowTemplateSegmentAssignment.AssignmentMode> assignmentModeCombo;
 
   final TextField nameFilter;
   final ComboBox<ShowType> showTypeFilter;
@@ -120,7 +132,9 @@ public class ShowTemplateListView extends Main {
       @NonNull final SecurityUtils securityUtils,
       @NonNull final ImageGenerationServiceFactory imageGenerationServiceFactory,
       @NonNull final ImageStorageService imageStorageService,
-      @NonNull final AiSettingsService aiSettingsService) {
+      @NonNull final AiSettingsService aiSettingsService,
+      @NonNull final SegmentTypeService segmentTypeService,
+      @NonNull final SegmentRuleService segmentRuleService) {
     this.showTemplateService = showTemplateService;
     this.showTypeService = showTypeService;
     this.commentaryTeamRepository = commentaryTeamRepository;
@@ -128,6 +142,8 @@ public class ShowTemplateListView extends Main {
     this.imageGenerationServiceFactory = imageGenerationServiceFactory;
     this.imageStorageService = imageStorageService;
     this.aiSettingsService = aiSettingsService;
+    this.segmentTypeService = segmentTypeService;
+    this.segmentRuleService = segmentRuleService;
 
     // Initialize filters
     nameFilter = new TextField();
@@ -541,6 +557,102 @@ public class ShowTemplateListView extends Main {
           editMonth.setVisible(type == RecurrenceType.ANNUAL);
         });
 
+    // ── Template segment assignments (ATW-0331): per-row type?/rule? + mode ──
+    dialogAssignments = new ArrayList<>();
+    assignmentGrid = new Grid<>(ShowTemplateSegmentAssignment.class, false);
+    assignmentGrid
+        .addColumn(a -> a.getSegmentType() != null ? a.getSegmentType().getName() : "—")
+        .setHeader("Segment Type (event-only)")
+        .setAutoWidth(true);
+    assignmentGrid
+        .addColumn(a -> a.getSegmentRule() != null ? a.getSegmentRule().getName() : "—")
+        .setHeader("Segment Rule")
+        .setAutoWidth(true);
+    assignmentGrid.addColumn(a -> a.getMode().name()).setHeader("Mode").setAutoWidth(true);
+    assignmentGrid.addComponentColumn(
+        row -> {
+          Button remove = new Button(new Icon(VaadinIcon.TRASH));
+          remove.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE, ButtonVariant.LUMO_ERROR);
+          remove.addClickListener(
+              e -> {
+                dialogAssignments.remove(row);
+                assignmentGrid.getListDataView().refreshAll();
+              });
+          return remove;
+        });
+    assignmentGrid.setWidthFull();
+    assignmentGrid.setHeight("150px");
+    assignmentGrid.setItems(dialogAssignments);
+
+    assignmentTypeCombo = new ComboBox<>("Segment Type (event-only)");
+    assignmentTypeCombo.setItems(
+        segmentTypeService.findAllForAdmin().stream()
+            .filter(SegmentType::isEventOnly)
+            .sorted(Comparator.comparing(SegmentType::getName))
+            .toList());
+    assignmentTypeCombo.setItemLabelGenerator(SegmentType::getName);
+    assignmentTypeCombo.setWidthFull();
+    assignmentTypeCombo.setPlaceholder("Optional");
+    assignmentTypeCombo.setClearButtonVisible(true);
+
+    assignmentRuleCombo = new ComboBox<>("Segment Rule");
+    assignmentRuleCombo.setItems(
+        segmentRuleService.findAll().stream()
+            .sorted(Comparator.comparing(SegmentRule::getName))
+            .toList());
+    assignmentRuleCombo.setItemLabelGenerator(SegmentRule::getName);
+    assignmentRuleCombo.setWidthFull();
+    assignmentRuleCombo.setPlaceholder("Optional");
+    assignmentRuleCombo.setClearButtonVisible(true);
+
+    assignmentModeCombo = new ComboBox<>("Mode");
+    assignmentModeCombo.setItems(ShowTemplateSegmentAssignment.AssignmentMode.values());
+    assignmentModeCombo.setItemLabelGenerator(ShowTemplateSegmentAssignment.AssignmentMode::name);
+    assignmentModeCombo.setValue(ShowTemplateSegmentAssignment.AssignmentMode.ENCOURAGED);
+    assignmentModeCombo.setWidthFull();
+
+    Button addAssignmentBtn =
+        new Button(
+            "Add Assignment",
+            new Icon(VaadinIcon.PLUS),
+            e -> {
+              SegmentType type = assignmentTypeCombo.getValue();
+              SegmentRule rule = assignmentRuleCombo.getValue();
+              // Exactly one target — or a type+rule pair — is required per row.
+              if (type == null && rule == null) {
+                Notification.show(
+                    "Pick a segment type and/or a segment rule for the assignment.",
+                    3000,
+                    Notification.Position.MIDDLE);
+                return;
+              }
+              ShowTemplateSegmentAssignment row = new ShowTemplateSegmentAssignment();
+              row.setSegmentType(type);
+              row.setSegmentRule(rule);
+              row.setMode(
+                  assignmentModeCombo.getValue() != null
+                      ? assignmentModeCombo.getValue()
+                      : ShowTemplateSegmentAssignment.AssignmentMode.ENCOURAGED);
+              dialogAssignments.add(row);
+              assignmentGrid.getListDataView().refreshAll();
+            });
+    addAssignmentBtn.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
+    addAssignmentBtn.setVisible(securityUtils.canEdit());
+
+    HorizontalLayout assignmentPicker =
+        new HorizontalLayout(assignmentTypeCombo, assignmentRuleCombo, assignmentModeCombo);
+    assignmentPicker.setWidthFull();
+    assignmentPicker.setAlignItems(FlexComponent.Alignment.END);
+    VerticalLayout assignmentSection =
+        new VerticalLayout(
+            new Span("Template Assignments (event types, encouraged or auto-attach rules)"),
+            assignmentPicker,
+            addAssignmentBtn,
+            assignmentGrid);
+    assignmentSection.setWidthFull();
+    assignmentSection.setSpacing(false);
+    assignmentSection.setPadding(false);
+
     Button saveBtn = new Button("Save", e -> saveTemplate());
     saveBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     saveBtn.setVisible(securityUtils.canEdit());
@@ -582,7 +694,7 @@ public class ShowTemplateListView extends Main {
     buttonLayout.setWidthFull();
     buttonLayout.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
 
-    VerticalLayout dialogLayout = new VerticalLayout(formLayout, buttonLayout);
+    VerticalLayout dialogLayout = new VerticalLayout(formLayout, assignmentSection, buttonLayout);
     dialogLayout.setWidthFull();
     dialogLayout.setSpacing(true);
 
@@ -664,6 +776,8 @@ public class ShowTemplateListView extends Main {
 
   private void openCreateDialog() {
     editingTemplate = new ShowTemplate();
+    dialogAssignments.clear();
+    assignmentGrid.setItems(dialogAssignments);
     editDialog.setHeaderTitle("Create Show Template");
     binder.readBean(editingTemplate);
     editDialog.open();
@@ -671,6 +785,21 @@ public class ShowTemplateListView extends Main {
 
   private void openEditDialog(final ShowTemplate template) {
     editingTemplate = template;
+    // Edit a detached copy so cancelling doesn't mutate the live entity (orphanRemoval deletes
+    // only rows actually removed on save).
+    dialogAssignments = new ArrayList<>();
+    template
+        .getSegmentAssignments()
+        .forEach(
+            a -> {
+              ShowTemplateSegmentAssignment copy = new ShowTemplateSegmentAssignment();
+              copy.setSegmentType(a.getSegmentType());
+              copy.setSegmentRule(a.getSegmentRule());
+              copy.setMode(a.getMode());
+              dialogAssignments.add(copy);
+            });
+    // Rebind: dialogAssignments was reassigned to a fresh list above.
+    assignmentGrid.setItems(dialogAssignments);
     editDialog.setHeaderTitle("Edit Show Template");
     binder.readBean(template);
     editDialog.open();
@@ -702,6 +831,9 @@ public class ShowTemplateListView extends Main {
                 editingTemplate.getGenderConstraint());
 
         if (savedTemplate != null) {
+          showTemplateService
+              .getTemplateById(savedTemplate.getId())
+              .ifPresent(this::syncAssignmentsToTemplate);
           Notification.show("Template created successfully", 3000, Notification.Position.BOTTOM_END)
               .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
         } else {
@@ -729,6 +861,11 @@ public class ShowTemplateListView extends Main {
             editingTemplate.getWeekOfMonth(),
             editingTemplate.getMonth(),
             editingTemplate.getGenderConstraint());
+        // updateTemplate rebuilds from primitives; assignments must be re-applied to the managed
+        // entity afterward (orphanRemoval drops rows removed in the dialog).
+        showTemplateService
+            .getTemplateById(editingTemplate.getId())
+            .ifPresent(this::syncAssignmentsToTemplate);
 
         Notification.show("Template updated successfully", 3000, Notification.Position.BOTTOM_END)
             .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
@@ -741,6 +878,50 @@ public class ShowTemplateListView extends Main {
       Notification.show("Please fix validation errors", 3000, Notification.Position.BOTTOM_END)
           .addThemeVariants(NotificationVariant.LUMO_ERROR);
     }
+  }
+
+  /**
+   * Replaces the template's assignment rows with the dialog state and saves (cascade persists new
+   * rows; orphanRemoval drops removed ones). ATW-0331.
+   */
+  private void syncAssignmentsToTemplate(final ShowTemplate managedTemplate) {
+    managedTemplate.getSegmentAssignments().clear();
+    dialogAssignments.forEach(
+        row -> {
+          ShowTemplateSegmentAssignment copy = new ShowTemplateSegmentAssignment();
+          copy.setTemplate(managedTemplate);
+          copy.setSegmentType(row.getSegmentType());
+          copy.setSegmentRule(row.getSegmentRule());
+          copy.setMode(row.getMode());
+          managedTemplate.getSegmentAssignments().add(copy);
+        });
+    showTemplateService.save(managedTemplate);
+  }
+
+  // --- Test-visible delegates (package-private) for ShowTemplateListViewTest ---
+
+  void openEditDialogForTest(final ShowTemplate template) {
+    openEditDialog(template);
+  }
+
+  Grid<ShowTemplateSegmentAssignment> getAssignmentGridForTest() {
+    return assignmentGrid;
+  }
+
+  void addAssignmentForTest(
+      final SegmentType type,
+      final SegmentRule rule,
+      final ShowTemplateSegmentAssignment.AssignmentMode mode) {
+    ShowTemplateSegmentAssignment row = new ShowTemplateSegmentAssignment();
+    row.setSegmentType(type);
+    row.setSegmentRule(rule);
+    row.setMode(mode);
+    dialogAssignments.add(row);
+    assignmentGrid.getListDataView().refreshAll();
+  }
+
+  void saveTemplateForTest() {
+    saveTemplate();
   }
 
   private void deleteTemplate(final ShowTemplate template) {
