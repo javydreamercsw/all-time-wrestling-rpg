@@ -142,6 +142,22 @@ class SegmentTypeServiceTest {
     assertEquals(5L, count);
   }
 
+  // ==================== findAllByExpansionCode ====================
+
+  @Test
+  void findAllByExpansionCode_delegatesToRepository() {
+    SegmentType customType = new SegmentType();
+    customType.setName("Custom Type");
+    customType.setExpansionCode("CUSTOM");
+    when(segmentTypeRepository.findByExpansionCodeOrderByNameAsc("CUSTOM"))
+        .thenReturn(List.of(customType));
+
+    List<SegmentType> result = segmentTypeService.findAllByExpansionCode("CUSTOM");
+
+    assertEquals(1, result.size());
+    assertSame(customType, result.get(0));
+  }
+
   // ==================== createSegmentType ====================
 
   @Test

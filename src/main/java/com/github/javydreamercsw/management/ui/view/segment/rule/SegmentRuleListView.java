@@ -317,4 +317,14 @@ public class SegmentRuleListView extends Main {
           .addThemeVariants(NotificationVariant.LUMO_ERROR);
     }
   }
+
+  // --- Test-visible delegates (package-private) for SegmentRuleListViewTest ---
+
+  void updateGridForTest() {
+    refreshGrid();
+  }
+
+  void openEditDialogForTest(final SegmentRule segmentRule) {
+    openEditDialog(segmentRule);
+  }
 }

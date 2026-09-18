@@ -389,6 +389,19 @@ class TitleServiceTest {
   }
 
   @Test
+  void findAllByExpansionCode_delegatesToRepository() {
+    Title customTitle = new Title();
+    customTitle.setName("Custom Belt");
+    customTitle.setExpansionCode("CUSTOM");
+    when(titleRepository.findByExpansionCodeOrderByNameAsc("CUSTOM"))
+        .thenReturn(List.of(customTitle));
+
+    List<Title> result = titleService.findAllByExpansionCode("CUSTOM");
+
+    assertThat(result).containsExactly(customTitle);
+  }
+
+  @Test
   void findAll_includesTitleWhenEnabledCodesEmptyDefensiveFallback() {
     // Regression: when expansions.json is unreadable the enabled-codes set is empty.
     // All titles must still appear rather than being silently hidden (ATW-ncn6).

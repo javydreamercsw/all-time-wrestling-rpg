@@ -270,4 +270,14 @@ public class SegmentTypeListView extends Main {
           .addThemeVariants(NotificationVariant.LUMO_ERROR);
     }
   }
+
+  // --- Test-visible delegates (package-private) for SegmentTypeListViewTest ---
+
+  void updateGridForTest() {
+    refreshGrid();
+  }
+
+  void openEditDialogForTest(final SegmentType segmentType) {
+    openEditDialog(segmentType);
+  }
 }
