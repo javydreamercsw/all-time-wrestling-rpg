@@ -36,7 +36,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.openqa.selenium.By;
-import org.openqa.selenium.Keys;
+import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -517,22 +517,19 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     navigateToAndWaitForElement(
         "campaign-card-export", By.xpath("//*[contains(., 'The Extreme Path')]"));
 
-    // Switch to the Custom Content category, then the NPCs kind.
+    // Switch to the Custom Content category, then the NPCs kind. Vaadin 25 (Lit) combo
+    // boxes do not reflect their label as a DOM attribute, so locate them by tag name and
+    // match on the label DOM property instead (see StoryArcVideoDocsE2ETest#fillBeatRow).
     WebElement categoryCombo =
         new WebDriverWait(driver, Duration.ofSeconds(10))
-            .until(
-                ExpectedConditions.elementToBeClickable(
-                    By.xpath("//vaadin-combo-box[@label='Category']")));
-    categoryCombo.sendKeys("Custom");
-    categoryCombo.sendKeys(Keys.ENTER);
+            .until(d -> findComboBoxByLabel("Category"));
+    selectFromVaadinComboBox(categoryCombo, "Custom Content");
 
+    // The kind combo is only added to the DOM once the Custom Content category is picked.
     WebElement kindCombo =
         new WebDriverWait(driver, Duration.ofSeconds(10))
-            .until(
-                ExpectedConditions.elementToBeClickable(
-                    By.xpath("//vaadin-combo-box[@label='Custom Content Kind']")));
-    kindCombo.sendKeys("NPCs");
-    kindCombo.sendKeys(Keys.ENTER);
+            .until(d -> findComboBoxByLabel("Custom Content Kind"));
+    selectFromVaadinComboBox(kindCombo, "NPCs");
 
     new WebDriverWait(driver, Duration.ofSeconds(15))
         .until(
@@ -579,6 +576,23 @@ class CampaignDocsE2ETest extends AbstractDocsE2ETest {
     Campaign c = campaignService.startCampaign(player);
     c.getState().setCurrentChapterId(chapterId);
     return campaignRepository.save(c);
+  }
+
+  /**
+   * Finds a visible {@code vaadin-combo-box} by its label DOM property, or {@code null} while still
+   * absent. Swallows {@link StaleElementReferenceException} — Vaadin detaches and reattaches combo
+   * boxes when the detail selector swaps, and a mid-poll detach must just retry the scan.
+   */
+  private WebElement findComboBoxByLabel(@NonNull final String label) {
+    try {
+      return driver.findElements(By.tagName("vaadin-combo-box")).stream()
+          .filter(c -> label.equals(c.getDomProperty("label")))
+          .filter(WebElement::isDisplayed)
+          .findFirst()
+          .orElse(null);
+    } catch (StaleElementReferenceException e) {
+      return null;
+    }
   }
 
   private void waitForText(@NonNull final String text) {
