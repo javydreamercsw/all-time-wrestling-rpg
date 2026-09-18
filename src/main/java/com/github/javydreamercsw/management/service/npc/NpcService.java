@@ -88,6 +88,11 @@ public class NpcService {
   }
 
   public Npc save(final Npc npc) {
+    if (npc.getId() == null && !"CUSTOM".equals(npc.getExpansionCode())) {
+      // New NPCs created through the app are custom content (seed sync saves via saveAll,
+      // which bypasses this stamp, so official seed NPCs keep their expansion codes).
+      npc.setExpansionCode("CUSTOM");
+    }
     return npcRepository.save(npc);
   }
 
