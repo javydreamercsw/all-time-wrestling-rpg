@@ -42,6 +42,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
 import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -110,6 +111,7 @@ class ShowPlanningServiceTest {
   @Mock private GameSettingService gameSettingService;
   @Mock private DramaEventService dramaEventService;
   @Mock private FeudScriptService feudScriptService;
+  @Mock private ShowTemplateRepository showTemplateRepository;
 
   @InjectMocks private ShowPlanningService showPlanningService;
 

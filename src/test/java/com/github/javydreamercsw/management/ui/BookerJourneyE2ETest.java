@@ -346,9 +346,11 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
 
       // Approve segments
       log.info("Approving segments");
+      // Wait for clickable, not just visible — the button starts disabled and is only
+      // re-enabled once proposeSegments()'s async callback populates the grid and calls
+      // approveButton.setEnabled(true); visibility alone can be true a moment before that.
       WebElement approveButton =
-          wait.until(
-              ExpectedConditions.visibilityOfElementLocated(By.id("approve-segments-button")));
+          wait.until(ExpectedConditions.elementToBeClickable(By.id("approve-segments-button")));
       Assertions.assertNotNull(approveButton);
       clickElement(approveButton);
 
