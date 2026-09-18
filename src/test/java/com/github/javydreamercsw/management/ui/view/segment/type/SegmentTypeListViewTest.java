@@ -31,6 +31,7 @@ import com.github.javydreamercsw.management.service.segment.type.SegmentTypeServ
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.textfield.TextField;
@@ -129,10 +130,10 @@ class SegmentTypeListViewTest extends AbstractViewTest {
     assertTrue(dialog.isOpened());
 
     // The checkbox reflects the bean state on open (readBean).
-    com.vaadin.flow.component.checkbox.Checkbox eventOnly =
+    Checkbox eventOnly =
         _get(
             UI.getCurrent(),
-            com.vaadin.flow.component.checkbox.Checkbox.class,
+            Checkbox.class,
             spec ->
                 spec.withLabel(
                     "Event-only (special PLE event format, excluded from AI proposals)"));
