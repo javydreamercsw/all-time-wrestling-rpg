@@ -29,6 +29,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import lombok.Getter;
@@ -86,8 +88,8 @@ public class ShowTemplateSegmentAssignment extends AbstractEntity<Long> {
     return segmentType != null || segmentRule != null;
   }
 
-  @jakarta.persistence.PrePersist
-  @jakarta.persistence.PreUpdate
+  @PrePersist
+  @PreUpdate
   private void ensureDefaults() {
     if (creationDate == null) {
       creationDate = Instant.now();

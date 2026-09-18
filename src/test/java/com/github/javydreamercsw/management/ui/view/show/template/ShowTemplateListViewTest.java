@@ -31,6 +31,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
+import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
@@ -42,10 +43,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 
 class ShowTemplateListViewTest extends AbstractViewTest {
 
@@ -85,10 +89,8 @@ class ShowTemplateListViewTest extends AbstractViewTest {
     UI.getCurrent().add(view);
   }
 
-  private static com.github.javydreamercsw.management.domain.show.type.ShowType showType(
-      String name) {
-    com.github.javydreamercsw.management.domain.show.type.ShowType t =
-        new com.github.javydreamercsw.management.domain.show.type.ShowType();
+  private static ShowType showType(String name) {
+    ShowType t = new ShowType();
     t.setName(name);
     return t;
   }
@@ -159,10 +161,10 @@ class ShowTemplateListViewTest extends AbstractViewTest {
         null, rule("Rumble Rules"), ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH);
     view.saveTemplateForTest();
 
-    org.mockito.Mockito.verify(showTemplateService)
+    Mockito.verify(showTemplateService)
         .syncSegmentAssignments(
-            org.mockito.ArgumentMatchers.eq(3L),
-            org.mockito.ArgumentMatchers.argThat(
+            ArgumentMatchers.eq(3L),
+            ArgumentMatchers.argThat(
                 rows ->
                     rows.size() == 1
                         && "Rumble Rules".equals(rows.get(0).getSegmentRule().getName())
@@ -177,6 +179,6 @@ class ShowTemplateListViewTest extends AbstractViewTest {
   }
 
   private static void assertEquals(int expected, int actual, String message) {
-    org.junit.jupiter.api.Assertions.assertEquals(expected, actual, message);
+    Assertions.assertEquals(expected, actual, message);
   }
 }
