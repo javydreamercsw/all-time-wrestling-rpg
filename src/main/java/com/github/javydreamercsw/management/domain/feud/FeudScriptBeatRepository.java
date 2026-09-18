@@ -34,7 +34,14 @@ public interface FeudScriptBeatRepository extends JpaRepository<FeudScriptBeat, 
           + " ORDER BY b.script.id, b.beatOrder")
   List<FeudScriptBeat> findPendingBeatsForShow(@Param("showId") Long showId);
 
-  Optional<FeudScriptBeat> findByActualSegment(Segment segment);
+  /**
+   * Find the beat that produced a given segment, with its {@code script} eagerly fetched — the
+   * caller (e.g. {@code ShowDetailView}'s segments grid) reads {@code beat.getScript().getName()}
+   * from a Vaadin renderer lambda invoked well after this call returns, outside any persistence
+   * session; a lazy {@code script} proxy would throw {@code LazyInitializationException} there.
+   */
+  @Query("SELECT b FROM FeudScriptBeat b JOIN FETCH b.script WHERE b.actualSegment = :segment")
+  Optional<FeudScriptBeat> findByActualSegment(@Param("segment") Segment segment);
 
   /**
    * Find pending beats whose arc wrestlers appear in the given ID set — rivalry arcs (both
