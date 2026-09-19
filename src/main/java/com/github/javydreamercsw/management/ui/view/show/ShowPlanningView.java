@@ -664,7 +664,8 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
                 boolean alreadySelected = show.equals(showComboBox.getValue());
                 showComboBox.setValue(show);
                 if (alreadySelected) {
-                  loadContext();
+                  // Test-visible stash so tests can await this reload like the listener's.
+                  pendingAutoLoadForTest = loadContext();
                 }
               });
     }

@@ -107,6 +107,8 @@ jobs:
               - 'tsconfig.json'
               - 'vite.config.ts'
               - 'scripts/sync-vaadin-overrides.cjs'
+              - 'scripts/cleanup-rc-releases.sh'
+              - 'scripts/cleanup-rc-releases.test.cjs'
             # Dependency/build-config bumps (e.g. Dependabot) — no Java/frontend source
             # changed, so build-and-unit-test still compiles/tests them, but
             # coverage-and-analysis (gated on code_changed only) is skipped since there's
@@ -204,6 +206,12 @@ jobs:
       # Single Maven invocation: compile once, run tests, then package WAR.
       # Previously two separate invocations caused a full recompile in the WAR step (~3-5 min wasted).
       run: mvn -B package -Pwar,coverage -DnvdApiKey=${{ secrets.NVD_API }}
+
+    - name: Test release-cleanup helper scripts
+      # cleanup-rc-releases.sh deletes superseded RC releases on final releases
+      # (called from release.yml's finalize job); its match rule and error paths
+      # are exercised here with a mocked gh.
+      run: node --test scripts/cleanup-rc-releases.test.cjs
 
     - name: Upload unit test coverage data
       uses: actions/upload-artifact@v7

@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRep
 import com.github.javydreamercsw.management.domain.show.template.RecurrenceType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import java.time.Clock;
@@ -325,6 +326,56 @@ public class ShowTemplateService {
   @PreAuthorize("isAuthenticated()")
   public Optional<ShowTemplate> getTemplateById(@NonNull final Long id) {
     return showTemplateRepository.findById(id);
+  }
+
+  /**
+   * Get a template with its segment assignments eagerly initialized, so the UI can read them
+   * without a session open (ATW-0331).
+   *
+   * @param id The template ID
+   * @return Optional containing the template with assignments fetched
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public Optional<ShowTemplate> getTemplateWithAssignments(@NonNull final Long id) {
+    return showTemplateRepository.findByIdWithAssignments(id);
+  }
+
+  /**
+   * Replaces a template's segment assignments with the given rows inside one transaction — the
+   * managed collection is initialized by {@link #getTemplateWithAssignments} or the fetch-join
+   * here, so no lazy initialization happens in the UI layer (ATW-0331).
+   *
+   * @param id The template ID
+   * @param assignments The new assignment rows (template back-reference is set here)
+   * @return The saved template
+   * @throws IllegalArgumentException if the template does not exist or a row is invalid
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  @CacheEvict(
+      value = {CacheConfig.SHOW_TEMPLATES_CACHE, CacheConfig.SHOWS_CACHE},
+      allEntries = true)
+  public ShowTemplate syncSegmentAssignments(
+      @NonNull final Long id, @NonNull final List<ShowTemplateSegmentAssignment> assignments) {
+    ShowTemplate template =
+        showTemplateRepository
+            .findByIdWithAssignments(id)
+            .orElseThrow(() -> new IllegalArgumentException("Show template not found: " + id));
+    template.getSegmentAssignments().clear();
+    for (ShowTemplateSegmentAssignment row : assignments) {
+      ShowTemplateSegmentAssignment copy = new ShowTemplateSegmentAssignment();
+      copy.setTemplate(template);
+      copy.setSegmentType(row.getSegmentType());
+      copy.setSegmentRule(row.getSegmentRule());
+      copy.setMode(row.getMode());
+      if (!copy.isValid()) {
+        throw new IllegalArgumentException(
+            "Assignment row must target a segment type and/or a segment rule");
+      }
+      template.getSegmentAssignments().add(copy);
+    }
+    return showTemplateRepository.save(template);
   }
 
   /**

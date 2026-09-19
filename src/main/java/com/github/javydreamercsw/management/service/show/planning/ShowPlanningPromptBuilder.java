@@ -101,6 +101,26 @@ public class ShowPlanningPromptBuilder {
           .append("Expected Promos: ")
           .append(context.getShowTemplate().getExpectedPromos())
           .append("\n");
+      // Template assignments (ATW-0331): event-only types allowed on this template's shows and
+      // encouraged rules the AI should prefer.
+      if (!context.getShowTemplate().getEventSegmentTypes().isEmpty()) {
+        prompt
+            .append("Event Segment Types (special formats allowed ONLY on this show): ")
+            .append(
+                context.getShowTemplate().getEventSegmentTypes().stream()
+                    .map(ShowPlanningPromptBuilder::sanitize)
+                    .collect(Collectors.joining(", ")))
+            .append("\n");
+      }
+      if (!context.getShowTemplate().getEncouragedRules().isEmpty()) {
+        prompt
+            .append("Encouraged Stipulation Matches (prefer these where appropriate): ")
+            .append(
+                context.getShowTemplate().getEncouragedRules().stream()
+                    .map(ShowPlanningPromptBuilder::sanitize)
+                    .collect(Collectors.joining(", ")))
+            .append("\n");
+      }
     }
 
     if (context.getShowDate() != null) {
@@ -450,7 +470,10 @@ public class ShowPlanningPromptBuilder {
           """);
     }
 
-    List<SegmentType> segmentTypes = segmentTypeService.findAll();
+    // Event-only types (e.g. Abu Dhabi Rumble) are special PLE formats the AI must never
+    // propose as an ordinary segment; a Booker/Admin can still pick them manually (ATW-0331).
+    List<SegmentType> segmentTypes =
+        segmentTypeService.findAll().stream().filter(type -> !type.isEventOnly()).toList();
     List<String> segmentTypeDescriptions =
         segmentTypes.stream()
             .map(
