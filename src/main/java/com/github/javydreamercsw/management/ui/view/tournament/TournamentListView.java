@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.tournament;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.title.Title;
@@ -35,12 +36,16 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.TabSheet;
@@ -68,6 +73,7 @@ public class TournamentListView extends VerticalLayout {
   private final WrestlerFacade wrestlerFacade;
   private final SegmentRuleService segmentRuleService;
   private final UniverseContextService universeContextService;
+  private final SecurityUtils securityUtils;
 
   private Grid<Tournament> grid;
 
@@ -81,6 +87,7 @@ public class TournamentListView extends VerticalLayout {
     this.wrestlerFacade = wrestlerFacade;
     this.segmentRuleService = showFacade.getSegmentRuleService();
     this.universeContextService = viewContext.getUniverseContextService();
+    this.securityUtils = viewContext.getSecurityUtils();
 
     setSizeFull();
     setPadding(false);
@@ -110,9 +117,133 @@ public class TournamentListView extends VerticalLayout {
     g.addColumn(t -> t.getStatus().name()).setHeader("Status").setSortable(true);
     g.addColumn(Tournament::getStartDate).setHeader("Start Date").setSortable(true);
 
+    g.addComponentColumn(this::buildRowActions).setHeader("Actions").setFlexGrow(0);
+
     g.addItemClickListener(
         e -> UI.getCurrent().navigate("tournament-detail/" + e.getItem().getId()));
     return g;
+  }
+
+  /** Edit / Delete controls, mirroring TitleListView's action column. */
+  private HorizontalLayout buildRowActions(Tournament tournament) {
+    HorizontalLayout actions = new HorizontalLayout();
+    actions.setSpacing(true);
+
+    Button editBtn = new Button("Edit", new Icon(VaadinIcon.EDIT));
+    editBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
+    editBtn.addClickListener(e -> openEditDialog(tournament));
+    editBtn.setVisible(securityUtils.canEdit());
+
+    Button deleteBtn = new Button("Delete", new Icon(VaadinIcon.TRASH));
+    deleteBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_ERROR);
+    deleteBtn.addClickListener(e -> confirmDelete(tournament));
+    deleteBtn.setVisible(securityUtils.canDelete());
+
+    actions.add(editBtn, deleteBtn);
+    return actions;
+  }
+
+  private void openEditDialog(Tournament tournament) {
+    Dialog dialog = new Dialog();
+    dialog.setHeaderTitle("Edit Tournament");
+    dialog.setWidth("min(600px, 95vw)");
+
+    TextField nameField = new TextField("Tournament Name");
+    nameField.setValue(tournament.getName());
+    nameField.setRequired(true);
+    nameField.setWidthFull();
+
+    ComboBox<TournamentFormat> formatCombo = new ComboBox<>("Format");
+    formatCombo.setItems(tournamentService.getAvailableFormats());
+    formatCombo.setItemLabelGenerator(TournamentFormat::getDisplayName);
+    formatCombo.setWidthFull();
+    tournamentService.findFormat(tournament.getFormatId()).ifPresent(formatCombo::setValue);
+
+    ComboBox<Title> titleCombo = new ComboBox<>("Linked Championship (optional)");
+    titleCombo.setItems(wrestlerFacade.getTitleService().findAll());
+    titleCombo.setItemLabelGenerator(Title::getName);
+    titleCombo.setValue(tournament.getLinkedTitle());
+    titleCombo.setWidthFull();
+    titleCombo.setClearButtonVisible(true);
+
+    DatePicker startDate = new DatePicker("Start Date");
+    startDate.setValue(tournament.getStartDate());
+    startDate.setWidthFull();
+
+    MultiSelectComboBox<SegmentRule> rulesPicker =
+        new MultiSelectComboBox<>("Allowed Segment Rules (optional)");
+    rulesPicker.setItems(segmentRuleService.findAll());
+    rulesPicker.setItemLabelGenerator(SegmentRule::getName);
+    rulesPicker.setValue(new java.util.HashSet<>(tournament.getAllowedRules()));
+    rulesPicker.setWidthFull();
+
+    Button cancel = new Button("Cancel", e -> dialog.close());
+    Button save =
+        new Button(
+            "Save",
+            e -> {
+              if (nameField.isEmpty()) {
+                Notification.show("Name is required.", 3000, Notification.Position.MIDDLE)
+                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                return;
+              }
+              try {
+                tournamentService.updateTournament(
+                    tournament.getId(),
+                    nameField.getValue(),
+                    formatCombo.getValue() != null ? formatCombo.getValue().getFormatId() : null,
+                    titleCombo.getValue(),
+                    startDate.getValue(),
+                    new ArrayList<>(rulesPicker.getSelectedItems()));
+                dialog.close();
+                refresh();
+                Notification.show("Tournament updated!", 3000, Notification.Position.BOTTOM_CENTER)
+                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+              } catch (Exception ex) {
+                log.error("Error updating tournament", ex);
+                Notification.show("Error: " + ex.getMessage(), 5000, Notification.Position.MIDDLE)
+                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
+              }
+            });
+    save.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+    dialog.getFooter().add(cancel, save);
+    dialog.add(new VerticalLayout(nameField, formatCombo, titleCombo, startDate, rulesPicker));
+    dialog.open();
+  }
+
+  private void confirmDelete(Tournament tournament) {
+    ConfirmDialog confirmDialog = new ConfirmDialog();
+    confirmDialog.setHeader("Delete Tournament");
+    confirmDialog.setText(
+        "Are you sure you want to delete the tournament '"
+            + tournament.getName()
+            + "'?"
+            + " Only scheduled (not started) tournaments can be deleted.");
+    confirmDialog.setCancelable(true);
+    confirmDialog.setConfirmText("Delete");
+    confirmDialog.setConfirmButtonTheme("error primary");
+
+    confirmDialog.addConfirmListener(
+        e -> {
+          try {
+            assert tournament.getId() != null;
+            boolean deleted = tournamentService.deleteTournament(tournament.getId());
+            if (deleted) {
+              refresh();
+              Notification.show("Tournament deleted", 3000, Notification.Position.BOTTOM_END)
+                  .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+            } else {
+              Notification.show("Tournament not found.", 5000, Notification.Position.BOTTOM_END)
+                  .addThemeVariants(NotificationVariant.LUMO_ERROR);
+            }
+          } catch (Exception ex) {
+            log.error("Error deleting tournament", ex);
+            Notification.show("Error: " + ex.getMessage(), 5000, Notification.Position.MIDDLE)
+                .addThemeVariants(NotificationVariant.LUMO_ERROR);
+          }
+        });
+    confirmDialog.open();
   }
 
   private void refresh() {
@@ -202,6 +333,35 @@ public class TournamentListView extends VerticalLayout {
     tabs.add(tab2, tab2Content);
     tabs.setSizeFull();
 
+    // Wizard gating: only the Details tab is selectable until name + format are filled — the
+    // Create button lives on the last step, so nothing can be created with an invalid step 1.
+    Button back = new Button("Back", e -> tabs.setSelectedIndex(0));
+    back.setEnabled(false);
+
+    Button next =
+        new Button(
+            "Next",
+            e -> {
+              if (nameField.isEmpty() || formatCombo.isEmpty()) {
+                Notification.show(
+                        "Name and format are required before seeding.",
+                        3000,
+                        Notification.Position.MIDDLE)
+                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                return;
+              }
+              tabs.setSelectedIndex(1);
+            });
+
+    Runnable updateWizardButtons =
+        () -> {
+          boolean onDetails = Objects.equals(tabs.getSelectedIndex(), 0);
+          back.setEnabled(!onDetails);
+          next.setVisible(onDetails);
+          create.setVisible(!onDetails);
+        };
+    tabs.addSelectedChangeListener(e -> updateWizardButtons.run());
+
     Button cancel = new Button("Cancel", e -> dialog.close());
     Button create =
         new Button(
@@ -249,7 +409,7 @@ public class TournamentListView extends VerticalLayout {
             });
     create.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
-    dialog.getFooter().add(cancel, create);
+    dialog.getFooter().add(cancel, back, next, create);
     dialog.add(tabs);
     dialog.open();
   }

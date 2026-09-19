@@ -170,6 +170,73 @@ public class TournamentService {
     return tournamentRepository.save(t);
   }
 
+  /**
+   * Update a tournament's editable metadata. Only SCHEDULED tournaments can be edited — once a
+   * bracket is underway its structure (format, entrants) is locked.
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public Tournament updateTournament(
+      @NonNull final Long id,
+      @NonNull final String name,
+      final String formatId,
+      final Title linkedTitle,
+      final LocalDate startDate,
+      final List<SegmentRule> allowedRules) {
+    Tournament t =
+        tournamentRepository
+            .findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Tournament not found: " + id));
+    if (t.getStatus() != TournamentStatus.SCHEDULED) {
+      throw new IllegalStateException(
+          "Only SCHEDULED tournaments can be edited — '" + t.getName() + "' is " + t.getStatus());
+    }
+    t.setName(name);
+    if (formatId != null && !formatId.equals(t.getFormatId())) {
+      if (!t.getEntries().isEmpty()) {
+        throw new IllegalStateException(
+            "Cannot change the format of a tournament that already has entrants");
+      }
+      findFormat(formatId)
+          .orElseThrow(() -> new IllegalArgumentException("Unknown format: " + formatId));
+      t.setFormatId(formatId);
+    }
+    t.setLinkedTitle(linkedTitle);
+    t.setStartDate(startDate);
+    t.setAllowedRules(allowedRules != null ? new ArrayList<>(allowedRules) : new ArrayList<>());
+    return tournamentRepository.save(t);
+  }
+
+  /**
+   * Delete a tournament. Only SCHEDULED ones (no bracket in flight, no booked segments to orphan);
+   * deletes entries, rounds, and their matches first since match → round is a plain FK with no JPA
+   * cascade.
+   *
+   * @return true when deleted, false when the tournament does not exist
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public boolean deleteTournament(@NonNull final Long id) {
+    Tournament t = tournamentRepository.findById(id).orElse(null);
+    if (t == null) {
+      return false;
+    }
+    if (t.getStatus() != TournamentStatus.SCHEDULED) {
+      throw new IllegalStateException(
+          "Only SCHEDULED tournaments can be deleted — '"
+              + t.getName()
+              + "' is "
+              + t.getStatus()
+              + ". Start a new one instead.");
+    }
+    t.getRounds()
+        .forEach(round -> matchRepository.deleteAll(matchRepository.findByRoundId(round.getId())));
+    roundRepository.deleteAll(roundRepository.findByTournamentIdOrderByRoundNumberAsc(id));
+    entryRepository.deleteAll(entryRepository.findByTournamentIdOrderBySeedAsc(id));
+    tournamentRepository.delete(t);
+    return true;
+  }
+
   // ── Entry management ──────────────────────────────────────────────────────
 
   @Transactional
