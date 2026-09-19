@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.tournament;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.reservation.ShowSegmentReservationPurpose;
@@ -85,6 +86,16 @@ public class TournamentService {
   @PreAuthorize("isAuthenticated()")
   public List<Tournament> findAll() {
     return tournamentRepository.findAll();
+  }
+
+  /**
+   * Session-safe entrant count for detached grid rows — the entries collection is lazy and the list
+   * view renders outside a transaction (TournamentListView).
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public long countEntries(Tournament tournament) {
+    return entryRepository.countByTournamentId(tournament.getId());
   }
 
   @Transactional(readOnly = true)
@@ -189,11 +200,18 @@ public class TournamentService {
               + fmt.getMaxEntrants()
               + "]");
     }
+    // A tournament linked to a gender-restricted championship seeds only eligible wrestlers
+    // (e.g. the ATW World title is male-exclusive).
+    Gender genderConstraint =
+        tournament.getLinkedTitle() != null ? tournament.getLinkedTitle().getGender() : null;
     List<Wrestler> active =
-        wrestlerRepository.findAllByActiveTrue().stream()
-            .sorted(Comparator.comparingLong((Wrestler w) -> w.getFans(universeId)).reversed())
-            .limit(count)
-            .toList();
+        (genderConstraint != null
+                ? wrestlerRepository.findAllByGenderAndActive(genderConstraint, true)
+                : wrestlerRepository.findAllByActiveTrue())
+            .stream()
+                .sorted(Comparator.comparingLong((Wrestler w) -> w.getFans(universeId)).reversed())
+                .limit(count)
+                .toList();
 
     List<TournamentEntry> entries = new ArrayList<>();
     for (int i = 0; i < active.size(); i++) {

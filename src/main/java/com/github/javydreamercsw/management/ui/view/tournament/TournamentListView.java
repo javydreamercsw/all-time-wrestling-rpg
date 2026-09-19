@@ -104,7 +104,9 @@ public class TournamentListView extends VerticalLayout {
 
     g.addColumn(Tournament::getName).setHeader("Name").setSortable(true).setFlexGrow(2);
     g.addColumn(t -> t.getFormatId().replace('_', ' ')).setHeader("Format").setSortable(true);
-    g.addColumn(t -> t.getEntries().size()).setHeader("Entrants");
+    // Entries are lazy and rows render outside a transaction — count through the service
+    // instead of touching the collection (LazyInitializationException otherwise).
+    g.addColumn(t -> tournamentService.countEntries(t)).setHeader("Entrants");
     g.addColumn(t -> t.getStatus().name()).setHeader("Status").setSortable(true);
     g.addColumn(Tournament::getStartDate).setHeader("Start Date").setSortable(true);
 
@@ -165,9 +167,13 @@ public class TournamentListView extends VerticalLayout {
 
     // Tab 2: Seeding
     ComboBox<String> seedingMode = new ComboBox<>("Seeding Method");
-    seedingMode.setItems("Auto (by fan count)", "Manual (pick wrestlers)");
+    seedingMode.setItems(
+        "Auto (by fan count)", "Manual (pick wrestlers)", "Don't seed now (seed later)");
     seedingMode.setValue("Auto (by fan count)");
     seedingMode.setWidthFull();
+    seedingMode.setHelperText(
+        "Auto seeds the top wrestlers by fan count. A tournament paired with a show template"
+            + " can also be seeded automatically when the paired show is approved.");
 
     IntegerField countField = new IntegerField("Number of Entrants");
     countField.setValue(8);
@@ -184,7 +190,8 @@ public class TournamentListView extends VerticalLayout {
     seedingMode.addValueChangeListener(
         e -> {
           boolean manual = "Manual (pick wrestlers)".equals(e.getValue());
-          countField.setVisible(!manual);
+          boolean skip = "Don't seed now (seed later)".equals(e.getValue());
+          countField.setVisible(!manual && !skip);
           wrestlerPicker.setVisible(manual);
         });
 
@@ -217,16 +224,17 @@ public class TournamentListView extends VerticalLayout {
                         startDate.getValue(),
                         new ArrayList<>(rulesPicker.getSelectedItems()));
 
-                boolean auto = !"Manual (pick wrestlers)".equals(seedingMode.getValue());
+                boolean auto = "Auto (by fan count)".equals(seedingMode.getValue());
+                boolean manual = "Manual (pick wrestlers)".equals(seedingMode.getValue());
                 if (auto) {
                   tournamentService.seedAuto(
                       t, countField.getValue(), universe.map(Universe::getId).orElse(1L));
-                } else {
+                } else if (manual) {
                   List<Wrestler> selected = new ArrayList<>(wrestlerPicker.getSelectedItems());
                   for (int i = 0; i < selected.size(); i++) {
                     tournamentService.addEntry(t, selected.get(i), i + 1);
                   }
-                }
+                } // "Don't seed now": seed later from the detail view or via a paired show.
 
                 dialog.close();
                 refresh();
