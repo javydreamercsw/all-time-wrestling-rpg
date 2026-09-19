@@ -318,12 +318,25 @@ public class TournamentService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public int countEligibleEntrants(Title linkedTitle) {
+    return findEligibleWrestlersSortedByFans(linkedTitle, null).size();
+  }
+
+  /**
+   * The active wrestlers eligible to seed a tournament linked to the given title, sorted by fans
+   * (most fans first) — the same pool and ordering {@link #seedAuto} uses. Transactional so
+   * detached UI callers can read fan counts (they walk the lazy wrestlerStates collection) and
+   * render the seeding preview without LazyInitializationException.
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public List<Wrestler> findEligibleWrestlersSortedByFans(Title linkedTitle, Long universeId) {
     Gender genderConstraint = linkedTitle != null ? linkedTitle.getGender() : null;
-    List<Wrestler> eligible =
-        genderConstraint != null
+    return (genderConstraint != null
             ? wrestlerRepository.findAllByGenderAndActive(genderConstraint, true)
-            : wrestlerRepository.findAllByActiveTrue();
-    return eligible.size();
+            : wrestlerRepository.findAllByActiveTrue())
+        .stream()
+            .sorted(Comparator.comparingLong((Wrestler w) -> w.getFans(universeId)).reversed())
+            .toList();
   }
 
   // ── Bracket lifecycle ─────────────────────────────────────────────────────

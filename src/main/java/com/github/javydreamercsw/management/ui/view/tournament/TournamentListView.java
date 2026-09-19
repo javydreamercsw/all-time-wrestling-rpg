@@ -58,7 +58,6 @@ import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -360,21 +359,13 @@ public class TournamentListView extends VerticalLayout {
             matchupPreview.setVisible(false);
             return;
           }
+          // Fans walk the lazy wrestlerStates collection — rank inside the service's
+          // transaction instead of touching detached entities here.
           List<Wrestler> pool =
-              new ArrayList<>(wrestlerFacade.getWrestlerService().getAllWrestlers());
-          pool.removeIf(w -> !Boolean.TRUE.equals(w.getActive()));
-          if (titleCombo.getValue() != null && titleCombo.getValue().getGender() != null) {
-            pool.removeIf(w -> !titleCombo.getValue().getGender().equals(w.getGender()));
-          }
-          pool.sort(
-              Comparator.comparingLong(
-                      (Wrestler w) ->
-                          w.getFans(
-                              universeContextService
-                                  .getCurrentUniverse()
-                                  .map(Universe::getId)
-                                  .orElse(1L)))
-                  .reversed());
+              new ArrayList<>(
+                  tournamentService.findEligibleWrestlersSortedByFans(
+                      titleCombo.getValue(),
+                      universeContextService.getCurrentUniverse().map(Universe::getId).orElse(1L)));
           int take = Math.min(entrants, pool.size());
           StringBuilder sb = new StringBuilder();
           for (int i = 0; i < take / 2; i++) {
