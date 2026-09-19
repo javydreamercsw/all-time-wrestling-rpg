@@ -281,11 +281,49 @@ public class TournamentService {
                 .limit(count)
                 .toList();
 
+    if (active.size() < fmt.getMinEntrants()) {
+      throw new IllegalStateException(
+          "Not enough eligible wrestlers to seed '"
+              + tournament.getName()
+              + "': "
+              + active.size()
+              + " available, the format needs at least "
+              + fmt.getMinEntrants()
+              + (genderConstraint != null
+                  ? " (eligibility limited by the linked championship's gender constraint)"
+                  : ""));
+    }
+    if (active.size() < count) {
+      // Requested more than the eligible roster holds — seed everyone available instead of
+      // failing (the wizard caps its field at the roster size; API callers may not).
+      log.info(
+          "Seeding '{}' with {} entrants ({} requested, roster holds only that many)",
+          tournament.getName(),
+          active.size(),
+          count);
+    }
+
     List<TournamentEntry> entries = new ArrayList<>();
     for (int i = 0; i < active.size(); i++) {
       entries.add(addEntry(tournament, active.get(i), i + 1));
     }
     return entries;
+  }
+
+  /**
+   * How many active wrestlers are eligible to seed a tournament linked to the given title — the
+   * active roster, narrowed by the title's gender constraint when it has one. The creation wizard
+   * caps its entrant-count field at this value.
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public int countEligibleEntrants(Title linkedTitle) {
+    Gender genderConstraint = linkedTitle != null ? linkedTitle.getGender() : null;
+    List<Wrestler> eligible =
+        genderConstraint != null
+            ? wrestlerRepository.findAllByGenderAndActive(genderConstraint, true)
+            : wrestlerRepository.findAllByActiveTrue();
+    return eligible.size();
   }
 
   // ── Bracket lifecycle ─────────────────────────────────────────────────────

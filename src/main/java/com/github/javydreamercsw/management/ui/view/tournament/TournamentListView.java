@@ -145,12 +145,16 @@ public class TournamentListView extends VerticalLayout {
   }
 
   private void openEditDialog(Tournament tournament) {
+    // The grid row is detached — its linkedTitle is an uninitialized proxy. Re-read with the
+    // graph initialized before binding lazy values to the dialog fields.
+    Tournament managed =
+        tournamentService.findByIdWithDetails(tournament.getId()).orElse(tournament);
     Dialog dialog = new Dialog();
     dialog.setHeaderTitle("Edit Tournament");
     dialog.setWidth("min(600px, 95vw)");
 
     TextField nameField = new TextField("Tournament Name");
-    nameField.setValue(tournament.getName());
+    nameField.setValue(managed.getName());
     nameField.setRequired(true);
     nameField.setWidthFull();
 
@@ -158,24 +162,24 @@ public class TournamentListView extends VerticalLayout {
     formatCombo.setItems(tournamentService.getAvailableFormats());
     formatCombo.setItemLabelGenerator(TournamentFormat::getDisplayName);
     formatCombo.setWidthFull();
-    tournamentService.findFormat(tournament.getFormatId()).ifPresent(formatCombo::setValue);
+    tournamentService.findFormat(managed.getFormatId()).ifPresent(formatCombo::setValue);
 
     ComboBox<Title> titleCombo = new ComboBox<>("Linked Championship (optional)");
     titleCombo.setItems(wrestlerFacade.getTitleService().findAll());
     titleCombo.setItemLabelGenerator(Title::getName);
-    titleCombo.setValue(tournament.getLinkedTitle());
+    titleCombo.setValue(managed.getLinkedTitle());
     titleCombo.setWidthFull();
     titleCombo.setClearButtonVisible(true);
 
     DatePicker startDate = new DatePicker("Start Date");
-    startDate.setValue(tournament.getStartDate());
+    startDate.setValue(managed.getStartDate());
     startDate.setWidthFull();
 
     MultiSelectComboBox<SegmentRule> rulesPicker =
         new MultiSelectComboBox<>("Allowed Segment Rules (optional)");
     rulesPicker.setItems(segmentRuleService.findAll());
     rulesPicker.setItemLabelGenerator(SegmentRule::getName);
-    rulesPicker.setValue(new java.util.HashSet<>(tournament.getAllowedRules()));
+    rulesPicker.setValue(new java.util.HashSet<>(managed.getAllowedRules()));
     rulesPicker.setWidthFull();
 
     Button cancel = new Button("Cancel", e -> dialog.close());
@@ -312,6 +316,21 @@ public class TournamentListView extends VerticalLayout {
     countField.setMin(3);
     countField.setMax(64);
     countField.setWidthFull();
+    countField.setHelperText("Capped at the number of eligible active wrestlers.");
+
+    // Cap the entrant count at the eligible roster (narrowed by the linked championship's
+    // gender constraint) — the format's 64 max means nothing to a 12-wrestler universe.
+    Runnable refreshEntrantCap =
+        () -> {
+          int eligible = tournamentService.countEligibleEntrants(titleCombo.getValue());
+          int cap = Math.max(3, Math.min(64, eligible));
+          countField.setMax(cap);
+          if (countField.getValue() == null || countField.getValue() > cap) {
+            countField.setValue(cap);
+          }
+        };
+    titleCombo.addValueChangeListener(e -> refreshEntrantCap.run());
+    refreshEntrantCap.run();
 
     MultiSelectComboBox<Wrestler> wrestlerPicker = new MultiSelectComboBox<>("Select Wrestlers");
     wrestlerPicker.setItems(wrestlerFacade.getWrestlerService().getAllWrestlers());
