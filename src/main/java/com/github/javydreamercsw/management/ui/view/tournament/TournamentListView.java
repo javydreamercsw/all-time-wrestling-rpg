@@ -46,6 +46,7 @@ import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
@@ -58,6 +59,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 @Route(value = "tournament-list", layout = MainLayout.class)
 @PageTitle("Tournaments | ATW RPG")
+@Menu(order = 7, icon = "vaadin:trophy", title = "Tournaments")
 @RolesAllowed({"ADMIN", "BOOKER", "PLAYER", "VIEWER"})
 @Slf4j
 public class TournamentListView extends VerticalLayout {
