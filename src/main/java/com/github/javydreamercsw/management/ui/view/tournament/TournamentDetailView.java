@@ -28,10 +28,12 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentRoundSta
 import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.show.ShowFacade;
+import com.github.javydreamercsw.management.service.tournament.TournamentFormat;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.ui.ViewContext;
 import com.github.javydreamercsw.management.ui.component.TournamentBracketComponent;
+import com.github.javydreamercsw.management.ui.component.TournamentBracketPreviewModel;
 import com.github.javydreamercsw.management.ui.component.TournamentEntityAdapter;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.button.Button;
@@ -133,8 +135,18 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
 
     if (tournament.getStatus() == TournamentStatus.SCHEDULED
         && !tournament.getEntries().isEmpty()) {
+      Button previewBtn = new Button("Preview Bracket", e -> showBracketPreview());
+      previewBtn.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
+      previewBtn.setTooltipText("Show the match-ups 'Start Tournament' will generate");
+      actions.add(previewBtn);
+
       Button startBtn = new Button("Start Tournament", e -> startTournament());
       startBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+      startBtn.setTooltipText(
+          "Generate the first-round bracket from the seeded entrants (1 vs last, 2 vs"
+              + " second-to-last, ...). The tournament switches to IN_PROGRESS and its rounds"
+              + " can then be booked onto shows — or fed into a paired PLE template"
+              + " automatically.");
       actions.add(startBtn);
     }
 
@@ -362,6 +374,38 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
       Notification.show("Error: " + e.getMessage(), 5000, Notification.Position.MIDDLE)
           .addThemeVariants(NotificationVariant.LUMO_ERROR);
     }
+  }
+
+  /**
+   * Show the match-ups Start Tournament would generate, without committing — rendered with the same
+   * bracket viewer the in-progress tournament uses, fed an in-memory preview model.
+   */
+  private void showBracketPreview() {
+    Dialog preview = new Dialog();
+    preview.setHeaderTitle("Bracket Preview (not started yet)");
+    preview.setWidth("min(900px, 95vw)");
+
+    VerticalLayout content = new VerticalLayout();
+    content.setPadding(false);
+    if (tournament.getEntries().size() < 2) {
+      content.add(new Span("Not enough entrants for a bracket."));
+    } else {
+      content.add(
+          new TournamentBracketComponent(
+              new TournamentBracketPreviewModel(tournament, resolveRenderMode())));
+      content.add(
+          new Span("Starting commits this bracket and switches the tournament to IN_PROGRESS."));
+    }
+    preview.add(content);
+    preview.getFooter().add(new Button("Close", e -> preview.close()));
+    preview.open();
+  }
+
+  private TournamentFormat.RenderMode resolveRenderMode() {
+    return tournamentService
+        .findFormat(tournament.getFormatId())
+        .map(TournamentFormat::renderMode)
+        .orElse(TournamentFormat.RenderMode.TREE);
   }
 
   private void advanceRound() {
