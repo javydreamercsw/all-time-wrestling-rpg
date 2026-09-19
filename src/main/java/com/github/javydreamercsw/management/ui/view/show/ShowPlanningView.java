@@ -121,6 +121,11 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   private final Editor<ProposedSegment> editor;
   private List<ProposedSegment> segments = new ArrayList<>();
 
+  // Test-visible only: the value-change listener's auto-triggered loadContext() call is
+  // fire-and-forget in production, but tests need to await it deterministically instead of
+  // racing it with their own mock stubbing/verification on a background thread.
+  CompletableFuture<Void> pendingAutoLoadForTest;
+
   @Autowired
   public ShowPlanningView(
       final ShowFacade showFacade,
@@ -179,9 +184,12 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     contextArea.setReadOnly(true);
     contextArea.setId("show-planning-context-area");
 
-    // The guided flow: picking a show enables AI planning directly — the
-    // context is loaded server-side inside proposeSegments(), so the old
-    // mandatory "Load Context" + JSON inspection gate is unnecessary.
+    // The guided flow: picking a show auto-loads the planning context in the background;
+    // AI Propose Segments only becomes clickable once that load succeeds (see the
+    // value-change listener below). It must NOT be enabled immediately on selection —
+    // proposeSegments() also loads the context itself, so an early click just races the
+    // fetch below instead of failing outright, but the button should reflect real
+    // readiness rather than "a show happens to be selected".
     proposeSegmentsButton = new Button("AI Propose Segments", e -> proposeSegments());
     proposeSegmentsButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     proposeSegmentsButton.setEnabled(false);
@@ -189,10 +197,17 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
 
     showComboBox.addValueChangeListener(
         e -> {
-          loadContextButton.setEnabled(e.getValue() != null);
-          viewDetailsButton.setEnabled(e.getValue() != null);
-          proposeSegmentsButton.setEnabled(e.getValue() != null);
-          updateTemplateImage(e.getValue());
+          Show selected = e.getValue();
+          loadContextButton.setEnabled(selected != null);
+          viewDetailsButton.setEnabled(selected != null);
+          // Disable until the auto-triggered loadContext() below re-enables it on success.
+          proposeSegmentsButton.setEnabled(false);
+          updateTemplateImage(selected);
+          if (selected != null) {
+            // Stashed for tests only, so they can await this fire-and-forget load instead of
+            // racing it with their own subsequent mock stubbing/verification.
+            pendingAutoLoadForTest = loadContext();
+          }
         });
 
     proposedSegmentsGrid = new Grid<>(ProposedSegment.class, false);
@@ -642,8 +657,15 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
           .getShowById(parameter)
           .ifPresent(
               show -> {
+                // setValue() on an unchanged value fires no ValueChangeEvent, so the
+                // value-change listener's auto context-load would silently not run when
+                // re-navigating to the already-selected show's URL — load explicitly in
+                // that case to preserve the old "always refresh on direct link" behavior.
+                boolean alreadySelected = show.equals(showComboBox.getValue());
                 showComboBox.setValue(show);
-                loadContext();
+                if (alreadySelected) {
+                  loadContext();
+                }
               });
     }
   }

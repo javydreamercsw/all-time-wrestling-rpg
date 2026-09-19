@@ -159,6 +159,88 @@ class ShowPlanningViewTest extends AbstractViewTest {
             objectMapper);
   }
 
+  /**
+   * Selects a show and awaits the value-change listener's auto-triggered context load
+   * (ShowPlanningView#pendingAutoLoadForTest) before returning — callers must stub whatever the
+   * load needs beforehand, since it now fires synchronously off {@code setValue}. Without this, the
+   * background load races the test's own subsequent mock stubbing on the same thread-unsafe mocks
+   * (observed: WrongTypeOfReturnValue from Mockito).
+   */
+  @SuppressWarnings("unchecked")
+  private void selectShowAndAwaitAutoLoad(final Show show) {
+    ComboBox<Show> showComboBox =
+        (ComboBox<Show>) ReflectionTestUtils.getField(showPlanningView, "showComboBox");
+    showComboBox.setValue(show);
+    CompletableFuture<Void> autoLoad =
+        (CompletableFuture<Void>)
+            ReflectionTestUtils.getField(showPlanningView, "pendingAutoLoadForTest");
+    if (autoLoad != null) {
+      autoLoad.join();
+    }
+    MockVaadin.runUIQueue();
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void selectShow_proposeButtonDisabledUntilContextLoadSucceeds() {
+    // Regression: the button used to enable synchronously on selection, racing the async
+    // context load that proposeSegments() also performs — a click could fire before any
+    // context existed. It must now only enable once the load has actually completed.
+    Show show = new Show();
+    show.setId(1L);
+    show.setName("Test Show");
+    show.setShowDate(LocalDate.now());
+
+    when(showPlanningService.getShowPlanningContext(show)).thenReturn(new ShowPlanningContextDTO());
+    ReflectionTestUtils.setField(showPlanningView, "objectMapper", new ObjectMapper());
+
+    ComboBox<Show> showComboBox =
+        (ComboBox<Show>) ReflectionTestUtils.getField(showPlanningView, "showComboBox");
+    Button proposeButton =
+        (Button) ReflectionTestUtils.getField(showPlanningView, "proposeSegmentsButton");
+
+    showComboBox.setValue(show);
+    // Immediately after selection — before the background load has had a chance to run — the
+    // button must be disabled, not "enabled because a show is selected".
+    assertFalse(proposeButton.isEnabled(), "Button must not enable before the context loads");
+
+    CompletableFuture<Void> autoLoad =
+        (CompletableFuture<Void>)
+            ReflectionTestUtils.getField(showPlanningView, "pendingAutoLoadForTest");
+    assertNotNull(autoLoad, "Selecting a show must auto-trigger a context load");
+    autoLoad.join();
+    MockVaadin.runUIQueue();
+
+    assertTrue(proposeButton.isEnabled(), "Button must enable once the context load succeeds");
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void selectShow_contextLoadFails_proposeButtonStaysDisabled() {
+    Show show = new Show();
+    show.setId(1L);
+    show.setName("Test Show");
+    show.setShowDate(LocalDate.now());
+
+    when(showPlanningService.getShowPlanningContext(show))
+        .thenThrow(new IllegalStateException("boom"));
+
+    ComboBox<Show> showComboBox =
+        (ComboBox<Show>) ReflectionTestUtils.getField(showPlanningView, "showComboBox");
+    Button proposeButton =
+        (Button) ReflectionTestUtils.getField(showPlanningView, "proposeSegmentsButton");
+
+    showComboBox.setValue(show);
+    CompletableFuture<Void> autoLoad =
+        (CompletableFuture<Void>)
+            ReflectionTestUtils.getField(showPlanningView, "pendingAutoLoadForTest");
+    assertNotNull(autoLoad);
+    autoLoad.join();
+    MockVaadin.runUIQueue();
+
+    assertFalse(proposeButton.isEnabled(), "A failed load must not leave the button clickable");
+  }
+
   @Test
   @SuppressWarnings("unchecked")
   void testLoadContextWithRivalries() throws Exception {
@@ -205,10 +287,6 @@ class ShowPlanningViewTest extends AbstractViewTest {
     show.setName("Test Show");
     show.setShowDate(LocalDate.now());
 
-    ComboBox<Show> showComboBox =
-        (ComboBox<Show>) ReflectionTestUtils.getField(showPlanningView, "showComboBox");
-    showComboBox.setValue(show);
-
     ShowPlanningContextDTO context = new ShowPlanningContextDTO();
     context.setExcludedBeatWarnings(
         List.of(
@@ -219,11 +297,8 @@ class ShowPlanningViewTest extends AbstractViewTest {
     ObjectMapper objectMapper = new ObjectMapper();
     ReflectionTestUtils.setField(showPlanningView, "objectMapper", objectMapper);
 
-    ((CompletableFuture<Void>)
-            Objects.requireNonNull(
-                ReflectionTestUtils.invokeMethod(showPlanningView, "loadContext")))
-        .join();
-    MockVaadin.runUIQueue();
+    // Selecting the show auto-triggers loadContext(); await it instead of racing it.
+    selectShowAndAwaitAutoLoad(show);
 
     VerticalLayout warnings =
         (VerticalLayout) ReflectionTestUtils.getField(showPlanningView, "excludedBeatsWarnings");
@@ -241,21 +316,13 @@ class ShowPlanningViewTest extends AbstractViewTest {
     show.setName("Test Show");
     show.setShowDate(LocalDate.now());
 
-    ComboBox<Show> showComboBox =
-        (ComboBox<Show>) ReflectionTestUtils.getField(showPlanningView, "showComboBox");
-    showComboBox.setValue(show);
-
     ShowPlanningContextDTO context = new ShowPlanningContextDTO();
     when(showPlanningService.getShowPlanningContext(show)).thenReturn(context);
 
     ObjectMapper objectMapper = new ObjectMapper();
     ReflectionTestUtils.setField(showPlanningView, "objectMapper", objectMapper);
 
-    ((CompletableFuture<Void>)
-            Objects.requireNonNull(
-                ReflectionTestUtils.invokeMethod(showPlanningView, "loadContext")))
-        .join();
-    MockVaadin.runUIQueue();
+    selectShowAndAwaitAutoLoad(show);
 
     VerticalLayout warnings =
         (VerticalLayout) ReflectionTestUtils.getField(showPlanningView, "excludedBeatsWarnings");
@@ -273,15 +340,18 @@ class ShowPlanningViewTest extends AbstractViewTest {
     show.setName("Test Show");
     show.setShowDate(LocalDate.now());
 
-    // Mock the ComboBox to return the mock Show
-    ComboBox<Show> showComboBox =
-        (ComboBox<Show>) ReflectionTestUtils.getField(showPlanningView, "showComboBox");
-    assertNotNull(showComboBox);
-    showComboBox.setValue(show);
-
-    // Create a mock ShowPlanningContext
+    // Create a mock ShowPlanningContext — stub before selecting so the auto-triggered load
+    // (fired by setValue below) doesn't race this stubbing call on a background thread.
     ShowPlanningContextDTO context = new ShowPlanningContextDTO();
     when(showPlanningService.getShowPlanningContext(show)).thenReturn(context);
+
+    // Mock the ObjectMapper
+    ObjectMapper objectMapper = new ObjectMapper();
+    ReflectionTestUtils.setField(showPlanningView, "objectMapper", objectMapper);
+
+    // Selecting the show auto-triggers loadContext(); await it before further stubbing.
+    selectShowAndAwaitAutoLoad(show);
+    assertNotNull(ReflectionTestUtils.getField(showPlanningView, "showComboBox"));
 
     ProposedShow proposedShow = new ProposedShow();
     ProposedSegment segment1 = new ProposedSegment();
@@ -295,10 +365,6 @@ class ShowPlanningViewTest extends AbstractViewTest {
     proposedShow.setSegments(List.of(segment1, segment2));
     when(showPlanningAiService.planShow(any())).thenReturn(proposedShow);
 
-    // Mock the ObjectMapper
-    ObjectMapper objectMapper = new ObjectMapper();
-    ReflectionTestUtils.setField(showPlanningView, "objectMapper", objectMapper);
-
     // Ensure the grid is initialized if not already
     Grid<ProposedSegment> grid =
         (Grid<ProposedSegment>)
@@ -310,10 +376,6 @@ class ShowPlanningViewTest extends AbstractViewTest {
     // Ensure AI factory returns a non-empty list so proposeSegments() does not return early
     when(aiFactory.getAvailableServicesInPriorityOrder())
         .thenReturn(List.of(mock(SegmentNarrationService.class)));
-    // Call the method to be tested
-    ((CompletableFuture<Void>) ReflectionTestUtils.invokeMethod(showPlanningView, "loadContext"))
-        .join();
-    MockVaadin.runUIQueue();
     ((CompletableFuture<Void>)
             Objects.requireNonNull(
                 ReflectionTestUtils.invokeMethod(showPlanningView, "proposeSegments")))
@@ -347,9 +409,24 @@ class ShowPlanningViewTest extends AbstractViewTest {
 
     when(showService.getShowById(showId)).thenReturn(Optional.of(show));
 
-    // Create a mock ShowPlanningContext
+    // Create a mock ShowPlanningContext — stub before setParameter, which selects the show and
+    // triggers the auto-load on a background thread.
     ShowPlanningContextDTO context = new ShowPlanningContextDTO();
     when(showPlanningService.getShowPlanningContext(show)).thenReturn(context);
+
+    // Mock the ObjectMapper
+    ObjectMapper objectMapper = new ObjectMapper();
+    ReflectionTestUtils.setField(showPlanningView, "objectMapper", objectMapper);
+
+    // Call the method to be tested
+    showPlanningView.setParameter(mock(BeforeEvent.class), showId);
+    CompletableFuture<Void> autoLoad =
+        (CompletableFuture<Void>)
+            ReflectionTestUtils.getField(showPlanningView, "pendingAutoLoadForTest");
+    if (autoLoad != null) {
+      autoLoad.join();
+    }
+    MockVaadin.runUIQueue();
 
     ProposedShow proposedShow = new ProposedShow();
     ProposedSegment segment1 = new ProposedSegment();
@@ -358,10 +435,6 @@ class ShowPlanningViewTest extends AbstractViewTest {
     segment1.setTeams(List.of(List.of("A"), List.of("B")));
     proposedShow.setSegments(List.of(segment1));
     when(showPlanningAiService.planShow(any())).thenReturn(proposedShow);
-
-    // Mock the ObjectMapper
-    ObjectMapper objectMapper = new ObjectMapper();
-    ReflectionTestUtils.setField(showPlanningView, "objectMapper", objectMapper);
 
     // Ensure the grid is initialized if not already
     Grid<ProposedSegment> grid =
@@ -374,13 +447,6 @@ class ShowPlanningViewTest extends AbstractViewTest {
     // Ensure AI factory returns a non-empty list so proposeSegments() does not return early
     when(aiFactory.getAvailableServicesInPriorityOrder())
         .thenReturn(List.of(mock(SegmentNarrationService.class)));
-    // Call the method to be tested
-    showPlanningView.setParameter(mock(BeforeEvent.class), showId);
-    ((CompletableFuture<Void>)
-            Objects.requireNonNull(
-                ReflectionTestUtils.invokeMethod(showPlanningView, "loadContext")))
-        .join();
-    MockVaadin.runUIQueue();
     ((CompletableFuture<Void>)
             Objects.requireNonNull(
                 ReflectionTestUtils.invokeMethod(showPlanningView, "proposeSegments")))
@@ -413,9 +479,10 @@ class ShowPlanningViewTest extends AbstractViewTest {
     show.setName("Test Show");
     show.setShowDate(LocalDate.now());
 
-    ComboBox<Show> showComboBox =
-        (ComboBox<Show>) ReflectionTestUtils.getField(showPlanningView, "showComboBox");
-    showComboBox.setValue(show);
+    // Stub before selecting: setValue below auto-triggers a background loadContext() call
+    // against the same showPlanningService mock used for validateCard() below.
+    when(showPlanningService.getShowPlanningContext(show)).thenReturn(new ShowPlanningContextDTO());
+    selectShowAndAwaitAutoLoad(show);
 
     ProposedSegment seg = new ProposedSegment();
     seg.setType("Match");
@@ -439,9 +506,8 @@ class ShowPlanningViewTest extends AbstractViewTest {
     show.setName("Test Show");
     show.setShowDate(LocalDate.now());
 
-    ComboBox<Show> showComboBox =
-        (ComboBox<Show>) ReflectionTestUtils.getField(showPlanningView, "showComboBox");
-    showComboBox.setValue(show);
+    when(showPlanningService.getShowPlanningContext(show)).thenReturn(new ShowPlanningContextDTO());
+    selectShowAndAwaitAutoLoad(show);
 
     ProposedSegment seg = new ProposedSegment();
     seg.setType("Match");
@@ -468,9 +534,8 @@ class ShowPlanningViewTest extends AbstractViewTest {
     show.setName("Test Show");
     show.setShowDate(LocalDate.now());
 
-    ComboBox<Show> showComboBox =
-        (ComboBox<Show>) ReflectionTestUtils.getField(showPlanningView, "showComboBox");
-    showComboBox.setValue(show);
+    when(showPlanningService.getShowPlanningContext(show)).thenReturn(new ShowPlanningContextDTO());
+    selectShowAndAwaitAutoLoad(show);
 
     ProposedSegment seg = new ProposedSegment();
     seg.setType("Match");
@@ -496,11 +561,11 @@ class ShowPlanningViewTest extends AbstractViewTest {
     show.setName("Test Show");
     show.setShowDate(LocalDate.now());
 
-    ComboBox<Show> showComboBox =
-        (ComboBox<Show>) ReflectionTestUtils.getField(showPlanningView, "showComboBox");
-    showComboBox.setValue(show);
-
+    // Stub before selecting: setValue below auto-triggers a background loadContext() call.
     when(showPlanningService.getShowPlanningContext(show)).thenReturn(new ShowPlanningContextDTO());
+    ObjectMapper objectMapper = new ObjectMapper();
+    ReflectionTestUtils.setField(showPlanningView, "objectMapper", objectMapper);
+    selectShowAndAwaitAutoLoad(show);
 
     ProposedSegment segment = new ProposedSegment();
     segment.setType("One on One");
@@ -510,9 +575,6 @@ class ShowPlanningViewTest extends AbstractViewTest {
     ProposedShow proposedShow = new ProposedShow();
     proposedShow.setSegments(List.of(segment));
     when(showPlanningAiService.planShow(any())).thenReturn(proposedShow);
-
-    ObjectMapper objectMapper = new ObjectMapper();
-    ReflectionTestUtils.setField(showPlanningView, "objectMapper", objectMapper);
 
     when(aiFactory.getAvailableServicesInPriorityOrder())
         .thenReturn(List.of(mock(SegmentNarrationService.class)));
@@ -540,11 +602,11 @@ class ShowPlanningViewTest extends AbstractViewTest {
     show.setName("Test Show");
     show.setShowDate(LocalDate.now());
 
-    // Mock the ComboBox to return the mock Show
-    @SuppressWarnings("unchecked")
-    ComboBox<Show> showComboBox =
-        (ComboBox<Show>) ReflectionTestUtils.getField(showPlanningView, "showComboBox");
-    showComboBox.setValue(show);
+    // Selecting the show auto-triggers loadContext(); stub harmlessly and await it before the
+    // navigation assertions below (the mock's default null return is otherwise caught internally
+    // but leaves a background task racing this test's teardown).
+    when(showPlanningService.getShowPlanningContext(show)).thenReturn(new ShowPlanningContextDTO());
+    selectShowAndAwaitAutoLoad(show);
 
     // Temporarily swap Karibu UI with a mock to capture navigation calls
     UI karibuUI = UI.getCurrent();
