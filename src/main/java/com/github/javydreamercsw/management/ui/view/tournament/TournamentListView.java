@@ -41,6 +41,7 @@ import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
@@ -57,6 +58,7 @@ import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -346,7 +348,52 @@ public class TournamentListView extends VerticalLayout {
           wrestlerPicker.setVisible(manual);
         });
 
-    VerticalLayout tab2Content = new VerticalLayout(seedingMode, countField, wrestlerPicker);
+    // Match-up preview for Auto seeding: what Create will build, before it commits.
+    Span matchupPreview = new Span();
+    matchupPreview.getStyle().set("color", "var(--lumo-secondary-text-color)");
+    matchupPreview.setVisible(false);
+    Runnable refreshMatchups =
+        () -> {
+          boolean autoMode = "Auto (by fan count)".equals(seedingMode.getValue());
+          Integer entrants = countField.getValue();
+          if (!autoMode || entrants == null || entrants < 2) {
+            matchupPreview.setVisible(false);
+            return;
+          }
+          List<Wrestler> pool =
+              new ArrayList<>(wrestlerFacade.getWrestlerService().getAllWrestlers());
+          pool.removeIf(w -> !Boolean.TRUE.equals(w.getActive()));
+          if (titleCombo.getValue() != null && titleCombo.getValue().getGender() != null) {
+            pool.removeIf(w -> !titleCombo.getValue().getGender().equals(w.getGender()));
+          }
+          pool.sort(
+              Comparator.comparingLong(
+                      (Wrestler w) ->
+                          w.getFans(
+                              universeContextService
+                                  .getCurrentUniverse()
+                                  .map(Universe::getId)
+                                  .orElse(1L)))
+                  .reversed());
+          int take = Math.min(entrants, pool.size());
+          StringBuilder sb = new StringBuilder();
+          for (int i = 0; i < take / 2; i++) {
+            if (sb.length() > 0) {
+              sb.append(" · ");
+            }
+            sb.append(pool.get(i).getName())
+                .append(" vs ")
+                .append(pool.get(take - 1 - i).getName());
+          }
+          matchupPreview.setText(sb.isEmpty() ? "No eligible wrestlers yet." : sb.toString());
+          matchupPreview.setVisible(true);
+        };
+    countField.addValueChangeListener(e -> refreshMatchups.run());
+    titleCombo.addValueChangeListener(e -> refreshMatchups.run());
+    seedingMode.addValueChangeListener(e -> refreshMatchups.run());
+
+    VerticalLayout tab2Content =
+        new VerticalLayout(seedingMode, countField, wrestlerPicker, matchupPreview);
     tab2Content.setPadding(false);
 
     tabs.add(tab1, tab1Content);
