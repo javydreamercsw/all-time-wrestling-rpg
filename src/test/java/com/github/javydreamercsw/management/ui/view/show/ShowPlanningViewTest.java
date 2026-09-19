@@ -84,6 +84,7 @@ import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.springframework.test.util.ReflectionTestUtils;
 
 class ShowPlanningViewTest extends AbstractViewTest {
@@ -512,7 +513,7 @@ class ShowPlanningViewTest extends AbstractViewTest {
     assertEquals(
         objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(context),
         contextArea.getValue());
-    verify(showPlanningService, org.mockito.Mockito.times(2)).getShowPlanningContext(show);
+    verify(showPlanningService, Mockito.times(2)).getShowPlanningContext(show);
   }
 
   @Test
