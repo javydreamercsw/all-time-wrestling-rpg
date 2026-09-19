@@ -22,8 +22,6 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
-import com.github.javydreamercsw.management.domain.show.ShowBookingService;
-import com.github.javydreamercsw.management.domain.show.ShowSegmentReservationService;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
@@ -34,6 +32,8 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentRoundRep
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.show.ShowBookingService;
+import com.github.javydreamercsw.management.service.show.ShowSegmentReservationService;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

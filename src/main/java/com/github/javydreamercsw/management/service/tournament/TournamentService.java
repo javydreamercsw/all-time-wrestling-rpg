@@ -44,6 +44,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -76,7 +77,7 @@ public class TournamentService {
     return List.copyOf(formats);
   }
 
-  public Optional<TournamentFormat> findFormat(String formatId) {
+  public Optional<TournamentFormat> findFormat(@NonNull String formatId) {
     return formats.stream().filter(f -> f.getFormatId().equals(formatId)).findFirst();
   }
 
@@ -94,19 +95,19 @@ public class TournamentService {
    */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public long countEntries(Tournament tournament) {
+  public long countEntries(@NonNull Tournament tournament) {
     return entryRepository.countByTournamentId(tournament.getId());
   }
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public List<Tournament> findByUniverse(Universe universe) {
+  public List<Tournament> findByUniverse(@NonNull Universe universe) {
     return tournamentRepository.findByUniverseIdOrderByStartDateDesc(universe.getId());
   }
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Optional<Tournament> findById(Long id) {
+  public Optional<Tournament> findById(@NonNull Long id) {
     return tournamentRepository.findById(id);
   }
 
@@ -117,7 +118,7 @@ public class TournamentService {
     return tournamentRepository.findById(id).map(this::initializeGraph);
   }
 
-  private Tournament initializeGraph(Tournament t) {
+  private Tournament initializeGraph(@NonNull Tournament t) {
     t.getEntries().forEach(e -> e.getWrestler().getName());
     t.getAllowedRules().forEach(SegmentRule::getName);
     // The detail view reads the linked championship's name outside the session.
