@@ -29,6 +29,7 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -42,13 +43,17 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.segment.NPCSegmentResolutionService;
+import com.github.javydreamercsw.management.service.segment.SegmentTeam;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /** Unit tests for tournament-fed booking on PLE templates (ATW-oahn). */
@@ -119,8 +124,8 @@ class TournamentTemplateBookingServiceTest {
         .when(tournamentService.findByIdWithDetails(5L))
         .thenAnswer(
             invocation -> {
-              tournament.setEntries(new java.util.ArrayList<>(List.of(aliceEntry, bobEntry)));
-              tournament.setRounds(new java.util.ArrayList<>(List.of(round(1, match))));
+              tournament.setEntries(new ArrayList<>(List.of(aliceEntry, bobEntry)));
+              tournament.setRounds(new ArrayList<>(List.of(round(1, match))));
               return Optional.of(tournament);
             });
     when(tournamentService.startTournament(tournament))
@@ -149,7 +154,7 @@ class TournamentTemplateBookingServiceTest {
     TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.ACTIVE);
     TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ACTIVE);
     TournamentMatch match = match(1, aliceEntry, bobEntry);
-    tournament.setRounds(new java.util.ArrayList<>(List.of(round(1, match))));
+    tournament.setRounds(new ArrayList<>(List.of(round(1, match))));
 
     Segment booked = singles(alice, bob, alice);
     stubResolve(booked);
@@ -176,7 +181,7 @@ class TournamentTemplateBookingServiceTest {
     decided.setWinner(aliceEntry);
     TournamentRound completeRound = round(1, decided);
     completeRound.setStatus(TournamentRoundStatus.COMPLETE);
-    tournament.setRounds(new java.util.ArrayList<>(List.of(completeRound)));
+    tournament.setRounds(new ArrayList<>(List.of(completeRound)));
 
     // advanceToNextRound generates round 2 (PENDING) onto the tournament instance.
     when(tournamentService.advanceToNextRound(tournament))
@@ -204,7 +209,7 @@ class TournamentTemplateBookingServiceTest {
     tournament.setStatus(TournamentStatus.COMPLETE);
     TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.WINNER);
     TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ELIMINATED);
-    tournament.setEntries(new java.util.ArrayList<>(List.of(aliceEntry, bobEntry)));
+    tournament.setEntries(new ArrayList<>(List.of(aliceEntry, bobEntry)));
 
     Segment booked = singles(alice, bob, alice);
     stubResolve(booked);
@@ -222,7 +227,7 @@ class TournamentTemplateBookingServiceTest {
   @Test
   void completeTournamentWithoutWinner_fallsBackEmpty() {
     tournament.setStatus(TournamentStatus.COMPLETE);
-    tournament.setEntries(new java.util.ArrayList<>());
+    tournament.setEntries(new ArrayList<>());
 
     assertTrue(
         service.bookTournamentFedSegment(assignment, rumbleType, show).isEmpty(),
@@ -248,7 +253,7 @@ class TournamentTemplateBookingServiceTest {
     decided.setWinner(aliceEntry);
     TournamentRound completeRound = round(1, decided);
     completeRound.setStatus(TournamentRoundStatus.COMPLETE);
-    tournament.setRounds(new java.util.ArrayList<>(List.of(completeRound)));
+    tournament.setRounds(new ArrayList<>(List.of(completeRound)));
     // advanceToNextRound cannot help either (tournament over — markWinner path returns List.of()).
     when(tournamentService.advanceToNextRound(tournament)).thenReturn(List.of());
 
@@ -274,10 +279,9 @@ class TournamentTemplateBookingServiceTest {
     TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.ACTIVE);
     TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ACTIVE);
     TournamentMatch match = match(1, aliceEntry, bobEntry);
-    tournament.setRounds(new java.util.ArrayList<>(List.of(round(1, match))));
+    tournament.setRounds(new ArrayList<>(List.of(round(1, match))));
 
-    com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule rule =
-        new com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule();
+    SegmentRule rule = new SegmentRule();
     rule.setId(20L);
     rule.setName("Rumble Rules");
     assignment.setSegmentRule(rule);
@@ -296,7 +300,7 @@ class TournamentTemplateBookingServiceTest {
     TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.ACTIVE);
     TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ACTIVE);
     TournamentMatch match = match(1, aliceEntry, bobEntry);
-    tournament.setRounds(new java.util.ArrayList<>(List.of(round(1, match))));
+    tournament.setRounds(new ArrayList<>(List.of(round(1, match))));
 
     Segment booked = singles(alice, bob, alice);
     when(segmentResolutionService.resolveTeamSegment(any(), any(), any(), any(), any()))
@@ -307,15 +311,9 @@ class TournamentTemplateBookingServiceTest {
 
     assertTrue(booking.isPresent());
     // SegmentTeam has no equals — capture and assert on the wrestlers instead.
-    org.mockito.ArgumentCaptor<com.github.javydreamercsw.management.service.segment.SegmentTeam>
-        team1Captor =
-            org.mockito.ArgumentCaptor.forClass(
-                com.github.javydreamercsw.management.service.segment.SegmentTeam.class);
-    org.mockito.ArgumentCaptor<com.github.javydreamercsw.management.service.segment.SegmentTeam>
-        team2Captor =
-            org.mockito.ArgumentCaptor.forClass(
-                com.github.javydreamercsw.management.service.segment.SegmentTeam.class);
-    org.mockito.Mockito.verify(segmentResolutionService)
+    ArgumentCaptor<SegmentTeam> team1Captor = ArgumentCaptor.forClass(SegmentTeam.class);
+    ArgumentCaptor<SegmentTeam> team2Captor = ArgumentCaptor.forClass(SegmentTeam.class);
+    Mockito.verify(segmentResolutionService)
         .resolveTeamSegment(
             team1Captor.capture(), team2Captor.capture(), eq(rumbleType), eq(show), eq(""));
     assertEquals("Alice", team1Captor.getValue().getMembers().get(0).getName());
