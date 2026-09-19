@@ -354,6 +354,7 @@ public class ShowTemplateListView extends Main {
               editBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
               editBtn.addClickListener(e -> openEditDialog(template));
               editBtn.setVisible(securityUtils.canEdit());
+              editBtn.setId("edit-btn-" + template.getId());
 
               Icon toggleIcon =
                   template.isActive() ? new Icon(VaadinIcon.EYE) : new Icon(VaadinIcon.EYE_SLASH);
