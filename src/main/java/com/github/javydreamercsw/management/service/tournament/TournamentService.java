@@ -99,6 +99,18 @@ public class TournamentService {
     return entryRepository.countByTournamentId(tournament.getId());
   }
 
+  /**
+   * Whether the tournament has any persisted entrants — asked via a count query rather than {@code
+   * getEntries().isEmpty()}, because inside an active transaction that call initializes the lazy
+   * collection empty and an initialized collection never re-queries (a caller that then seeds would
+   * still see "no entrants" for the rest of the transaction, ATW-oahn).
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public boolean hasEntries(@NonNull Long tournamentId) {
+    return entryRepository.countByTournamentId(tournamentId) > 0;
+  }
+
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<Tournament> findByUniverse(@NonNull Universe universe) {
@@ -307,6 +319,10 @@ public class TournamentService {
     for (int i = 0; i < active.size(); i++) {
       entries.add(addEntry(tournament, active.get(i), i + 1));
     }
+    // Deliberately NOT re-reading the entries onto the in-memory instance: within the caller's
+    // transaction a later getEntries() initializes the lazy collection fresh (auto-flush makes
+    // the persisted rows visible), and replacing the collection instance wholesale is illegal
+    // for an orphanRemoval mapping. Detached callers re-fetch via findByIdWithDetails.
     return entries;
   }
 
@@ -353,9 +369,39 @@ public class TournamentService {
     TournamentFormat fmt =
         findFormat(tournament.getFormatId())
             .orElseThrow(() -> new IllegalStateException("Format not found"));
-    fmt.generateBracket(tournament, formatContext());
+    List<TournamentRound> generated = fmt.generateBracket(tournament, formatContext());
+    // The format persists the bracket through the owning side; attach it to the in-memory
+    // collection so callers holding this instance (template-fed approval, ATW-oahn) can scan
+    // round 1 without re-fetching — a lazy collection already initialized inside the current
+    // transaction never re-queries.
+    attachGenerated(tournament, generated.stream().flatMap(r -> r.getMatches().stream()).toList());
     tournament.setStatus(TournamentStatus.IN_PROGRESS);
     return tournamentRepository.save(tournament);
+  }
+
+  /**
+   * Make freshly generated bracket content visible on the in-memory tournament. A lazy collection
+   * that was already initialized within the current transaction never re-queries, so rounds the
+   * format persisted through the owning side would otherwise be invisible to in-memory scans (e.g.
+   * the template-fed booking path's open-match lookup).
+   */
+  private void attachGenerated(Tournament tournament, List<TournamentMatch> generated) {
+    for (TournamentMatch match : generated) {
+      TournamentRound round = match.getRound();
+      TournamentRound attached =
+          tournament.getRounds().stream()
+              .filter(r -> r.getId() != null && r.getId().equals(round.getId()))
+              .findFirst()
+              .orElseGet(
+                  () -> {
+                    tournament.getRounds().add(round);
+                    return round;
+                  });
+      if (attached.getMatches().stream()
+          .noneMatch(m -> m.getId() != null && m.getId().equals(match.getId()))) {
+        attached.getMatches().add(match);
+      }
+    }
   }
 
   /**

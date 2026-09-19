@@ -116,31 +116,56 @@ public class TournamentTemplateBookingService {
    * Auto-seed (when unseeded) and start a SCHEDULED tournament, refreshing the in-memory instance
    * with the generated bracket. Returns false (with a warning) when the tournament cannot start —
    * never throws to the approval flow.
+   *
+   * <p>Every predictable failure is pre-flighted <em>before</em> entering the nested transactional
+   * calls: an exception thrown out of a joined {@code @Transactional} method marks the approval
+   * transaction rollback-only even when caught here, surfacing later as a confusing {@code
+   * UnexpectedRollbackException} at commit. The remaining catch is a dead-man switch for genuine
+   * races (roster shrinking between check and seed).
    */
   private boolean autoStartTournament(Tournament tournament, Show show) {
-    try {
-      if (tournament.getEntries().isEmpty()) {
-        log.info(
-            "Auto-seeding tournament '{}' from the active roster for show '{}'",
-            tournament.getName(),
-            show.getName());
-        tournamentService.seedAuto(tournament, defaultEntrantCount(tournament), universeId(show));
-        // seedAuto persists entries without touching the in-memory collection; re-fetch so
-        // startTournament's entries check and generateBracket see the seeded roster.
-        tournamentService
-            .findByIdWithDetails(tournament.getId())
-            .ifPresent(refreshed -> copyLifecycleState(tournament, refreshed));
-      }
-      tournamentService.startTournament(tournament);
-      return true;
-    } catch (IllegalStateException | IllegalArgumentException e) {
+    Optional<TournamentFormat> formatOpt = tournamentService.findFormat(tournament.getFormatId());
+    if (formatOpt.isEmpty()) {
       log.warn(
-          "Cannot auto-start tournament '{}' for show '{}': {} — falling back to AI participants",
+          "Cannot auto-start tournament '{}' for show '{}': format '{}' not found — falling back"
+              + " to AI participants",
           tournament.getName(),
           show.getName(),
-          e.getMessage());
+          tournament.getFormatId());
       return false;
     }
+    // Ask the repository (not the lazy collection): calling getEntries() would initialize it
+    // empty inside the approval transaction, and an initialized collection never re-queries —
+    // startTournament would then fail its own entrants check right after seeding.
+    if (!tournamentService.hasEntries(tournament.getId())) {
+      int minEntrants = formatOpt.get().getMinEntrants();
+      int eligible =
+          tournamentService
+              .findEligibleWrestlersSortedByFans(tournament.getLinkedTitle(), universeId(show))
+              .size();
+      if (eligible < minEntrants) {
+        log.warn(
+            "Cannot auto-start tournament '{}' for show '{}': {} eligible wrestlers available,"
+                + " the format needs at least {} — falling back to AI participants",
+            tournament.getName(),
+            show.getName(),
+            eligible,
+            minEntrants);
+        return false;
+      }
+      log.info(
+          "Auto-seeding tournament '{}' from the active roster for show '{}'",
+          tournament.getName(),
+          show.getName());
+      tournamentService.seedAuto(tournament, defaultEntrantCount(tournament), universeId(show));
+      // seedAuto persists entries without touching the in-memory collection; re-fetch so
+      // startTournament's entries check and generateBracket see the seeded roster.
+      tournamentService
+          .findByIdWithDetails(tournament.getId())
+          .ifPresent(refreshed -> copyLifecycleState(tournament, refreshed));
+    }
+    tournamentService.startTournament(tournament);
+    return true;
   }
 
   private Optional<TournamentBooking> bookCurrentRoundFedSegment(

@@ -118,6 +118,12 @@ class TournamentTemplateBookingServiceTest {
         .when(tournamentService.findFormat("SINGLE_ELIMINATION"))
         .thenReturn(Optional.of(format));
     lenient().when(format.getMaxEntrants()).thenReturn(8);
+    lenient().when(format.getMinEntrants()).thenReturn(2);
+    lenient().when(tournamentService.hasEntries(5L)).thenReturn(false);
+    // Eligibility pre-flight passes (10 available >= min 2) before seedAuto is attempted.
+    lenient()
+        .when(tournamentService.findEligibleWrestlersSortedByFans(any(), eq(1L)))
+        .thenReturn(List.of(alice, bob, wrestler(3L, "Cara"), wrestler(4L, "Dave")));
     // seedAuto does not touch the in-memory collection — simulate by leaving the caller's
     // instance empty and having the refresh return the seeded, bracketed instance.
     lenient()
@@ -146,6 +152,68 @@ class TournamentTemplateBookingServiceTest {
     verify(tournamentService).startTournament(tournament);
     verify(tournamentService).recordMatchResult(eq(match), eq(aliceEntry));
     assertEquals(booked, match.getSegment());
+  }
+
+  @Test
+  void scheduledTournament_belowFormatMinimum_fallsBackWithoutSeeding() {
+    // Eligibility pre-flight: fewer eligible wrestlers than the format's minimum → never enter
+    // the nested transactional calls, fall back cleanly (no rollback-only poisoning).
+    lenient()
+        .when(tournamentService.findFormat("SINGLE_ELIMINATION"))
+        .thenReturn(Optional.of(format));
+    lenient().when(format.getMinEntrants()).thenReturn(4);
+    lenient().when(tournamentService.hasEntries(5L)).thenReturn(false);
+    lenient()
+        .when(tournamentService.findEligibleWrestlersSortedByFans(any(), eq(1L)))
+        .thenReturn(List.of(alice, bob));
+
+    assertTrue(
+        service.bookTournamentFedSegment(assignment, rumbleType, show).isEmpty(),
+        "SCHEDULED tournament below the format minimum must fall back to the AI path");
+    verify(tournamentService, never()).seedAuto(any(), anyInt(), anyLong());
+    verify(tournamentService, never()).startTournament(any());
+  }
+
+  @Test
+  void scheduledTournament_alreadySeeded_skipsEligibilityPreflight() {
+    // The tournament already has entries (seeded via the UI earlier): auto-start proceeds
+    // without the eligibility check or seeding.
+    TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.ACTIVE);
+    TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ACTIVE);
+    TournamentMatch match = match(1, aliceEntry, bobEntry);
+    lenient()
+        .when(tournamentService.findFormat("SINGLE_ELIMINATION"))
+        .thenReturn(Optional.of(format));
+    lenient().when(tournamentService.hasEntries(5L)).thenReturn(true);
+    lenient().when(tournamentService.findByIdWithDetails(5L)).thenReturn(Optional.of(tournament));
+    when(tournamentService.startTournament(tournament))
+        .thenAnswer(
+            invocation -> {
+              tournament.setEntries(new ArrayList<>(List.of(aliceEntry, bobEntry)));
+              tournament.setRounds(new ArrayList<>(List.of(round(1, match))));
+              tournament.setStatus(TournamentStatus.IN_PROGRESS);
+              return tournament;
+            });
+    Segment booked = singles(alice, bob, alice);
+    stubResolve(booked);
+
+    Optional<TournamentTemplateBookingService.TournamentBooking> booking =
+        service.bookTournamentFedSegment(assignment, rumbleType, show);
+
+    assertTrue(booking.isPresent());
+    verify(tournamentService, never()).seedAuto(any(), anyInt(), anyLong());
+    verify(tournamentService).startTournament(tournament);
+    verify(tournamentService).recordMatchResult(eq(match), eq(aliceEntry));
+  }
+
+  @Test
+  void scheduledTournament_unknownFormat_fallsBackWithoutSeeding() {
+    when(tournamentService.findFormat("SINGLE_ELIMINATION")).thenReturn(Optional.empty());
+
+    assertTrue(
+        service.bookTournamentFedSegment(assignment, rumbleType, show).isEmpty(),
+        "SCHEDULED tournament with an unresolvable format must fall back to the AI path");
+    verify(tournamentService, never()).seedAuto(any(), anyInt(), anyLong());
   }
 
   @Test
@@ -232,16 +300,6 @@ class TournamentTemplateBookingServiceTest {
     assertTrue(
         service.bookTournamentFedSegment(assignment, rumbleType, show).isEmpty(),
         "COMPLETE tournament with no winner entry must fall back to the AI path");
-  }
-
-  @Test
-  void autoStartFailure_fallsBackEmpty() {
-    // Unseeded tournament whose format is unresolvable → seedAuto throws.
-    when(tournamentService.findFormat("SINGLE_ELIMINATION")).thenReturn(Optional.empty());
-
-    assertTrue(
-        service.bookTournamentFedSegment(assignment, rumbleType, show).isEmpty(),
-        "SCHEDULED tournament that cannot start must fall back to the AI path");
   }
 
   @Test
