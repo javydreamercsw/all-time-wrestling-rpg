@@ -217,6 +217,21 @@ public class TournamentService {
     return tournamentRepository.save(tournament);
   }
 
+  /**
+   * Mark a PENDING round IN_PROGRESS when one of its matches is booked through any path. The manual
+   * flow sets this in {@link #bookRoundOnShow}; template-fed booking (ATW-oahn) books matches one
+   * at a time outside it, so it calls this to keep the UI's "Book Round on Show" button coherent —
+   * a round with a booked match is no longer offerable for booking.
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public void markRoundInProgress(TournamentRound round) {
+    if (round.getStatus() == TournamentRoundStatus.PENDING) {
+      round.setStatus(TournamentRoundStatus.IN_PROGRESS);
+      roundRepository.save(round);
+    }
+  }
+
   /** Book all pending matches in the current round onto a show, creating segment reservations. */
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")

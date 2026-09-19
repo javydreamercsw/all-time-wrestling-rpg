@@ -28,6 +28,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
@@ -50,6 +51,7 @@ import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanni
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningDtoMapper;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRivalryDTO;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.tournament.TournamentTemplateBookingService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.Instant;
@@ -96,6 +98,7 @@ public class ShowPlanningService {
   private final DramaEventService dramaEventService;
   private final FeudScriptService feudScriptService;
   private final ShowTemplateRepository showTemplateRepository;
+  private final TournamentTemplateBookingService tournamentTemplateBookingService;
 
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
@@ -558,6 +561,49 @@ public class ShowPlanningService {
         continue;
       }
       segment.setSegmentType(segmentTypeOpt.get());
+
+      // Tournament-fed booking (ATW-oahn): when the show's template pairs this segment's type
+      // with a tournament (AUTO_ATTACH), the tournament — not the AI — fills the match's
+      // participants. Empty result (tournament cannot supply participants) falls through to the
+      // AI-proposed path unchanged.
+      Optional<ShowTemplateSegmentAssignment> tournamentAssignment =
+          managedTemplate != null
+              ? managedTemplate.findTournamentForSegmentType(segmentTypeOpt.get())
+              : Optional.empty();
+      if (tournamentAssignment.isPresent()) {
+        Optional<TournamentTemplateBookingService.TournamentBooking> tournamentBooking =
+            tournamentTemplateBookingService.bookTournamentFedSegment(
+                tournamentAssignment.get(), segmentTypeOpt.get(), show);
+        if (tournamentBooking.isPresent()) {
+          Segment booked = tournamentBooking.get().segment();
+          // The match mechanics created the segment (type, participants, winners, paired rule).
+          // Inherit the proposal's placement and content so it slots into the card exactly
+          // where the AI put it.
+          booked.setSegmentOrder(currentSegmentCount + i + 1);
+          booked.setSegmentDate(show.getShowDate().atStartOfDay(clock.getZone()).toInstant());
+          booked.setNarration(proposedSegment.getNarration());
+          booked.setSummary(proposedSegment.getSummary());
+          booked.setNotes(proposedSegment.getNotes());
+          booked.setRivalryId(proposedSegment.getRivalryId());
+          booked.setIsTitleSegment(proposedSegment.getIsTitleSegment());
+          if (proposedSegment.getTitles() != null && !proposedSegment.getTitles().isEmpty()) {
+            booked.setTitles(proposedSegment.getTitles());
+          }
+          segmentsToSave.add(booked);
+          log.info(
+              "Tournament '{}' fed segment ({}) on show '{}': {}",
+              tournamentBooking.get().tournament().getName(),
+              tournamentBooking.get().detail(),
+              show.getName(),
+              segmentTypeOpt.get().getName());
+          continue;
+        }
+        log.warn(
+            "Tournament assignment for segment type '{}' on show '{}' cannot supply participants"
+                + " — falling back to AI-proposed participants",
+            segmentTypeOpt.get().getName());
+      }
+
       segment.setSegmentDate(show.getShowDate().atStartOfDay(clock.getZone()).toInstant());
       segment.setNarration(proposedSegment.getNarration());
       segment.setSummary(proposedSegment.getSummary());
