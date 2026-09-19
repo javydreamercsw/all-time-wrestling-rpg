@@ -109,6 +109,10 @@ public class TournamentService {
   private Tournament initializeGraph(Tournament t) {
     t.getEntries().forEach(e -> e.getWrestler().getName());
     t.getAllowedRules().forEach(SegmentRule::getName);
+    // The detail view reads the linked championship's name outside the session.
+    if (t.getLinkedTitle() != null) {
+      t.getLinkedTitle().getName();
+    }
     t.getRounds()
         .forEach(
             r -> {
