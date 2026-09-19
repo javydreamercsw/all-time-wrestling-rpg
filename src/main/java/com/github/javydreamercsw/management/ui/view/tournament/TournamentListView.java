@@ -58,6 +58,7 @@ import jakarta.annotation.security.RolesAllowed;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -353,15 +354,6 @@ public class TournamentListView extends VerticalLayout {
               tabs.setSelectedIndex(1);
             });
 
-    Runnable updateWizardButtons =
-        () -> {
-          boolean onDetails = Objects.equals(tabs.getSelectedIndex(), 0);
-          back.setEnabled(!onDetails);
-          next.setVisible(onDetails);
-          create.setVisible(!onDetails);
-        };
-    tabs.addSelectedChangeListener(e -> updateWizardButtons.run());
-
     Button cancel = new Button("Cancel", e -> dialog.close());
     Button create =
         new Button(
@@ -408,6 +400,18 @@ public class TournamentListView extends VerticalLayout {
               }
             });
     create.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+    // Wizard button visibility follows the selected tab: on Details only Next is offered, so
+    // Create is unreachable until the seeding step.
+    Runnable updateWizardButtons =
+        () -> {
+          boolean onDetails = Objects.equals(tabs.getSelectedIndex(), 0);
+          back.setEnabled(!onDetails);
+          next.setVisible(onDetails);
+          create.setVisible(!onDetails);
+        };
+    tabs.addSelectedChangeListener(e -> updateWizardButtons.run());
+    updateWizardButtons.run();
 
     dialog.getFooter().add(cancel, back, next, create);
     dialog.add(tabs);
