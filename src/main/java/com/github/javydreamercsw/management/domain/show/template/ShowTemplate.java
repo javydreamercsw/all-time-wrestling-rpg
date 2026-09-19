@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.domain.show.template;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import jakarta.persistence.CascadeType;
@@ -42,6 +43,7 @@ import java.time.Instant;
 import java.time.Month;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import lombok.Getter;
 import lombok.Setter;
 import org.jspecify.annotations.Nullable;
@@ -162,6 +164,32 @@ public class ShowTemplate extends AbstractEntity<Long> {
                     && a.getSegmentType() == null
                     && a.getMode() == ShowTemplateSegmentAssignment.AssignmentMode.ENCOURAGED)
         .toList();
+  }
+
+  // ── Tournament assignments (ATW-oahn) ─────────────────────────────────────
+
+  /** Assignments referencing a tournament (with or without a type/rule pairing). */
+  public List<ShowTemplateSegmentAssignment> getTournamentAssignments() {
+    return segmentAssignments.stream()
+        .filter(a -> a.getTournament() != null && a.isValid())
+        .toList();
+  }
+
+  /**
+   * The AUTO_ATTACH pairing of a segment type with a tournament (ATW-oahn): when the given type's
+   * match is created on this template's show, the returned tournament's participants fill it.
+   */
+  public Optional<ShowTemplateSegmentAssignment> findTournamentForSegmentType(
+      final SegmentType segmentType) {
+    return segmentAssignments.stream()
+        .filter(
+            a ->
+                a.getTournament() != null
+                    && a.getSegmentType() != null
+                    && a.getSegmentType().getId().equals(segmentType.getId())
+                    && a.getMode() == ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH
+                    && a.isValid())
+        .findFirst();
   }
 
   /**

@@ -29,6 +29,9 @@ import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSeg
 import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
+import com.github.javydreamercsw.management.domain.tournament.Tournament;
+import com.github.javydreamercsw.management.domain.tournament.TournamentRepository;
+import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -46,6 +49,7 @@ class ShowTemplateServiceIT extends ManagementIntegrationTest {
   @Autowired private ShowTypeRepository showTypeRepository;
   @Autowired private SegmentTypeRepository segmentTypeRepository;
   @Autowired private SegmentRuleRepository segmentRuleRepository;
+  @Autowired private TournamentRepository tournamentRepository;
 
   private ShowType createPleType() {
     ShowType type =
@@ -154,6 +158,44 @@ class ShowTemplateServiceIT extends ManagementIntegrationTest {
                 showTemplateService.syncSegmentAssignments(
                     template.getId(), List.of(new ShowTemplateSegmentAssignment())))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("and/or");
+        .hasMessageContaining("segment type, a segment rule, or a tournament");
+  }
+
+  @Test
+  @DisplayName(
+      "a type+tournament row persists with tournament_id and is fetched eagerly by the"
+          + " fetch-join (ATW-oahn)")
+  void syncSegmentAssignments_tournamentRow_roundTrip() {
+    // Tournament fixture: the template pairing references it via tournament_id (ATW-oahn).
+    Tournament tournament = new Tournament();
+    tournament.setName("IT Crown Cup " + System.nanoTime());
+    tournament.setFormatId("SINGLE_ELIMINATION");
+    tournament.setStatus(TournamentStatus.SCHEDULED);
+    tournament = tournamentRepository.save(tournament);
+
+    SegmentType eventOnlyType = new SegmentType();
+    eventOnlyType.setName("IT Tournament Type " + System.nanoTime());
+    eventOnlyType.setEventOnly(true);
+    eventOnlyType = segmentTypeRepository.save(eventOnlyType);
+
+    ShowTemplate template = createTemplate("IT Template Tournament " + System.nanoTime());
+
+    ShowTemplateSegmentAssignment row = new ShowTemplateSegmentAssignment();
+    row.setSegmentType(eventOnlyType);
+    row.setTournament(tournament);
+    row.setMode(ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH);
+
+    showTemplateService.syncSegmentAssignments(template.getId(), List.of(row));
+
+    ShowTemplate fetched =
+        showTemplateService.getTemplateWithAssignments(template.getId()).orElseThrow();
+    assertThat(fetched.getSegmentAssignments()).hasSize(1);
+    ShowTemplateSegmentAssignment saved = fetched.getSegmentAssignments().get(0);
+    // Reading the tournament reference after the transactional read returned is exactly the
+    // detached-access path that motivates the LEFT JOIN FETCH a.tournament — a lazy proxy
+    // without the fetch-join would throw LazyInitializationException here.
+    assertThat(saved.getTournament().getName()).isEqualTo(tournament.getName());
+    assertThat(fetched.findTournamentForSegmentType(saved.getSegmentType())).isPresent();
+    assertThat(fetched.getTournamentAssignments()).hasSize(1);
   }
 }
