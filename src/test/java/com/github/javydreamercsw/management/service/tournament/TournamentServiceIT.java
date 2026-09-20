@@ -22,12 +22,14 @@ import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
+import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -61,7 +63,7 @@ class TournamentServiceIT extends ManagementIntegrationTest {
             "IT Grand Title " + System.nanoTime(),
             "IT fixture",
             WrestlerTier.MIDCARDER,
-            com.github.javydreamercsw.management.domain.title.ChampionshipType.SINGLE,
+            ChampionshipType.SINGLE,
             anyUniverse().getId());
     Tournament tournament =
         tournamentService.createTournament(
@@ -69,7 +71,7 @@ class TournamentServiceIT extends ManagementIntegrationTest {
             "SINGLE_ELIMINATION",
             championship.getUniverse(),
             championship,
-            java.time.LocalDate.now(),
+            LocalDate.now(),
             List.of());
 
     // The detail view navigates to the new tournament and reads the championship's name
@@ -94,7 +96,7 @@ class TournamentServiceIT extends ManagementIntegrationTest {
             "SINGLE_ELIMINATION",
             anyUniverse(),
             null,
-            java.time.LocalDate.now(),
+            LocalDate.now(),
             List.of(rule));
 
     Tournament fetched = tournamentService.findByIdWithDetails(tournament.getId()).orElseThrow();

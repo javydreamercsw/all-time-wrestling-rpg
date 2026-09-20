@@ -24,7 +24,9 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.tournament.TournamentFormat.RenderMode;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 /** Unit tests for the not-yet-started bracket preview model. */
@@ -74,9 +76,9 @@ class TournamentBracketPreviewModelTest {
     // Every entrant appears exactly 3 times (once per round).
     List<String> names =
         model.getMatches().stream()
-            .flatMap(m -> java.util.stream.Stream.of(m.getWrestler1Name(), m.getWrestler2Name()))
+            .flatMap(m -> Stream.of(m.getWrestler1Name(), m.getWrestler2Name()))
             .toList();
-    assertThat(java.util.Collections.frequency(names, "W1")).isEqualTo(3);
+    assertThat(Collections.frequency(names, "W1")).isEqualTo(3);
   }
 
   @Test

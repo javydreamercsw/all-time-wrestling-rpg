@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
+import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
@@ -129,17 +130,13 @@ abstract class AbstractTournamentFedPleIT extends ManagementIntegrationTest {
 
   private ShowType seedPleType() {
     return showTypeRepository.findAll().stream()
-        .filter(
-            t ->
-                t.getCategory()
-                    == com.github.javydreamercsw.management.domain.show.type.ShowCategory.PLE)
+        .filter(t -> t.getCategory() == ShowCategory.PLE)
         .findFirst()
         .orElseGet(
             () -> {
               ShowType type = new ShowType();
               type.setName("PLE IT " + System.nanoTime());
-              type.setCategory(
-                  com.github.javydreamercsw.management.domain.show.type.ShowCategory.PLE);
+              type.setCategory(ShowCategory.PLE);
               return showTypeRepository.saveAndFlush(type);
             });
   }

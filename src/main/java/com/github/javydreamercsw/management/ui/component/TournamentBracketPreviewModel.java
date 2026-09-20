@@ -36,7 +36,7 @@ public class TournamentBracketPreviewModel implements TournamentBracketModel {
 
   @Getter private final RenderMode renderMode;
   private final List<PreviewMatch> matches = new ArrayList<>();
-  private final int totalRounds;
+  @Getter private final int totalRounds;
 
   public TournamentBracketPreviewModel(Tournament tournament, RenderMode renderMode) {
     this.renderMode = renderMode;
@@ -89,11 +89,6 @@ public class TournamentBracketPreviewModel implements TournamentBracketModel {
   }
 
   @Override
-  public int getTotalRounds() {
-    return totalRounds;
-  }
-
-  @Override
   public int getCurrentRound() {
     return 1;
   }
@@ -103,13 +98,8 @@ public class TournamentBracketPreviewModel implements TournamentBracketModel {
     return List.copyOf(matches);
   }
 
-  private record PreviewMatch(int round, TournamentEntry e1, TournamentEntry e2)
+  private record PreviewMatch(@Getter int round, TournamentEntry e1, TournamentEntry e2)
       implements MatchModel {
-
-    @Override
-    public int getRound() {
-      return round;
-    }
 
     @Override
     public Long getWrestler1Id() {

@@ -23,13 +23,10 @@ import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
-import com.github.javydreamercsw.management.domain.tournament.Tournament;
-import com.github.javydreamercsw.management.domain.tournament.TournamentEntryStatus;
-import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
-import com.github.javydreamercsw.management.domain.tournament.TournamentMatchRepository;
-import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
+import com.github.javydreamercsw.management.domain.tournament.*;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -95,7 +92,7 @@ class TournamentFedPleApprovalIT extends AbstractTournamentFedPleIT {
             .getMatches()
             .stream()
             .filter(m -> m.getSegment() != null)
-            .min(java.util.Comparator.comparing(TournamentMatch::getId))
+            .min(Comparator.comparing(TournamentMatch::getId))
             .orElseThrow();
     assertThat(fedSegment.getWrestlers())
         .extracting(w -> w.getId())
@@ -145,7 +142,7 @@ class TournamentFedPleApprovalIT extends AbstractTournamentFedPleIT {
     reloaded.forEach(
         match -> {
           assertThat(match.getWinner()).isNotNull();
-          com.github.javydreamercsw.management.domain.tournament.TournamentEntry loser =
+          TournamentEntry loser =
               match.getWinner().equals(match.getEntrant1())
                   ? match.getEntrant2()
                   : match.getEntrant1();

@@ -22,6 +22,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
@@ -34,9 +35,13 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentRoundRep
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.show.ShowBookingService;
 import com.github.javydreamercsw.management.service.show.ShowSegmentReservationService;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,7 +57,7 @@ class BracketTournamentServiceTest {
   @Mock private TournamentRoundRepository roundRepository;
   @Mock private TournamentMatchRepository matchRepository;
   @Mock private WrestlerRepository wrestlerRepository;
-  @Mock private com.github.javydreamercsw.management.domain.show.ShowRepository showRepository;
+  @Mock private ShowRepository showRepository;
   @Mock private ShowBookingService showBookingService;
   @Mock private ShowSegmentReservationService reservationService;
   @Mock private TitleReignRepository titleReignRepository;
@@ -61,7 +66,6 @@ class BracketTournamentServiceTest {
   private TournamentService tournamentService;
 
   private Tournament tournament;
-  private Title womensTitle;
 
   @BeforeEach
   void setUp() {
@@ -86,8 +90,8 @@ class BracketTournamentServiceTest {
     tournament.setId(1L);
     tournament.setName("Cup");
     tournament.setFormatId("SINGLE_ELIMINATION");
-    tournament.setEntries(new java.util.ArrayList<>());
-    tournament.setRounds(new java.util.ArrayList<>());
+    tournament.setEntries(new ArrayList<>());
+    tournament.setRounds(new ArrayList<>());
     lenient()
         .when(tournamentRepository.save(any(Tournament.class)))
         .thenAnswer(inv -> inv.getArgument(0));
@@ -155,8 +159,7 @@ class BracketTournamentServiceTest {
     Wrestler a = wrestler(1L, "A", Gender.MALE, 300L);
     when(wrestlerRepository.findAllByActiveTrue()).thenReturn(List.of(a));
 
-    org.assertj.core.api.Assertions.assertThatThrownBy(
-            () -> tournamentService.seedAuto(tournament, 4, 1L))
+    Assertions.assertThatThrownBy(() -> tournamentService.seedAuto(tournament, 4, 1L))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Not enough eligible wrestlers")
         .hasMessageContaining("at least 4");
@@ -224,7 +227,7 @@ class BracketTournamentServiceTest {
     for (int i = 0; i < seeded.size(); i++) {
       seeded.get(i).setId((long) (i + 1));
     }
-    lenient().when(tournamentRepository.findById(1L)).thenReturn(java.util.Optional.of(tournament));
+    lenient().when(tournamentRepository.findById(1L)).thenReturn(Optional.of(tournament));
     when(entryRepository.findByTournamentIdOrderBySeedAsc(1L))
         .thenReturn(
             List.of(seeded.get(0), seeded.get(1), seeded.get(2), seeded.get(3)),
@@ -252,9 +255,9 @@ class BracketTournamentServiceTest {
     entryB.setTournament(tournament);
 
     Wrestler outsider = wrestler(9L, "Outsider", Gender.MALE, 100L);
-    lenient().when(tournamentRepository.findById(1L)).thenReturn(java.util.Optional.of(tournament));
-    lenient().when(entryRepository.findById(22L)).thenReturn(java.util.Optional.of(entryB));
-    when(wrestlerRepository.findById(9L)).thenReturn(java.util.Optional.of(outsider));
+    lenient().when(tournamentRepository.findById(1L)).thenReturn(Optional.of(tournament));
+    lenient().when(entryRepository.findById(22L)).thenReturn(Optional.of(entryB));
+    when(wrestlerRepository.findById(9L)).thenReturn(Optional.of(outsider));
     when(entryRepository.existsByTournamentIdAndWrestlerId(1L, 9L)).thenReturn(false);
 
     TournamentEntry replaced = tournamentService.replaceEntrant(1L, 22L, 9L);
@@ -275,13 +278,12 @@ class BracketTournamentServiceTest {
     entryB.setId(22L);
     entryB.setTournament(tournament);
 
-    lenient().when(tournamentRepository.findById(1L)).thenReturn(java.util.Optional.of(tournament));
-    lenient().when(entryRepository.findById(22L)).thenReturn(java.util.Optional.of(entryB));
-    when(wrestlerRepository.findById(1L)).thenReturn(java.util.Optional.of(a));
+    lenient().when(tournamentRepository.findById(1L)).thenReturn(Optional.of(tournament));
+    lenient().when(entryRepository.findById(22L)).thenReturn(Optional.of(entryB));
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(a));
     when(entryRepository.existsByTournamentIdAndWrestlerId(1L, 1L)).thenReturn(true);
 
-    org.assertj.core.api.Assertions.assertThatThrownBy(
-            () -> tournamentService.replaceEntrant(1L, 22L, 1L))
+    Assertions.assertThatThrownBy(() -> tournamentService.replaceEntrant(1L, 22L, 1L))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("already entered");
   }
@@ -295,8 +297,7 @@ class BracketTournamentServiceTest {
     w.setGender(gender);
     Universe universe = new Universe();
     universe.setId(1L);
-    com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
-        new com.github.javydreamercsw.management.domain.wrestler.WrestlerState();
+    WrestlerState state = new WrestlerState();
     state.setFans(fans);
     state.setUniverse(universe);
     w.getWrestlerStates().add(state);

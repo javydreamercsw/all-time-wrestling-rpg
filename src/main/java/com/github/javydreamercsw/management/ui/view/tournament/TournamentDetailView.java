@@ -57,8 +57,10 @@ import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -282,7 +284,7 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
     try {
       List<Long> reordered = new ArrayList<>();
       List<TournamentEntry> entries = tournament.getEntries();
-      for (int seed = 1; seed <= entries.size(); seed++) {
+      for (int seed = 1; seed < entries.size() + 1; seed++) {
         reordered.add(seed == targetSeed ? entry.getId() : entries.get(seed - 1).getId());
       }
       // The swapped-out entry takes the moved entry's original position.
@@ -307,7 +309,7 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
     ComboBox<Wrestler> picker = new ComboBox<>("New wrestler");
     // Offer the eligible pool minus anyone already entered — the service rejects duplicates,
     // but showing them as choices would guarantee an error after selection.
-    java.util.Set<Long> enteredIds = new java.util.HashSet<>();
+    Set<Long> enteredIds = new HashSet<>();
     tournament.getEntries().forEach(e -> enteredIds.add(e.getWrestler().getId()));
     picker.setItems(
         tournamentService

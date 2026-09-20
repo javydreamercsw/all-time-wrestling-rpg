@@ -58,6 +58,7 @@ import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -180,7 +181,7 @@ public class TournamentListView extends VerticalLayout {
         new MultiSelectComboBox<>("Allowed Segment Rules (optional)");
     rulesPicker.setItems(segmentRuleService.findAll());
     rulesPicker.setItemLabelGenerator(SegmentRule::getName);
-    rulesPicker.setValue(new java.util.HashSet<>(managed.getAllowedRules()));
+    rulesPicker.setValue(new HashSet<>(managed.getAllowedRules()));
     rulesPicker.setWidthFull();
 
     Button cancel = new Button("Cancel", e -> dialog.close());
