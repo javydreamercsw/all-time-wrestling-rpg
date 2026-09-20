@@ -97,6 +97,19 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
     add(content);
   }
 
+  /** Test hooks: bypass route-parameter resolution and render directly (Karibu tests). */
+  void setTournamentForTest(Tournament tournament) {
+    this.tournament = tournament;
+  }
+
+  void buildContentForTest() {
+    buildContent();
+  }
+
+  void openReplaceDialogForTest(TournamentEntry entry) {
+    openReplaceDialog(entry);
+  }
+
   @Override
   public void beforeEnter(BeforeEnterEvent event) {
     String idStr = event.getRouteParameters().get("tournamentId").orElse(null);
@@ -241,7 +254,10 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
     // 2 vs second-to-last, ... so reordering changes the match-ups Start will generate.
     if (tournament.getStatus() == TournamentStatus.SCHEDULED
         && !tournament.getEntries().isEmpty()) {
-      grid.addComponentColumn(this::buildSeedControls).setHeader("Reorder").setWidth("140px");
+      grid.addComponentColumn(this::buildSeedControls)
+          .setHeader("Reorder")
+          .setWidth("140px")
+          .setKey("reorder");
       grid.addComponentColumn(
               entry -> {
                 Button replaceBtn = new Button("Replace");
@@ -250,7 +266,8 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
                 return replaceBtn;
               })
           .setHeader("Swap")
-          .setWidth("100px");
+          .setWidth("100px")
+          .setKey("swap");
     }
 
     section.add(grid);

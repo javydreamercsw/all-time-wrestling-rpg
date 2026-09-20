@@ -475,4 +475,17 @@ public class TournamentListView extends VerticalLayout {
     dialog.add(tabs);
     dialog.open();
   }
+
+  /** Test hooks: drive the dialogs directly (Karibu tests can't traverse grid cell components). */
+  void openCreationWizardForTest() {
+    openCreationWizard();
+  }
+
+  void openEditDialogForTest(final Tournament tournament) {
+    openEditDialog(tournament);
+  }
+
+  void confirmDeleteForTest(final Tournament tournament) {
+    confirmDelete(tournament);
+  }
 }
