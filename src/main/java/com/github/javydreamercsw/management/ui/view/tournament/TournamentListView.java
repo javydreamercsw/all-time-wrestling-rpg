@@ -67,7 +67,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 @Route(value = "tournament-list", layout = MainLayout.class)
 @PageTitle("Tournaments | ATW RPG")
-@Menu(order = 7, icon = "vaadin:trophy", title = "Tournaments")
+@Menu(order = 7, icon = "vaadin:sitemap", title = "Tournaments")
 @RolesAllowed({"ADMIN", "BOOKER", "PLAYER", "VIEWER"})
 @Slf4j
 public class TournamentListView extends VerticalLayout {
