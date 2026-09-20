@@ -32,10 +32,13 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
+import com.github.javydreamercsw.management.service.show.ShowContextFacade;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
+import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.grid.Grid;
@@ -62,6 +65,8 @@ class ShowTemplateListViewTest extends AbstractViewTest {
   @Mock private AiSettingsService aiSettingsService;
   @Mock private SegmentTypeService segmentTypeService;
   @Mock private SegmentRuleService segmentRuleService;
+  @Mock private ShowContextFacade showContextFacade;
+  @Mock private TournamentService tournamentService;
 
   private ShowTemplateListView view;
 
@@ -72,6 +77,8 @@ class ShowTemplateListViewTest extends AbstractViewTest {
     lenient().when(commentaryTeamRepository.findAll()).thenReturn(Collections.emptyList());
     lenient().when(segmentTypeService.findAllForAdmin()).thenReturn(Collections.emptyList());
     lenient().when(segmentRuleService.findAll()).thenReturn(Collections.emptyList());
+    lenient().when(tournamentService.findAll()).thenReturn(Collections.emptyList());
+    lenient().when(showContextFacade.getTournamentService()).thenReturn(tournamentService);
     lenient().when(securityUtils.canCreate()).thenReturn(true);
     lenient().when(securityUtils.canEdit()).thenReturn(true);
 
@@ -85,7 +92,8 @@ class ShowTemplateListViewTest extends AbstractViewTest {
             imageStorageService,
             aiSettingsService,
             segmentTypeService,
-            segmentRuleService);
+            segmentRuleService,
+            showContextFacade);
     UI.getCurrent().add(view);
   }
 
@@ -176,6 +184,39 @@ class ShowTemplateListViewTest extends AbstractViewTest {
     SegmentRule r = new SegmentRule();
     r.setName(name);
     return r;
+  }
+
+  @Test
+  @DisplayName("Saving a type+tournament assignment row round-trips the tournament (ATW-oahn)")
+  void saveTemplate_syncsTournamentAssignment() {
+    ShowTemplate template = new ShowTemplate();
+    template.setId(4L);
+    template.setName("Tournament PLE");
+    template.setShowType(showType("PLE"));
+    when(showTemplateService.getTemplateWithAssignments(4L)).thenReturn(Optional.of(template));
+
+    SegmentType rumble = new SegmentType();
+    rumble.setId(1L);
+    rumble.setName("Abu Dhabi Rumble");
+    Tournament crownCup = new Tournament();
+    crownCup.setId(9L);
+    crownCup.setName("Crown Cup");
+
+    view.openEditDialogForTest(template);
+    view.addAssignmentForTest(
+        rumble, null, crownCup, ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH);
+    view.saveTemplateForTest();
+
+    Mockito.verify(showTemplateService)
+        .syncSegmentAssignments(
+            ArgumentMatchers.eq(4L),
+            ArgumentMatchers.argThat(
+                rows ->
+                    rows.size() == 1
+                        && rows.get(0).getTournament() == crownCup
+                        && "Abu Dhabi Rumble".equals(rows.get(0).getSegmentType().getName())
+                        && rows.get(0).getMode()
+                            == ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH));
   }
 
   private static void assertEquals(int expected, int actual, String message) {

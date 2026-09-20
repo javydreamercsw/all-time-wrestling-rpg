@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.domain.show.template;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -73,6 +74,15 @@ public class ShowTemplateSegmentAssignment extends AbstractEntity<Long> {
   @JoinColumn(name = "segment_rule_id")
   @Nullable private SegmentRule segmentRule;
 
+  /**
+   * Optional tournament whose participants feed the auto-attached segment (ATW-oahn). With a type+
+   * rule pairing this is "the tournament resolves that match's entrants"; tournament-only rows let
+   * the tournament book its rounds onto this template's shows.
+   */
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "tournament_id")
+  @Nullable private Tournament tournament;
+
   @Enumerated(EnumType.STRING)
   @Column(name = "mode", nullable = false, length = 20)
   private AssignmentMode mode = AssignmentMode.ENCOURAGED;
@@ -81,11 +91,12 @@ public class ShowTemplateSegmentAssignment extends AbstractEntity<Long> {
   private Instant creationDate;
 
   /**
-   * An assignment must target at least one of segmentType/segmentRule. Both set is the type+rule
-   * AUTO_ATTACH pairing (rule attaches whenever that type is used).
+   * An assignment must target at least one of segmentType/segmentRule/tournament. Both type and
+   * rule set is the type+rule AUTO_ATTACH pairing (rule attaches whenever that type is used); a
+   * tournament reference feeds its participants into the auto-attached match (ATW-oahn).
    */
   public boolean isValid() {
-    return segmentType != null || segmentRule != null;
+    return segmentType != null || segmentRule != null || tournament != null;
   }
 
   @PrePersist

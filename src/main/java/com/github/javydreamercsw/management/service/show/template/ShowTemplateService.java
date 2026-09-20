@@ -368,10 +368,11 @@ public class ShowTemplateService {
       copy.setTemplate(template);
       copy.setSegmentType(row.getSegmentType());
       copy.setSegmentRule(row.getSegmentRule());
+      copy.setTournament(row.getTournament());
       copy.setMode(row.getMode());
       if (!copy.isValid()) {
         throw new IllegalArgumentException(
-            "Assignment row must target a segment type and/or a segment rule");
+            "Assignment row must target a segment type, a segment rule, or a tournament");
       }
       template.getSegmentAssignments().add(copy);
     }

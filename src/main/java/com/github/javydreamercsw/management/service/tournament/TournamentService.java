@@ -16,11 +16,13 @@
 */
 package com.github.javydreamercsw.management.service.tournament;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.reservation.ShowSegmentReservationPurpose;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntryRepository;
@@ -42,7 +44,10 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -63,6 +68,7 @@ public class TournamentService {
   private final ShowRepository showRepository;
   private final ShowBookingService showBookingService;
   private final ShowSegmentReservationService reservationService;
+  private final TitleReignRepository titleReignRepository;
   private final List<TournamentFormat> formats;
 
   private TournamentFormatContext formatContext() {
@@ -75,7 +81,7 @@ public class TournamentService {
     return List.copyOf(formats);
   }
 
-  public Optional<TournamentFormat> findFormat(String formatId) {
+  public Optional<TournamentFormat> findFormat(@NonNull String formatId) {
     return formats.stream().filter(f -> f.getFormatId().equals(formatId)).findFirst();
   }
 
@@ -87,15 +93,37 @@ public class TournamentService {
     return tournamentRepository.findAll();
   }
 
+  /**
+   * Session-safe entrant count for detached grid rows — the entries collection is lazy and the list
+   * view renders outside a transaction (TournamentListView).
+   */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public List<Tournament> findByUniverse(Universe universe) {
+  public long countEntries(@NonNull Tournament tournament) {
+    return entryRepository.countByTournamentId(tournament.getId());
+  }
+
+  /**
+   * Whether the tournament has any persisted entrants — asked via a count query rather than {@code
+   * getEntries().isEmpty()}, because inside an active transaction that call initializes the lazy
+   * collection empty and an initialized collection never re-queries (a caller that then seeds would
+   * still see "no entrants" for the rest of the transaction, ATW-oahn).
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public boolean hasEntries(@NonNull Long tournamentId) {
+    return entryRepository.countByTournamentId(tournamentId) > 0;
+  }
+
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public List<Tournament> findByUniverse(@NonNull Universe universe) {
     return tournamentRepository.findByUniverseIdOrderByStartDateDesc(universe.getId());
   }
 
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public Optional<Tournament> findById(Long id) {
+  public Optional<Tournament> findById(@NonNull Long id) {
     return tournamentRepository.findById(id);
   }
 
@@ -106,9 +134,13 @@ public class TournamentService {
     return tournamentRepository.findById(id).map(this::initializeGraph);
   }
 
-  private Tournament initializeGraph(Tournament t) {
+  private Tournament initializeGraph(@NonNull Tournament t) {
     t.getEntries().forEach(e -> e.getWrestler().getName());
     t.getAllowedRules().forEach(SegmentRule::getName);
+    // The detail view reads the linked championship's name outside the session.
+    if (t.getLinkedTitle() != null) {
+      t.getLinkedTitle().getName();
+    }
     t.getRounds()
         .forEach(
             r -> {
@@ -155,6 +187,73 @@ public class TournamentService {
     return tournamentRepository.save(t);
   }
 
+  /**
+   * Update a tournament's editable metadata. Only SCHEDULED tournaments can be edited — once a
+   * bracket is underway its structure (format, entrants) is locked.
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public Tournament updateTournament(
+      @NonNull final Long id,
+      @NonNull final String name,
+      final String formatId,
+      final Title linkedTitle,
+      final LocalDate startDate,
+      final List<SegmentRule> allowedRules) {
+    Tournament t =
+        tournamentRepository
+            .findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Tournament not found: " + id));
+    if (t.getStatus() != TournamentStatus.SCHEDULED) {
+      throw new IllegalStateException(
+          "Only SCHEDULED tournaments can be edited — '" + t.getName() + "' is " + t.getStatus());
+    }
+    t.setName(name);
+    if (formatId != null && !formatId.equals(t.getFormatId())) {
+      if (!t.getEntries().isEmpty()) {
+        throw new IllegalStateException(
+            "Cannot change the format of a tournament that already has entrants");
+      }
+      findFormat(formatId)
+          .orElseThrow(() -> new IllegalArgumentException("Unknown format: " + formatId));
+      t.setFormatId(formatId);
+    }
+    t.setLinkedTitle(linkedTitle);
+    t.setStartDate(startDate);
+    t.setAllowedRules(allowedRules != null ? new ArrayList<>(allowedRules) : new ArrayList<>());
+    return tournamentRepository.save(t);
+  }
+
+  /**
+   * Delete a tournament. Only SCHEDULED ones (no bracket in flight, no booked segments to orphan);
+   * deletes entries, rounds, and their matches first since match → round is a plain FK with no JPA
+   * cascade.
+   *
+   * @return true when deleted, false when the tournament does not exist
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public boolean deleteTournament(@NonNull final Long id) {
+    Tournament t = tournamentRepository.findById(id).orElse(null);
+    if (t == null) {
+      return false;
+    }
+    if (t.getStatus() != TournamentStatus.SCHEDULED) {
+      throw new IllegalStateException(
+          "Only SCHEDULED tournaments can be deleted — '"
+              + t.getName()
+              + "' is "
+              + t.getStatus()
+              + ". Start a new one instead.");
+    }
+    t.getRounds()
+        .forEach(round -> matchRepository.deleteAll(matchRepository.findByRoundId(round.getId())));
+    roundRepository.deleteAll(roundRepository.findByTournamentIdOrderByRoundNumberAsc(id));
+    entryRepository.deleteAll(entryRepository.findByTournamentIdOrderBySeedAsc(id));
+    tournamentRepository.delete(t);
+    return true;
+  }
+
   // ── Entry management ──────────────────────────────────────────────────────
 
   @Transactional
@@ -175,27 +274,127 @@ public class TournamentService {
     TournamentFormat fmt =
         findFormat(tournament.getFormatId())
             .orElseThrow(() -> new IllegalStateException("Format not found"));
-    if (count < fmt.getMinEntrants() || count > fmt.getMaxEntrants()) {
+    List<Wrestler> pool =
+        findEligibleWrestlersSortedByFans(tournament.getLinkedTitle(), universeId);
+    if (pool.size() < fmt.getMinEntrants()) {
+      throw new IllegalStateException(
+          "Not enough eligible wrestlers to seed '"
+              + tournament.getName()
+              + "': "
+              + pool.size()
+              + " available, the format needs at least "
+              + fmt.getMinEntrants()
+              + eligibilityNote(tournament.getLinkedTitle()));
+    }
+    int effective = Math.min(count, pool.size());
+    if (effective < count) {
+      // Requested more than the eligible roster holds — seed everyone available instead of
+      // failing (the wizard caps its field at the roster size; API callers may not).
+      log.info(
+          "Seeding '{}' with {} entrants ({} requested, roster holds only that many)",
+          tournament.getName(),
+          effective,
+          count);
+    }
+    List<Wrestler> active = pool.stream().limit(effective).toList();
+    return seedWith(tournament, active);
+  }
+
+  /** Human-readable note appended to eligibility errors when a title narrowed the pool. */
+  private String eligibilityNote(Title linkedTitle) {
+    if (linkedTitle == null) {
+      return "";
+    }
+    return " (eligibility limited by the linked championship's gender constraint and current"
+        + " champion)";
+  }
+
+  /**
+   * How many active wrestlers are eligible to seed a tournament linked to the given title — the
+   * active roster, narrowed by the title's gender constraint and minus the current champion(s) (see
+   * {@link #findEligibleWrestlersSortedByFans}). The creation wizard caps its entrant-count field
+   * at this value.
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public int countEligibleEntrants(Title linkedTitle) {
+    return findEligibleWrestlersSortedByFans(linkedTitle, null).size();
+  }
+
+  /**
+   * Seed from an explicit ordered wrestler list (seed i+1 = list position i). Shared by {@link
+   * #seedAuto} and the seeding editor. Validates against the format's range so a re-seed cannot
+   * produce a bracket the format cannot generate.
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public List<TournamentEntry> seedWith(Tournament tournament, List<Wrestler> orderedWrestlers) {
+    TournamentFormat fmt =
+        findFormat(tournament.getFormatId())
+            .orElseThrow(() -> new IllegalStateException("Format not found"));
+    if (orderedWrestlers.size() < fmt.getMinEntrants()
+        || orderedWrestlers.size() > fmt.getMaxEntrants()) {
       throw new IllegalArgumentException(
           "Entrant count "
-              + count
+              + orderedWrestlers.size()
               + " out of range ["
               + fmt.getMinEntrants()
               + ", "
               + fmt.getMaxEntrants()
               + "]");
     }
-    List<Wrestler> active =
-        wrestlerRepository.findAllByActiveTrue().stream()
-            .sorted(Comparator.comparingLong((Wrestler w) -> w.getFans(universeId)).reversed())
-            .limit(count)
-            .toList();
-
     List<TournamentEntry> entries = new ArrayList<>();
-    for (int i = 0; i < active.size(); i++) {
-      entries.add(addEntry(tournament, active.get(i), i + 1));
+    for (int i = 0; i < orderedWrestlers.size(); i++) {
+      entries.add(addEntry(tournament, orderedWrestlers.get(i), i + 1));
     }
     return entries;
+  }
+
+  /**
+   * The active wrestlers eligible to seed a tournament linked to the given title, sorted by fans
+   * (most fans first) — the same pool {@link #seedAuto} uses. Eligibility: active, narrowed by the
+   * title's gender constraint when it has one, and (title-linked tournaments) the current
+   * champion(s) are excluded — they hold the belt the tournament awards, so they cannot win it from
+   * themselves. Transactional so detached UI callers can read fan counts (they walk the lazy
+   * wrestlerStates collection) and render the seeding preview without LazyInitializationException.
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public List<Wrestler> findEligibleWrestlersSortedByFans(Title linkedTitle, Long universeId) {
+    Gender genderConstraint = linkedTitle != null ? linkedTitle.getGender() : null;
+    List<Wrestler> pool =
+        (genderConstraint != null
+                ? wrestlerRepository.findAllByGenderAndActive(genderConstraint, true)
+                : wrestlerRepository.findAllByActiveTrue())
+            .stream()
+                .sorted(Comparator.comparingLong((Wrestler w) -> w.getFans(universeId)).reversed())
+                .toList();
+    if (linkedTitle == null) {
+      return pool;
+    }
+    List<Long> championIds = currentChampionIds(linkedTitle);
+    if (championIds.isEmpty()) {
+      return pool;
+    }
+    List<Wrestler> withoutChampions =
+        pool.stream().filter(w -> !championIds.contains(w.getId())).toList();
+    if (withoutChampions.size() < pool.size()) {
+      log.debug(
+          "Excluded current champion(s) of '{}' from tournament eligibility",
+          linkedTitle.getName());
+    }
+    return withoutChampions;
+  }
+
+  /** Ids of the wrestlers currently holding the given title (empty when vacant). */
+  private List<Long> currentChampionIds(Title linkedTitle) {
+    // A lazy collection already initialized inside the current transaction never re-queries —
+    // read the champions from the reign table, not the detached title's in-memory list.
+    return titleReignRepository.findByTitleIdAndEndDateIsNull(linkedTitle.getId()).stream()
+        .flatMap(reign -> reign.getChampions().stream())
+        .map(Wrestler::getId)
+        .distinct()
+        .toList();
   }
 
   // ── Bracket lifecycle ─────────────────────────────────────────────────────
@@ -212,9 +411,54 @@ public class TournamentService {
     TournamentFormat fmt =
         findFormat(tournament.getFormatId())
             .orElseThrow(() -> new IllegalStateException("Format not found"));
-    fmt.generateBracket(tournament, formatContext());
+    List<TournamentRound> generated = fmt.generateBracket(tournament, formatContext());
+    // The format persists the bracket through the owning side; attach it to the in-memory
+    // collection so callers holding this instance (template-fed approval, ATW-oahn) can scan
+    // round 1 without re-fetching — a lazy collection already initialized inside the current
+    // transaction never re-queries.
+    attachGenerated(tournament, generated.stream().flatMap(r -> r.getMatches().stream()).toList());
     tournament.setStatus(TournamentStatus.IN_PROGRESS);
     return tournamentRepository.save(tournament);
+  }
+
+  /**
+   * Make freshly generated bracket content visible on the in-memory tournament. A lazy collection
+   * that was already initialized within the current transaction never re-queries, so rounds the
+   * format persisted through the owning side would otherwise be invisible to in-memory scans (e.g.
+   * the template-fed booking path's open-match lookup).
+   */
+  private void attachGenerated(Tournament tournament, List<TournamentMatch> generated) {
+    for (TournamentMatch match : generated) {
+      TournamentRound round = match.getRound();
+      TournamentRound attached =
+          tournament.getRounds().stream()
+              .filter(r -> r.getId() != null && r.getId().equals(round.getId()))
+              .findFirst()
+              .orElseGet(
+                  () -> {
+                    tournament.getRounds().add(round);
+                    return round;
+                  });
+      if (attached.getMatches().stream()
+          .noneMatch(m -> m.getId() != null && m.getId().equals(match.getId()))) {
+        attached.getMatches().add(match);
+      }
+    }
+  }
+
+  /**
+   * Mark a PENDING round IN_PROGRESS when one of its matches is booked through any path. The manual
+   * flow sets this in {@link #bookRoundOnShow}; template-fed booking (ATW-oahn) books matches one
+   * at a time outside it, so it calls this to keep the UI's "Book Round on Show" button coherent —
+   * a round with a booked match is no longer offerable for booking.
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public void markRoundInProgress(TournamentRound round) {
+    if (round.getStatus() == TournamentRoundStatus.PENDING) {
+      round.setStatus(TournamentRoundStatus.IN_PROGRESS);
+      roundRepository.save(round);
+    }
   }
 
   /** Book all pending matches in the current round onto a show, creating segment reservations. */
@@ -271,6 +515,93 @@ public class TournamentService {
   public TournamentRound setRoundFixedRule(TournamentRound round, SegmentRule rule) {
     round.setFixedRule(rule);
     return roundRepository.save(round);
+  }
+
+  // ── Seeding edits (SCHEDULED + no bracket yet) ─────────────────────────────
+
+  /**
+   * Reorder the tournament's seeds: the given entry ids' order becomes the new seed order (seed 1 =
+   * first id in the list). Only allowed while SCHEDULED with no generated bracket — once the
+   * bracket exists the pairings are locked.
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public List<TournamentEntry> reorderSeeds(
+      @NonNull final Long tournamentId, @NonNull final List<Long> orderedEntryIds) {
+    Tournament t = requireEditableForSeeding(tournamentId);
+    List<TournamentEntry> entries = entryRepository.findByTournamentIdOrderBySeedAsc(tournamentId);
+    if (orderedEntryIds.size() != entries.size()) {
+      throw new IllegalArgumentException(
+          "Expected all "
+              + entries.size()
+              + " entrants in the new order, got "
+              + orderedEntryIds.size());
+    }
+    Set<Long> entryIds = entries.stream().map(TournamentEntry::getId).collect(Collectors.toSet());
+    for (Long entryId : orderedEntryIds) {
+      if (!entryIds.contains(entryId)) {
+        throw new IllegalArgumentException("Entry " + entryId + " is not in this tournament");
+      }
+    }
+    for (int i = 0; i < orderedEntryIds.size(); i++) {
+      final Long entryId = orderedEntryIds.get(i);
+      final int seed = i + 1;
+      TournamentEntry entry =
+          entries.stream().filter(e -> e.getId().equals(entryId)).findFirst().orElseThrow();
+      entry.setSeed(seed);
+      entryRepository.save(entry);
+    }
+    return entryRepository.findByTournamentIdOrderBySeedAsc(tournamentId);
+  }
+
+  /**
+   * Replace one entrant with a different wrestler, keeping the vacated seed. Only allowed while
+   * SCHEDULED with no generated bracket.
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public TournamentEntry replaceEntrant(
+      @NonNull final Long tournamentId,
+      @NonNull final Long entryId,
+      @NonNull final Long newWrestlerId) {
+    Tournament t = requireEditableForSeeding(tournamentId);
+    TournamentEntry entry =
+        entryRepository
+            .findById(entryId)
+            .filter(e -> e.getTournament().getId().equals(tournamentId))
+            .orElseThrow(() -> new IllegalArgumentException("Entry not found: " + entryId));
+    Wrestler replacement = wrestlerRepository.findById(newWrestlerId).orElse(null);
+    if (replacement == null) {
+      throw new IllegalArgumentException("Wrestler not found: " + newWrestlerId);
+    }
+    if (entryRepository.existsByTournamentIdAndWrestlerId(tournamentId, newWrestlerId)) {
+      throw new IllegalStateException(
+          replacement.getName() + " is already entered in this tournament");
+    }
+    entry.setWrestler(replacement);
+    entryRepository.save(entry);
+    return entry;
+  }
+
+  /** Load the tournament and gate seed edits: SCHEDULED with no generated rounds. */
+  private Tournament requireEditableForSeeding(Long tournamentId) {
+    Tournament t =
+        tournamentRepository
+            .findById(tournamentId)
+            .orElseThrow(
+                () -> new IllegalArgumentException("Tournament not found: " + tournamentId));
+    if (t.getStatus() != TournamentStatus.SCHEDULED) {
+      throw new IllegalStateException(
+          "Seeds are locked once the tournament starts — '"
+              + t.getName()
+              + "' is "
+              + t.getStatus());
+    }
+    if (!t.getRounds().isEmpty()) {
+      throw new IllegalStateException(
+          "Seeds are locked once the bracket is generated — '" + t.getName() + "' has rounds");
+    }
+    return t;
   }
 
   /**

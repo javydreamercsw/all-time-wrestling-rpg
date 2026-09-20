@@ -32,10 +32,13 @@ import com.github.javydreamercsw.management.domain.show.template.RecurrenceType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
+import com.github.javydreamercsw.management.service.show.ShowContextFacade;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
+import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -96,6 +99,7 @@ public class ShowTemplateListView extends Main {
   private final AiSettingsService aiSettingsService;
   private final SegmentTypeService segmentTypeService;
   private final SegmentRuleService segmentRuleService;
+  private final TournamentService tournamentService;
 
   private Dialog editDialog;
   private TextField editName;
@@ -119,6 +123,7 @@ public class ShowTemplateListView extends Main {
   private ComboBox<SegmentType> assignmentTypeCombo;
   private ComboBox<SegmentRule> assignmentRuleCombo;
   private ComboBox<ShowTemplateSegmentAssignment.AssignmentMode> assignmentModeCombo;
+  private ComboBox<Tournament> assignmentTournamentCombo;
 
   final TextField nameFilter;
   final ComboBox<ShowType> showTypeFilter;
@@ -134,7 +139,8 @@ public class ShowTemplateListView extends Main {
       @NonNull final ImageStorageService imageStorageService,
       @NonNull final AiSettingsService aiSettingsService,
       @NonNull final SegmentTypeService segmentTypeService,
-      @NonNull final SegmentRuleService segmentRuleService) {
+      @NonNull final SegmentRuleService segmentRuleService,
+      @NonNull final ShowContextFacade showContextFacade) {
     this.showTemplateService = showTemplateService;
     this.showTypeService = showTypeService;
     this.commentaryTeamRepository = commentaryTeamRepository;
@@ -144,6 +150,7 @@ public class ShowTemplateListView extends Main {
     this.aiSettingsService = aiSettingsService;
     this.segmentTypeService = segmentTypeService;
     this.segmentRuleService = segmentRuleService;
+    this.tournamentService = showContextFacade.getTournamentService();
 
     // Initialize filters
     nameFilter = new TextField();
@@ -347,6 +354,7 @@ public class ShowTemplateListView extends Main {
               editBtn.addThemeVariants(ButtonVariant.LUMO_SMALL);
               editBtn.addClickListener(e -> openEditDialog(template));
               editBtn.setVisible(securityUtils.canEdit());
+              editBtn.setId("edit-btn-" + template.getId());
 
               Icon toggleIcon =
                   template.isActive() ? new Icon(VaadinIcon.EYE) : new Icon(VaadinIcon.EYE_SLASH);
@@ -568,6 +576,10 @@ public class ShowTemplateListView extends Main {
         .addColumn(a -> a.getSegmentRule() != null ? a.getSegmentRule().getName() : "—")
         .setHeader("Segment Rule")
         .setAutoWidth(true);
+    assignmentGrid
+        .addColumn(a -> a.getTournament() != null ? a.getTournament().getName() : "—")
+        .setHeader("Tournament")
+        .setAutoWidth(true);
     assignmentGrid.addColumn(a -> a.getMode().name()).setHeader("Mode").setAutoWidth(true);
     assignmentGrid.addComponentColumn(
         row -> {
@@ -611,6 +623,17 @@ public class ShowTemplateListView extends Main {
     assignmentModeCombo.setValue(ShowTemplateSegmentAssignment.AssignmentMode.ENCOURAGED);
     assignmentModeCombo.setWidthFull();
 
+    // Tournament pairing (ATW-oahn): its participants feed the auto-attached segment.
+    assignmentTournamentCombo = new ComboBox<>("Tournament");
+    assignmentTournamentCombo.setItems(
+        tournamentService.findAll().stream()
+            .sorted(Comparator.comparing(Tournament::getName))
+            .toList());
+    assignmentTournamentCombo.setItemLabelGenerator(Tournament::getName);
+    assignmentTournamentCombo.setWidthFull();
+    assignmentTournamentCombo.setPlaceholder("Optional");
+    assignmentTournamentCombo.setClearButtonVisible(true);
+
     Button addAssignmentBtn =
         new Button(
             "Add Assignment",
@@ -618,10 +641,22 @@ public class ShowTemplateListView extends Main {
             e -> {
               SegmentType type = assignmentTypeCombo.getValue();
               SegmentRule rule = assignmentRuleCombo.getValue();
-              // Exactly one target — or a type+rule pair — is required per row.
-              if (type == null && rule == null) {
+              Tournament tournament = assignmentTournamentCombo.getValue();
+              // At least one target (type, rule, or tournament) is required per row.
+              if (type == null && rule == null && tournament == null) {
                 Notification.show(
-                    "Pick a segment type and/or a segment rule for the assignment.",
+                    "Pick a segment type, a segment rule, or a tournament for the assignment.",
+                    3000,
+                    Notification.Position.MIDDLE);
+                return;
+              }
+              // A tournament row must be AUTO_ATTACH: its participants are merged
+              // deterministically at approval time; ENCOURAGED is meaningless for it.
+              if (tournament != null
+                  && ShowTemplateSegmentAssignment.AssignmentMode.ENCOURAGED
+                      == assignmentModeCombo.getValue()) {
+                Notification.show(
+                    "Tournament rows must use AUTO_ATTACH mode.",
                     3000,
                     Notification.Position.MIDDLE);
                 return;
@@ -629,6 +664,7 @@ public class ShowTemplateListView extends Main {
               ShowTemplateSegmentAssignment row = new ShowTemplateSegmentAssignment();
               row.setSegmentType(type);
               row.setSegmentRule(rule);
+              row.setTournament(tournament);
               row.setMode(
                   assignmentModeCombo.getValue() != null
                       ? assignmentModeCombo.getValue()
@@ -640,12 +676,16 @@ public class ShowTemplateListView extends Main {
     addAssignmentBtn.setVisible(securityUtils.canEdit());
 
     HorizontalLayout assignmentPicker =
-        new HorizontalLayout(assignmentTypeCombo, assignmentRuleCombo, assignmentModeCombo);
+        new HorizontalLayout(
+            assignmentTypeCombo,
+            assignmentRuleCombo,
+            assignmentTournamentCombo,
+            assignmentModeCombo);
     assignmentPicker.setWidthFull();
     assignmentPicker.setAlignItems(FlexComponent.Alignment.END);
     VerticalLayout assignmentSection =
         new VerticalLayout(
-            new Span("Template Assignments (event types, encouraged or auto-attach rules)"),
+            new Span("Template Assignments (event types, rules, tournament-fed segments)"),
             assignmentPicker,
             addAssignmentBtn,
             assignmentGrid);
@@ -894,9 +934,18 @@ public class ShowTemplateListView extends Main {
       final SegmentType type,
       final SegmentRule rule,
       final ShowTemplateSegmentAssignment.AssignmentMode mode) {
+    addAssignmentForTest(type, rule, null, mode);
+  }
+
+  void addAssignmentForTest(
+      final SegmentType type,
+      final SegmentRule rule,
+      final Tournament tournament,
+      final ShowTemplateSegmentAssignment.AssignmentMode mode) {
     ShowTemplateSegmentAssignment row = new ShowTemplateSegmentAssignment();
     row.setSegmentType(type);
     row.setSegmentRule(rule);
+    row.setTournament(tournament);
     row.setMode(mode);
     dialogAssignments.add(row);
     assignmentGrid.getListDataView().refreshAll();

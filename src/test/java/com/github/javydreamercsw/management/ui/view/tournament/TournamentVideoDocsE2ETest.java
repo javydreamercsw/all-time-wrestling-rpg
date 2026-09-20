@@ -168,6 +168,86 @@ class TournamentVideoDocsE2ETest extends AbstractDocsE2ETest {
         5000);
   }
 
+  @Test
+  void recordTournamentFedPleWorkflow() {
+    setVideoInfo("Booker", "Tournament-Fed PLE Segments", "booker-tournament-fed-ple-workflow");
+
+    // A tournament paired with a PLE template's auto-attached segment (ATW-oahn): the
+    // bracket, not the AI, fills that match's participants when the show is approved.
+    navigateTo("tournament-list");
+    waitForVaadinClientToLoad();
+    waitForVaadinElement(driver, By.tagName("vaadin-grid"));
+    captureCaption(
+        "Start from the tournament you want to feed a PLE segment. This Crown Cup is"
+            + " scheduled — it doesn't even need to be seeded yet: approving a paired show"
+            + " auto-seeds it from the top roster by fan count and starts the bracket.",
+        4000);
+
+    navigateTo("show-template-list");
+    waitForVaadinClientToLoad();
+    waitForVaadinElement(driver, By.tagName("vaadin-grid"));
+    captureCaption(
+        "Open the PLE show template and add a Template Assignment: pick the segment type"
+            + " (for example Abu Dhabi Rumble), optionally a stipulation rule, the tournament,"
+            + " and AUTO_ATTACH mode. That pairing ties the bracket to the card.",
+        4500);
+
+    navigateTo("tournament-detail/" + tournamentId);
+    waitForVaadinClientToLoad();
+    waitForVaadinElement(driver, By.xpath("//*[contains(., 'King of the Ring')]"));
+    captureCaption(
+        "When the paired show's segments are approved, the tournament's next open match"
+            + " fills that segment — here the Quarter-Final results are already recorded"
+            + " and the winners advance. The bracket and the card never drift apart:"
+            + " the segment's actual winner is written back into the tournament.",
+        4500);
+
+    captureCaption(
+        "Once the final is decided, the next approval of a paired show books the winner"
+            + " showcase — the champion against the highest-seeded wrestler they eliminated."
+            + " If the tournament can't supply participants at any point, the show falls"
+            + " back to AI-proposed entrants instead of failing.",
+        4500);
+  }
+
+  @Test
+  void recordTournamentWizardWalkthrough() {
+    setVideoInfo("Booker", "Tournament Creation Wizard", "booker-tournament-creation-wizard");
+
+    // The wizard is reachable from the Entities → Tournaments sidebar entry.
+    navigateTo("tournament-list");
+    waitForVaadinClientToLoad();
+    waitForVaadinElement(driver, By.tagName("vaadin-grid"));
+    clickButtonByText("New Tournament");
+    waitForVaadinElement(driver, By.xpath("//*[contains(text(), 'New Tournament')]"));
+    captureCaption(
+        "Start from Entities → Tournaments and click 'New Tournament'. Step 1 collects the"
+            + " details: tournament name, the bracket format — Single Elimination or Round"
+            + " Robin — and an optional linked championship.",
+        4000);
+
+    captureCaption(
+        "Linking a championship narrows eligibility automatically: the roster is filtered"
+            + " by the title's gender constraint and the current champion is excluded —"
+            + " the belt holder cannot win the tournament that awards their own belt."
+            + " The entrant-count field caps itself at the eligible pool.",
+        4500);
+
+    captureCaption(
+        "The seeding step stays locked until name and format are filled — the wizard"
+            + " cannot produce a tournament with an invalid first step. Once they are set,"
+            + " Next unlocks step 2: choose Auto seeding by fan count, Manual picking,"
+            + " or Don't seed now to let a paired show seed it on approval.",
+        4500);
+
+    captureCaption(
+        "With Auto seeding, a live match-up preview shows exactly the round-1 pairings"
+            + " Create will commit — top seed vs bottom seed — before anything is saved."
+            + " Create generates the bracket-ready tournament and opens its detail view,"
+            + " where seeds can still be reordered or wrestlers swapped until Start.",
+        4500);
+  }
+
   private List<Wrestler> seedWrestlers(String... names) {
     List<Wrestler> result = new ArrayList<>();
     for (String name : names) {

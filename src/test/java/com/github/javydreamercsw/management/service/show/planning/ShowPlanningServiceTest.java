@@ -26,6 +26,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -49,6 +50,7 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
+import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -68,6 +70,7 @@ import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanni
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningDtoMapper;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRivalryDTO;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.tournament.TournamentTemplateBookingService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.Instant;
@@ -112,6 +115,7 @@ class ShowPlanningServiceTest {
   @Mock private DramaEventService dramaEventService;
   @Mock private FeudScriptService feudScriptService;
   @Mock private ShowTemplateRepository showTemplateRepository;
+  @Mock private TournamentTemplateBookingService tournamentTemplateBookingService;
 
   @InjectMocks private ShowPlanningService showPlanningService;
 
@@ -336,6 +340,136 @@ class ShowPlanningServiceTest {
     w.setId(id);
     w.setName(name);
     return w;
+  }
+
+  @Test
+  void testApproveSegments_tournamentFedBooking_replacesAiParticipants() {
+    SegmentType rumbleType = new SegmentType();
+    rumbleType.setId(10L);
+    rumbleType.setName("Abu Dhabi Rumble");
+    when(segmentTypeService.findByName("Abu Dhabi Rumble")).thenReturn(Optional.of(rumbleType));
+
+    ShowTemplate template = new ShowTemplate();
+    template.setId(5L);
+    ShowTemplateSegmentAssignment assignment = new ShowTemplateSegmentAssignment();
+    assignment.setTemplate(template);
+    assignment.setSegmentType(rumbleType);
+    assignment.setTournament(new Tournament());
+    assignment.setMode(ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH);
+    template.getSegmentAssignments().add(assignment);
+    show.setTemplate(template);
+
+    ProposedSegment proposed = new ProposedSegment();
+    proposed.setType("Abu Dhabi Rumble");
+    proposed.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+    proposed.setWinners(List.of("Wrestler A"));
+    proposed.setSummary("AI summary");
+    proposed.setNarration("AI narration");
+
+    Segment tournamentBooked = new Segment();
+    tournamentBooked.setSegmentType(rumbleType);
+    Wrestler entrant = wrestlerNamed(9L, "Tournament Entrant");
+    tournamentBooked.addParticipant(entrant, 1);
+    tournamentBooked.setWinners(List.of(entrant));
+    when(tournamentTemplateBookingService.bookTournamentFedSegment(assignment, rumbleType, show))
+        .thenReturn(
+            Optional.of(
+                new TournamentTemplateBookingService.TournamentBooking(
+                    tournamentBooked, assignment.getTournament(), "Round 1 — tournament-fed")));
+
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+
+    showPlanningService.approveSegments(show, List.of(proposed));
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Segment>> segmentsCaptor = ArgumentCaptor.forClass(List.class);
+    verify(segmentRepository).saveAll(segmentsCaptor.capture());
+    List<Segment> saved = segmentsCaptor.getValue();
+    assertEquals(1, saved.size());
+    // The tournament's booking replaces the AI-proposed participants entirely.
+    assertEquals(
+        "Tournament Entrant",
+        saved.get(0).getParticipants().iterator().next().getWrestler().getName());
+    assertEquals(1, saved.get(0).getWinners().size());
+    assertEquals("Tournament Entrant", saved.get(0).getWinners().iterator().next().getName());
+    // Proposal placement metadata is inherited.
+    assertEquals(1, saved.get(0).getSegmentOrder());
+    assertEquals("AI summary", saved.get(0).getSummary());
+    assertEquals("AI narration", saved.get(0).getNarration());
+  }
+
+  @Test
+  void testApproveSegments_tournamentFallback_keepsAiParticipants() {
+    SegmentType rumbleType = new SegmentType();
+    rumbleType.setId(10L);
+    rumbleType.setName("Abu Dhabi Rumble");
+    when(segmentTypeService.findByName("Abu Dhabi Rumble")).thenReturn(Optional.of(rumbleType));
+
+    ShowTemplate template = new ShowTemplate();
+    template.setId(5L);
+    ShowTemplateSegmentAssignment assignment = new ShowTemplateSegmentAssignment();
+    assignment.setTemplate(template);
+    assignment.setSegmentType(rumbleType);
+    assignment.setTournament(new Tournament());
+    assignment.setMode(ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH);
+    template.getSegmentAssignments().add(assignment);
+    show.setTemplate(template);
+
+    ProposedSegment proposed = new ProposedSegment();
+    proposed.setType("Abu Dhabi Rumble");
+    proposed.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+    proposed.setWinners(List.of("Wrestler A"));
+
+    // The tournament cannot supply participants — the AI path must proceed unchanged.
+    when(tournamentTemplateBookingService.bookTournamentFedSegment(assignment, rumbleType, show))
+        .thenReturn(Optional.empty());
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+    when(wrestlerRepository.findByName("Wrestler A"))
+        .thenReturn(Optional.of(wrestlerNamed(1L, "Wrestler A")));
+    when(wrestlerRepository.findByName("Wrestler B"))
+        .thenReturn(Optional.of(wrestlerNamed(2L, "Wrestler B")));
+
+    showPlanningService.approveSegments(show, List.of(proposed));
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Segment>> segmentsCaptor = ArgumentCaptor.forClass(List.class);
+    verify(segmentRepository).saveAll(segmentsCaptor.capture());
+    Segment saved = segmentsCaptor.getValue().get(0);
+    assertEquals(
+        2, saved.getParticipants().size(), "Fallback must keep the AI-proposed participants");
+    assertEquals("Wrestler A", saved.getWinners().iterator().next().getName());
+  }
+
+  @Test
+  void testApproveSegments_noTournamentAssignment_normalPathUnaffected() {
+    SegmentType singles = new SegmentType();
+    singles.setId(30L);
+    singles.setName("One on One");
+    when(segmentTypeService.findByName("One on One")).thenReturn(Optional.of(singles));
+
+    ShowTemplate template = new ShowTemplate();
+    template.setId(7L);
+    // Template exists but has no tournament paired with this type.
+    show.setTemplate(template);
+
+    ProposedSegment proposed = new ProposedSegment();
+    proposed.setType("One on One");
+    proposed.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+    proposed.setWinners(List.of("Wrestler A"));
+
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+    when(wrestlerRepository.findByName("Wrestler A"))
+        .thenReturn(Optional.of(wrestlerNamed(1L, "Wrestler A")));
+    when(wrestlerRepository.findByName("Wrestler B"))
+        .thenReturn(Optional.of(wrestlerNamed(2L, "Wrestler B")));
+
+    showPlanningService.approveSegments(show, List.of(proposed));
+
+    verify(tournamentTemplateBookingService, never()).bookTournamentFedSegment(any(), any(), any());
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Segment>> segmentsCaptor = ArgumentCaptor.forClass(List.class);
+    verify(segmentRepository).saveAll(segmentsCaptor.capture());
+    assertEquals(1, segmentsCaptor.getValue().size());
   }
 
   @Test
