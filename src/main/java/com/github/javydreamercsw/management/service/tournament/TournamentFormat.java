@@ -58,6 +58,13 @@ public interface TournamentFormat {
   boolean isComplete(Tournament tournament);
 
   /**
+   * Total matches the full bracket holds for the tournament's current entrant count — the pacing
+   * math uses this to distribute non-final rounds across the shows before the PLE (ATW-z963).
+   * Rounds generate lazily, so the count is estimated from the entrant count, not scanned.
+   */
+  int estimateTotalMatches(Tournament tournament);
+
+  /**
    * How the bracket should be rendered in the UI. Defaults to {@link RenderMode#TREE} (single
    * elimination bracket). Override for formats that display differently.
    */

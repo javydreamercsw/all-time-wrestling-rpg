@@ -375,7 +375,11 @@ class ShowPlanningServiceTest {
         .thenReturn(
             Optional.of(
                 new TournamentTemplateBookingService.TournamentBooking(
-                    tournamentBooked, assignment.getTournament(), "Round 1 — tournament-fed")));
+                    tournamentBooked,
+                    assignment.getTournament(),
+                    "Round 1 — tournament-fed",
+                    false,
+                    null)));
 
     when(segmentRepository.findByShow(show)).thenReturn(List.of());
 

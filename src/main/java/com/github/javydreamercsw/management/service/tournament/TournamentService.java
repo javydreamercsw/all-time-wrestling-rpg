@@ -39,6 +39,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.show.ShowBookingService;
 import com.github.javydreamercsw.management.service.show.ShowSegmentReservationService;
+import jakarta.annotation.Nullable;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -395,6 +396,35 @@ public class TournamentService {
         .map(Wrestler::getId)
         .distinct()
         .toList();
+  }
+
+  /**
+   * Whether the given championship is vacant (no active reign). Read from the reign table, not the
+   * detached title's in-memory list — the same lazy-collection trap {@link #currentChampionIds}
+   * avoids (ATW-z963 payoff semantics).
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public boolean isTitleVacant(@NonNull Title title) {
+    return titleReignRepository.findByTitleIdAndEndDateIsNull(title.getId()).isEmpty();
+  }
+
+  /**
+   * The wrestlers currently holding the given title (empty when vacant). Read from the reign table
+   * — the detached title's in-memory champions list may be an uninitialized lazy collection.
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public List<Wrestler> currentChampionsOf(@Nullable Title title) {
+    if (title == null) {
+      return List.of();
+    }
+    return titleReignRepository.findByTitleIdAndEndDateIsNull(title.getId()).stream()
+        .flatMap(reign -> reign.getChampions().stream())
+        .collect(
+            Collectors.collectingAndThen(
+                Collectors.toMap(Wrestler::getId, w -> w, (a, b) -> a),
+                m -> List.copyOf(m.values())));
   }
 
   // ── Bracket lifecycle ─────────────────────────────────────────────────────

@@ -585,9 +585,16 @@ public class ShowPlanningService {
           booked.setSummary(proposedSegment.getSummary());
           booked.setNotes(proposedSegment.getNotes());
           booked.setRivalryId(proposedSegment.getRivalryId());
-          booked.setIsTitleSegment(proposedSegment.getIsTitleSegment());
-          if (proposedSegment.getTitles() != null && !proposedSegment.getTitles().isEmpty()) {
-            booked.setTitles(proposedSegment.getTitles());
+          // Title-segment state comes from the tournament payoff, not the AI proposal — the
+          // adjudication path awards or defends the linked championship off these fields
+          // (ATW-z963: final at the PLE / champion showcase).
+          if (tournamentBooking.get().titleMatch()) {
+            booked.setIsTitleSegment(true);
+            if (tournamentBooking.get().title() != null) {
+              booked.getTitles().add(tournamentBooking.get().title());
+            }
+          } else {
+            booked.setIsTitleSegment(false);
           }
           segmentsToSave.add(booked);
           log.info(
@@ -724,6 +731,29 @@ public class ShowPlanningService {
       }
       segmentsToSave.add(segment);
     }
+
+    // Tournament pacing on weekly shows (ATW-z963): a tournament-only AUTO_ATTACH assignment on
+    // this template books the bracket's next paced match(es) as extra card slots — the AI does
+    // not propose them. PLE payoffs are NOT booked here; the PLE path (bookTournamentFedSegment)
+    // owns them. Never blocks approval: empty results simply add nothing.
+    if (managedTemplate != null && !show.isPremiumLiveEvent()) {
+      for (ShowTemplateSegmentAssignment ta : managedTemplate.getTournamentAssignments()) {
+        for (TournamentTemplateBookingService.TournamentBooking booking :
+            tournamentTemplateBookingService.bookWeeklyRounds(ta, show)) {
+          Segment booked = booking.segment();
+          booked.setSegmentOrder(
+              segmentRepository.findByShow(show).size() + 1 + segmentsToSave.size());
+          booked.setSegmentDate(show.getShowDate().atStartOfDay(clock.getZone()).toInstant());
+          segmentsToSave.add(booked);
+          log.info(
+              "Tournament '{}' paced round onto weekly show '{}': {}",
+              booking.tournament().getName(),
+              show.getName(),
+              booking.detail());
+        }
+      }
+    }
+
     segmentRepository.saveAll(segmentsToSave);
     log.debug("Approved and saved {} segments for show: {}", segmentsToSave.size(), show.getName());
     // Auto-complete any pending arc beat whose participants match a saved card segment — this is
