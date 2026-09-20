@@ -47,7 +47,9 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -110,7 +112,7 @@ class TournamentDetailViewTest extends AbstractViewTest {
     tournament.setName("Crown Cup");
     tournament.setFormatId("SINGLE_ELIMINATION");
     tournament.setStatus(TournamentStatus.SCHEDULED);
-    entries = new java.util.ArrayList<>();
+    entries = new ArrayList<>();
     for (int i = 0; i < 4; i++) {
       entries.add(
           TournamentEntry.builder()
@@ -120,7 +122,7 @@ class TournamentDetailViewTest extends AbstractViewTest {
               .build());
     }
     tournament.setEntries(entries);
-    tournament.setRounds(new java.util.ArrayList<>());
+    tournament.setRounds(new ArrayList<>());
 
     lenient()
         .when(tournamentService.findEligibleWrestlersSortedByFans(any(), anyLong()))
@@ -131,8 +133,8 @@ class TournamentDetailViewTest extends AbstractViewTest {
         .when(tournamentService.findByIdWithDetails(1L))
         .thenAnswer(
             inv -> {
-              tournament.setEntries(new java.util.ArrayList<>(entries));
-              return java.util.Optional.of(tournament);
+              tournament.setEntries(new ArrayList<>(entries));
+              return Optional.of(tournament);
             });
 
     buildView();

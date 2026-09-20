@@ -40,6 +40,8 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.ViewContext;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
+import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -258,9 +260,7 @@ class TournamentListViewTest extends AbstractViewTest {
   private static void fireConfirm(ConfirmDialog dialog) {
     try {
       var event = new ConfirmDialog.ConfirmEvent(dialog, true);
-      var fireEvent =
-          com.vaadin.flow.component.Component.class.getDeclaredMethod(
-              "fireEvent", com.vaadin.flow.component.ComponentEvent.class);
+      var fireEvent = Component.class.getDeclaredMethod("fireEvent", ComponentEvent.class);
       fireEvent.setAccessible(true);
       fireEvent.invoke(dialog, event);
     } catch (ReflectiveOperationException e) {
