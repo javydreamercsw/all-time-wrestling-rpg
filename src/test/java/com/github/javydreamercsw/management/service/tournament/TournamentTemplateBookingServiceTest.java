@@ -35,6 +35,7 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
@@ -62,10 +63,12 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 /** Unit tests for tournament-fed booking on PLE templates (ATW-oahn, ATW-z963). */
 @ExtendWith(MockitoExtension.class)
-@org.mockito.junit.jupiter.MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class TournamentTemplateBookingServiceTest {
 
   @Mock private TournamentService tournamentService;
@@ -117,7 +120,7 @@ class TournamentTemplateBookingServiceTest {
         .when(pacingService.payoffKindOf(any()))
         .thenReturn(TournamentPacingService.PayoffKind.FINAL_AT_PLE);
     lenient().when(tournamentService.isTitleVacant(any())).thenReturn(true);
-    lenient().when(tournamentService.currentChampionsOf(any())).thenReturn(java.util.List.of());
+    lenient().when(tournamentService.currentChampionsOf(any())).thenReturn(List.of());
     lenient().when(format.getMaxEntrants()).thenReturn(8);
     lenient().when(format.getMinEntrants()).thenReturn(2);
 
@@ -127,8 +130,7 @@ class TournamentTemplateBookingServiceTest {
     tournament.setFormatId("SINGLE_ELIMINATION");
     tournament.setStatus(TournamentStatus.SCHEDULED);
 
-    com.github.javydreamercsw.management.domain.show.template.ShowTemplate template =
-        new com.github.javydreamercsw.management.domain.show.template.ShowTemplate();
+    ShowTemplate template = new ShowTemplate();
     template.setId(9L);
     template.setName("Weekly");
     assignment = new ShowTemplateSegmentAssignment();

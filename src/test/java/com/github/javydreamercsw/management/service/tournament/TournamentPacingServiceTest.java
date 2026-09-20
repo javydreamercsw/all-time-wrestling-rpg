@@ -21,9 +21,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
+import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
+import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
+import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
 import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import java.time.Clock;
@@ -66,11 +71,8 @@ class TournamentPacingServiceTest {
     tournament.setFormatId("SINGLE_ELIMINATION");
     tournament.setStatus(TournamentStatus.SCHEDULED);
 
-    pleType =
-        showType("PLE", com.github.javydreamercsw.management.domain.show.type.ShowCategory.PLE);
-    weeklyType =
-        showType(
-            "Weekly", com.github.javydreamercsw.management.domain.show.type.ShowCategory.OTHER);
+    pleType = showType("PLE", ShowCategory.PLE);
+    weeklyType = showType("Weekly", ShowCategory.OTHER);
     ple = show(1L, "Big PLE", LocalDate.of(2026, 6, 22), pleType);
     lenient()
         .when(tournamentService.findFormat("SINGLE_ELIMINATION"))
@@ -126,13 +128,8 @@ class TournamentPacingServiceTest {
   @Test
   @DisplayName("FINAL_AT_PLE: 8-entrant bracket paced onto 2 weekly slots leaves 4+1")
   void plan_finalAtPle_8entrants() {
-    for (int i = 1; i <= 8; i++) {
-      tournament
-          .getEntries()
-          .add(
-              com.github.javydreamercsw.management.domain.tournament.TournamentEntry.builder()
-                  .seed(i)
-                  .build());
+    for (int i = 1; i < 8 + 1; i++) {
+      tournament.getEntries().add(TournamentEntry.builder().seed(i).build());
     }
     // 7 total matches, none booked. Remaining = 7, non-final = 6.
     lenient().when(format.estimateTotalMatches(tournament)).thenReturn(7);
@@ -158,18 +155,8 @@ class TournamentPacingServiceTest {
     title.setId(7L);
     tournament.setLinkedTitle(title);
     lenient().when(tournamentService.isTitleVacant(title)).thenReturn(false);
-    tournament
-        .getEntries()
-        .add(
-            com.github.javydreamercsw.management.domain.tournament.TournamentEntry.builder()
-                .seed(1)
-                .build());
-    tournament
-        .getEntries()
-        .add(
-            com.github.javydreamercsw.management.domain.tournament.TournamentEntry.builder()
-                .seed(2)
-                .build());
+    tournament.getEntries().add(TournamentEntry.builder().seed(1).build());
+    tournament.getEntries().add(TournamentEntry.builder().seed(2).build());
     lenient().when(format.estimateTotalMatches(tournament)).thenReturn(3);
     lenient().when(showService.getShowsByDateRange(any(), any())).thenReturn(List.of());
 
@@ -183,29 +170,14 @@ class TournamentPacingServiceTest {
   @Test
   @DisplayName("Booked matches reduce the remaining count")
   void plan_countsBookedMatches() {
-    tournament
-        .getEntries()
-        .add(
-            com.github.javydreamercsw.management.domain.tournament.TournamentEntry.builder()
-                .seed(1)
-                .build());
-    tournament
-        .getEntries()
-        .add(
-            com.github.javydreamercsw.management.domain.tournament.TournamentEntry.builder()
-                .seed(2)
-                .build());
+    tournament.getEntries().add(TournamentEntry.builder().seed(1).build());
+    tournament.getEntries().add(TournamentEntry.builder().seed(2).build());
     // estimateTotalMatches uses entrants; here stub 3 with 1 booked → remaining 2, non-final 2.
     lenient().when(format.estimateTotalMatches(tournament)).thenReturn(3);
     lenient().when(showService.getShowsByDateRange(any(), any())).thenReturn(List.of());
-    com.github.javydreamercsw.management.domain.tournament.TournamentRound round =
-        com.github.javydreamercsw.management.domain.tournament.TournamentRound.builder()
-            .roundNumber(1)
-            .roundName("Round 1")
-            .build();
-    com.github.javydreamercsw.management.domain.tournament.TournamentMatch booked =
-        com.github.javydreamercsw.management.domain.tournament.TournamentMatch.builder().build();
-    booked.setSegment(new com.github.javydreamercsw.management.domain.show.segment.Segment());
+    TournamentRound round = TournamentRound.builder().roundNumber(1).roundName("Round 1").build();
+    TournamentMatch booked = TournamentMatch.builder().build();
+    booked.setSegment(new Segment());
     round.getMatches().add(booked);
     tournament.getRounds().add(round);
 
@@ -225,8 +197,7 @@ class TournamentPacingServiceTest {
     return s;
   }
 
-  private static ShowType showType(
-      String name, com.github.javydreamercsw.management.domain.show.type.ShowCategory category) {
+  private static ShowType showType(String name, ShowCategory category) {
     ShowType t = new ShowType();
     t.setName(name);
     t.setCategory(category);

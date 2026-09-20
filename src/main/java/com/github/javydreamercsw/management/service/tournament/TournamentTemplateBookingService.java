@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.service.segment.NPCSegmentResolution
 import com.github.javydreamercsw.management.service.segment.SegmentTeam;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -201,7 +202,7 @@ public class TournamentTemplateBookingService {
       return List.of();
     }
 
-    java.util.ArrayList<TournamentBooking> bookings = new java.util.ArrayList<>();
+    ArrayList<TournamentBooking> bookings = new ArrayList<>();
     for (int i = 0; i < matchesThisShow; i++) {
       Optional<TournamentBooking> booking =
           bookCurrentRoundFedSegment(tournament, assignment, singlesType.get(), show);
