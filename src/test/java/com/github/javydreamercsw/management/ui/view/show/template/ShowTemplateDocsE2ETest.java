@@ -128,6 +128,9 @@ class ShowTemplateDocsE2ETest extends AbstractDocsE2ETest {
         showTemplateService.getTemplateWithAssignments(template.getId()).orElseThrow();
     managed.getSegmentAssignments().clear();
     ShowTemplateSegmentAssignment row = new ShowTemplateSegmentAssignment();
+    // The assignment is the owning side of the mapping — template must be set on the row
+    // itself, or the insert carries a NULL template_id and violates the FK.
+    row.setTemplate(managed);
     row.setTournament(cup);
     row.setMode(ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH);
     managed.getSegmentAssignments().add(row);
