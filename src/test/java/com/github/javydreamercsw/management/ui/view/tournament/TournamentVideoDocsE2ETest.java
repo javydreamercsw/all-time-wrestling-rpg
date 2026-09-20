@@ -210,6 +210,44 @@ class TournamentVideoDocsE2ETest extends AbstractDocsE2ETest {
         4500);
   }
 
+  @Test
+  void recordTournamentWizardWalkthrough() {
+    setVideoInfo("Booker", "Tournament Creation Wizard", "booker-tournament-creation-wizard");
+
+    // The wizard is reachable from the Entities → Tournaments sidebar entry.
+    navigateTo("tournament-list");
+    waitForVaadinClientToLoad();
+    waitForVaadinElement(driver, By.tagName("vaadin-grid"));
+    clickButtonByText("New Tournament");
+    waitForVaadinElement(driver, By.xpath("//*[contains(text(), 'New Tournament')]"));
+    captureCaption(
+        "Start from Entities → Tournaments and click 'New Tournament'. Step 1 collects the"
+            + " details: tournament name, the bracket format — Single Elimination or Round"
+            + " Robin — and an optional linked championship.",
+        4000);
+
+    captureCaption(
+        "Linking a championship narrows eligibility automatically: the roster is filtered"
+            + " by the title's gender constraint and the current champion is excluded —"
+            + " the belt holder cannot win the tournament that awards their own belt."
+            + " The entrant-count field caps itself at the eligible pool.",
+        4500);
+
+    captureCaption(
+        "The seeding step stays locked until name and format are filled — the wizard"
+            + " cannot produce a tournament with an invalid first step. Once they are set,"
+            + " Next unlocks step 2: choose Auto seeding by fan count, Manual picking,"
+            + " or Don't seed now to let a paired show seed it on approval.",
+        4500);
+
+    captureCaption(
+        "With Auto seeding, a live match-up preview shows exactly the round-1 pairings"
+            + " Create will commit — top seed vs bottom seed — before anything is saved."
+            + " Create generates the bracket-ready tournament and opens its detail view,"
+            + " where seeds can still be reordered or wrestlers swapped until Start.",
+        4500);
+  }
+
   private List<Wrestler> seedWrestlers(String... names) {
     List<Wrestler> result = new ArrayList<>();
     for (String name : names) {

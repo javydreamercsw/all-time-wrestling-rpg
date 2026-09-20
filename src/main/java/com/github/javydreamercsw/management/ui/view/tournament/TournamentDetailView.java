@@ -305,12 +305,23 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
     dialog.setHeaderTitle("Replace seed " + entry.getSeed() + ": " + entry.getWrestler().getName());
 
     ComboBox<Wrestler> picker = new ComboBox<>("New wrestler");
+    // Offer the eligible pool minus anyone already entered — the service rejects duplicates,
+    // but showing them as choices would guarantee an error after selection.
+    java.util.Set<Long> enteredIds = new java.util.HashSet<>();
+    tournament.getEntries().forEach(e -> enteredIds.add(e.getWrestler().getId()));
     picker.setItems(
-        tournamentService.findEligibleWrestlersSortedByFans(
-            tournament.getLinkedTitle(), universeContextService.getCurrentUniverseId()));
+        tournamentService
+            .findEligibleWrestlersSortedByFans(
+                tournament.getLinkedTitle(), universeContextService.getCurrentUniverseId())
+            .stream()
+            .filter(w -> !enteredIds.contains(w.getId()))
+            .toList());
     picker.setItemLabelGenerator(Wrestler::getName);
     picker.setWidth("320px");
     picker.setPlaceholder("Pick a replacement");
+    if (picker.getListDataView().getItemCount() == 0) {
+      picker.setHelperText("No eligible wrestlers available outside the current entrants.");
+    }
     Button replaceBtn = new Button("Replace", e -> {});
     replaceBtn.setEnabled(false);
     picker.addValueChangeListener(
@@ -332,6 +343,7 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
         });
 
     HorizontalLayout footer = new HorizontalLayout(replaceBtn);
+    dialog.add(picker);
     dialog.getFooter().add(footer);
     dialog.getFooter().add(new Button("Cancel", ev -> dialog.close()));
     dialog.open();
