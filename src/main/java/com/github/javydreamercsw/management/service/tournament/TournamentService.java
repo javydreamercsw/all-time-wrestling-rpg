@@ -22,6 +22,7 @@ import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.reservation.ShowSegmentReservationPurpose;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntryRepository;
@@ -43,7 +44,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -65,6 +68,7 @@ public class TournamentService {
   private final ShowRepository showRepository;
   private final ShowBookingService showBookingService;
   private final ShowSegmentReservationService reservationService;
+  private final TitleReignRepository titleReignRepository;
   private final List<TournamentFormat> formats;
 
   private TournamentFormatContext formatContext() {
@@ -270,66 +274,46 @@ public class TournamentService {
     TournamentFormat fmt =
         findFormat(tournament.getFormatId())
             .orElseThrow(() -> new IllegalStateException("Format not found"));
-    if (count < fmt.getMinEntrants() || count > fmt.getMaxEntrants()) {
-      throw new IllegalArgumentException(
-          "Entrant count "
-              + count
-              + " out of range ["
-              + fmt.getMinEntrants()
-              + ", "
-              + fmt.getMaxEntrants()
-              + "]");
-    }
-    // A tournament linked to a gender-restricted championship seeds only eligible wrestlers
-    // (e.g. the ATW World title is male-exclusive).
-    Gender genderConstraint =
-        tournament.getLinkedTitle() != null ? tournament.getLinkedTitle().getGender() : null;
-    List<Wrestler> active =
-        (genderConstraint != null
-                ? wrestlerRepository.findAllByGenderAndActive(genderConstraint, true)
-                : wrestlerRepository.findAllByActiveTrue())
-            .stream()
-                .sorted(Comparator.comparingLong((Wrestler w) -> w.getFans(universeId)).reversed())
-                .limit(count)
-                .toList();
-
-    if (active.size() < fmt.getMinEntrants()) {
+    List<Wrestler> pool =
+        findEligibleWrestlersSortedByFans(tournament.getLinkedTitle(), universeId);
+    if (pool.size() < fmt.getMinEntrants()) {
       throw new IllegalStateException(
           "Not enough eligible wrestlers to seed '"
               + tournament.getName()
               + "': "
-              + active.size()
+              + pool.size()
               + " available, the format needs at least "
               + fmt.getMinEntrants()
-              + (genderConstraint != null
-                  ? " (eligibility limited by the linked championship's gender constraint)"
-                  : ""));
+              + eligibilityNote(tournament.getLinkedTitle()));
     }
-    if (active.size() < count) {
+    int effective = Math.min(count, pool.size());
+    if (effective < count) {
       // Requested more than the eligible roster holds — seed everyone available instead of
       // failing (the wizard caps its field at the roster size; API callers may not).
       log.info(
           "Seeding '{}' with {} entrants ({} requested, roster holds only that many)",
           tournament.getName(),
-          active.size(),
+          effective,
           count);
     }
+    List<Wrestler> active = pool.stream().limit(effective).toList();
+    return seedWith(tournament, active);
+  }
 
-    List<TournamentEntry> entries = new ArrayList<>();
-    for (int i = 0; i < active.size(); i++) {
-      entries.add(addEntry(tournament, active.get(i), i + 1));
+  /** Human-readable note appended to eligibility errors when a title narrowed the pool. */
+  private String eligibilityNote(Title linkedTitle) {
+    if (linkedTitle == null) {
+      return "";
     }
-    // Deliberately NOT re-reading the entries onto the in-memory instance: within the caller's
-    // transaction a later getEntries() initializes the lazy collection fresh (auto-flush makes
-    // the persisted rows visible), and replacing the collection instance wholesale is illegal
-    // for an orphanRemoval mapping. Detached callers re-fetch via findByIdWithDetails.
-    return entries;
+    return " (eligibility limited by the linked championship's gender constraint and current"
+        + " champion)";
   }
 
   /**
    * How many active wrestlers are eligible to seed a tournament linked to the given title — the
-   * active roster, narrowed by the title's gender constraint when it has one. The creation wizard
-   * caps its entrant-count field at this value.
+   * active roster, narrowed by the title's gender constraint and minus the current champion(s) (see
+   * {@link #findEligibleWrestlersSortedByFans}). The creation wizard caps its entrant-count field
+   * at this value.
    */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
@@ -338,21 +322,79 @@ public class TournamentService {
   }
 
   /**
+   * Seed from an explicit ordered wrestler list (seed i+1 = list position i). Shared by {@link
+   * #seedAuto} and the seeding editor. Validates against the format's range so a re-seed cannot
+   * produce a bracket the format cannot generate.
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public List<TournamentEntry> seedWith(Tournament tournament, List<Wrestler> orderedWrestlers) {
+    TournamentFormat fmt =
+        findFormat(tournament.getFormatId())
+            .orElseThrow(() -> new IllegalStateException("Format not found"));
+    if (orderedWrestlers.size() < fmt.getMinEntrants()
+        || orderedWrestlers.size() > fmt.getMaxEntrants()) {
+      throw new IllegalArgumentException(
+          "Entrant count "
+              + orderedWrestlers.size()
+              + " out of range ["
+              + fmt.getMinEntrants()
+              + ", "
+              + fmt.getMaxEntrants()
+              + "]");
+    }
+    List<TournamentEntry> entries = new ArrayList<>();
+    for (int i = 0; i < orderedWrestlers.size(); i++) {
+      entries.add(addEntry(tournament, orderedWrestlers.get(i), i + 1));
+    }
+    return entries;
+  }
+
+  /**
    * The active wrestlers eligible to seed a tournament linked to the given title, sorted by fans
-   * (most fans first) — the same pool and ordering {@link #seedAuto} uses. Transactional so
-   * detached UI callers can read fan counts (they walk the lazy wrestlerStates collection) and
-   * render the seeding preview without LazyInitializationException.
+   * (most fans first) — the same pool {@link #seedAuto} uses. Eligibility: active, narrowed by the
+   * title's gender constraint when it has one, and (title-linked tournaments) the current
+   * champion(s) are excluded — they hold the belt the tournament awards, so they cannot win it from
+   * themselves. Transactional so detached UI callers can read fan counts (they walk the lazy
+   * wrestlerStates collection) and render the seeding preview without LazyInitializationException.
    */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<Wrestler> findEligibleWrestlersSortedByFans(Title linkedTitle, Long universeId) {
     Gender genderConstraint = linkedTitle != null ? linkedTitle.getGender() : null;
-    return (genderConstraint != null
-            ? wrestlerRepository.findAllByGenderAndActive(genderConstraint, true)
-            : wrestlerRepository.findAllByActiveTrue())
-        .stream()
-            .sorted(Comparator.comparingLong((Wrestler w) -> w.getFans(universeId)).reversed())
-            .toList();
+    List<Wrestler> pool =
+        (genderConstraint != null
+                ? wrestlerRepository.findAllByGenderAndActive(genderConstraint, true)
+                : wrestlerRepository.findAllByActiveTrue())
+            .stream()
+                .sorted(Comparator.comparingLong((Wrestler w) -> w.getFans(universeId)).reversed())
+                .toList();
+    if (linkedTitle == null) {
+      return pool;
+    }
+    List<Long> championIds = currentChampionIds(linkedTitle);
+    if (championIds.isEmpty()) {
+      return pool;
+    }
+    List<Wrestler> withoutChampions =
+        pool.stream().filter(w -> !championIds.contains(w.getId())).toList();
+    if (withoutChampions.size() < pool.size()) {
+      log.debug(
+          "Excluded current champion(s) of '{}' from tournament eligibility",
+          linkedTitle.getName());
+    }
+    return withoutChampions;
+  }
+
+  /** Ids of the wrestlers currently holding the given title (empty when vacant). */
+  private List<Long> currentChampionIds(Title linkedTitle) {
+    // A lazy collection already initialized inside the current transaction never re-queries —
+    // read the champions from the reign table, not the detached title's in-memory list.
+    return titleReignRepository.findByTitleIdAndEndDateIsNull(linkedTitle.getId()).stream()
+        .flatMap(reign -> reign.getChampions().stream())
+        .map(Wrestler::getId)
+        .distinct()
+        .toList();
   }
 
   // ── Bracket lifecycle ─────────────────────────────────────────────────────
@@ -473,6 +515,93 @@ public class TournamentService {
   public TournamentRound setRoundFixedRule(TournamentRound round, SegmentRule rule) {
     round.setFixedRule(rule);
     return roundRepository.save(round);
+  }
+
+  // ── Seeding edits (SCHEDULED + no bracket yet) ─────────────────────────────
+
+  /**
+   * Reorder the tournament's seeds: the given entry ids' order becomes the new seed order (seed 1 =
+   * first id in the list). Only allowed while SCHEDULED with no generated bracket — once the
+   * bracket exists the pairings are locked.
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public List<TournamentEntry> reorderSeeds(
+      @NonNull final Long tournamentId, @NonNull final List<Long> orderedEntryIds) {
+    Tournament t = requireEditableForSeeding(tournamentId);
+    List<TournamentEntry> entries = entryRepository.findByTournamentIdOrderBySeedAsc(tournamentId);
+    if (orderedEntryIds.size() != entries.size()) {
+      throw new IllegalArgumentException(
+          "Expected all "
+              + entries.size()
+              + " entrants in the new order, got "
+              + orderedEntryIds.size());
+    }
+    Set<Long> entryIds = entries.stream().map(TournamentEntry::getId).collect(Collectors.toSet());
+    for (Long entryId : orderedEntryIds) {
+      if (!entryIds.contains(entryId)) {
+        throw new IllegalArgumentException("Entry " + entryId + " is not in this tournament");
+      }
+    }
+    for (int i = 0; i < orderedEntryIds.size(); i++) {
+      final Long entryId = orderedEntryIds.get(i);
+      final int seed = i + 1;
+      TournamentEntry entry =
+          entries.stream().filter(e -> e.getId().equals(entryId)).findFirst().orElseThrow();
+      entry.setSeed(seed);
+      entryRepository.save(entry);
+    }
+    return entryRepository.findByTournamentIdOrderBySeedAsc(tournamentId);
+  }
+
+  /**
+   * Replace one entrant with a different wrestler, keeping the vacated seed. Only allowed while
+   * SCHEDULED with no generated bracket.
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public TournamentEntry replaceEntrant(
+      @NonNull final Long tournamentId,
+      @NonNull final Long entryId,
+      @NonNull final Long newWrestlerId) {
+    Tournament t = requireEditableForSeeding(tournamentId);
+    TournamentEntry entry =
+        entryRepository
+            .findById(entryId)
+            .filter(e -> e.getTournament().getId().equals(tournamentId))
+            .orElseThrow(() -> new IllegalArgumentException("Entry not found: " + entryId));
+    Wrestler replacement = wrestlerRepository.findById(newWrestlerId).orElse(null);
+    if (replacement == null) {
+      throw new IllegalArgumentException("Wrestler not found: " + newWrestlerId);
+    }
+    if (entryRepository.existsByTournamentIdAndWrestlerId(tournamentId, newWrestlerId)) {
+      throw new IllegalStateException(
+          replacement.getName() + " is already entered in this tournament");
+    }
+    entry.setWrestler(replacement);
+    entryRepository.save(entry);
+    return entry;
+  }
+
+  /** Load the tournament and gate seed edits: SCHEDULED with no generated rounds. */
+  private Tournament requireEditableForSeeding(Long tournamentId) {
+    Tournament t =
+        tournamentRepository
+            .findById(tournamentId)
+            .orElseThrow(
+                () -> new IllegalArgumentException("Tournament not found: " + tournamentId));
+    if (t.getStatus() != TournamentStatus.SCHEDULED) {
+      throw new IllegalStateException(
+          "Seeds are locked once the tournament starts — '"
+              + t.getName()
+              + "' is "
+              + t.getStatus());
+    }
+    if (!t.getRounds().isEmpty()) {
+      throw new IllegalStateException(
+          "Seeds are locked once the bracket is generated — '" + t.getName() + "' has rounds");
+    }
+    return t;
   }
 
   /**

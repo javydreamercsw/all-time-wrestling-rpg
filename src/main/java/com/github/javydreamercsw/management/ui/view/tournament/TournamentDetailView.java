@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus;
 import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.show.ShowFacade;
 import com.github.javydreamercsw.management.service.tournament.TournamentFormat;
@@ -43,6 +44,7 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexLayout;
@@ -54,6 +56,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
@@ -231,8 +234,113 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
     grid.addColumn(e -> e.getStatus().name()).setHeader("Status");
     grid.setItems(tournament.getEntries());
 
+    // Seeds are editable until the bracket is generated (ATW-hw6m): move an entrant up/down to
+    // change its seed, or swap in a different wrestler. The round-1 pairing is 1 vs last,
+    // 2 vs second-to-last, ... so reordering changes the match-ups Start will generate.
+    if (tournament.getStatus() == TournamentStatus.SCHEDULED
+        && !tournament.getEntries().isEmpty()) {
+      grid.addComponentColumn(this::buildSeedControls).setHeader("Reorder").setWidth("140px");
+      grid.addComponentColumn(
+              entry -> {
+                Button replaceBtn = new Button("Replace");
+                replaceBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+                replaceBtn.addClickListener(e -> openReplaceDialog(entry));
+                return replaceBtn;
+              })
+          .setHeader("Swap")
+          .setWidth("100px");
+    }
+
     section.add(grid);
     return section;
+  }
+
+  /** Up/down buttons moving one entry a seed at a time; writes the new order to the service. */
+  private HorizontalLayout buildSeedControls(TournamentEntry entry) {
+    HorizontalLayout controls = new HorizontalLayout();
+    controls.setSpacing(false);
+    controls.setPadding(false);
+
+    Button up = new Button(VaadinIcon.ARROW_UP.create());
+    up.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    up.setTooltipText("Move up one seed");
+    up.setEnabled(entry.getSeed() > 1);
+    up.addClickListener(e -> moveSeed(entry, entry.getSeed() - 1));
+
+    Button down = new Button(VaadinIcon.ARROW_DOWN.create());
+    down.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    down.setTooltipText("Move down one seed");
+    down.setEnabled(entry.getSeed() < tournament.getEntries().size());
+    down.addClickListener(e -> moveSeed(entry, entry.getSeed() + 1));
+
+    controls.add(up, down);
+    return controls;
+  }
+
+  /** Swap the entry with whichever entry currently holds {@code targetSeed} and persist. */
+  private void moveSeed(TournamentEntry entry, int targetSeed) {
+    try {
+      List<Long> reordered = new ArrayList<>();
+      List<TournamentEntry> entries = tournament.getEntries();
+      for (int seed = 1; seed <= entries.size(); seed++) {
+        reordered.add(seed == targetSeed ? entry.getId() : entries.get(seed - 1).getId());
+      }
+      // The swapped-out entry takes the moved entry's original position.
+      int original = entry.getSeed();
+      reordered.set(original - 1, entries.get(targetSeed - 1).getId());
+      tournamentService.reorderSeeds(tournament.getId(), reordered);
+      refreshAfterSeedingEdit();
+      Notification.show("Seed order updated", 2000, Notification.Position.BOTTOM_CENTER)
+          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+    } catch (Exception ex) {
+      log.error("Error reordering seeds", ex);
+      Notification.show("Error: " + ex.getMessage(), 5000, Notification.Position.MIDDLE)
+          .addThemeVariants(NotificationVariant.LUMO_ERROR);
+    }
+  }
+
+  /** Dialog replacing one entrant with another wrestler (same seed). */
+  private void openReplaceDialog(TournamentEntry entry) {
+    Dialog dialog = new Dialog();
+    dialog.setHeaderTitle("Replace seed " + entry.getSeed() + ": " + entry.getWrestler().getName());
+
+    ComboBox<Wrestler> picker = new ComboBox<>("New wrestler");
+    picker.setItems(
+        tournamentService.findEligibleWrestlersSortedByFans(
+            tournament.getLinkedTitle(), universeContextService.getCurrentUniverseId()));
+    picker.setItemLabelGenerator(Wrestler::getName);
+    picker.setWidth("320px");
+    picker.setPlaceholder("Pick a replacement");
+    Button replaceBtn = new Button("Replace", e -> {});
+    replaceBtn.setEnabled(false);
+    picker.addValueChangeListener(
+        e -> replaceBtn.setEnabled(e.getValue() != null && e.getValue() != entry.getWrestler()));
+
+    replaceBtn.addClickListener(
+        e -> {
+          try {
+            tournamentService.replaceEntrant(
+                tournament.getId(), entry.getId(), picker.getValue().getId());
+            dialog.close();
+            refreshAfterSeedingEdit();
+            Notification.show("Entrant replaced", 2000, Notification.Position.BOTTOM_CENTER)
+                .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+          } catch (Exception ex) {
+            Notification.show("Error: " + ex.getMessage(), 5000, Notification.Position.MIDDLE)
+                .addThemeVariants(NotificationVariant.LUMO_ERROR);
+          }
+        });
+
+    HorizontalLayout footer = new HorizontalLayout(replaceBtn);
+    dialog.getFooter().add(footer);
+    dialog.getFooter().add(new Button("Cancel", ev -> dialog.close()));
+    dialog.open();
+  }
+
+  /** Re-read the tournament graph and rebuild the view after a seeding edit. */
+  private void refreshAfterSeedingEdit() {
+    tournament = tournamentService.findByIdWithDetails(tournament.getId()).orElse(tournament);
+    buildContent();
   }
 
   private VerticalLayout buildBracketSection() {
