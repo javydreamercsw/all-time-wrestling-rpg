@@ -179,3 +179,39 @@ The system resolves a round's stipulation in this order:
 
 A Deadly Combat tournament (as referenced in OMZ's backstory) is configured by assigning a pool of high-intensity, No DQ-eligible rules — such as Submission, Last Man Standing, and Barbwire Exploding Deathmatch — to `allowedRules`. Each round then draws randomly from this pool, preserving the unpredictable, brutal nature of the original tournament.
 
+## One-Time Tournaments on a Host Show
+
+A tournament can be attached to a **particular show** (its *host show*) instead of being paired with a PLE template — the natural shape for one-off events like the Abu Dhabi Rumble. PLE-template attachment stays reserved for **recurring** tournaments.
+
+### Booking Behavior
+
+- **Payoff:** the tournament's payoff (its final, or a champion-vs-winner showcase) books on the host show exactly once, then the host-show link is consumed so it can never fire twice. When the linked championship is vacant, the final itself is the title match at the host show.
+- **Rounds:** the non-final rounds pace automatically onto the non-PLE shows scheduled before the host show — no weekly template row needed. The system divides the remaining matches across the slots remaining and books that many per show (never more than what remains).
+- **Payoff match type and rule:** configurable on the tournament (defaulting to One-on-One). This is what enables payoffs the PLE-template path cannot express — for example, a 6-man Free-for-All TLC match for a title at a one-off show.
+
+### Planning-Card Integration
+
+Tournament slots appear on the planning card ahead of the AI's proposals, the same way scripted arc beats do:
+
+- Each slot is one grid row (a multi-match round preview expands into one row per match), stamped **Tournament** in the Source column — delete a row to skip that slot on this show.
+- Seeded brackets preview the **real match-ups** (open bracket matches, champion showcases, and seeded round-1 finals); unseeded or unknowable finals preview placeholder teams, since participants resolve from the bracket at approval.
+- The AI prompt never lists these slots: they are removed from the AI's budget ("N total; X pre-determined match slot(s) are booked automatically") and their committed wrestlers are filtered out of the rendered roster, so the model can neither re-propose the slots nor double-book the wrestlers. Placeholder rows claim no budget — the bracket booking is additive. When every slot is pre-determined, the AI call is skipped entirely and the card is built purely from the deterministic passes.
+- If the bracket can't finish before the payoff show, approving the card shows a warning — the payoff would degrade to a regular round match; approve again later to catch up, or book rounds manually from the tournament view.
+
+### Template Attachment vs. Host Show
+
+These two binding mechanisms are mutually exclusive by design:
+
+- **Host show** (`Tournament.payoffShow`) — one-time tournaments. The show-attached booking path owns the tournament; any template pairing on it stays idle.
+- **PLE template pairing** (`ShowTemplateSegmentAssignment`) — recurring tournaments. The PLE template books the payoff every time that template runs; weekly templates pace the rounds.
+
+## Multi-Entrant Tournaments (Qualifier Groups → Multi-Man Final)
+
+The **Qualifier Groups** format runs N multi-wrestler qualifier matches feeding one M-entrant final — the classic shape for a Free-for-All tournament (e.g. 12 entrants in four 3-man qualifiers → a 4-man Free-for-All TLC title match at the payoff show).
+
+- **Bracket:** entrants split into balanced groups (aiming for 3-wrestler groups, adjusted for divisibility). Each wrestler plays exactly one qualifier; only group winners advance to the single final round.
+- **Booking:** multi-entrant matches book through the multi-team segment resolution — every entrant lands in their own team slot (the same layout the Edit Segment dialog shows). Two-entrant matches (including 2-qualifier finals) keep the classic path.
+- **Results:** recording a winner eliminates every other entrant in that match — a 6-man final crowns one winner and retires the other five.
+- **Match modeling:** the classic `entrant1`/`entrant2` columns remain the two-entrant case; matches with 3+ entrants carry ordered `tournament_match_participant` rows (the authoritative list, with the classic columns mirroring the first two slots).
+- **PLE template assignments** may now pick any segment type (not just event-only formats) — a Free-for-All qualifier round needs a Free-for-All assignment, which the old restriction blocked.
+

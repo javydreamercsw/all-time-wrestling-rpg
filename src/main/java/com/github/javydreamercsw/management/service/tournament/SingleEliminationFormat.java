@@ -150,4 +150,16 @@ public class SingleEliminationFormat implements TournamentFormat {
       default -> "Round " + round;
     };
   }
+
+  @Override
+  public int estimateTotalMatches(Tournament tournament) {
+    int entrants = tournament.getEntries().size();
+    // A single-elimination bracket of N entrants holds exactly N-1 matches. Below the
+    // format minimum the bracket cannot generate — report the configured minimum's count
+    // so pacing still computes a plan (it will fail the eligibility pre-flight anyway).
+    if (entrants < 2) {
+      return 0;
+    }
+    return entrants - 1;
+  }
 }

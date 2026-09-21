@@ -17,11 +17,20 @@
 package com.github.javydreamercsw.management.domain.tournament;
 
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface TournamentMatchRepository extends JpaRepository<TournamentMatch, Long> {
 
   List<TournamentMatch> findByRoundId(Long roundId);
 
   List<TournamentMatch> findByRoundIdAndWinnerIsNull(Long roundId);
+
+  /** The bracket match a booked segment fed (reverse of TournamentMatch.segment). */
+  @Query(
+      "SELECT m FROM TournamentMatch m JOIN FETCH m.round r JOIN FETCH r.tournament"
+          + " WHERE m.segment.id = :segmentId")
+  Optional<TournamentMatch> findBySegmentId(@Param("segmentId") Long segmentId);
 }

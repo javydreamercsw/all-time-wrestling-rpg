@@ -107,6 +107,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   private final ExpansionService expansionService;
   private final TeamService teamService;
   private final GameSettingService gameSettingService;
+  private final ShowContextFacade showContextFacade;
 
   private final ComboBox<Show> showComboBox;
   private final Button loadContextButton;
@@ -140,6 +141,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     this.showService = showFacade.getShowService();
     this.showPlanningService = showContextFacade.getShowPlanningService();
     this.showPlanningAiService = showContextFacade.getShowPlanningAiService();
+    this.showContextFacade = showContextFacade;
     this.wrestlerService = wrestlerService;
     this.showTemplateService = showContextFacade.getShowTemplateService();
     this.npcService = showFacade.getNpcService();
@@ -248,6 +250,36 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
             })
         .setHeader("Rules")
         .setResizable(true);
+
+    // Where the row came from: a highlighted badge for deterministic slots (scripted beats,
+    // show-attached tournament slots — participants resolve at approval) and blank for the AI's
+    // own proposals. A missing badge on a beat/tournament row is a bug, not a state.
+    proposedSegmentsGrid
+        .addComponentColumn(
+            s -> {
+              Span badge = new Span();
+              if ("Scripted beat".equals(s.getSource())) {
+                badge.setText("Arc beat");
+                badge.getElement().getThemeList().add("badge");
+                badge.getStyle().set("color", "var(--lumo-primary-text-color)");
+                badge
+                    .getElement()
+                    .setAttribute("title", "Scripted arc beat — booked as scripted when approved");
+              } else if ("Tournament".equals(s.getSource())) {
+                badge.setText("Tournament");
+                badge.getElement().getThemeList().add("badge success");
+                badge
+                    .getElement()
+                    .setAttribute(
+                        "title",
+                        "Tournament slot — participants come from the bracket at approval."
+                            + " Delete this row to skip this slot on this show.");
+              }
+              return badge;
+            })
+        .setHeader("Source")
+        .setResizable(true)
+        .setWidth("9em");
 
     Binder<ProposedSegment> binder = new Binder<>(ProposedSegment.class);
     editor = proposedSegmentsGrid.getEditor();
@@ -558,9 +590,54 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
 
     if (validation.hasWarnings()) {
       showMustBookWarningDialog(show, validation.getWarnings());
-    } else {
-      doApprove(show);
+      return;
     }
+    checkTournamentPayoffWarningThenApprove(show);
+  }
+
+  /**
+   * Before approving, warn when a show-attached tournament hosted on this show cannot finish its
+   * bracket first (ATW-xbn4): approval would book a regular round match instead of the payoff. The
+   * booker can go back and pace more rounds earlier, or approve anyway.
+   */
+  private void checkTournamentPayoffWarningThenApprove(final Show show) {
+    List<String> tournamentWarnings;
+    try {
+      tournamentWarnings =
+          GeneralSecurityUtils.runAsAdminAsync(
+                  () ->
+                      showContextFacade
+                          .getTournamentTemplateBookingService()
+                          .payoffCatchUpWarnings(show))
+              .join();
+    } catch (Exception e) {
+      log.warn("Tournament payoff pre-flight failed — approving without the advisory", e);
+      doApprove(show);
+      return;
+    }
+    if (tournamentWarnings == null || tournamentWarnings.isEmpty()) {
+      doApprove(show);
+      return;
+    }
+    ConfirmDialog dialog = new ConfirmDialog();
+    dialog.setHeader("Tournament Payoff Delayed (" + tournamentWarnings.size() + ")");
+    VerticalLayout content = new VerticalLayout();
+    content.setPadding(false);
+    content.add(
+        new Paragraph(
+            "These one-time tournaments can't finish their brackets before the card you are"
+                + " about to approve:"));
+    ListBox<String> warningList = new ListBox<>();
+    warningList.setItems(tournamentWarnings);
+    warningList.setHeight("200px");
+    content.add(warningList);
+    dialog.add(content);
+    dialog.setCancelable(true);
+    dialog.setCancelText("Go Back");
+    dialog.setConfirmText("Approve Anyway");
+    dialog.setConfirmButtonTheme("primary success");
+    dialog.addConfirmListener(e -> doApprove(show));
+    dialog.open();
   }
 
   private void showValidationErrorDialog(final List<String> errors) {

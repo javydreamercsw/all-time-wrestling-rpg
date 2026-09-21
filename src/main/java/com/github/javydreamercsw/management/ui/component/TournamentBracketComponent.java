@@ -183,6 +183,15 @@ public class TournamentBracketComponent extends HorizontalLayout {
 
     card.add(createWrestlerLine(match.getWrestler1Name(), match.getWrestler1Id(), match));
     card.add(createWrestlerLine(match.getWrestler2Name(), match.getWrestler2Id(), match));
+    // Multi-entrant matches (ATW-oloa): qualifiers/finals beyond two wrestlers render as
+    // additional plain lines — no winner-styling per slot, the winner line highlights above.
+    for (String extraName : match.getExtraEntrantNames()) {
+      Div line = new Div();
+      line.setText(extraName);
+      line.getStyle().set("min-height", "20px");
+      line.addClassNames(LumoUtility.FontSize.XSMALL);
+      card.add(line);
+    }
 
     if (match.isPlayerMatch()) {
       card.getStyle().set("border-color", "var(--lumo-primary-color)");

@@ -17,7 +17,9 @@
 package com.github.javydreamercsw.management.domain.tournament;
 
 import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import jakarta.persistence.CascadeType;
@@ -74,6 +76,26 @@ public class Tournament extends AbstractEntity<Long> {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "title_id")
   @Nullable private Title linkedTitle;
+
+  /**
+   * Host show for a one-time tournament: the payoff (final or champion showcase) books on this show
+   * exactly once, and the non-final rounds pace across the weekly shows before it. Null for
+   * recurring template-paired tournaments. Cleared after the payoff so it cannot fire twice
+   * (ATW-xbn4). EAGER so list/detail views render rows outside a transaction.
+   */
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "payoff_show_id")
+  @Nullable private Show payoffShow;
+
+  /** Segment type for the payoff at {@link #payoffShow}; null resolves to One-on-One at booking. */
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "payoff_segment_type_id")
+  @Nullable private SegmentType payoffSegmentType;
+
+  /** Optional stipulation applied to the payoff segment at {@link #payoffShow}. */
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "payoff_segment_rule_id")
+  @Nullable private SegmentRule payoffSegmentRule;
 
   @Column(name = "start_date")
   @Nullable private LocalDate startDate;

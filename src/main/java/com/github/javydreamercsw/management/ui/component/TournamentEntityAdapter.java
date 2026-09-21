@@ -109,6 +109,15 @@ public class TournamentEntityAdapter implements TournamentBracketModel {
     }
 
     @Override
+    public List<String> getExtraEntrantNames() {
+      if (!match.isMultiEntrant()) {
+        return List.of();
+      }
+      // Slots 0 and 1 render through the classic two lines; slot 2+ land here.
+      return match.entrants().stream().skip(2).map(e -> e.getWrestler().getName()).toList();
+    }
+
+    @Override
     public boolean isPlayerMatch() {
       return false;
     }

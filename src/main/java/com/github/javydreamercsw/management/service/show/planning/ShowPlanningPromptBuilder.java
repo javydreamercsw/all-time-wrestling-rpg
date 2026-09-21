@@ -18,13 +18,16 @@ package com.github.javydreamercsw.management.service.show.planning;
 
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.service.HolidayService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.planning.dto.FeudScriptBeatDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRivalryDTO;
+import com.github.javydreamercsw.management.service.show.planning.dto.TournamentSlotPreviewDTO;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -324,9 +327,13 @@ public class ShowPlanningPromptBuilder {
     }
 
     if (context.getFullRoster() != null && !context.getFullRoster().isEmpty()) {
+      // Wrestlers already locked into pre-determined slots (scripted beats, real-participant
+      // tournament rows) are removed from the rendered roster — the deterministic passes book
+      // them, so listing them would only invite the AI to double-book or waste tokens.
+      Set<String> preBookedNames = preBookedWrestlerNames(context);
       prompt.append("\nFull Roster:\n");
-      context
-          .getFullRoster()
+      context.getFullRoster().stream()
+          .filter(w -> !preBookedNames.contains(sanitize(w.getName())))
           .forEach(
               wrestler -> {
                 prompt
@@ -396,17 +403,10 @@ public class ShowPlanningPromptBuilder {
       }
     }
 
-    if (context.getUpcomingScriptedBeats() != null
-        && !context.getUpcomingScriptedBeats().isEmpty()) {
-      prompt.append("\n**Pre-Scripted Match Slots (booker-mandated — include these exactly):**\n");
-      context.getUpcomingScriptedBeats().stream()
-          .map(FeudScriptBeatDTO::toAiInstruction)
-          .map(ShowPlanningPromptBuilder::sanitize)
-          .forEach(line -> prompt.append("- ").append(line).append("\n"));
-      prompt.append(
-          "These slots MUST appear on the card. Book the specified match type,"
-              + " honour the winner instruction, and preserve any quoted story notes.\n\n");
-    }
+    // Scripted-beat and tournament slots are NOT listed in the prompt: the deterministic passes
+    // (applyScriptedBeats/applyTournamentSlots) inject those rows onto the card and claim their
+    // wrestlers from the roster above, so spelling them out would only burn tokens. The count
+    // line below already subtracts the claimed slots.
 
     prompt.append("\n**Booking Rules & Participation Goal:**\n");
     prompt.append(
@@ -539,12 +539,36 @@ public class ShowPlanningPromptBuilder {
             + " Promos and backstage segments should omit this or use an empty array.\n");
     prompt.append("}\n");
     prompt.append("```\n\n");
+    int[] preClaimed = preClaimedSlotCount(context);
+    int expectedMatches = context.getShowTemplate().getExpectedMatches();
+    int expectedPromos = context.getShowTemplate().getExpectedPromos();
+    prompt.append("Generate a JSON array of exactly ");
+    if (preClaimed[0] > 0) {
+      prompt
+          .append(Math.max(0, expectedMatches - preClaimed[0]))
+          .append(" matches (")
+          .append(expectedMatches)
+          .append(" total; ")
+          .append(preClaimed[0])
+          .append(" pre-determined match slot(s) are booked automatically)");
+    } else {
+      prompt.append(expectedMatches);
+    }
+    prompt.append(" matches");
+    if (preClaimed[1] > 0) {
+      prompt
+          .append(" and exactly ")
+          .append(Math.max(0, expectedPromos - preClaimed[1]))
+          .append(" promos (")
+          .append(expectedPromos)
+          .append(" total; ")
+          .append(preClaimed[1])
+          .append(" pre-determined promo slot(s) are booked automatically)");
+    } else {
+      prompt.append(" and ").append(expectedPromos).append(" promos");
+    }
     prompt
-        .append("Generate a JSON array of exactly ")
-        .append(context.getShowTemplate().getExpectedMatches())
-        .append(" matches and ")
-        .append(context.getShowTemplate().getExpectedPromos())
-        .append(" promos for the show. Each segment")
+        .append(" for the show. Each segment")
         .append(
             " should adhere to the provided schema. Ensure the segments flow logically and build")
         .append(
@@ -565,5 +589,86 @@ public class ShowPlanningPromptBuilder {
         .append(" text or explanations outside the JSON.\n\n");
     prompt.append("JSON:\n");
     return prompt.toString();
+  }
+
+  /**
+   * How many match/promo slots on this card are pre-determined: one per scripted beat (a promo-type
+   * beat claims a promo slot, anything else a match slot), plus one per real-participant tournament
+   * row. Placeholder tournament rows don't claim AI slots — the bracket booking is additive, and
+   * the claimed-wrestler warning above keeps the AI off those wrestlers. Mirrors the accounting in
+   * {@code ShowPlanningAiService} so the prompt's counts agree with the card.
+   *
+   * @return {{ claimedMatches, claimedPromos }}
+   */
+  private int[] preClaimedSlotCount(ShowPlanningContextDTO context) {
+    int matches = 0;
+    int promos = 0;
+    if (context.getUpcomingScriptedBeats() != null) {
+      for (FeudScriptBeatDTO beat : context.getUpcomingScriptedBeats()) {
+        if (beat.getSegmentType() == null || beat.getSegmentType().isBlank()) {
+          continue;
+        }
+        if (isPromoType(beat.getSegmentType())) {
+          promos++;
+        } else {
+          matches++;
+        }
+      }
+    }
+    if (context.getTournamentSlots() != null) {
+      matches +=
+          (int)
+              context.getTournamentSlots().stream()
+                  .filter(s -> !realParticipantNames(s).isEmpty())
+                  .count();
+    }
+    return new int[] {matches, promos};
+  }
+
+  /** Promo by well-known code when resolvable, else the lowercase-name heuristic. */
+  private boolean isPromoType(String typeName) {
+    return segmentTypeService
+        .findByName(typeName)
+        .map(type -> WellKnownSegmentType.PROMO.matches(type))
+        .orElseGet(() -> typeName.toLowerCase().contains("promo"));
+  }
+
+  /**
+   * Sanitized names of every wrestler already locked into a pre-determined slot on this card:
+   * scripted-beat participants (feud pair plus any externals/custom team layout) and
+   * real-participant tournament rows. Placeholder tournament rows claim nobody — participants
+   * resolve from the bracket at approval. Rendered roster entries matching these names are dropped
+   * from the prompt so the AI cannot double-book them.
+   */
+  private Set<String> preBookedWrestlerNames(ShowPlanningContextDTO context) {
+    Set<String> names = new HashSet<>();
+    if (context.getUpcomingScriptedBeats() != null) {
+      for (FeudScriptBeatDTO beat : context.getUpcomingScriptedBeats()) {
+        beat.getTeamNameLists().stream()
+            .flatMap(List::stream)
+            .filter(name -> name != null && !name.isBlank())
+            .map(ShowPlanningPromptBuilder::sanitize)
+            .forEach(names::add);
+      }
+    }
+    if (context.getTournamentSlots() != null) {
+      context.getTournamentSlots().stream()
+          .map(this::realParticipantNames)
+          .flatMap(List::stream)
+          .map(ShowPlanningPromptBuilder::sanitize)
+          .forEach(names::add);
+    }
+    return names;
+  }
+
+  /** Real participant names across a slot's teams; empty for placeholders. */
+  private List<String> realParticipantNames(TournamentSlotPreviewDTO slot) {
+    if (slot.getTeams() == null) {
+      return List.of();
+    }
+    return slot.getTeams().stream()
+        .flatMap(List::stream)
+        .filter(n -> n != null && !n.isBlank() && !"Tournament bracket".equals(n))
+        .toList();
   }
 }

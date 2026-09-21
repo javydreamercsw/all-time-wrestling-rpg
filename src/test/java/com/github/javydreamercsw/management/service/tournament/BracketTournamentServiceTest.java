@@ -19,25 +19,37 @@ package com.github.javydreamercsw.management.service.tournament;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntryRepository;
+import com.github.javydreamercsw.management.domain.tournament.TournamentEntryStatus;
+import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
+import com.github.javydreamercsw.management.domain.tournament.TournamentMatchParticipant;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatchRepository;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRepository;
+import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundRepository;
+import com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus;
+import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.show.ShowBookingService;
 import com.github.javydreamercsw.management.service.show.ShowSegmentReservationService;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -286,6 +298,243 @@ class BracketTournamentServiceTest {
     Assertions.assertThatThrownBy(() -> tournamentService.replaceEntrant(1L, 22L, 1L))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("already entered");
+  }
+
+  @Test
+  void isTitleVacant_readsFromReignTable() {
+    Title title = new Title();
+    title.setId(7L);
+    // Vacant — no active reign.
+    when(titleReignRepository.findByTitleIdAndEndDateIsNull(7L)).thenReturn(List.of());
+    assertThat(tournamentService.isTitleVacant(title)).isTrue();
+
+    // A reigning champion flips it — reign table read, not the in-memory title list.
+    TitleReign reign = new TitleReign();
+    Wrestler champion = wrestler(1L, "A", Gender.MALE, 800L);
+    reign.getChampions().add(champion);
+    lenient()
+        .when(titleReignRepository.findByTitleIdAndEndDateIsNull(7L))
+        .thenReturn(List.of(reign));
+    assertThat(tournamentService.isTitleVacant(title)).isFalse();
+  }
+
+  @Test
+  void currentChampionsOf_dedupesAndHandlesNull() {
+    assertThat(tournamentService.currentChampionsOf(null)).isEmpty();
+
+    Title title = new Title();
+    title.setId(7L);
+    Wrestler champion = wrestler(1L, "A", Gender.MALE, 800L);
+    TitleReign reign = new TitleReign();
+    reign.getChampions().add(champion);
+    // A tag-team title shared by two entrants in one reign, plus a second reign.
+    reign.getChampions().add(champion);
+    when(titleReignRepository.findByTitleIdAndEndDateIsNull(7L)).thenReturn(List.of(reign));
+
+    assertThat(tournamentService.currentChampionsOf(title)).containsExactly(champion);
+  }
+
+  @Test
+  void recordMatchResult_multiEntrantEliminatesAllLosers() {
+    // ATW-oloa: a Free-for-All has 3+ entrants — every non-winner must be eliminated, not just
+    // the classic entrant2.
+    TournamentEntry winner = entry(1);
+    TournamentEntry loser2 = entry(2);
+    TournamentEntry loser3 = entry(3);
+    TournamentMatch match = new TournamentMatch();
+    match.setId(11L);
+    match.setEntrant1(winner);
+    match.setEntrant2(loser2);
+    match.setParticipants(
+        new ArrayList<>(
+            List.of(
+                participant(match, winner, 0),
+                participant(match, loser2, 1),
+                participant(match, loser3, 2))));
+    TournamentRound round = new TournamentRound();
+    round.setId(21L);
+    match.setRound(round);
+
+    when(matchRepository.findByRoundIdAndWinnerIsNull(21L)).thenReturn(List.of());
+
+    tournamentService.recordMatchResult(match, winner);
+
+    assertThat(winner.getStatus()).isNotEqualTo(TournamentEntryStatus.ELIMINATED);
+    assertThat(loser2.getStatus()).isEqualTo(TournamentEntryStatus.ELIMINATED);
+    assertThat(loser3.getStatus()).isEqualTo(TournamentEntryStatus.ELIMINATED);
+    assertThat(match.getWinner()).isSameAs(winner);
+    assertThat(round.getStatus()).isEqualTo(TournamentRoundStatus.COMPLETE);
+  }
+
+  @Test
+  void recordMatchResult_classicShape_roundStaysOpen() {
+    // With another open match in the round, the round must not flip to COMPLETE.
+    TournamentEntry winner = entry(1);
+    TournamentEntry loser = entry(2);
+    TournamentMatch match = new TournamentMatch();
+    match.setId(11L);
+    match.setEntrant1(winner);
+    match.setEntrant2(loser);
+    TournamentRound round = new TournamentRound();
+    round.setId(21L);
+    match.setRound(round);
+
+    when(matchRepository.findByRoundIdAndWinnerIsNull(21L)).thenReturn(List.of(match));
+
+    tournamentService.recordMatchResult(match, winner);
+
+    assertThat(loser.getStatus()).isEqualTo(TournamentEntryStatus.ELIMINATED);
+    assertThat(round.getStatus()).isNotEqualTo(TournamentRoundStatus.COMPLETE);
+    verify(roundRepository, never()).save(any(TournamentRound.class));
+  }
+
+  @Test
+  void createTournament_withPayoffFields_persistsThem() {
+    // The one-time host-show binding: payoff show/type/rule ride through creation.
+    Universe universe = new Universe();
+    universe.setId(1L);
+    Show payoffShow = new Show();
+    payoffShow.setId(3L);
+    payoffShow.setUniverse(universe);
+    SegmentType payoffType = new SegmentType();
+    SegmentRule payoffRule = new SegmentRule();
+    Title linked = new Title();
+    linked.setId(7L);
+    when(tournamentRepository.save(any(Tournament.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    Tournament created =
+        tournamentService.createTournament(
+            "Crown Cup",
+            "SINGLE_ELIMINATION",
+            universe,
+            linked,
+            LocalDate.of(2026, 6, 1),
+            List.of(),
+            payoffShow,
+            payoffType,
+            payoffRule);
+
+    assertThat(created.getPayoffShow()).isSameAs(payoffShow);
+    assertThat(created.getPayoffSegmentType()).isSameAs(payoffType);
+    assertThat(created.getPayoffSegmentRule()).isSameAs(payoffRule);
+    assertThat(created.getStatus()).isEqualTo(TournamentStatus.SCHEDULED);
+  }
+
+  @Test
+  void createTournament_hostShowFromAnotherUniverse_rejected() {
+    // The host show must live in the tournament's universe — validated at creation time.
+    Universe universe = new Universe();
+    universe.setId(1L);
+    Universe otherUniverse = new Universe();
+    otherUniverse.setId(2L);
+    Show payoffShow = new Show();
+    payoffShow.setId(3L);
+    payoffShow.setUniverse(otherUniverse);
+
+    Assertions.assertThatThrownBy(
+            () ->
+                tournamentService.createTournament(
+                    "Crown Cup",
+                    "SINGLE_ELIMINATION",
+                    universe,
+                    null,
+                    null,
+                    List.of(),
+                    payoffShow,
+                    null,
+                    null))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("universe");
+  }
+
+  @Test
+  void updateTournament_setPayoffFieldsFalse_keepsExistingPayoffFields() {
+    // The compat delegate must not clobber the payoff binding — setPayoffFields=false leaves
+    // payoffShow/type/rule exactly as they were.
+    Tournament existing = new Tournament();
+    existing.setId(1L);
+    existing.setName("Crown Cup");
+    existing.setFormatId("SINGLE_ELIMINATION");
+    Show existingShow = new Show();
+    existingShow.setId(3L);
+    existing.setPayoffShow(existingShow);
+    SegmentType existingType = new SegmentType();
+    existing.setPayoffSegmentType(existingType);
+    when(tournamentRepository.findById(1L)).thenReturn(Optional.of(existing));
+    when(tournamentRepository.save(any(Tournament.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    Tournament updated =
+        tournamentService.updateTournament(
+            1L,
+            "Renamed Cup",
+            "SINGLE_ELIMINATION",
+            null,
+            null,
+            List.of(),
+            null,
+            null,
+            null,
+            false);
+
+    assertThat(updated.getName()).isEqualTo("Renamed Cup");
+    assertThat(updated.getPayoffShow()).isSameAs(existingShow);
+    assertThat(updated.getPayoffSegmentType()).isSameAs(existingType);
+  }
+
+  @Test
+  void updateTournament_setPayoffFieldsTrue_replacesAndValidates() {
+    // The wizard's save: the new payoff fields land, and a cross-universe host show is rejected
+    // at edit time too.
+    Universe universe = new Universe();
+    universe.setId(1L);
+    Tournament existing = new Tournament();
+    existing.setId(1L);
+    existing.setName("Crown Cup");
+    existing.setFormatId("SINGLE_ELIMINATION");
+    existing.setUniverse(universe);
+    when(tournamentRepository.findById(1L)).thenReturn(Optional.of(existing));
+
+    Universe otherUniverse = new Universe();
+    otherUniverse.setId(2L);
+    Show foreignShow = new Show();
+    foreignShow.setId(9L);
+    foreignShow.setUniverse(otherUniverse);
+
+    Assertions.assertThatThrownBy(
+            () ->
+                tournamentService.updateTournament(
+                    1L,
+                    "Crown Cup",
+                    "SINGLE_ELIMINATION",
+                    null,
+                    null,
+                    List.of(),
+                    foreignShow,
+                    null,
+                    null,
+                    true))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("universe");
+  }
+
+  private static TournamentEntry entry(long id) {
+    Wrestler w = new Wrestler();
+    w.setId(id);
+    w.setName("Wrestler " + id);
+    TournamentEntry e = new TournamentEntry();
+    e.setId(id);
+    e.setWrestler(w);
+    e.setStatus(TournamentEntryStatus.ACTIVE);
+    return e;
+  }
+
+  private static TournamentMatchParticipant participant(
+      TournamentMatch match, TournamentEntry entry, int slot) {
+    TournamentMatchParticipant p = new TournamentMatchParticipant();
+    p.setMatch(match);
+    p.setEntry(entry);
+    p.setSlot(slot);
+    return p;
   }
 
   private static Wrestler wrestler(Long id, String name, Gender gender, Long fans) {

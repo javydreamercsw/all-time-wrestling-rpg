@@ -18,16 +18,17 @@ package com.github.javydreamercsw.management.domain.tournament;
 
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
-public interface TournamentRepository extends JpaRepository<Tournament, Long> {
+/** Ordered entrant rows for multi-entrant tournament matches (ATW-oloa). */
+public interface TournamentMatchParticipantRepository
+    extends JpaRepository<TournamentMatchParticipant, Long> {
 
-  List<Tournament> findByUniverseIdOrderByStartDateDesc(Long universeId);
+  @Query(
+      "SELECT p FROM TournamentMatchParticipant p JOIN FETCH p.entry e JOIN FETCH e.wrestler"
+          + " WHERE p.match.id = :matchId ORDER BY p.slot ASC")
+  List<TournamentMatchParticipant> findByMatchIdOrderBySlotAsc(@Param("matchId") Long matchId);
 
-  List<Tournament> findByStatus(TournamentStatus status);
-
-  /** One-time tournaments whose payoff books on the given show (ATW-xbn4). */
-  List<Tournament> findByPayoffShowId(Long payoffShowId);
-
-  /** Show-attached tournaments of a universe — the paced-rounds scan (ATW-xbn4). */
-  List<Tournament> findByUniverseIdAndPayoffShowIsNotNull(Long universeId);
+  void deleteByMatchId(Long matchId);
 }

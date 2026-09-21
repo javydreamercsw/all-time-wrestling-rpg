@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.service.show.planning.ShowPlanningSe
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
+import com.github.javydreamercsw.management.service.tournament.TournamentTemplateBookingService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -42,4 +43,5 @@ public class ShowContextFacade {
   private final ShowPlanningAiService showPlanningAiService;
   private final ArenaService arenaService;
   private final TournamentService tournamentService;
+  private final TournamentTemplateBookingService tournamentTemplateBookingService;
 }

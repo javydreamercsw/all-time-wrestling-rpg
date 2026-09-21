@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.segment;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -25,6 +26,8 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
+import com.github.javydreamercsw.management.domain.tournament.TournamentMatchRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.Instant;
 import java.util.Collections;
@@ -47,6 +50,8 @@ import org.springframework.data.domain.Pageable;
 class SegmentServiceTest {
 
   @Mock private SegmentRepository matchRepository;
+
+  @Mock private TournamentMatchRepository tournamentMatchRepository;
 
   @InjectMocks private SegmentService segmentService;
 
@@ -319,6 +324,33 @@ class SegmentServiceTest {
     segmentService.deleteSegment(1L);
 
     // Then
+    verify(matchRepository).deleteById(1L);
+  }
+
+  @Test
+  @DisplayName("Deleting a booked tournament segment unbooks the bracket match first")
+  void deleteSegment_unbooksTournamentMatch() {
+    // Given: the segment carries a tournament bracket match (NO ACTION FK on segment_id).
+    TournamentMatch linkedMatch = TournamentMatch.builder().id(7L).build();
+    when(tournamentMatchRepository.findBySegmentId(1L)).thenReturn(Optional.of(linkedMatch));
+
+    // When
+    segmentService.deleteSegment(1L);
+
+    // Then: link cleared (match returns to open) before the segment goes away.
+    assertThat(linkedMatch.getSegment()).isNull();
+    verify(tournamentMatchRepository).save(linkedMatch);
+    verify(matchRepository).deleteById(1L);
+  }
+
+  @Test
+  @DisplayName("Deleting an unlinked segment touches no tournament matches")
+  void deleteSegment_noTournamentMatch_noUnlink() {
+    when(tournamentMatchRepository.findBySegmentId(1L)).thenReturn(Optional.empty());
+
+    segmentService.deleteSegment(1L);
+
+    verify(tournamentMatchRepository, never()).save(any());
     verify(matchRepository).deleteById(1L);
   }
 }

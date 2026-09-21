@@ -19,7 +19,9 @@ package com.github.javydreamercsw.management.ui.view.tournament;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._find;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -29,9 +31,14 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
+import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowFacade;
+import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.tournament.TournamentFormat;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
@@ -77,6 +84,10 @@ class TournamentListViewTest extends AbstractViewTest {
   @Mock private ShowFacade showFacade;
   @Mock private ViewContext viewContext;
   @Mock private SegmentRuleService segmentRuleService;
+
+  @Mock private SegmentTypeService segmentTypeService;
+
+  @Mock private ShowService showService;
   @Mock private UniverseContextService universeContextService;
   @Mock private SecurityUtils securityUtils;
   @Mock private TitleService titleService;
@@ -84,6 +95,9 @@ class TournamentListViewTest extends AbstractViewTest {
   @Mock private TournamentFormat format;
 
   private TournamentListView view;
+  private Show upcomingShow;
+  private SegmentType payoffType;
+  private SegmentRule payoffRule;
 
   @BeforeEach
   void setup() {
@@ -99,6 +113,21 @@ class TournamentListViewTest extends AbstractViewTest {
     lenient().when(wrestlerFacade.getTitleService()).thenReturn(titleService);
     lenient().when(wrestlerFacade.getWrestlerService()).thenReturn(wrestlerService);
     lenient().when(showFacade.getSegmentRuleService()).thenReturn(segmentRuleService);
+    lenient().when(showFacade.getSegmentTypeService()).thenReturn(segmentTypeService);
+    lenient().when(showFacade.getShowService()).thenReturn(showService);
+    upcomingShow = new Show();
+    upcomingShow.setId(3L);
+    upcomingShow.setName("Crown Cup Final");
+    upcomingShow.setShowDate(LocalDate.now().plusDays(14));
+    payoffType = new SegmentType();
+    payoffType.setId(10L);
+    payoffType.setName("Free-for-All");
+    payoffRule = new SegmentRule();
+    payoffRule.setId(20L);
+    payoffRule.setName("Tables, Ladders and Chairs (TLC)");
+    lenient().when(showService.getUpcomingShows(50)).thenReturn(List.of(upcomingShow));
+    lenient().when(segmentTypeService.findAll()).thenReturn(List.of(payoffType));
+    lenient().when(segmentRuleService.findAll()).thenReturn(List.of(payoffRule));
     lenient().when(viewContext.getUniverseContextService()).thenReturn(universeContextService);
     lenient().when(viewContext.getSecurityUtils()).thenReturn(securityUtils);
     lenient().when(universeContextService.getCurrentUniverse()).thenReturn(Optional.empty());
@@ -115,7 +144,9 @@ class TournamentListViewTest extends AbstractViewTest {
         .when(tournamentService.findByIdWithDetails(anyLong()))
         .thenAnswer(inv -> Optional.of(tournament()));
     lenient()
-        .when(tournamentService.createTournament(any(), any(), any(), any(), any(), any()))
+        .when(
+            tournamentService.createTournament(
+                any(), any(), any(), any(), any(), any(), any(), any(), any()))
         .thenAnswer(
             inv -> {
               Tournament t = tournament();
@@ -202,7 +233,16 @@ class TournamentListViewTest extends AbstractViewTest {
     _get(UI.getCurrent(), Button.class, spec -> spec.withText("Create Tournament")).click();
 
     verify(tournamentService)
-        .createTournament(eq("Fed Cup"), eq("SINGLE_ELIMINATION"), any(), any(), any(), any());
+        .createTournament(
+            eq("Fed Cup"),
+            eq("SINGLE_ELIMINATION"),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any());
     verify(tournamentService).seedAuto(any(Tournament.class), anyInt(), anyLong());
   }
 
@@ -228,7 +268,17 @@ class TournamentListViewTest extends AbstractViewTest {
     _get(UI.getCurrent(), Button.class, spec -> spec.withText("Save")).click();
 
     verify(tournamentService)
-        .updateTournament(eq(1L), eq("Renamed Cup"), eq("SINGLE_ELIMINATION"), any(), any(), any());
+        .updateTournament(
+            eq(1L),
+            eq("Renamed Cup"),
+            eq("SINGLE_ELIMINATION"),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            eq(true));
   }
 
   @Test
@@ -254,6 +304,136 @@ class TournamentListViewTest extends AbstractViewTest {
     fireConfirm(_get(UI.getCurrent(), ConfirmDialog.class));
 
     verify(tournamentService).deleteTournament(1L);
+  }
+
+  @Test
+  @DisplayName("Wizard offers the host show and payoff pickers; payoff stays disabled until host")
+  void wizard_hostShowPickers() {
+    view.openCreationWizardForTest();
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    ComboBox<Show> hostCombo =
+        _get(UI.getCurrent(), ComboBox.class, spec -> spec.withLabel("Host Show (optional)"));
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    ComboBox<SegmentType> payoffType =
+        _get(
+            UI.getCurrent(),
+            ComboBox.class,
+            spec -> spec.withLabel("Payoff Match Type (optional)"));
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    ComboBox<SegmentRule> payoffRule =
+        _get(UI.getCurrent(), ComboBox.class, spec -> spec.withLabel("Payoff Rule (optional)"));
+
+    assertFalse(payoffType.isEnabled(), "Payoff pickers stay disabled until a host show is picked");
+    assertFalse(payoffRule.isEnabled());
+    assertTrue(hostCombo.isEnabled());
+
+    // Choosing a host show enables the payoff pickers.
+    hostCombo.setValue(upcomingShow);
+
+    assertTrue(payoffType.isEnabled(), "Picking a host show enables the payoff pickers");
+    assertTrue(payoffRule.isEnabled());
+
+    // Clearing the host disables them again and wipes the payoff selections.
+    payoffType.setValue(this.payoffType);
+    hostCombo.clear();
+    assertFalse(payoffType.isEnabled());
+    assertFalse(payoffRule.isEnabled());
+    assertNull(payoffType.getValue(), "A cleared host show must clear the payoff type");
+  }
+
+  @Test
+  @DisplayName("Wizard create with a host show routes the payoff fields to createTournament")
+  void wizardCreate_withHostShow_passesPayoffFields() {
+    view.openCreationWizardForTest();
+    fillDetailsStep();
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    ComboBox<Show> hostCombo =
+        _get(UI.getCurrent(), ComboBox.class, spec -> spec.withLabel("Host Show (optional)"));
+    hostCombo.setValue(upcomingShow);
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    ComboBox<SegmentType> payoffType =
+        _get(
+            UI.getCurrent(),
+            ComboBox.class,
+            spec -> spec.withLabel("Payoff Match Type (optional)"));
+    payoffType.setValue(this.payoffType);
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Next")).click();
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Create Tournament")).click();
+
+    verify(tournamentService)
+        .createTournament(
+            eq("Fed Cup"),
+            eq("SINGLE_ELIMINATION"),
+            any(),
+            any(),
+            any(),
+            any(),
+            eq(upcomingShow),
+            eq(this.payoffType),
+            any());
+  }
+
+  @Test
+  @DisplayName("Grid shows the host show name on hosted tournaments")
+  void grid_hostShowColumnRendersPayoffShow() {
+    Tournament hosted = tournament();
+    hosted.setPayoffShow(upcomingShow);
+    lenient().when(tournamentService.findAll()).thenReturn(List.of(hosted));
+    view.refreshGridForTest();
+
+    Grid<Tournament> grid = _get(view, Grid.class);
+    assertEquals(1, grid.getListDataView().getItemCount());
+  }
+
+  @Test
+  @DisplayName("Edit dialog: clearing the host show clears and disables the payoff pickers")
+  void editDialog_clearingHostShow_disablesPayoffPickers() {
+    Tournament hosted = tournament();
+    hosted.setPayoffShow(upcomingShow);
+    hosted.setPayoffSegmentType(payoffType);
+    lenient().when(tournamentService.findByIdWithDetails(1L)).thenReturn(Optional.of(hosted));
+
+    view.openEditDialogForTest(hosted);
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    ComboBox<Show> hostCombo =
+        _get(UI.getCurrent(), ComboBox.class, spec -> spec.withLabel("Host Show (optional)"));
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    ComboBox<SegmentType> typeCombo =
+        _get(
+            UI.getCurrent(),
+            ComboBox.class,
+            spec -> spec.withLabel("Payoff Match Type (optional)"));
+
+    assertTrue(typeCombo.isEnabled(), "Prefilled host show enables the payoff picker");
+    hostCombo.clear();
+    assertFalse(typeCombo.isEnabled(), "Clearing the host disables the payoff pickers");
+    assertNull(typeCombo.getValue(), "Clearing the host clears the payoff type");
+  }
+
+  @Test
+  @DisplayName("Edit dialog prefills the host show and payoff fields")
+  void editDialog_prefillsPayoffFields() {
+    Tournament hosted = tournament();
+    hosted.setPayoffShow(upcomingShow);
+    hosted.setPayoffSegmentType(payoffType);
+    hosted.setPayoffSegmentRule(payoffRule);
+    lenient().when(tournamentService.findByIdWithDetails(1L)).thenReturn(Optional.of(hosted));
+
+    view.openEditDialogForTest(hosted);
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    ComboBox<Show> hostCombo =
+        _get(UI.getCurrent(), ComboBox.class, spec -> spec.withLabel("Host Show (optional)"));
+    assertEquals(upcomingShow, hostCombo.getValue());
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    ComboBox<SegmentType> typeCombo =
+        _get(
+            UI.getCurrent(),
+            ComboBox.class,
+            spec -> spec.withLabel("Payoff Match Type (optional)"));
+    assertEquals(payoffType, typeCombo.getValue());
   }
 
   /** Fires ConfirmDialog's confirm action via reflection (fireEvent is protected). */

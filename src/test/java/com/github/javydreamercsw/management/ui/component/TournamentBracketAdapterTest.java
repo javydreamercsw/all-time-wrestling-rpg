@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
+import com.github.javydreamercsw.management.domain.tournament.TournamentMatchParticipant;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -159,6 +160,81 @@ public class TournamentBracketAdapterTest {
     TournamentEntityAdapter adapter =
         new TournamentEntityAdapter(t, List.of(new SingleEliminationFormat()));
     assertThat(adapter.getCurrentRound()).isEqualTo(2);
+  }
+
+  @Test
+  void entityAdapter_multiEntrantMatch_exposesExtraEntrantNames() {
+    // ATW-oloa: a 3-entrant qualifier renders its first two entrants through the classic lines
+    // and the rest through the extra-entrants list.
+    Tournament t = tournamentEntity("SINGLE_ELIMINATION");
+
+    Wrestler w1 = wrestler(1L, "Rocky");
+    Wrestler w2 = wrestler(2L, "Austin");
+    Wrestler w3 = wrestler(3L, "Triple H");
+    TournamentEntry e1 = entry(w1);
+    TournamentEntry e2 = entry(w2);
+    TournamentEntry e3 = entry(w3);
+
+    TournamentMatch match = TournamentMatch.builder().entrant1(e1).entrant2(e2).winner(e1).build();
+    match.setParticipants(
+        new ArrayList<>(
+            List.of(
+                participant(match, e1, 0), participant(match, e2, 1), participant(match, e3, 2))));
+
+    TournamentRound round =
+        TournamentRound.builder()
+            .roundNumber(1)
+            .roundName("Qualifiers")
+            .status(TournamentRoundStatus.IN_PROGRESS)
+            .matches(new ArrayList<>(List.of(match)))
+            .build();
+
+    t.setRounds(new ArrayList<>(List.of(round)));
+    t.setEntries(List.of(e1, e2, e3));
+
+    TournamentEntityAdapter adapter =
+        new TournamentEntityAdapter(t, List.of(new SingleEliminationFormat()));
+
+    List<MatchModel> matches = adapter.getMatches();
+    assertThat(matches).hasSize(1);
+    MatchModel m = matches.get(0);
+    assertThat(m.getWrestler1Name()).isEqualTo("Rocky");
+    assertThat(m.getWrestler2Name()).isEqualTo("Austin");
+    assertThat(m.getExtraEntrantNames()).containsExactly("Triple H");
+  }
+
+  @Test
+  void entityAdapter_singlesMatch_hasNoExtraEntrants() {
+    // The classic two-entrant shape renders no extra lines.
+    Tournament t = tournamentEntity("SINGLE_ELIMINATION");
+
+    TournamentEntry e1 = entry(wrestler(1L, "Rocky"));
+    TournamentEntry e2 = entry(wrestler(2L, "Austin"));
+    TournamentMatch match = TournamentMatch.builder().entrant1(e1).entrant2(e2).build();
+    TournamentRound round =
+        TournamentRound.builder()
+            .roundNumber(1)
+            .roundName("Round 1")
+            .status(TournamentRoundStatus.IN_PROGRESS)
+            .matches(new ArrayList<>(List.of(match)))
+            .build();
+
+    t.setRounds(new ArrayList<>(List.of(round)));
+    t.setEntries(List.of(e1, e2));
+
+    TournamentEntityAdapter adapter =
+        new TournamentEntityAdapter(t, List.of(new SingleEliminationFormat()));
+
+    assertThat(adapter.getMatches().get(0).getExtraEntrantNames()).isEmpty();
+  }
+
+  private static TournamentMatchParticipant participant(
+      TournamentMatch match, TournamentEntry entry, int slot) {
+    TournamentMatchParticipant p = new TournamentMatchParticipant();
+    p.setMatch(match);
+    p.setEntry(entry);
+    p.setSlot(slot);
+    return p;
   }
 
   // ── TournamentBracketComponent round-robin rendering ─────────────────────

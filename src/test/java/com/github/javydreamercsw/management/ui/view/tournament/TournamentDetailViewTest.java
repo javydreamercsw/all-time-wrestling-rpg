@@ -22,6 +22,7 @@ import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.lenient;
@@ -29,9 +30,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
+import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
+import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
+import com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus;
 import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
@@ -47,6 +52,8 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.Span;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -156,6 +163,32 @@ class TournamentDetailViewTest extends AbstractViewTest {
     return w;
   }
 
+  @Test
+  @DisplayName("Tournament with a host show displays it in the info section")
+  void hostShow_displaysInInfoSection() {
+    Show host = new Show();
+    host.setId(9L);
+    host.setName("Crown Cup Final");
+    host.setShowDate(LocalDate.of(2026, 6, 22));
+    tournament.setPayoffShow(host);
+
+    buildView();
+
+    List<Span> hostSpans =
+        _find(
+            view,
+            Span.class,
+            spec ->
+                spec.withPredicate(
+                    (Predicate<Span>)
+                        span ->
+                            span.getText() != null
+                                && span.getText().startsWith("Host Show: Crown Cup Final")));
+    assertEquals(
+        1, hostSpans.size(), "The host show (with its date) must render in the info section");
+    assertTrue(hostSpans.get(0).getText().contains("2026-06-22"));
+  }
+
   private static List<Button> buttonsWithTooltip(Component root, String tooltipSubstring) {
     return _find(
         root,
@@ -256,5 +289,42 @@ class TournamentDetailViewTest extends AbstractViewTest {
     assertEquals(0, buttonsWithTooltip(view, "Move up one seed").size());
     assertEquals(0, _find(view, Button.class, spec -> spec.withText("Replace")).size());
     verify(tournamentService, never()).reorderSeeds(anyLong(), any());
+  }
+
+  @Test
+  @DisplayName("Open bracket match renders an entrants label and a winner picker")
+  void openMatch_rendersRecordRowWithWinnerPicker() {
+    // ATW-oloa/ATW-xbn4: the record row's label joins every entrant's name ("A vs B", or more
+    // for multi-entrant matches) and the winner picker offers the bracket's entrants.
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    TournamentMatch open =
+        TournamentMatch.builder().entrant1(entries.get(0)).entrant2(entries.get(1)).build();
+    TournamentRound round =
+        TournamentRound.builder()
+            .roundNumber(1)
+            .roundName("Round 1")
+            .status(TournamentRoundStatus.IN_PROGRESS)
+            .matches(new ArrayList<>(List.of(open)))
+            .build();
+    open.setRound(round);
+    tournament.setRounds(new ArrayList<>(List.of(round)));
+
+    buildView();
+
+    Span label =
+        _find(
+                view,
+                Span.class,
+                spec ->
+                    spec.withPredicate(
+                        (Predicate<Span>)
+                            span -> span.getText() != null && span.getText().contains(" vs ")))
+            .get(0);
+    assertTrue(
+        label.getText().startsWith("Alpha vs Bravo"),
+        "The row label names the bracket's entrants: " + label.getText());
+    ComboBox<TournamentEntry> picker =
+        _get(view, ComboBox.class, spec -> spec.withCaption("Pick winner"));
+    assertEquals(2, picker.getListDataView().getItemCount());
   }
 }

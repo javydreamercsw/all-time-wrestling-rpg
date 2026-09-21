@@ -50,6 +50,7 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningDtoMapper;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRivalryDTO;
+import com.github.javydreamercsw.management.service.show.planning.dto.TournamentSlotPreviewDTO;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.tournament.TournamentTemplateBookingService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -331,6 +332,30 @@ public class ShowPlanningService {
         beatInjection.exclusions().size(),
         rosterIds.size());
     dto.setUpcomingScriptedBeats(scriptedBeats);
+    // Show-attached tournament slots due on this card (ATW-xbn4): paced rounds / payoff previews
+    // so the booker sees them at planning time — same treatment as scripted beats.
+    var tournamentSlots =
+        tournamentTemplateBookingService.previewShowAttachedTournamentSlots(show).stream()
+            .map(
+                p -> {
+                  var slotDto = new TournamentSlotPreviewDTO();
+                  slotDto.setTournamentName(p.tournamentName());
+                  slotDto.setTypeName(p.typeName());
+                  slotDto.setRuleName(p.ruleName());
+                  slotDto.setShape(p.shape());
+                  slotDto.setTitleName(
+                      p.expectedTitle() != null ? p.expectedTitle().getName() : null);
+                  slotDto.setTeams(p.teams());
+                  return slotDto;
+                })
+            .toList();
+    dto.setTournamentSlots(tournamentSlots);
+    if (!tournamentSlots.isEmpty()) {
+      log.info(
+          "Planning context for show '{}': {} show-attached tournament slot(s) previewed",
+          show.getName(),
+          tournamentSlots.size());
+    }
     // Booker-facing warnings for beats that were withheld — mirrors the MUST_BOOK warning style.
     dto.setExcludedBeatWarnings(
         beatInjection.exclusions().stream()
@@ -517,10 +542,17 @@ public class ShowPlanningService {
               + "because showDate is not set.");
     }
 
-    reconcileTeamsWithIds(proposedSegments);
+    // Tournament marker rows (ATW-xbn4 preview) are consents, not card content — they carry
+    // no participants (or placeholders) and are consumed by the show-attached booking block
+    // below. Strip them before reconciliation/validation so placeholder names cannot trip
+    // duplicate-participant or intergender checks.
+    List<ProposedSegment> cardSegments =
+        proposedSegments.stream().filter(ps -> !"Tournament".equals(ps.getSource())).toList();
+
+    reconcileTeamsWithIds(cardSegments);
 
     CardValidationResult validation =
-        validateCard(proposedSegments, rivalryService.getActiveRivalries());
+        validateCard(cardSegments, rivalryService.getActiveRivalries());
     if (!validation.isValid()) {
       throw new IllegalStateException(
           "Show card validation failed for '"
@@ -535,8 +567,8 @@ public class ShowPlanningService {
           validation.getWarnings().size());
     }
 
-    validateNoDuplicateParticipants(proposedSegments);
-    validateTeamLayouts(proposedSegments);
+    validateNoDuplicateParticipants(cardSegments);
+    validateTeamLayouts(cardSegments);
 
     List<Segment> segmentsToSave = new ArrayList<>();
     int currentSegmentCount = segmentRepository.findByShow(show).size();
@@ -549,8 +581,8 @@ public class ShowPlanningService {
                 .findByIdWithAssignments(show.getTemplate().getId())
                 .orElse(show.getTemplate())
             : null;
-    for (int i = 0; i < proposedSegments.size(); i++) {
-      ProposedSegment proposedSegment = proposedSegments.get(i);
+    for (int i = 0; i < cardSegments.size(); i++) {
+      ProposedSegment proposedSegment = cardSegments.get(i);
       log.debug("Processing segment: {}", proposedSegment);
       Segment segment = new Segment();
       segment.setShow(show);
@@ -585,9 +617,16 @@ public class ShowPlanningService {
           booked.setSummary(proposedSegment.getSummary());
           booked.setNotes(proposedSegment.getNotes());
           booked.setRivalryId(proposedSegment.getRivalryId());
-          booked.setIsTitleSegment(proposedSegment.getIsTitleSegment());
-          if (proposedSegment.getTitles() != null && !proposedSegment.getTitles().isEmpty()) {
-            booked.setTitles(proposedSegment.getTitles());
+          // Title-segment state comes from the tournament payoff, not the AI proposal — the
+          // adjudication path awards or defends the linked championship off these fields
+          // (ATW-z963: final at the PLE / champion showcase).
+          if (tournamentBooking.get().titleMatch()) {
+            booked.setIsTitleSegment(true);
+            if (tournamentBooking.get().title() != null) {
+              booked.getTitles().add(tournamentBooking.get().title());
+            }
+          } else {
+            booked.setIsTitleSegment(false);
           }
           segmentsToSave.add(booked);
           log.info(
@@ -724,6 +763,78 @@ public class ShowPlanningService {
       }
       segmentsToSave.add(segment);
     }
+
+    // One-time show-attached tournaments (ATW-xbn4): the payoff books on the host show itself,
+    // paced rounds book on earlier weekly shows — no template row involved. The template path
+    // below stays for recurring tournaments. Never blocks approval: empty results add nothing.
+    // The planning grid previews these slots (source="Tournament"): every preview row that
+    // survived the booker's edits consents to one booking of its type, and deleting rows trims
+    // the bookings accordingly (keep 2 of 3 round rows → 2 book). A card with no preview rows
+    // (hand-built, or previews dropped) falls back to booking everything due — the slots are
+    // required unless the booker visibly trimmed them on the card.
+    List<ProposedSegment> tournamentRows =
+        proposedSegments.stream().filter(ps -> "Tournament".equals(ps.getSource())).toList();
+    List<String> remainingConsents =
+        tournamentRows.stream()
+            .map(ProposedSegment::getType)
+            .collect(Collectors.toCollection(ArrayList::new));
+    List<TournamentTemplateBookingService.TournamentBooking> showAttachedBookings =
+        tournamentTemplateBookingService.bookShowAttachedTournamentSegments(show);
+    for (TournamentTemplateBookingService.TournamentBooking booking : showAttachedBookings) {
+      String type = booking.segment().getSegmentType().getName();
+      if (!remainingConsents.isEmpty()) {
+        int consentIndex = remainingConsents.indexOf(type);
+        if (consentIndex < 0) {
+          log.info(
+              "Show-attached tournament '{}' trimmed on '{}': the booker removed that slot"
+                  + " from the planning card",
+              booking.tournament().getName(),
+              show.getName());
+          continue;
+        }
+        remainingConsents.remove(consentIndex);
+      }
+      Segment booked = booking.segment();
+      booked.setSegmentOrder(segmentRepository.findByShow(show).size() + 1 + segmentsToSave.size());
+      booked.setSegmentDate(show.getShowDate().atStartOfDay(clock.getZone()).toInstant());
+      if (booking.titleMatch()) {
+        booked.setIsTitleSegment(true);
+        if (booking.title() != null) {
+          booked.getTitles().add(booking.title());
+        }
+      } else {
+        booked.setIsTitleSegment(false);
+      }
+      segmentsToSave.add(booked);
+      log.info(
+          "Show-attached tournament '{}' booked on '{}': {}",
+          booking.tournament().getName(),
+          show.getName(),
+          booking.detail());
+    }
+
+    // Tournament pacing on weekly shows (ATW-z963): a tournament-only AUTO_ATTACH assignment on
+    // this template books the bracket's next paced match(es) as extra card slots — the AI does
+    // not propose them. PLE payoffs are NOT booked here; the PLE path (bookTournamentFedSegment)
+    // owns them. Never blocks approval: empty results simply add nothing.
+    if (managedTemplate != null && !show.isPremiumLiveEvent()) {
+      for (ShowTemplateSegmentAssignment ta : managedTemplate.getTournamentAssignments()) {
+        for (TournamentTemplateBookingService.TournamentBooking booking :
+            tournamentTemplateBookingService.bookWeeklyRounds(ta, show)) {
+          Segment booked = booking.segment();
+          booked.setSegmentOrder(
+              segmentRepository.findByShow(show).size() + 1 + segmentsToSave.size());
+          booked.setSegmentDate(show.getShowDate().atStartOfDay(clock.getZone()).toInstant());
+          segmentsToSave.add(booked);
+          log.info(
+              "Tournament '{}' paced round onto weekly show '{}': {}",
+              booking.tournament().getName(),
+              show.getName(),
+              booking.detail());
+        }
+      }
+    }
+
     segmentRepository.saveAll(segmentsToSave);
     log.debug("Approved and saved {} segments for show: {}", segmentsToSave.size(), show.getName());
     // Auto-complete any pending arc beat whose participants match a saved card segment — this is

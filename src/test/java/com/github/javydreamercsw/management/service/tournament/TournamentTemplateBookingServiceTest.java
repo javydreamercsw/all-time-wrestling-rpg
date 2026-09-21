@@ -17,6 +17,9 @@
 package com.github.javydreamercsw.management.service.tournament;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -31,12 +34,17 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntryStatus;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
+import com.github.javydreamercsw.management.domain.tournament.TournamentMatchParticipant;
+import com.github.javydreamercsw.management.domain.tournament.TournamentRepository;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus;
 import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
@@ -44,6 +52,8 @@ import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.segment.NPCSegmentResolutionService;
 import com.github.javydreamercsw.management.service.segment.SegmentTeam;
+import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
+import com.github.javydreamercsw.management.service.show.ShowService;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,13 +65,20 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
-/** Unit tests for tournament-fed booking on PLE templates (ATW-oahn). */
+/** Unit tests for tournament-fed booking on PLE templates (ATW-oahn, ATW-z963). */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class TournamentTemplateBookingServiceTest {
 
   @Mock private TournamentService tournamentService;
   @Mock private NPCSegmentResolutionService segmentResolutionService;
+  @Mock private TournamentPacingService pacingService;
+  @Mock private SegmentTypeService segmentTypeService;
+  @Mock private ShowService showService;
+  @Mock private TournamentRepository tournamentRepository;
   @Mock private TournamentFormat format;
 
   private TournamentTemplateBookingService service;
@@ -71,10 +88,18 @@ class TournamentTemplateBookingServiceTest {
   private Tournament tournament;
   private Wrestler alice;
   private Wrestler bob;
+  private SegmentRule rumbleRule;
 
   @BeforeEach
   void setUp() {
-    service = new TournamentTemplateBookingService(tournamentService, segmentResolutionService);
+    service =
+        new TournamentTemplateBookingService(
+            tournamentService,
+            segmentResolutionService,
+            pacingService,
+            segmentTypeService,
+            showService,
+            tournamentRepository);
 
     ShowType showType = new ShowType();
     showType.setName("PLE");
@@ -91,13 +116,29 @@ class TournamentTemplateBookingServiceTest {
     rumbleType.setId(10L);
     rumbleType.setName("Abu Dhabi Rumble");
 
+    rumbleRule = new SegmentRule();
+    rumbleRule.setId(20L);
+    rumbleRule.setName("Rumble Rules");
+
+    lenient()
+        .when(pacingService.payoffKindOf(any()))
+        .thenReturn(TournamentPacingService.PayoffKind.FINAL_AT_PLE);
+    lenient().when(tournamentService.isTitleVacant(any())).thenReturn(true);
+    lenient().when(tournamentService.currentChampionsOf(any())).thenReturn(List.of());
+    lenient().when(format.getMaxEntrants()).thenReturn(8);
+    lenient().when(format.getMinEntrants()).thenReturn(2);
+
     tournament = new Tournament();
     tournament.setId(5L);
     tournament.setName("Crown Cup");
     tournament.setFormatId("SINGLE_ELIMINATION");
     tournament.setStatus(TournamentStatus.SCHEDULED);
 
+    ShowTemplate template = new ShowTemplate();
+    template.setId(9L);
+    template.setName("Weekly");
     assignment = new ShowTemplateSegmentAssignment();
+    assignment.setTemplate(template);
     assignment.setTournament(tournament);
     assignment.setSegmentType(rumbleType);
     assignment.setMode(ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH);
@@ -273,11 +314,36 @@ class TournamentTemplateBookingServiceTest {
   }
 
   @Test
-  void completeTournament_booksWinnerShowcase() {
+  void completeTournament_noTitle_fallsBackAndConsumes() {
+    // Bracket finished before the PLE with no linked title: the final already played on a
+    // weekly show — the pairing is consumed and nothing books at the PLE.
     tournament.setStatus(TournamentStatus.COMPLETE);
     TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.WINNER);
     TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ELIMINATED);
     tournament.setEntries(new ArrayList<>(List.of(aliceEntry, bobEntry)));
+
+    assertTrue(
+        service.bookTournamentFedSegment(assignment, rumbleType, show).isEmpty(),
+        "COMPLETE tournament without a linked title must not book a showcase");
+    assertNull(
+        assignment.getTournament(),
+        "Pairing must be consumed — no title means the final already played");
+  }
+
+  @Test
+  void completeTournament_reigningChampion_booksShowcaseAndConsumes() {
+    // Bracket finished before the PLE, champion reigns: PLE books champion vs tournament winner
+    // as the title match, then consumes the pairing.
+    tournament.setStatus(TournamentStatus.COMPLETE);
+    Title title = new Title();
+    title.setId(7L);
+    title.setName("World Title");
+    tournament.setLinkedTitle(title);
+    TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.WINNER);
+    TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ELIMINATED);
+    tournament.setEntries(new ArrayList<>(List.of(aliceEntry, bobEntry)));
+    lenient().when(tournamentService.isTitleVacant(title)).thenReturn(false);
+    lenient().when(tournamentService.currentChampionsOf(title)).thenReturn(List.of(bob));
 
     Segment booked = singles(alice, bob, alice);
     stubResolve(booked);
@@ -286,9 +352,11 @@ class TournamentTemplateBookingServiceTest {
         service.bookTournamentFedSegment(assignment, rumbleType, show);
 
     assertTrue(booking.isPresent());
-    assertEquals(booked, booking.get().segment());
-    assertTrue(booking.get().detail().contains("Winner showcase"));
-    verify(tournamentService, never()).startTournament(any());
+    assertTrue(booking.get().titleMatch(), "Champion showcase must be flagged as a title match");
+    assertEquals(title, booking.get().title());
+    assertTrue(booked.getIsTitleSegment());
+    assertTrue(booked.getTitles().contains(title));
+    assertNull(assignment.getTournament(), "Showcase consumed the pairing");
     verify(tournamentService, never()).recordMatchResult(any(), any());
   }
 
@@ -338,11 +406,7 @@ class TournamentTemplateBookingServiceTest {
     TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ACTIVE);
     TournamentMatch match = match(1, aliceEntry, bobEntry);
     tournament.setRounds(new ArrayList<>(List.of(round(1, match))));
-
-    SegmentRule rule = new SegmentRule();
-    rule.setId(20L);
-    rule.setName("Rumble Rules");
-    assignment.setSegmentRule(rule);
+    assignment.setSegmentRule(rumbleRule);
 
     Segment booked = singles(alice, bob, alice);
     when(segmentResolutionService.resolveTeamSegment(
@@ -378,6 +442,1004 @@ class TournamentTemplateBookingServiceTest {
     assertEquals("Bob", team2Captor.getValue().getMembers().get(0).getName());
   }
 
+  @Test
+  void multiEntrantMatch_resolvesViaMultiTeamSegment() {
+    // A 3-man Free-for-All qualifier (ATW-oloa): every entrant books through the multi-team
+    // path — one SegmentTeam per entrant — not the two-team path.
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.ACTIVE);
+    TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ACTIVE);
+    Wrestler cara = wrestler(3L, "Cara");
+    TournamentEntry caraEntry = entry(cara, 3, TournamentEntryStatus.ACTIVE);
+    TournamentMatch match = match(1, aliceEntry, bobEntry);
+    match
+        .getParticipants()
+        .addAll(
+            List.of(
+                TournamentMatchParticipant.builder().match(match).entry(aliceEntry).slot(0).build(),
+                TournamentMatchParticipant.builder().match(match).entry(bobEntry).slot(1).build(),
+                TournamentMatchParticipant.builder()
+                    .match(match)
+                    .entry(caraEntry)
+                    .slot(2)
+                    .build()));
+    tournament.setRounds(new ArrayList<>(List.of(round(1, match))));
+
+    Segment booked = new Segment();
+    booked.setSegmentType(new SegmentType());
+    booked.addParticipant(alice, 1);
+    booked.addParticipant(bob, 2);
+    booked.addParticipant(cara, 3);
+    booked.setWinners(List.of(cara));
+    when(segmentResolutionService.resolveMultiTeamSegment(any(), any(), any(), any()))
+        .thenReturn(booked);
+
+    Optional<TournamentTemplateBookingService.TournamentBooking> booking =
+        service.bookTournamentFedSegment(assignment, rumbleType, show);
+
+    assertTrue(booking.isPresent());
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<SegmentTeam>> teamsCaptor = ArgumentCaptor.forClass(List.class);
+    Mockito.verify(segmentResolutionService)
+        .resolveMultiTeamSegment(teamsCaptor.capture(), eq(rumbleType), eq(show), eq(""));
+    assertEquals(
+        List.of("Alice", "Bob", "Cara"),
+        teamsCaptor.getValue().stream().map(t2 -> t2.getMembers().get(0).getName()).toList());
+    // The Free-for-All's winner mirrors into the bracket.
+    assertEquals(caraEntry, booking.get().segment() == null ? null : pickWinner(match, booked));
+  }
+
+  @Test
+  void finalAtPle_isTitleMatch_whenVacantTitleLinked_andConsumes() {
+    // 4-entrant bracket: 3 matches total; round 1 has 2 matches, the final is the 3rd. Booking
+    // the final at the PLE is the payoff — a title match (title vacant) that consumes the pairing.
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    tournament.setEntries(
+        new ArrayList<>(
+            List.of(
+                entry(alice, 1, TournamentEntryStatus.ACTIVE),
+                entry(bob, 2, TournamentEntryStatus.ACTIVE),
+                entry(wrestler(3L, "Cara"), 3, TournamentEntryStatus.ACTIVE),
+                entry(wrestler(4L, "Dave"), 4, TournamentEntryStatus.ACTIVE))));
+    TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.ACTIVE);
+    TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ACTIVE);
+    // Round 1's two matches were booked+decided on weekly shows; the final is the only open one.
+    TournamentMatch r1m1 =
+        match(
+            1,
+            entry(alice, 1, TournamentEntryStatus.ELIMINATED),
+            entry(wrestler(3L, "Cara"), 3, TournamentEntryStatus.ELIMINATED));
+    r1m1.setSegment(new Segment());
+    r1m1.setWinner(r1m1.getEntrant1());
+    TournamentMatch r1m2 =
+        match(
+            1,
+            entry(bob, 2, TournamentEntryStatus.ELIMINATED),
+            entry(wrestler(4L, "Dave"), 4, TournamentEntryStatus.ELIMINATED));
+    r1m2.setSegment(new Segment());
+    r1m2.setWinner(r1m2.getEntrant1());
+    TournamentRound round1 = round(1, r1m1, r1m2);
+    round1.setStatus(TournamentRoundStatus.COMPLETE);
+    TournamentMatch finalMatch = match(2, aliceEntry, bobEntry);
+    TournamentRound finalRound =
+        TournamentRound.builder()
+            .roundNumber(2)
+            .roundName("Final")
+            .status(TournamentRoundStatus.PENDING)
+            .build();
+    finalRound.getMatches().add(finalMatch);
+    finalMatch.setRound(finalRound);
+    tournament.setRounds(new ArrayList<>(List.of(round1, finalRound)));
+
+    Title title = new Title();
+    title.setId(7L);
+    title.setName("World Title");
+    tournament.setLinkedTitle(title);
+    lenient().when(tournamentService.isTitleVacant(title)).thenReturn(true);
+    lenient()
+        .when(tournamentService.findFormat("SINGLE_ELIMINATION"))
+        .thenReturn(Optional.of(format));
+    // estimateTotalMatches = entrants-1 = 3; booked = 0 → the open match (1 remaining before it)
+    // makes this the final.
+    lenient().when(format.estimateTotalMatches(tournament)).thenReturn(3);
+
+    Segment booked = singles(alice, bob, alice);
+    stubResolve(booked);
+
+    Optional<TournamentTemplateBookingService.TournamentBooking> booking =
+        service.bookTournamentFedSegment(assignment, rumbleType, show);
+
+    assertTrue(booking.isPresent());
+    assertTrue(booking.get().titleMatch(), "Vacant-title final at the PLE is the title match");
+    assertEquals(title, booking.get().title());
+    assertTrue(booked.getIsTitleSegment());
+    assertTrue(booked.getTitles().contains(title));
+    assertNull(assignment.getTournament(), "Payoff consumes the pairing");
+    // The bracket result flips the tournament COMPLETE so the winner entry exists.
+    verify(tournamentService).recordMatchResult(eq(finalMatch), eq(aliceEntry));
+    verify(tournamentService).advanceToNextRound(tournament);
+  }
+
+  @Test
+  void nonFinalPleMatch_isNotPayoff_doesNotConsume() {
+    // IN_PROGRESS with 2 of 3 bracket matches left (round 1 open): the PLE books a regular
+    // tournament match, not the payoff — pairing survives.
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    tournament.setEntries(
+        new ArrayList<>(
+            List.of(
+                entry(alice, 1, TournamentEntryStatus.ACTIVE),
+                entry(bob, 2, TournamentEntryStatus.ACTIVE))));
+    TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.ACTIVE);
+    TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ACTIVE);
+    TournamentMatch match = match(1, aliceEntry, bobEntry);
+    tournament.setRounds(new ArrayList<>(List.of(round(1, match))));
+    lenient()
+        .when(tournamentService.findFormat("SINGLE_ELIMINATION"))
+        .thenReturn(Optional.of(format));
+    lenient().when(format.estimateTotalMatches(tournament)).thenReturn(3);
+
+    Segment booked = singles(alice, bob, alice);
+    stubResolve(booked);
+
+    Optional<TournamentTemplateBookingService.TournamentBooking> booking =
+        service.bookTournamentFedSegment(assignment, rumbleType, show);
+
+    assertTrue(booking.isPresent());
+    assertFalse(booking.get().titleMatch());
+    assertNotNull(assignment.getTournament(), "A non-final PLE match keeps the pairing alive");
+  }
+
+  @Test
+  void weeklyRounds_paceToFinishBeforePle() {
+    // 8-entrant bracket (7 matches); 2 remain after round 1 booked; PLE in 3 weeks with this
+    // week + 2 more weekly slots → ceil(2/3) = 1 match this show.
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    tournament.setEntries(
+        new ArrayList<>(
+            List.of(
+                entry(alice, 1, TournamentEntryStatus.ACTIVE),
+                entry(bob, 2, TournamentEntryStatus.ACTIVE))));
+    TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.ACTIVE);
+    TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ACTIVE);
+    TournamentMatch match = match(1, aliceEntry, bobEntry);
+    tournament.setRounds(new ArrayList<>(List.of(round(1, match))));
+
+    Show ple = new Show();
+    ple.setId(2L);
+    ple.setName("Big PLE");
+    ple.setShowDate(LocalDate.of(2026, 6, 22));
+    ple.setType(show.getType());
+    Show weeklyShow = show;
+    weeklyShow.setShowDate(LocalDate.of(2026, 6, 8));
+
+    when(showService.getShowsByDateRange(any(), any()))
+        .thenReturn(
+            List.of(weeklyShow, ple, showWithName(3L, "Week 2", LocalDate.of(2026, 6, 15))));
+    when(showService.getShowsByDateRange(weeklyShow.getShowDate(), ple.getShowDate()))
+        .thenReturn(List.of(weeklyShow, showWithName(3L, "Week 2", LocalDate.of(2026, 6, 15))));
+    TournamentPacingService.PacingPlan plan =
+        new TournamentPacingService.PacingPlan(
+            TournamentPacingService.PayoffKind.FINAL_AT_PLE, List.of(), 7, 5, 2);
+    when(pacingService.planFor(tournament, ple)).thenReturn(plan);
+
+    SegmentType singlesType = new SegmentType();
+    singlesType.setId(11L);
+    singlesType.setName("One on One");
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(singlesType));
+
+    Segment booked = singles(alice, bob, alice);
+    when(segmentResolutionService.resolveTeamSegment(
+            any(), any(), eq(singlesType), eq(show), eq("")))
+        .thenReturn(booked);
+
+    List<TournamentTemplateBookingService.TournamentBooking> bookings =
+        service.bookWeeklyRounds(assignment, weeklyShow);
+
+    assertEquals(1, bookings.size(), "ceil(2 remaining / 2 slots) = 1 match this show");
+    assertEquals(booked, bookings.get(0).segment());
+    assertFalse(bookings.get(0).titleMatch());
+  }
+
+  @Test
+  void weeklyRounds_payoffOnlyRemaining_booksNothing() {
+    // Only the payoff remains (remainingNonFinal == 0): the final plays at the PLE — the weekly
+    // show must book nothing tournament-fed.
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    Show ple = new Show();
+    ple.setId(2L);
+    ple.setName("Big PLE");
+    ple.setShowDate(LocalDate.of(2026, 6, 22));
+    Show weeklyShow = show;
+    weeklyShow.setShowDate(LocalDate.of(2026, 6, 8));
+
+    when(showService.getShowsByDateRange(any(), any())).thenReturn(List.of());
+    TournamentPacingService.PacingPlan plan =
+        new TournamentPacingService.PacingPlan(
+            TournamentPacingService.PayoffKind.FINAL_AT_PLE, List.of(), 3, 2, 0);
+    when(pacingService.planFor(tournament, ple)).thenReturn(plan);
+
+    assertTrue(service.bookWeeklyRounds(assignment, weeklyShow).isEmpty());
+    verify(segmentResolutionService, never()).resolveTeamSegment(any(), any(), any(), any(), any());
+  }
+
+  @Test
+  void weeklyRounds_autoStartScheduledTournament() {
+    // Pacing auto-starts a SCHEDULED tournament at the first weekly slot.
+    Show ple = new Show();
+    ple.setId(2L);
+    ple.setName("Big PLE");
+    ple.setShowDate(LocalDate.of(2026, 6, 22));
+    Show weeklyShow = show;
+    weeklyShow.setShowDate(LocalDate.of(2026, 6, 8));
+
+    when(showService.getShowsByDateRange(any(), any())).thenReturn(List.of());
+    TournamentPacingService.PacingPlan plan =
+        new TournamentPacingService.PacingPlan(
+            TournamentPacingService.PayoffKind.FINAL_AT_PLE, List.of(), 7, 0, 6);
+    when(pacingService.planFor(tournament, ple)).thenReturn(plan);
+    when(tournamentService.findFormat("SINGLE_ELIMINATION")).thenReturn(Optional.of(format));
+    when(tournamentService.hasEntries(5L)).thenReturn(false);
+    when(tournamentService.findEligibleWrestlersSortedByFans(any(), eq(1L)))
+        .thenReturn(List.of(alice, bob, wrestler(3L, "Cara"), wrestler(4L, "Dave")));
+    when(tournamentService.findByIdWithDetails(5L)).thenReturn(Optional.of(tournament));
+    when(tournamentService.startTournament(tournament))
+        .thenAnswer(
+            invocation -> {
+              tournament.setStatus(TournamentStatus.IN_PROGRESS);
+              return tournament;
+            });
+    SegmentType singlesType = new SegmentType();
+    singlesType.setId(11L);
+    singlesType.setName("One on One");
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(singlesType));
+    TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.ACTIVE);
+    TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ACTIVE);
+    TournamentMatch match = match(1, aliceEntry, bobEntry);
+    tournament.setRounds(new ArrayList<>(List.of(round(1, match))));
+    Segment booked = singles(alice, bob, alice);
+    when(segmentResolutionService.resolveTeamSegment(any(), any(), eq(singlesType), any(), any()))
+        .thenReturn(booked);
+
+    List<TournamentTemplateBookingService.TournamentBooking> bookings =
+        service.bookWeeklyRounds(assignment, weeklyShow);
+
+    assertEquals(1, bookings.size());
+    verify(tournamentService).seedAuto(tournament, 8, 1L);
+    verify(tournamentService).startTournament(tournament);
+  }
+
+  // ── Show-attached one-time tournaments (ATW-xbn4) ─────────────────────────
+
+  @Test
+  void showPayoff_vacantTitleFinal_isTitleMatchAndConsumesLink() {
+    // IN_PROGRESS with only the final open: the host show books it as the payoff — a title
+    // match (vacant linked title) that consumes the host-show link.
+    Title title = new Title();
+    title.setId(7L);
+    title.setName("World Title");
+    tournament.setLinkedTitle(title);
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.ACTIVE);
+    TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ACTIVE);
+    TournamentMatch finalMatch = match(1, aliceEntry, bobEntry);
+    tournament.setRounds(new ArrayList<>(List.of(round(1, finalMatch))));
+    lenient()
+        .when(tournamentService.findFormat("SINGLE_ELIMINATION"))
+        .thenReturn(Optional.of(format));
+    // 2-entrant bracket → estimate 1, booked 0 → this open match is the final.
+    lenient().when(format.estimateTotalMatches(tournament)).thenReturn(1);
+    SegmentType singlesType = new SegmentType();
+    singlesType.setId(11L);
+    singlesType.setName("One on One");
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(singlesType));
+
+    Segment booked = singles(alice, bob, alice);
+    stubResolve(booked);
+
+    Optional<TournamentTemplateBookingService.TournamentBooking> booking =
+        service.bookShowPayoff(tournament, show);
+
+    assertTrue(booking.isPresent());
+    assertTrue(booking.get().titleMatch(), "Vacant-title final at the host show is the payoff");
+    assertEquals(title, booking.get().title());
+    assertTrue(booked.getIsTitleSegment());
+    assertTrue(booked.getTitles().contains(title));
+    verify(tournamentService).recordMatchResult(eq(finalMatch), eq(aliceEntry));
+    verify(tournamentService).advanceToNextRound(tournament);
+    verify(tournamentService).clearPayoffShow(tournament);
+  }
+
+  @Test
+  void showPayoff_usesCustomPayoffTypeAndRule() {
+    // A tournament-configured payoff type/rule wins over the One-on-One fallback — this is what
+    // enables non-event-only payoffs like a 6-man Free-for-All TLC match at a one-off show.
+    tournament.setPayoffShow(show);
+    tournament.setPayoffSegmentType(rumbleType);
+    tournament.setPayoffSegmentRule(rumbleRule);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.ACTIVE);
+    TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ACTIVE);
+    TournamentMatch finalMatch = match(1, aliceEntry, bobEntry);
+    tournament.setRounds(new ArrayList<>(List.of(round(1, finalMatch))));
+    lenient()
+        .when(tournamentService.findFormat("SINGLE_ELIMINATION"))
+        .thenReturn(Optional.of(format));
+    lenient().when(format.estimateTotalMatches(tournament)).thenReturn(1);
+
+    Segment booked = singles(alice, bob, alice);
+    when(segmentResolutionService.resolveTeamSegment(
+            any(), any(), eq(rumbleType), eq(show), eq("Rumble Rules")))
+        .thenReturn(booked);
+
+    Optional<TournamentTemplateBookingService.TournamentBooking> booking =
+        service.bookShowPayoff(tournament, show);
+
+    assertTrue(booking.isPresent());
+    assertEquals(booked, booking.get().segment());
+    verify(segmentResolutionService)
+        .resolveTeamSegment(any(), any(), eq(rumbleType), eq(show), eq("Rumble Rules"));
+    verify(tournamentService).clearPayoffShow(tournament);
+  }
+
+  @Test
+  void showPayoff_completeTournamentChampionReigns_booksShowcaseAndConsumes() {
+    Title title = new Title();
+    title.setId(7L);
+    title.setName("World Title");
+    tournament.setLinkedTitle(title);
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.COMPLETE);
+    tournament.setEntries(
+        new ArrayList<>(
+            List.of(
+                entry(alice, 1, TournamentEntryStatus.WINNER),
+                entry(bob, 2, TournamentEntryStatus.ELIMINATED))));
+    lenient().when(tournamentService.isTitleVacant(title)).thenReturn(false);
+    lenient().when(tournamentService.currentChampionsOf(title)).thenReturn(List.of(bob));
+
+    Segment booked = singles(bob, alice, bob);
+    stubResolve(booked);
+
+    Optional<TournamentTemplateBookingService.TournamentBooking> booking =
+        service.bookShowPayoff(tournament, show);
+
+    assertTrue(booking.isPresent());
+    assertTrue(booking.get().titleMatch(), "Champion showcase is the title match");
+    assertEquals(title, booking.get().title());
+    verify(tournamentService, never()).recordMatchResult(any(), any());
+    verify(tournamentService).clearPayoffShow(tournament);
+  }
+
+  @Test
+  void showPayoff_completeTournamentVacantTitle_consumesWithoutBooking() {
+    // The final already played before the host show and no champion to showcase — the link is
+    // consumed and nothing books.
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.COMPLETE);
+    tournament.setEntries(
+        new ArrayList<>(
+            List.of(
+                entry(alice, 1, TournamentEntryStatus.WINNER),
+                entry(bob, 2, TournamentEntryStatus.ELIMINATED))));
+
+    assertTrue(service.bookShowPayoff(tournament, show).isEmpty());
+    verify(tournamentService).clearPayoffShow(tournament);
+    verify(segmentResolutionService, never()).resolveTeamSegment(any(), any(), any(), any(), any());
+  }
+
+  @Test
+  void showPayoff_scheduledTournament_autoStartsThenBooks() {
+    tournament.setPayoffShow(show); // SCHEDULED from setUp
+    lenient()
+        .when(tournamentService.findFormat("SINGLE_ELIMINATION"))
+        .thenReturn(Optional.of(format));
+    lenient().when(tournamentService.hasEntries(5L)).thenReturn(false);
+    lenient()
+        .when(tournamentService.findEligibleWrestlersSortedByFans(any(), eq(1L)))
+        .thenReturn(List.of(alice, bob, wrestler(3L, "Cara"), wrestler(4L, "Dave")));
+    TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.ACTIVE);
+    TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ACTIVE);
+    TournamentMatch finalMatch = match(1, aliceEntry, bobEntry);
+    lenient()
+        .when(tournamentService.findByIdWithDetails(5L))
+        .thenAnswer(
+            invocation -> {
+              tournament.setEntries(new ArrayList<>(List.of(aliceEntry, bobEntry)));
+              tournament.setRounds(new ArrayList<>(List.of(round(1, finalMatch))));
+              return Optional.of(tournament);
+            });
+    when(tournamentService.startTournament(tournament))
+        .thenAnswer(
+            invocation -> {
+              tournament.setStatus(TournamentStatus.IN_PROGRESS);
+              return tournament;
+            });
+    lenient().when(format.estimateTotalMatches(tournament)).thenReturn(1);
+    SegmentType singlesType = new SegmentType();
+    singlesType.setId(11L);
+    singlesType.setName("One on One");
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(singlesType));
+
+    Segment booked = singles(alice, bob, alice);
+    stubResolve(booked);
+
+    Optional<TournamentTemplateBookingService.TournamentBooking> booking =
+        service.bookShowPayoff(tournament, show);
+
+    assertTrue(booking.isPresent());
+    verify(tournamentService).seedAuto(tournament, 8, 1L);
+    verify(tournamentService).startTournament(tournament);
+    verify(tournamentService).clearPayoffShow(tournament);
+  }
+
+  @Test
+  void showWeeklyRounds_paceToTheHostShow() {
+    // Non-PLE show before a future payoffShow: one paced round using the standard One-on-One type.
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    Show payoff = showWithName(2L, "Crown Cup Final", LocalDate.of(2026, 6, 22));
+    tournament.setPayoffShow(payoff);
+    Show weeklyShow = show;
+    weeklyShow.setShowDate(LocalDate.of(2026, 6, 8));
+
+    TournamentPacingService.PacingPlan plan =
+        new TournamentPacingService.PacingPlan(
+            TournamentPacingService.PayoffKind.FINAL_AT_PLE, List.of(), 7, 6, 1);
+    when(pacingService.planFor(tournament, payoff)).thenReturn(plan);
+    when(showService.getShowsByDateRange(any(), any())).thenReturn(List.of(weeklyShow));
+    SegmentType singlesType = new SegmentType();
+    singlesType.setId(11L);
+    singlesType.setName("One on One");
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(singlesType));
+    TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.ACTIVE);
+    TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ACTIVE);
+    TournamentMatch match = match(1, aliceEntry, bobEntry);
+    tournament.setRounds(new ArrayList<>(List.of(round(1, match))));
+    Segment booked = singles(alice, bob, alice);
+    when(segmentResolutionService.resolveTeamSegment(
+            any(), any(), eq(singlesType), eq(weeklyShow), eq("")))
+        .thenReturn(booked);
+
+    List<TournamentTemplateBookingService.TournamentBooking> bookings =
+        service.bookShowWeeklyRounds(tournament, weeklyShow);
+
+    assertEquals(1, bookings.size(), "ceil(1 remaining / 1 slot) = 1 match this show");
+    assertEquals(booked, bookings.get(0).segment());
+    assertFalse(bookings.get(0).titleMatch());
+    verify(tournamentService, never()).clearPayoffShow(any());
+  }
+
+  @Test
+  void showWeeklyRounds_shareOfRemainingMatches_notTheWholeRemainder() {
+    // Regression (sandbox find): the slot denominator must count every weekly slot from this
+    // show to the payoff, not just same-date shows. 2 non-final matches and 2 slots → 1 here,
+    // NOT both crammed onto this card.
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    Show payoff = showWithName(2L, "Crown Cup Final", LocalDate.of(2026, 6, 22));
+    tournament.setPayoffShow(payoff);
+    Show weeklyShow = show;
+    weeklyShow.setShowDate(LocalDate.of(2026, 6, 8));
+
+    TournamentPacingService.PacingPlan plan =
+        new TournamentPacingService.PacingPlan(
+            TournamentPacingService.PayoffKind.FINAL_AT_PLE, List.of(), 3, 0, 2);
+    when(pacingService.planFor(tournament, payoff)).thenReturn(plan);
+    // Two weekly slots between this show and the payoff.
+    when(pacingService.weeklyShowSlotsBefore(payoff, weeklyShow.getShowDate()))
+        .thenReturn(List.of(weeklyShow, showWithName(3L, "Week 2", LocalDate.of(2026, 6, 15))));
+    SegmentType singlesType = new SegmentType();
+    singlesType.setId(11L);
+    singlesType.setName("One on One");
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(singlesType));
+    // Round 1 holds both open matches, but only ceil(2/2)=1 books on this show.
+    TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.ACTIVE);
+    TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ACTIVE);
+    TournamentEntry caraEntry = entry(wrestler(3L, "Cara"), 3, TournamentEntryStatus.ACTIVE);
+    TournamentEntry daveEntry = entry(wrestler(4L, "Dave"), 4, TournamentEntryStatus.ACTIVE);
+    TournamentMatch m1 = match(1, aliceEntry, bobEntry);
+    TournamentMatch m2 = match(1, caraEntry, daveEntry);
+    tournament.setRounds(new ArrayList<>(List.of(round(1, m1, m2))));
+    Segment booked = singles(alice, bob, alice);
+    when(segmentResolutionService.resolveTeamSegment(
+            any(), any(), eq(singlesType), eq(weeklyShow), eq("")))
+        .thenReturn(booked);
+
+    List<TournamentTemplateBookingService.TournamentBooking> bookings =
+        service.bookShowWeeklyRounds(tournament, weeklyShow);
+
+    assertEquals(1, bookings.size(), "2 remaining across 2 slots = 1 match this show");
+  }
+
+  @Test
+  void trigger_booksPayoffOnHostShow() {
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    tournament.setPayoffShow(show);
+    Title title = new Title();
+    title.setId(7L);
+    tournament.setLinkedTitle(title);
+    TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.ACTIVE);
+    TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ACTIVE);
+    TournamentMatch finalMatch = match(1, aliceEntry, bobEntry);
+    tournament.setRounds(new ArrayList<>(List.of(round(1, finalMatch))));
+    lenient()
+        .when(tournamentService.findFormat("SINGLE_ELIMINATION"))
+        .thenReturn(Optional.of(format));
+    lenient().when(format.estimateTotalMatches(tournament)).thenReturn(1);
+    SegmentType singlesType = new SegmentType();
+    singlesType.setId(11L);
+    singlesType.setName("One on One");
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(singlesType));
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
+    // The tournament also shows up in the universe scan — skipped, the payoff books here.
+    when(tournamentRepository.findByUniverseIdAndPayoffShowIsNotNull(1L))
+        .thenReturn(List.of(tournament));
+
+    Segment booked = singles(alice, bob, alice);
+    stubResolve(booked);
+
+    List<TournamentTemplateBookingService.TournamentBooking> bookings =
+        service.bookShowAttachedTournamentSegments(show);
+
+    assertEquals(1, bookings.size());
+    assertTrue(bookings.get(0).titleMatch());
+    verify(tournamentService).clearPayoffShow(tournament);
+  }
+
+  @Test
+  void trigger_booksPacedRoundOnEarlierWeeklyShow() {
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    Show payoff = showWithName(2L, "Crown Cup Final", LocalDate.of(2026, 6, 22));
+    payoff.setUniverse(show.getUniverse());
+    tournament.setPayoffShow(payoff);
+    Show weeklyShow = show;
+    weeklyShow.setShowDate(LocalDate.of(2026, 6, 8));
+
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of());
+    when(tournamentRepository.findByUniverseIdAndPayoffShowIsNotNull(1L))
+        .thenReturn(List.of(tournament));
+    TournamentPacingService.PacingPlan plan =
+        new TournamentPacingService.PacingPlan(
+            TournamentPacingService.PayoffKind.FINAL_AT_PLE, List.of(weeklyShow), 3, 2, 1);
+    when(pacingService.planFor(tournament, payoff)).thenReturn(plan);
+    when(showService.getShowsByDateRange(any(), any())).thenReturn(List.of(weeklyShow));
+    SegmentType singlesType = new SegmentType();
+    singlesType.setId(11L);
+    singlesType.setName("One on One");
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(singlesType));
+    TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.ACTIVE);
+    TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ACTIVE);
+    TournamentMatch match = match(1, aliceEntry, bobEntry);
+    tournament.setRounds(new ArrayList<>(List.of(round(1, match))));
+    Segment booked = singles(alice, bob, alice);
+    when(segmentResolutionService.resolveTeamSegment(
+            any(), any(), eq(singlesType), eq(weeklyShow), eq("")))
+        .thenReturn(booked);
+
+    List<TournamentTemplateBookingService.TournamentBooking> bookings =
+        service.bookShowAttachedTournamentSegments(weeklyShow);
+
+    assertEquals(1, bookings.size(), "The weekly show paces one round before the host show");
+    assertFalse(bookings.get(0).titleMatch());
+  }
+
+  @Test
+  void trigger_payoffShowNotAhead_skipsRounds() {
+    // The host show is not in this show's future — its rounds do not book here.
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    Show payoff = showWithName(2L, "Crown Cup Final", LocalDate.of(2026, 5, 1)); // before June 1
+    tournament.setPayoffShow(payoff);
+
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of());
+    when(tournamentRepository.findByUniverseIdAndPayoffShowIsNotNull(1L))
+        .thenReturn(List.of(tournament));
+
+    assertTrue(service.bookShowAttachedTournamentSegments(show).isEmpty());
+    verify(segmentResolutionService, never()).resolveTeamSegment(any(), any(), any(), any(), any());
+  }
+
+  @Test
+  void templatePath_yieldsToShowAttachedTournament() {
+    // A tournament with a host show is owned by the show-attached path — template pairing
+    // (PLE payoff row and weekly pacing row) must not double-book it.
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.ACTIVE);
+    TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ACTIVE);
+    TournamentMatch match = match(1, aliceEntry, bobEntry);
+    tournament.setRounds(new ArrayList<>(List.of(round(1, match))));
+
+    assertTrue(
+        service.bookTournamentFedSegment(assignment, rumbleType, show).isEmpty(),
+        "Template PLE pairing must yield to the host-show binding");
+    assertTrue(
+        service.bookWeeklyRounds(assignment, show).isEmpty(),
+        "Template weekly pacing must yield to the host-show binding");
+    verify(segmentResolutionService, never()).resolveTeamSegment(any(), any(), any(), any(), any());
+  }
+
+  @Test
+  void terminalStatus_fallsBackToEmpty() {
+    // A tournament in an unexpected state (only SCHEDULED/IN_PROGRESS/COMPLETE are handled)
+    // must fall back to the AI path, never throw into the approval flow.
+    tournament.setStatus(TournamentStatus.CANCELLED);
+    assertTrue(service.bookTournamentFedSegment(assignment, rumbleType, show).isEmpty());
+  }
+
+  @Test
+  void bookWeeklyRounds_withoutTargetPle_booksOneOpenMatch() {
+    // No target PLE paired with this tournament within a year: the legacy free-running path
+    // books one open match per approval. This exercises the whole non-ple branch of the weekly
+    // pacing block (auto-start skipped, no pacing plan, 1 match).
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.ACTIVE);
+    TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ACTIVE);
+    TournamentMatch match = match(1, aliceEntry, bobEntry);
+    tournament.setRounds(new ArrayList<>(List.of(round(1, match))));
+    SegmentType singlesType = new SegmentType();
+    singlesType.setId(11L);
+    singlesType.setName("One on One");
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(singlesType));
+    when(segmentResolutionService.resolveTeamSegment(
+            any(), any(), eq(singlesType), eq(show), eq("")))
+        .thenReturn(singles(alice, bob, alice));
+
+    // Template weekly path routes through the standard One-on-One type; a single open match
+    // books once.
+    assertEquals(1, service.bookWeeklyRounds(assignment, show).size());
+  }
+
+  @Test
+  void bookShowAttachedTournamentSegments_weeklyRounds_missingOneOnOneType_returnsEmpty() {
+    // The One-on-One segment type is missing from the registry — weekly rounds must back off
+    // gracefully (nothing books, approval continues).
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    Show payoff = showWithName(2L, "Crown Cup Final", LocalDate.of(2026, 6, 22));
+    tournament.setPayoffShow(payoff);
+    when(tournamentRepository.findByUniverseIdAndPayoffShowIsNotNull(1L))
+        .thenReturn(List.of(tournament));
+    when(pacingService.planFor(tournament, payoff))
+        .thenReturn(
+            new TournamentPacingService.PacingPlan(
+                TournamentPacingService.PayoffKind.FINAL_AT_PLE, List.of(), 7, 6, 1));
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.empty());
+
+    assertTrue(service.bookShowAttachedTournamentSegments(show).isEmpty());
+  }
+
+  @Test
+  void championShowcase_noWinnerEntry_fallsBackEmpty() {
+    // COMPLETE with a held linked title but no WINNER entry in the bracket — the showcase
+    // cannot name a challenger, so bookChampionShowcase falls back to the AI path.
+    tournament.setStatus(TournamentStatus.COMPLETE);
+    Title title = new Title();
+    title.setId(7L);
+    tournament.setLinkedTitle(title);
+    tournament.setEntries(
+        new ArrayList<>(List.of(entry(alice, 1, TournamentEntryStatus.ELIMINATED))));
+    when(tournamentService.isTitleVacant(title)).thenReturn(false);
+
+    assertTrue(
+        service.bookTournamentFedSegment(assignment, rumbleType, show).isEmpty(),
+        "COMPLETE with no winner entry must fall back to the AI path");
+  }
+
+  @Test
+  void championShowcase_championLostBeltElsewhere_consumesAndFallsBack() {
+    // COMPLETE with a winner but the linked title has no current champion (lost between the
+    // final and the payoff): no showcase — the pairing is consumed and approval continues.
+    tournament.setStatus(TournamentStatus.COMPLETE);
+    Title title = new Title();
+    title.setId(7L);
+    tournament.setLinkedTitle(title);
+    tournament.setEntries(new ArrayList<>(List.of(entry(alice, 1, TournamentEntryStatus.WINNER))));
+    when(tournamentService.isTitleVacant(title)).thenReturn(false);
+    when(tournamentService.currentChampionsOf(title)).thenReturn(List.of());
+
+    assertTrue(
+        service.bookTournamentFedSegment(assignment, rumbleType, show).isEmpty(),
+        "No reigning champion — no showcase; pairing must be consumed");
+    assertNull(assignment.getTournament(), "Pairing must be consumed");
+  }
+
+  @Test
+  void preview_payoffTeamsOf_championShowcaseRendersRealTeams() {
+    // Seeded/complete bracket + reigning champion: the payoff preview carries the real
+    // champion vs winner teams instead of placeholders.
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.COMPLETE);
+    Title title = new Title();
+    title.setId(7L);
+    tournament.setLinkedTitle(title);
+    Wrestler champ = wrestler(31L, "Real Champ");
+    tournament.setEntries(new ArrayList<>(List.of(entry(alice, 1, TournamentEntryStatus.WINNER))));
+    when(tournamentService.isTitleVacant(title)).thenReturn(false);
+    when(tournamentService.currentChampionsOf(title)).thenReturn(List.of(champ));
+    SegmentType singlesType = new SegmentType();
+    singlesType.setName("One on One");
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(singlesType));
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
+
+    List<TournamentTemplateBookingService.TournamentSlotPreview> previews =
+        service.previewShowAttachedTournamentSlots(show);
+
+    assertEquals(1, previews.size());
+    assertEquals("Champion showcase", previews.get(0).shape());
+    assertEquals(List.of(List.of("Real Champ"), List.of("Alice")), previews.get(0).teams());
+    assertEquals(title, previews.get(0).expectedTitle());
+  }
+
+  @Test
+  void preview_completeTournamentWithoutChampionToShowcase_yieldsNoRow() {
+    // COMPLETE + vacant title = nothing would book (final already played, no champion to
+    // showcase) — the preview must not render a dead row.
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.COMPLETE);
+    Title title = new Title();
+    title.setId(7L);
+    tournament.setLinkedTitle(title);
+    when(tournamentService.isTitleVacant(title)).thenReturn(true);
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
+
+    assertTrue(service.previewShowAttachedTournamentSlots(show).isEmpty());
+  }
+
+  @Test
+  void preview_inProgressHostedTournament_showsPayoffFinalWithOpenMatchTeams() {
+    // IN_PROGRESS + hosted here: the payoff row reads "Payoff final" and previews the
+    // bracket's next open match — the real pairing when the bracket is generated.
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    TournamentMatch open =
+        match(
+            1,
+            entry(alice, 1, TournamentEntryStatus.ACTIVE),
+            entry(bob, 2, TournamentEntryStatus.ACTIVE));
+    tournament.setRounds(new ArrayList<>(List.of(round(1, open))));
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(new SegmentType()));
+
+    List<TournamentTemplateBookingService.TournamentSlotPreview> previews =
+        service.previewShowAttachedTournamentSlots(show);
+
+    assertEquals(1, previews.size());
+    assertEquals("Payoff final", previews.get(0).shape());
+    assertEquals(List.of(List.of("Alice"), List.of("Bob")), previews.get(0).teams());
+    assertNull(previews.get(0).expectedTitle(), "No title on the line without a linked title");
+  }
+
+  @Test
+  void preview_pacedRoundsPreviewRealPairings() {
+    // IN_PROGRESS show-attached tournament with an open round match + future payoff: a weekly
+    // show before the payoff previews the round match with the real pairing.
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    Show payoff = showWithName(2L, "Crown Cup Final", LocalDate.of(2026, 6, 22));
+    tournament.setPayoffShow(payoff);
+    TournamentMatch open =
+        match(
+            1,
+            entry(alice, 1, TournamentEntryStatus.ACTIVE),
+            entry(bob, 2, TournamentEntryStatus.ACTIVE));
+    tournament.setRounds(new ArrayList<>(List.of(round(1, open))));
+    when(tournamentRepository.findByUniverseIdAndPayoffShowIsNotNull(1L))
+        .thenReturn(List.of(tournament));
+    when(pacingService.planFor(tournament, payoff))
+        .thenReturn(
+            new TournamentPacingService.PacingPlan(
+                TournamentPacingService.PayoffKind.FINAL_AT_PLE, List.of(), 7, 6, 1));
+    when(pacingService.weeklyShowSlotsBefore(payoff, show.getShowDate())).thenReturn(List.of(show));
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(new SegmentType()));
+
+    List<TournamentTemplateBookingService.TournamentSlotPreview> previews =
+        service.previewShowAttachedTournamentSlots(show);
+
+    assertEquals(1, previews.size());
+    assertEquals("Round 1 — bracket match", previews.get(0).shape());
+    assertEquals(List.of(List.of("Alice"), List.of("Bob")), previews.get(0).teams());
+  }
+
+  @Test
+  void preview_scheduledTournament_rendersPlaceholderRoundRows() {
+    // SCHEDULED + future payoff: the bracket does not exist yet, so the pacing share renders
+    // as placeholder rows — the open-match cap applies only to a generated bracket.
+    tournament.setStatus(TournamentStatus.SCHEDULED);
+    Show payoff = showWithName(2L, "Crown Cup Final", LocalDate.of(2026, 6, 22));
+    tournament.setPayoffShow(payoff);
+    when(tournamentRepository.findByUniverseIdAndPayoffShowIsNotNull(1L))
+        .thenReturn(List.of(tournament));
+    when(pacingService.planFor(tournament, payoff))
+        .thenReturn(
+            new TournamentPacingService.PacingPlan(
+                TournamentPacingService.PayoffKind.FINAL_AT_PLE, List.of(), 3, 1, 2));
+    when(pacingService.weeklyShowSlotsBefore(payoff, show.getShowDate())).thenReturn(List.of(show));
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(new SegmentType()));
+
+    List<TournamentTemplateBookingService.TournamentSlotPreview> previews =
+        service.previewShowAttachedTournamentSlots(show);
+
+    assertEquals(2, previews.size(), "ceil(2 remaining / 1 slot) = 2 placeholder rows");
+    assertEquals("Round match", previews.get(0).shape());
+    assertEquals(
+        List.of(List.of("Tournament bracket"), List.of("Tournament bracket")),
+        previews.get(0).teams());
+  }
+
+  @Test
+  void preview_completeTournamentWithFuturePayoff_pacesNoRounds() {
+    // A COMPLETE tournament only ever hosts its showcase at the payoff show — earlier weekly
+    // cards must not render paced-round rows for it.
+    tournament.setStatus(TournamentStatus.COMPLETE);
+    Show payoff = showWithName(2L, "Crown Cup Final", LocalDate.of(2026, 6, 22));
+    tournament.setPayoffShow(payoff);
+    when(tournamentRepository.findByUniverseIdAndPayoffShowIsNotNull(1L))
+        .thenReturn(List.of(tournament));
+
+    assertTrue(service.previewShowAttachedTournamentSlots(show).isEmpty());
+  }
+
+  @Test
+  void bookShowPayoff_noBookableMatch_fallsBackWithoutConsuming() {
+    // IN_PROGRESS bracket but no bookable match left (all decided, advance adds nothing):
+    // the payoff falls through — the link is NOT consumed so a later catch-up approval can
+    // still deliver the payoff.
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    TournamentMatch decided =
+        match(
+            1,
+            entry(alice, 1, TournamentEntryStatus.ACTIVE),
+            entry(bob, 2, TournamentEntryStatus.ACTIVE));
+    decided.setWinner(decided.getEntrant1());
+    tournament.setRounds(new ArrayList<>(List.of(round(1, decided))));
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(new SegmentType()));
+
+    List<TournamentTemplateBookingService.TournamentBooking> bookings =
+        service.bookShowAttachedTournamentSegments(show);
+
+    assertTrue(bookings.isEmpty());
+    verify(tournamentService, never()).clearPayoffShow(any());
+  }
+
+  @Test
+  void bookShowPayoff_championShowcase_booksAndConsumesLink() {
+    // COMPLETE + reigning champion on the host show: champion vs tournament winner books as
+    // the title match, then the host-show link is consumed.
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.COMPLETE);
+    Title title = new Title();
+    title.setId(7L);
+    tournament.setLinkedTitle(title);
+    tournament.setEntries(new ArrayList<>(List.of(entry(alice, 1, TournamentEntryStatus.WINNER))));
+    when(tournamentService.isTitleVacant(title)).thenReturn(false);
+    when(tournamentService.currentChampionsOf(title)).thenReturn(List.of(bob));
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(new SegmentType()));
+    Segment booked = singles(bob, alice, bob);
+    stubResolve(booked);
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
+
+    List<TournamentTemplateBookingService.TournamentBooking> bookings =
+        service.bookShowAttachedTournamentSegments(show);
+
+    assertEquals(1, bookings.size());
+    assertTrue(bookings.get(0).titleMatch());
+    assertEquals(title, bookings.get(0).title());
+    verify(tournamentService).clearPayoffShow(tournament);
+  }
+
+  @Test
+  void bookShowPayoff_missingPayoffType_fallsBackToNullTypeAndStillBooks() {
+    // No payoff type chosen and the One-on-One type missing: payoffTypeOf warns and returns
+    // null — the payoff still books (the resolver receives the null type) rather than blocking
+    // approval.
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    TournamentMatch open =
+        match(
+            1,
+            entry(alice, 1, TournamentEntryStatus.ACTIVE),
+            entry(bob, 2, TournamentEntryStatus.ACTIVE));
+    tournament.setRounds(new ArrayList<>(List.of(round(1, open))));
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.empty());
+    // The lone match is the bracket final → the payoff consumes the link after booking.
+    lenient()
+        .when(tournamentService.findFormat("SINGLE_ELIMINATION"))
+        .thenReturn(Optional.of(format));
+    lenient().when(format.estimateTotalMatches(tournament)).thenReturn(1);
+    stubResolve(singles(alice, bob, alice));
+
+    List<TournamentTemplateBookingService.TournamentBooking> bookings =
+        service.bookShowAttachedTournamentSegments(show);
+
+    assertEquals(1, bookings.size());
+    verify(tournamentService).clearPayoffShow(tournament);
+  }
+
+  @Test
+  void payoffCatchUpWarnings_flagsUnfinishableBracket() {
+    // IN_PROGRESS with 2 open round matches + a final: only one match plays at the payoff
+    // show, so the bracket cannot finish there — the warning must fire.
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    TournamentMatch m1 =
+        match(
+            1,
+            entry(alice, 1, TournamentEntryStatus.ACTIVE),
+            entry(bob, 2, TournamentEntryStatus.ACTIVE));
+    TournamentMatch m2 =
+        match(
+            1,
+            entry(wrestler(3L, "Cara"), 3, TournamentEntryStatus.ACTIVE),
+            entry(wrestler(4L, "Dave"), 4, TournamentEntryStatus.ACTIVE));
+    tournament.setRounds(new ArrayList<>(List.of(round(1, m1, m2))));
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
+
+    List<String> warnings = service.payoffCatchUpWarnings(show);
+
+    assertEquals(1, warnings.size());
+    assertTrue(warnings.get(0).contains("Crown Cup"));
+    assertTrue(warnings.get(0).contains("cannot finish before its payoff show"));
+  }
+
+  @Test
+  void payoffCatchUpWarnings_quietWhenBracketCanFinish() {
+    // One open match (= the final) is exactly what the payoff show books — no warning.
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    TournamentMatch finalMatch =
+        match(
+            1,
+            entry(alice, 1, TournamentEntryStatus.ACTIVE),
+            entry(bob, 2, TournamentEntryStatus.ACTIVE));
+    tournament.setRounds(new ArrayList<>(List.of(round(1, finalMatch))));
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
+
+    assertTrue(service.payoffCatchUpWarnings(show).isEmpty());
+  }
+
+  @Test
+  void payoffCatchUpWarnings_scheduledBracket_estimatesFromEntries() {
+    // SCHEDULED + unseeded: the bracket is generated at start — 8 entries mean 7 matches,
+    // only one of which can play at the payoff show. The warning must reflect that.
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.SCHEDULED);
+    when(tournamentService.countEntries(tournament)).thenReturn(8L);
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
+
+    List<String> warnings = service.payoffCatchUpWarnings(show);
+
+    assertEquals(1, warnings.size());
+    assertTrue(warnings.get(0).contains("7 bracket matches"));
+  }
+
+  @Test
+  void payoffCatchUpWarnings_completeTournament_staysQuiet() {
+    // A COMPLETE bracket's payoff is the champion showcase — nothing can degrade.
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.COMPLETE);
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
+
+    assertTrue(service.payoffCatchUpWarnings(show).isEmpty());
+  }
+
   // ── Helpers ───────────────────────────────────────────────────────────────
 
   private void stubResolve(Segment booked) {
@@ -390,6 +1452,21 @@ class TournamentTemplateBookingServiceTest {
     w.setId(id);
     w.setName(name);
     return w;
+  }
+
+  private static Show showWithName(Long id, String name, LocalDate date) {
+    Show s = new Show();
+    s.setId(id);
+    s.setName(name);
+    s.setShowDate(date);
+    s.setType(showTypeNamed("Weekly"));
+    return s;
+  }
+
+  private static ShowType showTypeNamed(String name) {
+    ShowType t = new ShowType();
+    t.setName(name);
+    return t;
   }
 
   private static TournamentEntry entry(Wrestler wrestler, int seed, TournamentEntryStatus status) {
@@ -421,5 +1498,16 @@ class TournamentTemplateBookingServiceTest {
     segment.addParticipant(b, 1);
     segment.setWinners(List.of(winner));
     return segment;
+  }
+
+  /** Mirrors the booking service's winner derivation for assertions. */
+  private static TournamentEntry pickWinner(TournamentMatch match, Segment segment) {
+    return match.entrants().stream()
+        .filter(
+            e ->
+                segment.getWinners().stream()
+                    .anyMatch(w -> w.getId().equals(e.getWrestler().getId())))
+        .findFirst()
+        .orElse(null);
   }
 }

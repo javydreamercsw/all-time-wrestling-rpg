@@ -135,8 +135,9 @@ class TournamentVideoDocsE2ETest extends AbstractDocsE2ETest {
     waitForVaadinElement(driver, By.tagName("vaadin-grid"));
     captureCaption(
         "The Tournament List shows every active and completed tournament in your universe."
-            + " Each row shows the format, status, entrant count, and start date."
-            + " Click 'New Tournament' to launch the creation wizard.",
+            + " Each row shows the format, status, entrant count, and host show when the"
+            + " tournament is attached to one. Click 'New Tournament' to launch the"
+            + " creation wizard.",
         3500);
 
     navigateTo("tournament-detail/" + tournamentId);

@@ -26,10 +26,12 @@ import com.github.javydreamercsw.management.service.segment.type.SegmentTypeServ
 import com.github.javydreamercsw.management.service.show.planning.dto.AiGeneratedSegmentDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.FeudScriptBeatDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
+import com.github.javydreamercsw.management.service.show.planning.dto.TournamentSlotPreviewDTO;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -66,10 +68,84 @@ public class ShowPlanningAiService {
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public ProposedShow planShow(@NonNull final ShowPlanningContextDTO context) {
+    int expectedMatches = 0;
+    int expectedPromos = 0;
+    if (context.getShowTemplate() != null) {
+      expectedMatches = Math.max(0, context.getShowTemplate().getExpectedMatches());
+      expectedPromos = Math.max(0, context.getShowTemplate().getExpectedPromos());
+    }
+    // Beats may claim promo slots too — count each claim against the right budget.
+    int[] claimed = preClaimedSlotCount(context);
+    int freeMatches = Math.max(0, expectedMatches - claimed[0]);
+    int freePromos = Math.max(0, expectedPromos - claimed[1]);
+    if (freeMatches == 0 && freePromos == 0) {
+      // Every slot on this card is pre-determined (scripted beats + tournament brackets). The AI
+      // has nothing to propose — skip the call entirely; the deterministic passes build the card.
+      log.info(
+          "All match/promo slots on this card are pre-determined ({} claim(s)) — skipping the AI"
+              + " call",
+          claimed[0] + claimed[1]);
+      ProposedShow proposedShow = new ProposedShow();
+      applyScriptedBeats(proposedShow, context);
+      applyTournamentSlots(proposedShow, context);
+      applyDefaultRules(proposedShow);
+      return proposedShow;
+    }
     ProposedShow proposedShow = planShowWithAi(context);
     applyScriptedBeats(proposedShow, context);
+    applyTournamentSlots(proposedShow, context);
     applyDefaultRules(proposedShow);
     return proposedShow;
+  }
+
+  /**
+   * Match and promo slots the deterministic passes will fill without AI help: one per scripted beat
+   * (a beat whose type is a promo claims a promo slot, anything else a match slot), plus one per
+   * real-participant tournament preview row (always match slots; placeholder rows are additive and
+   * claim nothing). Mirrors the prompt's accounting in {@link ShowPlanningPromptBuilder}.
+   *
+   * @return {{ claimedMatches, claimedPromos }}
+   */
+  private int[] preClaimedSlotCount(ShowPlanningContextDTO context) {
+    int matches = 0;
+    int promos = 0;
+    if (context.getUpcomingScriptedBeats() != null) {
+      for (FeudScriptBeatDTO beat : context.getUpcomingScriptedBeats()) {
+        if (beat.getSegmentType() == null || beat.getSegmentType().isBlank()) {
+          continue;
+        }
+        if (isPromoType(beat.getSegmentType())) {
+          promos++;
+        } else {
+          matches++;
+        }
+      }
+    }
+    if (context.getTournamentSlots() != null) {
+      matches +=
+          (int)
+              context.getTournamentSlots().stream()
+                  .filter(
+                      s ->
+                          s.getTeams() != null
+                              && s.getTeams().stream()
+                                  .flatMap(List::stream)
+                                  .anyMatch(
+                                      n ->
+                                          n != null
+                                              && !n.isBlank()
+                                              && !"Tournament bracket".equals(n)))
+                  .count();
+    }
+    return new int[] {matches, promos};
+  }
+
+  /** Promo by well-known code when resolvable, else the lowercase-name heuristic. */
+  private boolean isPromoType(String typeName) {
+    return segmentTypeService
+        .findByName(typeName)
+        .map(type -> WellKnownSegmentType.PROMO.matches(type))
+        .orElseGet(() -> typeName.toLowerCase().contains("promo"));
   }
 
   /**
@@ -135,6 +211,7 @@ public class ShowPlanningAiService {
         // Give the scripted slot a summary in the same shape the AI's segments carry, sourced
         // from the arc context so the planning grid reads like the rest of the card.
         beatSegment.setSummary(summarizeBeat(beat));
+        beatSegment.setSource("Scripted beat");
         beatSegments.add(beatSegment);
       }
     }
@@ -177,6 +254,91 @@ public class ShowPlanningAiService {
       segment.setContenderTitleId(beat.getContenderTitleId());
     }
     return segment;
+  }
+
+  /**
+   * Deterministically places the show-attached tournament slots (ATW-xbn4) on the AI-proposed card,
+   * mirroring the scripted-beat pass: each preview becomes a card row ahead of the AI's segments —
+   * participants resolve from the bracket at approval, the row's type/rule/title flags tell the
+   * booker (and the approval flow) what the slot is. AI rows that collide with a tournament slot
+   * (same segment type, both match segments) are evicted so the tournament owns its slot instead of
+   * double-booking the type. Deleting the row on the planning grid means "don't book it here."
+   */
+  private void applyTournamentSlots(ProposedShow proposedShow, ShowPlanningContextDTO context) {
+    List<TournamentSlotPreviewDTO> slots = context.getTournamentSlots();
+    if (slots == null || slots.isEmpty()) {
+      return;
+    }
+    List<ProposedSegment> segments = proposedShow.getSegments();
+    int before = segments.size();
+
+    // No eviction pass (unlike beats): tournament participants come from the bracket and are
+    // unknown at planning time, and type-matching would nuke legitimate AI rows on weekly shows
+    // (round matches ride the generic One-on-One type). Both stay on the card — the booker sees
+    // the tournament rows and deletes either kind before approving.
+    List<ProposedSegment> slotRows = new ArrayList<>();
+    for (TournamentSlotPreviewDTO slot : slots) {
+      if (slot.getTypeName() == null || slot.getTypeName().isBlank()) {
+        continue;
+      }
+      int matchCount = roundMatchCountOf(slot.getShape());
+      // Multi-match previews expand into that many single rows — each books one bracket match,
+      // and removing one row removes exactly one match.
+      for (int i = 0; i < matchCount; i++) {
+        ProposedSegment segment = new ProposedSegment();
+        segment.setType(slot.getTypeName());
+        if (slot.getRuleName() != null && !slot.getRuleName().isBlank()) {
+          segment.setRules(List.of(slot.getRuleName()));
+        }
+        segment.setSummary(summarizeTournamentSlot(slot));
+        segment.setNotes(
+            slot.getTournamentName()
+                + " — "
+                + slot.getShape()
+                + " on this show. Participants come from the tournament bracket at approval;"
+                + " delete this row to skip this slot on this show.");
+        segment.setSource("Tournament");
+        // Real match-up when the bracket can supply one (seeded brackets preview actual
+        // pairings); placeholder teams otherwise — participants always re-derive from the
+        // bracket at approval, so the card's names are informational.
+        if (slot.getTeams() != null && !slot.getTeams().isEmpty()) {
+          segment.setTeams(slot.getTeams());
+          // Winner names are unknowable at preview time — leave winners empty (AI_PICKS
+          // semantics); the bracket result mirrors the booked segment's actual winners.
+        }
+        if (slot.getTitleName() != null && !slot.getTitleName().isBlank()) {
+          segment.setIsTitleSegment(true);
+        }
+        slotRows.add(segment);
+      }
+    }
+    // Tournament slots land ahead of the AI's card, like beats.
+    slotRows.addAll(segments);
+    proposedShow.setSegments(slotRows);
+    log.info(
+        "Applied {} tournament slot row(s) deterministically; card now has {} segments",
+        segments.size() - before,
+        segments.size());
+  }
+
+  /** Grid-facing summary for a tournament slot: tournament name plus the slot's shape. */
+  private String summarizeTournamentSlot(TournamentSlotPreviewDTO slot) {
+    StringBuilder sb = new StringBuilder();
+    sb.append("Tournament: ").append(slot.getTournamentName());
+    sb.append(" — ").append(slot.getShape());
+    if (slot.getTitleName() != null && !slot.getTitleName().isBlank()) {
+      sb.append(" (").append(slot.getTitleName()).append(" on the line)");
+    }
+    return sb.toString();
+  }
+
+  /** "N round matches" → N; any other shape ("Payoff final", "Champion showcase") → 1. */
+  private int roundMatchCountOf(String shape) {
+    if (shape == null) {
+      return 1;
+    }
+    var matcher = Pattern.compile("(\\d+) round matches?").matcher(shape);
+    return matcher.find() ? Math.max(1, Integer.parseInt(matcher.group(1))) : 1;
   }
 
   /** Grid-facing summary for a scripted slot: arc name plus planned-winner intent. */
