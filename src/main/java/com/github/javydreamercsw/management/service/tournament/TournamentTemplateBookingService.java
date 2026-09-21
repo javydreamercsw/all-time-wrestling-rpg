@@ -398,18 +398,22 @@ public class TournamentTemplateBookingService {
     return previews;
   }
 
-  /** Both entrants' names for a match, or a placeholder team layout when unseeded/unknown. */
+  /** Every entrant's name (one team per entrant), or a placeholder layout when unknown. */
   private List<List<String>> entrantNamesOf(@Nullable TournamentMatch match) {
-    if (match == null
-        || match.getEntrant1() == null
-        || match.getEntrant2() == null
-        || match.getEntrant1().getWrestler() == null
-        || match.getEntrant2().getWrestler() == null) {
+    if (match == null) {
       return List.of(List.of("Tournament bracket"), List.of("Tournament bracket"));
     }
-    return List.of(
-        List.of(match.getEntrant1().getWrestler().getName()),
-        List.of(match.getEntrant2().getWrestler().getName()));
+    List<List<String>> names = new ArrayList<>();
+    for (TournamentEntry entry : match.entrants()) {
+      if (entry == null || entry.getWrestler() == null || entry.getWrestler().getName() == null) {
+        return List.of(List.of("Tournament bracket"), List.of("Tournament bracket"));
+      }
+      names.add(List.of(entry.getWrestler().getName()));
+    }
+    if (names.size() < 2) {
+      return List.of(List.of("Tournament bracket"), List.of("Tournament bracket"));
+    }
+    return names;
   }
 
   /**
@@ -981,13 +985,23 @@ public class TournamentTemplateBookingService {
       final Show show,
       final String stipulation,
       final boolean titleOnTheLine) {
-    Segment segment =
-        segmentResolutionService.resolveTeamSegment(
-            new SegmentTeam(match.getEntrant1().getWrestler()),
-            new SegmentTeam(match.getEntrant2().getWrestler()),
-            segmentType,
-            show,
-            stipulation);
+    Segment segment;
+    if (match.isMultiEntrant()) {
+      // Multi-entrant match (Free-for-All qualifier, multi-man final): one team per entrant,
+      // resolved by the multi-team path so every participant lands in their own slot.
+      List<SegmentTeam> teams =
+          match.entrants().stream().map(entry -> new SegmentTeam(entry.getWrestler())).toList();
+      segment =
+          segmentResolutionService.resolveMultiTeamSegment(teams, segmentType, show, stipulation);
+    } else {
+      segment =
+          segmentResolutionService.resolveTeamSegment(
+              new SegmentTeam(match.getEntrant1().getWrestler()),
+              new SegmentTeam(match.getEntrant2().getWrestler()),
+              segmentType,
+              show,
+              stipulation);
+    }
     segment.setNarration(tournamentNotesOf(tournament, match, titleOnTheLine));
     if (titleOnTheLine && tournament.getLinkedTitle() != null) {
       segment.setIsTitleSegment(true);
@@ -1029,10 +1043,14 @@ public class TournamentTemplateBookingService {
    * matches the match result shown on the card.
    */
   private TournamentEntry pickBracketWinner(final TournamentMatch match, final Segment segment) {
-    boolean entrant1Won =
-        segment.getWinners().stream()
-            .anyMatch(w -> w.getId().equals(match.getEntrant1().getWrestler().getId()));
-    return entrant1Won ? match.getEntrant1() : match.getEntrant2();
+    // First segment winner that is one of the match's entrants — works for both the classic
+    // two-entrant shape and multi-entrant matches (any entrant can win a Free-for-All).
+    List<TournamentEntry> entrants = match.entrants();
+    return segment.getWinners().stream()
+        .flatMap(
+            winner -> entrants.stream().filter(e -> e.getWrestler().getId().equals(winner.getId())))
+        .findFirst()
+        .orElse(entrants.get(0));
   }
 
   private String roundNameOf(final TournamentMatch match) {

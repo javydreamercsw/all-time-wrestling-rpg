@@ -596,10 +596,13 @@ public class ShowTemplateListView extends Main {
     assignmentGrid.setHeight("150px");
     assignmentGrid.setItems(dialogAssignments);
 
-    assignmentTypeCombo = new ComboBox<>("Segment Type (event-only)");
+    assignmentTypeCombo = new ComboBox<>("Segment Type");
+    // Event-only formats were the original use (ATW-0331); tournament-fed rows may pick any
+    // active type now that multi-entrant tournaments exist (ATW-oloa) — e.g. a Free-for-All
+    // qualifier feeding a multi-man final. The AI never proposes event-only types (the prompt
+    // filters them); these rows are booker-configured, so the manual-selection caveat holds.
     assignmentTypeCombo.setItems(
         segmentTypeService.findAllForAdmin().stream()
-            .filter(SegmentType::isEventOnly)
             .sorted(Comparator.comparing(SegmentType::getName))
             .toList());
     assignmentTypeCombo.setItemLabelGenerator(SegmentType::getName);
