@@ -738,10 +738,15 @@ public class TournamentService {
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public void recordMatchResult(TournamentMatch match, TournamentEntry winner) {
-    TournamentEntry loser =
-        match.getEntrant1().equals(winner) ? match.getEntrant2() : match.getEntrant1();
-    loser.setStatus(TournamentEntryStatus.ELIMINATED);
-    entryRepository.save(loser);
+    // Every non-winning entrant is eliminated — for the classic two-entrant shape that is the
+    // single loser; for multi-entrant matches (ATW-oloa) everyone else in the Free-for-All is
+    // out too.
+    for (TournamentEntry entrant : match.entrants()) {
+      if (!entrant.equals(winner)) {
+        entrant.setStatus(TournamentEntryStatus.ELIMINATED);
+        entryRepository.save(entrant);
+      }
+    }
 
     match.setWinner(winner);
     matchRepository.save(match);

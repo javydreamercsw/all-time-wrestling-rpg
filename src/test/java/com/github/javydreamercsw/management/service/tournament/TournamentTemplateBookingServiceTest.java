@@ -43,6 +43,7 @@ import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntryStatus;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
+import com.github.javydreamercsw.management.domain.tournament.TournamentMatchParticipant;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRepository;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus;
@@ -439,6 +440,53 @@ class TournamentTemplateBookingServiceTest {
             team1Captor.capture(), team2Captor.capture(), eq(rumbleType), eq(show), eq(""));
     assertEquals("Alice", team1Captor.getValue().getMembers().get(0).getName());
     assertEquals("Bob", team2Captor.getValue().getMembers().get(0).getName());
+  }
+
+  @Test
+  void multiEntrantMatch_resolvesViaMultiTeamSegment() {
+    // A 3-man Free-for-All qualifier (ATW-oloa): every entrant books through the multi-team
+    // path — one SegmentTeam per entrant — not the two-team path.
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.ACTIVE);
+    TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ACTIVE);
+    Wrestler cara = wrestler(3L, "Cara");
+    TournamentEntry caraEntry = entry(cara, 3, TournamentEntryStatus.ACTIVE);
+    TournamentMatch match = match(1, aliceEntry, bobEntry);
+    match
+        .getParticipants()
+        .addAll(
+            List.of(
+                TournamentMatchParticipant.builder().match(match).entry(aliceEntry).slot(0).build(),
+                TournamentMatchParticipant.builder().match(match).entry(bobEntry).slot(1).build(),
+                TournamentMatchParticipant.builder()
+                    .match(match)
+                    .entry(caraEntry)
+                    .slot(2)
+                    .build()));
+    tournament.setRounds(new ArrayList<>(List.of(round(1, match))));
+
+    Segment booked = new Segment();
+    booked.setSegmentType(new SegmentType());
+    booked.addParticipant(alice, 1);
+    booked.addParticipant(bob, 2);
+    booked.addParticipant(cara, 3);
+    booked.setWinners(List.of(cara));
+    when(segmentResolutionService.resolveMultiTeamSegment(any(), any(), any(), any()))
+        .thenReturn(booked);
+
+    Optional<TournamentTemplateBookingService.TournamentBooking> booking =
+        service.bookTournamentFedSegment(assignment, rumbleType, show);
+
+    assertTrue(booking.isPresent());
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<SegmentTeam>> teamsCaptor = ArgumentCaptor.forClass(List.class);
+    Mockito.verify(segmentResolutionService)
+        .resolveMultiTeamSegment(teamsCaptor.capture(), eq(rumbleType), eq(show), eq(""));
+    assertEquals(
+        List.of("Alice", "Bob", "Cara"),
+        teamsCaptor.getValue().stream().map(t2 -> t2.getMembers().get(0).getName()).toList());
+    // The Free-for-All's winner mirrors into the bracket.
+    assertEquals(caraEntry, booking.get().segment() == null ? null : pickWinner(match, booked));
   }
 
   @Test
@@ -1143,5 +1191,16 @@ class TournamentTemplateBookingServiceTest {
     segment.addParticipant(b, 1);
     segment.setWinners(List.of(winner));
     return segment;
+  }
+
+  /** Mirrors the booking service's winner derivation for assertions. */
+  private static TournamentEntry pickWinner(TournamentMatch match, Segment segment) {
+    return match.entrants().stream()
+        .filter(
+            e ->
+                segment.getWinners().stream()
+                    .anyMatch(w -> w.getId().equals(e.getWrestler().getId())))
+        .findFirst()
+        .orElse(null);
   }
 }

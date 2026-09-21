@@ -205,3 +205,13 @@ These two binding mechanisms are mutually exclusive by design:
 - **Host show** (`Tournament.payoffShow`) — one-time tournaments. The show-attached booking path owns the tournament; any template pairing on it stays idle.
 - **PLE template pairing** (`ShowTemplateSegmentAssignment`) — recurring tournaments. The PLE template books the payoff every time that template runs; weekly templates pace the rounds.
 
+## Multi-Entrant Tournaments (Qualifier Groups → Multi-Man Final)
+
+The **Qualifier Groups** format runs N multi-wrestler qualifier matches feeding one M-entrant final — the classic shape for a Free-for-All tournament (e.g. 12 entrants in four 3-man qualifiers → a 4-man Free-for-All TLC title match at the payoff show).
+
+- **Bracket:** entrants split into balanced groups (aiming for 3-wrestler groups, adjusted for divisibility). Each wrestler plays exactly one qualifier; only group winners advance to the single final round.
+- **Booking:** multi-entrant matches book through the multi-team segment resolution — every entrant lands in their own team slot (the same layout the Edit Segment dialog shows). Two-entrant matches (including 2-qualifier finals) keep the classic path.
+- **Results:** recording a winner eliminates every other entrant in that match — a 6-man final crowns one winner and retires the other five.
+- **Match modeling:** the classic `entrant1`/`entrant2` columns remain the two-entrant case; matches with 3+ entrants carry ordered `tournament_match_participant` rows (the authoritative list, with the classic columns mirroring the first two slots).
+- **PLE template assignments** may now pick any segment type (not just event-only formats) — a Free-for-All qualifier round needs a Free-for-All assignment, which the old restriction blocked.
+

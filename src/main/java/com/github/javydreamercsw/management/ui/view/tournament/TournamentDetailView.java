@@ -61,6 +61,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -471,12 +472,13 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
     HorizontalLayout row = new HorizontalLayout();
     row.setAlignItems(Alignment.CENTER);
 
-    String e1 = match.getEntrant1().getWrestler().getName();
-    String e2 = match.getEntrant2().getWrestler().getName();
-    row.add(new Span(e1 + " vs " + e2));
+    List<TournamentEntry> entrants = match.entrants();
+    String label =
+        entrants.stream().map(e -> e.getWrestler().getName()).collect(Collectors.joining(" vs "));
+    row.add(new Span(label));
 
     ComboBox<TournamentEntry> winnerPicker = new ComboBox<>("Pick winner");
-    winnerPicker.setItems(match.getEntrant1(), match.getEntrant2());
+    winnerPicker.setItems(entrants);
     winnerPicker.setItemLabelGenerator(e -> e.getWrestler().getName());
 
     Button recordBtn =

@@ -45,6 +45,15 @@ public interface TournamentBracketModel {
 
     String getWrestler2Name();
 
+    /**
+     * Full entrant list for multi-entrant matches (Free-for-All qualifiers, multi-man finals —
+     * ATW-oloa): {@code name@id} beyond the first two slots renders as extra lines. Empty for the
+     * classic two-entrant shape.
+     */
+    default List<String> getExtraEntrantNames() {
+      return List.of();
+    }
+
     Long getWinnerId();
 
     /** True when this match involves the player's wrestler (campaign context only). */
