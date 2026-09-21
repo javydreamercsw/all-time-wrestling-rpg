@@ -181,4 +181,17 @@ class SingleEliminationFormatTest {
     w.setName("Wrestler " + seed);
     return TournamentEntry.builder().wrestler(w).seed(seed).build();
   }
+
+  @Test
+  void estimateTotalMatches_isEntrantsMinusOne() {
+    assertThat(format.estimateTotalMatches(tournamentWith8Entries())).isEqualTo(7);
+  }
+
+  @Test
+  void estimateTotalMatches_zeroWhenTooFewEntrants() {
+    Tournament tooSmall = new Tournament();
+    tooSmall.setFormatId("SINGLE_ELIMINATION");
+    tooSmall.setEntries(new ArrayList<>());
+    assertThat(format.estimateTotalMatches(tooSmall)).isZero();
+  }
 }

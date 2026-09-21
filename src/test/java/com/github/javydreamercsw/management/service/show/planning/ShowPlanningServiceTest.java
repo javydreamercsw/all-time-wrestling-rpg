@@ -445,6 +445,58 @@ class ShowPlanningServiceTest {
   }
 
   @Test
+  void testApproveSegments_showAttachedTournamentBooking_addsExtraSegment() {
+    // One-time show-attached tournament (ATW-xbn4): the trigger's bookings land on the card as
+    // extra segments with order/date/title flags applied — the AI never proposes them.
+    ShowTemplate template = new ShowTemplate();
+    template.setId(5L);
+    show.setTemplate(template);
+
+    ProposedSegment proposed = new ProposedSegment();
+    proposed.setType("One on One");
+    proposed.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+    proposed.setWinners(List.of("Wrestler A"));
+    when(segmentTypeService.findByName("One on One")).thenReturn(Optional.of(new SegmentType()));
+    when(wrestlerRepository.findByName("Wrestler A"))
+        .thenReturn(Optional.of(wrestlerNamed(1L, "Wrestler A")));
+    when(wrestlerRepository.findByName("Wrestler B"))
+        .thenReturn(Optional.of(wrestlerNamed(2L, "Wrestler B")));
+
+    SegmentType singlesType = new SegmentType();
+    singlesType.setId(11L);
+    singlesType.setName("One on One");
+    Segment tournamentBooked = new Segment();
+    tournamentBooked.setSegmentType(singlesType);
+    Wrestler entrant = wrestlerNamed(9L, "Cup Entrant");
+    tournamentBooked.addParticipant(entrant, 1);
+    tournamentBooked.setWinners(List.of(entrant));
+    Title title = new Title();
+    title.setId(7L);
+    title.setName("World Title");
+    when(tournamentTemplateBookingService.bookShowAttachedTournamentSegments(show))
+        .thenReturn(
+            List.of(
+                new TournamentTemplateBookingService.TournamentBooking(
+                    tournamentBooked, new Tournament(), "Final — tournament-fed", true, title)));
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+
+    showPlanningService.approveSegments(show, List.of(proposed));
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Segment>> segmentsCaptor = ArgumentCaptor.forClass(List.class);
+    verify(segmentRepository).saveAll(segmentsCaptor.capture());
+    List<Segment> saved = segmentsCaptor.getValue();
+    assertEquals(
+        2, saved.size(), "The show-attached tournament's payoff joins the AI-proposed segment");
+    Segment payoff = saved.get(1);
+    assertEquals("Cup Entrant", payoff.getParticipants().iterator().next().getWrestler().getName());
+    assertEquals(2, payoff.getSegmentOrder(), "Extra segment slots after the AI-proposed ones");
+    assertTrue(payoff.getIsTitleSegment(), "Payoff title flags apply to the saved segment");
+    assertTrue(payoff.getTitles().contains(title));
+    verify(tournamentTemplateBookingService).bookShowAttachedTournamentSegments(show);
+  }
+
+  @Test
   void testApproveSegments_noTournamentAssignment_normalPathUnaffected() {
     SegmentType singles = new SegmentType();
     singles.setId(30L);

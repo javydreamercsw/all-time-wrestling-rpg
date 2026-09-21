@@ -288,6 +288,40 @@ class BracketTournamentServiceTest {
         .hasMessageContaining("already entered");
   }
 
+  @Test
+  void isTitleVacant_readsFromReignTable() {
+    Title title = new Title();
+    title.setId(7L);
+    // Vacant — no active reign.
+    when(titleReignRepository.findByTitleIdAndEndDateIsNull(7L)).thenReturn(List.of());
+    assertThat(tournamentService.isTitleVacant(title)).isTrue();
+
+    // A reigning champion flips it — reign table read, not the in-memory title list.
+    TitleReign reign = new TitleReign();
+    Wrestler champion = wrestler(1L, "A", Gender.MALE, 800L);
+    reign.getChampions().add(champion);
+    lenient()
+        .when(titleReignRepository.findByTitleIdAndEndDateIsNull(7L))
+        .thenReturn(List.of(reign));
+    assertThat(tournamentService.isTitleVacant(title)).isFalse();
+  }
+
+  @Test
+  void currentChampionsOf_dedupesAndHandlesNull() {
+    assertThat(tournamentService.currentChampionsOf(null)).isEmpty();
+
+    Title title = new Title();
+    title.setId(7L);
+    Wrestler champion = wrestler(1L, "A", Gender.MALE, 800L);
+    TitleReign reign = new TitleReign();
+    reign.getChampions().add(champion);
+    // A tag-team title shared by two entrants in one reign, plus a second reign.
+    reign.getChampions().add(champion);
+    when(titleReignRepository.findByTitleIdAndEndDateIsNull(7L)).thenReturn(List.of(reign));
+
+    assertThat(tournamentService.currentChampionsOf(title)).containsExactly(champion);
+  }
+
   private static Wrestler wrestler(Long id, String name, Gender gender, Long fans) {
     Wrestler w = new Wrestler();
     w.setId(id);

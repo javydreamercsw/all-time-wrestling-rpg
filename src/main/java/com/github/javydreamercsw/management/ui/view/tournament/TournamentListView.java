@@ -18,12 +18,15 @@ package com.github.javydreamercsw.management.ui.view.tournament;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
+import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
+import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowFacade;
 import com.github.javydreamercsw.management.service.tournament.TournamentFormat;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
@@ -37,7 +40,6 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
-import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
@@ -75,8 +77,10 @@ public class TournamentListView extends VerticalLayout {
   private final TournamentService tournamentService;
   private final WrestlerFacade wrestlerFacade;
   private final SegmentRuleService segmentRuleService;
+  private final SegmentTypeService segmentTypeService;
   private final UniverseContextService universeContextService;
   private final SecurityUtils securityUtils;
+  private final ShowFacade showFacade;
 
   private Grid<Tournament> grid;
 
@@ -88,7 +92,9 @@ public class TournamentListView extends VerticalLayout {
       ViewContext viewContext) {
     this.tournamentService = tournamentService;
     this.wrestlerFacade = wrestlerFacade;
+    this.showFacade = showFacade;
     this.segmentRuleService = showFacade.getSegmentRuleService();
+    this.segmentTypeService = showFacade.getSegmentTypeService();
     this.universeContextService = viewContext.getUniverseContextService();
     this.securityUtils = viewContext.getSecurityUtils();
 
@@ -118,7 +124,16 @@ public class TournamentListView extends VerticalLayout {
     // instead of touching the collection (LazyInitializationException otherwise).
     g.addColumn(t -> tournamentService.countEntries(t)).setHeader("Entrants");
     g.addColumn(t -> t.getStatus().name()).setHeader("Status").setSortable(true);
-    g.addColumn(Tournament::getStartDate).setHeader("Start Date").setSortable(true);
+    // EAGER mapping — safe to read on detached rows (ATW-xbn4).
+    g.addColumn(
+            t ->
+                t.getPayoffShow() != null
+                    ? t.getPayoffShow().getName()
+                        + (t.getPayoffShow().getShowDate() != null
+                            ? " — " + t.getPayoffShow().getShowDate()
+                            : "")
+                    : "")
+        .setHeader("Host Show");
 
     g.addComponentColumn(this::buildRowActions).setHeader("Actions").setFlexGrow(0);
 
@@ -173,9 +188,42 @@ public class TournamentListView extends VerticalLayout {
     titleCombo.setWidthFull();
     titleCombo.setClearButtonVisible(true);
 
-    DatePicker startDate = new DatePicker("Start Date");
-    startDate.setValue(managed.getStartDate());
-    startDate.setWidthFull();
+    // One-time host-show binding (ATW-xbn4).
+    ComboBox<Show> hostShowCombo = new ComboBox<>("Host Show (optional)");
+    hostShowCombo.setItems(showFacade.getShowService().getUpcomingShows(50));
+    hostShowCombo.setItemLabelGenerator(
+        s -> s.getName() + (s.getShowDate() != null ? " — " + s.getShowDate() : ""));
+    hostShowCombo.setValue(managed.getPayoffShow());
+    hostShowCombo.setWidthFull();
+    hostShowCombo.setClearButtonVisible(true);
+    hostShowCombo.setAllowCustomValue(false);
+
+    ComboBox<SegmentType> payoffTypeCombo = new ComboBox<>("Payoff Match Type (optional)");
+    payoffTypeCombo.setItems(segmentTypeService.findAll());
+    payoffTypeCombo.setItemLabelGenerator(SegmentType::getName);
+    payoffTypeCombo.setValue(managed.getPayoffSegmentType());
+    payoffTypeCombo.setWidthFull();
+    payoffTypeCombo.setClearButtonVisible(true);
+    payoffTypeCombo.setHelperText("Defaults to One on One.");
+
+    ComboBox<SegmentRule> payoffRuleCombo = new ComboBox<>("Payoff Rule (optional)");
+    payoffRuleCombo.setItems(segmentRuleService.findAll());
+    payoffRuleCombo.setItemLabelGenerator(SegmentRule::getName);
+    payoffRuleCombo.setValue(managed.getPayoffSegmentRule());
+    payoffRuleCombo.setWidthFull();
+    payoffRuleCombo.setClearButtonVisible(true);
+    payoffTypeCombo.setEnabled(managed.getPayoffShow() != null);
+    payoffRuleCombo.setEnabled(managed.getPayoffShow() != null);
+    hostShowCombo.addValueChangeListener(
+        e -> {
+          boolean hasHost = e.getValue() != null;
+          payoffTypeCombo.setEnabled(hasHost);
+          payoffRuleCombo.setEnabled(hasHost);
+          if (!hasHost) {
+            payoffTypeCombo.clear();
+            payoffRuleCombo.clear();
+          }
+        });
 
     MultiSelectComboBox<SegmentRule> rulesPicker =
         new MultiSelectComboBox<>("Allowed Segment Rules (optional)");
@@ -200,8 +248,12 @@ public class TournamentListView extends VerticalLayout {
                     nameField.getValue(),
                     formatCombo.getValue() != null ? formatCombo.getValue().getFormatId() : null,
                     titleCombo.getValue(),
-                    startDate.getValue(),
-                    new ArrayList<>(rulesPicker.getSelectedItems()));
+                    managed.getStartDate(),
+                    new ArrayList<>(rulesPicker.getSelectedItems()),
+                    hostShowCombo.getValue(),
+                    payoffTypeCombo.getValue(),
+                    payoffRuleCombo.getValue(),
+                    true);
                 dialog.close();
                 refresh();
                 Notification.show("Tournament updated!", 3000, Notification.Position.BOTTOM_CENTER)
@@ -215,7 +267,15 @@ public class TournamentListView extends VerticalLayout {
     save.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
     dialog.getFooter().add(cancel, save);
-    dialog.add(new VerticalLayout(nameField, formatCombo, titleCombo, startDate, rulesPicker));
+    dialog.add(
+        new VerticalLayout(
+            nameField,
+            formatCombo,
+            titleCombo,
+            hostShowCombo,
+            payoffTypeCombo,
+            payoffRuleCombo,
+            rulesPicker));
     dialog.open();
   }
 
@@ -287,9 +347,55 @@ public class TournamentListView extends VerticalLayout {
     titleCombo.setItemLabelGenerator(Title::getName);
     titleCombo.setWidthFull();
 
-    DatePicker startDate = new DatePicker("Start Date");
-    startDate.setValue(LocalDate.now());
-    startDate.setWidthFull();
+    // One-time host-show binding (ATW-xbn4): the payoff books on this show exactly once; the
+    // non-final rounds pace automatically onto the weekly shows before it. Template pairing
+    // stays reserved for recurring tournaments.
+    ComboBox<Show> hostShowCombo = new ComboBox<>("Host Show (optional)");
+    hostShowCombo.setItems(
+        showFacade.getShowService().getUpcomingShows(50).stream()
+            .filter(
+                s ->
+                    universeContextService.getCurrentUniverse().isEmpty()
+                        || s.getUniverse() == null
+                        || universeContextService
+                            .getCurrentUniverse()
+                            .map(u -> u.getId().equals(s.getUniverse().getId()))
+                            .orElse(false))
+            .toList());
+    hostShowCombo.setItemLabelGenerator(
+        s -> s.getName() + (s.getShowDate() != null ? " — " + s.getShowDate() : ""));
+    hostShowCombo.setWidthFull();
+    hostShowCombo.setClearButtonVisible(true);
+    hostShowCombo.setAllowCustomValue(false);
+    hostShowCombo.setHelperText(
+        "Payoff books on this show exactly once; rounds pace onto the weekly shows before"
+            + " it automatically.");
+
+    ComboBox<SegmentType> payoffTypeCombo = new ComboBox<>("Payoff Match Type (optional)");
+    payoffTypeCombo.setItems(segmentTypeService.findAll());
+    payoffTypeCombo.setItemLabelGenerator(SegmentType::getName);
+    payoffTypeCombo.setWidthFull();
+    payoffTypeCombo.setClearButtonVisible(true);
+    payoffTypeCombo.setHelperText("Defaults to One on One.");
+
+    ComboBox<SegmentRule> payoffRuleCombo = new ComboBox<>("Payoff Rule (optional)");
+    payoffRuleCombo.setItems(segmentRuleService.findAll());
+    payoffRuleCombo.setItemLabelGenerator(SegmentRule::getName);
+    payoffRuleCombo.setWidthFull();
+    payoffRuleCombo.setClearButtonVisible(true);
+    // The payoff only exists on a show — keep the payoff pickers inert until a host is chosen.
+    payoffTypeCombo.setEnabled(false);
+    payoffRuleCombo.setEnabled(false);
+    hostShowCombo.addValueChangeListener(
+        e -> {
+          boolean hasHost = e.getValue() != null;
+          payoffTypeCombo.setEnabled(hasHost);
+          payoffRuleCombo.setEnabled(hasHost);
+          if (!hasHost) {
+            payoffTypeCombo.clear();
+            payoffRuleCombo.clear();
+          }
+        });
 
     MultiSelectComboBox<SegmentRule> rulesPicker =
         new MultiSelectComboBox<>("Allowed Segment Rules (optional)");
@@ -300,7 +406,14 @@ public class TournamentListView extends VerticalLayout {
         "Rules randomly applied to matches. A fixed rule can be set per round later.");
 
     VerticalLayout tab1Content =
-        new VerticalLayout(nameField, formatCombo, titleCombo, startDate, rulesPicker);
+        new VerticalLayout(
+            nameField,
+            formatCombo,
+            titleCombo,
+            hostShowCombo,
+            payoffTypeCombo,
+            payoffRuleCombo,
+            rulesPicker);
     tab1Content.setPadding(false);
 
     // Tab 2: Seeding
@@ -431,8 +544,11 @@ public class TournamentListView extends VerticalLayout {
                         formatCombo.getValue().getFormatId(),
                         universe.orElse(null),
                         titleCombo.getValue(),
-                        startDate.getValue(),
-                        new ArrayList<>(rulesPicker.getSelectedItems()));
+                        LocalDate.now(),
+                        new ArrayList<>(rulesPicker.getSelectedItems()),
+                        hostShowCombo.getValue(),
+                        payoffTypeCombo.getValue(),
+                        payoffRuleCombo.getValue());
 
                 boolean auto = "Auto (by fan count)".equals(seedingMode.getValue());
                 boolean manual = "Manual (pick wrestlers)".equals(seedingMode.getValue());

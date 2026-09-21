@@ -40,6 +40,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.tournament.TournamentMatchRepository;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
@@ -193,6 +194,7 @@ public class ShowDetailView extends Main
   private final NarrationParserService narrationParserService;
   private final DramaEventService dramaEventService;
   private final FeudScriptService feudScriptService;
+  private final TournamentMatchRepository tournamentMatchRepository;
 
   @Autowired
   public ShowDetailView(
@@ -210,7 +212,8 @@ public class ShowDetailView extends Main
       final CommentaryTeamRepository commentaryTeamRepository,
       final RingsideActionService ringsideActionService,
       final ShowExportService exportService,
-      final LeagueRepository leagueRepository) {
+      final LeagueRepository leagueRepository,
+      final TournamentMatchRepository tournamentMatchRepository) {
     this.showService = showFacade.getShowService();
     this.segmentService = showFacade.getSegmentService();
     this.segmentRepository = segmentRepository;
@@ -243,6 +246,7 @@ public class ShowDetailView extends Main
     this.narrationParserService = showFacade.getNarrationParserService();
     this.dramaEventService = showFacade.getDramaEventService();
     this.feudScriptService = showFacade.getFeudScriptService();
+    this.tournamentMatchRepository = tournamentMatchRepository;
     this.expansionService = viewContext.getExpansionService();
     this.gameSettingService = viewContext.getGameSettingService();
     initializeComponents();
@@ -933,29 +937,46 @@ public class ShowDetailView extends Main
                   });
         });
 
-    // Story arc badge — shown when the segment was produced by a FeudScriptBeat
+    // Source badge — shows where the segment came from: a story-arc beat, a tournament slot
+    // (fed from the bracket), or nothing for AI-proposed/manual segments.
     grid.addComponentColumn(
             segment -> {
-              return feudScriptService
-                  .findBeatForSegment(segment)
-                  .map(
-                      beat -> {
-                        String arcName = beat.getScript().getName();
-                        Span badge = new Span("🎭 " + arcName);
-                        badge.getElement().getThemeList().add("badge contrast");
-                        badge.addClassNames(
-                            LumoUtility.FontSize.XSMALL, LumoUtility.FontWeight.SEMIBOLD);
-                        Tooltip.forComponent(badge)
-                            .setText(
-                                "Story Arc beat #"
-                                    + beat.getBeatOrder()
-                                    + " — "
-                                    + beat.getScript().getName());
-                        return (Component) badge;
-                      })
-                  .orElse(new Span(""));
+              Span badge = new Span();
+              var beat = feudScriptService.findBeatForSegment(segment);
+              if (beat.isPresent()) {
+                String arcName = beat.get().getScript().getName();
+                badge.setText("🎭 " + arcName);
+                badge.getElement().getThemeList().add("badge contrast");
+                badge.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.FontWeight.SEMIBOLD);
+                badge
+                    .getElement()
+                    .setAttribute(
+                        "title",
+                        "Story Arc beat #"
+                            + beat.get().getBeatOrder()
+                            + " — "
+                            + beat.get().getScript().getName());
+                return (Component) badge;
+              }
+              // Tournament-fed segment: it belongs to a bracket match booked on this show.
+              var tournamentMatch = tournamentMatchRepository.findBySegmentId(segment.getId());
+              if (tournamentMatch.isPresent()) {
+                badge.setText("🏆 " + tournamentMatch.get().getRound().getTournament().getName());
+                badge.getElement().getThemeList().add("badge success");
+                badge.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.FontWeight.SEMIBOLD);
+                badge
+                    .getElement()
+                    .setAttribute(
+                        "title",
+                        "Tournament match — "
+                            + tournamentMatch.get().getRound().getRoundName()
+                            + " of "
+                            + tournamentMatch.get().getRound().getTournament().getName());
+                return (Component) badge;
+              }
+              return (Component) badge;
             })
-        .setHeader("Arc")
+        .setHeader("Source")
         .setAutoWidth(true)
         .setFlexGrow(0);
 
@@ -992,29 +1013,45 @@ public class ShowDetailView extends Main
         .setSortable(false)
         .setFlexGrow(2);
 
-    // Story arc badge — shown when the segment was produced by a FeudScriptBeat
+    // Source badge — shows where the segment came from: a story-arc beat, a tournament slot
+    // (fed from the bracket), or nothing for AI-proposed/manual segments.
     grid.addComponentColumn(
             segment -> {
-              return feudScriptService
-                  .findBeatForSegment(segment)
-                  .map(
-                      beat -> {
-                        String arcName = beat.getScript().getName();
-                        Span badge = new Span("🎭 " + arcName);
-                        badge.getElement().getThemeList().add("badge contrast");
-                        badge.addClassNames(
-                            LumoUtility.FontSize.XSMALL, LumoUtility.FontWeight.SEMIBOLD);
-                        Tooltip.forComponent(badge)
-                            .setText(
-                                "Story Arc beat #"
-                                    + beat.getBeatOrder()
-                                    + " — "
-                                    + beat.getScript().getName());
-                        return (Component) badge;
-                      })
-                  .orElse(new Span(""));
+              Span badge = new Span();
+              var beat = feudScriptService.findBeatForSegment(segment);
+              if (beat.isPresent()) {
+                String arcName = beat.get().getScript().getName();
+                badge.setText("🎭 " + arcName);
+                badge.getElement().getThemeList().add("badge contrast");
+                badge.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.FontWeight.SEMIBOLD);
+                badge
+                    .getElement()
+                    .setAttribute(
+                        "title",
+                        "Story Arc beat #"
+                            + beat.get().getBeatOrder()
+                            + " — "
+                            + beat.get().getScript().getName());
+                return (Component) badge;
+              }
+              var tournamentMatch = tournamentMatchRepository.findBySegmentId(segment.getId());
+              if (tournamentMatch.isPresent()) {
+                badge.setText("🏆 " + tournamentMatch.get().getRound().getTournament().getName());
+                badge.getElement().getThemeList().add("badge success");
+                badge.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.FontWeight.SEMIBOLD);
+                badge
+                    .getElement()
+                    .setAttribute(
+                        "title",
+                        "Tournament match — "
+                            + tournamentMatch.get().getRound().getRoundName()
+                            + " of "
+                            + tournamentMatch.get().getRound().getTournament().getName());
+                return (Component) badge;
+              }
+              return (Component) badge;
             })
-        .setHeader("Arc")
+        .setHeader("Source")
         .setAutoWidth(true)
         .setFlexGrow(0);
 

@@ -205,16 +205,19 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
     Span status = new Span("Status: " + tournament.getStatus().name());
     Span format = new Span("Format: " + tournament.getFormatId().replace('_', ' '));
     Span entrants = new Span("Entrants: " + tournament.getEntries().size());
-    Span startDate =
-        new Span(
-            "Start: "
-                + (tournament.getStartDate() != null
-                    ? tournament.getStartDate().toString()
-                    : "TBD"));
 
-    info.add(status, format, entrants, startDate);
+    info.add(status, format, entrants);
     if (tournament.getLinkedTitle() != null) {
       info.add(new Span("Championship: " + tournament.getLinkedTitle().getName()));
+    }
+    if (tournament.getPayoffShow() != null) {
+      // One-time tournament (ATW-xbn4): the payoff books on this show.
+      Show host = tournament.getPayoffShow();
+      info.add(
+          new Span(
+              "Host Show: "
+                  + host.getName()
+                  + (host.getShowDate() != null ? " (" + host.getShowDate() + ")" : "")));
     }
 
     List<SegmentRule> rules = tournament.getAllowedRules();

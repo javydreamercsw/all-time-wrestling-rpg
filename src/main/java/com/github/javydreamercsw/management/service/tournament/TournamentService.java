@@ -21,6 +21,7 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.reservation.ShowSegmentReservationPurpose;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
@@ -142,6 +143,10 @@ public class TournamentService {
     if (t.getLinkedTitle() != null) {
       t.getLinkedTitle().getName();
     }
+    // The one-time host show (ATW-xbn4) — defensive touch in case the fetch type ever changes.
+    if (t.getPayoffShow() != null) {
+      t.getPayoffShow().getName();
+    }
     t.getRounds()
         .forEach(
             r -> {
@@ -173,6 +178,28 @@ public class TournamentService {
       Title linkedTitle,
       LocalDate startDate,
       List<SegmentRule> allowedRules) {
+    return createTournament(
+        name, formatId, universe, linkedTitle, startDate, allowedRules, null, null, null);
+  }
+
+  /**
+   * Create with the one-time host-show binding (ATW-xbn4): the payoff books on {@code payoffShow}
+   * exactly once and rounds pace automatically onto the weekly shows before it. A null payoffShow
+   * creates a free-running (or recurring template-paired) tournament.
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public Tournament createTournament(
+      String name,
+      String formatId,
+      Universe universe,
+      Title linkedTitle,
+      LocalDate startDate,
+      List<SegmentRule> allowedRules,
+      Show payoffShow,
+      SegmentType payoffSegmentType,
+      SegmentRule payoffSegmentRule) {
+    validatePayoffShow(universe, payoffShow);
     findFormat(formatId)
         .orElseThrow(() -> new IllegalArgumentException("Unknown format: " + formatId));
     Tournament t = new Tournament();
@@ -180,12 +207,25 @@ public class TournamentService {
     t.setFormatId(formatId);
     t.setUniverse(universe);
     t.setLinkedTitle(linkedTitle);
+    t.setPayoffShow(payoffShow);
+    t.setPayoffSegmentType(payoffSegmentType);
+    t.setPayoffSegmentRule(payoffSegmentRule);
     t.setStartDate(startDate);
     t.setStatus(TournamentStatus.SCHEDULED);
     t.setEntries(new ArrayList<>());
     t.setRounds(new ArrayList<>());
     t.setAllowedRules(allowedRules != null ? new ArrayList<>(allowedRules) : new ArrayList<>());
     return tournamentRepository.save(t);
+  }
+
+  /** The host show must live in the tournament's universe — validated at creation/edit time. */
+  private void validatePayoffShow(Universe universe, Show payoffShow) {
+    if (payoffShow != null
+        && universe != null
+        && payoffShow.getUniverse() != null
+        && !payoffShow.getUniverse().getId().equals(universe.getId())) {
+      throw new IllegalArgumentException("Host show must belong to the tournament's universe");
+    }
   }
 
   /**
@@ -201,6 +241,27 @@ public class TournamentService {
       final Title linkedTitle,
       final LocalDate startDate,
       final List<SegmentRule> allowedRules) {
+    return updateTournament(
+        id, name, formatId, linkedTitle, startDate, allowedRules, null, null, null, false);
+  }
+
+  /**
+   * Update with the one-time host-show binding (ATW-xbn4). {@code setPayoffFields} false (the
+   * compat delegate) leaves the existing payoff fields untouched; the wizard's save passes true.
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public Tournament updateTournament(
+      @NonNull final Long id,
+      @NonNull final String name,
+      final String formatId,
+      final Title linkedTitle,
+      final LocalDate startDate,
+      final List<SegmentRule> allowedRules,
+      final Show payoffShow,
+      final SegmentType payoffSegmentType,
+      final SegmentRule payoffSegmentRule,
+      final boolean setPayoffFields) {
     Tournament t =
         tournamentRepository
             .findById(id)
@@ -208,6 +269,9 @@ public class TournamentService {
     if (t.getStatus() != TournamentStatus.SCHEDULED) {
       throw new IllegalStateException(
           "Only SCHEDULED tournaments can be edited — '" + t.getName() + "' is " + t.getStatus());
+    }
+    if (setPayoffFields) {
+      validatePayoffShow(t.getUniverse(), payoffShow);
     }
     t.setName(name);
     if (formatId != null && !formatId.equals(t.getFormatId())) {
@@ -222,7 +286,23 @@ public class TournamentService {
     t.setLinkedTitle(linkedTitle);
     t.setStartDate(startDate);
     t.setAllowedRules(allowedRules != null ? new ArrayList<>(allowedRules) : new ArrayList<>());
+    if (setPayoffFields) {
+      t.setPayoffShow(payoffShow);
+      t.setPayoffSegmentType(payoffSegmentType);
+      t.setPayoffSegmentRule(payoffSegmentRule);
+    }
     return tournamentRepository.save(t);
+  }
+
+  /**
+   * Detach a one-time tournament from its host show so the payoff cannot fire twice (ATW-xbn4). The
+   * booking service calls this once the payoff segment exists.
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public void clearPayoffShow(@NonNull Tournament tournament) {
+    tournament.setPayoffShow(null);
+    tournamentRepository.save(tournament);
   }
 
   /**

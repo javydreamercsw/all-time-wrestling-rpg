@@ -24,4 +24,10 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long> {
   List<Tournament> findByUniverseIdOrderByStartDateDesc(Long universeId);
 
   List<Tournament> findByStatus(TournamentStatus status);
+
+  /** One-time tournaments whose payoff books on the given show (ATW-xbn4). */
+  List<Tournament> findByPayoffShowId(Long payoffShowId);
+
+  /** Show-attached tournaments of a universe — the paced-rounds scan (ATW-xbn4). */
+  List<Tournament> findByUniverseIdAndPayoffShowIsNotNull(Long universeId);
 }

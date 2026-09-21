@@ -221,6 +221,23 @@ class TournamentDocsE2ETest extends AbstractDocsE2ETest {
         "booker-tournament-seed-editing");
   }
 
+  @Test
+  void captureTournamentCreationWizardHostShow() {
+    navigateToAndWaitForElement("tournament-list", By.tagName("vaadin-grid"));
+    clickButtonByText("New Tournament");
+    waitForVaadinElement(driver, By.xpath("//*[contains(text(), 'Host Show')]"));
+
+    documentFeature(
+        "Booker",
+        "One-Time Tournament on a Host Show",
+        "For a one-off tournament, attach it directly to a show instead of pairing it with"
+            + " a PLE template (that stays reserved for recurring tournaments). Pick a host"
+            + " show and the payoff books there exactly once — rounds pace automatically onto"
+            + " the weekly shows before it. The payoff match type and rule default to"
+            + " One-on-One but can be anything, e.g. a Free-for-All TLC match for a title.",
+        "booker-tournament-host-show");
+  }
+
   private List<Wrestler> seedWrestlers(String... names) {
     List<Wrestler> result = new ArrayList<>();
     for (String name : names) {

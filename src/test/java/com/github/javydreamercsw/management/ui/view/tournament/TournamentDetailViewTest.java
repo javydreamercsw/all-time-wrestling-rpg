@@ -22,6 +22,7 @@ import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.lenient;
@@ -29,6 +30,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
@@ -47,6 +49,8 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.Span;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -154,6 +158,32 @@ class TournamentDetailViewTest extends AbstractViewTest {
     w.setActive(true);
     w.setGender(Gender.MALE);
     return w;
+  }
+
+  @Test
+  @DisplayName("Tournament with a host show displays it in the info section")
+  void hostShow_displaysInInfoSection() {
+    Show host = new Show();
+    host.setId(9L);
+    host.setName("Crown Cup Final");
+    host.setShowDate(LocalDate.of(2026, 6, 22));
+    tournament.setPayoffShow(host);
+
+    buildView();
+
+    List<Span> hostSpans =
+        _find(
+            view,
+            Span.class,
+            spec ->
+                spec.withPredicate(
+                    (Predicate<Span>)
+                        span ->
+                            span.getText() != null
+                                && span.getText().startsWith("Host Show: Crown Cup Final")));
+    assertEquals(
+        1, hostSpans.size(), "The host show (with its date) must render in the info section");
+    assertTrue(hostSpans.get(0).getText().contains("2026-06-22"));
   }
 
   private static List<Button> buttonsWithTooltip(Component root, String tooltipSubstring) {

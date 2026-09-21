@@ -297,9 +297,9 @@ public class TournamentService {
       Segment segment = segmentService.createSegment(show, type, date);
       segment.setNarration("Tournament Match: " + w1.getName() + " vs " + w2.getName());
 
-      // Add Participants
-      segmentService.addParticipant(segment, w1);
-      segmentService.addParticipant(segment, w2);
+      // Add Participants (opposing sides of a bracket match)
+      segmentService.addParticipant(segment, w1, 1);
+      segmentService.addParticipant(segment, w2, 2);
 
       // Determine Winner
       Wrestler winner = winnerId.equals(w1.getId()) ? w1 : w2;
