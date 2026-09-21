@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -336,7 +337,7 @@ public class ShowPlanningAiService {
     if (shape == null) {
       return 1;
     }
-    var matcher = java.util.regex.Pattern.compile("(\\d+) round matches?").matcher(shape);
+    var matcher = Pattern.compile("(\\d+) round matches?").matcher(shape);
     return matcher.find() ? Math.max(1, Integer.parseInt(matcher.group(1))) : 1;
   }
 

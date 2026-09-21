@@ -35,7 +35,9 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
+import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowFacade;
+import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.tournament.TournamentFormat;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
@@ -82,11 +84,9 @@ class TournamentListViewTest extends AbstractViewTest {
   @Mock private ViewContext viewContext;
   @Mock private SegmentRuleService segmentRuleService;
 
-  @Mock
-  private com.github.javydreamercsw.management.service.segment.type.SegmentTypeService
-      segmentTypeService;
+  @Mock private SegmentTypeService segmentTypeService;
 
-  @Mock private com.github.javydreamercsw.management.service.show.ShowService showService;
+  @Mock private ShowService showService;
   @Mock private UniverseContextService universeContextService;
   @Mock private SecurityUtils securityUtils;
   @Mock private TitleService titleService;

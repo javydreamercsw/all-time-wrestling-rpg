@@ -50,6 +50,7 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningDtoMapper;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRivalryDTO;
+import com.github.javydreamercsw.management.service.show.planning.dto.TournamentSlotPreviewDTO;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.tournament.TournamentTemplateBookingService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -337,9 +338,7 @@ public class ShowPlanningService {
         tournamentTemplateBookingService.previewShowAttachedTournamentSlots(show).stream()
             .map(
                 p -> {
-                  var slotDto =
-                      new com.github.javydreamercsw.management.service.show.planning.dto
-                          .TournamentSlotPreviewDTO();
+                  var slotDto = new TournamentSlotPreviewDTO();
                   slotDto.setTournamentName(p.tournamentName());
                   slotDto.setTypeName(p.typeName());
                   slotDto.setRuleName(p.ruleName());

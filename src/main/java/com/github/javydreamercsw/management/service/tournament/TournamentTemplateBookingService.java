@@ -963,10 +963,6 @@ public class TournamentTemplateBookingService {
         .findFirst();
   }
 
-  private String stipulationOf(final ShowTemplateSegmentAssignment assignment) {
-    return stipulationOf(assignment.getSegmentRule());
-  }
-
   private String stipulationOf(@Nullable final SegmentRule rule) {
     return rule != null ? rule.getName() : "";
   }
