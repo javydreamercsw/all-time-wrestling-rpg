@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.Month;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -369,6 +370,12 @@ public class ShowTemplateService {
       copy.setSegmentType(row.getSegmentType());
       copy.setSegmentRule(row.getSegmentRule());
       copy.setTournament(row.getTournament());
+      copy.setSpecName(row.getSpecName());
+      copy.setSpecFormatId(row.getSpecFormatId());
+      copy.setSpecEntrantCount(row.getSpecEntrantCount());
+      copy.setSpecFinalRule(row.getSpecFinalRule());
+      copy.setSpecTitle(row.getSpecTitle());
+      copy.setSpecAllowedRules(new ArrayList<>(row.getSpecAllowedRules()));
       copy.setMode(row.getMode());
       if (!copy.isValid()) {
         throw new IllegalArgumentException(
