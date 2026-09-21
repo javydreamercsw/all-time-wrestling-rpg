@@ -249,7 +249,7 @@ class QualifierGroupsFormatTest {
     Tournament t = new Tournament();
     t.setFormatId(QualifierGroupsFormat.FORMAT_ID);
     List<TournamentEntry> entries = new ArrayList<>();
-    for (int i = 1; i <= count; i++) {
+    for (int i = 1; i < count + 1; i++) {
       entries.add(entry(i));
     }
     t.setEntries(entries);

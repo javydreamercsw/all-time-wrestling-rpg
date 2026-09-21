@@ -69,10 +69,14 @@ public class TournamentMatch {
    * Full ordered entrant list for multi-entrant matches (ATW-oloa): three or more entrants carry
    * every participant here, slot 0..n-1. Two-entrant matches leave this empty and use {@link
    * #entrant1}/{@link #entrant2} — {@link #entrants()} normalizes both shapes.
+   *
+   * <p>EAGER: the bracket renders on detached rows outside a transaction (list/detail views) — a
+   * lazy collection here would throw LazyInitializationException in the UI (same reason payoffShow
+   * is EAGER on Tournament, ATW-xbn4).
    */
   @OneToMany(
       mappedBy = "match",
-      fetch = FetchType.LAZY,
+      fetch = FetchType.EAGER,
       cascade = CascadeType.ALL,
       orphanRemoval = true)
   @OrderBy("slot ASC")
