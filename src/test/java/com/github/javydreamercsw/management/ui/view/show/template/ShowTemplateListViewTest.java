@@ -39,6 +39,7 @@ import com.github.javydreamercsw.management.service.show.ShowContextFacade;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.grid.Grid;
@@ -67,6 +68,7 @@ class ShowTemplateListViewTest extends AbstractViewTest {
   @Mock private SegmentRuleService segmentRuleService;
   @Mock private ShowContextFacade showContextFacade;
   @Mock private TournamentService tournamentService;
+  @Mock private WrestlerFacade wrestlerFacade;
 
   private ShowTemplateListView view;
 
@@ -78,6 +80,12 @@ class ShowTemplateListViewTest extends AbstractViewTest {
     lenient().when(segmentTypeService.findAllForAdmin()).thenReturn(Collections.emptyList());
     lenient().when(segmentRuleService.findAll()).thenReturn(Collections.emptyList());
     lenient().when(tournamentService.findAll()).thenReturn(Collections.emptyList());
+    lenient().when(tournamentService.getAvailableFormats()).thenReturn(Collections.emptyList());
+    lenient()
+        .when(wrestlerFacade.getTitleService())
+        .thenReturn(
+            Mockito.mock(com.github.javydreamercsw.management.service.title.TitleService.class));
+    lenient().when(wrestlerFacade.getTitleService().findAll()).thenReturn(Collections.emptyList());
     lenient().when(showContextFacade.getTournamentService()).thenReturn(tournamentService);
     lenient().when(securityUtils.canCreate()).thenReturn(true);
     lenient().when(securityUtils.canEdit()).thenReturn(true);
@@ -93,7 +101,8 @@ class ShowTemplateListViewTest extends AbstractViewTest {
             aiSettingsService,
             segmentTypeService,
             segmentRuleService,
-            showContextFacade);
+            showContextFacade,
+            wrestlerFacade);
     UI.getCurrent().add(view);
   }
 
@@ -221,5 +230,78 @@ class ShowTemplateListViewTest extends AbstractViewTest {
 
   private static void assertEquals(int expected, int actual, String message) {
     Assertions.assertEquals(expected, actual, message);
+  }
+
+  @Test
+  @DisplayName("Saving a spec assignment row round-trips the full spec (ATW-etws)")
+  void saveTemplate_syncsSpecAssignment() {
+    ShowTemplate template = new ShowTemplate();
+    template.setId(5L);
+    template.setName("Spec PLE");
+    template.setShowType(showType("PLE"));
+    when(showTemplateService.getTemplateWithAssignments(5L)).thenReturn(Optional.of(template));
+
+    view.openEditDialogForTest(template);
+    view.addSpecAssignmentForTest(
+        "Deadly Combat",
+        "SINGLE_ELIMINATION",
+        8,
+        ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH);
+    view.saveTemplateForTest();
+
+    Mockito.verify(showTemplateService)
+        .syncSegmentAssignments(
+            ArgumentMatchers.eq(5L),
+            ArgumentMatchers.argThat(
+                rows ->
+                    rows.size() == 1
+                        && "Deadly Combat".equals(rows.get(0).getSpecName())
+                        && "SINGLE_ELIMINATION".equals(rows.get(0).getSpecFormatId())
+                        && Integer.valueOf(8).equals(rows.get(0).getSpecEntrantCount())
+                        && rows.get(0).getMode()
+                            == ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH));
+  }
+
+  @Test
+  @DisplayName("Edit dialog preserves the tournament reference and spec fields (ATW-etws bug)")
+  void editDialog_preservesTournamentAndSpecFields() {
+    // Regression for the openEditDialog copy loop dropping tournament/spec on re-save.
+    ShowTemplate template = new ShowTemplate();
+    template.setId(6L);
+    template.setName("Copy PLE");
+    template.setShowType(showType("PLE"));
+    Tournament existing = new Tournament();
+    existing.setId(9L);
+    existing.setName("Crown Cup");
+    SegmentRule finalRule = rule("Barbwire Exploding Deathmatch");
+    ShowTemplateSegmentAssignment specRow = new ShowTemplateSegmentAssignment();
+    specRow.setTemplate(template);
+    specRow.setTournament(existing);
+    specRow.setSpecName("Deadly Combat");
+    specRow.setSpecFormatId("SINGLE_ELIMINATION");
+    specRow.setSpecEntrantCount(8);
+    specRow.setSpecFinalRule(finalRule);
+    specRow.getSpecAllowedRules().add(rule("No DQ"));
+    specRow.setMode(ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH);
+    template.getSegmentAssignments().add(specRow);
+    when(showTemplateService.getTemplateWithAssignments(6L)).thenReturn(Optional.of(template));
+
+    view.openEditDialogForTest(template);
+    view.saveTemplateForTest();
+
+    Mockito.verify(showTemplateService)
+        .syncSegmentAssignments(
+            ArgumentMatchers.eq(6L),
+            ArgumentMatchers.argThat(
+                rows ->
+                    rows.size() == 1
+                        && rows.get(0).getTournament() == existing
+                        && "Deadly Combat".equals(rows.get(0).getSpecName())
+                        && "SINGLE_ELIMINATION".equals(rows.get(0).getSpecFormatId())
+                        && Integer.valueOf(8).equals(rows.get(0).getSpecEntrantCount())
+                        && "Barbwire Exploding Deathmatch"
+                            .equals(rows.get(0).getSpecFinalRule().getName())
+                        && rows.get(0).getSpecAllowedRules().stream()
+                            .anyMatch(r -> "No DQ".equals(r.getName()))));
   }
 }
