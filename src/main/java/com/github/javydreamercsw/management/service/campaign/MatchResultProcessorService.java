@@ -49,6 +49,7 @@ import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.tournament.WellKnownTournament;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
@@ -359,7 +360,7 @@ public class MatchResultProcessorService {
 
       if (!isFinalsPhase || tournamentService.getTournamentState(campaign) == null) {
         featureDataService.setFeatureValue(state, KEY_FINALS_PHASE, true);
-        tournamentService.initializeTournament(campaign);
+        tournamentService.initializeTournament(campaign, currentChapter.getTournamentCode());
       }
 
       Show currentShow = state.getCurrentMatch().getShow();
@@ -390,15 +391,23 @@ public class MatchResultProcessorService {
       if (tournamentService.isPlayerChampion(campaign)) {
         log.info("Wrestler {} WON the tournament finals!", wrestler.getName());
         featureDataService.setFeatureValue(state, KEY_TOURNAMENT_WINNER, true);
-        int wins =
-            featureDataService.getFeatureValue(state, KEY_DEADLY_COMBAT_WINS, Integer.class, 0);
-        featureDataService.setFeatureValue(state, KEY_DEADLY_COMBAT_WINS, wins + 1);
-        if (campaign.getWrestler().getAccount() != null) {
-          Map<String, Object> ctx = Map.of(KEY_DEADLY_COMBAT_WINS, wins + 1);
-          scriptedAchievementEvaluator
-              .resolveNewlyUnlockedKeys(campaign.getWrestler().getAccount(), ctx)
-              .forEach(
-                  key -> legacyService.unlockAchievement(campaign.getWrestler().getAccount(), key));
+        // Deadly Combat counter + achievement only apply to the deadly_combat catalog tournament
+        // (ATW-vg16). Checking the CHAPTER keeps in-flight campaigns working: their saved state
+        // predates TournamentDTO.code, but the chapter JSON now carries tournamentCode.
+        if (WellKnownTournament.DEADLY_COMBAT
+            .getCode()
+            .equals(currentChapter.getTournamentCode())) {
+          int wins =
+              featureDataService.getFeatureValue(state, KEY_DEADLY_COMBAT_WINS, Integer.class, 0);
+          featureDataService.setFeatureValue(state, KEY_DEADLY_COMBAT_WINS, wins + 1);
+          if (campaign.getWrestler().getAccount() != null) {
+            Map<String, Object> ctx = Map.of(KEY_DEADLY_COMBAT_WINS, wins + 1);
+            scriptedAchievementEvaluator
+                .resolveNewlyUnlockedKeys(campaign.getWrestler().getAccount(), ctx)
+                .forEach(
+                    key ->
+                        legacyService.unlockAchievement(campaign.getWrestler().getAccount(), key));
+          }
         }
         awardTitleToWinner(wrestler.getId(), finalShow);
       } else {

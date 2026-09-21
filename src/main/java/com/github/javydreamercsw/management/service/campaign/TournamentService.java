@@ -34,6 +34,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.TournamentDTO;
 import com.github.javydreamercsw.management.dto.campaign.TournamentDTO.TournamentMatch;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
+import jakarta.annotation.Nullable;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -66,6 +67,19 @@ public class TournamentService {
 
   @Transactional
   public void initializeTournament(@NonNull final Campaign campaign) {
+    initializeTournament(campaign, null);
+  }
+
+  /**
+   * Initializes the chapter tournament bracket, stamping it with the chapter's catalog code (e.g.
+   * {@code deadly_combat}) so downstream rewards can be scoped to that tournament (ATW-vg16).
+   *
+   * @param tournamentCode catalog tournament code from the chapter definition, or null when the
+   *     chapter has no catalog identity
+   */
+  @Transactional
+  public void initializeTournament(
+      @NonNull final Campaign campaign, @Nullable final String tournamentCode) {
     CampaignState state = campaign.getState();
     if (getTournamentState(campaign) != null) {
       return; // Already initialized
@@ -102,6 +116,7 @@ public class TournamentService {
 
     TournamentDTO tournament = new TournamentDTO();
     tournament.setTotalRounds(totalRounds);
+    tournament.setCode(tournamentCode);
     List<TournamentMatch> matches = new ArrayList<>();
 
     // Round 1 Generation
