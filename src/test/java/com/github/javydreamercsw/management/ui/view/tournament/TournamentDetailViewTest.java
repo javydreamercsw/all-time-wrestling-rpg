@@ -34,6 +34,9 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
+import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
+import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
+import com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus;
 import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
@@ -286,5 +289,42 @@ class TournamentDetailViewTest extends AbstractViewTest {
     assertEquals(0, buttonsWithTooltip(view, "Move up one seed").size());
     assertEquals(0, _find(view, Button.class, spec -> spec.withText("Replace")).size());
     verify(tournamentService, never()).reorderSeeds(anyLong(), any());
+  }
+
+  @Test
+  @DisplayName("Open bracket match renders an entrants label and a winner picker")
+  void openMatch_rendersRecordRowWithWinnerPicker() {
+    // ATW-oloa/ATW-xbn4: the record row's label joins every entrant's name ("A vs B", or more
+    // for multi-entrant matches) and the winner picker offers the bracket's entrants.
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    TournamentMatch open =
+        TournamentMatch.builder().entrant1(entries.get(0)).entrant2(entries.get(1)).build();
+    TournamentRound round =
+        TournamentRound.builder()
+            .roundNumber(1)
+            .roundName("Round 1")
+            .status(TournamentRoundStatus.IN_PROGRESS)
+            .matches(new ArrayList<>(List.of(open)))
+            .build();
+    open.setRound(round);
+    tournament.setRounds(new ArrayList<>(List.of(round)));
+
+    buildView();
+
+    Span label =
+        _find(
+                view,
+                Span.class,
+                spec ->
+                    spec.withPredicate(
+                        (Predicate<Span>)
+                            span -> span.getText() != null && span.getText().contains(" vs ")))
+            .get(0);
+    assertTrue(
+        label.getText().startsWith("Alpha vs Bravo"),
+        "The row label names the bracket's entrants: " + label.getText());
+    ComboBox<TournamentEntry> picker =
+        _get(view, ComboBox.class, spec -> spec.withCaption("Pick winner"));
+    assertEquals(2, picker.getListDataView().getItemCount());
   }
 }

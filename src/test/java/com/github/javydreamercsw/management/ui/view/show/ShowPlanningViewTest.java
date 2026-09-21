@@ -109,6 +109,7 @@ class ShowPlanningViewTest extends AbstractViewTest {
   @Mock private UniverseContextService universeContextService;
   @Mock private ExpansionService expansionService;
   @Mock private TeamService teamService;
+  @Mock private TournamentTemplateBookingService tournamentTemplateBookingService;
 
   @BeforeEach
   public void setUp() {
@@ -133,7 +134,7 @@ class ShowPlanningViewTest extends AbstractViewTest {
             showPlanningAiService,
             arenaService,
             mock(TournamentService.class),
-            mock(TournamentTemplateBookingService.class));
+            tournamentTemplateBookingService);
     WrestlerFacade wrestlerFacade =
         new WrestlerFacade(
             wrestlerService,
@@ -600,6 +601,92 @@ class ShowPlanningViewTest extends AbstractViewTest {
 
     // approveSegments should NOT be called yet — dialog confirmation is pending
     verify(showPlanningService, never()).approveSegments(any(), any());
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void approvePlanning_tournamentPayoffWarning_showsConfirmDialogFirst() {
+    // ATW-xbn4: a hosted tournament whose bracket cannot finish before this card triggers a
+    // confirm dialog instead of immediate approval — the booker can go back and pace more.
+    Show show = new Show();
+    show.setId(1L);
+    show.setName("Test Show");
+    show.setShowDate(LocalDate.now());
+
+    when(showPlanningService.getShowPlanningContext(show)).thenReturn(new ShowPlanningContextDTO());
+    selectShowAndAwaitAutoLoad(show);
+
+    ProposedSegment seg = new ProposedSegment();
+    seg.setType("Match");
+    seg.setTeams(List.of(List.of("A"), List.of("B")));
+    ReflectionTestUtils.setField(showPlanningView, "segments", List.of(seg));
+
+    when(showPlanningService.validateCard(any()))
+        .thenReturn(new CardValidationResult(List.of(), List.of()));
+    when(tournamentTemplateBookingService.payoffCatchUpWarnings(show))
+        .thenReturn(List.of("Crown Cup cannot finish before its payoff show 'Test Show'"));
+
+    ReflectionTestUtils.invokeMethod(showPlanningView, "approvePlanning");
+
+    // The advisory holds approval — confirmation is pending.
+    verify(showPlanningService, never()).approveSegments(any(), any());
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void approvePlanning_tournamentPayoffPreFlightFails_approvesAnyway() {
+    // The pre-flight itself failing must never block approval — it is advisory only.
+    Show show = new Show();
+    show.setId(1L);
+    show.setName("Test Show");
+    show.setShowDate(LocalDate.now());
+
+    when(showPlanningService.getShowPlanningContext(show)).thenReturn(new ShowPlanningContextDTO());
+    selectShowAndAwaitAutoLoad(show);
+
+    ProposedSegment seg = new ProposedSegment();
+    seg.setType("Match");
+    seg.setTeams(List.of(List.of("A"), List.of("B")));
+    ReflectionTestUtils.setField(showPlanningView, "segments", List.of(seg));
+
+    when(showPlanningService.validateCard(any()))
+        .thenReturn(new CardValidationResult(List.of(), List.of()));
+    when(tournamentTemplateBookingService.payoffCatchUpWarnings(show))
+        .thenThrow(new IllegalStateException("boom"));
+
+    ReflectionTestUtils.invokeMethod(showPlanningView, "approvePlanning");
+
+    verify(showPlanningService).approveSegments(eq(show), any());
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void proposedSegmentsGrid_tournamentRow_rendersSourceBadge() {
+    // ATW-xbn4: deterministic rows carry a highlighted source badge — tournament slots included
+    // (scripted-beat badge already covered by integration docs tests). The badge column's
+    // renderer builds during grid attach, so this guards the view constructing cleanly with
+    // tournament rows on the card.
+    Show show = new Show();
+    show.setId(1L);
+    show.setName("Test Show");
+    show.setShowDate(LocalDate.now());
+
+    when(showPlanningService.getShowPlanningContext(show)).thenReturn(new ShowPlanningContextDTO());
+    selectShowAndAwaitAutoLoad(show);
+
+    ProposedSegment tournamentRow = new ProposedSegment();
+    tournamentRow.setType("One on One");
+    tournamentRow.setSource("Tournament");
+    ProposedSegment aiRow = new ProposedSegment();
+    aiRow.setType("Match");
+    ReflectionTestUtils.setField(showPlanningView, "segments", List.of(tournamentRow, aiRow));
+
+    Grid<ProposedSegment> grid =
+        (Grid<ProposedSegment>)
+            ReflectionTestUtils.getField(showPlanningView, "proposedSegmentsGrid");
+    MockVaadin.runUIQueue();
+
+    assertFalse(grid.getColumns().isEmpty(), "The card grid must render with its columns");
   }
 
   @Test

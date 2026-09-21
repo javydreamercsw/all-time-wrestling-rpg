@@ -135,7 +135,12 @@ public class TournamentListView extends VerticalLayout {
                     : "")
         .setHeader("Host Show");
 
-    g.addComponentColumn(this::buildRowActions).setHeader("Actions").setFlexGrow(0);
+    // AutoWidth so both buttons fit: a fixed narrow width clips the Delete button once the
+    // Host Show column takes its share of the row (user-reported).
+    g.addComponentColumn(this::buildRowActions)
+        .setHeader("Actions")
+        .setAutoWidth(true)
+        .setFlexGrow(0);
 
     g.addItemClickListener(
         e -> UI.getCurrent().navigate("tournament-detail/" + e.getItem().getId()));
@@ -595,6 +600,10 @@ public class TournamentListView extends VerticalLayout {
   /** Test hooks: drive the dialogs directly (Karibu tests can't traverse grid cell components). */
   void openCreationWizardForTest() {
     openCreationWizard();
+  }
+
+  void refreshGridForTest() {
+    refresh();
   }
 
   void openEditDialogForTest(final Tournament tournament) {

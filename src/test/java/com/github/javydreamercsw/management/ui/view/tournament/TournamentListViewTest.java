@@ -21,6 +21,7 @@ import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -332,6 +333,83 @@ class TournamentListViewTest extends AbstractViewTest {
 
     assertTrue(payoffType.isEnabled(), "Picking a host show enables the payoff pickers");
     assertTrue(payoffRule.isEnabled());
+
+    // Clearing the host disables them again and wipes the payoff selections.
+    payoffType.setValue(this.payoffType);
+    hostCombo.clear();
+    assertFalse(payoffType.isEnabled());
+    assertFalse(payoffRule.isEnabled());
+    assertNull(payoffType.getValue(), "A cleared host show must clear the payoff type");
+  }
+
+  @Test
+  @DisplayName("Wizard create with a host show routes the payoff fields to createTournament")
+  void wizardCreate_withHostShow_passesPayoffFields() {
+    view.openCreationWizardForTest();
+    fillDetailsStep();
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    ComboBox<Show> hostCombo =
+        _get(UI.getCurrent(), ComboBox.class, spec -> spec.withLabel("Host Show (optional)"));
+    hostCombo.setValue(upcomingShow);
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    ComboBox<SegmentType> payoffType =
+        _get(
+            UI.getCurrent(),
+            ComboBox.class,
+            spec -> spec.withLabel("Payoff Match Type (optional)"));
+    payoffType.setValue(this.payoffType);
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Next")).click();
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Create Tournament")).click();
+
+    verify(tournamentService)
+        .createTournament(
+            eq("Fed Cup"),
+            eq("SINGLE_ELIMINATION"),
+            any(),
+            any(),
+            any(),
+            any(),
+            eq(upcomingShow),
+            eq(this.payoffType),
+            any());
+  }
+
+  @Test
+  @DisplayName("Grid shows the host show name on hosted tournaments")
+  void grid_hostShowColumnRendersPayoffShow() {
+    Tournament hosted = tournament();
+    hosted.setPayoffShow(upcomingShow);
+    lenient().when(tournamentService.findAll()).thenReturn(List.of(hosted));
+    view.refreshGridForTest();
+
+    Grid<Tournament> grid = _get(view, Grid.class);
+    assertEquals(1, grid.getListDataView().getItemCount());
+  }
+
+  @Test
+  @DisplayName("Edit dialog: clearing the host show clears and disables the payoff pickers")
+  void editDialog_clearingHostShow_disablesPayoffPickers() {
+    Tournament hosted = tournament();
+    hosted.setPayoffShow(upcomingShow);
+    hosted.setPayoffSegmentType(payoffType);
+    lenient().when(tournamentService.findByIdWithDetails(1L)).thenReturn(Optional.of(hosted));
+
+    view.openEditDialogForTest(hosted);
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    ComboBox<Show> hostCombo =
+        _get(UI.getCurrent(), ComboBox.class, spec -> spec.withLabel("Host Show (optional)"));
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    ComboBox<SegmentType> typeCombo =
+        _get(
+            UI.getCurrent(),
+            ComboBox.class,
+            spec -> spec.withLabel("Payoff Match Type (optional)"));
+
+    assertTrue(typeCombo.isEnabled(), "Prefilled host show enables the payoff picker");
+    hostCombo.clear();
+    assertFalse(typeCombo.isEnabled(), "Clearing the host disables the payoff pickers");
+    assertNull(typeCombo.getValue(), "Clearing the host clears the payoff type");
   }
 
   @Test

@@ -45,7 +45,10 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.tournament.Tournament;
+import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatchRepository;
+import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -144,6 +147,7 @@ class ShowDetailViewTest extends AbstractViewTest {
   @Mock private ShowPlanningAiService showPlanningAiService;
   @Mock private TeamService teamService;
   @Mock private FeudScriptService feudScriptService;
+  @Mock private TournamentMatchRepository tournamentMatchRepository;
 
   @BeforeEach
   public void setUp() {
@@ -441,7 +445,7 @@ class ShowDetailViewTest extends AbstractViewTest {
         ringsideActionService,
         mock(ShowExportService.class),
         mock(LeagueRepository.class),
-        mock(TournamentMatchRepository.class));
+        tournamentMatchRepository);
   }
 
   @Test
@@ -505,6 +509,65 @@ class ShowDetailViewTest extends AbstractViewTest {
     Assertions.assertThat(plainCell.getElement().getText()).isEmpty();
     Mockito.verify(feudScriptService, Mockito.atLeastOnce()).findBeatForSegment(withArc);
     Mockito.verify(feudScriptService, Mockito.atLeastOnce()).findBeatForSegment(plain);
+  }
+
+  @Test
+  void segmentGrid_tournamentMatchBadge_showsBracketOrigin() {
+    // ATW-xbn4: a segment booked from a tournament match carries the tournament badge —
+    // the booker sees which bracket fed this match without opening the tournament view.
+    ShowType showType = new ShowType();
+    showType.setName("Test");
+    Show show = new Show();
+    show.setId(1L);
+    show.setName("Badge Show");
+    show.setType(showType);
+
+    Segment tournamentSegment = new Segment();
+    tournamentSegment.setId(20L);
+    tournamentSegment.setSegmentType(new SegmentType());
+    tournamentSegment.setSegmentDate(Instant.parse("2026-09-03T00:00:00Z"));
+
+    Tournament tournament = new Tournament();
+    tournament.setId(5L);
+    tournament.setName("Crown Cup");
+    TournamentRound round = new TournamentRound();
+    round.setTournament(tournament);
+    round.setRoundName("Semi-Final");
+    TournamentMatch match = new TournamentMatch();
+    match.setRound(round);
+
+    Mockito.when(showService.getShowById(any())).thenReturn(Optional.of(show));
+    Mockito.when(segmentRepository.findByShowOrderBySegmentOrderAsc(any(Show.class)))
+        .thenReturn(List.of(tournamentSegment));
+    Mockito.when(segmentRepository.findByShow(any(Show.class)))
+        .thenReturn(List.of(tournamentSegment));
+    Mockito.when(feudScriptService.findBeatForSegment(tournamentSegment))
+        .thenReturn(Optional.empty());
+    Mockito.when(tournamentMatchRepository.findBySegmentId(20L)).thenReturn(Optional.of(match));
+
+    ShowDetailView view = buildView(mock(SecurityUtils.class));
+    BeforeEvent event = Mockito.mock(BeforeEvent.class);
+    Mockito.when(event.getLocation()).thenReturn(new Location(""));
+    view.setParameter(event, 1L);
+
+    // Drive the source column's renderer directly (component renderers run at row render).
+    Grid<Segment> grid = LocatorJ._get(view, Grid.class, spec -> spec.withId("segments-grid"));
+    ComponentRenderer<?, Segment> tournamentRenderer = null;
+    for (var column : grid.getColumns()) {
+      if (column.getRenderer() instanceof ComponentRenderer<?, ?> cr) {
+        var probe = (ComponentRenderer<Component, Segment>) cr;
+        Component test = probe.createComponent(tournamentSegment);
+        if (test != null && test.getElement().getText().contains("Crown Cup")) {
+          tournamentRenderer = (ComponentRenderer<?, Segment>) column.getRenderer();
+          break;
+        }
+      }
+    }
+    Assertions.assertThat(tournamentRenderer).as("Tournament source column").isNotNull();
+    Component badge = tournamentRenderer.createComponent(tournamentSegment);
+    Assertions.assertThat(badge.getElement().getText()).contains("Crown Cup");
+    Assertions.assertThat(badge.getElement().getText()).contains("🏆");
+    Mockito.verify(tournamentMatchRepository, Mockito.atLeastOnce()).findBySegmentId(20L);
   }
 
   @Test
