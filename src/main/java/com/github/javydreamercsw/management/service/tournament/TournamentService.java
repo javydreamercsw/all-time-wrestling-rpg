@@ -21,6 +21,7 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.reservation.ShowSegmentReservationPurpose;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
@@ -45,6 +46,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
@@ -71,6 +73,7 @@ public class TournamentService {
   private final ShowBookingService showBookingService;
   private final ShowSegmentReservationService reservationService;
   private final TitleReignRepository titleReignRepository;
+  private final SegmentRuleRepository segmentRuleRepository;
   private final List<TournamentFormat> formats;
 
   private TournamentFormatContext formatContext() {
@@ -115,6 +118,13 @@ public class TournamentService {
   @PreAuthorize("isAuthenticated()")
   public boolean hasEntries(@NonNull Long tournamentId) {
     return entryRepository.countByTournamentId(tournamentId) > 0;
+  }
+
+  /** Total tournament count — the seed sync's skip-if-not-empty gate (ATW-vg16). */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public long count() {
+    return tournamentRepository.count();
   }
 
   @Transactional(readOnly = true)
@@ -216,6 +226,63 @@ public class TournamentService {
     t.setRounds(new ArrayList<>());
     t.setAllowedRules(allowedRules != null ? new ArrayList<>(allowedRules) : new ArrayList<>());
     return tournamentRepository.save(t);
+  }
+
+  /**
+   * Seed-catalog upsert (tournaments.json / {@code TournamentSync}, ATW-vg16): find by the stable
+   * {@code code}, create when absent, otherwise update the editable metadata. Lifecycle state
+   * (status, entries, rounds, payoff fields) is NEVER touched on update — re-syncing cannot
+   * resurrect a consumed or completed tournament. Rules resolve by NAME via {@code
+   * SegmentRuleRepository.findByName} (SegmentRule is name-keyed); unknown names are skipped with a
+   * warning.
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public Tournament createOrUpdateTournament(
+      @NonNull String code,
+      @NonNull String name,
+      @NonNull String formatId,
+      @Nullable Integer defaultEntrantCount,
+      @Nullable List<String> allowedRuleNames) {
+    findFormat(formatId)
+        .orElseThrow(() -> new IllegalArgumentException("Unknown format: " + formatId));
+    List<SegmentRule> rules = resolveRuleNames(allowedRuleNames);
+    Tournament t = tournamentRepository.findByCode(code).orElseGet(Tournament::new);
+    boolean isNew = t.getId() == null;
+    t.setCode(code);
+    t.setName(name);
+    if (isNew || !hasEntries(t.getId())) {
+      // The format is locked once a bracket exists — keep the running tournament's format.
+      t.setFormatId(formatId);
+    }
+    t.setDefaultEntrantCount(defaultEntrantCount);
+    t.setAllowedRules(rules);
+    if (isNew) {
+      t.setUniverse(null);
+      t.setStartDate(null);
+      t.setStatus(TournamentStatus.SCHEDULED);
+      t.setEntries(new ArrayList<>());
+      t.setRounds(new ArrayList<>());
+    }
+    return tournamentRepository.save(t);
+  }
+
+  /** Resolve rule names to entities; unknown names are skipped with a warning (seed tolerance). */
+  private List<SegmentRule> resolveRuleNames(@Nullable List<String> allowedRuleNames) {
+    if (allowedRuleNames == null || allowedRuleNames.isEmpty()) {
+      return new ArrayList<>();
+    }
+    return allowedRuleNames.stream()
+        .map(
+            name -> {
+              SegmentRule rule = segmentRuleRepository.findByName(name).orElse(null);
+              if (rule == null) {
+                log.warn("Seed rule '{}' not found — skipping it in the tournament catalog", name);
+              }
+              return rule;
+            })
+        .filter(Objects::nonNull)
+        .collect(Collectors.toCollection(ArrayList::new));
   }
 
   /** The host show must live in the tournament's universe — validated at creation/edit time. */

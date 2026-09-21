@@ -60,6 +60,23 @@ public class Tournament extends AbstractEntity<Long> {
   @Column(name = "name", nullable = false)
   private String name;
 
+  /**
+   * Stable machine-readable identifier for catalog-seeded tournaments (tournaments.json / {@link
+   * com.github.javydreamercsw.management.domain.tournament.WellKnownTournament}). Null for
+   * booker-created instances — spec rows on templates never stamp a code (two rows using the same
+   * preset would collide on the unique index).
+   */
+  @Column(name = "code", length = 64)
+  @Nullable private String code;
+
+  /**
+   * Catalog hint for auto-seeding: the bracket size a tournament starts with when the booking path
+   * has no explicit count. Overrides the format's max, stays overridable by a template spec's
+   * entrant count. Null = format default.
+   */
+  @Column(name = "default_entrant_count")
+  @Nullable private Integer defaultEntrantCount;
+
   /** Format identifier matching {@code TournamentFormat#getFormatId()}. */
   @Column(name = "format_id", nullable = false, length = 64)
   private String formatId;

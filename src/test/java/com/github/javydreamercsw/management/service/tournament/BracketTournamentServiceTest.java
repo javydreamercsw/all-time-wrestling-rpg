@@ -73,6 +73,11 @@ class BracketTournamentServiceTest {
   @Mock private ShowBookingService showBookingService;
   @Mock private ShowSegmentReservationService reservationService;
   @Mock private TitleReignRepository titleReignRepository;
+
+  @Mock
+  private com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository
+      segmentRuleRepository;
+
   @Mock private TournamentFormat format;
 
   private TournamentService tournamentService;
@@ -96,6 +101,7 @@ class BracketTournamentServiceTest {
             showBookingService,
             reservationService,
             titleReignRepository,
+            segmentRuleRepository,
             List.of(format));
 
     tournament = new Tournament();
