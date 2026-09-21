@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.tournament;
 
+import static com.github.mvysny.kaributesting.v10.GridKt._getCellComponent;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._find;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -290,6 +291,25 @@ class TournamentListViewTest extends AbstractViewTest {
     assertNotNull(confirm);
     fireConfirm(confirm);
 
+    verify(tournamentService).deleteTournament(1L);
+  }
+
+  @Test
+  @DisplayName("Clicking the row's Delete button opens the confirmation (row-click must not win)")
+  void deleteAction_rowButtonClick_opensConfirmDialog() {
+    // Regression: a click on the Delete button inside the Actions cell did nothing — the
+    // grid's row-click navigation swallowed it. Karibu's _getCellComponent reaches inside the
+    // rendered row (tree-wide search cannot), so this drives the real component a user clicks.
+    Grid<Tournament> grid = _get(view, Grid.class);
+    Component actionsCell = _getCellComponent(grid, 0, "actions");
+
+    Button deleteBtn = _get(actionsCell, Button.class, spec -> spec.withText("Delete"));
+    assertTrue(deleteBtn.isVisible(), "Delete must render for a booker");
+    deleteBtn.click();
+
+    ConfirmDialog confirm = _get(UI.getCurrent(), ConfirmDialog.class);
+    assertNotNull(confirm, "Row Delete click must open the confirmation dialog");
+    fireConfirm(confirm);
     verify(tournamentService).deleteTournament(1L);
   }
 

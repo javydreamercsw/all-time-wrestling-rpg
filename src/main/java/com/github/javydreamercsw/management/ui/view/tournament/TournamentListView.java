@@ -64,6 +64,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -82,7 +83,7 @@ public class TournamentListView extends VerticalLayout {
   private final SecurityUtils securityUtils;
   private final ShowFacade showFacade;
 
-  private Grid<Tournament> grid;
+  private final Grid<Tournament> grid;
 
   @Autowired
   public TournamentListView(
@@ -122,7 +123,7 @@ public class TournamentListView extends VerticalLayout {
     g.addColumn(t -> t.getFormatId().replace('_', ' ')).setHeader("Format").setSortable(true);
     // Entries are lazy and rows render outside a transaction — count through the service
     // instead of touching the collection (LazyInitializationException otherwise).
-    g.addColumn(t -> tournamentService.countEntries(t)).setHeader("Entrants");
+    g.addColumn(tournamentService::countEntries).setHeader("Entrants");
     g.addColumn(t -> t.getStatus().name()).setHeader("Status").setSortable(true);
     // EAGER mapping — safe to read on detached rows (ATW-xbn4).
     g.addColumn(
@@ -136,19 +137,29 @@ public class TournamentListView extends VerticalLayout {
         .setHeader("Host Show");
 
     // AutoWidth so both buttons fit: a fixed narrow width clips the Delete button once the
-    // Host Show column takes its share of the row (user-reported).
+    // Host Show column takes its share of the row (user-reported). The key lets tests target
+    // the cell (Karibu _getCellComponent).
     g.addComponentColumn(this::buildRowActions)
+        .setKey("actions")
         .setHeader("Actions")
         .setAutoWidth(true)
         .setFlexGrow(0);
 
     g.addItemClickListener(
-        e -> UI.getCurrent().navigate("tournament-detail/" + e.getItem().getId()));
+        e -> {
+          // Clicks inside the Actions cell belong to the Edit/Delete buttons — the buttons
+          // open their dialogs; navigating away here would instantly destroy the just-opened
+          // dialog (user-reported: Delete appeared dead). Anywhere else opens the detail view.
+          if (e.getColumn() != null && "actions".equals(e.getColumn().getKey())) {
+            return;
+          }
+          UI.getCurrent().navigate("tournament-detail/" + e.getItem().getId());
+        });
     return g;
   }
 
   /** Edit / Delete controls, mirroring TitleListView's action column. */
-  private HorizontalLayout buildRowActions(Tournament tournament) {
+  private HorizontalLayout buildRowActions(@NonNull Tournament tournament) {
     HorizontalLayout actions = new HorizontalLayout();
     actions.setSpacing(true);
 
@@ -166,7 +177,7 @@ public class TournamentListView extends VerticalLayout {
     return actions;
   }
 
-  private void openEditDialog(Tournament tournament) {
+  private void openEditDialog(@NonNull Tournament tournament) {
     // The grid row is detached — its linkedTitle is an uninitialized proxy. Re-read with the
     // graph initialized before binding lazy values to the dialog fields.
     Tournament managed =
@@ -284,7 +295,7 @@ public class TournamentListView extends VerticalLayout {
     dialog.open();
   }
 
-  private void confirmDelete(Tournament tournament) {
+  private void confirmDelete(@NonNull Tournament tournament) {
     ConfirmDialog confirmDialog = new ConfirmDialog();
     confirmDialog.setHeader("Delete Tournament");
     confirmDialog.setText(
@@ -443,7 +454,7 @@ public class TournamentListView extends VerticalLayout {
     Runnable refreshEntrantCap =
         () -> {
           int eligible = tournamentService.countEligibleEntrants(titleCombo.getValue());
-          int cap = Math.max(3, Math.min(64, eligible));
+          int cap = Math.clamp(eligible, 3, 64);
           countField.setMax(cap);
           if (countField.getValue() == null || countField.getValue() > cap) {
             countField.setValue(cap);
@@ -488,7 +499,7 @@ public class TournamentListView extends VerticalLayout {
           int take = Math.min(entrants, pool.size());
           StringBuilder sb = new StringBuilder();
           for (int i = 0; i < take / 2; i++) {
-            if (sb.length() > 0) {
+            if (!sb.isEmpty()) {
               sb.append(" · ");
             }
             sb.append(pool.get(i).getName())
