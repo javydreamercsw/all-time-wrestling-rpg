@@ -106,4 +106,5 @@ node/
 .graphify/omissions/
 # Added by code-review-graph
 .code-review-graph/
-.scratch/
+/.scratch/
+/.playwright-mcp/
