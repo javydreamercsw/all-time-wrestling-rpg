@@ -175,9 +175,16 @@ The system resolves a round's stipulation in this order:
 2. **Random pick from `allowedRules` pool** — if the pool is non-empty.
 3. **Normal** (standard match) — fallback when neither applies.
 
+The **template booking path** (tournament rows on a show template) inserts one extra tier between the fixed rule and the pool — the template row's own rule — because an existing type+rule pairing keeps its pairing's stipulation (ATW-etws):
+
+1. **Round's `fixedRule`** (booker-set, or the spec final rule stamped at the bracket final)
+2. **The template row's rule** (type+rule AUTO_ATTACH pairing)
+3. **Random pick from `allowedRules` pool**
+4. **Normal** (standard match)
+
 ### Creating a Deadly Combat Tournament
 
-A Deadly Combat tournament (as referenced in OMZ's backstory) is configured by assigning a pool of high-intensity, No DQ-eligible rules — such as Submission, Last Man Standing, and Barbwire Exploding Deathmatch — to `allowedRules`. Each round then draws randomly from this pool, preserving the unpredictable, brutal nature of the original tournament.
+A Deadly Combat tournament (as referenced in OMZ's backstory) ships in the seeded catalog (`tournaments.json`) with the pool of high-intensity, No DQ-eligible rules — Submission, Last Man Standing, and Barbwire Exploding Deathmatch — already assigned to `allowedRules` and a `defaultEntrantCount` of 8. Each round then draws randomly from this pool, preserving the unpredictable, brutal nature of the original tournament. The campaign's "The Tournament" chapter declares `tournamentCode: deadly_combat`, so the Deadly Combat win counter and its scripted achievement only progress in campaigns whose tournament chapter maps to that catalog tournament.
 
 ## One-Time Tournaments on a Host Show
 
@@ -204,6 +211,16 @@ These two binding mechanisms are mutually exclusive by design:
 
 - **Host show** (`Tournament.payoffShow`) — one-time tournaments. The show-attached booking path owns the tournament; any template pairing on it stays idle.
 - **PLE template pairing** (`ShowTemplateSegmentAssignment`) — recurring tournaments. The PLE template books the payoff every time that template runs; weekly templates pace the rounds.
+
+## Tournament Spec Rows on Templates
+
+A PLE template's assignment row can carry a full **tournament spec** instead of referencing an existing tournament (ATW-etws): a name, a format, an entrant count, a final rule, an allowed-rules pool, and an optional linked championship. The booking path creates **one persistent tournament per row** on first use — afterwards the row behaves exactly like a tournament-linked row, so approval/rollback cycles reuse the same instance.
+
+- **Identity:** the spec lives on the template row (`specName`, `specFormatId`, `specEntrantCount`, `specFinalRule`, `specTitle`, and the `show_template_assignment_rule` join table for the pool). A row is either a tournament reference or a spec — never both.
+- **Entrant-count hierarchy:** the row's spec count → the tournament's `defaultEntrantCount` (catalog presets, e.g. Deadly Combat's 8) → the format max (legacy full-bracket behavior). Spec and preset counts are strict — if the eligible roster can't cover them, the booking falls back to AI participants rather than quietly shrinking the promised bracket; the legacy format-max tier keeps its historical lenient behavior for small rosters.
+- **Stipulations:** round rules follow the template-path priority above (fixed rule → row rule → pool); the spec's final rule is stamped onto the bracket final when the row defines one.
+- **Consumption:** after the payoff the pairing is consumed — the spec fields clear along with the tournament reference, so a consumed row can never mint a second instance.
+- **Seeded catalog:** `tournaments.json` seeds predefined tournaments at startup (skipped when tournaments already exist, upserted by stable `code` otherwise; re-syncing never touches lifecycle state). Template rows can also reference catalog tournaments directly by picking them in the Tournament combo.
 
 ## Multi-Entrant Tournaments (Qualifier Groups → Multi-Man Final)
 
