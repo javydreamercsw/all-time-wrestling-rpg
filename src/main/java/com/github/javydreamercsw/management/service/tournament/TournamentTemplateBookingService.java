@@ -108,7 +108,9 @@ public class TournamentTemplateBookingService {
       @NonNull final ShowTemplateSegmentAssignment assignment,
       @NonNull final SegmentType segmentType,
       @NonNull final Show show) {
-    Tournament tournament = assignment.getTournament();
+    // Spec rows (ATW-etws): resolve the spec into one persistent tournament on first use —
+    // afterwards the row behaves like a tournament-linked row.
+    Tournament tournament = resolveSpecTournament(assignment, show);
     if (tournament == null) {
       return Optional.empty();
     }
@@ -146,7 +148,7 @@ public class TournamentTemplateBookingService {
     // feed this show's match. seedAuto persists entries without adding them to the in-memory
     // collection startTournament reads — re-fetch with the graph initialized first.
     if (tournament.getStatus() == TournamentStatus.SCHEDULED
-        && !autoStartTournament(tournament, show)) {
+        && !autoStartTournament(tournament, show, entrantPlan(assignment, tournament))) {
       return Optional.empty();
     }
 
@@ -177,7 +179,8 @@ public class TournamentTemplateBookingService {
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public List<TournamentBooking> bookWeeklyRounds(
       @NonNull final ShowTemplateSegmentAssignment assignment, @NonNull final Show show) {
-    Tournament tournament = assignment.getTournament();
+    // Spec rows resolve exactly like the PLE path — one persistent instance on first use.
+    Tournament tournament = resolveSpecTournament(assignment, show);
     if (tournament == null || tournament.getStatus() == TournamentStatus.COMPLETE) {
       return List.of();
     }
@@ -190,7 +193,7 @@ public class TournamentTemplateBookingService {
     // Auto-start BEFORE pacing math: an unseeded bracket estimates zero matches, which would
     // read as "only the payoff remains" and strand the tournament unstarted.
     if (tournament.getStatus() == TournamentStatus.SCHEDULED
-        && !autoStartTournament(tournament, show)) {
+        && !autoStartTournament(tournament, show, entrantPlan(assignment, tournament))) {
       return List.of();
     }
 
@@ -239,6 +242,136 @@ public class TournamentTemplateBookingService {
               booking.get().segment(), tournament, booking.get().detail(), false, null));
     }
     return bookings;
+  }
+
+  // ── Spec resolution (ATW-etws) ──────────────────────────────────────────────
+
+  /**
+   * Resolve an assignment row's tournament: the stored instance when the row already has one, the
+   * spec's instance (created on first use) when the row carries a tournament spec, null otherwise.
+   *
+   * <p>Spec creation pre-flights EVERYTHING before the nested {@code createTournament} call — an
+   * exception thrown out of a joined {@code @Transactional} method marks the approval transaction
+   * rollback-only even when caught here, surfacing later as a confusing {@code
+   * UnexpectedRollbackException} at commit (the {@link #autoStartTournament} lesson). Failure warns
+   * and returns null; approval never fails because of a tournament.
+   *
+   * <p>The created instance is written back onto the managed row, so the FK persists with the
+   * approval transaction — repeated resolutions hit the stored reference first and never mint a
+   * second instance (single-booker UI; concurrent approvals would race and are accepted + logged).
+   */
+  @Nullable private Tournament resolveSpecTournament(
+      @NonNull final ShowTemplateSegmentAssignment assignment, @NonNull final Show show) {
+    if (assignment.getTournament() != null) {
+      return assignment.getTournament();
+    }
+    if (!assignment.hasTournamentSpec()) {
+      return null;
+    }
+
+    // Pre-flight 1: format must exist.
+    Optional<TournamentFormat> formatOpt =
+        tournamentService.findFormat(assignment.getSpecFormatId());
+    if (formatOpt.isEmpty()) {
+      log.warn(
+          "Cannot resolve tournament spec '{}' on show '{}': format '{}' not found — falling back"
+              + " to AI participants",
+          assignment.getSpecName(),
+          show.getName(),
+          assignment.getSpecFormatId());
+      return null;
+    }
+    TournamentFormat format = formatOpt.get();
+
+    // Pre-flight 2+3 (ATW-etws): enough eligible wrestlers for the requested count — a spec asks
+    // for a specific bracket size, stricter than seedAuto's silent shrink to the format minimum.
+    // (The count is already clamped inside requestedEntrantCount, so no separate range check.)
+    Integer requestedBoxed = requestedEntrantCount(assignment, format);
+    if (requestedBoxed == null) {
+      return null;
+    }
+    int requested = requestedBoxed;
+    int eligible =
+        tournamentService
+            .findEligibleWrestlersSortedByFans(assignment.getSpecTitle(), universeId(show))
+            .size();
+    if (eligible < requested) {
+      log.warn(
+          "Cannot resolve tournament spec '{}' on show '{}': {} eligible wrestlers available, the"
+              + " spec wants {} — falling back to AI participants",
+          assignment.getSpecName(),
+          show.getName(),
+          eligible,
+          requested);
+      return null;
+    }
+
+    Tournament created =
+        tournamentService.createTournament(
+            assignment.getSpecName(),
+            assignment.getSpecFormatId(),
+            show.getUniverse(),
+            assignment.getSpecTitle(),
+            show.getShowDate(),
+            assignment.getSpecAllowedRules());
+    assignment.setTournament(created);
+    log.info(
+        "Resolved tournament spec '{}' into new tournament {} for show '{}' ({} entrants)",
+        assignment.getSpecName(),
+        created.getName(),
+        show.getName(),
+        requested);
+    return created;
+  }
+
+  /**
+   * Entrant count a spec row asks for at resolution time: the row's {@code specEntrantCount}, else
+   * the format's max (legacy auto-seed behavior). Clamped to the format's range. Never throws — an
+   * unresolvable format yields {@code null} and the caller falls back (no exception may escape
+   * pre-flight into a joined approval transaction).
+   */
+  @Nullable private Integer requestedEntrantCount(
+      @NonNull final ShowTemplateSegmentAssignment assignment,
+      @Nullable final TournamentFormat format) {
+    if (format == null) {
+      return null;
+    }
+    Integer spec = assignment.getSpecEntrantCount();
+    int requested = spec != null ? spec : format.getMaxEntrants();
+    return Math.max(format.getMinEntrants(), Math.min(requested, format.getMaxEntrants()));
+  }
+
+  /**
+   * How many entrants auto-seeding should request, and whether that count is a promise. A count
+   * from the spec row or the tournament's {@code defaultEntrantCount} preset is STRICT —
+   * eligibility must cover it, or the booking falls back (a spec/preset asking for 8 gets 8, not a
+   * quietly smaller bracket). The legacy format-max tier stays lenient: {@code seedAuto} shrinks to
+   * the eligible roster, preserving pre-ATW-etws behavior for small rosters. Never throws — an
+   * unresolvable format returns the legacy fallback (8, lenient).
+   */
+  private record EntrantPlan(int count, boolean strict) {}
+
+  private EntrantPlan entrantPlan(
+      @NonNull final ShowTemplateSegmentAssignment assignment,
+      @NonNull final Tournament tournament) {
+    Optional<TournamentFormat> formatOpt = tournamentService.findFormat(tournament.getFormatId());
+    if (formatOpt.isEmpty()) {
+      return new EntrantPlan(8, false);
+    }
+    TournamentFormat format = formatOpt.get();
+    if (assignment.getSpecEntrantCount() != null) {
+      return new EntrantPlan(clamp(assignment.getSpecEntrantCount(), format), true);
+    }
+    Integer preset = tournament.getDefaultEntrantCount();
+    if (preset != null) {
+      return new EntrantPlan(clamp(preset, format), true);
+    }
+    Integer legacy = requestedEntrantCount(assignment, format);
+    return new EntrantPlan(legacy != null ? legacy : format.getMaxEntrants(), false);
+  }
+
+  private int clamp(int requested, @NonNull final TournamentFormat format) {
+    return Math.max(format.getMinEntrants(), Math.min(requested, format.getMaxEntrants()));
   }
 
   // ── Show-attached one-time tournaments (ATW-xbn4) ──────────────────────────
@@ -558,7 +691,7 @@ public class TournamentTemplateBookingService {
     }
 
     if (tournament.getStatus() == TournamentStatus.SCHEDULED
-        && !autoStartTournament(tournament, show)) {
+        && !autoStartTournament(tournament, show, presetEntrantPlan(tournament))) {
       return Optional.empty();
     }
 
@@ -566,6 +699,7 @@ public class TournamentTemplateBookingService {
       return bookPayoffInProgress(
           tournament,
           payoffTypeOf(tournament, show),
+          tournament.getPayoffSegmentRule(),
           tournament.getPayoffSegmentRule(),
           show,
           () -> consumeShowLink(tournament, show, "payoff booked at the host show"));
@@ -594,7 +728,7 @@ public class TournamentTemplateBookingService {
     // read as "only the payoff remains" and strand the tournament unstarted until its host
     // show — where a round-1 match would book instead of the payoff.
     if (tournament.getStatus() == TournamentStatus.SCHEDULED
-        && !autoStartTournament(tournament, show)) {
+        && !autoStartTournament(tournament, show, presetEntrantPlan(tournament))) {
       return List.of();
     }
     Show payoffShow = tournament.getPayoffShow();
@@ -686,6 +820,7 @@ public class TournamentTemplateBookingService {
         tournament,
         segmentType,
         assignment.getSegmentRule(),
+        assignment.getSpecFinalRule(),
         show,
         () -> consumePairing(assignment, tournament, show, "final booked at the PLE"));
   }
@@ -693,12 +828,14 @@ public class TournamentTemplateBookingService {
   /**
    * Shared IN_PROGRESS payoff booking: the next open match — the bracket final under FINAL_AT_PLE
    * pacing is the payoff (title match when the linked championship is vacant) and runs {@code
-   * consumeAction}.
+   * consumeAction}. {@code finalRule} (ATW-etws spec) overrides the stipulation when the booked
+   * match IS the bracket final; null keeps the payoff rule.
    */
   private Optional<TournamentBooking> bookPayoffInProgress(
       final Tournament tournament,
       final SegmentType segmentType,
       final SegmentRule payoffRule,
+      @Nullable final SegmentRule finalRule,
       final Show show,
       final Runnable consumeAction) {
     Optional<TournamentMatch> openMatchOpt = nextBookableMatch(tournament);
@@ -732,9 +869,13 @@ public class TournamentTemplateBookingService {
     Title linkedTitle = tournament.getLinkedTitle();
     boolean titleOnTheLine = payoff && linkedTitle != null;
 
+    // The stipulation: the spec final rule wins when this booking IS the bracket final (ATW-etws),
+    // otherwise the row/pairing's payoff rule applies.
+    SegmentRule effectiveRule = payoff && finalRule != null ? finalRule : payoffRule;
+
     Segment segment =
         resolveSegment(
-            match, tournament, segmentType, show, stipulationOf(payoffRule), titleOnTheLine);
+            match, tournament, segmentType, show, stipulationOf(effectiveRule), titleOnTheLine);
 
     match.setSegment(segment);
     tournamentService.markRoundInProgress(match.getRound());
@@ -827,22 +968,29 @@ public class TournamentTemplateBookingService {
             linkedTitle));
   }
 
-  /** Detach the tournament from the assignment row so the pairing cannot fire again. */
+  /**
+   * Detach the tournament from the assignment row so the pairing cannot fire again. Spec rows
+   * (ATW-etws) also clear every spec field — leaving them set would mint a second instance the next
+   * time a resolution ran. Spec-only rows drop off the template entirely via the existing
+   * orphanRemoval mapping.
+   */
   private void consumePairing(
       @NonNull final ShowTemplateSegmentAssignment assignment,
       @NonNull final Tournament tournament,
       @NonNull final Show show,
       @NonNull final String reason) {
-    if (assignment.getTournament() == null) {
+    if (assignment.getTournament() == null && !assignment.hasTournamentSpec()) {
       return;
     }
     if (assignment.getSegmentType() != null || assignment.getSegmentRule() != null) {
-      // Keep the row as a plain type/rule pairing — only the tournament detaches.
+      // Keep the row as a plain type/rule pairing — the tournament identity and spec detach.
       assignment.setTournament(null);
+      clearSpec(assignment);
+    } else {
+      // Tournament-only and spec-only rows would become invalid (no target) — remove them from
+      // the template so the orphanRemoval mapping deletes the row.
+      assignment.getTemplate().getSegmentAssignments().remove(assignment);
     }
-    // Tournament-only rows would become invalid (no target) — remove them from the template
-    // so the orphanRemoval mapping deletes the row.
-    assignment.getTemplate().getSegmentAssignments().remove(assignment);
     log.info(
         "Consumed tournament pairing for '{}' on template of show '{}' ({}) — later shows fall"
             + " back to AI-proposed participants",
@@ -851,17 +999,46 @@ public class TournamentTemplateBookingService {
         reason);
   }
 
+  /** Null out every spec field on the row (identity detaches, the row's other targets stay). */
+  private void clearSpec(@NonNull final ShowTemplateSegmentAssignment assignment) {
+    assignment.setSpecName(null);
+    assignment.setSpecFormatId(null);
+    assignment.setSpecEntrantCount(null);
+    assignment.setSpecFinalRule(null);
+    assignment.setSpecTitle(null);
+    assignment.getSpecAllowedRules().clear();
+  }
+
   // ── Round booking (shared by PLE and weekly paths) ─────────────────────────
 
   /**
    * Book the tournament's next open match as a segment with the given type. Advances the bracket
    * once when every booked round is decided but the next round is not generated yet.
+   *
+   * <p>Stipulation precedence (ATW-etws): the round's fixedRule first (the spec final rule is
+   * stamped onto the bracket final below), then the row's own rule, then the tournament's
+   * allowed-rules pool, then no stipulation — {@code TournamentService.resolveRoundStipulation}.
    */
   private Optional<TournamentBooking> bookCurrentRoundFedSegment(
       final Tournament tournament,
       final ShowTemplateSegmentAssignment assignment,
       final SegmentType segmentType,
       final Show show) {
+    // Spec final rule (ATW-etws): when this booking is the bracket final and the row carries a
+    // specFinalRule the round itself has no fixed rule, stamp it — idempotent, and from here the
+    // normal fixedRule tier of resolveRoundStipulation picks it up.
+    Optional<TournamentMatch> finalCheckMatch = nextBookableMatch(tournament);
+    if (assignment.getSpecFinalRule() != null
+        && finalCheckMatch.isPresent()
+        && finalCheckMatch.get().getRound().getFixedRule() == null
+        && isBracketFinal(tournament, finalCheckMatch.get())) {
+      tournamentService.setRoundFixedRule(
+          finalCheckMatch.get().getRound(), assignment.getSpecFinalRule());
+      log.info(
+          "Stamped spec final rule '{}' onto the bracket final of '{}'",
+          assignment.getSpecFinalRule().getName(),
+          tournament.getName());
+    }
     return bookCurrentRoundFedSegment(tournament, segmentType, assignment.getSegmentRule(), show);
   }
 
@@ -893,8 +1070,11 @@ public class TournamentTemplateBookingService {
     }
 
     TournamentMatch match = openMatchOpt.get();
-    Segment segment =
-        resolveSegment(match, tournament, segmentType, show, stipulationOf(rule), false);
+    // Stipulation precedence: round fixedRule → row rule → tournament allowed-rules pool →
+    // none (ATW-etws). The manual path (bookRoundOnShow) keeps its own hierarchy.
+    String stipulation =
+        tournamentService.resolveRoundStipulation(tournament, match.getRound(), rule, "");
+    Segment segment = resolveSegment(match, tournament, segmentType, show, stipulation, false);
 
     // The match mechanics already decided a winner inside the segment — mirror it into the
     // bracket so the tournament advances in lockstep with the booked segment.
@@ -1070,7 +1250,7 @@ public class TournamentTemplateBookingService {
    * UnexpectedRollbackException} at commit. The remaining catch is a dead-man switch for genuine
    * races (roster shrinking between check and seed).
    */
-  private boolean autoStartTournament(Tournament tournament, Show show) {
+  private boolean autoStartTournament(Tournament tournament, Show show, EntrantPlan entrantPlan) {
     Optional<TournamentFormat> formatOpt = tournamentService.findFormat(tournament.getFormatId());
     if (formatOpt.isEmpty()) {
       log.warn(
@@ -1085,26 +1265,31 @@ public class TournamentTemplateBookingService {
     // empty inside the approval transaction, and an initialized collection never re-queries —
     // startTournament would then fail its own entrants check right after seeding.
     if (!tournamentService.hasEntries(tournament.getId())) {
-      int minEntrants = formatOpt.get().getMinEntrants();
       int eligible =
           tournamentService
               .findEligibleWrestlersSortedByFans(tournament.getLinkedTitle(), universeId(show))
               .size();
-      if (eligible < minEntrants) {
+      // A STRICT plan (spec count / catalog preset) requires eligibility to cover it — a preset
+      // asking for 8 gets 8, or nothing; a smaller bracket would quietly rewrite the booker's
+      // bracket. The lenient legacy tier only refuses below the format minimum (pre-ATW-etws
+      // behavior) and lets seedAuto shrink the request down to the eligible roster.
+      if (eligible < entrantPlan.count()
+          && (entrantPlan.strict() || eligible < formatOpt.get().getMinEntrants())) {
         log.warn(
             "Cannot auto-start tournament '{}' for show '{}': {} eligible wrestlers available,"
-                + " the format needs at least {} — falling back to AI participants",
+                + " the preset bracket needs {} — falling back to AI participants",
             tournament.getName(),
             show.getName(),
             eligible,
-            minEntrants);
+            entrantPlan.count());
         return false;
       }
       log.info(
-          "Auto-seeding tournament '{}' from the active roster for show '{}'",
+          "Auto-seeding tournament '{}' from the active roster for show '{}' ({} entrants)",
           tournament.getName(),
-          show.getName());
-      tournamentService.seedAuto(tournament, defaultEntrantCount(tournament), universeId(show));
+          show.getName(),
+          entrantPlan.count());
+      tournamentService.seedAuto(tournament, entrantPlan.count(), universeId(show));
       // seedAuto persists entries without touching the in-memory collection; re-fetch so
       // startTournament's entries check and generateBracket see the seeded roster.
       tournamentService
@@ -1116,14 +1301,18 @@ public class TournamentTemplateBookingService {
   }
 
   /**
-   * Default entrant count for auto-seeding: the format's maximum (a full bracket), or 8 when the
-   * format cannot be resolved. Single-elimination expects a power of two; the format validates.
+   * Entrant plan for show-attached tournaments (no spec row): the catalog preset hint is STRICT
+   * (eligibility must cover it), the format-max legacy tier is LENIENT (seedAuto shrinks to the
+   * roster). Wraps the preset tier with its strictness flag.
    */
-  private int defaultEntrantCount(final Tournament tournament) {
-    return tournamentService
-        .findFormat(tournament.getFormatId())
-        .map(TournamentFormat::getMaxEntrants)
-        .orElse(8);
+  private EntrantPlan presetEntrantPlan(final Tournament tournament) {
+    Optional<TournamentFormat> formatOpt = tournamentService.findFormat(tournament.getFormatId());
+    if (tournament.getDefaultEntrantCount() != null) {
+      int count = tournament.getDefaultEntrantCount();
+      return new EntrantPlan(
+          formatOpt.map(f -> clamp(count, f)).orElse(count), formatOpt.isPresent());
+    }
+    return new EntrantPlan(formatOpt.map(TournamentFormat::getMaxEntrants).orElse(8), false);
   }
 
   /**

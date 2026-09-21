@@ -801,6 +801,39 @@ public class TournamentService {
     return fallback;
   }
 
+  /**
+   * Stipulation for a template-booked round match (ATW-etws). Precedence:
+   *
+   * <ol>
+   *   <li>Round's fixedRule (booker-set, or the spec final rule stamped at the bracket final)
+   *   <li>The template row's own rule (e.g. a type+rule AUTO_ATTACH pairing)
+   *   <li>Random pick from the tournament's allowedRules pool
+   *   <li>Fallback string
+   * </ol>
+   *
+   * The template path diverges from the manual path ({@link #resolveStipulation}) by tier 2: a row
+   * rule outranks the pool so an existing pairing keeps today's behavior.
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public String resolveRoundStipulation(
+      @NonNull Tournament tournament,
+      @NonNull TournamentRound round,
+      @Nullable SegmentRule rowRule,
+      @NonNull String fallback) {
+    if (round.getFixedRule() != null) {
+      return round.getFixedRule().getName();
+    }
+    if (rowRule != null) {
+      return rowRule.getName();
+    }
+    List<SegmentRule> pool = tournament.getAllowedRules();
+    if (!pool.isEmpty()) {
+      return pool.get(ThreadLocalRandom.current().nextInt(pool.size())).getName();
+    }
+    return fallback;
+  }
+
   /** Record the winner of a match and, if the round is now fully decided, mark it complete. */
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
