@@ -60,6 +60,13 @@ public class ShowTemplateDTO {
     /** Segment rule name (e.g. "Rumble Rules"), or null. */
     private String segmentRuleName;
 
+    /**
+     * Catalog tournament code ({@code Tournament.code}, e.g. {@code deadly_combat}) to attach —
+     * resolves via TournamentSync @Order(55), which runs before this sync. Null for non-tournament
+     * rows.
+     */
+    private String tournamentCode;
+
     /** AUTO_ATTACH (deterministic merge) or ENCOURAGED (AI preference). Default ENCOURAGED. */
     private String mode;
   }

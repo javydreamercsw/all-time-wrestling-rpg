@@ -33,6 +33,8 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
+import com.github.javydreamercsw.management.domain.tournament.Tournament;
+import com.github.javydreamercsw.management.domain.tournament.TournamentRepository;
 import com.github.javydreamercsw.management.dto.ShowTemplateDTO;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
@@ -57,6 +59,7 @@ class ShowTemplateSyncTest {
   @Mock private ShowTemplateService showTemplateService;
   @Mock private SegmentTypeService segmentTypeService;
   @Mock private SegmentRuleService segmentRuleService;
+  @Mock private TournamentRepository tournamentRepository;
 
   private ShowTemplateSync sync;
 
@@ -93,7 +96,11 @@ class ShowTemplateSyncTest {
   /** Sync over a caller-supplied catalog instead of the classpath file. */
   private ShowTemplateSync syncOver(List<ShowTemplateDTO> dtos) {
     return new ShowTemplateSync(
-        showTemplateService, segmentTypeService, segmentRuleService, new ObjectMapper()) {
+        showTemplateService,
+        segmentTypeService,
+        segmentRuleService,
+        tournamentRepository,
+        new ObjectMapper()) {
       @Override
       protected List<ShowTemplateDTO> loadCatalog() {
         return dtos;
@@ -200,11 +207,45 @@ class ShowTemplateSyncTest {
   }
 
   @Test
+  @DisplayName("Tournament-code rows resolve through TournamentSync's catalog code")
+  void sync_tournamentCodeRow() {
+    Tournament deadly = new Tournament();
+    deadly.setId(77L);
+    deadly.setName("Deadly Combat");
+    deadly.setCode("deadly_combat");
+    when(tournamentRepository.findByCode("deadly_combat")).thenReturn(Optional.of(deadly));
+    SegmentType singles = new SegmentType();
+    singles.setName("One on One");
+    when(segmentTypeService.findByName("One on One")).thenReturn(Optional.of(singles));
+    ShowTemplateDTO dto = new ShowTemplateDTO();
+    dto.setName("Valentine's Day Massacre");
+    dto.setShowTypeName("Premium Live Event (PLE)");
+    ShowTemplateDTO.AssignmentDTO assignment = new ShowTemplateDTO.AssignmentDTO();
+    assignment.setSegmentTypeName("One on One");
+    assignment.setTournamentCode("deadly_combat");
+    assignment.setMode("AUTO_ATTACH");
+    dto.setAssignments(List.of(assignment));
+    sync = syncOver(List.of(dto));
+
+    sync.sync();
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<ShowTemplateSegmentAssignment>> captor =
+        ArgumentCaptor.forClass(List.class);
+    verify(showTemplateService).syncSegmentAssignments(eq(9L), captor.capture());
+    assertThat(captor.getValue()).hasSize(1);
+    assertThat(captor.getValue().get(0).getSegmentType()).isEqualTo(singles);
+    assertThat(captor.getValue().get(0).getTournament()).isEqualTo(deadly);
+    assertThat(captor.getValue().get(0).getMode())
+        .isEqualTo(ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH);
+  }
+
+  @Test
   @DisplayName("show_templates.json parses with the new assignment + expansion fields")
   void catalogParses() throws Exception {
     try (var is = getClass().getResourceAsStream("/show_templates.json")) {
       List<ShowTemplateDTO> dtos = new ObjectMapper().readValue(is, new TypeReference<>() {});
-      assertThat(dtos).hasSize(3);
+      assertThat(dtos).hasSize(4);
       ShowTemplateDTO rumble =
           dtos.stream()
               .filter(d -> "All Time Rumble".equals(d.getName()))
@@ -216,6 +257,16 @@ class ShowTemplateSyncTest {
       assertThat(rumble.getAssignments()).hasSize(1);
       assertThat(rumble.getAssignments().get(0).getSegmentTypeName()).isEqualTo("Abu Dhabi Rumble");
       assertThat(rumble.getAssignments().get(0).getMode()).isEqualTo("AUTO_ATTACH");
+      ShowTemplateDTO massacre =
+          dtos.stream()
+              .filter(d -> "Valentine's Day Massacre".equals(d.getName()))
+              .findFirst()
+              .orElseThrow();
+      assertThat(massacre.getWeekOfMonth()).isEqualTo(2);
+      assertThat(massacre.getMonth()).isEqualTo("FEBRUARY");
+      assertThat(massacre.getAssignments()).hasSize(1);
+      assertThat(massacre.getAssignments().get(0).getTournamentCode()).isEqualTo("deadly_combat");
+      assertThat(massacre.getAssignments().get(0).getSegmentTypeName()).isEqualTo("One on One");
     }
   }
 }

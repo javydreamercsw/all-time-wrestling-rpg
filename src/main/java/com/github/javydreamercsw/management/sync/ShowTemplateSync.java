@@ -22,6 +22,7 @@ import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.show.template.RecurrenceType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
+import com.github.javydreamercsw.management.domain.tournament.TournamentRepository;
 import com.github.javydreamercsw.management.dto.ShowTemplateDTO;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
@@ -45,6 +46,7 @@ public class ShowTemplateSync implements DataSyncContributor {
   private final ShowTemplateService showTemplateService;
   private final SegmentTypeService segmentTypeService;
   private final SegmentRuleService segmentRuleService;
+  private final TournamentRepository tournamentRepository;
   private final ObjectMapper objectMapper;
 
   @Autowired
@@ -52,10 +54,12 @@ public class ShowTemplateSync implements DataSyncContributor {
       final ShowTemplateService showTemplateService,
       final SegmentTypeService segmentTypeService,
       final SegmentRuleService segmentRuleService,
+      final TournamentRepository tournamentRepository,
       final ObjectMapper objectMapper) {
     this.showTemplateService = showTemplateService;
     this.segmentTypeService = segmentTypeService;
     this.segmentRuleService = segmentRuleService;
+    this.tournamentRepository = tournamentRepository;
     this.objectMapper = objectMapper;
   }
 
@@ -155,6 +159,19 @@ public class ShowTemplateSync implements DataSyncContributor {
                     log.warn(
                         "Segment rule '{}' not found — skipping assignment row on template '{}'",
                         assignmentDto.getSegmentRuleName(),
+                        dto.getName()));
+      }
+      if (assignmentDto.getTournamentCode() != null) {
+        // TournamentSync (@Order 55) ran before this sync, so catalog codes resolve.
+        tournamentRepository
+            .findByCode(assignmentDto.getTournamentCode())
+            .ifPresentOrElse(
+                row::setTournament,
+                () ->
+                    log.warn(
+                        "Tournament code '{}' not found — skipping assignment row on template"
+                            + " '{}'",
+                        assignmentDto.getTournamentCode(),
                         dto.getName()));
       }
       row.setMode(

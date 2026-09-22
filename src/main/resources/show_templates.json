@@ -29,4 +29,19 @@
     "segmentTypeName": "Abu Dhabi Rumble",
     "mode": "AUTO_ATTACH"
   } ]
+}, {
+  "name": "Valentine's Day Massacre",
+  "description": "Love is a battlefield — literally. The most brutal night of the wrestling calendar lands in the sweetest month: the Deadly Combat tournament crowns its winner amid hearts, roses, and barbwire.",
+  "showTypeName": "Premium Live Event (PLE)",
+  "commentaryTeamName": "All-Time Broadcast Team",
+  "recurrenceType": "ANNUAL",
+  "dayOfWeek": "SUNDAY",
+  "weekOfMonth": 2,
+  "month": "FEBRUARY",
+  "durationDays": 1,
+  "assignments": [ {
+    "segmentTypeName": "One on One",
+    "tournamentCode": "deadly_combat",
+    "mode": "AUTO_ATTACH"
+  } ]
 } ]
