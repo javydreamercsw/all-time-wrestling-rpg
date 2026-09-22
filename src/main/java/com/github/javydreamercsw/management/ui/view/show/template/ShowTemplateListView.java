@@ -1085,7 +1085,7 @@ public class ShowTemplateListView extends Main {
 
   /** Spec-field visibility follows the Tournament combo — a row is one or the other. */
   boolean areSpecFieldsVisibleForTest() {
-    return assignmentSpecFields.stream().allMatch(com.vaadin.flow.component.Component::isVisible);
+    return assignmentSpecFields.stream().allMatch(Component::isVisible);
   }
 
   /** Apply the dialog's current spec fields to a row, mirroring the Add Assignment path. */
