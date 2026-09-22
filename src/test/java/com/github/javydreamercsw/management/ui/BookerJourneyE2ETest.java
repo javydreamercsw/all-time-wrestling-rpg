@@ -58,6 +58,7 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 @Slf4j
 public class BookerJourneyE2ETest extends AbstractE2ETest {
@@ -72,7 +73,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
   @Autowired private SegmentRuleService segmentRuleService;
   @Autowired private SegmentService segmentService;
   @Autowired private CampaignRepository campaignRepository;
-  @Autowired private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+  @Autowired private JdbcTemplate jdbcTemplate;
   @Autowired private CampaignStateRepository campaignStateRepository;
   @Autowired private BackstageActionHistoryRepository backstageActionHistoryRepository;
   @Autowired private CampaignEncounterRepository campaignEncounterRepository;

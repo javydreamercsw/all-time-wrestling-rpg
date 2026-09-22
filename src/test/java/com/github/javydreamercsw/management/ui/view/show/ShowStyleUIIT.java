@@ -55,6 +55,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.vaadin.stefan.fullcalendar.Entry;
 import org.vaadin.stefan.fullcalendar.dataprovider.EntryQuery;
 
@@ -64,7 +65,7 @@ class ShowStyleUIIT extends ManagementIntegrationTest {
   private Show weeklyShow;
   private Show otherShow;
   @Autowired GameSettingService gameSettingService;
-  @Autowired org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+  @Autowired JdbcTemplate jdbcTemplate;
 
   @BeforeEach
   public void setUp() {
