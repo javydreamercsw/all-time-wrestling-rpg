@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.domain.tournament;
 
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface TournamentRepository extends JpaRepository<Tournament, Long> {
@@ -30,4 +31,7 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long> {
 
   /** Show-attached tournaments of a universe — the paced-rounds scan (ATW-xbn4). */
   List<Tournament> findByUniverseIdAndPayoffShowIsNotNull(Long universeId);
+
+  /** Catalog lookup by the stable seed code (tournaments.json / WellKnownTournament). */
+  Optional<Tournament> findByCode(String code);
 }

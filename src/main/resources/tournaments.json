@@ -1,0 +1,7 @@
+[ {
+  "name": "Deadly Combat",
+  "code": "deadly_combat",
+  "formatId": "SINGLE_ELIMINATION",
+  "defaultEntrantCount": 8,
+  "allowedRules": [ "Submission", "Last Man Standing", "Barbwire Exploding Deathmatch", "No DQ" ]
+} ]

@@ -127,6 +127,15 @@ class TournamentTemplateBookingServiceTest {
     lenient().when(tournamentService.currentChampionsOf(any())).thenReturn(List.of());
     lenient().when(format.getMaxEntrants()).thenReturn(8);
     lenient().when(format.getMinEntrants()).thenReturn(2);
+    // Round stipulation resolves through TournamentService — mirror the real hierarchy's
+    // fallback behavior (row rule name when set, else the fallback string).
+    lenient()
+        .when(tournamentService.resolveRoundStipulation(any(), any(), any(), any()))
+        .thenAnswer(
+            invocation -> {
+              SegmentRule rule = invocation.getArgument(2);
+              return rule != null ? rule.getName() : "";
+            });
 
     tournament = new Tournament();
     tournament.setId(5L);
@@ -255,6 +264,248 @@ class TournamentTemplateBookingServiceTest {
         service.bookTournamentFedSegment(assignment, rumbleType, show).isEmpty(),
         "SCHEDULED tournament with an unresolvable format must fall back to the AI path");
     verify(tournamentService, never()).seedAuto(any(), anyInt(), anyLong());
+  }
+
+  // ── Spec resolution (ATW-etws) ──────────────────────────────────────────────
+
+  private ShowTemplateSegmentAssignment specAssignment(ShowTemplate template) {
+    ShowTemplateSegmentAssignment row = new ShowTemplateSegmentAssignment();
+    row.setTemplate(template);
+    row.setSpecName("Deadly Combat");
+    row.setSpecFormatId("SINGLE_ELIMINATION");
+    row.setSpecEntrantCount(8);
+    row.setSegmentType(rumbleType);
+    row.setMode(ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH);
+    return row;
+  }
+
+  /** n distinct eligible wrestlers (Alice and Bob are the first two). */
+  private List<Wrestler> roster(int n) {
+    List<Wrestler> wrestlers = new ArrayList<>(List.of(alice, bob));
+    for (int i = wrestlers.size(); i < n; i++) {
+      wrestlers.add(wrestler(100L + i, "Roster" + i));
+    }
+    return wrestlers;
+  }
+
+  @Test
+  void specRow_resolvesIntoNewTournament_onFirstUse() {
+    // First approval of a spec row: a new SCHEDULED tournament is created from the spec and
+    // stored on the row — the booking then proceeds through the normal lifecycle.
+    ShowTemplate template = new ShowTemplate();
+    template.setId(9L);
+    ShowTemplateSegmentAssignment row = specAssignment(template);
+    Tournament created = new Tournament();
+    created.setId(50L);
+    created.setName("Deadly Combat");
+    created.setFormatId("SINGLE_ELIMINATION");
+    created.setStatus(TournamentStatus.SCHEDULED);
+    when(tournamentService.findFormat("SINGLE_ELIMINATION")).thenReturn(Optional.of(format));
+    lenient()
+        .when(tournamentService.findEligibleWrestlersSortedByFans(any(), eq(1L)))
+        .thenReturn(roster(8));
+    when(tournamentService.createTournament(
+            eq("Deadly Combat"),
+            eq("SINGLE_ELIMINATION"),
+            eq(show.getUniverse()),
+            any(),
+            eq(show.getShowDate()),
+            any()))
+        .thenReturn(created);
+    // Empty roster bracket: capture the seeded tournament lifecycle like the existing tests.
+    lenient().when(tournamentService.hasEntries(50L)).thenReturn(false);
+    when(tournamentService.startTournament(created))
+        .thenAnswer(
+            invocation -> {
+              created.setStatus(TournamentStatus.IN_PROGRESS);
+              return created;
+            });
+    lenient().when(format.estimateTotalMatches(created)).thenReturn(0);
+    // No bookable match on a 0-match bracket → empty booking, but the spec resolved.
+
+    Optional<TournamentTemplateBookingService.TournamentBooking> booking =
+        service.bookTournamentFedSegment(row, rumbleType, show);
+
+    assertNotNull(row.getTournament(), "Spec resolution must store the instance on the row");
+    assertEquals(created, row.getTournament());
+    verify(tournamentService)
+        .createTournament(
+            eq("Deadly Combat"),
+            eq("SINGLE_ELIMINATION"),
+            eq(show.getUniverse()),
+            any(),
+            eq(show.getShowDate()),
+            any());
+  }
+
+  @Test
+  void specRow_secondUse_reusesStoredInstance_neverMintsTwice() {
+    // The row's stored tournament FK wins over the spec — repeated resolution hits the FK.
+    Tournament existing = new Tournament();
+    existing.setId(51L);
+    existing.setName("Deadly Combat");
+    existing.setFormatId("SINGLE_ELIMINATION");
+    existing.setStatus(TournamentStatus.SCHEDULED);
+    ShowTemplate template = new ShowTemplate();
+    template.setId(9L);
+    ShowTemplateSegmentAssignment row = specAssignment(template);
+    row.setTournament(existing);
+    lenient()
+        .when(tournamentService.findFormat("SINGLE_ELIMINATION"))
+        .thenReturn(Optional.of(format));
+    lenient().when(tournamentService.hasEntries(51L)).thenReturn(false);
+    lenient()
+        .when(tournamentService.findEligibleWrestlersSortedByFans(any(), eq(1L)))
+        .thenReturn(roster(8));
+    lenient().when(tournamentService.findByIdWithDetails(51L)).thenReturn(Optional.of(existing));
+
+    service.bookTournamentFedSegment(row, rumbleType, show);
+
+    verify(tournamentService, never()).createTournament(any(), any(), any(), any(), any(), any());
+    verify(tournamentService).seedAuto(existing, 8, 1L);
+  }
+
+  @Test
+  void specRow_unknownFormat_fallsBackWithoutCreating() {
+    ShowTemplate template = new ShowTemplate();
+    template.setId(9L);
+    ShowTemplateSegmentAssignment row = specAssignment(template);
+    when(tournamentService.findFormat("QUALIFIER_GROUPS")).thenReturn(Optional.empty());
+
+    assertTrue(
+        service.bookTournamentFedSegment(row, rumbleType, show).isEmpty(),
+        "Unknown spec format must fall back to the AI path without creating anything");
+    verify(tournamentService, never()).createTournament(any(), any(), any(), any(), any(), any());
+  }
+
+  @Test
+  void specRow_eligibilityShortfall_fallsBackWithoutCreating() {
+    // Spec asks for 8; only 2 eligible — the strict pre-flight refuses (no silent shrink on a
+    // promised bracket size) and falls back to the AI path.
+    ShowTemplate template = new ShowTemplate();
+    template.setId(9L);
+    ShowTemplateSegmentAssignment row = specAssignment(template);
+    when(tournamentService.findFormat("SINGLE_ELIMINATION")).thenReturn(Optional.of(format));
+    lenient()
+        .when(tournamentService.findEligibleWrestlersSortedByFans(any(), eq(1L)))
+        .thenReturn(List.of(alice, bob));
+
+    assertTrue(
+        service.bookTournamentFedSegment(row, rumbleType, show).isEmpty(),
+        "Spec eligibility shortfall must fall back without creating a tournament");
+    verify(tournamentService, never()).createTournament(any(), any(), any(), any(), any(), any());
+  }
+
+  @Test
+  void specRow_presetEntrantCount_usedWhenSpecCountAbsent() {
+    // A catalog-seeded tournament carries defaultEntrantCount — the preset tier requests it
+    // (8 from the Deadly Combat seed) instead of the format max.
+    tournament.setDefaultEntrantCount(8);
+    TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.ACTIVE);
+    TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ACTIVE);
+    TournamentMatch match = match(1, aliceEntry, bobEntry);
+    lenient()
+        .when(tournamentService.findFormat("SINGLE_ELIMINATION"))
+        .thenReturn(Optional.of(format));
+    lenient().when(tournamentService.hasEntries(5L)).thenReturn(false);
+    lenient()
+        .when(tournamentService.findEligibleWrestlersSortedByFans(any(), eq(1L)))
+        .thenReturn(roster(8));
+    lenient()
+        .when(tournamentService.findByIdWithDetails(5L))
+        .thenAnswer(
+            invocation -> {
+              tournament.setEntries(new ArrayList<>(List.of(aliceEntry, bobEntry)));
+              tournament.setRounds(new ArrayList<>(List.of(round(1, match))));
+              return Optional.of(tournament);
+            });
+    when(tournamentService.startTournament(tournament))
+        .thenAnswer(
+            invocation -> {
+              tournament.setStatus(TournamentStatus.IN_PROGRESS);
+              return tournament;
+            });
+    Segment booked = singles(alice, bob, alice);
+    stubResolve(booked);
+
+    service.bookTournamentFedSegment(assignment, rumbleType, show);
+
+    verify(tournamentService).seedAuto(tournament, 8, 1L);
+  }
+
+  @Test
+  void consumePairing_clearsSpecFields() {
+    // A consumed spec row keeps no tournament identity: spec fields all null out so a later
+    // resolution cannot mint a second instance (ATW-etws).
+    tournament.setStatus(TournamentStatus.COMPLETE);
+    TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.WINNER);
+    TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ELIMINATED);
+    tournament.setEntries(new ArrayList<>(List.of(aliceEntry, bobEntry)));
+
+    assignment.setSpecName("Deadly Combat"); // paradoxical fixture: FK + spec both set
+    assignment.setSpecFormatId("SINGLE_ELIMINATION");
+    assignment.setSpecEntrantCount(8);
+    assignment.setSpecFinalRule(rumbleRule);
+    assignment.getSpecAllowedRules().add(rumbleRule);
+
+    assertTrue(
+        service.bookTournamentFedSegment(assignment, rumbleType, show).isEmpty(),
+        "COMPLETE tournament without a linked title must not book a showcase");
+    assertNull(assignment.getTournament());
+    assertNull(assignment.getSpecName(), "Spec fields must clear when the pairing consumes");
+    assertNull(assignment.getSpecFormatId());
+    assertNull(assignment.getSpecEntrantCount());
+    assertNull(assignment.getSpecFinalRule());
+    assertTrue(assignment.getSpecAllowedRules().isEmpty());
+  }
+
+  @Test
+  void plainRow_noTournament_returnsEmptyWithoutWarnings() {
+    // A type+rule row with no tournament and no spec resolves to nothing (ATW-etws spec path
+    // returns null before any lookup).
+    ShowTemplate template = new ShowTemplate();
+    template.setId(9L);
+    ShowTemplateSegmentAssignment plain = new ShowTemplateSegmentAssignment();
+    plain.setTemplate(template);
+    plain.setSegmentType(rumbleType);
+    plain.setMode(ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH);
+
+    assertTrue(service.bookTournamentFedSegment(plain, rumbleType, show).isEmpty());
+    assertTrue(service.bookWeeklyRounds(plain, show).isEmpty());
+    verify(tournamentService, never()).findFormat(any());
+  }
+
+  @Test
+  void advanceFails_whenNextRoundCannotGenerate_fallsBackGracefully() {
+    // advanceToNextRound throwing IllegalStateException → warn + fall back, no exception escapes
+    // (the rollback-only poison guard).
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.ACTIVE);
+    TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ACTIVE);
+    TournamentMatch match = match(1, aliceEntry, bobEntry);
+    match.setWinner(aliceEntry); // bracket shown as decided, but no next round exists
+    tournament.setRounds(new ArrayList<>(List.of(round(1, match))));
+    when(tournamentService.advanceToNextRound(tournament))
+        .thenThrow(new IllegalStateException("bracket stuck"));
+
+    assertTrue(
+        service.bookTournamentFedSegment(assignment, rumbleType, show).isEmpty(),
+        "A stuck bracket must fall back to AI participants, not throw");
+  }
+
+  @Test
+  void weeklyRounds_completeTournament_skipsImmediately() {
+    // A COMPLETE tournament on a weekly row: no auto-start, no booking, no format lookup.
+    tournament.setStatus(TournamentStatus.COMPLETE);
+    ShowTemplate template = new ShowTemplate();
+    template.setId(9L);
+    ShowTemplateSegmentAssignment row = new ShowTemplateSegmentAssignment();
+    row.setTemplate(template);
+    row.setTournament(tournament);
+    row.setMode(ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH);
+
+    assertTrue(service.bookWeeklyRounds(row, show).isEmpty());
+    verify(tournamentService, never()).startTournament(any());
   }
 
   @Test

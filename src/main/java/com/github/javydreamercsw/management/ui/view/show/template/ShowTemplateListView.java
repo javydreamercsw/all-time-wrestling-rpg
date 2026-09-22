@@ -32,16 +32,21 @@ import com.github.javydreamercsw.management.domain.show.template.RecurrenceType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowContextFacade;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
+import com.github.javydreamercsw.management.service.tournament.TournamentFormat;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
@@ -100,6 +105,7 @@ public class ShowTemplateListView extends Main {
   private final SegmentTypeService segmentTypeService;
   private final SegmentRuleService segmentRuleService;
   private final TournamentService tournamentService;
+  private final WrestlerFacade wrestlerFacade;
 
   private Dialog editDialog;
   private TextField editName;
@@ -124,6 +130,13 @@ public class ShowTemplateListView extends Main {
   private ComboBox<SegmentRule> assignmentRuleCombo;
   private ComboBox<ShowTemplateSegmentAssignment.AssignmentMode> assignmentModeCombo;
   private ComboBox<Tournament> assignmentTournamentCombo;
+  private TextField assignmentSpecNameField;
+  private ComboBox<TournamentFormat> assignmentSpecFormatCombo;
+  private IntegerField assignmentSpecEntrantCount;
+  private ComboBox<SegmentRule> assignmentSpecFinalRuleCombo;
+  private MultiSelectComboBox<SegmentRule> assignmentSpecAllowedRulesCombo;
+  private ComboBox<Title> assignmentSpecTitleCombo;
+  private List<Component> assignmentSpecFields;
 
   final TextField nameFilter;
   final ComboBox<ShowType> showTypeFilter;
@@ -140,7 +153,8 @@ public class ShowTemplateListView extends Main {
       @NonNull final AiSettingsService aiSettingsService,
       @NonNull final SegmentTypeService segmentTypeService,
       @NonNull final SegmentRuleService segmentRuleService,
-      @NonNull final ShowContextFacade showContextFacade) {
+      @NonNull final ShowContextFacade showContextFacade,
+      @NonNull final WrestlerFacade wrestlerFacade) {
     this.showTemplateService = showTemplateService;
     this.showTypeService = showTypeService;
     this.commentaryTeamRepository = commentaryTeamRepository;
@@ -151,6 +165,7 @@ public class ShowTemplateListView extends Main {
     this.segmentTypeService = segmentTypeService;
     this.segmentRuleService = segmentRuleService;
     this.tournamentService = showContextFacade.getTournamentService();
+    this.wrestlerFacade = wrestlerFacade;
 
     // Initialize filters
     nameFilter = new TextField();
@@ -577,7 +592,11 @@ public class ShowTemplateListView extends Main {
         .setHeader("Segment Rule")
         .setAutoWidth(true);
     assignmentGrid
-        .addColumn(a -> a.getTournament() != null ? a.getTournament().getName() : "—")
+        .addColumn(
+            a ->
+                a.getTournament() != null
+                    ? a.getTournament().getName()
+                    : a.hasTournamentSpec() ? a.getSpecName() + " (spec)" : "—")
         .setHeader("Tournament")
         .setAutoWidth(true);
     assignmentGrid.addColumn(a -> a.getMode().name()).setHeader("Mode").setAutoWidth(true);
@@ -637,6 +656,8 @@ public class ShowTemplateListView extends Main {
     assignmentTournamentCombo.setPlaceholder("Optional");
     assignmentTournamentCombo.setClearButtonVisible(true);
 
+    buildSpecFields();
+
     Button addAssignmentBtn =
         new Button(
             "Add Assignment",
@@ -645,17 +666,19 @@ public class ShowTemplateListView extends Main {
               SegmentType type = assignmentTypeCombo.getValue();
               SegmentRule rule = assignmentRuleCombo.getValue();
               Tournament tournament = assignmentTournamentCombo.getValue();
-              // At least one target (type, rule, or tournament) is required per row.
-              if (type == null && rule == null && tournament == null) {
+              boolean hasSpec = !assignmentSpecNameField.isEmpty();
+              // At least one target (type, rule, tournament, or spec) is required per row.
+              if (type == null && rule == null && tournament == null && !hasSpec()) {
                 Notification.show(
-                    "Pick a segment type, a segment rule, or a tournament for the assignment.",
+                    "Pick a segment type, a segment rule, a tournament, or fill in the"
+                        + " tournament spec for the assignment.",
                     3000,
                     Notification.Position.MIDDLE);
                 return;
               }
               // A tournament row must be AUTO_ATTACH: its participants are merged
               // deterministically at approval time; ENCOURAGED is meaningless for it.
-              if (tournament != null
+              if ((tournament != null || hasSpec())
                   && ShowTemplateSegmentAssignment.AssignmentMode.ENCOURAGED
                       == assignmentModeCombo.getValue()) {
                 Notification.show(
@@ -664,16 +687,25 @@ public class ShowTemplateListView extends Main {
                     Notification.Position.MIDDLE);
                 return;
               }
+              if (hasSpec() && tournament != null) {
+                Notification.show(
+                    "A row is either an existing tournament or a tournament spec — not both.",
+                    3000,
+                    Notification.Position.MIDDLE);
+                return;
+              }
               ShowTemplateSegmentAssignment row = new ShowTemplateSegmentAssignment();
               row.setSegmentType(type);
               row.setSegmentRule(rule);
               row.setTournament(tournament);
+              applySpecFields(row);
               row.setMode(
                   assignmentModeCombo.getValue() != null
                       ? assignmentModeCombo.getValue()
                       : ShowTemplateSegmentAssignment.AssignmentMode.ENCOURAGED);
               dialogAssignments.add(row);
               assignmentGrid.getListDataView().refreshAll();
+              clearSpecFields();
             });
     addAssignmentBtn.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
     addAssignmentBtn.setVisible(securityUtils.canEdit());
@@ -686,11 +718,16 @@ public class ShowTemplateListView extends Main {
             assignmentModeCombo);
     assignmentPicker.setWidthFull();
     assignmentPicker.setAlignItems(FlexComponent.Alignment.END);
+    VerticalLayout specSection = new VerticalLayout(assignmentSpecFields.toArray(new Component[0]));
+    specSection.setWidthFull();
+    specSection.setSpacing(false);
+    specSection.setPadding(false);
     VerticalLayout assignmentSection =
         new VerticalLayout(
             new Span("Template Assignments (event types, rules, tournament-fed segments)"),
             assignmentPicker,
             addAssignmentBtn,
+            specSection,
             assignmentGrid);
     assignmentSection.setWidthFull();
     assignmentSection.setSpacing(false);
@@ -817,6 +854,116 @@ public class ShowTemplateListView extends Main {
         .bind(ShowTemplate::getMonth, ShowTemplate::setMonth);
   }
 
+  /**
+   * Spec fields for tournament-spec rows (ATW-etws): visible only when the Tournament combo is
+   * empty — a row either references an existing tournament or defines one via spec.
+   */
+  private void buildSpecFields() {
+    assignmentSpecNameField = new TextField("Tournament Name (spec)");
+    assignmentSpecNameField.setWidthFull();
+    assignmentSpecNameField.setPlaceholder("Created on first use");
+    assignmentSpecNameField.setTooltipText(
+        "Leave empty to pick an existing tournament above. With a name, the booking path"
+            + " creates this tournament the first time the row is used.");
+
+    assignmentSpecFormatCombo = new ComboBox<>("Format (spec)");
+    List<TournamentFormat> formats = tournamentService.getAvailableFormats();
+    assignmentSpecFormatCombo.setItems(formats);
+    assignmentSpecFormatCombo.setItemLabelGenerator(TournamentFormat::getDisplayName);
+    assignmentSpecFormatCombo.setWidthFull();
+    assignmentSpecFormatCombo.setPlaceholder("Required for spec");
+
+    assignmentSpecEntrantCount = new IntegerField("Entrants (spec)");
+    assignmentSpecEntrantCount.setWidthFull();
+    assignmentSpecEntrantCount.setHelperText("Blank = preset hint or format max");
+    assignmentSpecEntrantCount.addValueChangeListener(e -> updateEntrantBounds());
+
+    assignmentSpecFinalRuleCombo = new ComboBox<>("Final Rule (spec)");
+    assignmentSpecFinalRuleCombo.setItems(
+        segmentRuleService.findAll().stream()
+            .sorted(Comparator.comparing(SegmentRule::getName))
+            .toList());
+    assignmentSpecFinalRuleCombo.setItemLabelGenerator(SegmentRule::getName);
+    assignmentSpecFinalRuleCombo.setWidthFull();
+    assignmentSpecFinalRuleCombo.setPlaceholder("Optional");
+    assignmentSpecFinalRuleCombo.setClearButtonVisible(true);
+
+    assignmentSpecAllowedRulesCombo = new MultiSelectComboBox<>("Allowed Rules (spec)");
+    assignmentSpecAllowedRulesCombo.setItems(
+        segmentRuleService.findAll().stream()
+            .sorted(Comparator.comparing(SegmentRule::getName))
+            .toList());
+    assignmentSpecAllowedRulesCombo.setItemLabelGenerator(SegmentRule::getName);
+    assignmentSpecAllowedRulesCombo.setWidthFull();
+    assignmentSpecAllowedRulesCombo.setPlaceholder("Optional pool for round stipulations");
+
+    assignmentSpecTitleCombo = new ComboBox<>("Linked Title (spec)");
+    assignmentSpecTitleCombo.setItems(wrestlerFacade.getTitleService().findAll());
+    assignmentSpecTitleCombo.setItemLabelGenerator(Title::getName);
+    assignmentSpecTitleCombo.setWidthFull();
+    assignmentSpecTitleCombo.setPlaceholder("Optional");
+    assignmentSpecTitleCombo.setClearButtonVisible(true);
+
+    assignmentSpecFields =
+        List.of(
+            new Span("Tournament spec (name + format create the instance on first use)"),
+            assignmentSpecNameField,
+            assignmentSpecFormatCombo,
+            assignmentSpecEntrantCount,
+            assignmentSpecFinalRuleCombo,
+            assignmentSpecAllowedRulesCombo,
+            assignmentSpecTitleCombo);
+    assignmentSpecFields.forEach(f -> f.setVisible(false));
+    // Spec visibility follows the Tournament combo: a row is one or the other, never both.
+    assignmentTournamentCombo.addValueChangeListener(e -> updateSpecVisibility());
+    updateSpecVisibility();
+  }
+
+  private void updateSpecVisibility() {
+    boolean visible = assignmentTournamentCombo.isEmpty();
+    assignmentSpecFields.forEach(f -> f.setVisible(visible));
+  }
+
+  private boolean hasSpec() {
+    return !assignmentSpecNameField.isEmpty();
+  }
+
+  /** Clamp the entrant-count field to the selected format's range and the eligible roster. */
+  private void updateEntrantBounds() {
+    TournamentFormat format = assignmentSpecFormatCombo.getValue();
+    if (format == null) {
+      assignmentSpecEntrantCount.setMin(3);
+      assignmentSpecEntrantCount.setMax(64);
+      return;
+    }
+    assignmentSpecEntrantCount.setMin(format.getMinEntrants());
+    assignmentSpecEntrantCount.setMax(
+        Math.min(format.getMaxEntrants(), tournamentService.countEligibleEntrants(null)));
+  }
+
+  /** Copy the spec fields into a new assignment row (only valid when the name is set). */
+  private void applySpecFields(ShowTemplateSegmentAssignment row) {
+    if (assignmentSpecNameField.isEmpty()) {
+      return;
+    }
+    row.setSpecName(assignmentSpecNameField.getValue().trim());
+    TournamentFormat format = assignmentSpecFormatCombo.getValue();
+    row.setSpecFormatId(format != null ? format.getFormatId() : null);
+    row.setSpecEntrantCount(assignmentSpecEntrantCount.getValue());
+    row.setSpecFinalRule(assignmentSpecFinalRuleCombo.getValue());
+    row.setSpecTitle(assignmentSpecTitleCombo.getValue());
+    row.getSpecAllowedRules().addAll(assignmentSpecAllowedRulesCombo.getValue());
+  }
+
+  private void clearSpecFields() {
+    assignmentSpecNameField.clear();
+    assignmentSpecFormatCombo.clear();
+    assignmentSpecEntrantCount.clear();
+    assignmentSpecFinalRuleCombo.clear();
+    assignmentSpecAllowedRulesCombo.clear();
+    assignmentSpecTitleCombo.clear();
+  }
+
   private void openCreateDialog() {
     editingTemplate = new ShowTemplate();
     dialogAssignments.clear();
@@ -842,6 +989,13 @@ public class ShowTemplateListView extends Main {
                           ShowTemplateSegmentAssignment copy = new ShowTemplateSegmentAssignment();
                           copy.setSegmentType(a.getSegmentType());
                           copy.setSegmentRule(a.getSegmentRule());
+                          copy.setTournament(a.getTournament());
+                          copy.setSpecName(a.getSpecName());
+                          copy.setSpecFormatId(a.getSpecFormatId());
+                          copy.setSpecEntrantCount(a.getSpecEntrantCount());
+                          copy.setSpecFinalRule(a.getSpecFinalRule());
+                          copy.setSpecTitle(a.getSpecTitle());
+                          copy.getSpecAllowedRules().addAll(a.getSpecAllowedRules());
                           copy.setMode(a.getMode());
                           dialogAssignments.add(copy);
                         }));
@@ -929,6 +1083,20 @@ public class ShowTemplateListView extends Main {
     openEditDialog(template);
   }
 
+  /** Spec-field visibility follows the Tournament combo — a row is one or the other. */
+  boolean areSpecFieldsVisibleForTest() {
+    return assignmentSpecFields.stream().allMatch(Component::isVisible);
+  }
+
+  /** Apply the dialog's current spec fields to a row, mirroring the Add Assignment path. */
+  void applySpecFieldsForTest(ShowTemplateSegmentAssignment row) {
+    applySpecFields(row);
+  }
+
+  void setTournamentSelectionForTest(Tournament tournament) {
+    assignmentTournamentCombo.setValue(tournament);
+  }
+
   Grid<ShowTemplateSegmentAssignment> getAssignmentGridForTest() {
     return assignmentGrid;
   }
@@ -949,6 +1117,21 @@ public class ShowTemplateListView extends Main {
     row.setSegmentType(type);
     row.setSegmentRule(rule);
     row.setTournament(tournament);
+    row.setMode(mode);
+    dialogAssignments.add(row);
+    assignmentGrid.getListDataView().refreshAll();
+  }
+
+  /** Spec-row test hook: mirrors the dialog's Add Assignment validation for spec rows. */
+  void addSpecAssignmentForTest(
+      final String specName,
+      final String specFormatId,
+      final Integer specEntrantCount,
+      final ShowTemplateSegmentAssignment.AssignmentMode mode) {
+    ShowTemplateSegmentAssignment row = new ShowTemplateSegmentAssignment();
+    row.setSpecName(specName);
+    row.setSpecFormatId(specFormatId);
+    row.setSpecEntrantCount(specEntrantCount);
     row.setMode(mode);
     dialogAssignments.add(row);
     assignmentGrid.getListDataView().refreshAll();
