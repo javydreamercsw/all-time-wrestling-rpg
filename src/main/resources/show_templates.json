@@ -6,4 +6,20 @@
   "recurrenceType": "WEEKLY",
   "dayOfWeek": "MONDAY",
   "durationDays": 1
+}, {
+  "name": "Timeless",
+  "description": "Classic prestige and grand rivalries. Timeless is your flagship show, focused on legacy, honor, and intergenerational conflict. This is where main-event feuds are born and wrestling tradition is sacred — even when it's broken.",
+  "showTypeName": "Weekly",
+  "commentaryTeamName": "All-Time Broadcast Team",
+  "recurrenceType": "WEEKLY",
+  "dayOfWeek": "FRIDAY",
+  "durationDays": 1
+}, {
+  "name": "All Time Rumble",
+  "description": "Massive battle royal across eras. Winner gets guaranteed shot at the ATW World Title.",
+  "showTypeName": "Premium Live Event (PLE)",
+  "commentaryTeamName": "All-Time Broadcast Team",
+  "recurrenceType": "ANNUAL",
+  "dayOfWeek": "SUNDAY",
+  "durationDays": 1
 } ]
