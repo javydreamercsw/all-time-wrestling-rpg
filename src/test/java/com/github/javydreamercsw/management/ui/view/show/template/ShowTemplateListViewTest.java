@@ -38,6 +38,7 @@ import com.github.javydreamercsw.management.service.segment.type.SegmentTypeServ
 import com.github.javydreamercsw.management.service.show.ShowContextFacade;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
+import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
@@ -84,7 +85,7 @@ class ShowTemplateListViewTest extends AbstractViewTest {
     lenient()
         .when(wrestlerFacade.getTitleService())
         .thenReturn(
-            Mockito.mock(com.github.javydreamercsw.management.service.title.TitleService.class));
+            Mockito.mock(TitleService.class));
     lenient().when(wrestlerFacade.getTitleService().findAll()).thenReturn(Collections.emptyList());
     lenient().when(showContextFacade.getTournamentService()).thenReturn(tournamentService);
     lenient().when(securityUtils.canCreate()).thenReturn(true);

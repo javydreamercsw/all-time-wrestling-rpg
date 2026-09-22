@@ -42,6 +42,7 @@ import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.tournament.TournamentFormat;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -135,7 +136,7 @@ public class ShowTemplateListView extends Main {
   private ComboBox<SegmentRule> assignmentSpecFinalRuleCombo;
   private MultiSelectComboBox<SegmentRule> assignmentSpecAllowedRulesCombo;
   private ComboBox<Title> assignmentSpecTitleCombo;
-  private List<com.vaadin.flow.component.Component> assignmentSpecFields;
+  private List<Component> assignmentSpecFields;
 
   final TextField nameFilter;
   final ComboBox<ShowType> showTypeFilter;
@@ -719,7 +720,7 @@ public class ShowTemplateListView extends Main {
     assignmentPicker.setAlignItems(FlexComponent.Alignment.END);
     VerticalLayout specSection =
         new VerticalLayout(
-            assignmentSpecFields.toArray(new com.vaadin.flow.component.Component[0]));
+            assignmentSpecFields.toArray(new Component[0]));
     specSection.setWidthFull();
     specSection.setSpacing(false);
     specSection.setPadding(false);

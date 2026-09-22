@@ -38,11 +38,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.test.util.ReflectionTestUtils;
 
 /** Unit tests for the tournaments.json seed sync (ATW-vg16). */
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class TournamentSyncTest {
 
   @Mock private TournamentService tournamentService;

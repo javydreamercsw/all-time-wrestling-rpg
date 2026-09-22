@@ -27,6 +27,7 @@ import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
@@ -75,7 +76,7 @@ class BracketTournamentServiceTest {
   @Mock private TitleReignRepository titleReignRepository;
 
   @Mock
-  private com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository
+  private SegmentRuleRepository
       segmentRuleRepository;
 
   @Mock private TournamentFormat format;
