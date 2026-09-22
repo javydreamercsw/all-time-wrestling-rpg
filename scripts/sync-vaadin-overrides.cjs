@@ -40,7 +40,8 @@ const overrides = ensureObject(pkg, 'overrides');
 
 const pinnedNpmVersions = {
   // Independent versioning / not published for every Vaadin patch
-  '@vaadin/common-frontend': '0.0.23',
+  // 0.0.24+ drops the nx dependency tree (GHSA-vp3h-ghgh-jr7g / GHSA-7w5x-hrqm-74c2)
+  '@vaadin/common-frontend': '0.0.24',
   '@vaadin/vaadin-development-mode-detector': '2.0.7',
   '@vaadin/vaadin-usage-statistics': '2.1.3',
   '@vaadin/router': '2.0.1',
