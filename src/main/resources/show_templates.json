@@ -21,5 +21,12 @@
   "commentaryTeamName": "All-Time Broadcast Team",
   "recurrenceType": "ANNUAL",
   "dayOfWeek": "SUNDAY",
-  "durationDays": 1
+  "weekOfMonth": -1,
+  "month": "JANUARY",
+  "durationDays": 1,
+  "requiredExpansions": [ "RUMBLE" ],
+  "assignments": [ {
+    "segmentTypeName": "Abu Dhabi Rumble",
+    "mode": "AUTO_ATTACH"
+  } ]
 } ]
