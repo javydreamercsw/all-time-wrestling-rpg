@@ -64,9 +64,15 @@ class ShowStyleUIIT extends ManagementIntegrationTest {
   private Show weeklyShow;
   private Show otherShow;
   @Autowired GameSettingService gameSettingService;
+  @Autowired org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
   @BeforeEach
   public void setUp() {
+    // Assignment/join child tables reference show_template (ATW-cpuu/ATW-xtf0 seed rows on the
+    // synced templates) — clear them before the bulk template delete or FK_STA_TEMPLATE fires.
+    jdbcTemplate.execute("DELETE FROM show_template_segment_assignment");
+    jdbcTemplate.execute("DELETE FROM show_template_assignment_rule");
+    jdbcTemplate.execute("DELETE FROM show_template_required_expansion");
     showRepository.deleteAllInBatch();
     showTemplateRepository.deleteAllInBatch();
     showTypeRepository.deleteAllInBatch();

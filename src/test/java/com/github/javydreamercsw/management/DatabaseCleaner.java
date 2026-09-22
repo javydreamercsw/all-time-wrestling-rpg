@@ -214,8 +214,13 @@ public class DatabaseCleaner implements DatabaseCleanup {
       "faction",
       "account_roles",
       // Template assignment rows reference tournament/show_template/universe — deleting them
-      // first unblocks those deletes below (they have no dedicated repository to clear).
+      // first unblocks those deletes below (they have no dedicated repository to clear). The
+      // allowed-rules and required-expansion child tables hang off assignment/template rows
+      // (ATW-cpuu/ATW-xtf0); requiredExpansions is a @CollectionTable, invisible to the
+      // @JoinTable scan below, so all three are cleared manually here.
       "show_template_segment_assignment",
+      "show_template_assignment_rule",
+      "show_template_required_expansion",
       "tournament_match",
       "tournament_round",
       "tournament_entry",

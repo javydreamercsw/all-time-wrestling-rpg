@@ -72,6 +72,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
   @Autowired private SegmentRuleService segmentRuleService;
   @Autowired private SegmentService segmentService;
   @Autowired private CampaignRepository campaignRepository;
+  @Autowired private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
   @Autowired private CampaignStateRepository campaignStateRepository;
   @Autowired private BackstageActionHistoryRepository backstageActionHistoryRepository;
   @Autowired private CampaignEncounterRepository campaignEncounterRepository;
@@ -104,6 +105,11 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     showRepository.deleteAll();
     wrestlerRepository.deleteAll();
     seasonRepository.deleteAll();
+    // Assignment/join child tables reference show_template (ATW-cpuu/ATW-xtf0 seed rows) —
+    // clear them before the bulk template delete or FK_STA_TEMPLATE fires.
+    jdbcTemplate.execute("DELETE FROM show_template_segment_assignment");
+    jdbcTemplate.execute("DELETE FROM show_template_assignment_rule");
+    jdbcTemplate.execute("DELETE FROM show_template_required_expansion");
     showTemplateRepository.deleteAll();
     showTypeRepository.deleteAll();
     rivalryRepository.deleteAll();
