@@ -75,9 +75,7 @@ class BracketTournamentServiceTest {
   @Mock private ShowSegmentReservationService reservationService;
   @Mock private TitleReignRepository titleReignRepository;
 
-  @Mock
-  private SegmentRuleRepository
-      segmentRuleRepository;
+  @Mock private SegmentRuleRepository segmentRuleRepository;
 
   @Mock private TournamentFormat format;
 

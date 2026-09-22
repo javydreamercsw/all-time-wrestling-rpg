@@ -82,10 +82,7 @@ class ShowTemplateListViewTest extends AbstractViewTest {
     lenient().when(segmentRuleService.findAll()).thenReturn(Collections.emptyList());
     lenient().when(tournamentService.findAll()).thenReturn(Collections.emptyList());
     lenient().when(tournamentService.getAvailableFormats()).thenReturn(Collections.emptyList());
-    lenient()
-        .when(wrestlerFacade.getTitleService())
-        .thenReturn(
-            Mockito.mock(TitleService.class));
+    lenient().when(wrestlerFacade.getTitleService()).thenReturn(Mockito.mock(TitleService.class));
     lenient().when(wrestlerFacade.getTitleService().findAll()).thenReturn(Collections.emptyList());
     lenient().when(showContextFacade.getTournamentService()).thenReturn(tournamentService);
     lenient().when(securityUtils.canCreate()).thenReturn(true);

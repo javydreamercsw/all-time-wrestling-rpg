@@ -29,10 +29,11 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
-import com.github.javydreamercsw.management.dto.ShowTemplateDTO;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
+import com.github.javydreamercsw.management.dto.ShowTemplateDTO;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
@@ -46,11 +47,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
-import org.springframework.test.util.ReflectionTestUtils;
+import org.mockito.quality.Strictness;
 
 /** Unit tests for the show_templates.json seed sync (ATW-cpuu, ATW-xtf0). */
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class ShowTemplateSyncTest {
 
   @Mock private ShowTemplateService showTemplateService;
@@ -61,10 +62,6 @@ class ShowTemplateSyncTest {
 
   @BeforeEach
   void setUp() {
-    sync =
-        new ShowTemplateSync(
-            showTemplateService, segmentTypeService, segmentRuleService, new ObjectMapper());
-    lenient().when(showTemplateService.count()).thenReturn(0L);
     lenient()
         .when(
             showTemplateService.createOrUpdateTemplate(
@@ -86,9 +83,22 @@ class ShowTemplateSyncTest {
         .thenAnswer(
             inv -> {
               ShowTemplate t = new ShowTemplate();
+              t.setId(9L);
               t.setName(inv.getArgument(0));
               return t;
             });
+    lenient().when(segmentRuleService.findAll()).thenReturn(List.of());
+  }
+
+  /** Sync over a caller-supplied catalog instead of the classpath file. */
+  private ShowTemplateSync syncOver(List<ShowTemplateDTO> dtos) {
+    return new ShowTemplateSync(
+        showTemplateService, segmentTypeService, segmentRuleService, new ObjectMapper()) {
+      @Override
+      protected List<ShowTemplateDTO> loadCatalog() {
+        return dtos;
+      }
+    };
   }
 
   @Test
@@ -97,90 +107,52 @@ class ShowTemplateSyncTest {
     SegmentType rumble = new SegmentType();
     rumble.setName("Abu Dhabi Rumble");
     when(segmentTypeService.findByName("Abu Dhabi Rumble")).thenReturn(Optional.of(rumble));
-    ShowTemplate saved = new ShowTemplate();
-    saved.setId(9L);
-    saved.setName("All Time Rumble");
-    when(showTemplateService.createOrUpdateTemplate(
-            eq("All Time Rumble"),
-            any(),
-            anyString(),
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            any(),
-            any()))
-        .thenReturn(saved);
-    // Build a one-template catalog so the ArgumentCaptor sees only this sync's rows.
-    String json =
-        """
-        [ {
-          "name": "All Time Rumble",
-          "showTypeName": "Premium Live Event (PLE)",
-          "assignments": [ { "segmentTypeName": "Abu Dhabi Rumble", "mode": "AUTO_ATTACH" } ]
-        } ]
-        """;
-    sync = syncWithJson(json);
+    ShowTemplateDTO dto = new ShowTemplateDTO();
+    dto.setName("All Time Rumble");
+    dto.setShowTypeName("Premium Live Event (PLE)");
+    ShowTemplateDTO.AssignmentDTO assignment = new ShowTemplateDTO.AssignmentDTO();
+    assignment.setSegmentTypeName("Abu Dhabi Rumble");
+    assignment.setMode("AUTO_ATTACH");
+    dto.setAssignments(List.of(assignment));
+    sync = syncOver(List.of(dto));
 
     sync.sync();
 
     @SuppressWarnings("unchecked")
-    ArgumentCaptor<List<com.github.javydreamercsw.management.domain.show.template
-                    .ShowTemplateSegmentAssignment>>
-        captor = ArgumentCaptor.forClass(List.class);
+    ArgumentCaptor<List<ShowTemplateSegmentAssignment>> captor =
+        ArgumentCaptor.forClass(List.class);
     verify(showTemplateService).syncSegmentAssignments(eq(9L), captor.capture());
     assertThat(captor.getValue()).hasSize(1);
     assertThat(captor.getValue().get(0).getSegmentType()).isEqualTo(rumble);
-    assertThat(
-            captor.getValue().get(0).getMode()
-                == ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH)
-        .isTrue();
+    assertThat(captor.getValue().get(0).getMode())
+        .isEqualTo(ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH);
   }
 
   @Test
   @DisplayName("Unknown type names are skipped with a warning — no invalid rows seeded")
   void sync_unknownType_skipsRow() {
     when(segmentTypeService.findByName("Ghost Type")).thenReturn(Optional.empty());
-    String json =
-        """
-        [ {
-          "name": "Rumble PLE",
-          "showTypeName": "Premium Live Event (PLE)",
-          "assignments": [ { "segmentTypeName": "Ghost Type" } ]
-        } ]
-        """;
-    ShowTemplate saved = new ShowTemplate();
-    saved.setId(3L);
-    saved.setName("Rumble PLE");
-    lenient()
-        .when(showTemplateService.createOrUpdateTemplate(any(), any(), any(), any(), any(), any(),
-                any(), any(), any(), any(), any(), any(), any(), any(), any()))
-        .thenReturn(saved);
-    sync = syncWithJson(json);
+    ShowTemplateDTO dto = new ShowTemplateDTO();
+    dto.setName("Rumble PLE");
+    dto.setShowTypeName("Premium Live Event (PLE)");
+    ShowTemplateDTO.AssignmentDTO assignment = new ShowTemplateDTO.AssignmentDTO();
+    assignment.setSegmentTypeName("Ghost Type");
+    dto.setAssignments(List.of(assignment));
+    sync = syncOver(List.of(dto));
 
     sync.sync();
 
-    verify(showTemplateService, never()).syncSegmentAssignments(anyLong(), any());
+    verify(showTemplateService, never()).syncSegmentAssignments(anyLong(), anyList());
   }
 
   @Test
   @DisplayName("Required expansion codes round-trip into createOrUpdateTemplate")
   void sync_passesRequiredExpansions() {
-    String json =
-        """
-        [ {
-          "name": "All Time Rumble",
-          "showTypeName": "Premium Live Event (PLE)",
-          "requiredExpansions": [ "RUMBLE" ]
-        } ]
-        """;
-    sync = syncWithJson(json);
+    ShowTemplateDTO dto = new ShowTemplateDTO();
+    dto.setName("All Time Rumble");
+    dto.setShowTypeName("Premium Live Event (PLE)");
+    dto.setRequiredExpansions(List.of("RUMBLE"));
+    sync = syncOver(List.of(dto));
 
     sync.sync();
 
@@ -204,31 +176,46 @@ class ShowTemplateSyncTest {
   }
 
   @Test
+  @DisplayName("Rule-only rows resolve the rule by name")
+  void sync_ruleOnlyRow() {
+    SegmentRule noDq = new SegmentRule();
+    noDq.setName("No DQ");
+    when(segmentRuleService.findByName("No DQ")).thenReturn(Optional.of(noDq));
+    ShowTemplateDTO dto = new ShowTemplateDTO();
+    dto.setName("Weekly");
+    dto.setShowTypeName("Weekly");
+    ShowTemplateDTO.AssignmentDTO assignment = new ShowTemplateDTO.AssignmentDTO();
+    assignment.setSegmentRuleName("No DQ");
+    dto.setAssignments(List.of(assignment));
+    sync = syncOver(List.of(dto));
+
+    sync.sync();
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<ShowTemplateSegmentAssignment>> captor =
+        ArgumentCaptor.forClass(List.class);
+    verify(showTemplateService).syncSegmentAssignments(eq(9L), captor.capture());
+    assertThat(captor.getValue()).hasSize(1);
+    assertThat(captor.getValue().get(0).getSegmentRule()).isEqualTo(noDq);
+  }
+
+  @Test
   @DisplayName("show_templates.json parses with the new assignment + expansion fields")
   void catalogParses() throws Exception {
     try (var is = getClass().getResourceAsStream("/show_templates.json")) {
-      List<ShowTemplateDTO> dtos =
-          new ObjectMapper().readValue(is, new TypeReference<>() {});
+      List<ShowTemplateDTO> dtos = new ObjectMapper().readValue(is, new TypeReference<>() {});
       assertThat(dtos).hasSize(3);
       ShowTemplateDTO rumble =
-          dtos.stream().filter(d -> "All Time Rumble".equals(d.getName())).findFirst().orElseThrow();
+          dtos.stream()
+              .filter(d -> "All Time Rumble".equals(d.getName()))
+              .findFirst()
+              .orElseThrow();
       assertThat(rumble.getWeekOfMonth()).isEqualTo(-1);
       assertThat(rumble.getMonth()).isEqualTo("JANUARY");
       assertThat(rumble.getRequiredExpansions()).containsExactly("RUMBLE");
       assertThat(rumble.getAssignments()).hasSize(1);
-      assertThat(rumble.getAssignments().get(0).getSegmentTypeName())
-          .isEqualTo("Abu Dhabi Rumble");
+      assertThat(rumble.getAssignments().get(0).getSegmentTypeName()).isEqualTo("Abu Dhabi Rumble");
+      assertThat(rumble.getAssignments().get(0).getMode()).isEqualTo("AUTO_ATTACH");
     }
-  }
-
-  private ShowTemplateSync syncWithJson(String json) {
-    ShowTemplateSync custom =
-        new ShowTemplateSync(
-            showTemplateService, segmentTypeService, segmentRuleService, new ObjectMapper());
-    com.github.javydreamercsw.management.sync.ShowTemplateSync spy =
-        org.mockito.Mockito.spy(custom);
-    // Redirect the sync's ClassPathResource read through an in-memory JSON body.
-    ReflectionTestUtils.setField(spy, "objectMapper", new ObjectMapper());
-    return spy;
   }
 }

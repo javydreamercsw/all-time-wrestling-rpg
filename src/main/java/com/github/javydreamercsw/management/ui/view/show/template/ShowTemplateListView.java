@@ -718,9 +718,7 @@ public class ShowTemplateListView extends Main {
             assignmentModeCombo);
     assignmentPicker.setWidthFull();
     assignmentPicker.setAlignItems(FlexComponent.Alignment.END);
-    VerticalLayout specSection =
-        new VerticalLayout(
-            assignmentSpecFields.toArray(new Component[0]));
+    VerticalLayout specSection = new VerticalLayout(assignmentSpecFields.toArray(new Component[0]));
     specSection.setWidthFull();
     specSection.setSpacing(false);
     specSection.setPadding(false);
