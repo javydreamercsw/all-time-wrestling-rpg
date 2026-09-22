@@ -174,6 +174,44 @@ public class ShowTemplateSync implements DataSyncContributor {
                         assignmentDto.getTournamentCode(),
                         dto.getName()));
       }
+      if (assignmentDto.getSpecName() != null) {
+        // Full spec row (ATW-etws): the booking path creates the tournament on first use. The
+        // final rule and allowed pool resolve by name like type/rule targets.
+        if (assignmentDto.getTournamentCode() != null) {
+          log.warn(
+              "Assignment row on template '{}' sets both tournamentCode and a spec — keeping the"
+                  + " tournament reference, ignoring the spec",
+              dto.getName());
+        } else {
+          row.setSpecName(assignmentDto.getSpecName());
+          row.setSpecFormatId(assignmentDto.getSpecFormatId());
+          row.setSpecEntrantCount(assignmentDto.getSpecEntrantCount());
+          if (assignmentDto.getSpecFinalRuleName() != null) {
+            segmentRuleService
+                .findByName(assignmentDto.getSpecFinalRuleName())
+                .ifPresentOrElse(
+                    row::setSpecFinalRule,
+                    () ->
+                        log.warn(
+                            "Final rule '{}' not found — spec final rule skipped on template"
+                                + " '{}'",
+                            assignmentDto.getSpecFinalRuleName(),
+                            dto.getName()));
+          }
+          for (String ruleName : assignmentDto.getAllowedRuleNames()) {
+            segmentRuleService
+                .findByName(ruleName)
+                .ifPresentOrElse(
+                    row.getSpecAllowedRules()::add,
+                    () ->
+                        log.warn(
+                            "Allowed rule '{}' not found — skipped from spec pool on template"
+                                + " '{}'",
+                            ruleName,
+                            dto.getName()));
+          }
+        }
+      }
       row.setMode(
           assignmentDto.getMode() != null
               ? ShowTemplateSegmentAssignment.AssignmentMode.valueOf(assignmentDto.getMode())

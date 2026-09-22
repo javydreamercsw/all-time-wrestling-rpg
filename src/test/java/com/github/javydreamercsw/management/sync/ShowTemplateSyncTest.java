@@ -241,6 +241,55 @@ class ShowTemplateSyncTest {
   }
 
   @Test
+  @DisplayName("Spec rows resolve the final rule and allowed pool by name")
+  void sync_specRow_resolvesRules() {
+    SegmentRule barbwire = new SegmentRule();
+    barbwire.setName("Barbwire Exploding Deathmatch");
+    SegmentRule lms = new SegmentRule();
+    lms.setName("Last Man Standing");
+    SegmentRule cage = new SegmentRule();
+    cage.setName("Cage");
+    SegmentRule noDq = new SegmentRule();
+    noDq.setName("No DQ");
+    when(segmentRuleService.findByName("Barbwire Exploding Deathmatch"))
+        .thenReturn(Optional.of(barbwire));
+    when(segmentRuleService.findByName("Last Man Standing")).thenReturn(Optional.of(lms));
+    when(segmentRuleService.findByName("Cage")).thenReturn(Optional.of(cage));
+    when(segmentRuleService.findByName("No DQ")).thenReturn(Optional.of(noDq));
+    SegmentType singles = new SegmentType();
+    singles.setName("One on One");
+    when(segmentTypeService.findByName("One on One")).thenReturn(Optional.of(singles));
+    ShowTemplateDTO dto = new ShowTemplateDTO();
+    dto.setName("Valentine's Day Massacre");
+    dto.setShowTypeName("Premium Live Event (PLE)");
+    ShowTemplateDTO.AssignmentDTO assignment = new ShowTemplateDTO.AssignmentDTO();
+    assignment.setSegmentTypeName("One on One");
+    assignment.setSpecName("Deadly Combat");
+    assignment.setSpecFormatId("SINGLE_ELIMINATION");
+    assignment.setSpecEntrantCount(8);
+    assignment.setSpecFinalRuleName("Barbwire Exploding Deathmatch");
+    assignment.setAllowedRuleNames(List.of("Last Man Standing", "Cage", "No DQ"));
+    assignment.setMode("AUTO_ATTACH");
+    dto.setAssignments(List.of(assignment));
+    sync = syncOver(List.of(dto));
+
+    sync.sync();
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<ShowTemplateSegmentAssignment>> captor =
+        ArgumentCaptor.forClass(List.class);
+    verify(showTemplateService).syncSegmentAssignments(eq(9L), captor.capture());
+    assertThat(captor.getValue()).hasSize(1);
+    ShowTemplateSegmentAssignment row = captor.getValue().get(0);
+    assertThat(row.getSpecName()).isEqualTo("Deadly Combat");
+    assertThat(row.getSpecFormatId()).isEqualTo("SINGLE_ELIMINATION");
+    assertThat(row.getSpecEntrantCount()).isEqualTo(8);
+    assertThat(row.getSpecFinalRule()).isEqualTo(barbwire);
+    assertThat(row.getSpecAllowedRules()).containsExactly(lms, cage, noDq);
+    assertThat(row.getTournament()).isNull();
+  }
+
+  @Test
   @DisplayName("show_templates.json parses with the new assignment + expansion fields")
   void catalogParses() throws Exception {
     try (var is = getClass().getResourceAsStream("/show_templates.json")) {
@@ -265,7 +314,14 @@ class ShowTemplateSyncTest {
       assertThat(massacre.getWeekOfMonth()).isEqualTo(2);
       assertThat(massacre.getMonth()).isEqualTo("FEBRUARY");
       assertThat(massacre.getAssignments()).hasSize(1);
-      assertThat(massacre.getAssignments().get(0).getTournamentCode()).isEqualTo("deadly_combat");
+      assertThat(massacre.getAssignments().get(0).getSpecName()).isEqualTo("Deadly Combat");
+      assertThat(massacre.getAssignments().get(0).getSpecFormatId())
+          .isEqualTo("SINGLE_ELIMINATION");
+      assertThat(massacre.getAssignments().get(0).getSpecEntrantCount()).isEqualTo(8);
+      assertThat(massacre.getAssignments().get(0).getSpecFinalRuleName())
+          .isEqualTo("Barbwire Exploding Deathmatch");
+      assertThat(massacre.getAssignments().get(0).getAllowedRuleNames())
+          .containsExactly("Last Man Standing", "Cage", "No DQ");
       assertThat(massacre.getAssignments().get(0).getSegmentTypeName()).isEqualTo("One on One");
     }
   }

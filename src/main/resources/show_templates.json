@@ -41,7 +41,11 @@
   "durationDays": 1,
   "assignments": [ {
     "segmentTypeName": "One on One",
-    "tournamentCode": "deadly_combat",
+    "specName": "Deadly Combat",
+    "specFormatId": "SINGLE_ELIMINATION",
+    "specEntrantCount": 8,
+    "specFinalRuleName": "Barbwire Exploding Deathmatch",
+    "allowedRuleNames": [ "Last Man Standing", "Cage", "No DQ" ],
     "mode": "AUTO_ATTACH"
   } ]
 } ]

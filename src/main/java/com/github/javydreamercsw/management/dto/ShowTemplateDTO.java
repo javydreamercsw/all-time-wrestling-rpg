@@ -54,7 +54,7 @@ public class ShowTemplateDTO {
 
   @Data
   public static class AssignmentDTO {
-    /** Segment type name (e.g. "Abu Dhabi Rumble"), or null for a rule-only row. */
+    /** Segment type name (e.g. "One on One"), or null for a rule-only row. */
     private String segmentTypeName;
 
     /** Segment rule name (e.g. "Rumble Rules"), or null. */
@@ -62,10 +62,26 @@ public class ShowTemplateDTO {
 
     /**
      * Catalog tournament code ({@code Tournament.code}, e.g. {@code deadly_combat}) to attach —
-     * resolves via TournamentSync @Order(55), which runs before this sync. Null for non-tournament
-     * rows.
+     * resolves via TournamentSync @Order(55), which runs before this sync. Mutually exclusive with
+     * the spec fields below.
      */
     private String tournamentCode;
+
+    /**
+     * Tournament spec fields (ATW-etws): when {@code specName} is set, the booking path creates ONE
+     * persistent tournament from the spec on first use. {@code specFormatId} is required for a
+     * valid spec; {@code specEntrantCount} falls back to the format max when null.
+     */
+    private String specName;
+
+    private String specFormatId;
+    private Integer specEntrantCount;
+
+    /** Rule forced onto the bracket final (e.g. "Barbwire Exploding Deathmatch"), or null. */
+    private String specFinalRuleName;
+
+    /** Allowed-rules pool for the other rounds; resolved by name, unknown names skipped. */
+    private List<String> allowedRuleNames = new ArrayList<>();
 
     /** AUTO_ATTACH (deterministic merge) or ENCOURAGED (AI preference). Default ENCOURAGED. */
     private String mode;
