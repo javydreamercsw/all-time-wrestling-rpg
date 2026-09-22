@@ -28,6 +28,7 @@ import com.github.javydreamercsw.management.domain.show.template.RecurrenceType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import java.time.DayOfWeek;
@@ -49,6 +50,7 @@ class ShowSchedulerServiceTest {
   @Mock private ShowService showService;
   @Mock private ShowTemplateService showTemplateService;
   @Mock private ArenaService arenaService;
+  @Mock private ExpansionService expansionService;
 
   @InjectMocks private ShowSchedulerService showSchedulerService;
 
@@ -238,6 +240,61 @@ class ShowSchedulerServiceTest {
 
     // Verify no shows were created
     verify(showService, Mockito.never())
+        .createShow(any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+  }
+
+  @Test
+  void testRequiredExpansionDisabled_skipsShowGeneration() {
+    // All Time Rumble shape: ANNUAL last-Sunday-of-January PLE gated on the RUMBLE expansion.
+    // With the expansion disabled, no shows are created at all — no empty shells (ATW-xtf0).
+    pleTemplate.getRequiredExpansions().add("RUMBLE");
+    when(expansionService.isExpansionEnabled("RUMBLE")).thenReturn(false);
+    when(showTemplateService.findAll()).thenReturn(List.of(pleTemplate));
+    lenient().when(arenaService.assignArenaToShow(any(boolean.class))).thenReturn(100L);
+
+    showSchedulerService.generateShowsForSeason(season);
+
+    verify(showService, Mockito.never())
+        .createShow(any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+  }
+
+  @Test
+  void testRequiredExpansionEnabled_generatesShows() {
+    // Same template with the expansion enabled: generation proceeds normally.
+    pleTemplate.getRequiredExpansions().add("RUMBLE");
+    when(expansionService.isExpansionEnabled("RUMBLE")).thenReturn(true);
+    when(showTemplateService.findAll()).thenReturn(List.of(pleTemplate));
+    when(showService.existsByNameAndShowDate(any(), any())).thenReturn(false);
+    when(arenaService.assignArenaToShow(any(boolean.class))).thenReturn(100L);
+
+    showSchedulerService.generateShowsForSeason(season);
+
+    // Last Sunday of Feb 2026 is Feb 22 (the fixture season spans Feb 2 - Mar 2).
+    verify(showService, atLeastOnce())
+        .createShow(
+            eq("Big Event - Night 1"),
+            any(),
+            eq(2L),
+            eq(LocalDate.of(2026, 2, 22)),
+            eq(1L),
+            eq(2L),
+            any(),
+            any(),
+            any(),
+            eq(100L));
+  }
+
+  @Test
+  void testNoRequiredExpansions_neverConsultsExpansionService() {
+    // Templates without requirements generate shows regardless of expansion settings.
+    when(showTemplateService.findAll()).thenReturn(List.of(weeklyTemplate));
+    when(showService.existsByNameAndShowDate(any(), any())).thenReturn(false);
+    lenient().when(arenaService.assignArenaToShow(any(boolean.class))).thenReturn(100L);
+
+    showSchedulerService.generateShowsForSeason(season);
+
+    verify(expansionService, Mockito.never()).isExpansionEnabled(any());
+    verify(showService, atLeastOnce())
         .createShow(any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
   }
 }

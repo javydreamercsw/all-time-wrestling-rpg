@@ -23,7 +23,9 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -42,8 +44,10 @@ import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.Month;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 import org.jspecify.annotations.Nullable;
@@ -125,6 +129,18 @@ public class ShowTemplate extends AbstractEntity<Long> {
    */
   @OneToMany(mappedBy = "template", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<ShowTemplateSegmentAssignment> segmentAssignments = new ArrayList<>();
+
+  /**
+   * Expansion codes that must ALL be enabled before this template's shows are created (ATW-xtf0).
+   * Mirrors {@code CampaignChapterDTO.requiredExpansions}. Empty list = no restriction (available
+   * in base game). Example: All Time Rumble requires the RUMBLE expansion.
+   */
+  @ElementCollection(fetch = FetchType.EAGER)
+  @CollectionTable(
+      name = "show_template_required_expansion",
+      joinColumns = @JoinColumn(name = "template_id"))
+  @Column(name = "expansion_code", length = 64)
+  private Set<String> requiredExpansions = new HashSet<>();
 
   /** Assigned event-only segment types offered to the AI for this template's shows. */
   public List<ShowTemplateSegmentAssignment> getAssignedEventTypes() {

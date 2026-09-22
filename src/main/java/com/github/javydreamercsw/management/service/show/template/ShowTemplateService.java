@@ -283,6 +283,55 @@ public class ShowTemplateService {
     return showTemplateRepository.save(template);
   }
 
+  /**
+   * Create-or-update with required-expansion codes (ATW-xtf0). The expansion set is replaced
+   * wholesale — an empty list clears the requirements (available in base game).
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  @CacheEvict(
+      value = {CacheConfig.SHOW_TEMPLATES_CACHE, CacheConfig.SHOWS_CACHE},
+      allEntries = true)
+  public ShowTemplate createOrUpdateTemplate(
+      @NonNull final String name,
+      final String description,
+      @NonNull final String showTypeName,
+      final String imageUrl,
+      final String commentaryTeamName,
+      final Integer expectedMatches,
+      final Integer expectedPromos,
+      final Integer durationDays,
+      final RecurrenceType recurrenceType,
+      final DayOfWeek dayOfWeek,
+      final Integer dayOfMonth,
+      final Integer weekOfMonth,
+      final Month month,
+      final Gender genderConstraint,
+      final List<String> requiredExpansionCodes) {
+    ShowTemplate template =
+        createOrUpdateTemplate(
+            name,
+            description,
+            showTypeName,
+            null,
+            commentaryTeamName,
+            expectedMatches,
+            expectedPromos,
+            durationDays,
+            recurrenceType,
+            dayOfWeek,
+            dayOfMonth,
+            weekOfMonth,
+            month,
+            genderConstraint);
+    if (template != null && requiredExpansionCodes != null) {
+      template.getRequiredExpansions().clear();
+      template.getRequiredExpansions().addAll(requiredExpansionCodes);
+      template = showTemplateRepository.save(template);
+    }
+    return template;
+  }
+
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   @CacheEvict(
