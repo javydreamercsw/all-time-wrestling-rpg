@@ -1083,6 +1083,20 @@ public class ShowTemplateListView extends Main {
     openEditDialog(template);
   }
 
+  /** Spec-field visibility follows the Tournament combo — a row is one or the other. */
+  boolean areSpecFieldsVisibleForTest() {
+    return assignmentSpecFields.stream().allMatch(com.vaadin.flow.component.Component::isVisible);
+  }
+
+  /** Apply the dialog's current spec fields to a row, mirroring the Add Assignment path. */
+  void applySpecFieldsForTest(ShowTemplateSegmentAssignment row) {
+    applySpecFields(row);
+  }
+
+  void setTournamentSelectionForTest(Tournament tournament) {
+    assignmentTournamentCombo.setValue(tournament);
+  }
+
   Grid<ShowTemplateSegmentAssignment> getAssignmentGridForTest() {
     return assignmentGrid;
   }

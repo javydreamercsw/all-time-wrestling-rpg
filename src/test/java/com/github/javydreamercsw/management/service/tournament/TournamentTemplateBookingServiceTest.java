@@ -460,6 +460,55 @@ class TournamentTemplateBookingServiceTest {
   }
 
   @Test
+  void plainRow_noTournament_returnsEmptyWithoutWarnings() {
+    // A type+rule row with no tournament and no spec resolves to nothing (ATW-etws spec path
+    // returns null before any lookup).
+    ShowTemplate template = new ShowTemplate();
+    template.setId(9L);
+    ShowTemplateSegmentAssignment plain = new ShowTemplateSegmentAssignment();
+    plain.setTemplate(template);
+    plain.setSegmentType(rumbleType);
+    plain.setMode(ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH);
+
+    assertTrue(service.bookTournamentFedSegment(plain, rumbleType, show).isEmpty());
+    assertTrue(service.bookWeeklyRounds(plain, show).isEmpty());
+    verify(tournamentService, never()).findFormat(any());
+  }
+
+  @Test
+  void advanceFails_whenNextRoundCannotGenerate_fallsBackGracefully() {
+    // advanceToNextRound throwing IllegalStateException → warn + fall back, no exception escapes
+    // (the rollback-only poison guard).
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.ACTIVE);
+    TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ACTIVE);
+    TournamentMatch match = match(1, aliceEntry, bobEntry);
+    match.setWinner(aliceEntry); // bracket shown as decided, but no next round exists
+    tournament.setRounds(new ArrayList<>(List.of(round(1, match))));
+    when(tournamentService.advanceToNextRound(tournament))
+        .thenThrow(new IllegalStateException("bracket stuck"));
+
+    assertTrue(
+        service.bookTournamentFedSegment(assignment, rumbleType, show).isEmpty(),
+        "A stuck bracket must fall back to AI participants, not throw");
+  }
+
+  @Test
+  void weeklyRounds_completeTournament_skipsImmediately() {
+    // A COMPLETE tournament on a weekly row: no auto-start, no booking, no format lookup.
+    tournament.setStatus(TournamentStatus.COMPLETE);
+    ShowTemplate template = new ShowTemplate();
+    template.setId(9L);
+    ShowTemplateSegmentAssignment row = new ShowTemplateSegmentAssignment();
+    row.setTemplate(template);
+    row.setTournament(tournament);
+    row.setMode(ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH);
+
+    assertTrue(service.bookWeeklyRounds(row, show).isEmpty());
+    verify(tournamentService, never()).startTournament(any());
+  }
+
+  @Test
   void inProgressTournament_booksFirstOpenMatch() {
     tournament.setStatus(TournamentStatus.IN_PROGRESS);
     TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.ACTIVE);

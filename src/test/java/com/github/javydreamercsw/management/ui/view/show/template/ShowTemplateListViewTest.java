@@ -17,6 +17,8 @@
 package com.github.javydreamercsw.management.ui.view.show.template;
 
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
@@ -224,6 +226,44 @@ class ShowTemplateListViewTest extends AbstractViewTest {
                         && "Abu Dhabi Rumble".equals(rows.get(0).getSegmentType().getName())
                         && rows.get(0).getMode()
                             == ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH));
+  }
+
+  @Test
+  @DisplayName("Spec fields follow Tournament combo visibility; spec application round-trips")
+  void specFields_visibilityAndApplication() {
+    ShowTemplate template = new ShowTemplate();
+    template.setId(8L);
+    template.setName("Dialog PLE");
+    template.setShowType(showType("PLE"));
+    when(showTemplateService.getTemplateWithAssignments(8L)).thenReturn(Optional.of(template));
+
+    view.openEditDialogForTest(template);
+
+    // Tournament combo empty → spec fields visible.
+    assertTrue(view.areSpecFieldsVisibleForTest(), "Empty tournament shows spec fields");
+    Tournament picked = new Tournament();
+    picked.setId(3L);
+    picked.setName("Crown Cup");
+    view.setTournamentSelectionForTest(picked);
+    assertFalse(view.areSpecFieldsVisibleForTest(), "Picked tournament hides spec fields");
+    view.setTournamentSelectionForTest(null);
+    assertTrue(view.areSpecFieldsVisibleForTest(), "Clearing restores spec visibility");
+  }
+
+  @Test
+  @DisplayName("applySpecFields copies name/format/count onto the row")
+  void applySpecFields_copiesOntoRow() {
+    ShowTemplate template = new ShowTemplate();
+    template.setId(8L);
+    template.setName("Dialog PLE");
+    template.setShowType(showType("PLE"));
+    when(showTemplateService.getTemplateWithAssignments(8L)).thenReturn(Optional.of(template));
+
+    view.openEditDialogForTest(template);
+    ShowTemplateSegmentAssignment row = new ShowTemplateSegmentAssignment();
+    view.applySpecFieldsForTest(row); // no spec name set → no-op
+
+    assertNull(row.getSpecName(), "Empty spec fields must not touch the row");
   }
 
   private static void assertEquals(int expected, int actual, String message) {

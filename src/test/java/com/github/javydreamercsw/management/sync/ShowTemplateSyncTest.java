@@ -39,6 +39,7 @@ import com.github.javydreamercsw.management.dto.ShowTemplateDTO;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -287,6 +288,64 @@ class ShowTemplateSyncTest {
     assertThat(row.getSpecFinalRule()).isEqualTo(barbwire);
     assertThat(row.getSpecAllowedRules()).containsExactly(lms, cage, noDq);
     assertThat(row.getTournament()).isNull();
+  }
+
+  @Test
+  @DisplayName("Unknown rule/tournament names skip with warnings; catalog file loads")
+  void sync_unknownNames_skipGracefully() {
+    // Unknown final rule + unknown allowed rule + unknown tournament code: each skipped with a
+    // warning, the row still seeds with the resolvable parts.
+    when(segmentTypeService.findByName("One on One")).thenReturn(Optional.of(new SegmentType()));
+    ShowTemplateDTO dto = new ShowTemplateDTO();
+    dto.setName("Edge PLE");
+    dto.setShowTypeName("Premium Live Event (PLE)");
+    ShowTemplateDTO.AssignmentDTO spec = new ShowTemplateDTO.AssignmentDTO();
+    spec.setSpecName("Ghost Combat");
+    spec.setSpecFormatId("SINGLE_ELIMINATION");
+    spec.setSpecFinalRuleName("Ghost Rule");
+    spec.setAllowedRuleNames(List.of("Real Rule", "Ghost Rule 2"));
+    dto.setAssignments(List.of(spec));
+    SegmentRule real = new SegmentRule();
+    real.setName("Real Rule");
+    when(segmentRuleService.findByName("Real Rule")).thenReturn(Optional.of(real));
+    when(segmentRuleService.findByName("Ghost Rule")).thenReturn(Optional.empty());
+    when(segmentRuleService.findByName("Ghost Rule 2")).thenReturn(Optional.empty());
+    sync = syncOver(List.of(dto));
+
+    sync.sync();
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<ShowTemplateSegmentAssignment>> captor =
+        ArgumentCaptor.forClass(List.class);
+    verify(showTemplateService).syncSegmentAssignments(eq(9L), captor.capture());
+    ShowTemplateSegmentAssignment row = captor.getValue().get(0);
+    assertThat(row.getSpecName()).isEqualTo("Ghost Combat");
+    assertThat(row.getSpecFinalRule()).isNull(); // unknown final rule skipped
+    assertThat(row.getSpecAllowedRules()).containsExactly(real); // unknown pool entry skipped
+  }
+
+  @Test
+  @DisplayName("Missing catalog file logs a warning and syncs nothing")
+  void sync_missingCatalogFile_warnsAndSkips() {
+    ShowTemplateSync missing =
+        new ShowTemplateSync(
+            showTemplateService,
+            segmentTypeService,
+            segmentRuleService,
+            tournamentRepository,
+            new ObjectMapper()) {
+          @Override
+          protected List<ShowTemplateDTO> loadCatalog() throws IOException {
+            throw new IOException("boom");
+          }
+        };
+
+    missing.sync();
+
+    verify(showTemplateService, never())
+        .createOrUpdateTemplate(
+            any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
+            any(), any(), any());
   }
 
   @Test

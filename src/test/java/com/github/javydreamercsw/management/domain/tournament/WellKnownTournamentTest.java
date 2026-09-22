@@ -61,4 +61,21 @@ class WellKnownTournamentTest {
                 + "add the missing constant(s) to WellKnownTournament")
         .isSubsetOf(enumCodes);
   }
+
+  @Test
+  void matchesAndFromCodeBehave() {
+    Tournament tournament = new Tournament();
+    tournament.setCode("deadly_combat");
+
+    assertThat(WellKnownTournament.DEADLY_COMBAT.matches(tournament)).isTrue();
+    assertThat(WellKnownTournament.DEADLY_COMBAT.matches(null)).isFalse();
+    Tournament other = new Tournament();
+    other.setCode("something_else");
+    assertThat(WellKnownTournament.DEADLY_COMBAT.matches(other)).isFalse();
+
+    assertThat(WellKnownTournament.fromCode("deadly_combat"))
+        .contains(WellKnownTournament.DEADLY_COMBAT);
+    assertThat(WellKnownTournament.fromCode("unknown_code")).isEmpty();
+    assertThat(WellKnownTournament.fromCode(null)).isEmpty();
+  }
 }
