@@ -630,7 +630,7 @@ public class ShowDetailView extends Main
   }
 
   private HorizontalLayout createDetailRow(
-      @NonNull final String label, @NonNull final com.vaadin.flow.component.Component value) {
+      @NonNull final String label, @NonNull final Component value) {
     Span labelSpan = new Span(label);
     labelSpan.addClassNames(LumoUtility.FontWeight.SEMIBOLD, LumoUtility.TextColor.SECONDARY);
     HorizontalLayout layout = new HorizontalLayout(labelSpan, value);
