@@ -139,6 +139,16 @@ public class TournamentService {
     return tournamentRepository.findById(id);
   }
 
+  /**
+   * One-time tournaments whose payoff (final or champion showcase) books on the given show
+   * (ATW-xbn4) — the "Host Show" binding from the tournament wizard.
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public List<Tournament> findByPayoffShowId(@NonNull Long showId) {
+    return tournamentRepository.findByPayoffShowId(showId);
+  }
+
   /** Like {@link #findById} but initializes all lazy collections for use outside a transaction. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")

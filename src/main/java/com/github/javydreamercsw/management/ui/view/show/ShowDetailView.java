@@ -39,8 +39,11 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentRepositor
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatchRepository;
+import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
@@ -65,6 +68,7 @@ import com.github.javydreamercsw.management.service.show.template.ShowTemplateSe
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
@@ -167,6 +171,7 @@ public class ShowDetailView extends Main
   private final ExpansionService expansionService;
   private final TeamService teamService;
   private final GameSettingService gameSettingService;
+  private final TournamentService tournamentService;
 
   private Button backButton;
   private Registration backButtonListener;
@@ -249,6 +254,7 @@ public class ShowDetailView extends Main
     this.tournamentMatchRepository = tournamentMatchRepository;
     this.expansionService = viewContext.getExpansionService();
     this.gameSettingService = viewContext.getGameSettingService();
+    this.tournamentService = showContextFacade.getTournamentService();
     initializeComponents();
   }
 
@@ -506,6 +512,10 @@ public class ShowDetailView extends Main
       detailsLayout.add(weeklyLayout);
     }
 
+    // Tournaments attached to this show (payoff host binding or the template's AUTO_ATTACH
+    // pairing) — surfaced so the card shows what the tournament booking path will bring.
+    addTournamentRows(show, detailsLayout);
+
     // Creation date
     if (show.getCreationDate() != null) {
       HorizontalLayout createdLayout =
@@ -564,12 +574,66 @@ public class ShowDetailView extends Main
     return card;
   }
 
+  /**
+   * Adds one row per tournament attached to this show, or nothing when none. Two attachment paths
+   * feed the row set: the one-time host-show binding ({@code Tournament#payoffShow}, ATW-xbn4) and
+   * the show template's tournament AUTO_ATTACH assignments (ATW-oahn/ATW-etws). Each row links to
+   * the tournament's detail view.
+   */
+  private void addTournamentRows(@NonNull final Show show, final VerticalLayout detailsLayout) {
+    // Payoff-host binding: tournaments that book their payoff on this show.
+    List<Tournament> attached = new ArrayList<>(tournamentService.findByPayoffShowId(show.getId()));
+
+    // Template-driven: tournaments referenced by (or specified on) this show's template.
+    if (show.getTemplate() != null && show.getTemplate().getId() != null) {
+      showTemplateService
+          .getTemplateWithAssignments(show.getTemplate().getId())
+          .map(ShowTemplate::getTournamentAssignments)
+          .ifPresent(
+              assignments ->
+                  assignments.forEach(
+                      a -> {
+                        Tournament t = a.getTournament();
+                        if (t != null && attached.stream().noneMatch(e -> e.equals(t))) {
+                          attached.add(t);
+                        }
+                      }));
+    }
+
+    if (attached.isEmpty()) {
+      return;
+    }
+
+    HorizontalLayout tournamentValues = new HorizontalLayout();
+    tournamentValues.setSpacing(true);
+    attached.forEach(
+        t ->
+            tournamentValues.add(
+                createTournamentLink(t, t.getStatus() == TournamentStatus.COMPLETE)));
+
+    detailsLayout.add(createDetailRow("Tournaments:", tournamentValues));
+  }
+
+  private Span createTournamentLink(@NonNull final Tournament tournament, final boolean complete) {
+    Span link = new Span(tournament.getName() + (complete ? " (complete)" : ""));
+    link.addClassNames(LumoUtility.TextColor.PRIMARY, LumoUtility.FontWeight.SEMIBOLD);
+    link.getStyle().set("cursor", "pointer");
+    link.getElement().setAttribute("title", "View tournament");
+    link.addClickListener(
+        e -> getUI().ifPresent(ui -> ui.navigate("tournament-detail/" + tournament.getId())));
+    return link;
+  }
+
   private HorizontalLayout createDetailRow(
       @NonNull final String label, @NonNull final String value) {
+    return createDetailRow(label, new Span(value));
+  }
+
+  private HorizontalLayout createDetailRow(
+      @NonNull final String label, @NonNull final com.vaadin.flow.component.Component value) {
     Span labelSpan = new Span(label);
     labelSpan.addClassNames(LumoUtility.FontWeight.SEMIBOLD, LumoUtility.TextColor.SECONDARY);
-    Span valueSpan = new Span(value);
-    HorizontalLayout layout = new HorizontalLayout(labelSpan, valueSpan);
+    HorizontalLayout layout = new HorizontalLayout(labelSpan, value);
     layout.setSpacing(true);
     return layout;
   }
