@@ -320,7 +320,7 @@ class TournamentDetailViewTest extends AbstractViewTest {
         label.getText().startsWith("Alpha vs Bravo"),
         "The row label names the bracket's entrants: " + label.getText());
     ComboBox<TournamentEntry> picker =
-        _get(view, ComboBox.class, spec -> spec.withCaption("Pick winner"));
+        _get(view, ComboBox.class, spec -> spec.withLabel("Pick winner"));
     assertEquals(2, picker.getListDataView().getItemCount());
   }
 }
