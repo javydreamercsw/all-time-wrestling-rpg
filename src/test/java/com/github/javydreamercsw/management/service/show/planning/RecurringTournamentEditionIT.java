@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentRecurren
 import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -191,7 +192,7 @@ class RecurringTournamentEditionIT extends AbstractTournamentFedPleIT {
         .getTournamentAssignments()
         .stream()
         .map(a -> a.getTournament())
-        .filter(java.util.Objects::nonNull)
+        .filter(Objects::nonNull)
         .findFirst()
         .orElse(null);
   }

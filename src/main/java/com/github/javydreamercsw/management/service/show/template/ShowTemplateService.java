@@ -35,6 +35,7 @@ import java.time.LocalDate;
 import java.time.Month;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.NonNull;
@@ -130,7 +131,7 @@ public class ShowTemplateService {
     }
     int synced = 0;
     for (Show shell : shells) {
-      if (!java.util.Objects.equals(
+      if (!Objects.equals(
           shell.getCommentaryTeam() == null ? null : shell.getCommentaryTeam().getId(),
           template.getCommentaryTeam() == null ? null : template.getCommentaryTeam().getId())) {
         shell.setCommentaryTeam(template.getCommentaryTeam());
