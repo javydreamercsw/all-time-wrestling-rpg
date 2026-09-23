@@ -5,4 +5,4 @@
 ██║  ██║   ██║   ╚███╔███╔╝    ██║  ██║██║     ╚██████╔╝
 ╚═╝  ╚═╝   ╚═╝    ╚══╝╚══╝     ╚═╝  ╚═╝╚═╝      ╚═════╝
 
- :: All Time Wrestling RPG ::  (v${application.version})
+ :: All Time Wrestling RPG ::  (v@project.version@)

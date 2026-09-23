@@ -674,6 +674,34 @@
 
   <build>
     <defaultGoal>spring-boot:run</defaultGoal>
+    <!--
+      Replicates the spring-boot-starter-parent resource config and adds banner.txt
+      to the filtered set: @project.version@ is substituted at build time so the
+      startup banner shows the version even when running exploded classes
+      (./mvnw, IDE) where the JAR manifest Implementation-Version doesn't exist.
+    -->
+    <resources>
+      <resource>
+        <filtering>true</filtering>
+        <directory>src/main/resources</directory>
+        <includes>
+          <include>**/application*.yml</include>
+          <include>**/application*.yaml</include>
+          <include>**/application*.properties</include>
+          <include>banner.txt</include>
+        </includes>
+      </resource>
+      <resource>
+        <filtering>false</filtering>
+        <directory>src/main/resources</directory>
+        <excludes>
+          <exclude>**/application*.yml</exclude>
+          <exclude>**/application*.yaml</exclude>
+          <exclude>**/application*.properties</exclude>
+          <exclude>banner.txt</exclude>
+        </excludes>
+      </resource>
+    </resources>
     <pluginManagement>
       <plugins>
         <plugin>
