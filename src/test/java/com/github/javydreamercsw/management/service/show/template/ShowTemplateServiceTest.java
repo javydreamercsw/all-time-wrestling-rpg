@@ -44,12 +44,15 @@ class ShowTemplateServiceTest {
   @Mock private ShowTemplateRepository showTemplateRepository;
   @Mock private ShowTypeRepository showTypeRepository;
   @Mock private Clock clock;
+  @Mock private com.github.javydreamercsw.management.domain.show.ShowRepository showRepository;
 
   @InjectMocks private ShowTemplateService showTemplateService;
 
   @BeforeEach
   public void setUp() {
     lenient().when(clock.instant()).thenReturn(Instant.now());
+    // syncFutureShowsWithTemplate (ATW-ekev) derives the in-game cutoff from the clock's zone.
+    lenient().when(clock.getZone()).thenReturn(java.time.ZoneId.systemDefault());
   }
 
   @Test
