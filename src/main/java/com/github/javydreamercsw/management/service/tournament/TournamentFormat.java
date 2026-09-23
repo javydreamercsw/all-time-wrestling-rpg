@@ -76,6 +76,17 @@ public interface TournamentFormat {
   }
 
   /**
+   * The segment rule name this format's non-final rounds default to when nothing higher in the
+   * stipulation hierarchy applies (no round fixedRule, no template-row rule, no allowed-rules pool)
+   * — resolved against the rule catalog, ignored when absent. Empty = no default (the catalog's
+   * "Normal" applies). Qualifier groups are No-DQ scrambles by convention, so the format answers
+   * "Free-For-All".
+   */
+  default String getDefaultRoundRuleName() {
+    return "";
+  }
+
+  /**
    * How the bracket should be rendered in the UI. Defaults to {@link RenderMode#TREE} (single
    * elimination bracket). Override for formats that display differently.
    */

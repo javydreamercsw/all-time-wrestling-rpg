@@ -261,6 +261,20 @@ public class TournamentTemplateBookingService {
     return resolved;
   }
 
+  /**
+   * The format's default round rule, resolved to a catalog rule name. The rule catalog seeds
+   * "Free-For-All" (No-DQ); when the row is missing the raw name still lands in the stipulation
+   * string (narration-only at worst), and "Normal" stays the fallback when the format declares no
+   * default.
+   */
+  private String defaultRoundRuleOf(Tournament tournament) {
+    return tournamentService
+        .findFormat(tournament.getFormatId())
+        .map(TournamentFormat::getDefaultRoundRuleName)
+        .filter(name -> !name.isEmpty())
+        .orElse("Normal");
+  }
+
   // ── PLE-adjudication auto-start ─────────────────────────────────────────────
 
   /**
@@ -1236,10 +1250,11 @@ public class TournamentTemplateBookingService {
     }
 
     TournamentMatch match = openMatchOpt.get();
-    // Stipulation precedence: round fixedRule → row rule → tournament allowed-rules pool →
-    // none (ATW-etws). The manual path (bookRoundOnShow) keeps its own hierarchy.
+    // Stipulation precedence: round fixedRule → row rule → tournament allowed-rules pool → the
+    // format's default round rule (e.g. Free-For-All qualifiers are No-DQ by convention).
     String stipulation =
-        tournamentService.resolveRoundStipulation(tournament, match.getRound(), rule, "");
+        tournamentService.resolveRoundStipulation(
+            tournament, match.getRound(), rule, defaultRoundRuleOf(tournament));
     Segment segment = resolveSegment(match, tournament, segmentType, show, stipulation, false);
 
     // The match mechanics already decided a winner inside the segment — mirror it into the

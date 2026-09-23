@@ -135,7 +135,8 @@ class TournamentTemplateBookingServiceTest {
         .thenAnswer(
             invocation -> {
               SegmentRule rule = invocation.getArgument(2);
-              return rule != null ? rule.getName() : "";
+              // Mirror the real hierarchy's tail: fixedRule/row rule, else the fallback.
+              return rule != null ? rule.getName() : invocation.getArgument(3);
             });
 
     tournament = new Tournament();
@@ -948,7 +949,7 @@ class TournamentTemplateBookingServiceTest {
 
     Segment booked = singles(alice, bob, alice);
     when(segmentResolutionService.resolveTeamSegment(
-            any(), any(), eq(singlesType), eq(show), eq("")))
+            any(), any(), eq(singlesType), eq(show), any()))
         .thenReturn(booked);
 
     List<TournamentTemplateBookingService.TournamentBooking> bookings =
@@ -1220,7 +1221,7 @@ class TournamentTemplateBookingServiceTest {
     tournament.setRounds(new ArrayList<>(List.of(round(1, match))));
     Segment booked = singles(alice, bob, alice);
     when(segmentResolutionService.resolveTeamSegment(
-            any(), any(), eq(singlesType), eq(weeklyShow), eq("")))
+            any(), any(), eq(singlesType), eq(weeklyShow), any()))
         .thenReturn(booked);
 
     List<TournamentTemplateBookingService.TournamentBooking> bookings =
@@ -1265,7 +1266,7 @@ class TournamentTemplateBookingServiceTest {
     tournament.setRounds(new ArrayList<>(List.of(round(1, m1, m2))));
     Segment booked = singles(alice, bob, alice);
     when(segmentResolutionService.resolveTeamSegment(
-            any(), any(), eq(singlesType), eq(weeklyShow), eq("")))
+            any(), any(), eq(singlesType), eq(weeklyShow), any()))
         .thenReturn(booked);
 
     List<TournamentTemplateBookingService.TournamentBooking> bookings =
@@ -1338,7 +1339,7 @@ class TournamentTemplateBookingServiceTest {
     tournament.setRounds(new ArrayList<>(List.of(round(1, match))));
     Segment booked = singles(alice, bob, alice);
     when(segmentResolutionService.resolveTeamSegment(
-            any(), any(), eq(singlesType), eq(weeklyShow), eq("")))
+            any(), any(), eq(singlesType), eq(weeklyShow), any()))
         .thenReturn(booked);
 
     List<TournamentTemplateBookingService.TournamentBooking> bookings =
@@ -1407,7 +1408,7 @@ class TournamentTemplateBookingServiceTest {
     when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
         .thenReturn(Optional.of(singlesType));
     when(segmentResolutionService.resolveTeamSegment(
-            any(), any(), eq(singlesType), eq(show), eq("")))
+            any(), any(), eq(singlesType), eq(show), any()))
         .thenReturn(singles(alice, bob, alice));
 
     // Template weekly path routes through the standard One-on-One type; a single open match
@@ -1785,14 +1786,14 @@ class TournamentTemplateBookingServiceTest {
     ffa.addParticipant(bob, 1);
     ffa.addParticipant(cara, 1);
     ffa.setWinners(List.of(alice));
-    when(segmentResolutionService.resolveMultiTeamSegment(any(), eq(ffaType), eq(show), eq("")))
+    when(segmentResolutionService.resolveMultiTeamSegment(any(), eq(ffaType), eq(show), any()))
         .thenReturn(ffa);
 
     List<TournamentTemplateBookingService.TournamentBooking> bookings =
         service.bookWeeklyRounds(assignment, show);
 
     assertEquals(1, bookings.size());
-    verify(segmentResolutionService).resolveMultiTeamSegment(any(), eq(ffaType), eq(show), eq(""));
+    verify(segmentResolutionService).resolveMultiTeamSegment(any(), eq(ffaType), eq(show), any());
     verify(segmentResolutionService, never()).resolveTeamSegment(any(), any(), any(), any(), any());
     // The bracket mirrored the FFA result: the service recorded the match result.
     verify(tournamentService).recordMatchResult(eq(match), any());
@@ -1812,6 +1813,35 @@ class TournamentTemplateBookingServiceTest {
 
     assertTrue(service.bookWeeklyRounds(assignment, show).isEmpty());
     verify(segmentResolutionService, never()).resolveTeamSegment(any(), any(), any(), any(), any());
+  }
+
+  @Test
+  void bookWeeklyRounds_qualifierGroups_defaultRuleIsFreeForAll() {
+    // Free-for-All qualifiers are No-DQ by convention: when the stipulation hierarchy is empty
+    // (no round fixedRule, no row rule, no allowed-rules pool) the format's default rule applies.
+    tournament.setFormatId(QualifierGroupsFormat.FORMAT_ID);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    when(tournamentService.findFormat(QualifierGroupsFormat.FORMAT_ID))
+        .thenReturn(Optional.of(format));
+    when(format.getRoundSegmentTypeCode()).thenReturn(WellKnownSegmentType.FREE_FOR_ALL.getCode());
+    when(format.getDefaultRoundRuleName()).thenReturn("Free-For-All");
+    SegmentType ffaType = new SegmentType();
+    ffaType.setId(12L);
+    ffaType.setName("Free-for-All");
+    when(segmentTypeService.findByCode(WellKnownSegmentType.FREE_FOR_ALL.getCode()))
+        .thenReturn(Optional.of(ffaType));
+    TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.ACTIVE);
+    TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ACTIVE);
+    TournamentMatch match = match(1, aliceEntry, bobEntry);
+    tournament.setRounds(new ArrayList<>(List.of(round(1, match))));
+    when(segmentResolutionService.resolveTeamSegment(
+            any(), any(), eq(ffaType), eq(show), eq("Free-For-All")))
+        .thenReturn(singles(alice, bob, alice));
+
+    assertEquals(1, service.bookWeeklyRounds(assignment, show).size());
+    verify(tournamentService)
+        .resolveRoundStipulation(
+            eq(tournament), any(), eq(assignment.getSegmentRule()), eq("Free-For-All"));
   }
 
   @Test

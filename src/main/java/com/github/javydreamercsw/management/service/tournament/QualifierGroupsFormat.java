@@ -146,6 +146,11 @@ public class QualifierGroupsFormat implements TournamentFormat {
     return WellKnownSegmentType.FREE_FOR_ALL.getCode();
   }
 
+  @Override
+  public String getDefaultRoundRuleName() {
+    return "Free-For-All"; // qualifier scrambles are No-DQ by convention
+  }
+
   /**
    * Split seeds into groups: the tournament's {@code qualifierGroupSize} when set (validated at
    * creation — the bracket needs at least two groups), otherwise aim for 3-wrestler groups with a

@@ -302,6 +302,13 @@ class QualifierGroupsFormatTest {
                 .getCode());
   }
 
+  @Test
+  void defaultRoundRule_isFreeForAll() {
+    // Qualifier scrambles are No-DQ by convention — the format's default rule name matches the
+    // rule catalog's seeded Free-For-All (no_dq=1).
+    assertThat(format.getDefaultRoundRuleName()).isEqualTo("Free-For-All");
+  }
+
   // ── helpers ──────────────────────────────────────────────────────────────
 
   private static Tournament tournamentWith(int count) {
