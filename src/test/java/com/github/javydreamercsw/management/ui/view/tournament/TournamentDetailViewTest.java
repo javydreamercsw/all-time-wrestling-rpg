@@ -57,7 +57,6 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -180,13 +179,12 @@ class TournamentDetailViewTest extends AbstractViewTest {
             Span.class,
             spec ->
                 spec.withPredicate(
-                    (Predicate<Span>)
-                        span ->
-                            span.getText() != null
-                                && span.getText().startsWith("Host Show: Crown Cup Final")));
+                    span ->
+                        span.getText() != null
+                            && span.getText().startsWith("Host Show: Crown Cup Final")));
     assertEquals(
         1, hostSpans.size(), "The host show (with its date) must render in the info section");
-    assertTrue(hostSpans.get(0).getText().contains("2026-06-22"));
+    assertTrue(hostSpans.getFirst().getText().contains("2026-06-22"));
   }
 
   private static List<Button> buttonsWithTooltip(Component root, String tooltipSubstring) {
@@ -195,11 +193,10 @@ class TournamentDetailViewTest extends AbstractViewTest {
         Button.class,
         spec ->
             spec.withPredicate(
-                (Predicate<Button>)
-                    btn ->
-                        btn.getTooltip() != null
-                            && btn.getTooltip().getText() != null
-                            && btn.getTooltip().getText().contains(tooltipSubstring)));
+                btn ->
+                    btn.getTooltip() != null
+                        && btn.getTooltip().getText() != null
+                        && btn.getTooltip().getText().contains(tooltipSubstring)));
   }
 
   @Test
@@ -220,10 +217,10 @@ class TournamentDetailViewTest extends AbstractViewTest {
   void seedControls_disableAtEdges() {
     Grid<TournamentEntry> grid = _get(view, Grid.class);
     Button topUp =
-        buttonsWithTooltip(_getCellComponent(grid, 0, "reorder"), "Move up one seed").get(0);
+        buttonsWithTooltip(_getCellComponent(grid, 0, "reorder"), "Move up one seed").getFirst();
     assertFalse(topUp.isEnabled(), "Seed 1 has nowhere to move up to");
     Button bottomDown =
-        buttonsWithTooltip(_getCellComponent(grid, 3, "reorder"), "Move down one seed").get(0);
+        buttonsWithTooltip(_getCellComponent(grid, 3, "reorder"), "Move down one seed").getFirst();
     assertFalse(bottomDown.isEnabled(), "The last seed has nowhere to move down to");
   }
 
@@ -232,7 +229,7 @@ class TournamentDetailViewTest extends AbstractViewTest {
   void moveSeed_persistsSwappedOrder() {
     // Down-arrow on the top seed row swaps seeds 1 and 2.
     Component cell = _getCellComponent(_get(view, Grid.class), 0, "reorder");
-    buttonsWithTooltip(cell, "Move down one seed").get(0).click();
+    buttonsWithTooltip(cell, "Move down one seed").getFirst().click();
 
     @SuppressWarnings("unchecked")
     ArgumentCaptor<List<Long>> captor = ArgumentCaptor.forClass((Class) List.class);
@@ -254,7 +251,7 @@ class TournamentDetailViewTest extends AbstractViewTest {
   @Test
   @DisplayName("Replace dialog opens with a wrestler picker for the chosen seed")
   void replaceDialog_opens() {
-    view.openReplaceDialogForTest(entries.get(0));
+    view.openReplaceDialogForTest(entries.getFirst());
 
     Dialog dialog = _get(UI.getCurrent(), Dialog.class);
     assertNotNull(dialog);
@@ -317,9 +314,8 @@ class TournamentDetailViewTest extends AbstractViewTest {
                 Span.class,
                 spec ->
                     spec.withPredicate(
-                        (Predicate<Span>)
-                            span -> span.getText() != null && span.getText().contains(" vs ")))
-            .get(0);
+                        span -> span.getText() != null && span.getText().contains(" vs ")))
+            .getFirst();
     assertTrue(
         label.getText().startsWith("Alpha vs Bravo"),
         "The row label names the bracket's entrants: " + label.getText());
