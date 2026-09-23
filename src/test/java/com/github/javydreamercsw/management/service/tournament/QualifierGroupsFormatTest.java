@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
@@ -296,10 +297,7 @@ class QualifierGroupsFormatTest {
   @Test
   void roundSegmentType_isFreeForAll() {
     assertThat(format.getRoundSegmentTypeCode())
-        .isEqualTo(
-            com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType
-                .FREE_FOR_ALL
-                .getCode());
+        .isEqualTo(WellKnownSegmentType.FREE_FOR_ALL.getCode());
   }
 
   @Test

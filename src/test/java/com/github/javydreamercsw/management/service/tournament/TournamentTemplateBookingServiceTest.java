@@ -37,6 +37,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
+import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
@@ -2036,8 +2037,7 @@ class TournamentTemplateBookingServiceTest {
   private ShowTemplate pleTemplateWithAssignment() {
     ShowType pleType = new ShowType();
     pleType.setName("PLE");
-    com.github.javydreamercsw.management.domain.show.type.ShowCategory pleCategory =
-        com.github.javydreamercsw.management.domain.show.type.ShowCategory.PLE;
+    ShowCategory pleCategory = ShowCategory.PLE;
     pleType.setCategory(pleCategory);
     ShowTemplate template = new ShowTemplate();
     template.setId(9L);
