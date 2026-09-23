@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowFacade;
+import com.github.javydreamercsw.management.service.tournament.QualifierGroupsFormat;
 import com.github.javydreamercsw.management.service.tournament.TournamentFormat;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
@@ -530,6 +531,50 @@ public class TournamentListView extends VerticalLayout {
     countField.setWidthFull();
     countField.setHelperText("Capped at the number of eligible active wrestlers.");
 
+    // QUALIFIER_GROUPS group size: wrestlers per qualifier Free-for-All. Part of the entrant
+    // validation — the bracket needs at least two groups, so entrants must cover 2 × group size.
+    IntegerField groupSizeField = new IntegerField("Wrestlers per Qualifier Group (optional)");
+    groupSizeField.setMin(2);
+    groupSizeField.setMax(QualifierGroupsFormat.MAX_GROUP_SIZE);
+    groupSizeField.setWidthFull();
+    groupSizeField.setVisible(false);
+    groupSizeField.setHelperText("Leave empty for auto-sized groups (≈3 wrestlers each).");
+    formatCombo.addValueChangeListener(
+        e -> {
+          boolean qualifierGroups =
+              e.getValue() != null
+                  && QualifierGroupsFormat.FORMAT_ID.equals(e.getValue().getFormatId());
+          groupSizeField.setVisible(qualifierGroups);
+          if (!qualifierGroups) {
+            groupSizeField.clear();
+          }
+        });
+
+    // Entrant-count validation across the pair: with a group size G the bracket needs at least
+    // two groups (entrants ≥ 2G). Re-checks whenever either field changes.
+    Runnable validateGroupSplit =
+        () -> {
+          Integer groupSize = groupSizeField.getValue();
+          Integer entrants = countField.getValue();
+          boolean invalid =
+              qualifierGroupsSelected(formatCombo)
+                  && groupSize != null
+                  && entrants != null
+                  && entrants
+                      < 2 * Math.max(2, Math.min(groupSize, QualifierGroupsFormat.MAX_GROUP_SIZE));
+          groupSizeField.setInvalid(invalid);
+          groupSizeField.setErrorMessage(
+              "At least "
+                  + (groupSize == null ? 2 : 2 * groupSize)
+                  + " entrants are needed for"
+                  + " groups of "
+                  + (groupSize == null ? 3 : groupSize)
+                  + " — two groups minimum.");
+        };
+    groupSizeField.addValueChangeListener(e -> validateGroupSplit.run());
+    countField.addValueChangeListener(e -> validateGroupSplit.run());
+    formatCombo.addValueChangeListener(e -> validateGroupSplit.run());
+
     // Cap the entrant count at the eligible roster (narrowed by the linked championship's
     // gender constraint) — the format's 64 max means nothing to a 12-wrestler universe.
     Runnable refreshEntrantCap =
@@ -595,7 +640,7 @@ public class TournamentListView extends VerticalLayout {
     seedingMode.addValueChangeListener(e -> refreshMatchups.run());
 
     VerticalLayout tab2Content =
-        new VerticalLayout(seedingMode, countField, wrestlerPicker, matchupPreview);
+        new VerticalLayout(seedingMode, countField, groupSizeField, wrestlerPicker, matchupPreview);
     tab2Content.setPadding(false);
 
     tabs.add(tab1, tab1Content);
@@ -614,6 +659,14 @@ public class TournamentListView extends VerticalLayout {
               if (nameField.isEmpty() || formatCombo.isEmpty()) {
                 Notification.show(
                         "Name and format are required before seeding.",
+                        3000,
+                        Notification.Position.MIDDLE)
+                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                return;
+              }
+              if (groupSizeField.isInvalid()) {
+                Notification.show(
+                        "Fix the qualifier group size before continuing.",
                         3000,
                         Notification.Position.MIDDLE)
                     .addThemeVariants(NotificationVariant.LUMO_ERROR);
@@ -647,6 +700,7 @@ public class TournamentListView extends VerticalLayout {
                         payoffTypeCombo.getValue(),
                         payoffRuleCombo.getValue());
                 t.setRecurrence(recurrenceCombo.getValue());
+                t.setQualifierGroupSize(groupSizeField.getValue());
                 tournamentService.save(t);
 
                 boolean auto = "Auto (by fan count)".equals(seedingMode.getValue());
@@ -694,6 +748,12 @@ public class TournamentListView extends VerticalLayout {
   /** Test hooks: drive the dialogs directly (Karibu tests can't traverse grid cell components). */
   void openCreationWizardForTest() {
     openCreationWizard();
+  }
+
+  /** Whether the wizard's current format selection is the qualifier-groups format. */
+  private static boolean qualifierGroupsSelected(ComboBox<TournamentFormat> formatCombo) {
+    return formatCombo.getValue() != null
+        && QualifierGroupsFormat.FORMAT_ID.equals(formatCombo.getValue().getFormatId());
   }
 
   void refreshGridForTest() {

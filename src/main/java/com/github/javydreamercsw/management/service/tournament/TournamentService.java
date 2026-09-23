@@ -278,6 +278,7 @@ public class TournamentService {
     next.setUniverse(completed.getUniverse());
     next.setLinkedTitle(completed.getLinkedTitle());
     next.setDefaultEntrantCount(completed.getDefaultEntrantCount());
+    next.setQualifierGroupSize(completed.getQualifierGroupSize());
     next.setParent(completed);
     next.setEditionOrdinal(nextOrdinal);
     next.setRecurrence(TournamentRecurrence.ANNUAL);

@@ -243,6 +243,65 @@ class QualifierGroupsFormatTest {
     assertThat(format.estimateTotalMatches(tournamentWith(7))).isEqualTo(4);
   }
 
+  @Test
+  void groupSize_pinned_splitHonorsTournamentSetting() {
+    // 18 entrants pinned at 6 per group → 3 groups of 6 → 3 qualifiers + 1 final = 4 matches.
+    Tournament t = tournamentWith(18);
+    t.setQualifierGroupSize(6);
+    when(roundRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    when(matchRepo.save(any()))
+        .thenAnswer(
+            inv -> {
+              TournamentMatch m = inv.getArgument(0);
+              if (m.getParticipants() != null) {
+                m.getParticipants().forEach(p -> p.setMatch(m));
+              }
+              return m;
+            });
+
+    List<TournamentRound> rounds = format.generateBracket(t, ctx);
+
+    assertThat(rounds).hasSize(1);
+    List<TournamentMatch> qualifiers = rounds.get(0).getMatches();
+    assertThat(qualifiers).hasSize(3);
+    assertThat(qualifiers).allSatisfy(m -> assertThat(m.entrants()).hasSize(6));
+    assertThat(format.estimateTotalMatches(t)).isEqualTo(4);
+  }
+
+  @Test
+  void groupSize_tooLargeForTwoGroups_fallsBackToAutoSize() {
+    // A setting that cannot form two groups (12 entrants, size 10 → only 1 group of 12/10)
+    // falls back to the balanced auto split rather than producing a single mega-group.
+    Tournament t = tournamentWith(12);
+    t.setQualifierGroupSize(10);
+    assertThat(format.estimateTotalMatches(t)).isEqualTo(5); // ceil(12/3)=4 groups + final
+  }
+
+  @Test
+  void groupSize_outOfRange_clampedToSupportedBounds() {
+    // 18 entrants, configured 99 → clamped to 10 → 18/10 = 1 group is rejected (needs 2), so
+    // the size clamp keeps the split sane: 2 groups of 9 (18/10 rounds down; guard requires
+    // entrants ≥ 2×clamped size, so 18 ≥ 20 is false → auto split). The lower clamp: 18 at 1
+    // → clamped to 2 → 9 groups of 2.
+    Tournament low = tournamentWith(18);
+    low.setQualifierGroupSize(1);
+    assertThat(format.estimateTotalMatches(low)).isEqualTo(10); // 9 groups of 2 + final
+
+    Tournament high = tournamentWith(18);
+    high.setQualifierGroupSize(QualifierGroupsFormat.MAX_GROUP_SIZE + 50);
+    // Clamped to 10; 18 < 2×10 → auto split (ceil(18/3)=6 groups).
+    assertThat(format.estimateTotalMatches(high)).isEqualTo(7);
+  }
+
+  @Test
+  void roundSegmentType_isFreeForAll() {
+    assertThat(format.getRoundSegmentTypeCode())
+        .isEqualTo(
+            com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType
+                .FREE_FOR_ALL
+                .getCode());
+  }
+
   // ── helpers ──────────────────────────────────────────────────────────────
 
   private static Tournament tournamentWith(int count) {

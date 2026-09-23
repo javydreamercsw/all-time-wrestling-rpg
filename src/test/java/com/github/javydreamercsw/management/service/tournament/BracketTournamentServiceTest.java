@@ -573,6 +573,7 @@ class BracketTournamentServiceTest {
     tournament.setUniverse(universe);
     tournament.setLinkedTitle(title);
     tournament.setDefaultEntrantCount(8);
+    tournament.setQualifierGroupSize(3);
     tournament.setEditionOrdinal(1);
     tournament.setRecurrence(TournamentRecurrence.ANNUAL);
 
@@ -585,6 +586,7 @@ class BracketTournamentServiceTest {
     assertThat(edition.getUniverse()).isSameAs(universe);
     assertThat(edition.getLinkedTitle()).isSameAs(title);
     assertThat(edition.getDefaultEntrantCount()).isEqualTo(8);
+    assertThat(edition.getQualifierGroupSize()).isEqualTo(3);
     assertThat(edition.getParent()).isSameAs(tournament);
     assertThat(edition.getEditionOrdinal()).isEqualTo(2);
     assertThat(edition.getRecurrence()).isEqualTo(TournamentRecurrence.ANNUAL);

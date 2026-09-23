@@ -41,6 +41,7 @@ import com.github.javydreamercsw.management.service.segment.type.SegmentTypeServ
 import com.github.javydreamercsw.management.service.show.ShowFacade;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.tournament.QualifierGroupsFormat;
 import com.github.javydreamercsw.management.service.tournament.TournamentFormat;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
@@ -57,6 +58,7 @@ import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.tabs.TabSheet;
+import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import java.time.LocalDate;
 import java.util.List;
@@ -65,6 +67,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -94,6 +97,7 @@ class TournamentListViewTest extends AbstractViewTest {
   @Mock private TitleService titleService;
   @Mock private WrestlerService wrestlerService;
   @Mock private TournamentFormat format;
+  @Mock private TournamentFormat qualifierFormat;
 
   private TournamentListView view;
   private Show upcomingShow;
@@ -245,6 +249,44 @@ class TournamentListViewTest extends AbstractViewTest {
             any(),
             any());
     verify(tournamentService).seedAuto(any(Tournament.class), anyInt(), anyLong());
+  }
+
+  @Test
+  @DisplayName("Qualifier group-size field appears only for QUALIFIER_GROUPS and saves its value")
+  void wizardGroupSize_visibleForQualifierGroups_andSaved() {
+    lenient().when(qualifierFormat.getFormatId()).thenReturn(QualifierGroupsFormat.FORMAT_ID);
+    lenient().when(qualifierFormat.getDisplayName()).thenReturn(QualifierGroupsFormat.FORMAT_ID);
+    lenient().when(qualifierFormat.getMinEntrants()).thenReturn(4);
+    lenient().when(qualifierFormat.getMaxEntrants()).thenReturn(25);
+    lenient()
+        .when(tournamentService.getAvailableFormats())
+        .thenReturn(List.of(format, qualifierFormat));
+
+    view.openCreationWizardForTest();
+    _get(UI.getCurrent(), TextField.class, spec -> spec.withLabel("Tournament Name"))
+        .setValue("Fed Cup");
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    ComboBox<TournamentFormat> formatBox =
+        _get(UI.getCurrent(), ComboBox.class, spec -> spec.withLabel("Format"));
+
+    // Selecting the qualifier-groups format reveals the field — it lives on the seeding tab,
+    // so advance there before probing (TabSheet renders tab content lazily).
+    formatBox.setValue(qualifierFormat);
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Next")).click();
+    IntegerField groupSize =
+        _get(
+            UI.getCurrent(),
+            IntegerField.class,
+            spec -> spec.withLabel("Wrestlers per Qualifier Group (optional)"));
+    assertTrue(groupSize.isVisible());
+
+    groupSize.setValue(3);
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Create Tournament")).click();
+
+    // The created tournament carries the pinned group size.
+    ArgumentCaptor<Tournament> created = ArgumentCaptor.forClass(Tournament.class);
+    verify(tournamentService).save(created.capture());
+    assertEquals(3, created.getValue().getQualifierGroupSize());
   }
 
   @Test

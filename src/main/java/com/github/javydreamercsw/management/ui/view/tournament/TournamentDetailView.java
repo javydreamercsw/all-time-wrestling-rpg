@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.show.ShowFacade;
+import com.github.javydreamercsw.management.service.tournament.QualifierGroupsFormat;
 import com.github.javydreamercsw.management.service.tournament.TournamentFormat;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
@@ -208,6 +209,14 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
     Span entrants = new Span("Entrants: " + tournament.getEntries().size());
 
     info.add(status, format, entrants);
+    if (QualifierGroupsFormat.FORMAT_ID.equals(tournament.getFormatId())) {
+      info.add(
+          new Span(
+              "Qualifier group size: "
+                  + (tournament.getQualifierGroupSize() != null
+                      ? tournament.getQualifierGroupSize()
+                      : "auto (≈3 per group)")));
+    }
     if (tournament.getEditionOrdinal() != null) {
       // Recurring edition (ATW-o4ad): chain name/ordinal plus the cadence.
       info.add(

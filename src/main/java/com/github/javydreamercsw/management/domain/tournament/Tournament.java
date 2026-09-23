@@ -77,6 +77,14 @@ public class Tournament extends AbstractEntity<Long> {
   @Column(name = "default_entrant_count")
   @Nullable private Integer defaultEntrantCount;
 
+  /**
+   * QUALIFIER_GROUPS only: wrestlers per qualifier group (the Free-for-All qualifiers feeding the
+   * final). Null = format default (3-wrestler groups). Part of the entrant-count validation — the
+   * bracket needs at least two groups ({@code entrants >= 2 * groupSize}).
+   */
+  @Column(name = "qualifier_group_size")
+  @Nullable private Integer qualifierGroupSize;
+
   /** Format identifier matching {@code TournamentFormat#getFormatId()}. */
   @Column(name = "format_id", nullable = false, length = 64)
   private String formatId;
