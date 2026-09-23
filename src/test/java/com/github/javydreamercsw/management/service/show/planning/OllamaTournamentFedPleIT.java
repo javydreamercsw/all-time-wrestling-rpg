@@ -23,7 +23,10 @@ import com.github.javydreamercsw.base.ai.ollama.OllamaSegmentNarrationService;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
+import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
+import com.github.javydreamercsw.management.domain.tournament.TournamentRecurrence;
 import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.service.HolidayService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
@@ -151,5 +154,66 @@ class OllamaTournamentFedPleIT extends AbstractTournamentFedPleIT {
     approveCard(plainShow, proposed.getSegments());
 
     assertThat(tournament.getStatus()).isEqualTo(TournamentStatus.SCHEDULED);
+  }
+
+  /**
+   * Annual-cycle edition test (ATW-o4ad) with a real LLM planning the card: an ANNUAL 2-entrant
+   * edition paired to the PLE — the LLM-planned approval books the payoff, auto-creates the next
+   * edition ("II", SCHEDULED), and re-points the template pairing to it. The deterministic
+   * assertions are all on the edition side; the LLM only has to produce a parseable card.
+   */
+  @Test
+  void aiPlannedCard_annualEdition_renewsAndRePoints() {
+    // Edition 1 of an annual chain, seeded with a 2-entrant bracket so its round-1 match is
+    // the payoff (final at PLE pacing).
+    tournament.setRecurrence(TournamentRecurrence.ANNUAL);
+    tournament.setEditionOrdinal(1);
+    tournamentRepository.saveAndFlush(tournament);
+    seedTournamentEntries(tournament, 2);
+
+    ShowPlanningContextDTO context = showPlanningService.getShowPlanningContext(show);
+    ProposedShow proposed = aiService.planShow(context);
+    log.info(
+        "Ollama proposed {} segment(s) for the annual edition PLE", proposed.getSegments().size());
+
+    boolean hasPairedType =
+        proposed.getSegments().stream().anyMatch(s -> eventType.getName().equals(s.getType()));
+    if (!hasPairedType) {
+      ProposedSegment forced = new ProposedSegment();
+      forced.setType(eventType.getName());
+      forced.setNarration("Annual tournament payoff");
+      proposed.getSegments().add(forced);
+    }
+
+    approveCard(show, proposed.getSegments());
+
+    // Edition 1 completed; edition 2 auto-created SCHEDULED, chained, and the pairing survives.
+    Tournament firstEdition =
+        tournamentService.findByIdWithDetails(tournament.getId()).orElseThrow();
+    assertThat(firstEdition.getStatus()).isEqualTo(TournamentStatus.COMPLETE);
+
+    Tournament successor =
+        tournamentService.findAll().stream()
+            .filter(
+                t -> t.getParent() != null && t.getParent().getId().equals(firstEdition.getId()))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Next edition must auto-create at payoff"));
+    assertThat(successor.getStatus()).isEqualTo(TournamentStatus.SCHEDULED);
+    assertThat(successor.getEditionOrdinal()).isEqualTo(2);
+    assertThat(successor.getName()).endsWith(" II");
+
+    // The pairing re-pointed — the template row now references edition 2, so the cycle repeats
+    // on every future PLE from this template without manual re-arming.
+    ShowTemplate reloaded =
+        showTemplateRepository.findByIdWithAssignments(show.getTemplate().getId()).orElseThrow();
+    boolean pointsAtSuccessor =
+        reloaded.getTournamentAssignments().stream()
+            .anyMatch(
+                a ->
+                    a.getTournament() != null
+                        && a.getTournament().getId().equals(successor.getId()));
+    assertThat(pointsAtSuccessor)
+        .as("Template pairing must re-point to the successor edition")
+        .isTrue();
   }
 }
