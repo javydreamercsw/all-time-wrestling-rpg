@@ -208,6 +208,21 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
     Span entrants = new Span("Entrants: " + tournament.getEntries().size());
 
     info.add(status, format, entrants);
+    if (tournament.getEditionOrdinal() != null) {
+      // Recurring edition (ATW-o4ad): chain name/ordinal plus the cadence.
+      info.add(
+          new Span(
+              "Edition: "
+                  + (tournament.getEditionOrdinal() > 1
+                      ? TournamentService.editionName("", tournament.getEditionOrdinal()).trim()
+                      : "I (first)")
+                  + " — "
+                  + tournament.getRecurrence().name().toLowerCase()
+                  + " recurring"));
+      if (tournament.getParent() != null) {
+        info.add(new Span("Previous edition: " + tournament.getParent().getName()));
+      }
+    }
     if (tournament.getLinkedTitle() != null) {
       info.add(new Span("Championship: " + tournament.getLinkedTitle().getName()));
     }

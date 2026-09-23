@@ -184,4 +184,15 @@ abstract class AbstractTournamentFedPleIT extends ManagementIntegrationTest {
   protected void approveCard(Show targetShow, List<ProposedSegment> card) {
     showPlanningService.approveSegments(targetShow, card);
   }
+
+  /**
+   * Seed {@code count} bracket entries onto {@code t} (top of the fixture roster by fans) and flush
+   * — used by edition-cycle tests to hand a tournament a playable bracket.
+   */
+  protected void seedTournamentEntries(Tournament t, int count) {
+    List<Wrestler> seeded = roster.subList(0, count);
+    for (int i = 0; i < seeded.size(); i++) {
+      tournamentService.addEntry(t, seeded.get(i), i + 1);
+    }
+  }
 }

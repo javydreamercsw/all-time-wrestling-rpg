@@ -44,6 +44,7 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntryStatus;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatchParticipant;
+import com.github.javydreamercsw.management.domain.tournament.TournamentRecurrence;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRepository;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus;
@@ -457,6 +458,71 @@ class TournamentTemplateBookingServiceTest {
     assertNull(assignment.getSpecEntrantCount());
     assertNull(assignment.getSpecFinalRule());
     assertTrue(assignment.getSpecAllowedRules().isEmpty());
+  }
+
+  @Test
+  void recurringTournament_payoffBooks_nextEditionCreatedAndPairingRePointed() {
+    // ATW-o4ad: an ANNUAL tournament's consumed pairing re-arms instead — the successor edition
+    // is created and the assignment row re-points to it, so the next PLE hosts the next cycle.
+    tournament.setStatus(TournamentStatus.COMPLETE);
+    tournament.setRecurrence(TournamentRecurrence.ANNUAL);
+    tournament.setEditionOrdinal(1);
+    TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.WINNER);
+    TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ELIMINATED);
+    tournament.setEntries(new ArrayList<>(List.of(aliceEntry, bobEntry)));
+
+    Tournament successor = new Tournament();
+    successor.setId(6L);
+    successor.setName("Crown Cup II");
+    successor.setRecurrence(TournamentRecurrence.ANNUAL);
+    successor.setEditionOrdinal(2);
+    successor.setStatus(TournamentStatus.SCHEDULED);
+    when(tournamentService.createNextEdition(tournament)).thenReturn(Optional.of(successor));
+
+    assertTrue(
+        service.bookTournamentFedSegment(assignment, rumbleType, show).isEmpty(),
+        "COMPLETE tournament without a linked title books nothing itself");
+    assertEquals(
+        successor, assignment.getTournament(), "Pairing must re-point to the next edition");
+  }
+
+  @Test
+  void recurringTournament_successorExists_pairingRePointsToIt() {
+    // Idempotency guard (ATW-o4ad): createNextEdition returning empty (successor already minted
+    // by a previous payoff) re-points the pairing to the existing edition instead of consuming —
+    // re-approving the same payoff must not double-mint nor strand the pairing.
+    tournament.setStatus(TournamentStatus.COMPLETE);
+    tournament.setRecurrence(TournamentRecurrence.ANNUAL);
+    tournament.setEditionOrdinal(1);
+    TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.WINNER);
+    tournament.setEntries(new ArrayList<>(List.of(aliceEntry)));
+
+    Tournament existing = new Tournament();
+    existing.setId(6L);
+    existing.setName("Crown Cup II");
+    existing.setEditionOrdinal(2);
+    when(tournamentService.createNextEdition(tournament)).thenReturn(Optional.empty());
+    when(tournamentRepository.findByParentId(5L)).thenReturn(Optional.of(existing));
+
+    service.bookTournamentFedSegment(assignment, rumbleType, show);
+
+    assertEquals(
+        existing,
+        assignment.getTournament(),
+        "Pairing must re-point to the already-existing successor edition");
+  }
+
+  @Test
+  void oneShotTournament_pairingConsumed_noEditionCreated() {
+    // Recurrence NONE (default): the legacy consumption path — createNextEdition is never asked.
+    tournament.setStatus(TournamentStatus.COMPLETE);
+    TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.WINNER);
+    tournament.setEntries(new ArrayList<>(List.of(aliceEntry)));
+
+    service.bookTournamentFedSegment(assignment, rumbleType, show);
+
+    verify(tournamentService, never()).createNextEdition(any());
+    assertNull(assignment.getTournament());
   }
 
   @Test

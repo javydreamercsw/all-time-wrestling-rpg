@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntryStatus;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
+import com.github.javydreamercsw.management.domain.tournament.TournamentRecurrence;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRepository;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus;
 import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
@@ -791,11 +792,35 @@ public class TournamentTemplateBookingService {
             });
   }
 
-  /** Detach a one-time tournament from its host show so the payoff cannot fire twice. */
+  /**
+   * Detach a one-time tournament from its host show so the payoff cannot fire twice. Recurring
+   * editions (ATW-o4ad) also renew here: the next edition is created so the chain continues even
+   * when the payoff booked through the host-show path (ATW-xbn4) rather than a template pairing.
+   */
   private void consumeShowLink(
       @NonNull final Tournament tournament,
       @NonNull final Show show,
       @NonNull final String reason) {
+    if (tournament.getRecurrence() == TournamentRecurrence.ANNUAL) {
+      tournamentService
+          .createNextEdition(tournament)
+          .ifPresentOrElse(
+              next ->
+                  log.info(
+                      "Recurring tournament '{}' completed via host show '{}' — created next"
+                          + " edition '{}' (#{}); pair it with a PLE template to continue the"
+                          + " cycle ({})",
+                      tournament.getName(),
+                      show.getName(),
+                      next.getName(),
+                      next.getEditionOrdinal(),
+                      reason),
+              () ->
+                  log.info(
+                      "Recurring tournament '{}' completed — next edition already exists ({})",
+                      tournament.getName(),
+                      reason));
+    }
     tournamentService.clearPayoffShow(tournament);
     log.info(
         "Consumed host-show link for '{}' (was '{}') — {}",
@@ -973,6 +998,12 @@ public class TournamentTemplateBookingService {
    * (ATW-etws) also clear every spec field — leaving them set would mint a second instance the next
    * time a resolution ran. Spec-only rows drop off the template entirely via the existing
    * orphanRemoval mapping.
+   *
+   * <p>Recurring editions (ATW-o4ad): an ANNUAL tournament's payoff re-arms instead of consuming —
+   * the next edition is created (same format/rules/title/universe, ordinal + 1, SCHEDULED) and the
+   * row is re-pointed to it, so the pairing survives and every future PLE instance from the
+   * template hosts the next cycle. Idempotent: the successor is created at most once per completed
+   * edition (a parent-id existence check), so re-approval of the same show never mints duplicates.
    */
   private void consumePairing(
       @NonNull final ShowTemplateSegmentAssignment assignment,
@@ -980,6 +1011,9 @@ public class TournamentTemplateBookingService {
       @NonNull final Show show,
       @NonNull final String reason) {
     if (assignment.getTournament() == null && !assignment.hasTournamentSpec()) {
+      return;
+    }
+    if (renewEdition(assignment, tournament, show, reason)) {
       return;
     }
     if (assignment.getSegmentType() != null || assignment.getSegmentRule() != null) {
@@ -997,6 +1031,44 @@ public class TournamentTemplateBookingService {
         tournament.getName(),
         show.getName(),
         reason);
+  }
+
+  /**
+   * When {@code tournament} is a recurring edition (ATW-o4ad), create its successor and re-point
+   * {@code assignment} to it instead of consuming the pairing. No-op (returns false) for one-shot
+   * tournaments — the caller proceeds with the legacy consumption. Also renews a host-show link
+   * that a recurring edition carries (the successor inherits no host show; the next PLE instance
+   * from the template books its payoff via the pairing).
+   */
+  private boolean renewEdition(
+      @NonNull final ShowTemplateSegmentAssignment assignment,
+      @NonNull final Tournament tournament,
+      @NonNull final Show show,
+      @NonNull final String reason) {
+    if (tournament.getRecurrence() != TournamentRecurrence.ANNUAL) {
+      return false;
+    }
+    // Mint the successor, or find the one a previous payoff already created (idempotency:
+    // re-approving the same payoff re-points to the existing edition rather than consuming).
+    Optional<Tournament> successor =
+        tournamentService
+            .createNextEdition(tournament)
+            .or(() -> tournamentRepository.findByParentId(tournament.getId()));
+    if (successor.isEmpty()) {
+      return false;
+    }
+    Tournament next = successor.get();
+    assignment.setTournament(next);
+    clearSpec(assignment); // the row now references the successor directly; specs detach
+    log.info(
+        "Recurring tournament '{}' — pairing re-pointed to next edition '{}' (#{}), cycle"
+            + " continues ({} for show '{}')",
+        tournament.getName(),
+        next.getName(),
+        next.getEditionOrdinal(),
+        reason,
+        show.getName());
+    return true;
   }
 
   /** Null out every spec field on the row (identity detaches, the row's other targets stay). */

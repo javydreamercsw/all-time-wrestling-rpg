@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
+import com.github.javydreamercsw.management.domain.tournament.TournamentRecurrence;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
@@ -37,6 +38,7 @@ import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
@@ -60,8 +62,10 @@ import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import lombok.NonNull;
@@ -84,6 +88,7 @@ public class TournamentListView extends VerticalLayout {
   private final ShowFacade showFacade;
 
   private final Grid<Tournament> grid;
+  private Checkbox showPastEditionsCheckbox;
 
   @Autowired
   public TournamentListView(
@@ -112,7 +117,13 @@ public class TournamentListView extends VerticalLayout {
   private ViewToolbar buildToolbar() {
     Button newBtn = new Button("New Tournament", e -> openCreationWizard());
     newBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-    return new ViewToolbar("Tournaments", ViewToolbar.group(newBtn));
+    // ATW-o4ad: recurring chains list their latest edition by default; this toggle reveals
+    // the completed earlier editions of each chain.
+    showPastEditionsCheckbox = new Checkbox("Show past editions");
+    showPastEditionsCheckbox.setValue(false);
+    showPastEditionsCheckbox.addValueChangeListener(e -> refresh());
+    return new ViewToolbar(
+        "Tournaments", ViewToolbar.group(newBtn), ViewToolbar.group(showPastEditionsCheckbox));
   }
 
   private Grid<Tournament> buildGrid() {
@@ -121,6 +132,8 @@ public class TournamentListView extends VerticalLayout {
 
     g.addColumn(Tournament::getName).setHeader("Name").setSortable(true).setFlexGrow(2);
     g.addColumn(t -> t.getFormatId().replace('_', ' ')).setHeader("Format").setSortable(true);
+    // Edition badge (ATW-o4ad): roman-numeral ordinal for recurring chains, blank for one-shots.
+    g.addColumn(t -> editionBadgeOf(t)).setHeader("Edition").setSortable(true);
     // Entries are lazy and rows render outside a transaction — count through the service
     // instead of touching the collection (LazyInitializationException otherwise).
     g.addColumn(tournamentService::countEntries).setHeader("Entrants");
@@ -333,7 +346,56 @@ public class TournamentListView extends VerticalLayout {
     Optional<Universe> universe = universeContextService.getCurrentUniverse();
     List<Tournament> items =
         universe.map(tournamentService::findByUniverse).orElseGet(tournamentService::findAll);
+    if (!showPastEditionsCheckbox.getValue()) {
+      // Recurring chains show the latest edition only (ATW-o4ad) — past editions surface via
+      // the toggle, and one-shot tournaments (no ordinal) always list.
+      items = latestEditionPerChain(items);
+    }
     grid.setItems(items);
+  }
+
+  /**
+   * Keeps only the highest-ordinal edition of each recurring chain; one-shots (no ordinal) pass
+   * through. Chains are walked via {@code parent} (EAGER), so a completed edition with a successor
+   * is hidden from the default view.
+   */
+  private static List<Tournament> latestEditionPerChain(@NonNull List<Tournament> items) {
+    Map<Long, Tournament> latestByChainRoot = new HashMap<>();
+    List<Tournament> oneShots = new ArrayList<>();
+    for (Tournament t : items) {
+      if (t.getEditionOrdinal() == null) {
+        oneShots.add(t);
+      }
+    }
+    // Root each edition at its chain's first edition id (walk parents), keep the max ordinal.
+    for (Tournament t : items) {
+      if (t.getEditionOrdinal() == null) {
+        continue;
+      }
+      Tournament walk = t;
+      while (walk.getParent() != null && walk.getParent().getId() != null) {
+        walk = walk.getParent();
+      }
+      Long root = walk.getId();
+      Tournament current = latestByChainRoot.get(root);
+      if (current == null
+          || t.getEditionOrdinal() > current.getEditionOrdinal()
+          || (t.getEditionOrdinal().equals(current.getEditionOrdinal())
+              && t.getId() != null
+              && t.getId() > current.getId())) {
+        latestByChainRoot.put(root, t);
+      }
+    }
+    List<Tournament> result = new ArrayList<>(oneShots);
+    result.addAll(latestByChainRoot.values());
+    return result;
+  }
+
+  /** "II" / "III" — the roman-numeral edition ordinal, blank for one-shot tournaments. */
+  private static String editionBadgeOf(@NonNull Tournament t) {
+    return t.getEditionOrdinal() != null && t.getEditionOrdinal() > 1
+        ? TournamentService.editionName("", t.getEditionOrdinal()).trim()
+        : "";
   }
 
   // ── Creation wizard ───────────────────────────────────────────────────────
@@ -413,6 +475,24 @@ public class TournamentListView extends VerticalLayout {
           }
         });
 
+    // Edition cadence (ATW-o4ad): recurring editions re-arm the PLE template pairing each cycle
+    // — the next edition auto-creates when the payoff books, instead of consuming the pairing.
+    ComboBox<TournamentRecurrence> recurrenceCombo =
+        new ComboBox<>("Edition Cadence (recurring tournaments)");
+    recurrenceCombo.setItems(TournamentRecurrence.values());
+    recurrenceCombo.setItemLabelGenerator(
+        r ->
+            switch (r) {
+              case NONE -> "One-time";
+              case ANNUAL -> "Annual";
+            });
+    recurrenceCombo.setValue(TournamentRecurrence.NONE);
+    recurrenceCombo.setWidthFull();
+    recurrenceCombo.setHelperText(
+        "Annual editions pair with a PLE show template: when a payoff books, the next edition"
+            + " is created automatically and the template pairing re-points to it — no manual"
+            + " re-arming each year.");
+
     MultiSelectComboBox<SegmentRule> rulesPicker =
         new MultiSelectComboBox<>("Allowed Segment Rules (optional)");
     rulesPicker.setItems(segmentRuleService.findAll());
@@ -429,6 +509,7 @@ public class TournamentListView extends VerticalLayout {
             hostShowCombo,
             payoffTypeCombo,
             payoffRuleCombo,
+            recurrenceCombo,
             rulesPicker);
     tab1Content.setPadding(false);
 
@@ -565,6 +646,8 @@ public class TournamentListView extends VerticalLayout {
                         hostShowCombo.getValue(),
                         payoffTypeCombo.getValue(),
                         payoffRuleCombo.getValue());
+                t.setRecurrence(recurrenceCombo.getValue());
+                tournamentService.save(t);
 
                 boolean auto = "Auto (by fan count)".equals(seedingMode.getValue());
                 boolean manual = "Manual (pick wrestlers)".equals(seedingMode.getValue());

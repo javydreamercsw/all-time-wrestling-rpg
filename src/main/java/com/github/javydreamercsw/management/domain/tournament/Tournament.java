@@ -143,4 +143,28 @@ public class Tournament extends AbstractEntity<Long> {
       joinColumns = @JoinColumn(name = "tournament_id"),
       inverseJoinColumns = @JoinColumn(name = "segment_rule_id"))
   private List<SegmentRule> allowedRules = new ArrayList<>();
+
+  /**
+   * Previous edition of a recurring tournament chain (ATW-o4ad): {@code null} for one-shot
+   * tournaments and for a chain's first edition. EAGER so list/detail views render outside a
+   * transaction.
+   */
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "parent_tournament_id")
+  @Nullable private Tournament parent;
+
+  /** 1-based edition counter within a recurring chain; {@code null} for one-shot tournaments. */
+  @Column(name = "edition_ordinal")
+  @Nullable private Integer editionOrdinal;
+
+  /**
+   * Edition cadence (ATW-o4ad): {@code NONE} keeps the one-shot semantics — the payoff books once
+   * and the template pairing is consumed (ATW-xbn4/ATW-z963). {@code ANNUAL} auto-creates the next
+   * edition (same format/rules/title/universe, ordinal+1, SCHEDULED) when the payoff books and
+   * re-points the PLE template pairing to it, so every future PLE instance from the template hosts
+   * the next cycle without manual re-arming.
+   */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "recurrence", nullable = false, length = 16)
+  private TournamentRecurrence recurrence = TournamentRecurrence.NONE;
 }
