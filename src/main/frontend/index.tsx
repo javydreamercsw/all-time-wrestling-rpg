@@ -1,8 +1,6 @@
 /******************************************************************************
- * Custom app entry point (copied from the generated one — keep in sync when Vaadin updates it).
- * If you want to customize the entry point, you can copy this file or create
- * your own `index.tsx` in your frontend directory.
- * By default, the `index.tsx` file should be in `./frontend/` folder.
+ * Custom app entry point (copied from the Flow-generated default — keep in sync
+ * when Vaadin updates it).
  *
  * NOTE:
  *     - You need to restart the dev-server after adding the new `index.tsx` file.
@@ -16,16 +14,23 @@
 // Delete — permanently inert while the connection indicator reports "Online".
 import '@vaadin/confirm-dialog/src/vaadin-confirm-dialog.js';
 
-import { createElement } from 'react';
-import { createRoot } from 'react-dom/client';
-import { RouterProvider } from 'react-router';
-import { router } from 'Frontend/generated/routes.js';
+// import Vaadin client-router to handle client-side and server-side navigation
+import { Router } from '@vaadin/router';
 
-function App() {
-  return <RouterProvider router={router} />;
-}
+// import Flow module to enable navigation to Vaadin server-side views
+import { Flow } from 'Frontend/generated/jar-resources/Flow.js';
 
-const outlet = document.getElementById('outlet')!;
-let root = (outlet as any)._root ?? createRoot(outlet);
-(outlet as any)._root = root;
-root.render(createElement(App));
+const { serverSideRoutes } = new Flow({
+  imports: () => import('Frontend/generated/flow/generated-flow-imports.js'),
+});
+
+const routes = [
+  // for client-side, place routes below (more info https://hilla.dev/docs/lit/guides/routing#initializing-the-router)
+
+  // for server-side, the next magic line sends all unmatched routes:
+  ...serverSideRoutes, // IMPORTANT: this must be the last entry in the array
+];
+
+// Vaadin router needs an outlet in the index.html page to display views
+const router = new Router(document.querySelector('#outlet'));
+router.setRoutes(routes);
