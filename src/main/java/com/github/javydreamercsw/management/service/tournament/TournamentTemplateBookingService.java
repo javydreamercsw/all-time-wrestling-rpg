@@ -262,10 +262,9 @@ public class TournamentTemplateBookingService {
   }
 
   /**
-   * The format's default round rule, resolved to a catalog rule name. The rule catalog seeds
-   * "Free-For-All" (No-DQ); when the row is missing the raw name still lands in the stipulation
-   * string (narration-only at worst), and "Normal" stays the fallback when the format declares no
-   * default.
+   * The format's default round rule, resolved to a catalog rule name. The rule catalog seeds "No
+   * DQ" (no_dq=1); when the row is missing the raw name still lands in the stipulation string
+   * (narration-only at worst), and "Normal" stays the fallback when the format declares no default.
    */
   private String defaultRoundRuleOf(Tournament tournament) {
     return tournamentService
@@ -1251,7 +1250,7 @@ public class TournamentTemplateBookingService {
 
     TournamentMatch match = openMatchOpt.get();
     // Stipulation precedence: round fixedRule → row rule → tournament allowed-rules pool → the
-    // format's default round rule (e.g. Free-For-All qualifiers are No-DQ by convention).
+    // format's default round rule (e.g. Free-for-All qualifiers are No-DQ by convention).
     String stipulation =
         tournamentService.resolveRoundStipulation(
             tournament, match.getRound(), rule, defaultRoundRuleOf(tournament));

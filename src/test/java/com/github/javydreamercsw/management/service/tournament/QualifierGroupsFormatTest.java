@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSe
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
+import com.github.javydreamercsw.management.domain.tournament.TournamentMatchParticipant;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatchRepository;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundRepository;
@@ -31,6 +32,7 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentRoundSta
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -301,10 +303,144 @@ class QualifierGroupsFormatTest {
   }
 
   @Test
-  void defaultRoundRule_isFreeForAll() {
-    // Qualifier scrambles are No-DQ by convention — the format's default rule name matches the
-    // rule catalog's seeded Free-For-All (no_dq=1).
-    assertThat(format.getDefaultRoundRuleName()).isEqualTo("Free-For-All");
+  void defaultRoundRule_isNoDQ() {
+    // Qualifier scrambles are No-DQ by convention — "No DQ" matches the rule catalog's seeded
+    // no-DQ rule (no_dq=1) and reads cleanly next to the Free-for-All segment type on cards.
+    assertThat(format.getDefaultRoundRuleName()).isEqualTo("No DQ");
+  }
+
+  // ── Bracket projection (full-render request): 18 entrants → 6 qualifiers + 6-slot final ──
+
+  @Test
+  void projectBracket_18Entrants_groupSize6_threeQualifiersPlus6SlotFinal() {
+    Tournament t = tournamentWith(18);
+    t.setQualifierGroupSize(6);
+
+    Optional<TournamentFormat.BracketProjection> projection = format.projectBracket(t);
+
+    assertThat(projection).isPresent();
+    TournamentFormat.BracketProjection bracket = projection.orElseThrow();
+    assertThat(bracket.roundNames()).containsExactly("Qualifiers", "Final");
+    // 18 entrants at 6 per group → 3 qualifiers + 1 final = 4 matches.
+    assertThat(bracket.matches()).hasSize(4);
+
+    // Round 1 slots carry the real seeded wrestlers, 6 per qualifier, sequential match numbers.
+    List<TournamentFormat.ProjectedMatch> qualifiers = matchesInRound(bracket, 1);
+    assertThat(qualifiers).hasSize(3);
+    qualifiers.forEach(
+        q ->
+            assertThat(q.slots())
+                .extracting(TournamentFormat.ProjectedSlot::entrantName)
+                .hasSize(6)
+                .doesNotContainNull());
+    assertThat(qualifiers.get(0).slots().get(0).entrantName()).isEqualTo("Wrestler 1");
+    assertThat(bracket.matches())
+        .extracting(TournamentFormat.ProjectedMatch::matchNumber)
+        .containsExactly(1, 2, 3, 4);
+
+    // The final (match 4) has one "Winner of Match N" placeholder slot per qualifier — a 6-entrant
+    // final shape rendered before the final exists.
+    TournamentFormat.ProjectedMatch finalMatch = matchesInRound(bracket, 2).get(0);
+    assertThat(finalMatch.matchNumber()).isEqualTo(4);
+    assertThat(finalMatch.slots())
+        .extracting(TournamentFormat.ProjectedSlot::sourceMatchNumber)
+        .containsExactly(1, 2, 3);
+    assertThat(finalMatch.slots())
+        .extracting(TournamentFormat.ProjectedSlot::entrantName)
+        .containsOnlyNulls();
+  }
+
+  @Test
+  void projectBracket_persistedWinnerOverlaysQualifierSlots() {
+    // A decided qualifier keeps its real winner (green) — the projection carries decidedWinner
+    // so the UI strikes everyone who didn't win the Free-for-All. The winner also propagates
+    // into the final: the advancing name replaces "Winner of Match N".
+    Tournament t = tournamentWith(3);
+    TournamentRound qualifiers =
+        TournamentRound.builder()
+            .tournament(t)
+            .roundNumber(1)
+            .roundName("Qualifiers")
+            .status(TournamentRoundStatus.IN_PROGRESS)
+            .build();
+    List<TournamentEntry> seeds = t.getEntries();
+    TournamentMatch played =
+        TournamentMatch.builder()
+            .round(qualifiers)
+            .entrant1(seeds.get(0))
+            .entrant2(seeds.get(1))
+            .winner(seeds.get(0))
+            .build();
+    played.setParticipants(
+        new ArrayList<>(
+            List.of(
+                participant(played, seeds.get(0), 0),
+                participant(played, seeds.get(1), 1),
+                participant(played, seeds.get(2), 2))));
+    qualifiers.setMatches(new ArrayList<>(List.of(played)));
+    t.setRounds(new ArrayList<>(List.of(qualifiers)));
+
+    TournamentFormat.ProjectedMatch first =
+        matchesInRound(format.projectBracket(t).orElseThrow(), 1).get(0);
+
+    assertThat(first.decidedWinnerId()).isEqualTo(seeds.get(0).getWrestler().getId());
+    assertThat(first.decidedWinnerName()).isEqualTo("Wrestler 1");
+    assertThat(first.slots()).hasSize(3);
+
+    // The decided winner propagates into the projected final: the slot shows "Wrestler 1"
+    // (advancing) instead of "Winner of Match 1" — there is only one group in this fixture.
+    TournamentFormat.ProjectedMatch finalMatch =
+        matchesInRound(format.projectBracket(t).orElseThrow(), 2).get(0);
+    assertThat(finalMatch.slots()).hasSize(1);
+    assertThat(finalMatch.slots().get(0).entrantName()).isEqualTo("Wrestler 1");
+    assertThat(finalMatch.slots().get(0).advancing()).isTrue();
+  }
+
+  @Test
+  void projectBracket_finalWinnerOverlaysFinalSlots() {
+    // A decided final's winner overlays the projected final match.
+    Tournament t = tournamentWith(4);
+    List<TournamentEntry> seeds = t.getEntries();
+    TournamentRound finalRound =
+        TournamentRound.builder()
+            .tournament(t)
+            .roundNumber(2)
+            .roundName("Final")
+            .status(TournamentRoundStatus.COMPLETE)
+            .build();
+    TournamentMatch finalMatch =
+        TournamentMatch.builder()
+            .round(finalRound)
+            .entrant1(seeds.get(0))
+            .entrant2(seeds.get(1))
+            .winner(seeds.get(0))
+            .build();
+    finalRound.setMatches(new ArrayList<>(List.of(finalMatch)));
+    t.setRounds(new ArrayList<>(List.of(finalRound)));
+
+    TournamentFormat.ProjectedMatch projectedFinal =
+        matchesInRound(format.projectBracket(t).orElseThrow(), 2).get(0);
+
+    assertThat(projectedFinal.decidedWinnerId()).isEqualTo(seeds.get(0).getWrestler().getId());
+  }
+
+  @Test
+  void projectBracket_noEntries_returnsEmpty() {
+    Tournament t = new Tournament();
+    t.setFormatId(QualifierGroupsFormat.FORMAT_ID);
+    t.setEntries(new ArrayList<>());
+    t.setRounds(new ArrayList<>());
+    assertThat(format.projectBracket(t)).isEmpty();
+  }
+
+  private static List<TournamentFormat.ProjectedMatch> matchesInRound(
+      TournamentFormat.BracketProjection bracket, int round) {
+    return bracket.matches().stream().filter(m -> m.roundNumber() == round).toList();
+  }
+
+  private static TournamentMatchParticipant participant(
+      TournamentMatch match, TournamentEntry entry, int slot) {
+    return TournamentMatchParticipant.builder().match(match).entry(entry).slot(slot).build();
   }
 
   // ── helpers ──────────────────────────────────────────────────────────────

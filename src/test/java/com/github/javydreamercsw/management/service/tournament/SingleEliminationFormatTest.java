@@ -32,6 +32,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.tournament.TournamentFormat.RenderMode;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -178,6 +179,7 @@ class SingleEliminationFormatTest {
 
   private static TournamentEntry entry(int seed) {
     Wrestler w = new Wrestler();
+    w.setId((long) seed);
     w.setName("Wrestler " + seed);
     return TournamentEntry.builder().wrestler(w).seed(seed).build();
   }
@@ -193,5 +195,100 @@ class SingleEliminationFormatTest {
     tooSmall.setFormatId("SINGLE_ELIMINATION");
     tooSmall.setEntries(new ArrayList<>());
     assertThat(format.estimateTotalMatches(tooSmall)).isZero();
+  }
+
+  // ── Bracket projection (full-render request): N-1 matches, Winner-of-Match-N placeholders ──
+
+  @Test
+  void projectBracket_8Entrants_seededRound1PlusPlaceholderLaterRounds() {
+    Tournament t = tournamentWith8Entries();
+
+    Optional<TournamentFormat.BracketProjection> projection = format.projectBracket(t);
+
+    assertThat(projection).isPresent();
+    TournamentFormat.BracketProjection bracket = projection.orElseThrow();
+    // 8 entrants → 3 rounds (Quarter/Semi/Final), 7 matches total.
+    assertThat(bracket.roundNames()).containsExactly("Quarter-Final", "Semi-Final", "Final");
+    assertThat(bracket.matches()).hasSize(7);
+
+    List<TournamentFormat.ProjectedMatch> round1 = matchesInRound(bracket, 1);
+    assertThat(round1).hasSize(4);
+    // Seed math: 1v8, 2v7, 3v6, 4v5 — real names on every round-1 slot.
+    assertThat(round1.get(0).slots())
+        .extracting(TournamentFormat.ProjectedSlot::entrantName)
+        .containsExactly("Wrestler 1", "Wrestler 8");
+    assertThat(round1.get(1).slots())
+        .extracting(TournamentFormat.ProjectedSlot::entrantName)
+        .containsExactly("Wrestler 2", "Wrestler 7");
+
+    // Match numbers are 1-based and sequential across the projection.
+    assertThat(bracket.matches())
+        .extracting(TournamentFormat.ProjectedMatch::matchNumber)
+        .containsExactly(1, 2, 3, 4, 5, 6, 7);
+
+    // Semi-final match 5 references the winners of quarter-finals 1 and 2; the final (match 7)
+    // references the winners of the semis (5 and 6) — placeholders, not names.
+    List<TournamentFormat.ProjectedMatch> semis = matchesInRound(bracket, 2);
+    assertThat(semis.get(0).slots())
+        .extracting(TournamentFormat.ProjectedSlot::sourceMatchNumber)
+        .containsExactly(1, 2);
+    List<TournamentFormat.ProjectedMatch> finals = matchesInRound(bracket, 3);
+    assertThat(finals).hasSize(1);
+    assertThat(finals.get(0).slots())
+        .extracting(TournamentFormat.ProjectedSlot::sourceMatchNumber)
+        .containsExactly(5, 6);
+    assertThat(finals.get(0).slots())
+        .extracting(TournamentFormat.ProjectedSlot::entrantName)
+        .containsOnlyNulls();
+  }
+
+  @Test
+  void projectBracket_persistedRound1WinnerOverlaysProjection() {
+    Tournament t = tournamentWith8Entries();
+    // Play the first round-1 match: seeds 1 and 8, winner seed 1 (entry id → wrestler id 1).
+    TournamentRound round1 =
+        TournamentRound.builder()
+            .roundNumber(1)
+            .roundName("Round 1")
+            .status(TournamentRoundStatus.IN_PROGRESS)
+            .tournament(t)
+            .build();
+    TournamentMatch played =
+        TournamentMatch.builder()
+            .round(round1)
+            .entrant1(t.getEntries().get(0))
+            .entrant2(t.getEntries().get(7))
+            .winner(t.getEntries().get(0))
+            .build();
+    round1.setMatches(new ArrayList<>(List.of(played)));
+    t.setRounds(new ArrayList<>(List.of(round1)));
+
+    TournamentFormat.ProjectedMatch first =
+        matchesInRound(format.projectBracket(t).orElseThrow(), 1).get(0);
+
+    assertThat(first.decidedWinnerId()).isEqualTo(1L);
+    assertThat(first.decidedWinnerName()).isEqualTo("Wrestler 1");
+
+    // The decided round-1 winner propagates into the semi-final (match 5, sources 1+2):
+    // slot 1 shows the advancing winner, slot 2 stays a placeholder for the open match.
+    TournamentFormat.ProjectedMatch semi =
+        matchesInRound(format.projectBracket(t).orElseThrow(), 2).get(0);
+    assertThat(semi.slots().get(0).entrantName()).isEqualTo("Wrestler 1");
+    assertThat(semi.slots().get(0).advancing()).isTrue();
+    assertThat(semi.slots().get(1).sourceMatchNumber()).isEqualTo(2);
+    assertThat(semi.slots().get(1).advancing()).isFalse();
+  }
+
+  @Test
+  void projectBracket_tooFewEntrants_returnsEmpty() {
+    Tournament empty = new Tournament();
+    empty.setFormatId("SINGLE_ELIMINATION");
+    empty.setEntries(new ArrayList<>());
+    assertThat(format.projectBracket(empty)).isEmpty();
+  }
+
+  private static List<TournamentFormat.ProjectedMatch> matchesInRound(
+      TournamentFormat.BracketProjection bracket, int round) {
+    return bracket.matches().stream().filter(m -> m.roundNumber() == round).toList();
   }
 }

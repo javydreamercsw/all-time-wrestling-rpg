@@ -192,6 +192,11 @@ public class TournamentService {
                         if (m.getWinner() != null) {
                           m.getWinner().getWrestler().getName();
                         }
+                        // The bracket label reads the booked segment's applied rule (and the
+                        // segment link itself) outside the session — touch both eagerly.
+                        if (m.getSegment() != null) {
+                          m.getSegment().getSegmentRules().forEach(SegmentRule::getName);
+                        }
                         if (r.getShow() != null) {
                           r.getShow().getName();
                         }

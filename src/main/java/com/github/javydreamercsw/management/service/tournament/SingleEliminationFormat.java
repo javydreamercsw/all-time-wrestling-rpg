@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -161,5 +162,111 @@ public class SingleEliminationFormat implements TournamentFormat {
       return 0;
     }
     return entrants - 1;
+  }
+
+  /**
+   * Full bracket projection: round 1 pairs 1vN/2vN-1 from the seeds (overlaid with persisted
+   * round-1 state by position); every later round is N/2^(r-1) "Winner of Match X/Y" placeholder
+   * matches — N-1 matches total, the final a single 2-slot match, all rendered before the lazy
+   * rounds generate.
+   */
+  @Override
+  public Optional<BracketProjection> projectBracket(Tournament tournament) {
+    List<TournamentEntry> seeds = tournament.getEntries();
+    int n = seeds.size();
+    if (n < 2) {
+      return Optional.empty();
+    }
+    int totalRounds = (int) Math.ceil(Math.log(n) / Math.log(2));
+
+    // Persisted round-1 matches for winner overlay (position-ordered, round 1 generates first).
+    List<TournamentMatch> round1Real =
+        tournament.getRounds().stream()
+            .filter(r -> r.getRoundNumber() == 1)
+            .findFirst()
+            .map(TournamentRound::getMatches)
+            .orElse(List.of());
+
+    List<ProjectedMatch> matches = new ArrayList<>();
+    int matchNumber = 1;
+    for (int i = 0; i < n / 2; i++) {
+      TournamentEntry s1 = seeds.get(i);
+      TournamentEntry s2 = seeds.get(n - 1 - i);
+      TournamentMatch real = i < round1Real.size() ? round1Real.get(i) : null;
+      matches.add(
+          new ProjectedMatch(
+              matchNumber++,
+              1,
+              List.of(
+                  new ProjectedSlot(wrestlerNameOf(s1), wrestlerIdOf(s1), null, false),
+                  new ProjectedSlot(wrestlerNameOf(s2), wrestlerIdOf(s2), null, false)),
+              winnerIdOf(real),
+              winnerNameOf(real)));
+    }
+
+    // Later rounds: each match pairs the winners of the previous round's consecutive matches.
+    // Match numbers are global 1-based, so round r's match j references (r-1)'s matches
+    // 2j-1 and 2j by number. A decided source match propagates its winner (advancing slot);
+    // an undecided one keeps the "Winner of Match N" placeholder.
+    int prevRoundFirst = 1;
+    int prevRoundCount = n / 2;
+    for (int round = 2; round <= totalRounds; round++) {
+      for (int j = 0; j < prevRoundCount / 2; j++) {
+        int firstSource = prevRoundFirst + 2 * j;
+        matches.add(
+            new ProjectedMatch(
+                matchNumber++,
+                round,
+                List.of(
+                    slotFromSource(matches, firstSource), slotFromSource(matches, firstSource + 1)),
+                null,
+                null));
+      }
+      prevRoundFirst = matchNumber - prevRoundCount / 2;
+      prevRoundCount /= 2;
+    }
+
+    List<String> roundNames = new ArrayList<>();
+    for (int round = 1; round <= totalRounds; round++) {
+      roundNames.add(roundName(round, totalRounds));
+    }
+    return Optional.of(new BracketProjection(roundNames, matches));
+  }
+
+  private String wrestlerNameOf(TournamentEntry entry) {
+    return entry != null && entry.getWrestler() != null ? entry.getWrestler().getName() : null;
+  }
+
+  /**
+   * The slot for "winner of source match": resolved to the source's decided winner (advancing) —
+   * round-1 matches overlay persisted state, so their winners propagate too.
+   */
+  private ProjectedSlot slotFromSource(List<ProjectedMatch> built, int sourceMatchNumber) {
+    return built.stream()
+        .filter(m -> m.matchNumber() == sourceMatchNumber)
+        .findFirst()
+        .map(
+            src ->
+                src.decidedWinnerId() != null
+                    ? new ProjectedSlot(
+                        src.decidedWinnerName(), src.decidedWinnerId(), sourceMatchNumber, true)
+                    : new ProjectedSlot(null, null, sourceMatchNumber, false))
+        .orElse(new ProjectedSlot(null, null, sourceMatchNumber, false));
+  }
+
+  private Long wrestlerIdOf(TournamentEntry entry) {
+    return entry != null && entry.getWrestler() != null ? entry.getWrestler().getId() : null;
+  }
+
+  private Long winnerIdOf(TournamentMatch match) {
+    return match != null && match.getWinner() != null && match.getWinner().getWrestler() != null
+        ? match.getWinner().getWrestler().getId()
+        : null;
+  }
+
+  private String winnerNameOf(TournamentMatch match) {
+    return match != null && match.getWinner() != null && match.getWinner().getWrestler() != null
+        ? match.getWinner().getWrestler().getName()
+        : null;
   }
 }

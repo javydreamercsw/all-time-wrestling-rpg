@@ -1817,7 +1817,7 @@ class TournamentTemplateBookingServiceTest {
   }
 
   @Test
-  void bookWeeklyRounds_qualifierGroups_defaultRuleIsFreeForAll() {
+  void bookWeeklyRounds_qualifierGroups_defaultRuleIsNoDQ() {
     // Free-for-All qualifiers are No-DQ by convention: when the stipulation hierarchy is empty
     // (no round fixedRule, no row rule, no allowed-rules pool) the format's default rule applies.
     tournament.setFormatId(QualifierGroupsFormat.FORMAT_ID);
@@ -1825,7 +1825,7 @@ class TournamentTemplateBookingServiceTest {
     when(tournamentService.findFormat(QualifierGroupsFormat.FORMAT_ID))
         .thenReturn(Optional.of(format));
     when(format.getRoundSegmentTypeCode()).thenReturn(WellKnownSegmentType.FREE_FOR_ALL.getCode());
-    when(format.getDefaultRoundRuleName()).thenReturn("Free-For-All");
+    when(format.getDefaultRoundRuleName()).thenReturn("No DQ");
     SegmentType ffaType = new SegmentType();
     ffaType.setId(12L);
     ffaType.setName("Free-for-All");
@@ -1836,13 +1836,13 @@ class TournamentTemplateBookingServiceTest {
     TournamentMatch match = match(1, aliceEntry, bobEntry);
     tournament.setRounds(new ArrayList<>(List.of(round(1, match))));
     when(segmentResolutionService.resolveTeamSegment(
-            any(), any(), eq(ffaType), eq(show), eq("Free-For-All")))
+            any(), any(), eq(ffaType), eq(show), eq("No DQ")))
         .thenReturn(singles(alice, bob, alice));
 
     assertEquals(1, service.bookWeeklyRounds(assignment, show).size());
     verify(tournamentService)
         .resolveRoundStipulation(
-            eq(tournament), any(), eq(assignment.getSegmentRule()), eq("Free-For-All"));
+            eq(tournament), any(), eq(assignment.getSegmentRule()), eq("No DQ"));
   }
 
   @Test

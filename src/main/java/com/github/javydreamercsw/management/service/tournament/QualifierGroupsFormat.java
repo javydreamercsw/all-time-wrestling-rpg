@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.stereotype.Component;
 
 /**
@@ -141,6 +142,96 @@ public class QualifierGroupsFormat implements TournamentFormat {
     return splitIntoGroups(tournament, tournament.getEntries()).size() + 1;
   }
 
+  /**
+   * Full bracket projection (sandbox request): the qualifiers round with its real seeded groups —
+   * overlaid with any already-played state from the persisted bracket — plus the multi-slot final
+   * of "Winner of Match N" placeholders. 18 entrants → 6 qualifier matches + a 6-slot final,
+   * rendered before the final exists.
+   */
+  @Override
+  public Optional<BracketProjection> projectBracket(Tournament tournament) {
+    List<TournamentEntry> seeds = tournament.getEntries();
+    if (seeds.isEmpty()) {
+      return Optional.empty();
+    }
+    List<List<TournamentEntry>> groups = splitIntoGroups(tournament, seeds);
+
+    // The persisted (or absent) real bracket, matched to the projection by position:
+    // qualifier i lives at index i of round 1; the final is round 2's single match.
+    List<TournamentMatch> round1Real =
+        tournament.getRounds().stream()
+            .filter(r -> r.getRoundNumber() == 1)
+            .findFirst()
+            .map(r -> r.getMatches())
+            .orElse(List.of());
+    Optional<TournamentMatch> finalReal =
+        tournament.getRounds().stream()
+            .filter(r -> r.getRoundNumber() == 2)
+            .findFirst()
+            .flatMap(r -> r.getMatches().stream().findFirst());
+
+    List<ProjectedMatch> matches = new ArrayList<>();
+    int matchNumber = 1;
+    for (List<TournamentEntry> group : groups) {
+      // Prefer the real match's played state when one exists at this position.
+      TournamentMatch real =
+          matchNumber - 1 < round1Real.size() ? round1Real.get(matchNumber - 1) : null;
+      TournamentEntry realWinner = real != null ? real.getWinner() : null;
+      List<ProjectedSlot> slots = new ArrayList<>();
+      for (TournamentEntry entry : group) {
+        slots.add(new ProjectedSlot(nameOf(entry), wrestlerIdOf(entry), null, false));
+      }
+      matches.add(
+          new ProjectedMatch(
+              matchNumber,
+              1,
+              List.copyOf(slots),
+              realWinner != null ? realWinner.getWrestler().getId() : null,
+              realWinner != null ? realWinner.getWrestler().getName() : null));
+      matchNumber++;
+    }
+
+    // The final: one slot per group. A decided qualifier propagates its winner — the advancing
+    // name replaces "Winner of Match N" — undecided groups keep the placeholder.
+    int qualifierCount = groups.size();
+    List<ProjectedSlot> finalSlots = new ArrayList<>();
+    for (int g = 0; g < qualifierCount; g++) {
+      // Winner of qualifier g+1: the persisted round-1 match at position g, when decided.
+      TournamentMatch qualifierReal = g < round1Real.size() ? round1Real.get(g) : null;
+      TournamentEntry qualifierWinner = qualifierReal != null ? qualifierReal.getWinner() : null;
+      if (qualifierWinner != null) {
+        finalSlots.add(
+            new ProjectedSlot(
+                qualifierWinner.getWrestler().getName(),
+                qualifierWinner.getWrestler().getId(),
+                g + 1,
+                true));
+      } else {
+        finalSlots.add(new ProjectedSlot(null, null, g + 1, false));
+      }
+    }
+    TournamentMatch played = finalReal.orElse(null);
+    TournamentEntry finalWinner = played != null ? played.getWinner() : null;
+    matches.add(
+        new ProjectedMatch(
+            matchNumber,
+            2,
+            List.copyOf(finalSlots),
+            finalWinner != null ? finalWinner.getWrestler().getId() : null,
+            finalWinner != null ? finalWinner.getWrestler().getName() : null));
+
+    return Optional.of(new BracketProjection(List.of("Qualifiers", "Final"), matches));
+  }
+
+  private String nameOf(TournamentEntry entry) {
+    return entry != null && entry.getWrestler() != null ? entry.getWrestler().getName() : null;
+  }
+
+  /** Wrestler id for winner/loser styling — the same id space as {@code decidedWinnerId}. */
+  private Long wrestlerIdOf(TournamentEntry entry) {
+    return entry != null && entry.getWrestler() != null ? entry.getWrestler().getId() : null;
+  }
+
   @Override
   public String getRoundSegmentTypeCode() {
     return WellKnownSegmentType.FREE_FOR_ALL.getCode();
@@ -148,7 +239,7 @@ public class QualifierGroupsFormat implements TournamentFormat {
 
   @Override
   public String getDefaultRoundRuleName() {
-    return "Free-For-All"; // qualifier scrambles are No-DQ by convention
+    return "No DQ"; // qualifier scrambles are No-DQ by convention
   }
 
   /**
