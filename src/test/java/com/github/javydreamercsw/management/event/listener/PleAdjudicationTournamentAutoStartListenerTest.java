@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /** Unit tests for the PLE-adjudication auto-start listener's gating and leniency contract. */
@@ -46,7 +47,7 @@ class PleAdjudicationTournamentAutoStartListenerTest {
 
   @BeforeEach
   void setUp() {
-    org.mockito.Mockito.lenient().when(pleShowType.getCategory()).thenReturn(ShowCategory.PLE);
+    Mockito.lenient().when(pleShowType.getCategory()).thenReturn(ShowCategory.PLE);
   }
 
   @Test
