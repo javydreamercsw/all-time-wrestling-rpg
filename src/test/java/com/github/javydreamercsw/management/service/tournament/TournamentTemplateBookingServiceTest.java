@@ -2004,6 +2004,52 @@ class TournamentTemplateBookingServiceTest {
     verify(tournamentService, never()).startTournament(any());
   }
 
+  @Test
+  void autoStartOnPleAdjudication_unresolvableFormat_skipsTournament() {
+    // No format behind the tournament's formatId — the start pre-flight refuses (the preset
+    // plan is lenient, but the format drives bracket generation, so the start refuses).
+    tournament.setStatus(TournamentStatus.SCHEDULED);
+    Show adjudicated = showWithName(3L, "Spring PLE", LocalDate.of(2026, 3, 1));
+    adjudicated.setUniverse(show.getUniverse());
+    Show nextPle = show;
+    nextPle.setTemplate(pleTemplateWithAssignment());
+
+    when(tournamentRepository.findByStatus(TournamentStatus.SCHEDULED))
+        .thenReturn(List.of(tournament));
+    when(showService.getShowsByDateRange(any(), any())).thenReturn(List.of(nextPle));
+    lenient().when(tournamentService.findFormat(any())).thenReturn(Optional.empty());
+
+    assertEquals(0, service.autoStartScheduledTournamentsForNextPle(adjudicated));
+    verify(tournamentService, never()).startTournament(any());
+    verify(tournamentService, never()).seedAuto(any(), anyInt(), anyLong());
+  }
+
+  @Test
+  void autoStartOnPleAdjudication_otherUniverseSkipped() {
+    // A tournament of another universe never starts from this PLE's adjudication.
+    tournament.setStatus(TournamentStatus.SCHEDULED);
+    Universe otherUniverse = new Universe();
+    otherUniverse.setId(2L);
+    tournament.setUniverse(otherUniverse);
+    Show adjudicated = showWithName(3L, "Spring PLE", LocalDate.of(2026, 3, 1));
+    adjudicated.setUniverse(show.getUniverse());
+
+    when(tournamentRepository.findByStatus(TournamentStatus.SCHEDULED))
+        .thenReturn(List.of(tournament));
+
+    assertEquals(0, service.autoStartScheduledTournamentsForNextPle(adjudicated));
+    verify(tournamentService, never()).startTournament(any());
+  }
+
+  @Test
+  void autoStartOnPleAdjudication_nullShowDate_startsNothing() {
+    // An adjudicated PLE with no configured date cannot define "after it" — no-op.
+    Show adjudicated = showWithName(3L, "Dateless PLE", null);
+
+    assertEquals(0, service.autoStartScheduledTournamentsForNextPle(adjudicated));
+    verify(tournamentRepository, never()).findByStatus(any());
+  }
+
   // ── Helpers ───────────────────────────────────────────────────────────────
 
   private void stubResolve(Segment booked) {

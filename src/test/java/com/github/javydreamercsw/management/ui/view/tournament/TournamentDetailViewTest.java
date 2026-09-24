@@ -187,6 +187,66 @@ class TournamentDetailViewTest extends AbstractViewTest {
     assertTrue(hostSpans.getFirst().getText().contains("2026-06-22"));
   }
 
+  @Test
+  @DisplayName("Qualifier-groups tournament shows its pinned group size")
+  void qualifierGroups_pinnedGroupSize_displays() {
+    tournament.setFormatId("QUALIFIER_GROUPS");
+    tournament.setQualifierGroupSize(6);
+
+    buildView();
+
+    assertEquals(
+        1,
+        _find(
+                view,
+                Span.class,
+                spec ->
+                    spec.withPredicate(
+                        span ->
+                            span.getText() != null
+                                && span.getText().contains("Qualifier group size: 6")))
+            .size());
+  }
+
+  @Test
+  @DisplayName("Qualifier-groups tournament without a setting shows the auto default")
+  void qualifierGroups_unpinnedGroupSize_showsAuto() {
+    tournament.setFormatId("QUALIFIER_GROUPS");
+
+    buildView();
+
+    assertEquals(
+        1,
+        _find(
+                view,
+                Span.class,
+                spec ->
+                    spec.withPredicate(
+                        span ->
+                            span.getText() != null
+                                && span.getText().contains("Qualifier group size: auto")))
+            .size());
+  }
+
+  @Test
+  @DisplayName("Non-qualifier formats show no group-size row")
+  void otherFormats_noGroupSizeRow() {
+    buildView();
+
+    assertEquals(
+        0,
+        _find(
+                view,
+                Span.class,
+                spec ->
+                    spec.withPredicate(
+                        span ->
+                            span.getText() != null
+                                && span.getText().contains("Qualifier group size")))
+            .size(),
+        "SINGLE_ELIMINATION must not render the group-size row");
+  }
+
   private static List<Button> buttonsWithTooltip(Component root, String tooltipSubstring) {
     return _find(
         root,
