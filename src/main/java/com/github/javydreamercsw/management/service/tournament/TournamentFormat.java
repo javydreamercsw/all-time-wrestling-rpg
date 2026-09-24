@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.tournament;
 
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
@@ -63,6 +64,27 @@ public interface TournamentFormat {
    * Rounds generate lazily, so the count is estimated from the entrant count, not scanned.
    */
   int estimateTotalMatches(Tournament tournament);
+
+  /**
+   * The segment type code this format's non-final rounds book as. Single-elimination rounds are
+   * classic one-on-one bouts; qualifier-group rounds are multi-entrant Free-for-Alls. The pacing
+   * path resolves the code against the segment-type catalog, falling back to one-on-one when the
+   * type is missing.
+   */
+  default String getRoundSegmentTypeCode() {
+    return WellKnownSegmentType.ONE_ON_ONE.getCode();
+  }
+
+  /**
+   * The segment rule name this format's non-final rounds default to when nothing higher in the
+   * stipulation hierarchy applies (no round fixedRule, no template-row rule, no allowed-rules pool)
+   * — resolved against the rule catalog, ignored when absent. Empty = no default (the catalog's
+   * "Normal" applies). Qualifier groups are No-DQ scrambles by convention, so the format answers
+   * "Free-For-All".
+   */
+  default String getDefaultRoundRuleName() {
+    return "";
+  }
 
   /**
    * How the bracket should be rendered in the UI. Defaults to {@link RenderMode#TREE} (single

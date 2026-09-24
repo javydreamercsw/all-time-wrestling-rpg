@@ -20,6 +20,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
+import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
+import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
+import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.ShowRepository;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
@@ -32,6 +38,9 @@ import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRepository;
 import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
+import com.github.javydreamercsw.management.service.show.ShowService;
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -50,6 +59,17 @@ class ShowTemplateServiceIT extends ManagementIntegrationTest {
   @Autowired private SegmentTypeRepository segmentTypeRepository;
   @Autowired private SegmentRuleRepository segmentRuleRepository;
   @Autowired private TournamentRepository tournamentRepository;
+  @Autowired private CommentaryTeamRepository commentaryTeamRepository;
+  @Autowired private ShowRepository showRepository;
+  @Autowired private SegmentRepository segmentRepository;
+  @Autowired private ShowService showService;
+  @Autowired private Clock clock;
+
+  private CommentaryTeam newTeam(String name) {
+    CommentaryTeam team = new CommentaryTeam();
+    team.setName(name);
+    return commentaryTeamRepository.saveAndFlush(team);
+  }
 
   private ShowType createPleType() {
     ShowType type =
@@ -71,6 +91,99 @@ class ShowTemplateServiceIT extends ManagementIntegrationTest {
     template.setName(name);
     template.setShowType(createPleType());
     return showTemplateService.save(template);
+  }
+
+  @Test
+  @DisplayName("Template commentary-team change propagates to future empty shows (ATW-ekev)")
+  void templateCommentaryChange_propagatesToFutureEmptyShells() {
+    // Policy under test (ATW-ekev): snapshot fields re-sync to future non-adjudicated instances
+    // at template save; shows with segments and past shows are never touched.
+    CommentaryTeam newTeam =
+        commentaryTeamRepository.save(newTeam("New Team " + System.nanoTime()));
+    ShowType type = showTypeRepository.findAll().stream().findFirst().orElseThrow();
+
+    ShowTemplate template = createTemplate("Prop Template " + System.nanoTime());
+    Show futureEmpty =
+        showService.createShow(
+            "Future shell " + System.nanoTime(),
+            null,
+            type.getId(),
+            LocalDate.now(clock).plusDays(10),
+            null,
+            template.getId(),
+            null,
+            null,
+            null,
+            null);
+    Show pastShell =
+        showService.createShow(
+            "Past shell " + System.nanoTime(),
+            null,
+            type.getId(),
+            LocalDate.now(clock).minusDays(5),
+            null,
+            template.getId(),
+            null,
+            null,
+            null,
+            null);
+
+    // Change the template's commentary team and save — propagation fires on save.
+    template.setCommentaryTeam(newTeam);
+    showTemplateService.save(template);
+
+    Show reloadedFuture = showService.getShowById(futureEmpty.getId()).orElseThrow();
+    Show reloadedPast = showService.getShowById(pastShell.getId()).orElseThrow();
+    assertThat(reloadedFuture.getCommentaryTeam())
+        .as("Future empty shell picks up the new commentary team")
+        .isNotNull()
+        .extracting(CommentaryTeam::getId)
+        .isEqualTo(newTeam.getId());
+    assertThat(reloadedPast.getCommentaryTeam()).as("Past shows are never touched").isNull();
+  }
+
+  @Test
+  @DisplayName("Shows with segments are exempt from snapshot propagation (ATW-ekev)")
+  void propagation_skipsShowsWithSegments() {
+    CommentaryTeam newTeam =
+        commentaryTeamRepository.save(newTeam("Seg Team " + System.nanoTime()));
+    ShowType type = showTypeRepository.findAll().stream().findFirst().orElseThrow();
+
+    ShowTemplate template = createTemplate("Seg Template " + System.nanoTime());
+    Show worked =
+        showService.createShow(
+            "Worked shell " + System.nanoTime(),
+            null,
+            type.getId(),
+            LocalDate.now(clock).plusDays(10),
+            null,
+            template.getId(),
+            null,
+            null,
+            null,
+            null);
+    Segment existing = new Segment();
+    existing.setShow(worked);
+    existing.setSegmentOrder(1);
+    SegmentType anyType =
+        segmentTypeRepository.findAll().stream()
+            .findFirst()
+            .orElseGet(
+                () -> {
+                  SegmentType fresh = new SegmentType();
+                  fresh.setName("Prop IT Type " + System.nanoTime());
+                  return segmentTypeRepository.saveAndFlush(fresh);
+                });
+    existing.setSegmentType(anyType);
+    segmentRepository.save(existing);
+
+    template.setCommentaryTeam(newTeam);
+    showTemplateService.save(template);
+
+    Show reloaded = showService.getShowById(worked.getId()).orElseThrow();
+    assertThat(reloaded.getCommentaryTeam())
+        .as("A shell with booker card work is left alone")
+        .isNull();
   }
 
   @Test

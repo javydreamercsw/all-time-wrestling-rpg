@@ -21,6 +21,8 @@ import com.github.javydreamercsw.base.image.DefaultImageService;
 import com.github.javydreamercsw.base.image.ImageCategory;
 import com.github.javydreamercsw.management.config.CacheConfig;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
+import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.template.RecurrenceType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
@@ -29,9 +31,11 @@ import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import java.time.Clock;
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.Month;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.NonNull;
@@ -58,6 +62,7 @@ public class ShowTemplateService {
   @Autowired private ShowTemplateRepository showTemplateRepository;
   @Autowired private ShowTypeRepository showTypeRepository;
   @Autowired private CommentaryTeamRepository commentaryTeamRepository;
+  @Autowired private ShowRepository showRepository;
   @Autowired private Clock clock;
   @Autowired private DefaultImageService imageService;
 
@@ -93,7 +98,54 @@ public class ShowTemplateService {
       allEntries = true)
   public ShowTemplate save(@NonNull final ShowTemplate showTemplate) {
     showTemplate.setCreationDate(clock.instant());
-    return showTemplateRepository.saveAndFlush(showTemplate);
+    ShowTemplate saved = showTemplateRepository.saveAndFlush(showTemplate);
+    // Snapshot propagation (ATW-ekev): template edits flow to future empty show shells.
+    if (saved.getId() != null) {
+      syncFutureShowsWithTemplate(saved.getId());
+    }
+    return saved;
+  }
+
+  /**
+   * Re-syncs the snapshot fields a show inherits at generation (commentary team) onto every future
+   * show of this template that is still empty (ATW-ekev).
+   *
+   * <p>Deliberately NOT propagated: assignment-derived behavior (tournament pairings, auto-attach
+   * and encouraged rules, event-only types — the planning and approval paths read the template's
+   * CURRENT rows live at plan/approve time, so they never go stale); show name/date (the show's
+   * calendar identity is booker-owned once generated; the scheduler's unpopulated-shell cleanup
+   * already handles structural recurrence changes); arena (assignment is capacity-aware at
+   * generation time — re-assigning later could double-book a venue). Shows with segments are left
+   * alone: silent alteration of booker card work is worse than staleness.
+   */
+  public void syncFutureShowsWithTemplate(@NonNull final Long templateId) {
+    List<Show> shells =
+        showRepository.findByTemplateIdAndShowDateAfterAndSegmentsEmpty(
+            templateId, LocalDate.now(clock));
+    if (shells.isEmpty()) {
+      return;
+    }
+    ShowTemplate template = showTemplateRepository.findById(templateId).orElse(null);
+    if (template == null) {
+      return;
+    }
+    int synced = 0;
+    for (Show shell : shells) {
+      if (!Objects.equals(
+          shell.getCommentaryTeam() == null ? null : shell.getCommentaryTeam().getId(),
+          template.getCommentaryTeam() == null ? null : template.getCommentaryTeam().getId())) {
+        shell.setCommentaryTeam(template.getCommentaryTeam());
+        showRepository.save(shell);
+        synced++;
+      }
+    }
+    if (synced > 0) {
+      log.info(
+          "Template '{}' snapshot change propagated to {} future show(s) (commentary team"
+              + " re-synced; ATW-ekev)",
+          template.getName(),
+          synced);
+    }
   }
 
   /**
@@ -515,6 +567,8 @@ public class ShowTemplateService {
     }
 
     ShowTemplate savedTemplate = showTemplateRepository.save(template);
+    // Snapshot propagation (ATW-ekev): commentary-team edits reach future empty shells too.
+    syncFutureShowsWithTemplate(id);
     log.info("Updated show template: {}", name);
     return Optional.of(savedTemplate);
   }

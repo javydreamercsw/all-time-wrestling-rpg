@@ -31,6 +31,7 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentEntryRep
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntryStatus;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatchRepository;
+import com.github.javydreamercsw.management.domain.tournament.TournamentRecurrence;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRepository;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundRepository;
@@ -131,6 +132,16 @@ public class TournamentService {
   @PreAuthorize("isAuthenticated()")
   public List<Tournament> findByUniverse(@NonNull Universe universe) {
     return tournamentRepository.findByUniverseIdOrderByStartDateDesc(universe.getId());
+  }
+
+  /**
+   * Persist edits to an existing tournament (e.g. the creation wizard setting the edition cadence
+   * after {@link #createTournament}, ATW-o4ad).
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public Tournament save(@NonNull Tournament tournament) {
+    return tournamentRepository.save(tournament);
   }
 
   @Transactional(readOnly = true)
@@ -236,6 +247,82 @@ public class TournamentService {
     t.setRounds(new ArrayList<>());
     t.setAllowedRules(allowedRules != null ? new ArrayList<>(allowedRules) : new ArrayList<>());
     return tournamentRepository.save(t);
+  }
+
+  /**
+   * Create the next edition of a recurring tournament (ATW-o4ad): copies format, allowed rules,
+   * linked title, universe, and default entrant count; names it with the base name (any trailing
+   * Roman numeral stripped) plus the successor ordinal in Roman numerals ("Time Vault" → "Time
+   * Vault II"); sets parent + ordinal; SCHEDULED, no host show, no entries/rounds. Recurrence
+   * carries over so the chain continues. Idempotent: returns empty when a successor of {@code
+   * completed} already exists (re-approval of the same payoff must not mint duplicate editions).
+   *
+   * @param completed the edition whose payoff just booked
+   * @return the new edition, or empty when one already exists or the tournament is not recurring
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public Optional<Tournament> createNextEdition(@NonNull Tournament completed) {
+    if (completed.getRecurrence() != TournamentRecurrence.ANNUAL) {
+      return Optional.empty();
+    }
+    if (completed.getId() != null
+        && tournamentRepository.findByParentId(completed.getId()).isPresent()) {
+      return Optional.empty(); // successor already minted — re-approval is a no-op
+    }
+    int nextOrdinal =
+        (completed.getEditionOrdinal() != null ? completed.getEditionOrdinal() : 1) + 1;
+    Tournament next = new Tournament();
+    next.setName(editionName(baseEditionName(completed.getName()), nextOrdinal));
+    next.setFormatId(completed.getFormatId());
+    next.setUniverse(completed.getUniverse());
+    next.setLinkedTitle(completed.getLinkedTitle());
+    next.setDefaultEntrantCount(completed.getDefaultEntrantCount());
+    next.setQualifierGroupSize(completed.getQualifierGroupSize());
+    next.setParent(completed);
+    next.setEditionOrdinal(nextOrdinal);
+    next.setRecurrence(TournamentRecurrence.ANNUAL);
+    next.setStartDate(completed.getStartDate());
+    next.setStatus(TournamentStatus.SCHEDULED);
+    next.setEntries(new ArrayList<>());
+    next.setRounds(new ArrayList<>());
+    next.setAllowedRules(new ArrayList<>(completed.getAllowedRules()));
+    return Optional.of(tournamentRepository.save(next));
+  }
+
+  /**
+   * "Time Vault" + 3 → "Time Vault III". Ordinal 1 → the base name unchanged. A base name already
+   * carrying a Roman-numeral edition suffix has it stripped first ("Crown Cup XLII" + 43 → "Crown
+   * Cup XLIII", never a stacked suffix).
+   */
+  public static String editionName(@NonNull String baseName, int ordinal) {
+    return ordinal <= 1 ? baseName : baseEditionName(baseName) + " " + romanNumeral(ordinal);
+  }
+
+  /**
+   * Strips a trailing Roman-numeral edition suffix ("Time Vault II" → "Time Vault"; a plain name
+   * passes through) so the next edition builds from the shared base.
+   */
+  private static String baseEditionName(@NonNull String name) {
+    return name.replaceFirst(" (?:[IVXLCDM]+)$", "");
+  }
+
+  private static String romanNumeral(int value) {
+    if (value <= 0) {
+      throw new IllegalArgumentException("Edition ordinals start at 1: " + value);
+    }
+    final int[] numbers = {1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1};
+    final String[] symbols = {
+      "M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I"
+    };
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < numbers.length; i++) {
+      while (value >= numbers[i]) {
+        sb.append(symbols[i]);
+        value -= numbers[i];
+      }
+    }
+    return sb.toString();
   }
 
   /**

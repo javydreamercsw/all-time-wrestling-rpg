@@ -77,6 +77,14 @@ public class Tournament extends AbstractEntity<Long> {
   @Column(name = "default_entrant_count")
   @Nullable private Integer defaultEntrantCount;
 
+  /**
+   * QUALIFIER_GROUPS only: wrestlers per qualifier group (the Free-for-All qualifiers feeding the
+   * final). Null = format default (3-wrestler groups). Part of the entrant-count validation — the
+   * bracket needs at least two groups ({@code entrants >= 2 * groupSize}).
+   */
+  @Column(name = "qualifier_group_size")
+  @Nullable private Integer qualifierGroupSize;
+
   /** Format identifier matching {@code TournamentFormat#getFormatId()}. */
   @Column(name = "format_id", nullable = false, length = 64)
   private String formatId;
@@ -143,4 +151,28 @@ public class Tournament extends AbstractEntity<Long> {
       joinColumns = @JoinColumn(name = "tournament_id"),
       inverseJoinColumns = @JoinColumn(name = "segment_rule_id"))
   private List<SegmentRule> allowedRules = new ArrayList<>();
+
+  /**
+   * Previous edition of a recurring tournament chain (ATW-o4ad): {@code null} for one-shot
+   * tournaments and for a chain's first edition. EAGER so list/detail views render outside a
+   * transaction.
+   */
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "parent_tournament_id")
+  @Nullable private Tournament parent;
+
+  /** 1-based edition counter within a recurring chain; {@code null} for one-shot tournaments. */
+  @Column(name = "edition_ordinal")
+  @Nullable private Integer editionOrdinal;
+
+  /**
+   * Edition cadence (ATW-o4ad): {@code NONE} keeps the one-shot semantics — the payoff books once
+   * and the template pairing is consumed (ATW-xbn4/ATW-z963). {@code ANNUAL} auto-creates the next
+   * edition (same format/rules/title/universe, ordinal+1, SCHEDULED) when the payoff books and
+   * re-points the PLE template pairing to it, so every future PLE instance from the template hosts
+   * the next cycle without manual re-arming.
+   */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "recurrence", nullable = false, length = 16)
+  private TournamentRecurrence recurrence = TournamentRecurrence.NONE;
 }

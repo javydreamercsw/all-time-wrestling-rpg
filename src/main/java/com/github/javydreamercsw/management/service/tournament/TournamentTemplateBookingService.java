@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntryStatus;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
+import com.github.javydreamercsw.management.domain.tournament.TournamentRecurrence;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRepository;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus;
 import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
@@ -218,22 +219,17 @@ public class TournamentTemplateBookingService {
       return List.of();
     }
 
-    // Weekly rounds use the standard one-on-one type — event-only types stay exclusive to the
-    // PLE payoff.
-    Optional<SegmentType> singlesType =
-        segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode());
-    if (singlesType.isEmpty()) {
-      log.warn(
-          "Cannot book tournament rounds on weekly show '{}': the standard one-on-one segment"
-              + " type is missing",
-          show.getName());
+    // Weekly rounds book the format's round type — one-on-one for single elimination, Free-for-All
+    // qualifiers for QUALIFIER_GROUPS. Event-only types stay exclusive to the PLE payoff.
+    Optional<SegmentType> roundType = roundSegmentTypeOf(tournament);
+    if (roundType.isEmpty()) {
       return List.of();
     }
 
     ArrayList<TournamentBooking> bookings = new ArrayList<>();
     for (int i = 0; i < matchesThisShow; i++) {
       Optional<TournamentBooking> booking =
-          bookCurrentRoundFedSegment(tournament, assignment, singlesType.get(), show);
+          bookCurrentRoundFedSegment(tournament, assignment, roundType.get(), show);
       if (booking.isEmpty()) {
         break;
       }
@@ -242,6 +238,112 @@ public class TournamentTemplateBookingService {
               booking.get().segment(), tournament, booking.get().detail(), false, null));
     }
     return bookings;
+  }
+
+  /**
+   * The segment type this tournament's non-final rounds book as: the format's round type code
+   * resolved against the catalog, falling back to the standard one-on-one type. Empty (with a
+   * warning) when neither exists — pacing skips the show rather than booking a wrong type.
+   */
+  private Optional<SegmentType> roundSegmentTypeOf(Tournament tournament) {
+    String code =
+        tournamentService
+            .findFormat(tournament.getFormatId())
+            .map(TournamentFormat::getRoundSegmentTypeCode)
+            .orElse(WellKnownSegmentType.ONE_ON_ONE.getCode());
+    Optional<SegmentType> resolved = segmentTypeService.findByCode(code);
+    if (resolved.isEmpty()) {
+      log.warn(
+          "Cannot book tournament rounds on show '{}': the '{}' segment type is missing",
+          tournament.getFormatId(),
+          code);
+    }
+    return resolved;
+  }
+
+  /**
+   * The format's default round rule, resolved to a catalog rule name. The rule catalog seeds
+   * "Free-For-All" (No-DQ); when the row is missing the raw name still lands in the stipulation
+   * string (narration-only at worst), and "Normal" stays the fallback when the format declares no
+   * default.
+   */
+  private String defaultRoundRuleOf(Tournament tournament) {
+    return tournamentService
+        .findFormat(tournament.getFormatId())
+        .map(TournamentFormat::getDefaultRoundRuleName)
+        .filter(name -> !name.isEmpty())
+        .orElse("Normal");
+  }
+
+  // ── PLE-adjudication auto-start ─────────────────────────────────────────────
+
+  /**
+   * Auto-start the SCHEDULED tournaments whose target PLE is the first PLE after the one just
+   * adjudicated: a PLE's adjudication is the moment the next PLE's cycle begins, so the paired
+   * tournaments seed and generate their bracket now — later weekly planning previews then show real
+   * pairings instead of placeholders.
+   *
+   * <p>"Target PLE" mirrors {@code findTargetPle}: the first PLE within a year of the adjudicated
+   * show's date whose template carries this tournament on a tournament assignment row. Tournaments
+   * already underway or complete are skipped, as are one-time show-attached ones (payoffShow set —
+   * the host-show path owns them). Never throws: failures to start one tournament are logged and
+   * skipped, so adjudication never fails because of a tournament.
+   *
+   * @param adjudicatedPle the PLE whose adjudication just completed
+   * @return how many tournaments were started
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public int autoStartScheduledTournamentsForNextPle(@NonNull final Show adjudicatedPle) {
+    if (adjudicatedPle.getShowDate() == null) {
+      return 0;
+    }
+    int started = 0;
+    for (Tournament tournament : tournamentRepository.findByStatus(TournamentStatus.SCHEDULED)) {
+      if (tournament.getPayoffShow() != null
+          || tournament.getId() == null
+          || tournament.getUniverse() != null
+              && adjudicatedPle.getUniverse() != null
+              && !tournament.getUniverse().getId().equals(adjudicatedPle.getUniverse().getId())) {
+        continue; // host-show owned, unsaved, or another universe's tournament
+      }
+      Optional<Show> targetPle = firstPlePairingTournamentAfter(adjudicatedPle, tournament);
+      if (targetPle.isEmpty()) {
+        continue; // no future PLE pairs this tournament within a year
+      }
+      if (autoStartTournament(tournament, adjudicatedPle, presetEntrantPlan(tournament))) {
+        started++;
+        log.info(
+            "PLE '{}' adjudicated — auto-started tournament '{}' (target PLE '{}')",
+            adjudicatedPle.getName(),
+            tournament.getName(),
+            targetPle.get().getName());
+      }
+    }
+    return started;
+  }
+
+  /**
+   * The first PLE after {@code adjudicatedPle}'s date (within a year) whose template pairs {@code
+   * tournament} — the tournament's target PLE, and the one whose weekly shows will pace its
+   * qualifying rounds.
+   */
+  private Optional<Show> firstPlePairingTournamentAfter(
+      final Show adjudicatedPle, final Tournament tournament) {
+    return showService
+        .getShowsByDateRange(
+            adjudicatedPle.getShowDate().plusDays(1), adjudicatedPle.getShowDate().plusYears(1))
+        .stream()
+        .filter(Show::isPremiumLiveEvent)
+        .filter(
+            s ->
+                s.getTemplate() != null
+                    && s.getTemplate().getTournamentAssignments().stream()
+                        .anyMatch(
+                            a ->
+                                a.getTournament() != null
+                                    && tournament.getId().equals(a.getTournament().getId())))
+        .findFirst();
   }
 
   // ── Spec resolution (ATW-etws) ──────────────────────────────────────────────
@@ -503,6 +605,7 @@ public class TournamentTemplateBookingService {
         if (matches > 0) {
           // One preview row per match, each with its real pairing when the bracket is generated
           // (seed math makes round-1 pairings predictable); placeholders when unseeded.
+          String roundTypeName = roundTypeNameOf(tournament);
           List<TournamentMatch> openMatches =
               tournament.getRounds() == null
                   ? List.of()
@@ -517,7 +620,7 @@ public class TournamentTemplateBookingService {
             previews.add(
                 new TournamentSlotPreview(
                     tournament.getName(),
-                    "One on One",
+                    roundTypeName,
                     null,
                     open != null
                         ? "Round " + open.getRound().getRoundNumber() + " — bracket match"
@@ -529,6 +632,18 @@ public class TournamentTemplateBookingService {
       }
     }
     return previews;
+  }
+
+  /** The display name of the type this tournament's rounds book as (for preview rows). */
+  private String roundTypeNameOf(Tournament tournament) {
+    return segmentTypeService
+        .findByCode(
+            tournamentService
+                .findFormat(tournament.getFormatId())
+                .map(TournamentFormat::getRoundSegmentTypeCode)
+                .orElse(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .map(SegmentType::getName)
+        .orElse(WellKnownSegmentType.ONE_ON_ONE.getCode());
   }
 
   /** Every entrant's name (one team per entrant), or a placeholder layout when unknown. */
@@ -612,7 +727,7 @@ public class TournamentTemplateBookingService {
    * How many round matches {@link #bookShowWeeklyRounds} would book for this tournament on this
    * show — the pacing math without the booking. Non-positive when the tournament would not feed
    * this show (already started elsewhere, unseedable roster, only the payoff remaining, missing
-   * One-on-One type).
+   * round segment type).
    */
   private int plannedRoundCountFor(Tournament tournament, Show show) {
     if (tournament.getStatus() == TournamentStatus.COMPLETE) {
@@ -632,8 +747,7 @@ public class TournamentTemplateBookingService {
     boolean feeds =
         tournament.getStatus() == TournamentStatus.SCHEDULED
             || tournament.getStatus() == TournamentStatus.IN_PROGRESS;
-    if (!feeds
-        || segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()).isEmpty()) {
+    if (!feeds || roundSegmentTypeOf(tournament).isEmpty()) {
       return 0;
     }
     // A SCHEDULED tournament's bracket is generated at start — its round-1 matches do not exist
@@ -751,20 +865,15 @@ public class TournamentTemplateBookingService {
       return List.of();
     }
 
-    Optional<SegmentType> singlesType =
-        segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode());
-    if (singlesType.isEmpty()) {
-      log.warn(
-          "Cannot book tournament rounds on weekly show '{}': the standard one-on-one segment"
-              + " type is missing",
-          show.getName());
+    Optional<SegmentType> roundType = roundSegmentTypeOf(tournament);
+    if (roundType.isEmpty()) {
       return List.of();
     }
 
     ArrayList<TournamentBooking> bookings = new ArrayList<>();
     for (int i = 0; i < matchesThisShow; i++) {
       Optional<TournamentBooking> booking =
-          bookCurrentRoundFedSegment(tournament, singlesType.get(), null, show);
+          bookCurrentRoundFedSegment(tournament, roundType.get(), null, show);
       if (booking.isEmpty()) {
         break;
       }
@@ -791,11 +900,35 @@ public class TournamentTemplateBookingService {
             });
   }
 
-  /** Detach a one-time tournament from its host show so the payoff cannot fire twice. */
+  /**
+   * Detach a one-time tournament from its host show so the payoff cannot fire twice. Recurring
+   * editions (ATW-o4ad) also renew here: the next edition is created so the chain continues even
+   * when the payoff booked through the host-show path (ATW-xbn4) rather than a template pairing.
+   */
   private void consumeShowLink(
       @NonNull final Tournament tournament,
       @NonNull final Show show,
       @NonNull final String reason) {
+    if (tournament.getRecurrence() == TournamentRecurrence.ANNUAL) {
+      tournamentService
+          .createNextEdition(tournament)
+          .ifPresentOrElse(
+              next ->
+                  log.info(
+                      "Recurring tournament '{}' completed via host show '{}' — created next"
+                          + " edition '{}' (#{}); pair it with a PLE template to continue the"
+                          + " cycle ({})",
+                      tournament.getName(),
+                      show.getName(),
+                      next.getName(),
+                      next.getEditionOrdinal(),
+                      reason),
+              () ->
+                  log.info(
+                      "Recurring tournament '{}' completed — next edition already exists ({})",
+                      tournament.getName(),
+                      reason));
+    }
     tournamentService.clearPayoffShow(tournament);
     log.info(
         "Consumed host-show link for '{}' (was '{}') — {}",
@@ -973,6 +1106,12 @@ public class TournamentTemplateBookingService {
    * (ATW-etws) also clear every spec field — leaving them set would mint a second instance the next
    * time a resolution ran. Spec-only rows drop off the template entirely via the existing
    * orphanRemoval mapping.
+   *
+   * <p>Recurring editions (ATW-o4ad): an ANNUAL tournament's payoff re-arms instead of consuming —
+   * the next edition is created (same format/rules/title/universe, ordinal + 1, SCHEDULED) and the
+   * row is re-pointed to it, so the pairing survives and every future PLE instance from the
+   * template hosts the next cycle. Idempotent: the successor is created at most once per completed
+   * edition (a parent-id existence check), so re-approval of the same show never mints duplicates.
    */
   private void consumePairing(
       @NonNull final ShowTemplateSegmentAssignment assignment,
@@ -980,6 +1119,9 @@ public class TournamentTemplateBookingService {
       @NonNull final Show show,
       @NonNull final String reason) {
     if (assignment.getTournament() == null && !assignment.hasTournamentSpec()) {
+      return;
+    }
+    if (renewEdition(assignment, tournament, show, reason)) {
       return;
     }
     if (assignment.getSegmentType() != null || assignment.getSegmentRule() != null) {
@@ -997,6 +1139,44 @@ public class TournamentTemplateBookingService {
         tournament.getName(),
         show.getName(),
         reason);
+  }
+
+  /**
+   * When {@code tournament} is a recurring edition (ATW-o4ad), create its successor and re-point
+   * {@code assignment} to it instead of consuming the pairing. No-op (returns false) for one-shot
+   * tournaments — the caller proceeds with the legacy consumption. Also renews a host-show link
+   * that a recurring edition carries (the successor inherits no host show; the next PLE instance
+   * from the template books its payoff via the pairing).
+   */
+  private boolean renewEdition(
+      @NonNull final ShowTemplateSegmentAssignment assignment,
+      @NonNull final Tournament tournament,
+      @NonNull final Show show,
+      @NonNull final String reason) {
+    if (tournament.getRecurrence() != TournamentRecurrence.ANNUAL) {
+      return false;
+    }
+    // Mint the successor, or find the one a previous payoff already created (idempotency:
+    // re-approving the same payoff re-points to the existing edition rather than consuming).
+    Optional<Tournament> successor =
+        tournamentService
+            .createNextEdition(tournament)
+            .or(() -> tournamentRepository.findByParentId(tournament.getId()));
+    if (successor.isEmpty()) {
+      return false;
+    }
+    Tournament next = successor.get();
+    assignment.setTournament(next);
+    clearSpec(assignment); // the row now references the successor directly; specs detach
+    log.info(
+        "Recurring tournament '{}' — pairing re-pointed to next edition '{}' (#{}), cycle"
+            + " continues ({} for show '{}')",
+        tournament.getName(),
+        next.getName(),
+        next.getEditionOrdinal(),
+        reason,
+        show.getName());
+    return true;
   }
 
   /** Null out every spec field on the row (identity detaches, the row's other targets stay). */
@@ -1070,10 +1250,11 @@ public class TournamentTemplateBookingService {
     }
 
     TournamentMatch match = openMatchOpt.get();
-    // Stipulation precedence: round fixedRule → row rule → tournament allowed-rules pool →
-    // none (ATW-etws). The manual path (bookRoundOnShow) keeps its own hierarchy.
+    // Stipulation precedence: round fixedRule → row rule → tournament allowed-rules pool → the
+    // format's default round rule (e.g. Free-For-All qualifiers are No-DQ by convention).
     String stipulation =
-        tournamentService.resolveRoundStipulation(tournament, match.getRound(), rule, "");
+        tournamentService.resolveRoundStipulation(
+            tournament, match.getRound(), rule, defaultRoundRuleOf(tournament));
     Segment segment = resolveSegment(match, tournament, segmentType, show, stipulation, false);
 
     // The match mechanics already decided a winner inside the segment — mirror it into the

@@ -37,6 +37,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
+import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
@@ -44,6 +45,7 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntryStatus;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatchParticipant;
+import com.github.javydreamercsw.management.domain.tournament.TournamentRecurrence;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRepository;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus;
@@ -134,7 +136,8 @@ class TournamentTemplateBookingServiceTest {
         .thenAnswer(
             invocation -> {
               SegmentRule rule = invocation.getArgument(2);
-              return rule != null ? rule.getName() : "";
+              // Mirror the real hierarchy's tail: fixedRule/row rule, else the fallback.
+              return rule != null ? rule.getName() : invocation.getArgument(3);
             });
 
     tournament = new Tournament();
@@ -457,6 +460,71 @@ class TournamentTemplateBookingServiceTest {
     assertNull(assignment.getSpecEntrantCount());
     assertNull(assignment.getSpecFinalRule());
     assertTrue(assignment.getSpecAllowedRules().isEmpty());
+  }
+
+  @Test
+  void recurringTournament_payoffBooks_nextEditionCreatedAndPairingRePointed() {
+    // ATW-o4ad: an ANNUAL tournament's consumed pairing re-arms instead — the successor edition
+    // is created and the assignment row re-points to it, so the next PLE hosts the next cycle.
+    tournament.setStatus(TournamentStatus.COMPLETE);
+    tournament.setRecurrence(TournamentRecurrence.ANNUAL);
+    tournament.setEditionOrdinal(1);
+    TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.WINNER);
+    TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ELIMINATED);
+    tournament.setEntries(new ArrayList<>(List.of(aliceEntry, bobEntry)));
+
+    Tournament successor = new Tournament();
+    successor.setId(6L);
+    successor.setName("Crown Cup II");
+    successor.setRecurrence(TournamentRecurrence.ANNUAL);
+    successor.setEditionOrdinal(2);
+    successor.setStatus(TournamentStatus.SCHEDULED);
+    when(tournamentService.createNextEdition(tournament)).thenReturn(Optional.of(successor));
+
+    assertTrue(
+        service.bookTournamentFedSegment(assignment, rumbleType, show).isEmpty(),
+        "COMPLETE tournament without a linked title books nothing itself");
+    assertEquals(
+        successor, assignment.getTournament(), "Pairing must re-point to the next edition");
+  }
+
+  @Test
+  void recurringTournament_successorExists_pairingRePointsToIt() {
+    // Idempotency guard (ATW-o4ad): createNextEdition returning empty (successor already minted
+    // by a previous payoff) re-points the pairing to the existing edition instead of consuming —
+    // re-approving the same payoff must not double-mint nor strand the pairing.
+    tournament.setStatus(TournamentStatus.COMPLETE);
+    tournament.setRecurrence(TournamentRecurrence.ANNUAL);
+    tournament.setEditionOrdinal(1);
+    TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.WINNER);
+    tournament.setEntries(new ArrayList<>(List.of(aliceEntry)));
+
+    Tournament existing = new Tournament();
+    existing.setId(6L);
+    existing.setName("Crown Cup II");
+    existing.setEditionOrdinal(2);
+    when(tournamentService.createNextEdition(tournament)).thenReturn(Optional.empty());
+    when(tournamentRepository.findByParentId(5L)).thenReturn(Optional.of(existing));
+
+    service.bookTournamentFedSegment(assignment, rumbleType, show);
+
+    assertEquals(
+        existing,
+        assignment.getTournament(),
+        "Pairing must re-point to the already-existing successor edition");
+  }
+
+  @Test
+  void oneShotTournament_pairingConsumed_noEditionCreated() {
+    // Recurrence NONE (default): the legacy consumption path — createNextEdition is never asked.
+    tournament.setStatus(TournamentStatus.COMPLETE);
+    TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.WINNER);
+    tournament.setEntries(new ArrayList<>(List.of(aliceEntry)));
+
+    service.bookTournamentFedSegment(assignment, rumbleType, show);
+
+    verify(tournamentService, never()).createNextEdition(any());
+    assertNull(assignment.getTournament());
   }
 
   @Test
@@ -882,7 +950,7 @@ class TournamentTemplateBookingServiceTest {
 
     Segment booked = singles(alice, bob, alice);
     when(segmentResolutionService.resolveTeamSegment(
-            any(), any(), eq(singlesType), eq(show), eq("")))
+            any(), any(), eq(singlesType), eq(show), any()))
         .thenReturn(booked);
 
     List<TournamentTemplateBookingService.TournamentBooking> bookings =
@@ -1154,7 +1222,7 @@ class TournamentTemplateBookingServiceTest {
     tournament.setRounds(new ArrayList<>(List.of(round(1, match))));
     Segment booked = singles(alice, bob, alice);
     when(segmentResolutionService.resolveTeamSegment(
-            any(), any(), eq(singlesType), eq(weeklyShow), eq("")))
+            any(), any(), eq(singlesType), eq(weeklyShow), any()))
         .thenReturn(booked);
 
     List<TournamentTemplateBookingService.TournamentBooking> bookings =
@@ -1199,7 +1267,7 @@ class TournamentTemplateBookingServiceTest {
     tournament.setRounds(new ArrayList<>(List.of(round(1, m1, m2))));
     Segment booked = singles(alice, bob, alice);
     when(segmentResolutionService.resolveTeamSegment(
-            any(), any(), eq(singlesType), eq(weeklyShow), eq("")))
+            any(), any(), eq(singlesType), eq(weeklyShow), any()))
         .thenReturn(booked);
 
     List<TournamentTemplateBookingService.TournamentBooking> bookings =
@@ -1272,7 +1340,7 @@ class TournamentTemplateBookingServiceTest {
     tournament.setRounds(new ArrayList<>(List.of(round(1, match))));
     Segment booked = singles(alice, bob, alice);
     when(segmentResolutionService.resolveTeamSegment(
-            any(), any(), eq(singlesType), eq(weeklyShow), eq("")))
+            any(), any(), eq(singlesType), eq(weeklyShow), any()))
         .thenReturn(booked);
 
     List<TournamentTemplateBookingService.TournamentBooking> bookings =
@@ -1341,7 +1409,7 @@ class TournamentTemplateBookingServiceTest {
     when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
         .thenReturn(Optional.of(singlesType));
     when(segmentResolutionService.resolveTeamSegment(
-            any(), any(), eq(singlesType), eq(show), eq("")))
+            any(), any(), eq(singlesType), eq(show), any()))
         .thenReturn(singles(alice, bob, alice));
 
     // Template weekly path routes through the standard One-on-One type; a single open match
@@ -1691,6 +1759,297 @@ class TournamentTemplateBookingServiceTest {
     assertTrue(service.payoffCatchUpWarnings(show).isEmpty());
   }
 
+  @Test
+  void bookWeeklyRounds_qualifierGroupsFormat_booksFreeForAllWithAllEntrants() {
+    // QUALIFIER_GROUPS paces its qualifiers as multi-entrant Free-for-Alls (ATW-o4ad follow-up):
+    // the round books the format's round type with EVERY group entrant, not a two-entrant
+    // One-on-One.
+    tournament.setFormatId(QualifierGroupsFormat.FORMAT_ID);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.ACTIVE);
+    TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ACTIVE);
+    Wrestler cara = wrestler(3L, "Cara");
+    TournamentEntry caraEntry = entry(cara, 3, TournamentEntryStatus.ACTIVE);
+    // A 3-entrant qualifier group — the multi-entrant shape (participants, not entrant1/2).
+    TournamentMatch match = multiMatch(1, aliceEntry, bobEntry, caraEntry);
+    tournament.setRounds(new ArrayList<>(List.of(round(1, match))));
+    SegmentType ffaType = new SegmentType();
+    ffaType.setId(12L);
+    ffaType.setName("Free-for-All");
+    when(tournamentService.findFormat(QualifierGroupsFormat.FORMAT_ID))
+        .thenReturn(Optional.of(format));
+    when(format.getRoundSegmentTypeCode()).thenReturn(WellKnownSegmentType.FREE_FOR_ALL.getCode());
+    when(segmentTypeService.findByCode(WellKnownSegmentType.FREE_FOR_ALL.getCode()))
+        .thenReturn(Optional.of(ffaType));
+    Segment ffa = new Segment();
+    ffa.setSegmentType(ffaType);
+    ffa.addParticipant(alice, 1);
+    ffa.addParticipant(bob, 1);
+    ffa.addParticipant(cara, 1);
+    ffa.setWinners(List.of(alice));
+    when(segmentResolutionService.resolveMultiTeamSegment(any(), eq(ffaType), eq(show), any()))
+        .thenReturn(ffa);
+
+    List<TournamentTemplateBookingService.TournamentBooking> bookings =
+        service.bookWeeklyRounds(assignment, show);
+
+    assertEquals(1, bookings.size());
+    verify(segmentResolutionService).resolveMultiTeamSegment(any(), eq(ffaType), eq(show), any());
+    verify(segmentResolutionService, never()).resolveTeamSegment(any(), any(), any(), any(), any());
+    // The bracket mirrored the FFA result: the service recorded the match result.
+    verify(tournamentService).recordMatchResult(eq(match), any());
+  }
+
+  @Test
+  void bookWeeklyRounds_missingRoundType_fallsBackToEmpty() {
+    // The format's round segment type is missing from the catalog — pacing backs off instead
+    // of booking a wrong type.
+    tournament.setFormatId(QualifierGroupsFormat.FORMAT_ID);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    when(tournamentService.findFormat(QualifierGroupsFormat.FORMAT_ID))
+        .thenReturn(Optional.of(format));
+    when(format.getRoundSegmentTypeCode()).thenReturn(WellKnownSegmentType.FREE_FOR_ALL.getCode());
+    when(segmentTypeService.findByCode(WellKnownSegmentType.FREE_FOR_ALL.getCode()))
+        .thenReturn(Optional.empty());
+
+    assertTrue(service.bookWeeklyRounds(assignment, show).isEmpty());
+    verify(segmentResolutionService, never()).resolveTeamSegment(any(), any(), any(), any(), any());
+  }
+
+  @Test
+  void bookWeeklyRounds_qualifierGroups_defaultRuleIsFreeForAll() {
+    // Free-for-All qualifiers are No-DQ by convention: when the stipulation hierarchy is empty
+    // (no round fixedRule, no row rule, no allowed-rules pool) the format's default rule applies.
+    tournament.setFormatId(QualifierGroupsFormat.FORMAT_ID);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    when(tournamentService.findFormat(QualifierGroupsFormat.FORMAT_ID))
+        .thenReturn(Optional.of(format));
+    when(format.getRoundSegmentTypeCode()).thenReturn(WellKnownSegmentType.FREE_FOR_ALL.getCode());
+    when(format.getDefaultRoundRuleName()).thenReturn("Free-For-All");
+    SegmentType ffaType = new SegmentType();
+    ffaType.setId(12L);
+    ffaType.setName("Free-for-All");
+    when(segmentTypeService.findByCode(WellKnownSegmentType.FREE_FOR_ALL.getCode()))
+        .thenReturn(Optional.of(ffaType));
+    TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.ACTIVE);
+    TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ACTIVE);
+    TournamentMatch match = match(1, aliceEntry, bobEntry);
+    tournament.setRounds(new ArrayList<>(List.of(round(1, match))));
+    when(segmentResolutionService.resolveTeamSegment(
+            any(), any(), eq(ffaType), eq(show), eq("Free-For-All")))
+        .thenReturn(singles(alice, bob, alice));
+
+    assertEquals(1, service.bookWeeklyRounds(assignment, show).size());
+    verify(tournamentService)
+        .resolveRoundStipulation(
+            eq(tournament), any(), eq(assignment.getSegmentRule()), eq("Free-For-All"));
+  }
+
+  @Test
+  void previewShowAttached_qualifierGroupsFormat_usesFormatTypeName() {
+    // Paced-round preview rows name the format's round type (Free-for-All), not a hardcoded
+    // "One on One".
+    tournament.setFormatId(QualifierGroupsFormat.FORMAT_ID);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    Show payoff = showWithName(2L, "Crown Cup Final", LocalDate.of(2026, 6, 22));
+    payoff.setUniverse(show.getUniverse());
+    tournament.setPayoffShow(payoff);
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of());
+    when(tournamentRepository.findByUniverseIdAndPayoffShowIsNotNull(1L))
+        .thenReturn(List.of(tournament));
+    when(pacingService.planFor(tournament, payoff))
+        .thenReturn(
+            new TournamentPacingService.PacingPlan(
+                TournamentPacingService.PayoffKind.FINAL_AT_PLE, List.of(), 4, 2, 2));
+    when(showService.getShowsByDateRange(any(), any())).thenReturn(List.of(show));
+    when(tournamentService.findFormat(QualifierGroupsFormat.FORMAT_ID))
+        .thenReturn(Optional.of(format));
+    when(format.getRoundSegmentTypeCode()).thenReturn(WellKnownSegmentType.FREE_FOR_ALL.getCode());
+    SegmentType ffaType = new SegmentType();
+    ffaType.setId(12L);
+    ffaType.setName("Free-for-All");
+    when(segmentTypeService.findByCode(WellKnownSegmentType.FREE_FOR_ALL.getCode()))
+        .thenReturn(Optional.of(ffaType));
+    // An open qualifier match in the bracket — the preview shows its real pairing.
+    TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.ACTIVE);
+    TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ACTIVE);
+    Wrestler cara = wrestler(3L, "Cara");
+    TournamentEntry caraEntry = entry(cara, 3, TournamentEntryStatus.ACTIVE);
+    TournamentMatch open = multiMatch(1, aliceEntry, bobEntry, caraEntry);
+    tournament.setRounds(new ArrayList<>(List.of(round(1, open))));
+
+    // The preview names the format's round type, with the real seeded pairing.
+    List<TournamentTemplateBookingService.TournamentSlotPreview> previews =
+        service.previewShowAttachedTournamentSlots(show);
+
+    assertFalse(previews.isEmpty());
+    assertEquals("Free-for-All", previews.get(0).typeName());
+    assertEquals(
+        List.of(List.of("Alice"), List.of("Bob"), List.of("Cara")), previews.get(0).teams());
+  }
+
+  @Test
+  void autoStartOnPleAdjudication_startsPairedScheduledTournament() {
+    // A PLE adjudicated: the SCHEDULED tournament whose target PLE comes next auto-starts —
+    // seeded, started, bracket generated.
+    tournament.setStatus(TournamentStatus.SCHEDULED);
+    Show adjudicated = showWithName(3L, "Spring PLE", LocalDate.of(2026, 3, 1));
+    adjudicated.setUniverse(show.getUniverse());
+    Show nextPle = show; // June 1 PLE, template pairs the tournament
+    nextPle.setTemplate(pleTemplateWithAssignment());
+
+    when(tournamentRepository.findByStatus(TournamentStatus.SCHEDULED))
+        .thenReturn(List.of(tournament));
+    when(showService.getShowsByDateRange(any(), any())).thenReturn(List.of(nextPle));
+    lenient()
+        .when(tournamentService.findFormat("SINGLE_ELIMINATION"))
+        .thenReturn(Optional.of(format));
+    lenient().when(tournamentService.hasEntries(5L)).thenReturn(true);
+    when(tournamentService.startTournament(tournament)).thenReturn(tournament);
+
+    int started = service.autoStartScheduledTournamentsForNextPle(adjudicated);
+
+    assertEquals(1, started);
+    verify(tournamentService).startTournament(tournament);
+  }
+
+  @Test
+  void autoStartOnPleAdjudication_skipsTournamentsWhoseTargetPleIsNotNext() {
+    // The pairing PLE is the adjudicated show itself (already happened) or behind it — no
+    // future PLE pairs the tournament within a year, so nothing starts.
+    tournament.setStatus(TournamentStatus.SCHEDULED);
+    Show adjudicated = showWithName(3L, "June PLE", LocalDate.of(2026, 6, 1));
+    adjudicated.setUniverse(show.getUniverse());
+    Show pairedPle = showWithName(4L, "Paired PLE", LocalDate.of(2026, 5, 1)); // in the past
+    ShowTemplate template = new ShowTemplate();
+    template.setId(9L);
+    template.setSegmentAssignments(new ArrayList<>(List.of(assignment)));
+    pairedPle.setTemplate(template);
+
+    when(tournamentRepository.findByStatus(TournamentStatus.SCHEDULED))
+        .thenReturn(List.of(tournament));
+    when(showService.getShowsByDateRange(any(), any()))
+        .thenReturn(List.of()); // no PLE after the adjudicated one pairs it
+
+    assertEquals(0, service.autoStartScheduledTournamentsForNextPle(adjudicated));
+    verify(tournamentService, never()).startTournament(any());
+  }
+
+  @Test
+  void autoStartOnPleAdjudication_skipsHostShowOwnedTournaments() {
+    // A tournament attached to its host show (ATW-xbn4) is owned by that path — never
+    // auto-started by PLE adjudication.
+    tournament.setStatus(TournamentStatus.SCHEDULED);
+    tournament.setPayoffShow(show);
+    Show adjudicated = showWithName(3L, "Spring PLE", LocalDate.of(2026, 3, 1));
+    adjudicated.setUniverse(show.getUniverse());
+
+    when(tournamentRepository.findByStatus(TournamentStatus.SCHEDULED))
+        .thenReturn(List.of(tournament));
+
+    assertEquals(0, service.autoStartScheduledTournamentsForNextPle(adjudicated));
+    verify(tournamentService, never()).startTournament(any());
+  }
+
+  @Test
+  void autoStartOnPleAdjudication_seedsUnseededTournament() {
+    // An unseeded SCHEDULED tournament auto-seeds from the roster (preset entrant plan) before
+    // starting — same lenient semantics as the booking paths.
+    tournament.setStatus(TournamentStatus.SCHEDULED);
+    Show adjudicated = showWithName(3L, "Spring PLE", LocalDate.of(2026, 3, 1));
+    adjudicated.setUniverse(show.getUniverse());
+    Show nextPle = show;
+    nextPle.setTemplate(pleTemplateWithAssignment());
+
+    when(tournamentRepository.findByStatus(TournamentStatus.SCHEDULED))
+        .thenReturn(List.of(tournament));
+    when(showService.getShowsByDateRange(any(), any())).thenReturn(List.of(nextPle));
+    lenient()
+        .when(tournamentService.findFormat("SINGLE_ELIMINATION"))
+        .thenReturn(Optional.of(format));
+    lenient().when(tournamentService.hasEntries(5L)).thenReturn(false);
+    lenient()
+        .when(tournamentService.findEligibleWrestlersSortedByFans(any(), eq(1L)))
+        .thenReturn(List.of(alice, bob, wrestler(3L, "Cara"), wrestler(4L, "Dave")));
+    when(tournamentService.startTournament(tournament)).thenReturn(tournament);
+
+    int started = service.autoStartScheduledTournamentsForNextPle(adjudicated);
+
+    assertEquals(1, started);
+    verify(tournamentService).seedAuto(eq(tournament), eq(8), eq(1L));
+  }
+
+  @Test
+  void autoStartOnPleAdjudication_startFailure_isSkippedSilently() {
+    // A tournament that cannot start (eligibility pre-flight fails) is skipped — the scan
+    // never throws into adjudication.
+    tournament.setStatus(TournamentStatus.SCHEDULED);
+    Show adjudicated = showWithName(3L, "Spring PLE", LocalDate.of(2026, 3, 1));
+    adjudicated.setUniverse(show.getUniverse());
+    Show nextPle = show;
+    nextPle.setTemplate(pleTemplateWithAssignment());
+
+    when(tournamentRepository.findByStatus(TournamentStatus.SCHEDULED))
+        .thenReturn(List.of(tournament));
+    when(showService.getShowsByDateRange(any(), any())).thenReturn(List.of(nextPle));
+    lenient()
+        .when(tournamentService.findFormat("SINGLE_ELIMINATION"))
+        .thenReturn(Optional.of(format));
+    lenient().when(tournamentService.hasEntries(5L)).thenReturn(false);
+    lenient()
+        .when(tournamentService.findEligibleWrestlersSortedByFans(any(), eq(1L)))
+        .thenReturn(List.of()); // nobody eligible
+
+    assertEquals(0, service.autoStartScheduledTournamentsForNextPle(adjudicated));
+    verify(tournamentService, never()).startTournament(any());
+  }
+
+  @Test
+  void autoStartOnPleAdjudication_unresolvableFormat_skipsTournament() {
+    // No format behind the tournament's formatId — the start pre-flight refuses (the preset
+    // plan is lenient, but the format drives bracket generation, so the start refuses).
+    tournament.setStatus(TournamentStatus.SCHEDULED);
+    Show adjudicated = showWithName(3L, "Spring PLE", LocalDate.of(2026, 3, 1));
+    adjudicated.setUniverse(show.getUniverse());
+    Show nextPle = show;
+    nextPle.setTemplate(pleTemplateWithAssignment());
+
+    when(tournamentRepository.findByStatus(TournamentStatus.SCHEDULED))
+        .thenReturn(List.of(tournament));
+    when(showService.getShowsByDateRange(any(), any())).thenReturn(List.of(nextPle));
+    lenient().when(tournamentService.findFormat(any())).thenReturn(Optional.empty());
+
+    assertEquals(0, service.autoStartScheduledTournamentsForNextPle(adjudicated));
+    verify(tournamentService, never()).startTournament(any());
+    verify(tournamentService, never()).seedAuto(any(), anyInt(), anyLong());
+  }
+
+  @Test
+  void autoStartOnPleAdjudication_otherUniverseSkipped() {
+    // A tournament of another universe never starts from this PLE's adjudication.
+    tournament.setStatus(TournamentStatus.SCHEDULED);
+    Universe otherUniverse = new Universe();
+    otherUniverse.setId(2L);
+    tournament.setUniverse(otherUniverse);
+    Show adjudicated = showWithName(3L, "Spring PLE", LocalDate.of(2026, 3, 1));
+    adjudicated.setUniverse(show.getUniverse());
+
+    when(tournamentRepository.findByStatus(TournamentStatus.SCHEDULED))
+        .thenReturn(List.of(tournament));
+
+    assertEquals(0, service.autoStartScheduledTournamentsForNextPle(adjudicated));
+    verify(tournamentService, never()).startTournament(any());
+  }
+
+  @Test
+  void autoStartOnPleAdjudication_nullShowDate_startsNothing() {
+    // An adjudicated PLE with no configured date cannot define "after it" — no-op.
+    Show adjudicated = showWithName(3L, "Dateless PLE", null);
+
+    assertEquals(0, service.autoStartScheduledTournamentsForNextPle(adjudicated));
+    verify(tournamentRepository, never()).findByStatus(any());
+  }
+
   // ── Helpers ───────────────────────────────────────────────────────────────
 
   private void stubResolve(Segment booked) {
@@ -1718,6 +2077,20 @@ class TournamentTemplateBookingServiceTest {
     ShowType t = new ShowType();
     t.setName(name);
     return t;
+  }
+
+  /** A PLE-category template carrying the fixture assignment — {@code isPremiumLiveEvent} true. */
+  private ShowTemplate pleTemplateWithAssignment() {
+    ShowType pleType = new ShowType();
+    pleType.setName("PLE");
+    ShowCategory pleCategory = ShowCategory.PLE;
+    pleType.setCategory(pleCategory);
+    ShowTemplate template = new ShowTemplate();
+    template.setId(9L);
+    template.setName("PLE Template");
+    template.setShowType(pleType);
+    template.setSegmentAssignments(new ArrayList<>(List.of(assignment)));
+    return template;
   }
 
   private static TournamentEntry entry(Wrestler wrestler, int seed, TournamentEntryStatus status) {
@@ -1760,5 +2133,18 @@ class TournamentTemplateBookingServiceTest {
                     .anyMatch(w -> w.getId().equals(e.getWrestler().getId())))
         .findFirst()
         .orElse(null);
+  }
+
+  /** A 3+-entrant match in the participant shape (isMultiEntrant true). */
+  private static TournamentMatch multiMatch(
+      int roundNumber, TournamentEntry e1, TournamentEntry e2, TournamentEntry e3) {
+    TournamentMatch m = TournamentMatch.builder().entrant1(e1).entrant2(e2).build();
+    m.setParticipants(
+        new ArrayList<>(
+            List.of(
+                TournamentMatchParticipant.builder().entry(e1).slot(0).build(),
+                TournamentMatchParticipant.builder().entry(e2).slot(1).build(),
+                TournamentMatchParticipant.builder().entry(e3).slot(2).build())));
+    return m;
   }
 }

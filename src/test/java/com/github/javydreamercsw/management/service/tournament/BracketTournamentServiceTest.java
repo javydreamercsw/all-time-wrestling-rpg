@@ -39,6 +39,7 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentEntrySta
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatchParticipant;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatchRepository;
+import com.github.javydreamercsw.management.domain.tournament.TournamentRecurrence;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRepository;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundRepository;
@@ -556,5 +557,91 @@ class BracketTournamentServiceTest {
     state.setUniverse(universe);
     w.getWrestlerStates().add(state);
     return w;
+  }
+
+  // ── Recurring editions (ATW-o4ad) ─────────────────────────────────────────
+
+  @Test
+  void createNextEdition_copiesMetadataAndChains() {
+    Universe universe = new Universe();
+    universe.setId(1L);
+    Title title = new Title();
+    title.setId(5L);
+    title.setName("Crown Cup Championship");
+    tournament.setName("Crown Cup");
+    tournament.setFormatId("SINGLE_ELIMINATION");
+    tournament.setUniverse(universe);
+    tournament.setLinkedTitle(title);
+    tournament.setDefaultEntrantCount(8);
+    tournament.setQualifierGroupSize(3);
+    tournament.setEditionOrdinal(1);
+    tournament.setRecurrence(TournamentRecurrence.ANNUAL);
+
+    Optional<Tournament> next = tournamentService.createNextEdition(tournament);
+
+    assertThat(next).isPresent();
+    Tournament edition = next.get();
+    assertThat(edition.getName()).isEqualTo("Crown Cup II");
+    assertThat(edition.getFormatId()).isEqualTo("SINGLE_ELIMINATION");
+    assertThat(edition.getUniverse()).isSameAs(universe);
+    assertThat(edition.getLinkedTitle()).isSameAs(title);
+    assertThat(edition.getDefaultEntrantCount()).isEqualTo(8);
+    assertThat(edition.getQualifierGroupSize()).isEqualTo(3);
+    assertThat(edition.getParent()).isSameAs(tournament);
+    assertThat(edition.getEditionOrdinal()).isEqualTo(2);
+    assertThat(edition.getRecurrence()).isEqualTo(TournamentRecurrence.ANNUAL);
+    assertThat(edition.getStatus()).isEqualTo(TournamentStatus.SCHEDULED);
+    assertThat(edition.getEntries()).isEmpty();
+    assertThat(edition.getRounds()).isEmpty();
+    assertThat(edition.getPayoffShow()).isNull();
+  }
+
+  @Test
+  void createNextEdition_idempotent_existingSuccessorReturnsEmpty() {
+    // Re-approving the same payoff must not mint a duplicate edition: the parent-id
+    // existence guard short-circuits (ATW-o4ad).
+    tournament.setId(5L);
+    tournament.setEditionOrdinal(1);
+    tournament.setRecurrence(TournamentRecurrence.ANNUAL);
+    when(tournamentRepository.findByParentId(5L)).thenReturn(Optional.of(new Tournament()));
+
+    assertThat(tournamentService.createNextEdition(tournament)).isEmpty();
+    verify(tournamentRepository, never()).save(any(Tournament.class));
+  }
+
+  @Test
+  void createNextEdition_nonRecurring_returnsEmpty() {
+    // Recurrence NONE keeps the one-shot lifecycle — no successor, ever.
+    tournament.setRecurrence(TournamentRecurrence.NONE);
+
+    assertThat(tournamentService.createNextEdition(tournament)).isEmpty();
+    verify(tournamentRepository, never()).save(any(Tournament.class));
+  }
+
+  @Test
+  void createNextEdition_ordinalDefaultsToTwo_whenParentMissingOrdinal() {
+    // A chain seeded before the ordinal column existed: the successor still numbers 2.
+    tournament.setRecurrence(TournamentRecurrence.ANNUAL);
+
+    Optional<Tournament> next = tournamentService.createNextEdition(tournament);
+
+    assertThat(next).isPresent();
+    assertThat(next.get().getEditionOrdinal()).isEqualTo(2);
+    assertThat(next.get().getName()).isEqualTo("Cup II");
+  }
+
+  @Test
+  void editionName_formatsRomanOrdinals() {
+    // Public naming contract: base name unchanged at 1, roman suffix from 2 up; the base
+    // name strips a trailing roman suffix from the predecessor so chains never stack ("II II").
+    assertThat(TournamentService.editionName("Crown Cup", 1)).isEqualTo("Crown Cup");
+    assertThat(TournamentService.editionName("Crown Cup", 2)).isEqualTo("Crown Cup II");
+    assertThat(TournamentService.editionName("Crown Cup", 4)).isEqualTo("Crown Cup IV");
+    assertThat(TournamentService.editionName("Crown Cup", 9)).isEqualTo("Crown Cup IX");
+    assertThat(TournamentService.editionName("Crown Cup", 40)).isEqualTo("Crown Cup XL");
+    assertThat(TournamentService.editionName("Crown Cup", 89)).isEqualTo("Crown Cup LXXXIX");
+    assertThat(TournamentService.editionName("Crown Cup", 1987)).isEqualTo("Crown Cup MCMLXXXVII");
+    // Predecessor names already carrying an ordinal strip it before re-suffixing.
+    assertThat(TournamentService.editionName("Crown Cup XLII", 43)).isEqualTo("Crown Cup XLIII");
   }
 }

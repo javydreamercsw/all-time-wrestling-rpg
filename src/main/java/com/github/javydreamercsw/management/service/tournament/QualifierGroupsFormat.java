@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.tournament;
 
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
@@ -33,13 +34,18 @@ import org.springframework.stereotype.Component;
  * a 4-man Free-for-All TLC title match at the payoff show.
  *
  * <p>Group size adapts to the entrant count: 4-5 entrants → one group per 2-3 wrestlers with the
- * best-fit split; larger fields aim for 3-wrestler groups (never below 2, never above 5). Every
- * wrestler plays exactly one qualifier; only group winners survive to the final.
+ * best-fit split; larger fields aim for 3-wrestler groups (never below 2, never above 5). A
+ * tournament may pin the group size explicitly ({@code qualifierGroupSize}) — e.g. 18 entrants at
+ * size 6 → three 6-man qualifiers → a 3-man final. Every wrestler plays exactly one qualifier; only
+ * group winners survive to the final.
  */
 @Component
 public class QualifierGroupsFormat implements TournamentFormat {
 
   public static final String FORMAT_ID = "QUALIFIER_GROUPS";
+
+  /** Upper clamp for a tournament's configured qualifier group size. */
+  public static final int MAX_GROUP_SIZE = 10;
 
   @Override
   public String getFormatId() {
@@ -64,7 +70,7 @@ public class QualifierGroupsFormat implements TournamentFormat {
   @Override
   public List<TournamentRound> generateBracket(Tournament tournament, TournamentFormatContext ctx) {
     List<TournamentEntry> seeds = tournament.getEntries();
-    List<List<TournamentEntry>> groups = splitIntoGroups(seeds);
+    List<List<TournamentEntry>> groups = splitIntoGroups(tournament, seeds);
 
     TournamentRound qualifierRound =
         TournamentRound.builder()
@@ -132,21 +138,51 @@ public class QualifierGroupsFormat implements TournamentFormat {
   public int estimateTotalMatches(Tournament tournament) {
     // One qualifier per group + one final = groups + 1. Groups derive from the same split the
     // bracket generation uses, so pacing matches reality without persisting anything.
-    return splitIntoGroups(tournament.getEntries()).size() + 1;
+    return splitIntoGroups(tournament, tournament.getEntries()).size() + 1;
   }
 
-  /** Split seeds into groups: aim for 3-wrestler groups; adjust for clean divisibility. */
-  private List<List<TournamentEntry>> splitIntoGroups(List<TournamentEntry> seeds) {
+  @Override
+  public String getRoundSegmentTypeCode() {
+    return WellKnownSegmentType.FREE_FOR_ALL.getCode();
+  }
+
+  @Override
+  public String getDefaultRoundRuleName() {
+    return "Free-For-All"; // qualifier scrambles are No-DQ by convention
+  }
+
+  /**
+   * Split seeds into groups: the tournament's {@code qualifierGroupSize} when set (validated at
+   * creation — the bracket needs at least two groups), otherwise aim for 3-wrestler groups with a
+   * balanced adjustment.
+   */
+  private List<List<TournamentEntry>> splitIntoGroups(
+      Tournament tournament, List<TournamentEntry> seeds) {
     int n = seeds.size();
+    Integer configured = tournament.getQualifierGroupSize();
+    if (configured != null && n >= 2 * groupSizeOf(configured)) {
+      return contiguousGroups(seeds, n / groupSizeOf(configured));
+    }
     // Choose the group count whose sizes are most balanced: ceil(n/3) groups, then spread.
     int groupCount = Math.max(1, (int) Math.ceil(n / 3.0));
+    return contiguousGroups(seeds, groupCount);
+  }
+
+  /** Clamped configured group size (2..10). */
+  private int groupSizeOf(int configured) {
+    return Math.max(2, Math.min(configured, MAX_GROUP_SIZE));
+  }
+
+  /** Split seeds into {@code groupCount} groups, snake-seeding the strongest across them. */
+  private List<List<TournamentEntry>> contiguousGroups(
+      List<TournamentEntry> seeds, int groupCount) {
+    int n = seeds.size();
     int base = n / groupCount;
     int remainder = n % groupCount;
     List<List<TournamentEntry>> groups = new ArrayList<>();
     int index = 0;
     for (int g = 0; g < groupCount; g++) {
       int size = base + (g < remainder ? 1 : 0);
-      // Snake-seed across groups: strongest seeds spread one per group first.
       groups.add(new ArrayList<>(seeds.subList(index, index + size)));
       index += size;
     }

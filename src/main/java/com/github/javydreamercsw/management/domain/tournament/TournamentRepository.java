@@ -34,4 +34,7 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long> {
 
   /** Catalog lookup by the stable seed code (tournaments.json / WellKnownTournament). */
   Optional<Tournament> findByCode(String code);
+
+  /** The successor edition of a recurring chain (ATW-o4ad) — the idempotency guard. */
+  Optional<Tournament> findByParentId(Long parentId);
 }
