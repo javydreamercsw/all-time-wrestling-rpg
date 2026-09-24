@@ -33,20 +33,37 @@ public class TournamentEntityAdapter implements TournamentBracketModel {
 
   private final Tournament tournament;
   @Getter private final RenderMode renderMode;
+  private final TournamentFormat format;
 
   public TournamentEntityAdapter(Tournament tournament, List<TournamentFormat> formats) {
     this.tournament = tournament;
-    this.renderMode =
+    this.format =
         formats.stream()
             .filter(f -> f.getFormatId().equals(tournament.getFormatId()))
             .findFirst()
-            .map(TournamentFormat::renderMode)
-            .orElse(RenderMode.TREE);
+            .orElse(null);
+    this.renderMode = format != null ? format.renderMode() : RenderMode.TREE;
   }
 
   @Override
   public int getTotalRounds() {
     return tournament.getRounds().size();
+  }
+
+  @Override
+  public boolean isComplete() {
+    // The format knows whether the bracket played through its final — lazy round generation
+    // means "a decided match exists" is not the same as "the tournament is finished".
+    return format != null && format.isComplete(tournament);
+  }
+
+  @Override
+  public String getRoundName(int round) {
+    return tournament.getRounds().stream()
+        .filter(r -> r.getRoundNumber() == round)
+        .findFirst()
+        .map(r -> r.getRoundName())
+        .orElse(null);
   }
 
   @Override

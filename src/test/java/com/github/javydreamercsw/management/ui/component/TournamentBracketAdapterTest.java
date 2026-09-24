@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.campaign.TournamentDTO;
+import com.github.javydreamercsw.management.service.tournament.QualifierGroupsFormat;
 import com.github.javydreamercsw.management.service.tournament.RoundRobinFormat;
 import com.github.javydreamercsw.management.service.tournament.SingleEliminationFormat;
 import com.github.javydreamercsw.management.service.tournament.TournamentFormat;
@@ -237,8 +238,176 @@ public class TournamentBracketAdapterTest {
     return p;
   }
 
-  // ── TournamentBracketComponent round-robin rendering ─────────────────────
+  // ── Lazy-bracket regression (sandbox bug): qualifiers ≠ Finals, no premature champion ──
 
+  @Test
+  void entityAdapter_incompleteLazyBracket_reportsNotComplete() {
+    // Round 1 (Qualifiers) exists with a DECIDED match; the Final still generates lazily.
+    // The sandbox bug: the adapter reported the only round as the final → premature champion.
+    Tournament t = tournamentEntity("QUALIFIER_GROUPS");
+    Wrestler w1 = wrestler(1L, "Shumba");
+    Wrestler w2 = wrestler(2L, "Johnny");
+    Wrestler w3 = wrestler(3L, "Aldis");
+    TournamentEntry e1 = entry(w1);
+    TournamentEntry e2 = entry(w2);
+    TournamentEntry e3 = entry(w3);
+    TournamentMatch decided =
+        TournamentMatch.builder().entrant1(e1).entrant2(e2).winner(e1).build();
+    decided.setParticipants(
+        new ArrayList<>(
+            List.of(
+                participant(decided, e1, 0),
+                participant(decided, e2, 1),
+                participant(decided, e3, 2))));
+    TournamentMatch open = TournamentMatch.builder().entrant1(e2).entrant2(e3).build();
+
+    TournamentRound qualifiers =
+        TournamentRound.builder()
+            .roundNumber(1)
+            .roundName("Qualifiers")
+            .status(TournamentRoundStatus.IN_PROGRESS)
+            .matches(new ArrayList<>(List.of(decided, open)))
+            .build();
+    t.setRounds(new ArrayList<>(List.of(qualifiers)));
+    t.setEntries(List.of(e1, e2, e3));
+
+    TournamentEntityAdapter adapter =
+        new TournamentEntityAdapter(t, List.of(new QualifierGroupsFormat()));
+
+    assertThat(adapter.isComplete())
+        .as("A bracket with only its qualifier round is NOT complete")
+        .isFalse();
+    assertThat(adapter.getRoundName(1)).isEqualTo("Qualifiers");
+  }
+
+  @Test
+  void entityAdapter_completedBracket_reportsComplete() {
+    Tournament t = tournamentEntity("QUALIFIER_GROUPS");
+    Wrestler w1 = wrestler(1L, "Shumba");
+    Wrestler w2 = wrestler(2L, "Aldis");
+    TournamentEntry e1 = entry(w1);
+    TournamentEntry e2 = entry(w2);
+    TournamentMatch finalMatch =
+        TournamentMatch.builder().entrant1(e1).entrant2(e2).winner(e1).build();
+    TournamentRound finalRound =
+        TournamentRound.builder()
+            .roundNumber(2)
+            .roundName("Final")
+            .status(TournamentRoundStatus.COMPLETE)
+            .matches(new ArrayList<>(List.of(finalMatch)))
+            .build();
+    t.setRounds(new ArrayList<>(List.of(finalRound)));
+    t.setEntries(List.of(e1, e2));
+
+    TournamentEntityAdapter adapter =
+        new TournamentEntityAdapter(t, List.of(new QualifierGroupsFormat()));
+
+    assertThat(adapter.isComplete()).isTrue();
+    assertThat(adapter.getRoundName(2)).isEqualTo("Final");
+  }
+
+  @Test
+  void entityAdapter_qualifierGroupsRenderMode() {
+    Tournament t = tournamentEntity("QUALIFIER_GROUPS");
+    TournamentEntityAdapter adapter =
+        new TournamentEntityAdapter(t, List.of(new QualifierGroupsFormat()));
+    assertThat(adapter.getRenderMode()).isEqualTo(RenderMode.TREE);
+  }
+
+  // ── TournamentBracketComponent: champion gating + persisted round labels ──
+
+  @Test
+  void component_incompleteBracketWithDecidedQualifier_noChampionBox() {
+    // THE sandbox bug: a two-round bracket renders only its qualifiers round (lazy generation),
+    // one qualifier has a winner — the component must NOT crown a champion and must label the
+    // round "Qualifiers", not "Finals".
+    Tournament t = tournamentEntity("QUALIFIER_GROUPS");
+    Wrestler w1 = wrestler(1L, "Shumba");
+    Wrestler w2 = wrestler(2L, "Johnny");
+    Wrestler w3 = wrestler(3L, "Aldis");
+    TournamentEntry e1 = entry(w1);
+    TournamentEntry e2 = entry(w2);
+    TournamentEntry e3 = entry(w3);
+    TournamentMatch decided =
+        TournamentMatch.builder().entrant1(e1).entrant2(e2).winner(e1).build();
+    decided.setParticipants(
+        new ArrayList<>(
+            List.of(
+                participant(decided, e1, 0),
+                participant(decided, e2, 1),
+                participant(decided, e3, 2))));
+    TournamentMatch open = TournamentMatch.builder().entrant1(e2).entrant2(e3).build();
+    TournamentRound qualifiers =
+        TournamentRound.builder()
+            .roundNumber(1)
+            .roundName("Qualifiers")
+            .status(TournamentRoundStatus.IN_PROGRESS)
+            .matches(new ArrayList<>(List.of(decided, open)))
+            .build();
+    t.setRounds(new ArrayList<>(List.of(qualifiers)));
+    t.setEntries(List.of(e1, e2, e3));
+
+    TournamentEntityAdapter adapter =
+        new TournamentEntityAdapter(t, List.of(new QualifierGroupsFormat()));
+    TournamentBracketComponent component = new TournamentBracketComponent(adapter);
+
+    List<String> texts = descendantTexts(component);
+    assertThat(texts)
+        .as("The single existing round must use its persisted name")
+        .contains("Qualifiers");
+    assertThat(texts).doesNotContain("Finals");
+    assertThat(texts)
+        .as("No champion while later rounds still generate lazily")
+        .doesNotContain("CHAMPION");
+  }
+
+  @Test
+  void component_completeBracket_showsChampionBox() {
+    // A finished bracket (single-elimination final decided) still crowns its champion.
+    Tournament t = tournamentEntity("SINGLE_ELIMINATION");
+    Wrestler w1 = wrestler(1L, "Rocky");
+    Wrestler w2 = wrestler(2L, "Austin");
+    TournamentEntry e1 = entry(w1);
+    TournamentEntry e2 = entry(w2);
+    TournamentMatch finalMatch =
+        TournamentMatch.builder().entrant1(e1).entrant2(e2).winner(e1).build();
+    TournamentRound finalRound =
+        TournamentRound.builder()
+            .roundNumber(1)
+            .roundName("Final")
+            .status(TournamentRoundStatus.COMPLETE)
+            .matches(new ArrayList<>(List.of(finalMatch)))
+            .build();
+    t.setRounds(new ArrayList<>(List.of(finalRound)));
+    t.setEntries(List.of(e1, e2));
+
+    TournamentEntityAdapter adapter =
+        new TournamentEntityAdapter(t, List.of(new SingleEliminationFormat()));
+    TournamentBracketComponent component = new TournamentBracketComponent(adapter);
+
+    List<String> texts = descendantTexts(component);
+    assertThat(texts).contains("CHAMPION");
+    assertThat(texts).contains("Rocky");
+  }
+
+  /** Depth-first walk over all descendant text nodes (component tree, not just direct children). */
+  private static List<String> descendantTexts(com.vaadin.flow.component.Component root) {
+    java.util.ArrayList<String> texts = new java.util.ArrayList<>();
+    collectTexts(root, texts);
+    return texts;
+  }
+
+  private static void collectTexts(
+      com.vaadin.flow.component.Component node, java.util.List<String> out) {
+    if (node instanceof com.vaadin.flow.component.HasText
+        && ((com.vaadin.flow.component.HasText) node).getText() != null
+        && !((com.vaadin.flow.component.HasText) node).getText().isBlank()) {
+      out.add(((com.vaadin.flow.component.HasText) node).getText());
+    }
+    node.getChildren().forEach(child -> collectTexts(child, out));
+  }
+
+  // ── TournamentBracketComponent round-robin rendering ─────────────────────
   @Test
   void component_roundRobinGridRendersWithoutError() {
     TournamentDTO dto = new TournamentDTO();

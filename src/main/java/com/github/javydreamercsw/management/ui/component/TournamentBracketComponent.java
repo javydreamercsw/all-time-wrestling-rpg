@@ -63,7 +63,7 @@ public class TournamentBracketComponent extends HorizontalLayout {
     }
 
     for (int i = 1; i < totalRounds + 1; i++) {
-      addTreeRound(model, i, roundLabel(i, totalRounds), totalRounds);
+      addTreeRound(model, i, roundLabel(model, i, totalRounds), totalRounds);
     }
     addWinner(model, totalRounds);
   }
@@ -100,7 +100,15 @@ public class TournamentBracketComponent extends HorizontalLayout {
     add(roundCol);
   }
 
+  /**
+   * The champion box renders ONLY when the tournament is actually complete: a decided match in the
+   * last *rendered* round is not a champion while later rounds still generate lazily (the sandbox
+   * bug — a won qualifier crowned a champion on a two-rounds-left bracket).
+   */
   private void addWinner(TournamentBracketModel model, int totalRounds) {
+    if (!model.isComplete()) {
+      return;
+    }
     MatchModel finals =
         model.getMatches().stream()
             .filter(m -> m.getRound() == totalRounds)
@@ -221,7 +229,17 @@ public class TournamentBracketComponent extends HorizontalLayout {
     return line;
   }
 
-  private static String roundLabel(int round, int totalRounds) {
+  /**
+   * Prefer the persisted round name ("Qualifiers", "Final") — lazy generation makes positional
+   * guessing wrong ("Finals" on a bracket whose only round is the qualifiers). Falls back to the
+   * positional label for models without real names (campaign DTO path, which pre-computes its
+   * bracket size).
+   */
+  private static String roundLabel(TournamentBracketModel model, int round, int totalRounds) {
+    String persisted = model.getRoundName(round);
+    if (persisted != null && !persisted.isBlank()) {
+      return persisted;
+    }
     int remaining = totalRounds - round;
     return switch (remaining) {
       case 0 -> "Finals";

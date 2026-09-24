@@ -29,6 +29,23 @@ public interface TournamentBracketModel {
 
   int getCurrentRound();
 
+  /**
+   * Whether the tournament has played through its final. Governs the champion box: a decided match
+   * in the last *rendered* round is not a champion when later rounds generate lazily. Defaults
+   * false — a model that cannot answer completeness never shows a champion.
+   */
+  default boolean isComplete() {
+    return false;
+  }
+
+  /**
+   * The persisted display name for a round ("Qualifiers", "Final"), or null when the model does not
+   * carry real round names and the component should label positionally (Finals, Semi-Finals…).
+   */
+  default String getRoundName(int round) {
+    return null;
+  }
+
   /** Which visual layout the bracket component should use. */
   RenderMode getRenderMode();
 
