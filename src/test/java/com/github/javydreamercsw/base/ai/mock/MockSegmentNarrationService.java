@@ -261,6 +261,7 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
     String comm1 = "Dara Hoshiko";
     String comm2 = "Lord Bastian Von Crowe";
     Map<String, String> participantAlignments = new HashMap<>();
+    String userFeedback = "";
 
     try {
       String jsonMarker = "Here is the JSON context:\n\n";
@@ -268,6 +269,8 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
       if (jsonStart != -1) {
         String jsonContext = prompt.substring(jsonStart + jsonMarker.length());
         JsonNode rootNode = objectMapper.readTree(jsonContext);
+
+        userFeedback = extractUserFeedback(rootNode);
 
         // Extract wrestlers
         if (rootNode.has("wrestlers") && rootNode.get("wrestlers").isArray()) {
@@ -347,6 +350,11 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
       sb.append(comm1).append(": ").append("I can't believe the resilience!").append("\n\n");
       sb.append("Narrator: ").append(generateClimaxAndFinish(wrestler1, wrestler2)).append("\n\n");
       sb.append(comm2).append(": ").append("What an ending!");
+
+      // Echo user feedback (ATW-hq8e) so E2E tests can prove feedback reached the narration.
+      if (!userFeedback.isBlank()) {
+        sb.append("\n\nNarrator: ").append(userFeedback.trim());
+      }
     } else {
       sb.append("Narrator: ")
           .append(wrestler1)
@@ -670,6 +678,21 @@ public class MockSegmentNarrationService extends AbstractSegmentNarrationService
       String description,
       String outcome,
       List<String> participants) {}
+
+  /**
+   * Pulls the text after the shared "User Feedback: " marker out of the context fields the real
+   * prompt builder elevates (ATW-19v7): determinedOutcome and instructions.
+   */
+  private String extractUserFeedback(JsonNode rootNode) {
+    for (String field : List.of("determinedOutcome", "instructions")) {
+      String value = rootNode.path(field).asText("");
+      int marker = value.indexOf("User Feedback:");
+      if (marker != -1) {
+        return value.substring(marker + "User Feedback:".length()).trim();
+      }
+    }
+    return "";
+  }
 
   private String generateOpening(
       String wrestler1, String wrestler2, String venue, String segmentType) {

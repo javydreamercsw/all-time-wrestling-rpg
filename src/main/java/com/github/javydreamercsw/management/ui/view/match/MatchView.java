@@ -1219,21 +1219,34 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       context.setDeterminedOutcome(
           segment.getWinners().stream().map(Wrestler::getName).collect(Collectors.joining(", ")));
 
-      // Add all available NPCs to the context to help AI stay within roster
-
-      context.setNpcs(
-          npcService.findAll().stream()
-              .map(
-                  npc -> {
-                    NPCContext nc = new NPCContext();
-                    nc.setName(npc.getName());
-                    nc.setDescription(npc.getDescription());
-                    if (npc.getNpcType() != null) {
-                      nc.setRole(npc.getNpcType());
-                    }
-                    return nc;
-                  })
-              .toList());
+      // Only narratively relevant NPCs: the assigned referee and any NPC supporters
+      // (managers) resolved for the participants. Commentators ride in the dedicated
+      // 'commentators' field and everyone else is roster noise (ATW-2ax7).
+      LinkedHashMap<String, NPCContext> relevantNpcs = new LinkedHashMap<>();
+      if (segment.getReferee() != null) {
+        NPCContext nc = new NPCContext();
+        nc.setName(segment.getReferee().getName());
+        nc.setDescription(segment.getReferee().getDescription());
+        nc.setRole(segment.getReferee().getNpcType());
+        relevantNpcs.put(segment.getReferee().getName(), nc);
+      }
+      for (WrestlerContext wc : context.getWrestlers()) {
+        if (wc.getManagerName() == null) {
+          continue;
+        }
+        npcService
+            .getByName(wc.getManagerName())
+            .filter(n -> !relevantNpcs.containsKey(n.getName()))
+            .ifPresent(
+                npc -> {
+                  NPCContext nc = new NPCContext();
+                  nc.setName(npc.getName());
+                  nc.setDescription(npc.getDescription());
+                  nc.setRole(npc.getNpcType());
+                  relevantNpcs.put(npc.getName(), nc);
+                });
+      }
+      context.setNpcs(List.copyOf(relevantNpcs.values()));
 
       // Commentary Team Context
       CommentaryTeam team = segment.getShow().getCommentaryTeam();
@@ -1309,9 +1322,12 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                       + " members provided in the context. ")
               + "Each commentator has a distinct persona (Alignment, Style, Catchphrase) that MUST"
               + " be respected. Ensure the narration flows as dynamic dialogue, capturing their"
-              + " different perspectives. IMPORTANT: You MUST ONLY use the wrestlers, commentators"
-              + " and NPCs provided in the context. Do NOT invent new characters, announcers, or"
-              + " managers. Stick strictly to the All Time Wrestling roster provided.";
+              + " different perspectives. IMPORTANT: The characters physically acting in this match"
+              + " are exclusively the wrestlers, commentators and NPCs provided in the context. Do"
+              + " NOT invent new characters, announcers, or managers. If user feedback names other"
+              + " wrestlers from the All Time Wrestling roster (e.g. a run-in or a rescue), they"
+              + " may be mentioned and perform those described actions, but no one else may act"
+              + " or speak.";
 
       if (feedback != null && !feedback.isBlank()) {
         // "User Feedback: " is the marker the narration prompt builder elevates as mandatory
@@ -1389,6 +1405,9 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                       () -> {
                         narrationArea.setValue(generated);
                         segment.setNarration(generated);
+                        // Persist the feedback that drove this generation (ATW-mkvj) so it
+                        // survives regeneration and shows in segment notes.
+                        segment.setNotes(feedback);
                         segmentService.updateSegment(segment);
                         updateCommentaryDisplay();
                         notificationService.showSuccess("Narration generated!");
