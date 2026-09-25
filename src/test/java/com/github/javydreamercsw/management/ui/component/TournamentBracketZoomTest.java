@@ -125,6 +125,10 @@ public class TournamentBracketZoomTest extends AbstractMockUserIntegrationTest {
     // Edges come off the host attribute; paths are drawn per src:dst pair.
     assertThat(script).contains("data-bracket-edges");
     assertThat(script).contains("[data-match-number=");
+    // Theme sensitivity: --lumo-contrast flips with light/dark mode (--lumo-contrast-color does
+    // not exist in Lumo and made the lines permanently black).
+    assertThat(script).contains("getPropertyValue('--lumo-contrast')");
+    assertThat(script).doesNotContain("--lumo-contrast-color");
   }
 
   @Test

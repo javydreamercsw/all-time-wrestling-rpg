@@ -332,7 +332,9 @@ public class TournamentBracketComponent extends HorizontalLayout {
         svg.style.height = h + 'px';
         svg.style.pointerEvents = 'none';
         svg.style.opacity = '0.35';
-        const color = (getComputedStyle(root).getPropertyValue('--lumo-contrast-color') || '#000').trim();
+        // --lumo-contrast flips shade/tint via light-dark() — black in light mode, white in
+        // dark mode (the former non-existent contrast-color token always fell back to #000).
+        const color = (getComputedStyle(root).getPropertyValue('--lumo-contrast') || '#000').trim();
         for (const pair of edges.split(',')) {
           const [src, dst] = pair.split(':').map(Number);
           const srcEl = root.querySelector('[data-match-number="' + src + '"]');
@@ -349,7 +351,7 @@ public class TournamentBracketComponent extends HorizontalLayout {
           path.setAttribute('d', 'M ' + x1 + ' ' + y1 + ' H ' + midX + ' V ' + y2 + ' H ' + x2);
           path.setAttribute('stroke', color);
           path.setAttribute('fill', 'none');
-          path.setAttribute('stroke-width', '1');
+          path.setAttribute('stroke-width', '2.5');
           svg.appendChild(path);
         }
         host.appendChild(svg);
