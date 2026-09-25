@@ -244,7 +244,7 @@ public class TournamentBracketComponent extends HorizontalLayout {
                     Collectors.toList()));
 
     int roundCount = projection.roundNames().size();
-    for (int round = 1; round <= roundCount; round++) {
+    for (int round = 1; round < roundCount + 1; round++) {
       String title =
           round <= projection.roundNames().size()
               ? projection.roundNames().get(round - 1)

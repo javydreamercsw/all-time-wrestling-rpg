@@ -18,10 +18,16 @@ package com.github.javydreamercsw.management.ui.component;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.javydreamercsw.management.domain.tournament.Tournament;
+import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.tournament.QualifierGroupsFormat;
 import com.github.javydreamercsw.management.test.AbstractMockUserIntegrationTest;
 import com.github.mvysny.kaributesting.v10.MockVaadin;
+import com.vaadin.flow.component.Component;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -136,24 +142,17 @@ public class TournamentBracketZoomTest extends AbstractMockUserIntegrationTest {
 
   /** A 6-entrant qualifier bracket (2 qualifiers + a projected final) with zoom wiring. */
   private static TournamentBracketComponent bracketComponent() {
-    com.github.javydreamercsw.management.domain.tournament.Tournament t =
-        new com.github.javydreamercsw.management.domain.tournament.Tournament();
+    Tournament t = new Tournament();
     t.setFormatId(QualifierGroupsFormat.FORMAT_ID);
-    java.util.List<com.github.javydreamercsw.management.domain.tournament.TournamentEntry> entries =
-        new java.util.ArrayList<>();
-    for (int i = 1; i <= 6; i++) {
-      com.github.javydreamercsw.management.domain.wrestler.Wrestler w =
-          new com.github.javydreamercsw.management.domain.wrestler.Wrestler();
+    List<TournamentEntry> entries = new ArrayList<>();
+    for (int i = 1; i < 6 + 1; i++) {
+      Wrestler w = new Wrestler();
       w.setId((long) i);
       w.setName("Wrestler " + i);
-      entries.add(
-          com.github.javydreamercsw.management.domain.tournament.TournamentEntry.builder()
-              .wrestler(w)
-              .seed(i)
-              .build());
+      entries.add(TournamentEntry.builder().wrestler(w).seed(i).build());
     }
     t.setEntries(entries);
-    t.setRounds(new java.util.ArrayList<>());
+    t.setRounds(new ArrayList<>());
 
     TournamentEntityAdapter adapter =
         new TournamentEntityAdapter(t, List.of(new QualifierGroupsFormat()));
@@ -161,27 +160,25 @@ public class TournamentBracketZoomTest extends AbstractMockUserIntegrationTest {
   }
 
   /** Counts descendant elements carrying {@code attribute}. */
-  private static int countDescendantsWithAttribute(
-      com.vaadin.flow.component.Component root, String attribute) {
+  private static int countDescendantsWithAttribute(Component root, String attribute) {
     int count = root.getElement().hasAttribute(attribute) ? 1 : 0;
-    for (com.vaadin.flow.component.Component child : root.getChildren().toList()) {
+    for (Component child : root.getChildren().toList()) {
       count += countDescendantsWithAttribute(child, attribute);
     }
     return count;
   }
 
   /** Depth-first search for a component carrying {@code className}. */
-  private static java.util.Optional<com.vaadin.flow.component.Component> findByClass(
-      com.vaadin.flow.component.Component root, String className) {
+  private static Optional<Component> findByClass(Component root, String className) {
     if (root.getClassNames().contains(className)) {
-      return java.util.Optional.of(root);
+      return Optional.of(root);
     }
-    for (com.vaadin.flow.component.Component child : root.getChildren().toList()) {
+    for (Component child : root.getChildren().toList()) {
       var found = findByClass(child, className);
       if (found.isPresent()) {
         return found;
       }
     }
-    return java.util.Optional.empty();
+    return Optional.empty();
   }
 }

@@ -35,6 +35,10 @@ import com.github.javydreamercsw.management.service.tournament.TournamentFormat;
 import com.github.javydreamercsw.management.service.tournament.TournamentFormat.RenderMode;
 import com.github.javydreamercsw.management.ui.component.TournamentBracketModel.MatchModel;
 import com.github.javydreamercsw.management.ui.component.TournamentBracketModel.MatchModel.ExtraEntrant;
+import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.HasText;
+import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.dom.Element;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -463,7 +467,7 @@ public class TournamentBracketAdapterTest {
         new TournamentEntityAdapter(t, List.of(new QualifierGroupsFormat()));
     TournamentBracketComponent component = new TournamentBracketComponent(adapter);
 
-    com.vaadin.flow.dom.Element host = findConnectorHost(component);
+    Element host = findConnectorHost(component);
     assertThat(host).as("Projected bracket renders a connector overlay host").isNotNull();
     assertThat(host.getAttribute("data-bracket-edges")).isEqualTo("1:3,2:3");
     // Cards expose their match number for the client-side measurement.
@@ -574,7 +578,7 @@ public class TournamentBracketAdapterTest {
     // hops (4 quarter-finals → 2 semi-finals → 1 final), 7 tagged cards, 6 edges.
     Tournament t = tournamentEntity("SINGLE_ELIMINATION");
     List<TournamentEntry> entries = new ArrayList<>();
-    for (int i = 1; i <= 8; i++) {
+    for (int i = 1; i < 8 + 1; i++) {
       entries.add(entry(wrestler((long) i, "Wrestler " + i)));
     }
     t.setEntries(entries);
@@ -583,7 +587,7 @@ public class TournamentBracketAdapterTest {
         new TournamentEntityAdapter(t, List.of(new SingleEliminationFormat()));
     TournamentBracketComponent component = new TournamentBracketComponent(adapter);
 
-    com.vaadin.flow.dom.Element host = findConnectorHost(component);
+    Element host = findConnectorHost(component);
     assertThat(host).as("Projected single-elimination bracket renders the overlay").isNotNull();
     // Quarter-finals 1-4 feed semis 5 (1+2) and 6 (3+4); semis feed the final (match 7).
     assertThat(host.getAttribute("data-bracket-edges")).isEqualTo("1:5,2:5,3:6,4:6,5:7,6:7");
@@ -592,13 +596,12 @@ public class TournamentBracketAdapterTest {
   }
 
   /** Depth-first search for the bracket-connector-host element. */
-  private static com.vaadin.flow.dom.Element findConnectorHost(
-      com.vaadin.flow.component.Component root) {
+  private static Element findConnectorHost(Component root) {
     if (root.getClassNames().contains("bracket-connector-host")) {
       return root.getElement();
     }
-    for (com.vaadin.flow.component.Component child : root.getChildren().toList()) {
-      com.vaadin.flow.dom.Element found = findConnectorHost(child);
+    for (Component child : root.getChildren().toList()) {
+      Element found = findConnectorHost(child);
       if (found != null) {
         return found;
       }
@@ -607,14 +610,13 @@ public class TournamentBracketAdapterTest {
   }
 
   /** Counts descendant elements carrying {@code attribute}. */
-  private static int countDescendantsWithAttribute(
-      com.vaadin.flow.component.Component root, String attribute) {
+  private static int countDescendantsWithAttribute(Component root, String attribute) {
     int count =
         root.getElement().getAttribute(attribute) != null
                 && root.getElement().hasAttribute(attribute)
             ? 1
             : 0;
-    for (com.vaadin.flow.component.Component child : root.getChildren().toList()) {
+    for (Component child : root.getChildren().toList()) {
       count += countDescendantsWithAttribute(child, attribute);
     }
     return count;
@@ -797,15 +799,14 @@ public class TournamentBracketAdapterTest {
   }
 
   /** Names of spans styled struck-through anywhere under {@code root}. */
-  private static List<String> strikingNames(com.vaadin.flow.component.Component root) {
-    java.util.List<String> struck = new java.util.ArrayList<>();
+  private static List<String> strikingNames(Component root) {
+    List<String> struck = new ArrayList<>();
     collectStruck(root, struck);
     return struck;
   }
 
-  private static void collectStruck(
-      com.vaadin.flow.component.Component node, java.util.List<String> out) {
-    if (node instanceof com.vaadin.flow.component.html.Span span
+  private static void collectStruck(Component node, List<String> out) {
+    if (node instanceof Span span
         && "line-through".equals(span.getElement().getStyle().get("text-decoration"))) {
       out.add(span.getText());
     }
@@ -889,18 +890,17 @@ public class TournamentBracketAdapterTest {
   }
 
   /** Depth-first walk over all descendant text nodes (component tree, not just direct children). */
-  private static List<String> descendantTexts(com.vaadin.flow.component.Component root) {
-    java.util.ArrayList<String> texts = new java.util.ArrayList<>();
+  private static List<String> descendantTexts(Component root) {
+    ArrayList<String> texts = new ArrayList<>();
     collectTexts(root, texts);
     return texts;
   }
 
-  private static void collectTexts(
-      com.vaadin.flow.component.Component node, java.util.List<String> out) {
-    if (node instanceof com.vaadin.flow.component.HasText
-        && ((com.vaadin.flow.component.HasText) node).getText() != null
-        && !((com.vaadin.flow.component.HasText) node).getText().isBlank()) {
-      out.add(((com.vaadin.flow.component.HasText) node).getText());
+  private static void collectTexts(Component node, List<String> out) {
+    if (node instanceof HasText
+        && ((HasText) node).getText() != null
+        && !((HasText) node).getText().isBlank()) {
+      out.add(((HasText) node).getText());
     }
     node.getChildren().forEach(child -> collectTexts(child, out));
   }

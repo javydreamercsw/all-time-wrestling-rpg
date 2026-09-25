@@ -210,7 +210,7 @@ public class SingleEliminationFormat implements TournamentFormat {
     // an undecided one keeps the "Winner of Match N" placeholder.
     int prevRoundFirst = 1;
     int prevRoundCount = n / 2;
-    for (int round = 2; round <= totalRounds; round++) {
+    for (int round = 2; round < totalRounds + 1; round++) {
       for (int j = 0; j < prevRoundCount / 2; j++) {
         int firstSource = prevRoundFirst + 2 * j;
         matches.add(
@@ -227,7 +227,7 @@ public class SingleEliminationFormat implements TournamentFormat {
     }
 
     List<String> roundNames = new ArrayList<>();
-    for (int round = 1; round <= totalRounds; round++) {
+    for (int round = 1; round < totalRounds + 1; round++) {
       roundNames.add(roundName(round, totalRounds));
     }
     return Optional.of(new BracketProjection(roundNames, matches));
