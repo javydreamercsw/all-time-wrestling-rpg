@@ -28,17 +28,21 @@ import org.jspecify.annotations.Nullable;
  * apart.
  */
 public enum WellKnownSegmentType {
-  ONE_ON_ONE("one_on_one"),
-  TAG_TEAM("tag_team"),
-  PROMO("promo"),
-  ABU_DHABI_RUMBLE("abu_dhabi_rumble"),
-  FREE_FOR_ALL("free_for_all"),
-  HANDICAP_MATCH("handicap_match");
+  ONE_ON_ONE("one_on_one", "One on One"),
+  TAG_TEAM("tag_team", "Tag Team"),
+  PROMO("promo", "Promo"),
+  ABU_DHABI_RUMBLE("abu_dhabi_rumble", "Abu Dhabi Rumble"),
+  FREE_FOR_ALL("free_for_all", "Free-for-All"),
+  HANDICAP_MATCH("handicap_match", "Handicap Match");
 
   @Getter private final String code;
 
-  WellKnownSegmentType(final String code) {
+  /** Human-readable name as seeded in segment_types.json (enforced by the companion test). */
+  @Getter private final String displayName;
+
+  WellKnownSegmentType(final String code, final String displayName) {
     this.code = code;
+    this.displayName = displayName;
   }
 
   /** Null-safe match against a {@link SegmentType} entity's code field. */

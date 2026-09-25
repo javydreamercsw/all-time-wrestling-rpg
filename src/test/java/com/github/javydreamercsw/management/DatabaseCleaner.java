@@ -213,6 +213,18 @@ public class DatabaseCleaner implements DatabaseCleanup {
       "faction_members",
       "faction",
       "account_roles",
+      // Template assignment rows reference tournament/show_template/universe — deleting them
+      // first unblocks those deletes below (they have no dedicated repository to clear). The
+      // allowed-rules and required-expansion child tables hang off assignment/template rows
+      // (ATW-cpuu/ATW-xtf0); requiredExpansions is a @CollectionTable, invisible to the
+      // @JoinTable scan below, so all three are cleared manually here.
+      "show_template_segment_assignment",
+      "show_template_assignment_rule",
+      "show_template_required_expansion",
+      "tournament_match",
+      "tournament_round",
+      "tournament_entry",
+      "tournament",
       "wrestler",
       "account"
     };
@@ -233,6 +245,9 @@ public class DatabaseCleaner implements DatabaseCleanup {
                   """);
           case "faction" ->
               jdbcTemplate.execute("UPDATE faction SET leader_id = NULL, manager_id = NULL");
+          case "tournament_match" ->
+              jdbcTemplate.execute(
+                  "UPDATE tournament_match SET segment_id = NULL, winner_entry_id = NULL");
           case "account" ->
               // Break link from wrestler back to account
               jdbcTemplate.execute("UPDATE wrestler SET account_id = NULL");

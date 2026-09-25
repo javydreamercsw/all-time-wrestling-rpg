@@ -19,9 +19,13 @@ package com.github.javydreamercsw.management.domain.show.template;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -31,6 +35,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
@@ -38,6 +43,11 @@ import jakarta.validation.constraints.Size;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.Month;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 import org.jspecify.annotations.Nullable;
@@ -111,6 +121,94 @@ public class ShowTemplate extends AbstractEntity<Long> {
 
   @Column(name = "is_active", nullable = false)
   private boolean isActive = true;
+
+  /**
+   * Segment type/rule assignments for this template (ATW-0331): event-only types the AI may use on
+   * this template's shows, encouraged rules (AI preference) and auto-attach rules (deterministic
+   * merge at proposal approval). Edited in the template admin view.
+   */
+  @OneToMany(mappedBy = "template", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<ShowTemplateSegmentAssignment> segmentAssignments = new ArrayList<>();
+
+  /**
+   * Expansion codes that must ALL be enabled before this template's shows are created (ATW-xtf0).
+   * Mirrors {@code CampaignChapterDTO.requiredExpansions}. Empty list = no restriction (available
+   * in base game). Example: All Time Rumble requires the RUMBLE expansion.
+   */
+  @ElementCollection(fetch = FetchType.EAGER)
+  @CollectionTable(
+      name = "show_template_required_expansion",
+      joinColumns = @JoinColumn(name = "template_id"))
+  @Column(name = "expansion_code", length = 64)
+  private Set<String> requiredExpansions = new HashSet<>();
+
+  /** Assigned event-only segment types offered to the AI for this template's shows. */
+  public List<ShowTemplateSegmentAssignment> getAssignedEventTypes() {
+    return segmentAssignments.stream()
+        .filter(a -> a.getSegmentType() != null && a.isValid())
+        .toList();
+  }
+
+  /** Rule-only assignments with AUTO_ATTACH mode: attach to every approved match segment. */
+  public List<ShowTemplateSegmentAssignment> getRuleAutoAttachAssignments() {
+    return segmentAssignments.stream()
+        .filter(
+            a ->
+                a.getSegmentRule() != null
+                    && a.getSegmentType() == null
+                    && a.getMode() == ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH)
+        .toList();
+  }
+
+  /** Type-paired AUTO_ATTACH assignments: attach the rule whenever its paired type is used. */
+  public List<ShowTemplateSegmentAssignment> getTypePairedAutoAttachAssignments() {
+    return segmentAssignments.stream()
+        .filter(
+            a ->
+                a.getSegmentType() != null
+                    && a.getSegmentRule() != null
+                    && a.getMode() == ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH)
+        .toList();
+  }
+
+  /** Rule-only assignments with ENCOURAGED mode: AI preference only. */
+  public List<ShowTemplateSegmentAssignment> getEncouragedRuleAssignments() {
+    return segmentAssignments.stream()
+        .filter(
+            a ->
+                a.getSegmentRule() != null
+                    && a.getSegmentType() == null
+                    && a.getMode() == ShowTemplateSegmentAssignment.AssignmentMode.ENCOURAGED)
+        .toList();
+  }
+
+  // ── Tournament assignments (ATW-oahn) ─────────────────────────────────────
+
+  /** Assignments referencing a tournament or defining one via spec (with or without a pairing). */
+  public List<ShowTemplateSegmentAssignment> getTournamentAssignments() {
+    return segmentAssignments.stream()
+        .filter(a -> (a.getTournament() != null || a.hasTournamentSpec()) && a.isValid())
+        .toList();
+  }
+
+  /**
+   * The AUTO_ATTACH pairing of a segment type with a tournament (ATW-oahn): when the given type's
+   * match is created on this template's show, the returned tournament's participants fill it. Spec
+   * rows qualify too — {@code TournamentTemplateBookingService} resolves their instance before this
+   * lookup matters (ATW-etws).
+   */
+  public Optional<ShowTemplateSegmentAssignment> findTournamentForSegmentType(
+      final SegmentType segmentType) {
+    return segmentAssignments.stream()
+        .filter(
+            a ->
+                (a.getTournament() != null || a.hasTournamentSpec())
+                    && a.getSegmentType() != null
+                    && a.getSegmentType().getId().equals(segmentType.getId())
+                    && a.getMode() == ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH
+                    && a.isValid())
+        .findFirst();
+  }
 
   /**
    * Check if this is a Premium Live Event (PLE) template.

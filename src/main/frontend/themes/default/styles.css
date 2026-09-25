@@ -182,7 +182,7 @@
     top: 0;
     bottom: 0;
     width: 2px;
-    background-color: black;
+    background-color: var(--lumo-contrast);
     opacity: 0.5;
     z-index: 2;
 }
@@ -207,11 +207,11 @@
 .status-bar-tick {
     width: 1px;
     height: 100%;
-    background-color: rgba(255, 255, 255, 0.3);
+    background-color: var(--lumo-contrast-20pct);
 }
 
 .status-bar-tick.major {
-    background-color: rgba(0, 0, 0, 0.2);
+    background-color: var(--lumo-contrast-50pct);
     width: 1px;
 }
 
@@ -274,7 +274,13 @@
 }
 
 /* Custom Themes */
+/* Every custom theme must declare color-scheme explicitly: Lumo's :root sets
+   color-scheme: light and [theme~="dark"] flips it — a theme that omits the
+   declaration silently inherits one or the other, and every light-dark()
+   Lumo token (--lumo-contrast, text colors, borders) resolves accordingly.
+   See docs/agent/theme-guidelines.md. */
 [theme~="retro"] {
+    color-scheme: light;
     --lumo-base-color: #f4ecd8;
     --lumo-primary-color: #d35400;
     --lumo-primary-text-color: #d35400;
@@ -287,6 +293,7 @@
 }
 
 [theme~="neon"] {
+    color-scheme: dark;
     --lumo-base-color: #0d0221;
     --lumo-primary-color: #00ff41;
     --lumo-primary-text-color: #00ff41;
@@ -299,6 +306,7 @@
 }
 
 [theme~="high-contrast"] {
+    color-scheme: light;
     --lumo-base-color: #ffffff;
     --lumo-primary-color: #000000;
     --lumo-primary-text-color: #000000;

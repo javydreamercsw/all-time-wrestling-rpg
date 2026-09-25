@@ -81,4 +81,48 @@ class OllamaSegmentNarrationServiceIT {
   void getProviderName_returnsOllama() {
     assertThat(ollamaService.getProviderName()).isEqualTo("Ollama");
   }
+
+  @Test
+  void narrateSegment_weavesUserFeedbackIntoNarration() {
+    // Regression for ATW-19v7: user feedback (opener spot + finish) pasted into a narration
+    // feedback box must reach the generated narration. Uses distinctive invented move names so a
+    // pass cannot be explained by generic model defaults. LLM output is nondeterministic, so a
+    // couple of attempts are allowed before failing.
+    WrestlerContext w1 = new WrestlerContext();
+    w1.setName("Titan Kade");
+    w1.setAlignment("FACE");
+
+    WrestlerContext w2 = new WrestlerContext();
+    w2.setName("Gor Muk");
+    w2.setAlignment("HEEL");
+
+    SegmentTypeContext segType = new SegmentTypeContext();
+    segType.setSegmentType("One-on-One Match");
+
+    SegmentNarrationContext ctx = new SegmentNarrationContext();
+    ctx.setWrestlers(List.of(w1, w2));
+    ctx.setSegmentType(segType);
+    ctx.setDeterminedOutcome(
+        "Titan Kade wins the segment.\n\n"
+            + "User Feedback: Titan Kade opens the match with a surprise Zambian Splash. "
+            + "Gor Muk countered the Hurt Lock, but Titan Kade surprised him with a "
+            + "High Angle Spinebuster for the win!");
+
+    String result = null;
+    for (int attempt = 0; attempt < 3 && result == null; attempt++) {
+      String narration = ollamaService.narrateSegment(ctx);
+      if (narration != null
+          && !narration.isBlank()
+          && narration.toLowerCase().contains("zambian splash")
+          && narration.toLowerCase().contains("spinebuster")) {
+        result = narration;
+      }
+    }
+
+    assertThat(result)
+        .as(
+            "Narration must weave user feedback into the story (Zambian Splash opener and"
+                + " Spinebuster finish) within 3 attempts")
+        .isNotNull();
+  }
 }

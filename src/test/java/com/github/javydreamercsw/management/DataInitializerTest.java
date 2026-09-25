@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.dto.*;
+import com.github.javydreamercsw.management.migration.DataMigrationRunner;
 import com.github.javydreamercsw.management.sync.DataSyncContributor;
 import java.io.IOException;
 import java.util.List;
@@ -36,7 +37,9 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -46,26 +49,38 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 class DataInitializerTest {
 
   @Mock private DataSyncContributor contributor;
+  @Mock private DataMigrationRunner dataMigrationRunner;
 
   private DataInitializer dataInitializer;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @BeforeEach
   void setUp() {
-    dataInitializer = new DataInitializer(true, List.of(contributor));
+    dataInitializer = new DataInitializer(true, List.of(contributor), dataMigrationRunner);
   }
 
   @Test
   void testInitialize_Disabled() {
-    DataInitializer disabled = new DataInitializer(false, List.of(contributor));
+    DataInitializer disabled =
+        new DataInitializer(false, List.of(contributor), dataMigrationRunner);
     disabled.init();
     verify(contributor, never()).sync();
+    verify(dataMigrationRunner, never()).runMigrations();
   }
 
   @Test
   void init_delegatesToAllContributors() {
     dataInitializer.init();
     verify(contributor).sync();
+  }
+
+  @Test
+  void init_runsDataMigrationsAfterSyncs() {
+    dataInitializer.init();
+    InOrder inOrder = Mockito.inOrder(contributor, dataMigrationRunner);
+    inOrder.verify(contributor).sync();
+    inOrder.verify(dataMigrationRunner).runMigrations();
+    inOrder.verifyNoMoreInteractions();
   }
 
   // ── JSON validation tests ─────────────────────────────────────────────────

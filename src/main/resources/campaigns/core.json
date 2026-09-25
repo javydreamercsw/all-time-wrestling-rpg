@@ -6,6 +6,7 @@
   "aiSystemPrompt": "You are the Campaign Director for Chapter: The Tournament. Your goal is to test the player's moral alignment through choices while they navigate a tournament quest. Generate encounters that reflect their current Face/Heel standing.",
   "difficulty": "MEDIUM",
   "tournament": true,
+  "tournamentCode": "deadly_combat",
   "tagTeam": false,
   "entryPoints": [ {
     "name": "Tournament Invite",

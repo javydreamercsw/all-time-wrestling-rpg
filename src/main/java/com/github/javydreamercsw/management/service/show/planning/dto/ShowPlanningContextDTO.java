@@ -39,6 +39,13 @@ public class ShowPlanningContextDTO {
   private List<FeudScriptBeatDTO> upcomingScriptedBeats;
 
   /**
+   * Show-attached tournament slots due on this show (ATW-xbn4): paced rounds on a weekly show
+   * before the host show, or the payoff on the host show itself. Planning-card previews only —
+   * approval re-derives the real bookings transactionally.
+   */
+  private List<TournamentSlotPreviewDTO> tournamentSlots = new ArrayList<>();
+
+  /**
    * Booker-facing warnings for pending arc beats that were withheld from the planning context
    * because their participants are unavailable (injury, low condition, or show constraints).
    * Show-planning UIs render these next to the unbooked-rivalry warnings so a reserved beat missing

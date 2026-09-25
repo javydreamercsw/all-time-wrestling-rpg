@@ -17,7 +17,9 @@
 package com.github.javydreamercsw.management.domain.tournament;
 
 import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import jakarta.persistence.CascadeType;
@@ -58,6 +60,31 @@ public class Tournament extends AbstractEntity<Long> {
   @Column(name = "name", nullable = false)
   private String name;
 
+  /**
+   * Stable machine-readable identifier for catalog-seeded tournaments (tournaments.json / {@link
+   * com.github.javydreamercsw.management.domain.tournament.WellKnownTournament}). Null for
+   * booker-created instances — spec rows on templates never stamp a code (two rows using the same
+   * preset would collide on the unique index).
+   */
+  @Column(name = "code", length = 64)
+  @Nullable private String code;
+
+  /**
+   * Catalog hint for auto-seeding: the bracket size a tournament starts with when the booking path
+   * has no explicit count. Overrides the format's max, stays overridable by a template spec's
+   * entrant count. Null = format default.
+   */
+  @Column(name = "default_entrant_count")
+  @Nullable private Integer defaultEntrantCount;
+
+  /**
+   * QUALIFIER_GROUPS only: wrestlers per qualifier group (the Free-for-All qualifiers feeding the
+   * final). Null = format default (3-wrestler groups). Part of the entrant-count validation — the
+   * bracket needs at least two groups ({@code entrants >= 2 * groupSize}).
+   */
+  @Column(name = "qualifier_group_size")
+  @Nullable private Integer qualifierGroupSize;
+
   /** Format identifier matching {@code TournamentFormat#getFormatId()}. */
   @Column(name = "format_id", nullable = false, length = 64)
   private String formatId;
@@ -74,6 +101,26 @@ public class Tournament extends AbstractEntity<Long> {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "title_id")
   @Nullable private Title linkedTitle;
+
+  /**
+   * Host show for a one-time tournament: the payoff (final or champion showcase) books on this show
+   * exactly once, and the non-final rounds pace across the weekly shows before it. Null for
+   * recurring template-paired tournaments. Cleared after the payoff so it cannot fire twice
+   * (ATW-xbn4). EAGER so list/detail views render rows outside a transaction.
+   */
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "payoff_show_id")
+  @Nullable private Show payoffShow;
+
+  /** Segment type for the payoff at {@link #payoffShow}; null resolves to One-on-One at booking. */
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "payoff_segment_type_id")
+  @Nullable private SegmentType payoffSegmentType;
+
+  /** Optional stipulation applied to the payoff segment at {@link #payoffShow}. */
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "payoff_segment_rule_id")
+  @Nullable private SegmentRule payoffSegmentRule;
 
   @Column(name = "start_date")
   @Nullable private LocalDate startDate;
@@ -104,4 +151,28 @@ public class Tournament extends AbstractEntity<Long> {
       joinColumns = @JoinColumn(name = "tournament_id"),
       inverseJoinColumns = @JoinColumn(name = "segment_rule_id"))
   private List<SegmentRule> allowedRules = new ArrayList<>();
+
+  /**
+   * Previous edition of a recurring tournament chain (ATW-o4ad): {@code null} for one-shot
+   * tournaments and for a chain's first edition. EAGER so list/detail views render outside a
+   * transaction.
+   */
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "parent_tournament_id")
+  @Nullable private Tournament parent;
+
+  /** 1-based edition counter within a recurring chain; {@code null} for one-shot tournaments. */
+  @Column(name = "edition_ordinal")
+  @Nullable private Integer editionOrdinal;
+
+  /**
+   * Edition cadence (ATW-o4ad): {@code NONE} keeps the one-shot semantics — the payoff books once
+   * and the template pairing is consumed (ATW-xbn4/ATW-z963). {@code ANNUAL} auto-creates the next
+   * edition (same format/rules/title/universe, ordinal+1, SCHEDULED) when the payoff books and
+   * re-points the PLE template pairing to it, so every future PLE instance from the template hosts
+   * the next cycle without manual re-arming.
+   */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "recurrence", nullable = false, length = 16)
+  private TournamentRecurrence recurrence = TournamentRecurrence.NONE;
 }

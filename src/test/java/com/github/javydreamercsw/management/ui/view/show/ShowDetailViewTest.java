@@ -43,8 +43,14 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.tournament.Tournament;
+import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
+import com.github.javydreamercsw.management.domain.tournament.TournamentMatchRepository;
+import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -72,6 +78,8 @@ import com.github.javydreamercsw.management.service.show.template.ShowTemplateSe
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.tournament.TournamentService;
+import com.github.javydreamercsw.management.service.tournament.TournamentTemplateBookingService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.AbilityReminderTextService;
@@ -87,6 +95,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Paragraph;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.data.provider.Query;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
@@ -141,6 +150,9 @@ class ShowDetailViewTest extends AbstractViewTest {
   @Mock private ShowPlanningAiService showPlanningAiService;
   @Mock private TeamService teamService;
   @Mock private FeudScriptService feudScriptService;
+  @Mock private TournamentMatchRepository tournamentMatchRepository;
+  @Mock private TournamentService tournamentService;
+  @Mock private TournamentTemplateBookingService tournamentTemplateBookingService;
 
   @BeforeEach
   public void setUp() {
@@ -402,7 +414,9 @@ class ShowDetailViewTest extends AbstractViewTest {
             showTemplateService,
             showPlanningService,
             showPlanningAiService,
-            arenaService);
+            arenaService,
+            tournamentService,
+            tournamentTemplateBookingService);
     WrestlerFacade wrestlerFacade =
         new WrestlerFacade(
             wrestlerService,
@@ -435,7 +449,8 @@ class ShowDetailViewTest extends AbstractViewTest {
         commentaryTeamRepository,
         ringsideActionService,
         mock(ShowExportService.class),
-        mock(LeagueRepository.class));
+        mock(LeagueRepository.class),
+        tournamentMatchRepository);
   }
 
   @Test
@@ -499,6 +514,172 @@ class ShowDetailViewTest extends AbstractViewTest {
     Assertions.assertThat(plainCell.getElement().getText()).isEmpty();
     Mockito.verify(feudScriptService, Mockito.atLeastOnce()).findBeatForSegment(withArc);
     Mockito.verify(feudScriptService, Mockito.atLeastOnce()).findBeatForSegment(plain);
+  }
+
+  @Test
+  void segmentGrid_tournamentMatchBadge_showsBracketOrigin() {
+    // ATW-xbn4: a segment booked from a tournament match carries the tournament badge —
+    // the booker sees which bracket fed this match without opening the tournament view.
+    ShowType showType = new ShowType();
+    showType.setName("Test");
+    Show show = new Show();
+    show.setId(1L);
+    show.setName("Badge Show");
+    show.setType(showType);
+
+    Segment tournamentSegment = new Segment();
+    tournamentSegment.setId(20L);
+    tournamentSegment.setSegmentType(new SegmentType());
+    tournamentSegment.setSegmentDate(Instant.parse("2026-09-03T00:00:00Z"));
+
+    Tournament tournament = new Tournament();
+    tournament.setId(5L);
+    tournament.setName("Crown Cup");
+    TournamentRound round = new TournamentRound();
+    round.setTournament(tournament);
+    round.setRoundName("Semi-Final");
+    TournamentMatch match = new TournamentMatch();
+    match.setRound(round);
+
+    Mockito.when(showService.getShowById(any())).thenReturn(Optional.of(show));
+    Mockito.when(segmentRepository.findByShowOrderBySegmentOrderAsc(any(Show.class)))
+        .thenReturn(List.of(tournamentSegment));
+    Mockito.when(segmentRepository.findByShow(any(Show.class)))
+        .thenReturn(List.of(tournamentSegment));
+    Mockito.when(feudScriptService.findBeatForSegment(tournamentSegment))
+        .thenReturn(Optional.empty());
+    Mockito.when(tournamentMatchRepository.findBySegmentId(20L)).thenReturn(Optional.of(match));
+
+    ShowDetailView view = buildView(mock(SecurityUtils.class));
+    BeforeEvent event = Mockito.mock(BeforeEvent.class);
+    Mockito.when(event.getLocation()).thenReturn(new Location(""));
+    view.setParameter(event, 1L);
+
+    // Drive the source column's renderer directly (component renderers run at row render).
+    Grid<Segment> grid = LocatorJ._get(view, Grid.class, spec -> spec.withId("segments-grid"));
+    ComponentRenderer<?, Segment> tournamentRenderer = null;
+    for (var column : grid.getColumns()) {
+      if (column.getRenderer() instanceof ComponentRenderer<?, ?> cr) {
+        var probe = (ComponentRenderer<Component, Segment>) cr;
+        Component test = probe.createComponent(tournamentSegment);
+        if (test != null && test.getElement().getText().contains("Crown Cup")) {
+          tournamentRenderer = (ComponentRenderer<?, Segment>) column.getRenderer();
+          break;
+        }
+      }
+    }
+    Assertions.assertThat(tournamentRenderer).as("Tournament source column").isNotNull();
+    Component badge = tournamentRenderer.createComponent(tournamentSegment);
+    Assertions.assertThat(badge.getElement().getText()).contains("Crown Cup");
+    Assertions.assertThat(badge.getElement().getText()).contains("🏆");
+    Mockito.verify(tournamentMatchRepository, Mockito.atLeastOnce()).findBySegmentId(20L);
+  }
+
+  @Test
+  void tournamentIndicator_payoffHostBinding_showsTournamentRow() {
+    // ATW-xbn4: a show hosting a one-time tournament's payoff lists it in the details card.
+    ShowType showType = new ShowType();
+    showType.setName("Test");
+    Show show = new Show();
+    show.setId(452L);
+    show.setName("Quantum Quarrel");
+    show.setType(showType);
+
+    Tournament hosted = new Tournament();
+    hosted.setId(5L);
+    hosted.setName("Time Vault");
+    Mockito.when(tournamentService.findByPayoffShowId(452L)).thenReturn(List.of(hosted));
+    Mockito.when(showService.getShowById(any())).thenReturn(Optional.of(show));
+    Mockito.when(segmentRepository.findByShowOrderBySegmentOrderAsc(any(Show.class)))
+        .thenReturn(Collections.emptyList());
+    Mockito.when(segmentRepository.findByShow(any(Show.class))).thenReturn(Collections.emptyList());
+
+    ShowDetailView view = buildView(mock(SecurityUtils.class));
+    BeforeEvent event = Mockito.mock(BeforeEvent.class);
+    Mockito.when(event.getLocation()).thenReturn(new Location(""));
+    view.setParameter(event, 452L);
+
+    List<String> labels = childTexts(view);
+    assertThat(labels).anyMatch(t -> t.contains("Time Vault"));
+  }
+
+  @Test
+  void tournamentIndicator_templateAutoAttach_showsTournamentRow() {
+    // ATW-oahn: a tournament AUTO_ATTACHed to the show's template surfaces on the show card too.
+    ShowType showType = new ShowType();
+    showType.setName("Test");
+    Show show = new Show();
+    show.setId(453L);
+    show.setName("Quantum Quarrel II");
+    show.setType(showType);
+
+    ShowTemplate template = new ShowTemplate();
+    template.setId(7L);
+    show.setTemplate(template);
+
+    ShowTemplateSegmentAssignment assignment = new ShowTemplateSegmentAssignment();
+    assignment.setTemplate(template);
+    Tournament paired = new Tournament();
+    paired.setId(9L);
+    paired.setName("Deadly Combat");
+    assignment.setTournament(paired);
+    template.getSegmentAssignments().add(assignment);
+
+    Mockito.when(showTemplateService.getTemplateWithAssignments(7L))
+        .thenReturn(Optional.of(template));
+    Mockito.when(showTemplateService.resolveShowTemplateImage(Mockito.any()))
+        .thenReturn("images/test-template.png");
+    Mockito.when(tournamentService.findByPayoffShowId(453L)).thenReturn(Collections.emptyList());
+    Mockito.when(showService.getShowById(any())).thenReturn(Optional.of(show));
+    Mockito.when(segmentRepository.findByShowOrderBySegmentOrderAsc(any(Show.class)))
+        .thenReturn(Collections.emptyList());
+    Mockito.when(segmentRepository.findByShow(any(Show.class))).thenReturn(Collections.emptyList());
+
+    ShowDetailView view = buildView(mock(SecurityUtils.class));
+    BeforeEvent event = Mockito.mock(BeforeEvent.class);
+    Mockito.when(event.getLocation()).thenReturn(new Location(""));
+    view.setParameter(event, 453L);
+
+    List<String> labels = childTexts(view);
+    assertThat(labels).anyMatch(t -> t.contains("Deadly Combat"));
+  }
+
+  @Test
+  void tournamentIndicator_noTournaments_noRow() {
+    ShowType showType = new ShowType();
+    showType.setName("Test");
+    Show show = new Show();
+    show.setId(454L);
+    show.setName("Plain Show");
+    show.setType(showType);
+
+    Mockito.when(tournamentService.findByPayoffShowId(454L)).thenReturn(Collections.emptyList());
+    Mockito.when(showService.getShowById(any())).thenReturn(Optional.of(show));
+    Mockito.when(segmentRepository.findByShowOrderBySegmentOrderAsc(any(Show.class)))
+        .thenReturn(Collections.emptyList());
+    Mockito.when(segmentRepository.findByShow(any(Show.class))).thenReturn(Collections.emptyList());
+
+    ShowDetailView view = buildView(mock(SecurityUtils.class));
+    BeforeEvent event = Mockito.mock(BeforeEvent.class);
+    Mockito.when(event.getLocation()).thenReturn(new Location(""));
+    view.setParameter(event, 454L);
+
+    List<String> labels = childTexts(view);
+    assertThat(labels).noneMatch(t -> t.contains("Tournaments:"));
+  }
+
+  /** All descendant text strings — the details card nests rows inside a collapsed Details panel. */
+  private static List<String> childTexts(Component root) {
+    List<String> texts = new ArrayList<>();
+    collectTexts(root, texts);
+    return texts;
+  }
+
+  private static void collectTexts(Component component, List<String> texts) {
+    if (component instanceof Span span && !span.getText().isBlank()) {
+      texts.add(span.getText());
+    }
+    component.getChildren().forEach(child -> collectTexts(child, texts));
   }
 
   @Test

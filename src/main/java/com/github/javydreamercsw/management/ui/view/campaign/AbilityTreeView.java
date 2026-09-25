@@ -106,7 +106,7 @@ public class AbilityTreeView extends VerticalLayout {
     VerticalLayout card = new VerticalLayout();
     card.addClassName("ability-card");
     card.setPadding(true);
-    card.getStyle().set("border", "1px solid #ccc");
+    card.getStyle().set("border", "1px solid var(--lumo-contrast-20pct)");
     card.getStyle().set("border-radius", "5px");
     card.setWidth("300px");
 

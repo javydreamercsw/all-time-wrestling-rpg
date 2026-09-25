@@ -28,10 +28,12 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.service.HolidayService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
+import com.github.javydreamercsw.management.service.show.planning.dto.FeudScriptBeatDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRivalryDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRosterEntryDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningSegmentDTO;
+import com.github.javydreamercsw.management.service.show.planning.dto.TournamentSlotPreviewDTO;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -101,6 +103,34 @@ class ShowPlanningPromptBuilderTest {
     ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
     String prompt = builder.build(ctx);
     assertTrue(prompt.contains("Booking Rules & Participation Goal"));
+  }
+
+  @Test
+  void build_listsRegularSegmentTypes() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    String prompt = builder.build(ctx);
+    assertTrue(
+        prompt.contains("Available Segment Types: Match (A wrestling match.)"),
+        "Regular segment types must appear in the prompt's available list");
+  }
+
+  @Test
+  void build_eventOnlyType_excludedFromAvailableTypes() {
+    SegmentType eventOnly = new SegmentType();
+    eventOnly.setName("Abu Dhabi Rumble");
+    eventOnly.setDescription("Large-scale elimination match with timed entries");
+    eventOnly.setEventOnly(true);
+    SegmentType regular = new SegmentType();
+    regular.setName("Match");
+    regular.setDescription("A wrestling match.");
+    when(segmentTypeService.findAll()).thenReturn(List.of(regular, eventOnly));
+
+    String prompt = builder.build(contextWithTemplate(1, 0));
+
+    assertFalse(
+        prompt.contains("Abu Dhabi Rumble"),
+        "Event-only types must never be proposed as ordinary segments (ATW-0331)");
+    assertTrue(prompt.contains("Match (A wrestling match.)"));
   }
 
   @Test
@@ -480,6 +510,49 @@ class ShowPlanningPromptBuilderTest {
     assertTrue(prompt.contains("Betrayal"), "Event type must survive sanitization");
   }
 
+  @Test
+  void build_templateEventSegmentTypes_listedAsEventOnly() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ShowTemplate template = ctx.getShowTemplate();
+    template.setEventSegmentTypes(List.of("Abu Dhabi Rumble"));
+
+    String prompt = builder.build(ctx);
+
+    assertTrue(
+        prompt.contains("Event Segment Types (special formats allowed ONLY on this show):"),
+        "Template-assigned event types must be surfaced separately (ATW-0331)");
+    assertTrue(prompt.contains("Abu Dhabi Rumble"));
+  }
+
+  @Test
+  void build_noTemplateEventTypes_omitsEventSection() {
+    String prompt = builder.build(contextWithTemplate(1, 0));
+
+    assertFalse(
+        prompt.contains("Event Segment Types"),
+        "Event section must be absent when the template assigns none");
+  }
+
+  @Test
+  void build_templateEncouragedRules_listedAsPreference() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ctx.getShowTemplate().setEncouragedRules(List.of("Exploding Barbed Wire"));
+
+    String prompt = builder.build(ctx);
+
+    assertTrue(
+        prompt.contains("Encouraged Stipulation Matches (prefer these where appropriate):"),
+        "Encouraged rules must be surfaced as an AI preference (ATW-0331)");
+    assertTrue(prompt.contains("Exploding Barbed Wire"));
+  }
+
+  @Test
+  void build_noEncouragedRules_omitsEncouragedSection() {
+    String prompt = builder.build(contextWithTemplate(1, 0));
+
+    assertFalse(prompt.contains("Encouraged Stipulation Matches"));
+  }
+
   private ShowPlanningRivalryDTO rivalryWithHeat(int heat) {
     ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
     rivalry.setId(99L);
@@ -497,5 +570,154 @@ class ShowPlanningPromptBuilderTest {
     ctx.setShowTemplate(template);
     ctx.setShowDate(Instant.now());
     return ctx;
+  }
+
+  @Test
+  void build_tournamentSlots_notListedInPrompt() {
+    // Slot details live on the planning-card rows (deterministic pass), not in the prompt —
+    // listing them would burn tokens. The counts carry the slot accounting instead.
+    ShowPlanningContextDTO ctx = contextWithTemplate(2, 1);
+    ctx.setTournamentSlots(
+        List.of(
+            slot("Crown Cup", "Payoff final", "One on One", null, null),
+            slot("Crown Cup", "Payoff final", "One on One", "ATW World", List.of("A", "B"))));
+    String prompt = builder.build(ctx);
+    assertFalse(
+        prompt.contains("Pre-Determined Tournament Slots"), "No slot section in the prompt");
+    assertFalse(prompt.contains("Crown Cup"), "Slot details must not reach the AI");
+  }
+
+  @Test
+  void build_tournamentSlots_realTeams_removeWrestlersFromRoster() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(2, 1);
+    ctx.setFullRoster(
+        List.of(
+            rosterEntry(1L, "Shelton", "MALE"),
+            rosterEntry(2L, "Free Agent", "MALE"),
+            rosterEntry(3L, "Bobby", "MALE")));
+    ctx.setTournamentSlots(
+        List.of(
+            slot("Crown Cup", "Payoff final", "One on One", null, List.of("Shelton", "Bobby"))));
+    String prompt = builder.build(ctx);
+    assertFalse(
+        prompt.contains("Name: Shelton"), "Tournament-committed wrestler must leave the roster");
+    assertFalse(prompt.contains("Name: Bobby"));
+    assertTrue(
+        prompt.contains("Name: Free Agent"), "Unclaimed wrestlers stay bookable in the roster");
+  }
+
+  @Test
+  void build_placeholderTournamentSlots_keepRosterIntact() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(2, 1);
+    ctx.setFullRoster(List.of(rosterEntry(1L, "Shelton", "MALE")));
+    ctx.setTournamentSlots(List.of(slot("Crown Cup", "Payoff final", "One on One", null, null)));
+    String prompt = builder.build(ctx);
+    assertTrue(
+        prompt.contains("Name: Shelton"),
+        "Placeholder rows claim nobody — the wrestler stays bookable");
+  }
+
+  @Test
+  void build_beatParticipants_removedFromRoster() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 1);
+    ctx.setFullRoster(
+        List.of(
+            rosterEntry(1L, "Shelton", "MALE"),
+            rosterEntry(2L, "Bobby", "MALE"),
+            rosterEntry(3L, "Free Agent", "MALE")));
+    FeudScriptBeatDTO beat = beatDto("Singles Match");
+    beat.setParticipantNames("Shelton vs Bobby");
+    ctx.setUpcomingScriptedBeats(List.of(beat));
+    String prompt = builder.build(ctx);
+    assertFalse(prompt.contains("Name: Shelton"), "Beat participant must leave the roster");
+    assertFalse(prompt.contains("Name: Bobby"));
+    assertTrue(prompt.contains("Name: Free Agent"));
+  }
+
+  @Test
+  void build_tournamentSlots_reduceMatchCount() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(2, 1);
+    ctx.setTournamentSlots(
+        List.of(
+            slot("Crown Cup", "Payoff final", "One on One", null, List.of("A", "B")),
+            slot("Crown Cup", "Payoff final", "One on One", null, List.of("C", "D"))));
+    String prompt = builder.build(ctx);
+    assertTrue(
+        prompt.contains(
+            "exactly 0 matches (2 total; 2 pre-determined match slot(s) are booked"
+                + " automatically)"),
+        "Real-participant tournament slots claim match slots from the AI's budget");
+  }
+
+  @Test
+  void build_noTournamentSlots_noReduction() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(2, 1);
+    String prompt = builder.build(ctx);
+    assertTrue(prompt.contains("Generate a JSON array of exactly 2 matches and 1 promos"));
+  }
+
+  @Test
+  void build_promoBeat_claimsPromoSlotInCount() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 1);
+    ctx.setUpcomingScriptedBeats(List.of(beatDto("Promo")));
+    String prompt = builder.build(ctx);
+    assertTrue(prompt.contains("exactly 1 matches and "), "Match budget untouched");
+    assertTrue(
+        prompt.contains(
+            "0 promos (1 total; 1 pre-determined promo slot(s) are booked" + " automatically)"),
+        "A promo-type scripted beat must claim a promo slot, not a match slot");
+  }
+
+  @Test
+  void build_matchBeat_claimsMatchSlotInCount() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 1);
+    ctx.setUpcomingScriptedBeats(List.of(beatDto("Singles Match")));
+    String prompt = builder.build(ctx);
+    assertTrue(
+        prompt.contains(
+            "exactly 0 matches (1 total; 1 pre-determined match slot(s) are booked"
+                + " automatically)"));
+  }
+
+  @Test
+  void build_beatSections_notInPrompt() {
+    // Beat instructions are the deterministic pass's job — the prompt carries neither the beat
+    // lines nor the "include these exactly" preamble.
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 1);
+    ctx.setUpcomingScriptedBeats(List.of(beatDto("Singles Match")));
+    String prompt = builder.build(ctx);
+    assertFalse(prompt.contains("Pre-Scripted Match Slots"));
+    assertFalse(prompt.contains("booker-mandated"));
+    assertFalse(prompt.contains("Lashley Arc"));
+  }
+
+  /** Tournament slot preview with either placeholder or real team names. */
+  private TournamentSlotPreviewDTO slot(
+      String tournamentName,
+      String shape,
+      String typeName,
+      String titleName,
+      List<String> flatTeams) {
+    TournamentSlotPreviewDTO dto = new TournamentSlotPreviewDTO();
+    dto.setTournamentName(tournamentName);
+    dto.setShape(shape);
+    dto.setTypeName(typeName);
+    dto.setTitleName(titleName);
+    if (flatTeams == null || flatTeams.size() < 2) {
+      dto.setTeams(List.of(List.of("Tournament bracket"), List.of("Tournament bracket")));
+    } else {
+      dto.setTeams(List.of(List.of(flatTeams.get(0)), List.of(flatTeams.get(1))));
+    }
+    return dto;
+  }
+
+  /** Scripted beat of the given segment type with no participants (type-only slot claim). */
+  private FeudScriptBeatDTO beatDto(String segmentType) {
+    FeudScriptBeatDTO dto = new FeudScriptBeatDTO();
+    dto.setBeatId(1L);
+    dto.setScriptName("Test Arc");
+    dto.setSegmentType(segmentType);
+    dto.setWinnerControl("AI_PICKS");
+    return dto;
   }
 }

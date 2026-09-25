@@ -65,10 +65,15 @@ public class AlignmentTrackComponent extends Div {
     trackContainer.getStyle().set("overflow", "visible");
     trackContainer.getStyle().set("box-sizing", "border-box");
 
-    // Multi-color gradient for bidirectional track
+    // Multi-color gradient for bidirectional track — 50pct tints of the error/success colors
+    // soften with the theme (full-strength red/green would overpower the muted spots), and the
+    // middle uses a contrast token so the neutral center reads on both light and dark themes.
     trackContainer
         .getStyle()
-        .set("background", "linear-gradient(to right, #ef9a9a 0%, #eeeeee 50%, #a5d6a7 100%)");
+        .set(
+            "background",
+            "linear-gradient(to right, var(--lumo-error-color-50pct) 0%,"
+                + " var(--lumo-contrast-10pct) 50%, var(--lumo-success-color-50pct) 100%)");
     trackContainer.getStyle().set("border-radius", "20px");
 
     // Heel Side (5 down to 1)
@@ -114,7 +119,7 @@ public class AlignmentTrackComponent extends Div {
     div.addClassNames(
         LumoUtility.Display.FLEX, LumoUtility.FlexDirection.COLUMN, LumoUtility.Gap.XSMALL);
     div.setWidth("50%");
-    div.getStyle().set("border-left", "3px solid #ef9a9a");
+    div.getStyle().set("border-left", "3px solid var(--lumo-error-color)");
     div.getStyle().set("padding-left", "10px");
   }
 
@@ -122,7 +127,7 @@ public class AlignmentTrackComponent extends Div {
     div.addClassNames(
         LumoUtility.Display.FLEX, LumoUtility.FlexDirection.COLUMN, LumoUtility.Gap.XSMALL);
     div.setWidth("50%");
-    div.getStyle().set("border-left", "3px solid #a5d6a7");
+    div.getStyle().set("border-left", "3px solid var(--lumo-success-color)");
     div.getStyle().set("padding-left", "10px");
   }
 
@@ -142,7 +147,7 @@ public class AlignmentTrackComponent extends Div {
     spot.getStyle().set("font-weight", "bold");
     spot.getStyle().set("font-size", "var(--lumo-font-size-xs, 0.75rem)");
 
-    spot.getStyle().set("border", "2px solid white");
+    spot.getStyle().set("border", "2px solid var(--lumo-base-color)");
     spot.setText(level == 0 ? "N" : String.valueOf(level));
 
     // Tooltip Info
@@ -167,7 +172,7 @@ public class AlignmentTrackComponent extends Div {
       }
       spot.getStyle().set("color", "var(--lumo-base-color)");
       spot.getStyle().set("transform", "scale(1.4)");
-      spot.getStyle().set("box-shadow", "0 0 15px rgba(0,0,0,0.3)");
+      spot.getStyle().set("box-shadow", "0 0 15px rgba(0,0,0,0.45)");
       spot.getStyle().set("z-index", "1");
     } else if (spotType == AlignmentType.HEEL) {
       spot.getStyle().set("background-color", "var(--lumo-error-color-10pct)");

@@ -41,6 +41,8 @@ public interface TitleRepository
 
   Optional<Title> findByName(String name);
 
+  List<Title> findByExpansionCodeOrderByNameAsc(String expansionCode);
+
   /** Case-insensitive name search for the title list view's search box. */
   Page<Title> findByNameContainingIgnoreCase(String searchTerm, Pageable pageable);
 

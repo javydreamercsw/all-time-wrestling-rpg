@@ -11,7 +11,7 @@
 
   <groupId>com.github.javydreamercsw</groupId>
   <artifactId>all-time-wrestling-rpg</artifactId>
-  <version>2.10.2</version>
+  <version>2.11.0-SNAPSHOT</version>
 
   <packaging>jar</packaging>
   <name>All Time Wrestling RPG</name>
@@ -81,7 +81,7 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-bom</artifactId>
-        <version>4.2.17.Final</version>
+        <version>4.2.18.Final</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -393,7 +393,7 @@
     <dependency>
       <groupId>org.apache.tomcat</groupId>
       <artifactId>tomcat-annotations-api</artifactId>
-      <version>11.0.25</version>
+      <version>11.0.26</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -454,19 +454,19 @@
     <dependency>
       <groupId>com.github.mvysny.kaributesting</groupId>
       <artifactId>karibu-testing-v10</artifactId>
-      <version>2.7.2</version>
+      <version>2.7.3</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.github.mvysny.kaributesting</groupId>
       <artifactId>karibu-testing-v10-spring</artifactId>
-      <version>2.7.2</version>
+      <version>2.7.3</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.github.mvysny.kaributesting</groupId>
       <artifactId>karibu-testing-v24</artifactId>
-      <version>2.7.2</version>
+      <version>2.7.3</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -674,6 +674,34 @@
 
   <build>
     <defaultGoal>spring-boot:run</defaultGoal>
+    <!--
+      Replicates the spring-boot-starter-parent resource config and adds banner.txt
+      to the filtered set: @project.version@ is substituted at build time so the
+      startup banner shows the version even when running exploded classes
+      (./mvnw, IDE) where the JAR manifest Implementation-Version doesn't exist.
+    -->
+    <resources>
+      <resource>
+        <filtering>true</filtering>
+        <directory>src/main/resources</directory>
+        <includes>
+          <include>**/application*.yml</include>
+          <include>**/application*.yaml</include>
+          <include>**/application*.properties</include>
+          <include>banner.txt</include>
+        </includes>
+      </resource>
+      <resource>
+        <filtering>false</filtering>
+        <directory>src/main/resources</directory>
+        <excludes>
+          <exclude>**/application*.yml</exclude>
+          <exclude>**/application*.yaml</exclude>
+          <exclude>**/application*.properties</exclude>
+          <exclude>banner.txt</exclude>
+        </excludes>
+      </resource>
+    </resources>
     <pluginManagement>
       <plugins>
         <plugin>
@@ -913,7 +941,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>versions-maven-plugin</artifactId>
-        <version>2.20.1</version>
+        <version>2.22.0</version>
       </plugin>
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
@@ -1170,7 +1198,7 @@
           <dependency>
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
-            <version>9.6.0</version>
+            <version>9.7.0</version>
           </dependency>
         </dependencies>
       </plugin>
@@ -1178,7 +1206,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
-        <version>3.6.3</version>
+        <version>3.6.4</version>
         <executions>
           <execution>
             <id>configure-git-hooks-path</id>
@@ -1254,7 +1282,7 @@
           <plugin>
             <groupId>org.graalvm.buildtools</groupId>
             <artifactId>native-maven-plugin</artifactId>
-            <version>1.1.11</version>
+            <version>1.1.13</version>
             <extensions>true</extensions>
             <configuration>
               <imageName>${project.artifactId}</imageName>
@@ -1398,7 +1426,7 @@
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>build-helper-maven-plugin</artifactId>
-            <version>3.6.1</version>
+            <version>3.6.2</version>
             <executions>
               <execution>
                 <id>sanitize-version</id>
