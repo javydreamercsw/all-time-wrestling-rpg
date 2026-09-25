@@ -218,6 +218,23 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
 
         """);
 
+    boolean hasUserFeedback =
+        (context.getDeterminedOutcome() != null
+                && context.getDeterminedOutcome().contains("User Feedback:"))
+            || (context.getInstructions() != null
+                && context.getInstructions().contains("User Feedback:"));
+    if (hasUserFeedback) {
+      prompt.append(
+          """
+          \n\nIMPORTANT - USER FEEDBACK: If the instructions or the 'determinedOutcome' contain a\
+           'User Feedback:' section, you MUST treat every event, spot, entrance, finish, and\
+           post-match detail described there as a mandatory story requirement. Weave ALL of them\
+           into the narration in the order described, starting with the first described event as\
+           the opening of the match. Where user feedback conflicts with 'Existing Description/Story\
+           Beats', the USER FEEDBACK takes precedence.\
+          """);
+    }
+
     log.debug("Generated AI Prompt: {}", prompt);
     return prompt.toString();
   }

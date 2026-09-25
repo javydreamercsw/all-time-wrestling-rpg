@@ -1314,7 +1314,9 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
               + " managers. Stick strictly to the All Time Wrestling roster provided.";
 
       if (feedback != null && !feedback.isBlank()) {
-        instructions += "\n\nPlease also incorporate this specific feedback: " + feedback;
+        // "User Feedback: " is the marker the narration prompt builder elevates as mandatory
+        // story requirements (see AbstractSegmentNarrationService.buildSegmentNarrationPrompt).
+        instructions += "\n\nUser Feedback: " + feedback;
       }
 
       if (segment.getNarration() != null && !segment.getNarration().isBlank()) {

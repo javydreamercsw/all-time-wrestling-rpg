@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.base.ai;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext;
@@ -89,5 +90,62 @@ class AbstractSegmentNarrationServiceTest {
     assertTrue(
         prompt.contains("IMPORTANT - EXISTING STORY BEATS"),
         "Prompt should contain instructions for existing story beats");
+  }
+
+  @Test
+  void testUserFeedbackInDeterminedOutcomeIsElevated() {
+    SegmentNarrationContext context = baseMatchContext();
+    context.setDeterminedOutcome(
+        "Bobby Lashley wins the segment.\n\n"
+            + "User Feedback: Kamala opened the match with a surprise Ugandan Splash. "
+            + "Bobby surprised him with a High Angle Spinebuster for the win!");
+
+    String prompt = service.buildSegmentNarrationPrompt(context);
+
+    assertTrue(
+        prompt.contains("IMPORTANT - USER FEEDBACK"),
+        "Prompt should elevate user feedback when determinedOutcome contains the marker");
+    assertTrue(
+        prompt.contains("USER FEEDBACK takes precedence"),
+        "Prompt should state user feedback precedence over story beats");
+  }
+
+  @Test
+  void testUserFeedbackInInstructionsIsElevated() {
+    SegmentNarrationContext context = baseMatchContext();
+    context.setInstructions(
+        "Narrate the match.\n\nUser Feedback: Kamala opens with a Ugandan Splash.");
+
+    String prompt = service.buildSegmentNarrationPrompt(context);
+
+    assertTrue(
+        prompt.contains("IMPORTANT - USER FEEDBACK"),
+        "Prompt should elevate user feedback when instructions contain the marker");
+  }
+
+  @Test
+  void testNoUserFeedbackSkipsElevation() {
+    SegmentNarrationContext context = baseMatchContext();
+    context.setDeterminedOutcome("Bobby Lashley wins the segment.");
+    context.setInstructions("Narrate the match.");
+
+    String prompt = service.buildSegmentNarrationPrompt(context);
+
+    assertFalse(
+        prompt.contains("IMPORTANT - USER FEEDBACK"),
+        "Prompt should not mention user feedback when no feedback marker exists");
+  }
+
+  private SegmentNarrationContext baseMatchContext() {
+    SegmentNarrationContext context = new SegmentNarrationContext();
+    SegmentTypeContext type = new SegmentTypeContext();
+    type.setSegmentType("Match");
+    context.setSegmentType(type);
+
+    WrestlerContext w1 = new WrestlerContext();
+    w1.setName("Bobby Lashley");
+    context.setWrestlers(List.of(w1));
+
+    return context;
   }
 }
