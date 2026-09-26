@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.tournament;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -502,11 +503,25 @@ public class TournamentListView extends VerticalLayout {
     rulesPicker.setHelperText(
         "Rules randomly applied to matches. A fixed rule can be set per round later.");
 
+    ComboBox<Gender> genderCombo = new ComboBox<>("Gender Filter (optional)");
+    genderCombo.setItems(Gender.values());
+    genderCombo.setItemLabelGenerator(
+        g ->
+            switch (g) {
+              case MALE -> "Men's division";
+              case FEMALE -> "Women's division";
+            });
+    genderCombo.setWidthFull();
+    genderCombo.setClearButtonVisible(true);
+    genderCombo.setHelperText(
+        "Restricts entrants to one gender. The linked championship's own constraint also applies.");
+
     VerticalLayout tab1Content =
         new VerticalLayout(
             nameField,
             formatCombo,
             titleCombo,
+            genderCombo,
             hostShowCombo,
             payoffTypeCombo,
             payoffRuleCombo,
@@ -579,7 +594,9 @@ public class TournamentListView extends VerticalLayout {
     // gender constraint) — the format's 64 max means nothing to a 12-wrestler universe.
     Runnable refreshEntrantCap =
         () -> {
-          int eligible = tournamentService.countEligibleEntrants(titleCombo.getValue());
+          int eligible =
+              tournamentService.countEligibleEntrants(
+                  titleCombo.getValue(), genderCombo.getValue());
           int cap = Math.clamp(eligible, 3, 64);
           countField.setMax(cap);
           if (countField.getValue() == null || countField.getValue() > cap) {
@@ -587,6 +604,7 @@ public class TournamentListView extends VerticalLayout {
           }
         };
     titleCombo.addValueChangeListener(e -> refreshEntrantCap.run());
+    genderCombo.addValueChangeListener(e -> refreshEntrantCap.run());
     refreshEntrantCap.run();
 
     MultiSelectComboBox<Wrestler> wrestlerPicker = new MultiSelectComboBox<>("Select Wrestlers");
@@ -621,6 +639,7 @@ public class TournamentListView extends VerticalLayout {
               new ArrayList<>(
                   tournamentService.findEligibleWrestlersSortedByFans(
                       titleCombo.getValue(),
+                      genderCombo.getValue(),
                       universeContextService.getCurrentUniverse().map(Universe::getId).orElse(1L)));
           int take = Math.min(entrants, pool.size());
           StringBuilder sb = new StringBuilder();
@@ -637,6 +656,7 @@ public class TournamentListView extends VerticalLayout {
         };
     countField.addValueChangeListener(e -> refreshMatchups.run());
     titleCombo.addValueChangeListener(e -> refreshMatchups.run());
+    genderCombo.addValueChangeListener(e -> refreshMatchups.run());
     seedingMode.addValueChangeListener(e -> refreshMatchups.run());
 
     VerticalLayout tab2Content =
@@ -698,7 +718,8 @@ public class TournamentListView extends VerticalLayout {
                         new ArrayList<>(rulesPicker.getSelectedItems()),
                         hostShowCombo.getValue(),
                         payoffTypeCombo.getValue(),
-                        payoffRuleCombo.getValue());
+                        payoffRuleCombo.getValue(),
+                        genderCombo.getValue());
                 t.setRecurrence(recurrenceCombo.getValue());
                 t.setQualifierGroupSize(groupSizeField.getValue());
                 tournamentService.save(t);

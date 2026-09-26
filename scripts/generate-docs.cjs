@@ -222,6 +222,21 @@ Array.from(allCategories).sort().forEach(category => {
   console.log(`Generated: ${filePath}`);
 });
 
+// Hand-written tutorial pages (task-ordered walkthroughs maintained in the repo,
+// ATW-scty/ATW-aqwr/ATW-rwoz). generate-docs.cjs regenerates sidebar.json from the
+// feature manifest on every docs run — without this list, each regen dropped the
+// hand-written Tutorial entries (v2.10.0 wiped admin-getting-started and
+// book-your-first-show from the nav). Keep in sync with docs/site/guide/.
+const HAND_WRITTEN_TUTORIALS = [
+  { text: 'Admin Getting Started', link: '/guide/admin-getting-started' },
+  { text: 'Schedule a Show', link: '/guide/schedule-a-show' },
+  { text: 'Configure AI Providers', link: '/guide/configure-ai-providers' },
+  { text: 'Configure Tournaments', link: '/guide/configure-tournaments' },
+  { text: 'Set a Player-Controlled Wrestler', link: '/guide/set-player-controlled-wrestler' },
+  { text: 'Report Match Results', link: '/guide/report-match-results' },
+  { text: 'Book Your First Show', link: '/guide/book-your-first-show' },
+];
+
 // 4. Generate Sidebar for VitePress
 console.log('Generating dynamic sidebar...');
 const sidebar = [];
@@ -235,6 +250,15 @@ Array.from(allCategories).sort().forEach(category => {
     ]
   });
 });
+
+// Append the hand-written tutorial walkthroughs to the manifest's Tutorial section
+// (create it if a fresh manifest has no Tutorial category at all).
+let tutorialSection = sidebar.find(s => s.text === 'Tutorial');
+if (!tutorialSection) {
+  tutorialSection = { text: 'Tutorial', collapsed: false, items: [] };
+  sidebar.push(tutorialSection);
+}
+tutorialSection.items.push(...HAND_WRITTEN_TUTORIALS);
 
 fs.writeFileSync(
   path.join(rootDir, 'docs', 'site', '.vitepress', 'sidebar.json'),

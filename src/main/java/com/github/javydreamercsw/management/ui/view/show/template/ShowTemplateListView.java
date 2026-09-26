@@ -938,7 +938,7 @@ public class ShowTemplateListView extends Main {
     }
     assignmentSpecEntrantCount.setMin(format.getMinEntrants());
     assignmentSpecEntrantCount.setMax(
-        Math.min(format.getMaxEntrants(), tournamentService.countEligibleEntrants(null)));
+        Math.min(format.getMaxEntrants(), tournamentService.countEligibleEntrants(null, null)));
   }
 
   /** Copy the spec fields into a new assignment row (only valid when the name is set). */

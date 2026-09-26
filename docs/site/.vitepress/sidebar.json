@@ -136,6 +136,34 @@
       {
         "text": "Overview",
         "link": "/guide/tutorial"
+      },
+      {
+        "text": "Admin Getting Started",
+        "link": "/guide/admin-getting-started"
+      },
+      {
+        "text": "Schedule a Show",
+        "link": "/guide/schedule-a-show"
+      },
+      {
+        "text": "Configure AI Providers",
+        "link": "/guide/configure-ai-providers"
+      },
+      {
+        "text": "Configure Tournaments",
+        "link": "/guide/configure-tournaments"
+      },
+      {
+        "text": "Set a Player-Controlled Wrestler",
+        "link": "/guide/set-player-controlled-wrestler"
+      },
+      {
+        "text": "Report Match Results",
+        "link": "/guide/report-match-results"
+      },
+      {
+        "text": "Book Your First Show",
+        "link": "/guide/book-your-first-show"
       }
     ]
   },

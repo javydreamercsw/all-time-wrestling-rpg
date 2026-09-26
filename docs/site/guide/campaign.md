@@ -77,8 +77,6 @@ Two categories are available:
 
 ![Card Export](/screenshots/campaign-card-export.png)
 
-![Custom Content Card Export](/screenshots/campaign-card-export-custom-content.png)
-
 > Promos are a live AI experience rather than fixed card content — the printable part is the segment type/rule reference, which is exported above.
 
 ---

@@ -215,13 +215,14 @@ public class TournamentService {
       LocalDate startDate,
       List<SegmentRule> allowedRules) {
     return createTournament(
-        name, formatId, universe, linkedTitle, startDate, allowedRules, null, null, null);
+        name, formatId, universe, linkedTitle, startDate, allowedRules, null, null, null, null);
   }
 
   /**
    * Create with the one-time host-show binding (ATW-xbn4): the payoff books on {@code payoffShow}
    * exactly once and rounds pace automatically onto the weekly shows before it. A null payoffShow
-   * creates a free-running (or recurring template-paired) tournament.
+   * creates a free-running (or recurring template-paired) tournament. The optional gender filter
+   * narrows the eligible entrant pool on top of the linked title's own constraint.
    */
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
@@ -235,6 +236,33 @@ public class TournamentService {
       Show payoffShow,
       SegmentType payoffSegmentType,
       SegmentRule payoffSegmentRule) {
+    return createTournament(
+        name,
+        formatId,
+        universe,
+        linkedTitle,
+        startDate,
+        allowedRules,
+        payoffShow,
+        payoffSegmentType,
+        payoffSegmentRule,
+        null);
+  }
+
+  /** Full overload including the optional entrant gender filter. */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public Tournament createTournament(
+      String name,
+      String formatId,
+      Universe universe,
+      Title linkedTitle,
+      LocalDate startDate,
+      List<SegmentRule> allowedRules,
+      Show payoffShow,
+      SegmentType payoffSegmentType,
+      SegmentRule payoffSegmentRule,
+      Gender gender) {
     validatePayoffShow(universe, payoffShow);
     findFormat(formatId)
         .orElseThrow(() -> new IllegalArgumentException("Unknown format: " + formatId));
@@ -246,6 +274,7 @@ public class TournamentService {
     t.setPayoffShow(payoffShow);
     t.setPayoffSegmentType(payoffSegmentType);
     t.setPayoffSegmentRule(payoffSegmentRule);
+    t.setGender(gender);
     t.setStartDate(startDate);
     t.setStatus(TournamentStatus.SCHEDULED);
     t.setEntries(new ArrayList<>());
@@ -282,6 +311,7 @@ public class TournamentService {
     next.setFormatId(completed.getFormatId());
     next.setUniverse(completed.getUniverse());
     next.setLinkedTitle(completed.getLinkedTitle());
+    next.setGender(completed.getGender());
     next.setDefaultEntrantCount(completed.getDefaultEntrantCount());
     next.setQualifierGroupSize(completed.getQualifierGroupSize());
     next.setParent(completed);
@@ -525,7 +555,8 @@ public class TournamentService {
         findFormat(tournament.getFormatId())
             .orElseThrow(() -> new IllegalStateException("Format not found"));
     List<Wrestler> pool =
-        findEligibleWrestlersSortedByFans(tournament.getLinkedTitle(), universeId);
+        findEligibleWrestlersSortedByFans(
+            tournament.getLinkedTitle(), tournament.getGender(), universeId);
     if (pool.size() < fmt.getMinEntrants()) {
       throw new IllegalStateException(
           "Not enough eligible wrestlers to seed '"
@@ -534,7 +565,7 @@ public class TournamentService {
               + pool.size()
               + " available, the format needs at least "
               + fmt.getMinEntrants()
-              + eligibilityNote(tournament.getLinkedTitle()));
+              + eligibilityNote(tournament.getLinkedTitle(), tournament.getGender()));
     }
     int effective = Math.min(count, pool.size());
     if (effective < count) {
@@ -550,25 +581,31 @@ public class TournamentService {
     return seedWith(tournament, active);
   }
 
-  /** Human-readable note appended to eligibility errors when a title narrowed the pool. */
-  private String eligibilityNote(Title linkedTitle) {
-    if (linkedTitle == null) {
+  /** Human-readable note appended to eligibility errors when a constraint narrowed the pool. */
+  private String eligibilityNote(Title linkedTitle, Gender gender) {
+    if (linkedTitle == null && gender == null) {
       return "";
     }
-    return " (eligibility limited by the linked championship's gender constraint and current"
-        + " champion)";
+    StringBuilder note = new StringBuilder(" (eligibility limited");
+    if (linkedTitle != null) {
+      note.append(" by the linked championship's gender constraint and current champion");
+    }
+    if (gender != null) {
+      note.append(linkedTitle != null ? "," : " by").append(" the tournament gender filter");
+    }
+    return note.append(")").toString();
   }
 
   /**
-   * How many active wrestlers are eligible to seed a tournament linked to the given title — the
-   * active roster, narrowed by the title's gender constraint and minus the current champion(s) (see
-   * {@link #findEligibleWrestlersSortedByFans}). The creation wizard caps its entrant-count field
-   * at this value.
+   * How many active wrestlers are eligible to seed a tournament with the given linked title and
+   * gender filter — the active roster, narrowed by both gender constraints and minus the current
+   * champion(s) (see {@link #findEligibleWrestlersSortedByFans}). The creation wizard caps its
+   * entrant-count field at this value.
    */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public int countEligibleEntrants(Title linkedTitle) {
-    return findEligibleWrestlersSortedByFans(linkedTitle, null).size();
+  public int countEligibleEntrants(Title linkedTitle, Gender gender) {
+    return findEligibleWrestlersSortedByFans(linkedTitle, gender, null).size();
   }
 
   /**
@@ -601,20 +638,23 @@ public class TournamentService {
   }
 
   /**
-   * The active wrestlers eligible to seed a tournament linked to the given title, sorted by fans
-   * (most fans first) — the same pool {@link #seedAuto} uses. Eligibility: active, narrowed by the
-   * title's gender constraint when it has one, and (title-linked tournaments) the current
-   * champion(s) are excluded — they hold the belt the tournament awards, so they cannot win it from
-   * themselves. Transactional so detached UI callers can read fan counts (they walk the lazy
-   * wrestlerStates collection) and render the seeding preview without LazyInitializationException.
+   * The active wrestlers eligible to seed a tournament with the given linked title and gender
+   * filter, sorted by fans (most fans first) — the same pool {@link #seedAuto} uses. Eligibility:
+   * active, narrowed by the title's gender constraint and the tournament's own gender filter when
+   * either is set, and (title-linked tournaments) the current champion(s) are excluded — they hold
+   * the belt the tournament awards, so they cannot win it from themselves. Transactional so
+   * detached UI callers can read fan counts (they walk the lazy wrestlerStates collection) and
+   * render the seeding preview without LazyInitializationException.
    */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public List<Wrestler> findEligibleWrestlersSortedByFans(Title linkedTitle, Long universeId) {
-    Gender genderConstraint = linkedTitle != null ? linkedTitle.getGender() : null;
+  public List<Wrestler> findEligibleWrestlersSortedByFans(
+      Title linkedTitle, Gender gender, Long universeId) {
+    Gender effectiveGender =
+        gender != null ? gender : linkedTitle != null ? linkedTitle.getGender() : null;
     List<Wrestler> pool =
-        (genderConstraint != null
-                ? wrestlerRepository.findAllByGenderAndActive(genderConstraint, true)
+        (effectiveGender != null
+                ? wrestlerRepository.findAllByGenderAndActive(effectiveGender, true)
                 : wrestlerRepository.findAllByActiveTrue())
             .stream()
                 .sorted(Comparator.comparingLong((Wrestler w) -> w.getFans(universeId)).reversed())

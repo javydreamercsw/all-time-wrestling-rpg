@@ -234,6 +234,59 @@ class BracketTournamentServiceTest {
   }
 
   @Test
+  void seedAuto_genderFilter_narrowsEligiblePool() {
+    // The tournament's own gender filter narrows the pool on top of the title constraint —
+    // a women's tournament must not seed male wrestlers even when no title is linked.
+    tournament.setGender(Gender.FEMALE);
+
+    Wrestler m1 = wrestler(1L, "M1", Gender.MALE, 900L);
+    Wrestler m2 = wrestler(2L, "M2", Gender.MALE, 800L);
+    Wrestler m3 = wrestler(3L, "M3", Gender.MALE, 700L);
+    Wrestler m4 = wrestler(4L, "M4", Gender.MALE, 600L);
+    Wrestler f1 = wrestler(5L, "F1", Gender.FEMALE, 500L);
+    Wrestler f2 = wrestler(6L, "F2", Gender.FEMALE, 400L);
+    Wrestler f3 = wrestler(7L, "F3", Gender.FEMALE, 300L);
+    Wrestler f4 = wrestler(8L, "F4", Gender.FEMALE, 200L);
+    when(wrestlerRepository.findAllByGenderAndActive(Gender.FEMALE, true))
+        .thenReturn(List.of(f1, f2, f3, f4));
+
+    List<TournamentEntry> entries = tournamentService.seedAuto(tournament, 4, 1L);
+
+    assertThat(entries).hasSize(4);
+    assertThat(entries.stream().map(e -> e.getWrestler().getName()))
+        .as("the gender filter excludes the higher-fan male wrestlers")
+        .containsExactly("F1", "F2", "F3", "F4");
+    verify(wrestlerRepository, never()).findAllByActiveTrue();
+  }
+
+  @Test
+  void seedAuto_titleGenderConstraintAndTournamentFilter_intersect() {
+    // Both constraints apply — the tournament filter cannot widen a title's constraint,
+    // and the title's constraint cannot survive a narrower tournament filter.
+    Title womensTitle = new Title();
+    womensTitle.setId(7L);
+    womensTitle.setName("ATW Women's");
+    womensTitle.setGender(Gender.FEMALE);
+    tournament.setLinkedTitle(womensTitle);
+    tournament.setGender(Gender.FEMALE);
+
+    Wrestler f1 = wrestler(1L, "F1", Gender.FEMALE, 500L);
+    Wrestler f2 = wrestler(2L, "F2", Gender.FEMALE, 400L);
+    Wrestler f3 = wrestler(3L, "F3", Gender.FEMALE, 300L);
+    Wrestler f4 = wrestler(4L, "F4", Gender.FEMALE, 200L);
+    when(wrestlerRepository.findAllByGenderAndActive(Gender.FEMALE, true))
+        .thenReturn(List.of(f1, f2, f3, f4));
+    when(titleReignRepository.findByTitleIdAndEndDateIsNull(7L)).thenReturn(List.of());
+
+    List<TournamentEntry> entries = tournamentService.seedAuto(tournament, 4, 1L);
+
+    assertThat(entries).hasSize(4);
+    assertThat(entries.stream().map(e -> e.getWrestler().getName()))
+        .containsExactly("F1", "F2", "F3", "F4");
+    verify(wrestlerRepository, never()).findAllByActiveTrue();
+  }
+
+  @Test
   void reorderSeeds_reordersAndPersistsNewSeedOrder() {
     Wrestler a = wrestler(1L, "A", Gender.MALE, 800L);
     Wrestler b = wrestler(2L, "B", Gender.MALE, 700L);
