@@ -66,20 +66,11 @@ You don't belong here — but you're going in anyway. Any wrestler can step into
 
 ---
 
-## Card Export
+## Campaign Card Export
 
-Admins can print physical cards directly from the browser. Cards are rendered at standard poker size (63.5 × 88.9 mm) and laid out ready to print on A4 paper — no external tools required.
+Admins can print physical encounter cards for any campaign chapter directly from the browser. Cards are rendered at standard poker size (63.5 × 88.9 mm) and laid out ready to print on A4 paper — no external tools required.
 
-Two categories are available:
-
-- **Campaign Chapters** — encounter cards for any campaign chapter, including the chapter cover card.
-- **Custom Content** — everything tagged with the CUSTOM expansion: your custom segment types, segment rules, NPCs, and championship titles. Content created through the admin forms (segment type/rule dialogs, NPC dialog, title dialog) is stamped CUSTOM automatically. Custom content prints regardless of whether the CUSTOM expansion is toggled on in game settings — it is an export of your own creations. Segment-rule cards carry No DQ / High Heat / bumps badges and the solo/multiplayer play-guide overview; NPC and title cards include their images when set.
-
-![Card Export](/screenshots/campaign-card-export.png)
-
-![Custom Content Card Export](/screenshots/campaign-card-export-custom-content.png)
-
-> Promos are a live AI experience rather than fixed card content — the printable part is the segment type/rule reference, which is exported above.
+![Campaign Card Export](/screenshots/campaign-card-export.png)
 
 ---
 

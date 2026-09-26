@@ -939,12 +939,5 @@
     "description": "Every saved arc lives on the rivalry detail as a card with a status badge (Active, Completed, Cancelled). The beat grid lists each beat in order — match type, stipulation, external participants, winner control, blowoff marker and status. Pending beats can be edited or removed and renumber automatically; the arc itself can be renamed, extended with more beats, or cancelled before its culmination.",
     "imagePath": "screenshots/booker-story-arc-card.png",
     "order": 0
-  }, {
-    "id": "game-mechanics-mechanic-tournament-bracket",
-    "category": "Game Mechanics",
-    "title": "Tournament Bracket",
-    "description": "The full projected 4-round bracket (Round 1 through Quarter-Final, Semi-Final and Final): connector lines between rounds, decided winners advancing (replacing 'Winner of Match N' placeholders), losers struck through, and Fit/100% zoom controls.",
-    "imagePath": "screenshots/mechanic-tournament-bracket.png",
-    "order": 0
   } ]
 }
