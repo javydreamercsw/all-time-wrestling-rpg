@@ -448,14 +448,10 @@ public class InjuryService {
       penalty = wrestler.getAlignment().getCampaign().getState().getHealthPenalty();
     }
 
-    int conditionPenalty = Math.min(5, (100 - state.getPhysicalCondition()) / 5);
     int effectiveHealth =
-        wrestler.getStartingHealth()
-            + bonus
-            - penalty
-            - state.getBumps()
-            - totalHealthPenalty
-            - conditionPenalty;
+        wrestler.getStartingHealth() + bonus - penalty - state.getBumps() - totalHealthPenalty;
+    // No condition/wear-and-tear HP penalty by design (ATW-xz4): low condition manifests as a
+    // per-match wear-and-tear bump roll instead (≤75% condition), and bumps are what reduce HP.
     effectiveHealth = Math.max(1, effectiveHealth);
 
     return new InjuryStats(

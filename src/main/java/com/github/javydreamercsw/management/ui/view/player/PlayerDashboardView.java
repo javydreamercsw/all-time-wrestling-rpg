@@ -653,18 +653,9 @@ public class PlayerDashboardView extends VerticalLayout {
     if (bumps > 0) {
       hpTooltip.append("\nBump Penalty: -").append(bumps);
     }
-    int conditionPenalty =
-        Math.min(
-            5,
-            (100
-                    - playerWrestler
-                        .getDefaultState()
-                        .map(WrestlerState::getPhysicalCondition)
-                        .orElse(100))
-                / 5);
-    if (conditionPenalty > 0) {
-      hpTooltip.append("\nWear & Tear Penalty: -").append(conditionPenalty);
-    }
+    // No condition/wear-and-tear HP penalty here by design (ATW-xz4): low condition manifests as a
+    // per-match wear-and-tear bump roll instead (≤75% condition), and bumps are what reduce HP.
+
     int injuryPenalty =
         playerWrestler.getDefaultState().map(WrestlerState::getTotalInjuryPenalty).orElse(0);
     if (injuryPenalty > 0) {
