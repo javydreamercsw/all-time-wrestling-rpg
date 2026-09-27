@@ -359,7 +359,9 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
     picker.setItems(
         tournamentService
             .findEligibleWrestlersSortedByFans(
-                tournament.getLinkedTitle(), universeContextService.getCurrentUniverseId())
+                tournament.getLinkedTitle(),
+                tournament.getGender(),
+                universeContextService.getCurrentUniverseId())
             .stream()
             .filter(w -> !enteredIds.contains(w.getId()))
             .toList());

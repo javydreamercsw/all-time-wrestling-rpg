@@ -1,0 +1,1 @@
+var e=`/screenshots/league-draft-room.png`;export{e as t};

@@ -394,7 +394,7 @@ public class TournamentTemplateBookingService {
     int requested = requestedBoxed;
     int eligible =
         tournamentService
-            .findEligibleWrestlersSortedByFans(assignment.getSpecTitle(), universeId(show))
+            .findEligibleWrestlersSortedByFans(assignment.getSpecTitle(), null, universeId(show))
             .size();
     if (eligible < requested) {
       log.warn(
@@ -1447,7 +1447,8 @@ public class TournamentTemplateBookingService {
     if (!tournamentService.hasEntries(tournament.getId())) {
       int eligible =
           tournamentService
-              .findEligibleWrestlersSortedByFans(tournament.getLinkedTitle(), universeId(show))
+              .findEligibleWrestlersSortedByFans(
+                  tournament.getLinkedTitle(), tournament.getGender(), universeId(show))
               .size();
       // A STRICT plan (spec count / catalog preset) requires eligibility to cover it — a preset
       // asking for 8 gets 8, or nothing; a smaller bracket would quietly rewrite the booker's

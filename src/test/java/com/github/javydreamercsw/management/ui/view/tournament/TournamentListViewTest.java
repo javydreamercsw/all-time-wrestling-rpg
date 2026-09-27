@@ -141,9 +141,9 @@ class TournamentListViewTest extends AbstractViewTest {
     lenient().when(securityUtils.canDelete()).thenReturn(true);
     lenient().when(tournamentService.findAll()).thenReturn(List.of(tournament()));
     lenient().when(tournamentService.countEntries(any(Tournament.class))).thenReturn(8L);
-    lenient().when(tournamentService.countEligibleEntrants(any())).thenReturn(20);
+    lenient().when(tournamentService.countEligibleEntrants(any(), any())).thenReturn(20);
     lenient()
-        .when(tournamentService.findEligibleWrestlersSortedByFans(any(), anyLong()))
+        .when(tournamentService.findEligibleWrestlersSortedByFans(any(), any(), anyLong()))
         .thenReturn(List.of());
     lenient()
         .when(tournamentService.findByIdWithDetails(anyLong()))
@@ -151,7 +151,7 @@ class TournamentListViewTest extends AbstractViewTest {
     lenient()
         .when(
             tournamentService.createTournament(
-                any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
         .thenAnswer(
             inv -> {
               Tournament t = tournament();
@@ -241,6 +241,7 @@ class TournamentListViewTest extends AbstractViewTest {
         .createTournament(
             eq("Fed Cup"),
             eq("SINGLE_ELIMINATION"),
+            any(),
             any(),
             any(),
             any(),
@@ -433,6 +434,7 @@ class TournamentListViewTest extends AbstractViewTest {
             any(),
             eq(upcomingShow),
             eq(this.payoffType),
+            any(),
             any());
   }
 

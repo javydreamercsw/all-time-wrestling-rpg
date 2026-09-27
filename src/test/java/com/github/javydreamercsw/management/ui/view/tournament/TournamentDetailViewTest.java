@@ -131,7 +131,7 @@ class TournamentDetailViewTest extends AbstractViewTest {
     tournament.setRounds(new ArrayList<>());
 
     lenient()
-        .when(tournamentService.findEligibleWrestlersSortedByFans(any(), anyLong()))
+        .when(tournamentService.findEligibleWrestlersSortedByFans(any(), any(), anyLong()))
         .thenReturn(List.of(alpha, bravo, charlie, delta, echo));
     // findByIdWithDetails copies the refreshed graph onto the fixture's instance (detached-safe
     // refresh path used by the view after each seeding edit).

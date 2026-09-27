@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.domain.tournament;
 
 import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
@@ -76,6 +77,14 @@ public class Tournament extends AbstractEntity<Long> {
    */
   @Column(name = "default_entrant_count")
   @Nullable private Integer defaultEntrantCount;
+
+  /**
+   * Optional gender restriction for entrants — narrows the eligible pool in the creation wizard and
+   * auto-seeding on top of the linked title's own gender constraint. Null = all genders.
+   */
+  @Column(name = "gender")
+  @Enumerated(EnumType.STRING)
+  @Nullable private Gender gender;
 
   /**
    * QUALIFIER_GROUPS only: wrestlers per qualifier group (the Free-for-All qualifiers feeding the
