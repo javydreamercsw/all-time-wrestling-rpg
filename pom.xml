@@ -561,7 +561,7 @@
     <dependency>
       <groupId>io.github.bonigarcia</groupId>
       <artifactId>webdrivermanager</artifactId>
-      <version>6.3.4</version>
+      <version>6.4.0</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -1282,7 +1282,7 @@
           <plugin>
             <groupId>org.graalvm.buildtools</groupId>
             <artifactId>native-maven-plugin</artifactId>
-            <version>1.1.13</version>
+            <version>1.1.14</version>
             <extensions>true</extensions>
             <configuration>
               <imageName>${project.artifactId}</imageName>
