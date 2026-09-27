@@ -1,5 +1,7 @@
 # Manage Rivalries
 
+> **Who this is for:** BOOKER or ADMIN — creating rivalries and steering feuds. Rivalry heat itself builds automatically from match results, no role needed.
+
 A booker's guide to rivalries — the feuds that give your shows a reason to exist. Rivalries build heat as wrestlers cross paths, force themselves onto your cards, and resolve in big matches.
 
 **How heat works** (the ATW RPG rules, applied automatically):

@@ -1,5 +1,7 @@
 # Admin Getting Started
 
+> **Who this is for:** ADMIN — AI keys, game settings, and expansion management are all admin-gated.
+
 A step-by-step setup guide for admins: enable AI narration with an API key, and choose which content sets (expansions) your promotion uses. Ten minutes from first login to a working promotion.
 
 **You need:** the ADMIN role (the initial install ships an `admin` account — change its password first under your user menu) and a web browser.

@@ -1,5 +1,7 @@
 # Manage Universes
 
+> **Who this is for:** ADMIN only — creating universes, generating invites, and approving join requests are admin-gated. Members of a universe just switch between the ones they belong to via the sidebar selector.
+
 An admin's guide to universes — isolated continuity containers for your promotions. Every show, wrestler state, rivalry, and title reign belongs to one universe, so you can run parallel timelines ("what if the Attitude Era never ended?"), separate campaigns per friend group, or a global roster plus private test beds without data bleeding between them.
 
 ---

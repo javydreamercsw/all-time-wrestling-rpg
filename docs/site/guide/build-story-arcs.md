@@ -1,5 +1,7 @@
 # Build Story Arcs
 
+> **Who this is for:** BOOKER or ADMIN — creating arcs and planning beats. Anyone can read the arcs; only bookers write them.
+
 A booker's guide to story arcs — scripted, multi-show feuds with a planned beginning, middle, and blowoff. Where [rivalries](./manage-rivalries) track _heat_, story arcs are the _script_: beats you plan in advance and book onto shows in order.
 
 ---

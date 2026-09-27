@@ -1,5 +1,7 @@
 # Configure Tournaments
 
+> **Who this is for:** BOOKER or ADMIN — creating, seeding, and starting tournaments. Players and viewers can watch brackets fill in, but the wizard is booker-gated.
+
 A booker's guide to tournaments — one-shot brackets that crown a contender or a champion, and annual editions that run themselves year after year.
 
 **Two kinds of tournament:**

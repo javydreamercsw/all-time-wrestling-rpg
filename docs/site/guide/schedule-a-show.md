@@ -1,6 +1,8 @@
 # Schedule a Show
 
-A booker's guide to putting a show on the calendar and building its card — from an empty date to a card ready to run. Written for anyone holding the BOOKER role (admins can do all of this too).
+> **Who this is for:** BOOKER or ADMIN. Players and viewers can watch shows run, but only bookers put them on the calendar.
+
+A booker's guide to putting a show on the calendar and building its card — from an empty date to a card ready to run.
 
 **Before you start:** you need at least one show type and one arena set up by your admin. If those are missing, see [Admin Getting Started](./admin-getting-started).
 

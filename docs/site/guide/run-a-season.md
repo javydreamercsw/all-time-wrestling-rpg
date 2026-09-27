@@ -1,5 +1,7 @@
 # Run a Season
 
+> **Who this is for:** BOOKER or ADMIN for creating seasons and booking their shows; ADMIN only for the Season Settings screen (schedule generation, boundaries, fan recalibration).
+
 A booker's guide to seasons — the yearly frame that groups shows, awards, and wrestler histories into chapters you can look back on.
 
 **What a season gives you:** a container for your promotion's year (its shows, its champions, its milestones), per-wrestler season histories for the record books, and an auto-generated show schedule so the calendar fills itself.

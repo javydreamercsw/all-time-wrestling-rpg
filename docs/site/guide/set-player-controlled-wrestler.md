@@ -1,5 +1,7 @@
 # Set a Player-Controlled Wrestler
 
+> **Who this is for:** BOOKER or ADMIN — only bookers and admins see the Is Player flag and Player Account picker in the wrestler dialog.
+
 An admin or booker's guide to handing a wrestler to a player. A wrestler flagged as **player-controlled** belongs to a real account: that player makes their wrestler's campaign choices, books their league matches, and gets personal notifications — instead of the AI running them as an NPC.
 
 ---

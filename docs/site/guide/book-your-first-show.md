@@ -1,6 +1,8 @@
 # Book Your First Show
 
-A first-time booker's walkthrough: from an empty calendar to a completed show with results. Written for anyone holding the BOOKER role (admins can do all of this too).
+> **Who this is for:** BOOKER or ADMIN. Players and viewers can watch shows run, but only bookers build and run the card.
+
+A first-time booker's walkthrough: from an empty calendar to a completed show with results.
 
 **Before you start:** your admin must have set up the promotion — wrestlers on the roster, at least one arena, and (for AI narration) a working AI provider. See [Admin Getting Started](./admin-getting-started) if anything is missing.
 

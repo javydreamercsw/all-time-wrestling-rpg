@@ -1,5 +1,7 @@
 # Report Match Results
 
+> **Who this is for:** PLAYER — the account whose wrestler is in the booked match. Bookers and admins book the matches; the players involved report them.
+
 A player's guide to reporting the results of matches booked for your wrestler — the heartbeat of league play. When a league match featuring your wrestler is booked, you get an inbox notification asking you to report who won.
 
 **Who this is for:** players with a [player-controlled wrestler](./set-player-controlled-wrestler) whose match is up. Booker-run shows don't need this — the show adjudication decides those.

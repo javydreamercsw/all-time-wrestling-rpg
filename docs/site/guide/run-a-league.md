@@ -1,5 +1,7 @@
 # Run a League (Commissioner's Guide)
 
+> **Who this is for:** Creating a league needs BOOKER or ADMIN; after that, the **commissioner** (whoever created it — any role with that button) runs it. Players who only draft and report results just need [Report Match Results](./report-match-results).
+
 A commissioner's guide to leagues — the multiplayer mode where players draft wrestlers and compete on shared shows. Written for the player who _creates_ the league; players who join only need [Report Match Results](./report-match-results).
 
 **The commissioner's arc:** create the league → invite players → run the snake draft → book and settle matches → hand out the crown.

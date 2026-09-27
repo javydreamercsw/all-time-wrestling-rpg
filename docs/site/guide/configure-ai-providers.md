@@ -1,5 +1,7 @@
 # Configure AI Providers
 
+> **Who this is for:** ADMIN only — the AI Settings screen is admin-gated.
+
 An admin's guide to turning on AI narration — the feature that generates live commentary for every segment your promotion runs. Requires the ADMIN role.
 
 **What AI narration does:** when a show runs, each segment gets play-by-play commentary, wrestler promos get voice, and show recaps are written for you. Without a provider, shows still run — you just don't get the narration.

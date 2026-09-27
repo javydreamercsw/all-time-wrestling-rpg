@@ -1,5 +1,7 @@
 # Grow a Wrestler
 
+> **Who this is for:** BOOKER or ADMIN for the booking side (matches, title runs, contracts); PLAYER for the backstage actions of a player-controlled wrestler. Wear & tear, injuries, and fan gains apply to every wrestler automatically.
+
 A booker's guide to the long game: fans, tiers, momentum, wear & tear, injuries, and contracts. Everything that makes a wrestler's career a story instead of a number.
 
 **The growth loop:** wrestlers perform on shows → they gain (or lose) **fans** → fans drive their **tier** and their **salary** → matches cost **condition** → injuries and age bite → book wisely to keep stars healthy and rising.
