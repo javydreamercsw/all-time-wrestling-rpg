@@ -50,6 +50,7 @@ import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.event.FeudScriptCompletedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
@@ -1191,6 +1192,93 @@ class FeudScriptServiceTest {
     assertThat(existing.getExternalOpponents()).containsExactly(detachedExternal);
   }
 
+  @Test
+  void updateBeat_keepingSameExternalParticipant_doesNotClearAndReadd() {
+    // Regression for the production uq_fsbp_beat_wrestler duplicate-key failure: re-saving a beat
+    // whose external roster is unchanged must not clear()+re-add() the collection, or Hibernate
+    // flushes the re-INSERT before the orphan-DELETE. The merge must mutate in place.
+    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
+    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
+    Wrestler external = wrestlerWith(30L, Gender.MALE);
+    FeudScript script = rivalryScript(rivalry(w1, w2));
+    FeudScriptBeat existing = beatWithExternals(script, List.of(external), List.of());
+    existing.setId(10L);
+    script.getBeats().add(existing);
+    when(gameSettingService.isIntergenderMatchesEnabled()).thenReturn(true);
+
+    FeudScriptBeat edited = new FeudScriptBeat();
+    edited.setSegmentType("Singles Match");
+    edited.addExternalParticipant(external, FeudBeatParticipantRole.OPPONENT);
+    edited.setScript(script);
+
+    when(feudScriptBeatRepository.save(existing)).thenReturn(existing);
+
+    FeudScriptBeat saved = service.updateBeat(script, existing, edited);
+
+    // The original row is mutated, not replaced: no orphan delete + re-insert of the same
+    // (beat, wrestler) pair can be flushed.
+    assertThat(saved.getExternalParticipants()).hasSize(1);
+    assertThat(saved.getExternalParticipants().get(0))
+        .isSameAs(existing.getExternalParticipants().get(0));
+    assertThat(saved.getExternalOpponents()).containsExactly(external);
+  }
+
+  @Test
+  void updateBeat_replacingAndAddingExternals_mergesInPlace() {
+    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
+    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
+    Wrestler kept = wrestlerWith(30L, Gender.MALE);
+    Wrestler removed = wrestlerWith(31L, Gender.MALE);
+    Wrestler added = wrestlerWith(32L, Gender.MALE);
+    FeudScript script = rivalryScript(rivalry(w1, w2));
+    FeudScriptBeat existing = new FeudScriptBeat();
+    existing.setId(10L);
+    existing.setBeatOrder(1);
+    existing.setSegmentType("Tag Match");
+    existing.addExternalParticipant(kept, FeudBeatParticipantRole.OPPONENT);
+    existing.addExternalParticipant(removed, FeudBeatParticipantRole.OPPONENT);
+    existing.setScript(script);
+    script.getBeats().add(existing);
+    when(gameSettingService.isIntergenderMatchesEnabled()).thenReturn(true);
+
+    FeudScriptBeat edited = new FeudScriptBeat();
+    edited.setSegmentType("Tag Match");
+    edited.addExternalParticipant(kept, FeudBeatParticipantRole.OPPONENT);
+    edited.addExternalParticipant(added, FeudBeatParticipantRole.EXTRA);
+    edited.setScript(script);
+
+    when(feudScriptBeatRepository.save(existing)).thenReturn(existing);
+
+    FeudScriptBeat saved = service.updateBeat(script, existing, edited);
+
+    // Kept wrestler's row is mutated in place (same instance), removed wrestler's row is gone,
+    // added wrestler's row is appended.
+    assertThat(saved.getExternalParticipants()).hasSize(2);
+    assertThat(saved.getExternalParticipants().get(0))
+        .isSameAs(existing.getExternalParticipants().get(0));
+    assertThat(saved.getExternalOpponents()).containsExactly(kept);
+    assertThat(saved.getExternalExtras()).containsExactly(added);
+  }
+
+  // ── markBeatComplete (no-segment completion) ──────────────────────────────
+
+  @Test
+  void markBeatComplete_pendingBeat_marksCompletedWithoutSegment() {
+    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
+    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
+    FeudScript script = rivalryScript(rivalry(w1, w2));
+    FeudScriptBeat beat = pendingBeat(10L, script);
+    beat.setSegmentType("Cage Match");
+    script.getBeats().add(beat);
+    when(feudScriptBeatRepository.save(beat)).thenReturn(beat);
+
+    FeudScriptBeat saved = service.markBeatComplete(script, beat);
+
+    assertThat(saved.getBeatStatus()).isEqualTo(FeudScriptBeatStatus.COMPLETED);
+    assertThat(saved.getActualSegment()).isNull();
+    verify(feudScriptBeatRepository).save(beat);
+  }
+
   // ── full-segment beat setup (ATW-ushl) ─────────────────────────────────────
 
   @Test
@@ -1332,6 +1420,77 @@ class FeudScriptServiceTest {
 
     assertThat(targeted.getBeatStatus()).isEqualTo(FeudScriptBeatStatus.BOOKED);
     verify(feudScriptBeatRepository).save(targeted);
+  }
+
+  @Test
+  void markBeatComplete_bookedBeat_marksCompletedAndCancelsReservation() {
+    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
+    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
+    FeudScript script = rivalryScript(rivalry(w1, w2));
+    FeudScriptBeat beat = pendingBeat(10L, script);
+    beat.setSegmentType("Cage Match");
+    beat.setBeatStatus(FeudScriptBeatStatus.BOOKED);
+    ShowSegmentReservation reservation = new ShowSegmentReservation();
+    beat.setReservation(reservation);
+    script.getBeats().add(beat);
+    when(feudScriptBeatRepository.save(beat)).thenReturn(beat);
+
+    FeudScriptBeat saved = service.markBeatComplete(script, beat);
+
+    assertThat(saved.getBeatStatus()).isEqualTo(FeudScriptBeatStatus.COMPLETED);
+    verify(reservationService).cancelReservation(reservation);
+    assertThat(saved.getReservation()).isNull();
+  }
+
+  @Test
+  void markBeatComplete_lastOutstandingBeat_completesScriptAndPublishesEvent() {
+    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
+    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
+    FeudScript script = rivalryScript(rivalry(w1, w2));
+    FeudScriptBeat done = pendingBeat(10L, script);
+    done.setBeatStatus(FeudScriptBeatStatus.COMPLETED);
+    script.getBeats().add(done);
+    FeudScriptBeat last = pendingBeat(11L, script);
+    script.getBeats().add(last);
+    when(feudScriptBeatRepository.save(last)).thenReturn(last);
+    when(feudScriptRepository.save(script)).thenReturn(script);
+
+    service.markBeatComplete(script, last);
+
+    assertThat(script.getStatus()).isEqualTo(FeudScriptStatus.COMPLETED);
+    verify(feudScriptRepository).save(script);
+    verify(eventPublisher).publishEvent(any(FeudScriptCompletedEvent.class));
+  }
+
+  @Test
+  void markBeatComplete_alreadyTerminal_throws() {
+    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
+    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
+    FeudScript script = rivalryScript(rivalry(w1, w2));
+    FeudScriptBeat beat = pendingBeat(10L, script);
+    beat.setBeatStatus(FeudScriptBeatStatus.SKIPPED);
+    script.getBeats().add(beat);
+
+    assertThatThrownBy(() -> service.markBeatComplete(script, beat))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("already SKIPPED");
+  }
+
+  @Test
+  void markBeatComplete_noOtherBeatStatusesDone_scriptStaysActive() {
+    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
+    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
+    FeudScript script = rivalryScript(rivalry(w1, w2));
+    FeudScriptBeat beat = pendingBeat(10L, script);
+    script.getBeats().add(beat);
+    FeudScriptBeat later = pendingBeat(11L, script);
+    script.getBeats().add(later);
+    when(feudScriptBeatRepository.save(beat)).thenReturn(beat);
+
+    service.markBeatComplete(script, beat);
+
+    assertThat(script.getStatus()).isEqualTo(FeudScriptStatus.ACTIVE);
+    verify(feudScriptRepository, never()).save(script);
   }
 
   @Test

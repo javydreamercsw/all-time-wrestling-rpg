@@ -618,6 +618,46 @@ public class FeudScriptService {
   }
 
   /**
+   * Marks a PENDING or BOOKED beat as COMPLETED without linking a segment — the recovery path for a
+   * beat whose segment happened but was never credited (e.g. the card was rebuilt before the beat
+   * matched, and the segment was deleted). There is no segment to read a winner from, so title
+   * stakes and contender designations are NOT applied; the PLE reservation (if any) is cancelled
+   * since no segment will ever fill it. Completes the script when this was the last outstanding
+   * beat, publishing {@link FeudScriptCompletedEvent}.
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public FeudScriptBeat markBeatComplete(@NonNull FeudScript script, @NonNull FeudScriptBeat beat) {
+    script = reattachScript(script);
+    if (beat.getId() != null) {
+      beat = feudScriptBeatRepository.findById(beat.getId()).orElse(beat);
+    }
+    if (beat.getBeatStatus() == FeudScriptBeatStatus.COMPLETED
+        || beat.getBeatStatus() == FeudScriptBeatStatus.SKIPPED) {
+      throw new IllegalStateException(
+          "Beat #" + beat.getBeatOrder() + " is already " + beat.getBeatStatus());
+    }
+    if (beat.getReservation() != null) {
+      reservationService.cancelReservation(beat.getReservation());
+      beat.setReservation(null);
+    }
+    beat.setBeatStatus(FeudScriptBeatStatus.COMPLETED);
+    FeudScriptBeat saved = feudScriptBeatRepository.save(beat);
+    log.info(
+        "Manually completed beat #{} of arc '{}' without a linked segment — no title/contender"
+            + " outcome applied",
+        saved.getBeatOrder(),
+        script.getName());
+    if (isScriptComplete(script)) {
+      script.setStatus(FeudScriptStatus.COMPLETED);
+      feudScriptRepository.save(script);
+      eventPublisher.publishEvent(new FeudScriptCompletedEvent(this, script));
+      log.info("Story arc '{}' completed (last beat manually completed)", script.getName());
+    }
+    return saved;
+  }
+
+  /**
    * CONTENDER_DESIGNATION beat outcome: when the beat carries a contender title, its segment winner
    * becomes the #1 contender for that title. Null-safe on the winner list (no declared winner → no
    * designation) and on the injected service (unit tests).
@@ -722,11 +762,32 @@ public class FeudScriptService {
     managed.setTitles(edited.getTitles());
     managed.setContenderTitle(edited.getContenderTitle());
 
-    // Replace external participants wholesale (upsert + removal via orphanRemoval).
-    managed.getExternalParticipants().clear();
+    // Sync external participants in place: a clear()+re-add() makes Hibernate flush the re-INSERT
+    // before the orphan-DELETE, and re-adding the same wrestler then violates
+    // uq_fsbp_beat_wrestler (duplicate beat+wrestler). Update rows whose wrestler stays, remove
+    // rows whose wrestler is gone, and add only the genuinely new ones.
+    Map<Long, FeudScriptBeatParticipant> editedByWrestlerId =
+        edited.getExternalParticipants().stream()
+            .collect(
+                Collectors.toMap(
+                    e -> e.getWrestler().getId(), e -> e, (a, b) -> a, LinkedHashMap::new));
+    managed
+        .getExternalParticipants()
+        .removeIf(row -> !editedByWrestlerId.containsKey(row.getWrestler().getId()));
+    for (FeudScriptBeatParticipant row : managed.getExternalParticipants()) {
+      FeudScriptBeatParticipant replacement = editedByWrestlerId.get(row.getWrestler().getId());
+      row.setRole(replacement.getRole());
+      row.setTeamNumber(replacement.getTeamNumber());
+    }
+    Set<Long> managedWrestlerIds =
+        managed.getExternalParticipants().stream()
+            .map(p -> p.getWrestler().getId())
+            .collect(Collectors.toSet());
     for (FeudScriptBeatParticipant external : edited.getExternalParticipants()) {
-      managed.addExternalParticipant(
-          external.getWrestler(), external.getRole(), external.getTeamNumber());
+      if (!managedWrestlerIds.contains(external.getWrestler().getId())) {
+        managed.addExternalParticipant(
+            external.getWrestler(), external.getRole(), external.getTeamNumber());
+      }
     }
 
     // (Re)create the PLE reservation after the cap validation, mirroring addBeat.

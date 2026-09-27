@@ -241,36 +241,49 @@ public class FeudScriptCard extends VerticalLayout {
       beatGrid
           .addComponentColumn(
               beat -> {
-                if (beat.getBeatStatus() == FeudScriptBeatStatus.PENDING) {
+                if (beat.getBeatStatus() == FeudScriptBeatStatus.PENDING
+                    || beat.getBeatStatus() == FeudScriptBeatStatus.BOOKED) {
                   HorizontalLayout actions = new HorizontalLayout();
                   actions.setSpacing(false);
                   actions.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
 
-                  Button editBtn = new Button("✎");
-                  editBtn.addThemeVariants(
-                      ButtonVariant.LUMO_SMALL,
-                      ButtonVariant.LUMO_TERTIARY,
-                      ButtonVariant.LUMO_CONTRAST);
-                  editBtn.addClickListener(e -> openEditBeatDialog(beat));
-                  actions.add(editBtn);
+                  if (beat.getBeatStatus() == FeudScriptBeatStatus.PENDING) {
+                    Button editBtn = new Button("✎");
+                    editBtn.addThemeVariants(
+                        ButtonVariant.LUMO_SMALL,
+                        ButtonVariant.LUMO_TERTIARY,
+                        ButtonVariant.LUMO_CONTRAST);
+                    editBtn.addClickListener(e -> openEditBeatDialog(beat));
+                    actions.add(editBtn);
+                  }
 
-                  Button skipBtn = new Button("Skip");
-                  skipBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
-                  skipBtn.addClickListener(e -> confirmSkipBeat(beat));
-                  actions.add(skipBtn);
+                  // Recovery path for a beat whose segment happened but was never credited (e.g.
+                  // the card was rebuilt and the segment deleted): completes it without a link.
+                  Button completeBtn = new Button("✓");
+                  completeBtn.addThemeVariants(
+                      ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
+                  completeBtn.addClickListener(e -> confirmCompleteBeat(beat));
+                  actions.add(completeBtn);
 
-                  Button removeBtn = new Button("✕");
-                  removeBtn.addThemeVariants(
-                      ButtonVariant.LUMO_SMALL,
-                      ButtonVariant.LUMO_TERTIARY,
-                      ButtonVariant.LUMO_ERROR);
-                  removeBtn.addClickListener(e -> confirmRemoveBeat(beat));
-                  actions.add(removeBtn);
+                  if (beat.getBeatStatus() == FeudScriptBeatStatus.PENDING) {
+                    Button skipBtn = new Button("Skip");
+                    skipBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
+                    skipBtn.addClickListener(e -> confirmSkipBeat(beat));
+                    actions.add(skipBtn);
+
+                    Button removeBtn = new Button("✕");
+                    removeBtn.addThemeVariants(
+                        ButtonVariant.LUMO_SMALL,
+                        ButtonVariant.LUMO_TERTIARY,
+                        ButtonVariant.LUMO_ERROR);
+                    removeBtn.addClickListener(e -> confirmRemoveBeat(beat));
+                    actions.add(removeBtn);
+                  }
                   return actions;
                 }
                 return new Span();
               })
-          .setWidth("9em")
+          .setWidth("12em")
           .setFlexGrow(0)
           .setKey("actions");
     }
@@ -442,6 +455,38 @@ public class FeudScriptCard extends VerticalLayout {
     cancelBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
 
     dialog.getFooter().add(cancelBtn, confirmBtn);
+    dialog.open();
+  }
+
+  private void confirmCompleteBeat(FeudScriptBeat beat) {
+    Dialog dialog = new Dialog();
+    dialog.setHeaderTitle("Complete Beat");
+    dialog.add(
+        new Paragraph(
+            "Mark beat #"
+                + beat.getBeatOrder()
+                + " ("
+                + beat.getSegmentType()
+                + ") as completed without linking a segment? Use this when the segment already"
+                + " happened but was never credited. Title and contender outcomes are NOT applied"
+                + (beat.getReservation() != null
+                    ? ", and the PLE slot reservation will be cancelled."
+                    : ".")));
+
+    Button confirmBtn =
+        new Button(
+            "Complete",
+            e -> {
+              services.feudScriptService().markBeatComplete(script, beat);
+              dialog.close();
+              reload.run();
+            });
+    confirmBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+    Button keepBtn = new Button("Keep Beat", e -> dialog.close());
+    keepBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+
+    dialog.getFooter().add(keepBtn, confirmBtn);
     dialog.open();
   }
 
