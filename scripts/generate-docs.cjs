@@ -234,6 +234,12 @@ const HAND_WRITTEN_TUTORIALS = [
   { text: 'Configure Tournaments', link: '/guide/configure-tournaments' },
   { text: 'Set a Player-Controlled Wrestler', link: '/guide/set-player-controlled-wrestler' },
   { text: 'Report Match Results', link: '/guide/report-match-results' },
+  { text: 'Manage Rivalries', link: '/guide/manage-rivalries' },
+  { text: 'Run a League', link: '/guide/run-a-league' },
+  { text: 'Grow a Wrestler', link: '/guide/grow-a-wrestler' },
+  { text: 'Run a Season', link: '/guide/run-a-season' },
+  { text: 'Build Story Arcs', link: '/guide/build-story-arcs' },
+  { text: 'Manage Universes', link: '/guide/manage-universes' },
   { text: 'Book Your First Show', link: '/guide/book-your-first-show' },
 ];
 

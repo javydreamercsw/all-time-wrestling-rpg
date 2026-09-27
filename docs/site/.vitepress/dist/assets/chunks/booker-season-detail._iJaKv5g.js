@@ -1,0 +1,1 @@
+var e=`/screenshots/booker-season-list.png`,t=`/screenshots/booker-season-detail.png`;export{e as n,t};

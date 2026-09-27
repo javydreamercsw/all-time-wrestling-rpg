@@ -63,4 +63,6 @@ Expansions are the game's content packs: each one bundles wrestler tiers, match 
 ## What's next
 
 - Hand the booker role to your first booker and walk them through [Book Your First Show](./book-your-first-show).
+- [Configure AI Providers](./configure-ai-providers) — a deeper dive on provider setup.
+- [Manage Universes](./manage-universes) — splitting your world into multiple continuities.
 - The auto-generated [Admin Overview](./admin) documents every admin screen in depth.

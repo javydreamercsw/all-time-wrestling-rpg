@@ -72,5 +72,6 @@ Completed earlier editions stay in the list; tick **Show past editions** on the 
 ## Where to go next
 
 - [Schedule a Show](./schedule-a-show) — the shows tournaments book onto.
+- [Run a Season](./run-a-season) — filling the calendar the rounds pace against.
 - [Report Match Results](./report-match-results) — resolving the individual matches.
 - The auto-generated [General Manager](./general-manager) guide covers seasons, rivalries, and the wider booking picture.

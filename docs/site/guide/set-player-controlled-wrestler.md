@@ -44,5 +44,6 @@ Untick **Is Player** and save. The link to the player account is cleared — the
 ## Where to go next
 
 - [Wrestler Profile](./wrestler-profile) — what players see once they control a wrestler.
+- [Grow a Wrestler](./grow-a-wrestler) — fans, tiers, injuries, and the career arc.
 - [Player Dashboard](./player-dashboard) — the player's home screen.
 - [Report Match Results](./report-match-results) — the player's side of league play.

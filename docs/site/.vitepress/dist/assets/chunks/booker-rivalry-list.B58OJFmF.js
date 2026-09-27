@@ -1,0 +1,1 @@
+var e=`/screenshots/booker-show-planning-must-book-warning.png`,t=`/screenshots/booker-rivalry-detail.png`,n=`/screenshots/booker-rivalry-list.png`;export{t as n,e as r,n as t};

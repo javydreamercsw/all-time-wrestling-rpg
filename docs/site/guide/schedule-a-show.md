@@ -75,6 +75,8 @@ Once the show is final:
 
 ## Where to go next
 
+- [Manage Rivalries](./manage-rivalries) — the heat system the Add Segment suggestions come from.
 - [Report Match Results](./report-match-results) — when your league assigns matches to players.
 - [Configure Tournaments](./configure-tournaments) — brackets that pay off on a show like this one.
+- [Run a Season](./run-a-season) — the yearly frame around the weekly grind.
 - The auto-generated [Booker Overview](./booker) documents every booker screen.

@@ -66,5 +66,6 @@ Check the show's detail page afterwards — it's also where you review the AI na
 ## Where to go next
 
 - The auto-generated [Booker Overview](./booker) documents every booker screen.
+- [Manage Rivalries](./manage-rivalries) — the heat system that decides who belongs on your cards.
 - The [Booker Journey](./booker-journey) page has video walkthroughs of the full show lifecycle.
 - Rivalries, tournaments, and season scheduling are covered in the [General Manager](./general-manager) guide.

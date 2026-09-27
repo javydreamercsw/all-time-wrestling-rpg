@@ -45,6 +45,7 @@ On the **League** page, the dashboard shows current standings (wins, losses, dra
 
 ## Where to go next
 
+- [Run a League](./run-a-league) — the commissioner's side of league play.
 - [Leagues](./leagues) — creating leagues, the draft, and match booking.
 - [Set a Player-Controlled Wrestler](./set-player-controlled-wrestler) — the admin side of handing wrestlers to players.
 - [Player Dashboard](./player-dashboard) — your wrestler's stats and history.
