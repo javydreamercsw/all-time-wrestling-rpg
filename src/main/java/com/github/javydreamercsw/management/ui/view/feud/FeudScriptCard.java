@@ -22,6 +22,7 @@ import com.github.javydreamercsw.management.domain.feud.FeudScript;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptBeat;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptBeatStatus;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptWinnerControl;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
@@ -39,12 +40,16 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.theme.lumo.LumoUtility;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -93,6 +98,9 @@ public class FeudScriptCard extends VerticalLayout {
   private final List<Wrestler> participants;
   private final EditorServices services;
   private final Runnable reload;
+
+  private static final DateTimeFormatter DATE_FORMAT =
+      DateTimeFormatter.ofPattern("MMM d, yyyy").withZone(ZoneId.systemDefault());
 
   public FeudScriptCard(
       FeudScript script, List<Wrestler> participants, EditorServices services, Runnable reload) {
@@ -460,33 +468,94 @@ public class FeudScriptCard extends VerticalLayout {
 
   private void confirmCompleteBeat(FeudScriptBeat beat) {
     Dialog dialog = new Dialog();
-    dialog.setHeaderTitle("Complete Beat");
-    dialog.add(
-        new Paragraph(
-            "Mark beat #"
-                + beat.getBeatOrder()
-                + " ("
-                + beat.getSegmentType()
-                + ") as completed without linking a segment? Use this when the segment already"
-                + " happened but was never credited. Title and contender outcomes are NOT applied"
-                + (beat.getReservation() != null
-                    ? ", and the PLE slot reservation will be cancelled."
-                    : ".")));
+    dialog.setHeaderTitle("Complete Beat #" + beat.getBeatOrder());
+    dialog.setWidth("min(860px, 92vw)");
 
-    Button confirmBtn =
-        new Button(
-            "Complete",
-            e -> {
-              services.feudScriptService().markBeatComplete(script, beat);
-              dialog.close();
-              reload.run();
-            });
-    confirmBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    VerticalLayout body = new VerticalLayout();
+    body.setPadding(false);
+    body.setSpacing(true);
+    dialog.add(body);
+
+    body.add(
+        new Paragraph(
+            "Credit this beat. Pick the match that already happened to link it (winner-driven"
+                + " outcomes apply), or complete it without a link (no title/contender outcome)."
+                + (beat.getReservation() != null
+                    ? " The PLE slot reservation will be cancelled."
+                    : "")));
+
+    Grid<Segment> matchGrid = new Grid<>(Segment.class, false);
+    matchGrid.setSelectionMode(Grid.SelectionMode.SINGLE);
+    matchGrid.addColumn(s -> DATE_FORMAT.format(s.getSegmentDate())).setHeader("Date");
+    matchGrid.addColumn(s -> s.getShow() != null ? s.getShow().getName() : "—").setHeader("Show");
+    matchGrid
+        .addColumn(
+            s ->
+                s.getParticipants().stream()
+                    .map(p -> p.getWrestler().getName())
+                    .sorted()
+                    .collect(Collectors.joining(" vs ")))
+        .setHeader("Participants")
+        .setFlexGrow(2);
+    matchGrid
+        .addColumn(
+            s ->
+                s.getWinners().isEmpty()
+                    ? "—"
+                    : s.getWinners().stream()
+                        .map(Wrestler::getName)
+                        .collect(Collectors.joining(", ")))
+        .setHeader("Winner")
+        .setFlexGrow(1);
+    matchGrid.setHeight("16em");
+    body.add(matchGrid);
+
+    HorizontalLayout footerButtons = new HorizontalLayout();
+    footerButtons.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
+    footerButtons.setWidthFull();
 
     Button keepBtn = new Button("Keep Beat", e -> dialog.close());
     keepBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
 
-    dialog.getFooter().add(keepBtn, confirmBtn);
+    Button linkBtn = new Button("Link & Complete");
+    linkBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    linkBtn.setEnabled(false);
+    linkBtn.addClickListener(
+        e -> {
+          try {
+            services
+                .feudScriptService()
+                .resolveAndCompleteBeat(
+                    script, beat, matchGrid.getSelectedItems().iterator().next());
+            dialog.close();
+            reload.run();
+          } catch (Exception ex) {
+            Notification.show("Error: " + ex.getMessage(), 5000, Notification.Position.BOTTOM_END)
+                .addThemeVariants(NotificationVariant.LUMO_ERROR);
+          }
+        });
+
+    Button linklessBtn = new Button("Complete without link");
+    linklessBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+    linklessBtn.addClickListener(
+        e -> {
+          try {
+            services.feudScriptService().markBeatComplete(script, beat);
+            dialog.close();
+            reload.run();
+          } catch (Exception ex) {
+            Notification.show("Error: " + ex.getMessage(), 5000, Notification.Position.BOTTOM_END)
+                .addThemeVariants(NotificationVariant.LUMO_ERROR);
+          }
+        });
+
+    matchGrid.addSelectionListener(
+        event -> linkBtn.setEnabled(!event.getAllSelectedItems().isEmpty()));
+
+    footerButtons.add(keepBtn, linklessBtn, linkBtn);
+    dialog.getFooter().add(footerButtons);
+
+    matchGrid.setItems(services.feudScriptService().findLinkableSegmentsForBeat(beat));
     dialog.open();
   }
 

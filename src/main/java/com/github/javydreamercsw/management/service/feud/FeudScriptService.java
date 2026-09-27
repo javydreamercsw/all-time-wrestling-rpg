@@ -471,8 +471,27 @@ public class FeudScriptService {
   }
 
   /**
+   * Completed segments involving the arc's wrestlers that no beat is linked to — the arc card's
+   * Complete dialog lists these so a beat whose match already ran can be credited retroactively.
+   * Re-attaches the UI-supplied beat by id inside a read-only transaction so its LAZY script
+   * resolves for the participant lookup.
+   */
+  @Transactional(readOnly = true)
+  public List<Segment> findLinkableSegmentsForBeat(@NonNull FeudScriptBeat beat) {
+    FeudScriptBeat managed =
+        beat.getId() == null ? beat : feudScriptBeatRepository.findById(beat.getId()).orElse(beat);
+    if (managed.getScript() == null) {
+      return List.of();
+    }
+    return segmentRepository.findLinkableForBeat(new ArrayList<>(participantIdsOf(managed)));
+  }
+
+  /**
    * Public entry point for completing a beat with a specific segment — used by the manual
-   * add-segment flow in ShowDetailView, which previously never consulted pending beats.
+   * add-segment flow in ShowDetailView and by the arc card's Complete dialog (retroactive credit
+   * for a match that already ran). UI dialogs hold detached entities; the script and beat are
+   * re-attached by id so LAZY associations resolve inside this transaction. Accepts PENDING and
+   * BOOKED beats — a beat booked on a show whose card was later rebuilt still deserves credit.
    */
   @Transactional
   @PreAuthorize(
@@ -480,6 +499,18 @@ public class FeudScriptService {
           + " or @universeAuthz.hasRoleInCurrentUniverse('BOOKER')")
   public Optional<FeudScriptBeat> resolveAndCompleteBeat(
       @NonNull FeudScript script, @NonNull FeudScriptBeat beat, @NonNull Segment segment) {
+    script = reattachScript(script);
+    if (beat.getId() != null) {
+      beat = feudScriptBeatRepository.findById(beat.getId()).orElse(beat);
+    }
+    if (beat.getBeatStatus() == FeudScriptBeatStatus.COMPLETED
+        || beat.getBeatStatus() == FeudScriptBeatStatus.SKIPPED) {
+      throw new IllegalStateException(
+          "Beat #" + beat.getBeatOrder() + " is already " + beat.getBeatStatus());
+    }
+    if (segment.getId() != null) {
+      segment = segmentRepository.findById(segment.getId()).orElse(segment);
+    }
     completeBeatInternal(beat, segment);
     return Optional.of(beat);
   }

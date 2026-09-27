@@ -318,7 +318,7 @@ class FeudScriptCardTest extends AbstractViewTest {
   }
 
   @Test
-  @DisplayName("Complete-beat confirmation calls markBeatComplete")
+  @DisplayName("Complete dialog: linkless completion calls markBeatComplete")
   void completeBeatConfirmation_callsService() {
     FeudScriptBeat pending = beat(1, "Singles Match");
     script.getBeats().add(pending);
@@ -327,7 +327,7 @@ class FeudScriptCardTest extends AbstractViewTest {
 
     Button completeBtn = _get(cellButton(card, 0), Button.class, spec -> spec.withText("✓"));
     _click(completeBtn);
-    _click(_get(_get(Dialog.class), Button.class, spec -> spec.withText("Complete")));
+    _click(_get(_get(Dialog.class), Button.class, spec -> spec.withText("Complete without link")));
 
     verify(feudScriptService).markBeatComplete(same(script), same(pending));
   }

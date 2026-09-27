@@ -539,6 +539,104 @@ class FeudScriptServiceTest {
     verifyNoInteractions(contenderSelectionService);
   }
 
+  // ── resolveAndCompleteBeat (retroactive link from the arc card) ───────────
+
+  @Test
+  void resolveAndCompleteBeat_transientBeat_linksSegmentAndCompletes() {
+    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
+    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
+    FeudScript script = rivalryScript(rivalry(w1, w2));
+    FeudScriptBeat beat = pendingBeat(10L, script);
+    beat.setSegmentType("Singles Match");
+    script.getBeats().add(beat);
+    Segment segment = new Segment();
+    segment.setId(88L);
+    when(feudScriptBeatRepository.save(beat)).thenReturn(beat);
+
+    Optional<FeudScriptBeat> result = service.resolveAndCompleteBeat(script, beat, segment);
+
+    assertThat(result).isPresent();
+    assertThat(result.get().getBeatStatus()).isEqualTo(FeudScriptBeatStatus.COMPLETED);
+    assertThat(result.get().getActualSegment()).isEqualTo(segment);
+    // Transient beat: no id-based reload attempted beyond the no-op path.
+    verify(feudScriptBeatRepository).save(beat);
+  }
+
+  @Test
+  void resolveAndCompleteBeat_bookedBeat_isAccepted() {
+    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
+    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
+    FeudScript script = rivalryScript(rivalry(w1, w2));
+    FeudScriptBeat beat = pendingBeat(10L, script);
+    beat.setBeatStatus(FeudScriptBeatStatus.BOOKED);
+    beat.setSegmentType("Singles Match");
+    script.getBeats().add(beat);
+    Segment segment = new Segment();
+    segment.setId(89L);
+    when(feudScriptBeatRepository.save(beat)).thenReturn(beat);
+
+    Optional<FeudScriptBeat> result = service.resolveAndCompleteBeat(script, beat, segment);
+
+    assertThat(result).isPresent();
+    assertThat(result.get().getBeatStatus()).isEqualTo(FeudScriptBeatStatus.COMPLETED);
+  }
+
+  @Test
+  void resolveAndCompleteBeat_completedBeat_throws() {
+    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
+    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
+    FeudScript script = rivalryScript(rivalry(w1, w2));
+    FeudScriptBeat beat = pendingBeat(10L, script);
+    beat.setBeatStatus(FeudScriptBeatStatus.COMPLETED);
+    script.getBeats().add(beat);
+    Segment segment = new Segment();
+    segment.setId(90L);
+
+    assertThatThrownBy(() -> service.resolveAndCompleteBeat(script, beat, segment))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("already COMPLETED");
+  }
+
+  @Test
+  void resolveAndCompleteBeat_persistedBeat_reloadsById() {
+    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
+    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
+    FeudScript script = rivalryScript(rivalry(w1, w2));
+    FeudScriptBeat detached = pendingBeat(10L, script);
+    detached.setId(10L);
+    detached.setSegmentType("Singles Match");
+    script.getBeats().add(detached);
+    Segment segment = new Segment();
+    segment.setId(91L);
+    FeudScriptBeat managed = pendingBeat(10L, script);
+    when(feudScriptBeatRepository.findById(10L)).thenReturn(Optional.of(managed));
+    when(feudScriptBeatRepository.save(managed)).thenReturn(managed);
+
+    Optional<FeudScriptBeat> result = service.resolveAndCompleteBeat(script, detached, segment);
+
+    assertThat(result).contains(managed);
+    assertThat(managed.getBeatStatus()).isEqualTo(FeudScriptBeatStatus.COMPLETED);
+  }
+
+  @Test
+  void findLinkableSegmentsForBeat_delegatesToRepository() {
+    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
+    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
+    FeudScript script = rivalryScript(rivalry(w1, w2));
+    FeudScriptBeat beat = pendingBeat(10L, script);
+    beat.setSegmentType("Singles Match");
+    beat.setId(12L);
+    Segment segment = new Segment();
+    segment.setId(55L);
+    when(feudScriptBeatRepository.findById(12L)).thenReturn(Optional.of(beat));
+    when(segmentRepository.findLinkableForBeat(any())).thenReturn(List.of(segment));
+
+    List<Segment> result = service.findLinkableSegmentsForBeat(beat);
+
+    assertThat(result).containsExactly(segment);
+    verify(segmentRepository).findLinkableForBeat(List.of(1L, 2L));
+  }
+
   // ── getDefaultMaxPleAppearances ───────────────────────────────────────────
 
   @Test
