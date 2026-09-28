@@ -43,6 +43,8 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class ShowPlanningAiService {
 
+  private static final Pattern ROUND_MATCHES_PATTERN = Pattern.compile("(\\d++) round matches?");
+
   private final SegmentNarrationServiceFactory narrationServiceFactory;
   private final ObjectMapper objectMapper;
   private final SegmentTypeService segmentTypeService;
@@ -337,7 +339,9 @@ public class ShowPlanningAiService {
     if (shape == null) {
       return 1;
     }
-    var matcher = Pattern.compile("(\\d+) round matches?").matcher(shape);
+    // Possessive quantifier: shape comes from tournament/AI data, so \d++ (no backtracking)
+    // keeps matching linear — a long digit run can't blow up the scan (CodeQL ReDoS).
+    var matcher = ROUND_MATCHES_PATTERN.matcher(shape);
     return matcher.find() ? Math.max(1, Integer.parseInt(matcher.group(1))) : 1;
   }
 
