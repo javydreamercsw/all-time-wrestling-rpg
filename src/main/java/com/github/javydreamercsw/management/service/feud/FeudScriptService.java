@@ -135,6 +135,10 @@ public class FeudScriptService {
     List<FeudScriptBeat> beats =
         new ArrayList<>(feudScriptBeatRepository.findPendingBeatsForShow(show.getId()));
     Set<Long> present = beats.stream().map(FeudScriptBeat::getId).collect(Collectors.toSet());
+    // Scripts that already have a beat explicitly targeted at this show — used to keep an arc
+    // from contributing a second (fallback) beat to the same card.
+    Set<Long> targetedScriptIds =
+        beats.stream().map(b -> b.getScript().getId()).collect(Collectors.toSet());
     List<FeudScriptBeat> fallback = feudScriptBeatRepository.findNextPendingBeatPerActiveScript();
     log.info(
         "Beat injection for show {}: {} targeted beat(s), {} fallback candidate(s), roster of {}"
@@ -147,6 +151,45 @@ public class FeudScriptService {
     for (FeudScriptBeat next : fallback) {
       if (!present.add(next.getId())) {
         continue;
+      }
+      // A beat with an explicit target show belongs only on that show (the fallback query already
+      // filters these out — this is defense in depth).
+      if (next.getTargetShow() != null && !next.getTargetShow().getId().equals(show.getId())) {
+        log.info(
+            "Beat #{} of arc '{}' skipped: targeted at show '{}' (planning '{}')",
+            next.getBeatOrder(),
+            next.getScript().getName(),
+            next.getTargetShow().getName(),
+            show.getName());
+        continue;
+      }
+      // An untargeted Culmination/Blowoff beat is the arc's finale — it belongs on a PLE, not a
+      // weekly. When this show IS a PLE, the arc's configured PLE budget still applies (the
+      // save-time cap only counts explicitly targeted beats, so this is the last checkpoint).
+      if (next.isCulmination() && next.getTargetShow() == null) {
+        FeudScript script = next.getScript();
+        if (!show.isPremiumLiveEvent()) {
+          log.info(
+              "Beat #{} of arc '{}' skipped: culmination is reserved for the next PLE",
+              next.getBeatOrder(),
+              script.getName());
+          continue;
+        }
+        if (script.countPleBeats() >= script.getMaxPleAppearances()) {
+          log.info(
+              "Beat #{} of arc '{}' skipped: PLE appearance cap of {} already reached",
+              next.getBeatOrder(),
+              script.getName(),
+              script.getMaxPleAppearances());
+          continue;
+        }
+        if (targetedScriptIds.contains(script.getId())) {
+          log.info(
+              "Beat #{} of arc '{}' skipped: the arc already has a beat targeted at this PLE",
+              next.getBeatOrder(),
+              script.getName());
+          continue;
+        }
       }
       Map<Long, String> participants = participantsOf(next);
       if (!rosterIds.containsAll(participants.keySet())) {

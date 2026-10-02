@@ -321,6 +321,8 @@ public class ShowPlanningService {
     // Inject scripted beat slots so the AI honours pre-planned match types and winner intent.
     // Beats without an explicit target show (the common case) fall back to the next pending beat
     // of every active arc — but only when all of the arc's participants are on this roster.
+    // Beats with an explicit target stay on that show, and untargeted Culmination/Blowoff beats
+    // are reserved for PLEs (subject to the arc's PLE appearance cap).
     Set<Long> rosterIds = allWrestlers.stream().map(Wrestler::getId).collect(Collectors.toSet());
     var beatInjection = feudScriptService.getUpcomingBeatDTOsWithExclusionsForShow(show, rosterIds);
     var scriptedBeats = beatInjection.beats();

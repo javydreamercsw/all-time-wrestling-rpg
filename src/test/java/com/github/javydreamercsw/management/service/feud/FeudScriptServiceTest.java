@@ -790,6 +790,75 @@ class FeudScriptServiceTest {
     verifyNoInteractions(feudScriptBeatRepository);
   }
 
+  @Test
+  void getUpcomingBeatsForShow_beatTargetedAtOtherShow_notInjected() {
+    // ATW-28ms: a beat explicitly targeted at the PLE must not surface when planning a weekly.
+    FeudScript script =
+        rivalryScript(rivalry(wrestlerWith(1L, Gender.MALE), wrestlerWith(2L, Gender.MALE)));
+    FeudScriptBeat beat = pendingBeat(13L, script);
+    beat.setTargetShow(pleShow(9L));
+
+    when(feudScriptBeatRepository.findPendingBeatsForShow(5L)).thenReturn(List.of());
+    when(feudScriptBeatRepository.findNextPendingBeatPerActiveScript()).thenReturn(List.of(beat));
+
+    List<FeudScriptBeat> result = service.getUpcomingBeatsForShow(show(5L), Set.of(1L, 2L));
+
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void getUpcomingBeatsForShow_untargetedCulmination_weeklyNotInjected() {
+    // ATW-28ms: a Culmination/Blowoff beat with no target show is reserved for a PLE.
+    FeudScript script =
+        rivalryScript(rivalry(wrestlerWith(1L, Gender.MALE), wrestlerWith(2L, Gender.MALE)));
+    FeudScriptBeat beat = pendingBeat(14L, script);
+    beat.setCulmination(true);
+
+    when(feudScriptBeatRepository.findPendingBeatsForShow(5L)).thenReturn(List.of());
+    when(feudScriptBeatRepository.findNextPendingBeatPerActiveScript()).thenReturn(List.of(beat));
+
+    List<FeudScriptBeat> result = service.getUpcomingBeatsForShow(show(5L), Set.of(1L, 2L));
+
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void getUpcomingBeatsForShow_untargetedCulmination_pleInjected() {
+    FeudScript script =
+        rivalryScript(rivalry(wrestlerWith(1L, Gender.MALE), wrestlerWith(2L, Gender.MALE)));
+    FeudScriptBeat beat = pendingBeat(15L, script);
+    beat.setCulmination(true);
+
+    when(feudScriptBeatRepository.findPendingBeatsForShow(9L)).thenReturn(List.of());
+    when(feudScriptBeatRepository.findNextPendingBeatPerActiveScript()).thenReturn(List.of(beat));
+
+    List<FeudScriptBeat> result = service.getUpcomingBeatsForShow(pleShow(9L), Set.of(1L, 2L));
+
+    assertThat(result).containsExactly(beat);
+  }
+
+  @Test
+  void getUpcomingBeatsForShow_untargetedCulmination_pleCapReached_notInjected() {
+    // The arc's PLE budget is already spent on an explicitly targeted beat — the untargeted
+    // culmination must not add a second PLE appearance for the same arc.
+    FeudScript script =
+        rivalryScript(rivalry(wrestlerWith(1L, Gender.MALE), wrestlerWith(2L, Gender.MALE)));
+    script.setMaxPleAppearances(1);
+    FeudScriptBeat targetedBeat = pendingBeat(16L, script);
+    targetedBeat.setTargetShow(pleShow(9L));
+    script.setBeats(List.of(targetedBeat));
+    FeudScriptBeat culmination = pendingBeat(17L, script);
+    culmination.setCulmination(true);
+
+    when(feudScriptBeatRepository.findPendingBeatsForShow(9L)).thenReturn(List.of(targetedBeat));
+    when(feudScriptBeatRepository.findNextPendingBeatPerActiveScript())
+        .thenReturn(List.of(culmination));
+
+    List<FeudScriptBeat> result = service.getUpcomingBeatsForShow(pleShow(9L), Set.of(1L, 2L));
+
+    assertThat(result).containsExactly(targetedBeat);
+  }
+
   // ── external participants (ATW-iukb) ─────────────────────────────────────
 
   private Rivalry rivalry(Wrestler w1, Wrestler w2) {
