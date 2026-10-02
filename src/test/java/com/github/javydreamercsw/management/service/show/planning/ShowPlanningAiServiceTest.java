@@ -34,6 +34,7 @@ import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanni
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningPleDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRivalryDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningSegmentDTO;
+import com.github.javydreamercsw.management.service.show.planning.dto.TournamentSlotPreviewDTO;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -887,6 +888,154 @@ class ShowPlanningAiServiceTest {
   }
 
   @Test
+  void planShow_tournamentSlots_injectedAheadOfAiCard() {
+    // Show-attached tournament slots (ATW-xbn4) preview on the card like scripted beats: a row
+    // per round match / payoff, ahead of the AI's segments, with the Tournament source stamp.
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+
+    TournamentSlotPreviewDTO payoff = new TournamentSlotPreviewDTO();
+    payoff.setTournamentName("Crown's Cup");
+    payoff.setTypeName("Free-for-All");
+    payoff.setRuleName("Tables, Ladders and Chairs (TLC)");
+    payoff.setShape("Payoff final");
+    payoff.setTitleName("ATW World");
+    TournamentSlotPreviewDTO rounds = new TournamentSlotPreviewDTO();
+    rounds.setTournamentName("Crown's Cup");
+    rounds.setTypeName("One on One");
+    rounds.setShape("2 round matches");
+    context.setTournamentSlots(List.of(payoff, rounds));
+
+    String aiResponseJson =
+        """
+        [
+          {
+            "segmentId": "seg1",
+            "type": "One on One",
+            "description": "A match",
+            "outcome": "A wins",
+            "teams": [["A"], ["B"]],
+            "teamIds": [[1], [2]]
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    // 3 tournament rows + the AI's single segment.
+    assertEquals(4, proposedShow.getSegments().size());
+    // Tournament rows land ahead of the AI card.
+    List<ProposedSegment> tournamentRows =
+        proposedShow.getSegments().stream()
+            .filter(s -> "Tournament".equals(s.getSource()))
+            .toList();
+    assertEquals(3, tournamentRows.size());
+    assertEquals("Free-for-All", tournamentRows.get(0).getType());
+    assertEquals(List.of("Tables, Ladders and Chairs (TLC)"), tournamentRows.get(0).getRules());
+    assertTrue(tournamentRows.get(0).getIsTitleSegment());
+    assertTrue(tournamentRows.get(0).getSummary().contains("Crown's Cup"));
+    assertTrue(tournamentRows.get(0).getSummary().contains("Payoff final"));
+    assertEquals("One on One", tournamentRows.get(1).getType());
+    assertEquals("One on One", tournamentRows.get(2).getType());
+    // The AI's row survives below the tournament rows.
+    assertEquals("One on One", proposedShow.getSegments().get(3).getType());
+    assertNull(proposedShow.getSegments().get(3).getSource());
+  }
+
+  @Test
+  void planShow_tournamentSlot_aiRowsStayOnCard() {
+    // Unlike beats, tournament slots do NOT evict AI rows: the bracket's participants are
+    // unknown at planning time and type-matching would nuke legitimate One-on-One rows on
+    // weekly cards. Both stay — the booker deletes what they don't want before approving.
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+
+    TournamentSlotPreviewDTO payoff = new TournamentSlotPreviewDTO();
+    payoff.setTournamentName("Crown's Cup");
+    payoff.setTypeName("Free-for-All");
+    payoff.setShape("Payoff final");
+    context.setTournamentSlots(List.of(payoff));
+
+    SegmentType ffaType = new SegmentType();
+    ffaType.setName("Free-for-All");
+    when(segmentTypeService.findByName("Free-for-All")).thenReturn(Optional.of(ffaType));
+    String aiResponseJson =
+        """
+        [
+          {
+            "segmentId": "seg1",
+            "type": "Free-for-All",
+            "description": "AI's rumble",
+            "outcome": "A wins",
+            "teams": [["A"], ["B"]],
+            "teamIds": [[1], [2]]
+          },
+          {
+            "segmentId": "seg2",
+            "type": "One on One",
+            "description": "A match",
+            "outcome": "B wins",
+            "teams": [["C"], ["D"]],
+            "teamIds": [[3], [4]]
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    // Tournament row first, then both AI rows untouched.
+    assertEquals(3, proposedShow.getSegments().size());
+    assertEquals("Tournament", proposedShow.getSegments().get(0).getSource());
+    assertEquals("Free-for-All", proposedShow.getSegments().get(0).getType());
+    assertNull(proposedShow.getSegments().get(1).getSource());
+    assertEquals("Free-for-All", proposedShow.getSegments().get(1).getType());
+    assertNull(proposedShow.getSegments().get(2).getSource());
+    assertEquals("One on One", proposedShow.getSegments().get(2).getType());
+  }
+
+  @Test
+  void planShow_scriptedBeat_sourceStamped() {
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    context.setUpcomingScriptedBeats(
+        List.of(beat("Singles Match", null, "AI_PICKS", null, List.of(11L, 12L))));
+
+    String aiResponseJson =
+        """
+        [
+          {
+            "segmentId": "seg1",
+            "type": "One on One",
+            "description": "A match",
+            "outcome": "A wins",
+            "teams": [["A"], ["B"]],
+            "teamIds": [[1], [2]]
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    ProposedSegment beatRow = proposedShow.getSegments().get(0);
+    assertEquals("Scripted beat", beatRow.getSource(), "Beat rows carry the Scripted beat stamp");
+  }
+
+  @Test
   void planShow_aiPutsBeatWrestlersInUnrelatedPromo_promoKept() {
     // A promo mentioning the arc's wrestlers is NOT a match slot — it must survive
     ShowPlanningContextDTO context = new ShowPlanningContextDTO();
@@ -974,9 +1123,11 @@ class ShowPlanningAiServiceTest {
   @Test
   void planShow_aiDuplicateNamesOnly_teamIdsNull_stillDropped() {
     // AI duplicates often carry participant NAMES with teamIds null (ids reconcile at approval).
+    // Two expected matches: the scripted beat claims one, leaving one free slot so the AI is
+    // still consulted (all-slots-claimed cards skip the AI entirely).
     ShowPlanningContextDTO context = new ShowPlanningContextDTO();
     ShowTemplate showTemplate = new ShowTemplate();
-    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedMatches(2);
     showTemplate.setExpectedPromos(0);
     context.setShowTemplate(showTemplate);
     context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
@@ -1161,5 +1312,141 @@ class ShowPlanningAiServiceTest {
 
     assertEquals(1, proposedShow.getSegments().size());
     assertEquals("Singles Match", proposedShow.getSegments().get(0).getType());
+  }
+
+  @Test
+  void planShow_allSlotsPredetermined_skipsAiCall() {
+    // One beat + one real-participant tournament slot = both expected matches claimed. The AI
+    // has nothing free to propose, so generateText must never be called.
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(2);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    context.setUpcomingScriptedBeats(
+        List.of(beat("Singles Match", null, "AI_PICKS", null, List.of(11L, 12L))));
+    context.setTournamentSlots(List.of(tournamentSlot("Shelton", "Bobby")));
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    verify(narrationServiceFactory, never()).generateText(anyString());
+    // Deterministic passes still build the card: tournament slot + beat (tournament rows are
+    // prepended after beats are applied, so they land at the front).
+    assertEquals(2, proposedShow.getSegments().size());
+    assertEquals("Tournament", proposedShow.getSegments().get(0).getSource());
+    assertEquals(
+        "Scripted beat: Lashley Arc (Singles Match)",
+        proposedShow.getSegments().get(1).getSummary());
+    assertEquals("Scripted beat", proposedShow.getSegments().get(1).getSource());
+  }
+
+  @Test
+  void planShow_placeholderTournamentSlot_doesNotClaimMatchSlot() {
+    // Placeholder tournament rows are additive (participants resolve at approval) — they claim
+    // nothing, so the AI is still consulted for its expected match.
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    context.setTournamentSlots(List.of(tournamentSlot(null, null)));
+
+    String aiResponseJson =
+        """
+        [
+          {
+            "segmentId": "seg1",
+            "type": "One on One",
+            "description": "Free slot",
+            "outcome": "Someone wins",
+            "teams": [["Randy Orton"], ["Kevin Owens"]]
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    verify(narrationServiceFactory, times(1)).generateText(anyString());
+    assertEquals(2, proposedShow.getSegments().size());
+    assertEquals("Tournament", proposedShow.getSegments().get(0).getSource());
+    assertEquals("One on One", proposedShow.getSegments().get(1).getType());
+  }
+
+  @Test
+  void planShow_promoBeatClaimsPromoSlot_matchStillFreedForAi() {
+    // A promo-type beat claims a PROMO slot; the expected match slot stays free for the AI.
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(1);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    FeudScriptBeatDTO beat = beat("Singles Match", null, "AI_PICKS", null, List.of(11L, 12L));
+    beat.setSegmentType("Promo");
+    context.setUpcomingScriptedBeats(List.of(beat));
+
+    String aiResponseJson =
+        """
+        [
+          {
+            "segmentId": "seg1",
+            "type": "One on One",
+            "description": "Match slot",
+            "outcome": "Someone wins",
+            "teams": [["Randy Orton"], ["Kevin Owens"]]
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    // Promo beat → AI still called for the match slot.
+    verify(narrationServiceFactory, times(1)).generateText(anyString());
+    assertEquals(2, proposedShow.getSegments().size());
+    assertEquals("Promo", proposedShow.getSegments().get(0).getType());
+    assertEquals("Scripted beat", proposedShow.getSegments().get(0).getSource());
+    assertEquals("One on One", proposedShow.getSegments().get(1).getType());
+  }
+
+  @Test
+  void planShow_promoBeatFillsLastPromoSlot_skipsAiWhenNoMatchExpected() {
+    // Template expects no matches; the promo beat claims the only promo slot. Nothing is free
+    // for the AI — skip the call and build the card deterministically.
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(0);
+    showTemplate.setExpectedPromos(1);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    SegmentType promoType = new SegmentType();
+    promoType.setName("Promo");
+    promoType.setCode("promo");
+    when(segmentTypeService.findByName("Promo")).thenReturn(Optional.of(promoType));
+    FeudScriptBeatDTO beat = beat("Promo", null, "AI_PICKS", null, List.of(11L, 12L));
+    context.setUpcomingScriptedBeats(List.of(beat));
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    verify(narrationServiceFactory, never()).generateText(anyString());
+    assertEquals(1, proposedShow.getSegments().size());
+    assertEquals("Promo", proposedShow.getSegments().get(0).getType());
+  }
+
+  /** Tournament slot preview row with either real team names or placeholders. */
+  private TournamentSlotPreviewDTO tournamentSlot(String team1, String team2) {
+    TournamentSlotPreviewDTO dto = new TournamentSlotPreviewDTO();
+    dto.setTournamentName("Crown Cup");
+    dto.setTypeName("One on One");
+    dto.setShape("Payoff final");
+    if (team1 == null) {
+      dto.setTeams(List.of(List.of("Tournament bracket"), List.of("Tournament bracket")));
+    } else {
+      dto.setTeams(List.of(List.of(team1), List.of(team2)));
+    }
+    return dto;
   }
 }

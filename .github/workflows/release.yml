@@ -715,6 +715,11 @@ jobs:
           else
             # Final release: remove prerelease flag and mark latest.
             gh release edit "v${VERSION}" --prerelease=false --latest
+            # RC releases for this numeric version are now superseded: delete them
+            # so no stale installers remain downloadable (ATW-rvx0). The git tags
+            # stay — they are historical and carry the RC build commits.
+            BASE_VERSION="$(echo "$VERSION" | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+')"
+            bash scripts/cleanup-rc-releases.sh "$BASE_VERSION"
           fi
 
   build_and_publish_docker:

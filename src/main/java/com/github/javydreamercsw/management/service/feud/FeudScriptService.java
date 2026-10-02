@@ -135,6 +135,10 @@ public class FeudScriptService {
     List<FeudScriptBeat> beats =
         new ArrayList<>(feudScriptBeatRepository.findPendingBeatsForShow(show.getId()));
     Set<Long> present = beats.stream().map(FeudScriptBeat::getId).collect(Collectors.toSet());
+    // Scripts that already have a beat explicitly targeted at this show — used to keep an arc
+    // from contributing a second (fallback) beat to the same card.
+    Set<Long> targetedScriptIds =
+        beats.stream().map(b -> b.getScript().getId()).collect(Collectors.toSet());
     List<FeudScriptBeat> fallback = feudScriptBeatRepository.findNextPendingBeatPerActiveScript();
     log.info(
         "Beat injection for show {}: {} targeted beat(s), {} fallback candidate(s), roster of {}"
@@ -147,6 +151,45 @@ public class FeudScriptService {
     for (FeudScriptBeat next : fallback) {
       if (!present.add(next.getId())) {
         continue;
+      }
+      // A beat with an explicit target show belongs only on that show (the fallback query already
+      // filters these out — this is defense in depth).
+      if (next.getTargetShow() != null && !next.getTargetShow().getId().equals(show.getId())) {
+        log.info(
+            "Beat #{} of arc '{}' skipped: targeted at show '{}' (planning '{}')",
+            next.getBeatOrder(),
+            next.getScript().getName(),
+            next.getTargetShow().getName(),
+            show.getName());
+        continue;
+      }
+      // An untargeted Culmination/Blowoff beat is the arc's finale — it belongs on a PLE, not a
+      // weekly. When this show IS a PLE, the arc's configured PLE budget still applies (the
+      // save-time cap only counts explicitly targeted beats, so this is the last checkpoint).
+      if (next.isCulmination() && next.getTargetShow() == null) {
+        FeudScript script = next.getScript();
+        if (!show.isPremiumLiveEvent()) {
+          log.info(
+              "Beat #{} of arc '{}' skipped: culmination is reserved for the next PLE",
+              next.getBeatOrder(),
+              script.getName());
+          continue;
+        }
+        if (script.countPleBeats() >= script.getMaxPleAppearances()) {
+          log.info(
+              "Beat #{} of arc '{}' skipped: PLE appearance cap of {} already reached",
+              next.getBeatOrder(),
+              script.getName(),
+              script.getMaxPleAppearances());
+          continue;
+        }
+        if (targetedScriptIds.contains(script.getId())) {
+          log.info(
+              "Beat #{} of arc '{}' skipped: the arc already has a beat targeted at this PLE",
+              next.getBeatOrder(),
+              script.getName());
+          continue;
+        }
       }
       Map<Long, String> participants = participantsOf(next);
       if (!rosterIds.containsAll(participants.keySet())) {
@@ -471,8 +514,27 @@ public class FeudScriptService {
   }
 
   /**
+   * Completed segments involving the arc's wrestlers that no beat is linked to — the arc card's
+   * Complete dialog lists these so a beat whose match already ran can be credited retroactively.
+   * Re-attaches the UI-supplied beat by id inside a read-only transaction so its LAZY script
+   * resolves for the participant lookup.
+   */
+  @Transactional(readOnly = true)
+  public List<Segment> findLinkableSegmentsForBeat(@NonNull FeudScriptBeat beat) {
+    FeudScriptBeat managed =
+        beat.getId() == null ? beat : feudScriptBeatRepository.findById(beat.getId()).orElse(beat);
+    if (managed.getScript() == null) {
+      return List.of();
+    }
+    return segmentRepository.findLinkableForBeat(new ArrayList<>(participantIdsOf(managed)));
+  }
+
+  /**
    * Public entry point for completing a beat with a specific segment — used by the manual
-   * add-segment flow in ShowDetailView, which previously never consulted pending beats.
+   * add-segment flow in ShowDetailView and by the arc card's Complete dialog (retroactive credit
+   * for a match that already ran). UI dialogs hold detached entities; the script and beat are
+   * re-attached by id so LAZY associations resolve inside this transaction. Accepts PENDING and
+   * BOOKED beats — a beat booked on a show whose card was later rebuilt still deserves credit.
    */
   @Transactional
   @PreAuthorize(
@@ -480,6 +542,18 @@ public class FeudScriptService {
           + " or @universeAuthz.hasRoleInCurrentUniverse('BOOKER')")
   public Optional<FeudScriptBeat> resolveAndCompleteBeat(
       @NonNull FeudScript script, @NonNull FeudScriptBeat beat, @NonNull Segment segment) {
+    script = reattachScript(script);
+    if (beat.getId() != null) {
+      beat = feudScriptBeatRepository.findById(beat.getId()).orElse(beat);
+    }
+    if (beat.getBeatStatus() == FeudScriptBeatStatus.COMPLETED
+        || beat.getBeatStatus() == FeudScriptBeatStatus.SKIPPED) {
+      throw new IllegalStateException(
+          "Beat #" + beat.getBeatOrder() + " is already " + beat.getBeatStatus());
+    }
+    if (segment.getId() != null) {
+      segment = segmentRepository.findById(segment.getId()).orElse(segment);
+    }
     completeBeatInternal(beat, segment);
     return Optional.of(beat);
   }
@@ -618,6 +692,46 @@ public class FeudScriptService {
   }
 
   /**
+   * Marks a PENDING or BOOKED beat as COMPLETED without linking a segment — the recovery path for a
+   * beat whose segment happened but was never credited (e.g. the card was rebuilt before the beat
+   * matched, and the segment was deleted). There is no segment to read a winner from, so title
+   * stakes and contender designations are NOT applied; the PLE reservation (if any) is cancelled
+   * since no segment will ever fill it. Completes the script when this was the last outstanding
+   * beat, publishing {@link FeudScriptCompletedEvent}.
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public FeudScriptBeat markBeatComplete(@NonNull FeudScript script, @NonNull FeudScriptBeat beat) {
+    script = reattachScript(script);
+    if (beat.getId() != null) {
+      beat = feudScriptBeatRepository.findById(beat.getId()).orElse(beat);
+    }
+    if (beat.getBeatStatus() == FeudScriptBeatStatus.COMPLETED
+        || beat.getBeatStatus() == FeudScriptBeatStatus.SKIPPED) {
+      throw new IllegalStateException(
+          "Beat #" + beat.getBeatOrder() + " is already " + beat.getBeatStatus());
+    }
+    if (beat.getReservation() != null) {
+      reservationService.cancelReservation(beat.getReservation());
+      beat.setReservation(null);
+    }
+    beat.setBeatStatus(FeudScriptBeatStatus.COMPLETED);
+    FeudScriptBeat saved = feudScriptBeatRepository.save(beat);
+    log.info(
+        "Manually completed beat #{} of arc '{}' without a linked segment — no title/contender"
+            + " outcome applied",
+        saved.getBeatOrder(),
+        script.getName());
+    if (isScriptComplete(script)) {
+      script.setStatus(FeudScriptStatus.COMPLETED);
+      feudScriptRepository.save(script);
+      eventPublisher.publishEvent(new FeudScriptCompletedEvent(this, script));
+      log.info("Story arc '{}' completed (last beat manually completed)", script.getName());
+    }
+    return saved;
+  }
+
+  /**
    * CONTENDER_DESIGNATION beat outcome: when the beat carries a contender title, its segment winner
    * becomes the #1 contender for that title. Null-safe on the winner list (no declared winner → no
    * designation) and on the injected service (unit tests).
@@ -722,11 +836,32 @@ public class FeudScriptService {
     managed.setTitles(edited.getTitles());
     managed.setContenderTitle(edited.getContenderTitle());
 
-    // Replace external participants wholesale (upsert + removal via orphanRemoval).
-    managed.getExternalParticipants().clear();
+    // Sync external participants in place: a clear()+re-add() makes Hibernate flush the re-INSERT
+    // before the orphan-DELETE, and re-adding the same wrestler then violates
+    // uq_fsbp_beat_wrestler (duplicate beat+wrestler). Update rows whose wrestler stays, remove
+    // rows whose wrestler is gone, and add only the genuinely new ones.
+    Map<Long, FeudScriptBeatParticipant> editedByWrestlerId =
+        edited.getExternalParticipants().stream()
+            .collect(
+                Collectors.toMap(
+                    e -> e.getWrestler().getId(), e -> e, (a, b) -> a, LinkedHashMap::new));
+    managed
+        .getExternalParticipants()
+        .removeIf(row -> !editedByWrestlerId.containsKey(row.getWrestler().getId()));
+    for (FeudScriptBeatParticipant row : managed.getExternalParticipants()) {
+      FeudScriptBeatParticipant replacement = editedByWrestlerId.get(row.getWrestler().getId());
+      row.setRole(replacement.getRole());
+      row.setTeamNumber(replacement.getTeamNumber());
+    }
+    Set<Long> managedWrestlerIds =
+        managed.getExternalParticipants().stream()
+            .map(p -> p.getWrestler().getId())
+            .collect(Collectors.toSet());
     for (FeudScriptBeatParticipant external : edited.getExternalParticipants()) {
-      managed.addExternalParticipant(
-          external.getWrestler(), external.getRole(), external.getTeamNumber());
+      if (!managedWrestlerIds.contains(external.getWrestler().getId())) {
+        managed.addExternalParticipant(
+            external.getWrestler(), external.getRole(), external.getTeamNumber());
+      }
     }
 
     // (Re)create the PLE reservation after the cap validation, mirroring addBeat.

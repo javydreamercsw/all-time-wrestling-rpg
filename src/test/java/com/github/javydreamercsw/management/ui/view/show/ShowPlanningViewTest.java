@@ -58,6 +58,8 @@ import com.github.javydreamercsw.management.service.show.template.ShowTemplateSe
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.tournament.TournamentService;
+import com.github.javydreamercsw.management.service.tournament.TournamentTemplateBookingService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.AbilityReminderTextService;
@@ -84,6 +86,7 @@ import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.springframework.test.util.ReflectionTestUtils;
 
 class ShowPlanningViewTest extends AbstractViewTest {
@@ -106,6 +109,7 @@ class ShowPlanningViewTest extends AbstractViewTest {
   @Mock private UniverseContextService universeContextService;
   @Mock private ExpansionService expansionService;
   @Mock private TeamService teamService;
+  @Mock private TournamentTemplateBookingService tournamentTemplateBookingService;
 
   @BeforeEach
   public void setUp() {
@@ -128,7 +132,9 @@ class ShowPlanningViewTest extends AbstractViewTest {
             showTemplateService,
             showPlanningService,
             showPlanningAiService,
-            arenaService);
+            arenaService,
+            mock(TournamentService.class),
+            tournamentTemplateBookingService);
     WrestlerFacade wrestlerFacade =
         new WrestlerFacade(
             wrestlerService,
@@ -473,6 +479,50 @@ class ShowPlanningViewTest extends AbstractViewTest {
 
   @Test
   @SuppressWarnings("unchecked")
+  void setParameter_alreadySelectedShow_reloadsContext() throws Exception {
+    // setParameter() must explicitly reload when navigating to the already-selected show's URL:
+    // setValue() on an unchanged value fires no ValueChangeEvent, so without the explicit
+    // loadContext() there the deep-link refresh would silently do nothing.
+    Show show = new Show();
+    show.setId(2L);
+    show.setName("Already Selected");
+    show.setShowDate(LocalDate.now());
+
+    when(showService.getShowById(2L)).thenReturn(Optional.of(show));
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    when(showPlanningService.getShowPlanningContext(show)).thenReturn(context);
+    ObjectMapper objectMapper = new ObjectMapper();
+    ReflectionTestUtils.setField(showPlanningView, "objectMapper", objectMapper);
+
+    // First navigation selects the show and auto-loads.
+    showPlanningView.setParameter(mock(BeforeEvent.class), 2L);
+    CompletableFuture<Void> firstLoad =
+        (CompletableFuture<Void>)
+            ReflectionTestUtils.getField(showPlanningView, "pendingAutoLoadForTest");
+    if (firstLoad != null) {
+      firstLoad.join();
+    }
+    MockVaadin.runUIQueue();
+
+    // Second navigation to the same show: setValue() is a no-op, so the explicit reload in
+    // setParameter must fire its own loadContext() (pendingAutoLoadForTest is reassigned).
+    showPlanningView.setParameter(mock(BeforeEvent.class), 2L);
+    CompletableFuture<Void> secondLoad =
+        (CompletableFuture<Void>)
+            ReflectionTestUtils.getField(showPlanningView, "pendingAutoLoadForTest");
+    assertNotNull(secondLoad, "Re-navigating to the selected show must trigger a fresh load");
+    secondLoad.join();
+    MockVaadin.runUIQueue();
+
+    TextArea contextArea = (TextArea) ReflectionTestUtils.getField(showPlanningView, "contextArea");
+    assertEquals(
+        objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(context),
+        contextArea.getValue());
+    verify(showPlanningService, Mockito.times(2)).getShowPlanningContext(show);
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
   void approvePlanning_withValidCard_callsApproveSegments() {
     Show show = new Show();
     show.setId(1L);
@@ -551,6 +601,92 @@ class ShowPlanningViewTest extends AbstractViewTest {
 
     // approveSegments should NOT be called yet — dialog confirmation is pending
     verify(showPlanningService, never()).approveSegments(any(), any());
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void approvePlanning_tournamentPayoffWarning_showsConfirmDialogFirst() {
+    // ATW-xbn4: a hosted tournament whose bracket cannot finish before this card triggers a
+    // confirm dialog instead of immediate approval — the booker can go back and pace more.
+    Show show = new Show();
+    show.setId(1L);
+    show.setName("Test Show");
+    show.setShowDate(LocalDate.now());
+
+    when(showPlanningService.getShowPlanningContext(show)).thenReturn(new ShowPlanningContextDTO());
+    selectShowAndAwaitAutoLoad(show);
+
+    ProposedSegment seg = new ProposedSegment();
+    seg.setType("Match");
+    seg.setTeams(List.of(List.of("A"), List.of("B")));
+    ReflectionTestUtils.setField(showPlanningView, "segments", List.of(seg));
+
+    when(showPlanningService.validateCard(any()))
+        .thenReturn(new CardValidationResult(List.of(), List.of()));
+    when(tournamentTemplateBookingService.payoffCatchUpWarnings(show))
+        .thenReturn(List.of("Crown Cup cannot finish before its payoff show 'Test Show'"));
+
+    ReflectionTestUtils.invokeMethod(showPlanningView, "approvePlanning");
+
+    // The advisory holds approval — confirmation is pending.
+    verify(showPlanningService, never()).approveSegments(any(), any());
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void approvePlanning_tournamentPayoffPreFlightFails_approvesAnyway() {
+    // The pre-flight itself failing must never block approval — it is advisory only.
+    Show show = new Show();
+    show.setId(1L);
+    show.setName("Test Show");
+    show.setShowDate(LocalDate.now());
+
+    when(showPlanningService.getShowPlanningContext(show)).thenReturn(new ShowPlanningContextDTO());
+    selectShowAndAwaitAutoLoad(show);
+
+    ProposedSegment seg = new ProposedSegment();
+    seg.setType("Match");
+    seg.setTeams(List.of(List.of("A"), List.of("B")));
+    ReflectionTestUtils.setField(showPlanningView, "segments", List.of(seg));
+
+    when(showPlanningService.validateCard(any()))
+        .thenReturn(new CardValidationResult(List.of(), List.of()));
+    when(tournamentTemplateBookingService.payoffCatchUpWarnings(show))
+        .thenThrow(new IllegalStateException("boom"));
+
+    ReflectionTestUtils.invokeMethod(showPlanningView, "approvePlanning");
+
+    verify(showPlanningService).approveSegments(eq(show), any());
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void proposedSegmentsGrid_tournamentRow_rendersSourceBadge() {
+    // ATW-xbn4: deterministic rows carry a highlighted source badge — tournament slots included
+    // (scripted-beat badge already covered by integration docs tests). The badge column's
+    // renderer builds during grid attach, so this guards the view constructing cleanly with
+    // tournament rows on the card.
+    Show show = new Show();
+    show.setId(1L);
+    show.setName("Test Show");
+    show.setShowDate(LocalDate.now());
+
+    when(showPlanningService.getShowPlanningContext(show)).thenReturn(new ShowPlanningContextDTO());
+    selectShowAndAwaitAutoLoad(show);
+
+    ProposedSegment tournamentRow = new ProposedSegment();
+    tournamentRow.setType("One on One");
+    tournamentRow.setSource("Tournament");
+    ProposedSegment aiRow = new ProposedSegment();
+    aiRow.setType("Match");
+    ReflectionTestUtils.setField(showPlanningView, "segments", List.of(tournamentRow, aiRow));
+
+    Grid<ProposedSegment> grid =
+        (Grid<ProposedSegment>)
+            ReflectionTestUtils.getField(showPlanningView, "proposedSegmentsGrid");
+    MockVaadin.runUIQueue();
+
+    assertFalse(grid.getColumns().isEmpty(), "The card grid must render with its columns");
   }
 
   @Test

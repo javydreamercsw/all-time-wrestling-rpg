@@ -128,6 +128,25 @@ public interface SegmentRepository
   List<Segment> findCompletedByRivalryId(@Param("rivalryId") Long rivalryId);
 
   /**
+   * Completed segments involving any of the given wrestlers that no story-arc beat is linked to —
+   * candidates for manually completing a beat whose match already ran but was never credited (the
+   * arc card's Complete dialog). Most recent first. The subquery excludes NULL links explicitly:
+   * {@code NOT IN} over a set containing NULL would filter out every row.
+   */
+  @Query(
+      """
+      SELECT DISTINCT s FROM Segment s
+      JOIN FETCH s.show
+      JOIN s.participants p
+      WHERE s.status = 'COMPLETED'
+      AND s.id NOT IN (
+          SELECT b.actualSegment.id FROM FeudScriptBeat b WHERE b.actualSegment IS NOT NULL)
+      AND p.wrestler.id IN :wrestlerIds
+      ORDER BY s.segmentDate DESC, s.id DESC
+      """)
+  List<Segment> findLinkableForBeat(@Param("wrestlerIds") Collection<Long> wrestlerIds);
+
+  /**
    * Completed segments where every given wrestler participates (JOIN semantics: all ids must be
    * present among the segment's participants), most recent first — rivalry-less backfill path when
    * the arc has no rivalry id to query by (ATW-1csz).

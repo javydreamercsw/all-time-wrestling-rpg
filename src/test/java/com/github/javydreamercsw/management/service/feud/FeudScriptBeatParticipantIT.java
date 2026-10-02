@@ -174,6 +174,39 @@ class FeudScriptBeatParticipantIT extends ManagementIntegrationTest {
     assertThat(detached.getPlannedWinner().getName()).isEqualTo("Bobby Lashley");
   }
 
+  @Test
+  @WithCustomMockUser(
+      username = "admin",
+      roles = {"ADMIN"})
+  void updateBeat_keepingSameExternalParticipant_noDuplicateKey() {
+    // Regression for the production uq_fsbp_beat_wrestler failure: re-saving a beat whose external
+    // roster is unchanged must not clear()+re-add() the collection, or Hibernate flushes the
+    // re-INSERT before the orphan-DELETE and the unique key (beat, wrestler) explodes.
+    Wrestler w1 = wrestlerRepo.save(wrestler("Shelton Benjamin"));
+    Wrestler w2 = wrestlerRepo.save(wrestler("Bobby Lashley"));
+    Wrestler external = wrestlerRepo.save(wrestler("Kamala"));
+
+    Rivalry rivalry = rivalryRepository.save(rivalry(w1, w2));
+    FeudScript script = script(rivalry, "Resave Arc");
+
+    FeudScriptBeat beat = new FeudScriptBeat();
+    beat.setSegmentType("Singles Match");
+    beat.addExternalParticipant(external, FeudBeatParticipantRole.OPPONENT);
+    FeudScriptBeat saved = feudScriptService.addBeat(script, beat);
+    assertThat(participantRepository.findByBeatId(saved.getId())).hasSize(1);
+
+    FeudScriptBeat edited = new FeudScriptBeat();
+    edited.setSegmentType("Singles Match");
+    edited.addExternalParticipant(external, FeudBeatParticipantRole.OPPONENT);
+
+    FeudScriptBeat resaved = feudScriptService.updateBeat(script, saved, edited);
+    assertThat(participantRepository.findByBeatId(resaved.getId())).hasSize(1);
+
+    // A second re-save on the returned instance must behave the same way.
+    FeudScriptBeat resavedAgain = feudScriptService.updateBeat(script, resaved, edited);
+    assertThat(participantRepository.findByBeatId(resavedAgain.getId())).hasSize(1);
+  }
+
   private List<Long> reloadedExternalIds(FeudScriptBeatDTO dto) {
     return dto.getTeamIds() != null ? dto.getTeamIds().get(1) : List.of();
   }

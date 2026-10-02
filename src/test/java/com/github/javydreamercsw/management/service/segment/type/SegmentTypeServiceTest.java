@@ -142,6 +142,22 @@ class SegmentTypeServiceTest {
     assertEquals(5L, count);
   }
 
+  // ==================== findAllByExpansionCode ====================
+
+  @Test
+  void findAllByExpansionCode_delegatesToRepository() {
+    SegmentType customType = new SegmentType();
+    customType.setName("Custom Type");
+    customType.setExpansionCode("CUSTOM");
+    when(segmentTypeRepository.findByExpansionCodeOrderByNameAsc("CUSTOM"))
+        .thenReturn(List.of(customType));
+
+    List<SegmentType> result = segmentTypeService.findAllByExpansionCode("CUSTOM");
+
+    assertEquals(1, result.size());
+    assertSame(customType, result.get(0));
+  }
+
   // ==================== createSegmentType ====================
 
   @Test
@@ -189,6 +205,73 @@ class SegmentTypeServiceTest {
     assertEquals("Promo", result.getName());
     assertEquals("A mic segment", result.getDescription());
     verify(segmentTypeRepository).save(any(SegmentType.class));
+  }
+
+  // ==================== eventOnly (ATW-0331) ====================
+
+  @Test
+  void createOrUpdate_eventOnlyTrue_persistsOnCreate() {
+    when(segmentTypeRepository.findByName("Abu Dhabi Rumble")).thenReturn(Optional.empty());
+    when(segmentTypeRepository.save(any(SegmentType.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    SegmentType result =
+        segmentTypeService.createOrUpdateSegmentType(
+            "Abu Dhabi Rumble",
+            "Large-scale elimination match.",
+            "RUMBLE",
+            null,
+            "abu_dhabi_rumble",
+            true);
+
+    assertTrue(result.isEventOnly(), "eventOnly=true must persist on create");
+  }
+
+  @Test
+  void createOrUpdate_eventOnlyNull_defaultsFalseOnCreate() {
+    when(segmentTypeRepository.findByName("Promo")).thenReturn(Optional.empty());
+    when(segmentTypeRepository.save(any(SegmentType.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    SegmentType result =
+        segmentTypeService.createOrUpdateSegmentType(
+            "Promo", "A mic segment", "BASE_GAME", null, null, null);
+
+    assertFalse(result.isEventOnly(), "null eventOnly must default to false on create");
+  }
+
+  @Test
+  void createOrUpdate_eventOnlyNull_preservesExistingValueOnUpdate() {
+    segmentType.setEventOnly(true);
+    when(segmentTypeRepository.findByName("Match")).thenReturn(Optional.of(segmentType));
+
+    segmentTypeService.createOrUpdateSegmentType(
+        "Match", "A standard wrestling match", "BASE_GAME", null, null, null);
+
+    assertTrue(segmentType.isEventOnly(), "null eventOnly must leave the existing value intact");
+  }
+
+  @Test
+  void createOrUpdate_eventOnlyChanged_updatesAndSaves() {
+    when(segmentTypeRepository.findByName("Match")).thenReturn(Optional.of(segmentType));
+    when(segmentTypeRepository.save(segmentType)).thenReturn(segmentType);
+
+    segmentTypeService.createOrUpdateSegmentType(
+        "Match", "A standard wrestling match", "BASE_GAME", null, null, true);
+
+    assertTrue(segmentType.isEventOnly(), "changed eventOnly must be stamped on update");
+    verify(segmentTypeRepository).save(segmentType);
+  }
+
+  @Test
+  void createOrUpdate_eventOnlyUnchanged_returnsExistingWithoutSave() {
+    segmentType.setEventOnly(true);
+    when(segmentTypeRepository.findByName("Match")).thenReturn(Optional.of(segmentType));
+
+    SegmentType result =
+        segmentTypeService.createOrUpdateSegmentType(
+            "Match", "A standard wrestling match", "BASE_GAME", null, null, true);
+
+    assertSame(segmentType, result);
+    verify(segmentTypeRepository, never()).save(any());
   }
 
   // ==================== deleteSegmentType ====================

@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management;
 
 import com.github.javydreamercsw.base.Initializable;
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
+import com.github.javydreamercsw.management.migration.DataMigrationRunner;
 import com.github.javydreamercsw.management.sync.DataSyncContributor;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -31,13 +32,16 @@ public class DataInitializer implements Initializable {
 
   private final boolean enabled;
   private final List<DataSyncContributor> contributors;
+  private final DataMigrationRunner dataMigrationRunner;
 
   @Autowired
   public DataInitializer(
       @Value("${data.initializer.enabled:true}") final boolean enabled,
-      final List<DataSyncContributor> contributors) {
+      final List<DataSyncContributor> contributors,
+      final DataMigrationRunner dataMigrationRunner) {
     this.enabled = enabled;
     this.contributors = contributors;
+    this.dataMigrationRunner = dataMigrationRunner;
   }
 
   public void init() {
@@ -49,6 +53,7 @@ public class DataInitializer implements Initializable {
 
   private void performInit() {
     contributors.forEach(DataSyncContributor::sync);
+    dataMigrationRunner.runMigrations();
     log.debug("Data initialization complete.");
   }
 }

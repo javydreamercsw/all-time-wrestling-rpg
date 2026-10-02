@@ -25,11 +25,16 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
+import com.github.javydreamercsw.management.domain.tournament.Tournament;
+import com.github.javydreamercsw.management.domain.tournament.TournamentRepository;
+import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.tournament.SingleEliminationFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
@@ -47,6 +52,7 @@ class ShowPlanningValidationDocsE2ETest extends AbstractE2ETest {
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private AccountRepository accountRepository;
   @Autowired private RivalryRepository rivalryRepository;
+  @Autowired private TournamentRepository tournamentRepository;
 
   private Show testShow;
   private Wrestler wrestler1;
@@ -160,6 +166,42 @@ class ShowPlanningValidationDocsE2ETest extends AbstractE2ETest {
             + " Edit the segment and add a rule such as Steel Cage or Last Man Standing"
             + " before approving.",
         "booker-show-planning-stipulation-error");
+  }
+
+  @Test
+  void documentTournamentSlotsOnPlanningCard() {
+    // One-time tournament (ATW-xbn4) attached to this show as its host: the payoff previews
+    // on the card like a scripted beat, with a Source badge and placeholder participants
+    // (the bracket fills them at approval).
+    Tournament tournament = new Tournament();
+    tournament.setName("Crown's Cup");
+    tournament.setFormatId(SingleEliminationFormat.FORMAT_ID);
+    tournament.setStatus(TournamentStatus.SCHEDULED);
+    tournament.setStartDate(LocalDate.now());
+    tournament.setEntries(new ArrayList<>());
+    tournament.setRounds(new ArrayList<>());
+    tournament.setUniverse(defaultUniverse);
+    tournament.setPayoffShow(testShow);
+    tournament = tournamentRepository.saveAndFlush(tournament);
+
+    navigateToAndWaitForElement(
+        "show-planning/" + testShow.getId(), By.id("show-planning-context-area"));
+    waitForNonEmptyText(By.id("show-planning-context-area"));
+
+    // Load context and propose segments — the tournament slot row appears with the AI's rows.
+    clickElement(waitForVaadinElement(driver, By.id("propose-segments-button")));
+    waitForVaadinElement(driver, By.id("proposed-segments-grid"));
+    pause(4000);
+
+    documentFeature(
+        "Booker",
+        "Show Planning — Tournament Slots on the Card",
+        "A one-time tournament attached to this show previews its slots on the proposed card:"
+            + " the payoff (and paced round matches on weekly shows) each appear as a grid row"
+            + " with a Tournament source badge. Seeded brackets preview the real match-ups;"
+            + " unknowable ones show placeholder teams. Delete a row to skip that slot on this"
+            + " show — approving books the slots that remain, exactly once.",
+        "booker-show-planning-tournament-slots");
   }
 
   private Wrestler ensureWrestler(final String name) {

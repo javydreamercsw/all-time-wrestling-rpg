@@ -39,6 +39,14 @@ public class CampaignChapterDTO {
   private String aiSystemPrompt;
   private Difficulty difficulty;
   private boolean tournament;
+
+  /**
+   * Optional catalog tournament code ({@code Tournament.code}, e.g. {@code deadly_combat}) this
+   * chapter's bracket maps to. Gates code-specific rewards (ATW-vg16: Deadly Combat win counter) to
+   * the matching seeded tournament only. Null = chapter has no catalog identity.
+   */
+  private String tournamentCode;
+
   private boolean tagTeam;
   private List<ChapterPointDTO> entryPoints;
   private List<ChapterPointDTO> exitPoints;

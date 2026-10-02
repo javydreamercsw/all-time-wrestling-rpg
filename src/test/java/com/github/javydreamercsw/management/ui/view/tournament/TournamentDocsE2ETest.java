@@ -182,6 +182,62 @@ class TournamentDocsE2ETest extends AbstractDocsE2ETest {
         "booker-tournament-detail-in-progress");
   }
 
+  @Test
+  void captureTournamentCreationWizard() {
+    navigateToAndWaitForElement("tournament-list", By.tagName("vaadin-grid"));
+    clickButtonByText("New Tournament");
+    waitForVaadinElement(driver, By.xpath("//*[contains(text(), 'New Tournament')]"));
+
+    documentFeature(
+        "Booker",
+        "Tournament Creation Wizard",
+        "Create a tournament in two steps. Step 1 names the tournament and picks the format"
+            + " (Single Elimination or Round Robin), an optional linked championship, start"
+            + " date, and allowed rules — the seeding step stays locked until these are set."
+            + " Step 2 chooses how entrants are seeded: automatically by fan count (with a"
+            + " live match-up preview of what Create will build), manual wrestler picking,"
+            + " or deferred so a paired show can seed it on approval.",
+        "booker-tournament-creation-wizard");
+  }
+
+  @Test
+  void captureTournamentSeedEditing() {
+    navigateToAndWaitForElement(
+        "tournament-detail/" + scheduledId, By.xpath("//*[contains(., 'Grand Prix Tournament')]"));
+    // The reorder/swap columns only render on SCHEDULED, unstarted tournaments.
+    waitForVaadinElement(driver, By.xpath("//*[contains(text(), 'Reorder')]"));
+    waitForVaadinElement(driver, By.xpath("//*[contains(text(), 'Swap')]"));
+
+    documentFeature(
+        "Booker",
+        "Editing Tournament Seeds",
+        "Before the bracket is generated, seeds stay editable. Move an entrant up or down"
+            + " to change its seed — the round-1 pairing is 1 vs last, 2 vs second-to-last,"
+            + " so reordering directly reshapes the match-ups — or swap in a different"
+            + " wrestler while keeping the seed. When the tournament is linked to a"
+            + " championship, the current titleholder is excluded from seeding and from the"
+            + " swap picker: the champion cannot win the belt from themselves. Seeds lock"
+            + " once the tournament starts.",
+        "booker-tournament-seed-editing");
+  }
+
+  @Test
+  void captureTournamentCreationWizardHostShow() {
+    navigateToAndWaitForElement("tournament-list", By.tagName("vaadin-grid"));
+    clickButtonByText("New Tournament");
+    waitForVaadinElement(driver, By.xpath("//*[contains(text(), 'Host Show')]"));
+
+    documentFeature(
+        "Booker",
+        "One-Time Tournament on a Host Show",
+        "For a one-off tournament, attach it directly to a show instead of pairing it with"
+            + " a PLE template (that stays reserved for recurring tournaments). Pick a host"
+            + " show and the payoff books there exactly once — rounds pace automatically onto"
+            + " the weekly shows before it. The payoff match type and rule default to"
+            + " One-on-One but can be anything, e.g. a Free-for-All TLC match for a title.",
+        "booker-tournament-host-show");
+  }
+
   private List<Wrestler> seedWrestlers(String... names) {
     List<Wrestler> result = new ArrayList<>();
     for (String name : names) {

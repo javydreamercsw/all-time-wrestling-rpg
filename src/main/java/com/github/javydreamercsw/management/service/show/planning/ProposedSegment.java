@@ -42,6 +42,13 @@ public class ProposedSegment {
   private List<String> rules;
   private String refereeName;
 
+  /**
+   * Where this row came from, for the planning grid's Source badge: "Scripted beat" (deterministic
+   * arc slot), "Tournament" (show-attached tournament slot — paced round or payoff), or null (the
+   * AI's own proposal). Badge display only — approval treats every row the same.
+   */
+  private String source;
+
   public void setTitles(final Set<Title> titles) {
     this.titles = titles;
     this.isTitleSegment = !titles.isEmpty();

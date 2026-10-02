@@ -18,6 +18,9 @@ package com.github.javydreamercsw.management.service.campaign;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -295,6 +298,62 @@ class MatchResultProcessorServiceTest {
     verify(tournamentService).advanceTournament(any(), any(Boolean.class), any());
   }
 
+  @Test
+  void testProcessMatchResult_TournamentWin_otherCode_skipsDeadlyCombatWins() {
+    Account account = new Account();
+    Wrestler wrestler = new Wrestler();
+    wrestler.setId(1L);
+    wrestler.setAccount(account);
+    Universe universe = Universe.builder().name("Test Universe").build();
+    Campaign campaign = new Campaign();
+    campaign.setId(1L);
+    campaign.setWrestler(wrestler);
+    campaign.setUniverse(universe);
+    CampaignState state = new CampaignState();
+    state.setWins(0);
+    state.setLosses(0);
+    state.setVictoryPoints(0);
+    state.setMatchesPlayed(0);
+    state.setActiveCards(new ArrayList<>());
+    state.setCurrentChapterId("tournament");
+    Segment currentMatch = new Segment();
+    currentMatch.setShow(new Show());
+    state.setCurrentMatch(currentMatch);
+    campaign.setState(state);
+
+    when(campaignRepository.findById(1L)).thenReturn(Optional.of(campaign));
+    when(campaignService.getCurrentChapter(campaign))
+        .thenReturn(
+            Optional.of(
+                CampaignChapterDTO.builder()
+                    .id("tournament")
+                    .tournament(true)
+                    // Chapter has a different catalog identity (or none) — no Deadly Combat credit.
+                    .tournamentCode("some_other_tournament")
+                    .rules(
+                        CampaignChapterDTO.ChapterRules.builder()
+                            .victoryPointsWin(2)
+                            .victoryPointsLoss(1)
+                            .build())
+                    .build()));
+    WrestlerAlignment alignment = new WrestlerAlignment();
+    alignment.setAlignmentType(AlignmentType.FACE);
+    alignment.setLevel(1);
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
+    when(tournamentService.isPlayerChampion(campaign)).thenReturn(true);
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
+    Title title = new Title();
+    title.setName("ATW World");
+    when(titleRepository.findByName("ATW World")).thenReturn(Optional.of(title));
+
+    service.processMatchResult(campaign, true);
+
+    verify(featureDataService, never())
+        .setFeatureValue(eq(state), eq("deadlyCombatWins"), anyInt());
+    verify(legacyService, never()).unlockAchievement(any(), any());
+  }
+
   // ── bonus VP tests ──────────────────────────────────────────────────────────
 
   @Test
@@ -513,6 +572,7 @@ class MatchResultProcessorServiceTest {
                 CampaignChapterDTO.builder()
                     .id("tournament")
                     .tournament(true)
+                    .tournamentCode("deadly_combat")
                     .rules(
                         CampaignChapterDTO.ChapterRules.builder()
                             .victoryPointsWin(2)

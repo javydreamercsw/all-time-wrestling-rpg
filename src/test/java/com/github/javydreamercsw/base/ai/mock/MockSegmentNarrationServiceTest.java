@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.base.ai.mock;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
@@ -43,6 +44,43 @@ class MockSegmentNarrationServiceTest {
         "Output should contain Lord Bastian's speaker tag");
     assertTrue(result.contains("Narrator:"), "Output should contain Narrator tag");
     assertTrue(result.contains("Test Arena"), "Output should contain the venue name");
+  }
+
+  @Test
+  void testGenerateMockTextNarrationEchoesUserFeedback() {
+    MockSegmentNarrationService service = new MockSegmentNarrationService();
+    String prompt =
+        """
+        Generate a compelling wrestling narration for a Match. Here is the JSON context:
+
+        {"wrestlers": [{"name": "Wrestler A", "alignment": "FACE"}, {"name":\
+         "Wrestler B", "alignment": "HEEL"}], "determinedOutcome": "Wrestler A wins the\
+         segment.\\n\\nUser Feedback: Wrestler A opens the match with a surprise Ugandan\
+         Splash. Wrestler A surprises him with a High Angle Spinebuster for the win!"}\
+        """;
+
+    String result = service.generateText(prompt);
+
+    assertTrue(result.contains("Ugandan Splash"), "Output should echo user feedback opener");
+    assertTrue(
+        result.contains("High Angle Spinebuster"), "Output should echo user feedback finish");
+  }
+
+  @Test
+  void testGenerateMockTextNarrationWithoutFeedbackOmitsEcho() {
+    MockSegmentNarrationService service = new MockSegmentNarrationService();
+    String prompt =
+        """
+        Generate a compelling wrestling narration for a Match. Here is the JSON context:
+
+        {"wrestlers": [{"name": "Wrestler A", "alignment": "FACE"}, {"name":\
+         "Wrestler B", "alignment": "HEEL"}], "determinedOutcome": "Wrestler A wins the\
+         segment."}\
+        """;
+
+    String result = service.generateText(prompt);
+
+    assertFalse(result.contains("User Feedback:"), "No echo without feedback");
   }
 
   @Test

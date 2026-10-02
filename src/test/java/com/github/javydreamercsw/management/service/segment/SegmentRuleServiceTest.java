@@ -236,6 +236,19 @@ class SegmentRuleServiceTest {
   }
 
   @Test
+  void findAllByExpansionCode_delegatesToRepository() {
+    SegmentRule customRule = new SegmentRule();
+    customRule.setName("Custom Rule");
+    customRule.setExpansionCode("CUSTOM");
+    when(segmentRuleRepository.findByExpansionCodeOrderByNameAsc("CUSTOM"))
+        .thenReturn(List.of(customRule));
+
+    List<SegmentRule> result = segmentRuleService.findAllByExpansionCode("CUSTOM");
+
+    assertThat(result).containsExactly(customRule);
+  }
+
+  @Test
   void createOrUpdateRule_newRule_createsNewRule() {
     when(segmentRuleRepository.findByName("Ladder Match")).thenReturn(Optional.empty());
     when(segmentRuleRepository.save(any(SegmentRule.class))).thenAnswer(inv -> inv.getArgument(0));

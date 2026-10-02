@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.show.planning.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.javydreamercsw.management.domain.title.Title;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -68,8 +69,20 @@ public class FeudScriptBeatDTO {
   /** True when the beat is contested for the titles in {@link #titles}. */
   private boolean titleSegment;
 
-  /** Titles at stake when this beat is a title match. */
-  private List<Title> titles = new ArrayList<>();
+  /**
+   * Titles at stake when this beat is a title match. Kept out of JSON: the entities reach the
+   * technical planning-context display detached from their Hibernate session, and serializing their
+   * lazy graphs (titleReigns, contenders' accounts…) blows up with LazyInitializationException.
+   * {@link #getTitleNames()} carries the display value instead.
+   */
+  @JsonIgnore private List<Title> titles = new ArrayList<>();
+
+  /** Names of the titles at stake — the JSON-safe projection of {@link #titles}. */
+  public List<String> getTitleNames() {
+    return titles == null
+        ? List.of()
+        : titles.stream().map(Title::getName).collect(Collectors.toList());
+  }
 
   /** #1 contender designation outcome: winner of the beat's segment becomes #1 contender. */
   private Long contenderTitleId;

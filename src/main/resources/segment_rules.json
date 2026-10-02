@@ -124,24 +124,7 @@
   "requiresHighHeat": false,
   "noDq": true,
   "bumpAddition": "NONE",
-  "expansion_code": "BASE_GAME",
-  "guide": {
-    "solo": {
-      "overview": "A promo segment builds fan heat and advances storylines without physical combat. Your goal is to maximize crowd reaction and momentum.",
-      "setup": "Draw 3 Promo cards from the Promo deck. Each card represents a promo style: Boast, Challenge, Insult, or Heartfelt. You will play one card per promo exchange.",
-      "attacking": "There is no physical attacking. Instead, play a Promo card and roll your Charisma die. High results increase crowd heat; low results may draw boos.",
-      "defending": "If another participant interrupts your promo, play a Rebuttal card (if available) or roll Charisma contested vs their roll. Winning the contested roll maintains your crowd momentum.",
-      "winCondition": "Accumulate 3 or more Crowd Heat tokens by the end of the promo segment.",
-      "npcRecovery": "NPC opponents draw a random response card when you play a Promo card. Positive promo results increase your Rivalry Heat with that NPC by 1."
-    },
-    "multiplayer": {
-      "concepts": "Each player competes to earn the most Crowd Heat tokens. The player with the most at the end wins the promo segment and earns a momentum bonus.",
-      "setup": "All players draw 3 Promo cards. Players take turns in order playing cards and rolling Charisma.",
-      "gameplayChanges": "Players may play a Hype card to grant another player a +2 Charisma bonus on their next roll (useful in ally scenarios). Interruption cards allow out-of-turn promo challenges.",
-      "modeSpecificAbilities": "Face/Heel Dynamic: Face wrestlers (fan favorites) gain +1 to Heartfelt and Challenge promos. Heel wrestlers gain +1 to Boast and Insult promos.",
-      "gameEndConditions": "The promo ends after each player has played all 3 cards. The player with the most Crowd Heat tokens wins. Ties are broken by highest single Charisma roll result."
-    }
-  }
+  "expansion_code": "BASE_GAME"
 }, {
   "name": "Cage",
   "description": "Steel Cage Match: The ring is surrounded by a steel cage. Victory can be achieved by escaping the cage (either over the top or through the door) or by pinfall/submission inside the ring.",

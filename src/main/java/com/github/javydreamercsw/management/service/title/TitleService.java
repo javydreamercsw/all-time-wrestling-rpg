@@ -165,6 +165,12 @@ public class TitleService {
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @CacheEvict(value = CacheConfig.TITLES_CACHE, allEntries = true)
   public Title save(@NonNull final Title title) {
+    if (title.getId() == null && !"CUSTOM".equals(title.getExpansionCode())) {
+      // New titles created through the app are custom content (seed sync saves via
+      // createTitle/saveAll, which bypass this stamp, so official seed titles keep their
+      // expansion codes).
+      title.setExpansionCode("CUSTOM");
+    }
     return titleRepository.save(title);
   }
 
@@ -191,6 +197,16 @@ public class TitleService {
   @Cacheable(value = CacheConfig.TITLES_CACHE, key = "'all'")
   public List<Title> findAll() {
     return findAll(enabledExpansionCodes());
+  }
+
+  /**
+   * Returns all titles stamped with the given expansion code, including inactive ones. Unlike
+   * {@link #findAll()}, this ignores the expansion toggle — used by the card export view so the
+   * user's custom content prints regardless of the CUSTOM expansion toggle.
+   */
+  @PreAuthorize("isAuthenticated()")
+  public List<Title> findAllByExpansionCode(@NonNull final String expansionCode) {
+    return titleRepository.findByExpansionCodeOrderByNameAsc(expansionCode);
   }
 
   /**

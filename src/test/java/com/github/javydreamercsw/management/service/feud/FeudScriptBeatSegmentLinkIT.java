@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.feud.FeudScript;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptBeat;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptBeatRepository;
+import com.github.javydreamercsw.management.domain.feud.FeudScriptBeatStatus;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptRepository;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptStatus;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
@@ -32,6 +33,7 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentStatus;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -40,6 +42,7 @@ import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -60,6 +63,7 @@ class FeudScriptBeatSegmentLinkIT extends ManagementIntegrationTest {
 
   @Autowired private FeudScriptBeatRepository beatRepository;
   @Autowired private FeudScriptRepository feudScriptRepository;
+  @Autowired private FeudScriptService feudScriptService;
   @Autowired private RivalryRepository rivalryRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private ShowRepository showRepository;
@@ -161,5 +165,64 @@ class FeudScriptBeatSegmentLinkIT extends ManagementIntegrationTest {
     Optional<FeudScriptBeat> found = beatRepository.findByActualSegment(segment);
 
     assertThat(found).isEmpty();
+  }
+
+  @Test
+  @WithCustomMockUser(
+      username = "admin",
+      roles = {"ADMIN"})
+  void findLinkableSegmentsForBeat_listsUnlinkedCompletedMatches_only() {
+    Wrestler w1 = wrestler("Bobby Lashley");
+    Wrestler w2 = wrestler("Shelton Benjamin");
+
+    Rivalry rivalry = new Rivalry();
+    rivalry.setWrestler1(w1);
+    rivalry.setWrestler2(w2);
+    rivalry.setUniverse(defaultUniverse);
+    rivalry = rivalryRepository.save(rivalry);
+
+    FeudScript script = new FeudScript();
+    script.setName("Linkable Arc");
+    script.setStatus(FeudScriptStatus.ACTIVE);
+    script.setRivalry(rivalry);
+    script = feudScriptRepository.save(script);
+
+    FeudScriptBeat beat = new FeudScriptBeat();
+    beat.setScript(script);
+    beat.setSegmentType("Singles Match");
+    beat.setBeatOrder(1);
+    beat = beatRepository.save(beat);
+
+    // Completed, unlinked match — the only one the picker should list.
+    Segment completed = segment(w1, w2);
+    completed.setStatus(SegmentStatus.COMPLETED);
+    segmentRepository.save(completed);
+
+    // A match already linked to another beat must not appear.
+    Segment linked = segment(w1, w2);
+    linked.setStatus(SegmentStatus.COMPLETED);
+    segmentRepository.save(linked);
+    FeudScriptBeat otherBeat = new FeudScriptBeat();
+    otherBeat.setScript(script);
+    otherBeat.setSegmentType("Singles Match");
+    otherBeat.setBeatOrder(2);
+    otherBeat.setActualSegment(linked);
+    beatRepository.save(otherBeat);
+
+    // A BOOKED (not yet completed) match must not appear.
+    Segment booked = segment(w1, w2);
+    booked.setStatus(SegmentStatus.BOOKED);
+    segmentRepository.save(booked);
+
+    List<Segment> linkable = feudScriptService.findLinkableSegmentsForBeat(beat);
+
+    assertThat(linkable).extracting(Segment::getId).containsExactly(completed.getId());
+
+    // Linking through the production path completes the beat and persists the segment link.
+    feudScriptService.resolveAndCompleteBeat(script, beat, completed);
+
+    FeudScriptBeat reloaded = beatRepository.findById(beat.getId()).orElseThrow();
+    assertThat(reloaded.getBeatStatus()).isEqualTo(FeudScriptBeatStatus.COMPLETED);
+    assertThat(reloaded.getActualSegment().getId()).isEqualTo(completed.getId());
   }
 }
