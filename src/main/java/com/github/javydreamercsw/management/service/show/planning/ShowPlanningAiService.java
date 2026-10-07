@@ -308,7 +308,12 @@ public class ShowPlanningAiService {
           // Winner names are unknowable at preview time — leave winners empty (AI_PICKS
           // semantics); the bracket result mirrors the booked segment's actual winners.
         }
-        if (slot.getTitleName() != null && !slot.getTitleName().isBlank()) {
+        // The Title entity wins (selector pre-selection); titleName stays the fallback for
+        // hand-built contexts. setTitles flips isTitleSegment in sync — the same contract the
+        // scripted-beat path relies on.
+        if (slot.getTitle() != null) {
+          segment.setTitles(Set.of(slot.getTitle()));
+        } else if (slot.getTitleName() != null && !slot.getTitleName().isBlank()) {
           segment.setIsTitleSegment(true);
         }
         slotRows.add(segment);
