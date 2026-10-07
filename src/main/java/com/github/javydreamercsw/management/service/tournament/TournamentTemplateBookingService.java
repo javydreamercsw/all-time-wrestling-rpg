@@ -1058,9 +1058,9 @@ public class TournamentTemplateBookingService {
     // title is NOT on the line: the winner becomes the #1 contender. Vacant/no title: the final
     // at the payoff show is the payoff (title match when vacant).
     boolean payoff =
-        (payoffKind == TournamentPacingService.PayoffKind.FINAL_AT_PLE
-                || payoffKind == TournamentPacingService.PayoffKind.CONTENDER_AT_PLE)
-            && isFinal;
+        isFinal
+            && (payoffKind == TournamentPacingService.PayoffKind.FINAL_AT_PLE
+                || payoffKind == TournamentPacingService.PayoffKind.CONTENDER_AT_PLE);
     boolean contenderPayoff =
         payoff && payoffKind == TournamentPacingService.PayoffKind.CONTENDER_AT_PLE;
     Title linkedTitle = tournament.getLinkedTitle();
@@ -1104,7 +1104,7 @@ public class TournamentTemplateBookingService {
             tournament,
             roundNameOf(match) + " — tournament-fed",
             titleOnTheLine,
-            (titleOnTheLine || contenderPayoff) ? linkedTitle : null));
+            titleOnTheLine || contenderPayoff ? linkedTitle : null));
   }
 
   /**
