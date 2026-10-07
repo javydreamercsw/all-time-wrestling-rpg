@@ -497,6 +497,59 @@ class ShowPlanningServiceTest {
   }
 
   @Test
+  void testApproveSegments_contenderDesignationBooking_setsContenderMatch() {
+    // Contender-deciding tournament (ATW-ewrp): a booking with titleMatch=false but a non-null
+    // title means CONTENDER DESIGNATION — the saved segment carries the title WITHOUT being a
+    // title segment, flagged as a contender match so adjudication names the winner the #1
+    // contender.
+    ShowTemplate template = new ShowTemplate();
+    template.setId(5L);
+    show.setTemplate(template);
+
+    ProposedSegment proposed = new ProposedSegment();
+    proposed.setType("One on One");
+    proposed.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+    proposed.setWinners(List.of("Wrestler A"));
+    when(segmentTypeService.findByName("One on One")).thenReturn(Optional.of(new SegmentType()));
+    when(wrestlerRepository.findByName("Wrestler A"))
+        .thenReturn(Optional.of(wrestlerNamed(1L, "Wrestler A")));
+    when(wrestlerRepository.findByName("Wrestler B"))
+        .thenReturn(Optional.of(wrestlerNamed(2L, "Wrestler B")));
+
+    SegmentType singlesType = new SegmentType();
+    singlesType.setId(11L);
+    singlesType.setName("One on One");
+    Segment tournamentBooked = new Segment();
+    tournamentBooked.setSegmentType(singlesType);
+    Wrestler entrant = wrestlerNamed(9L, "Cup Entrant");
+    tournamentBooked.addParticipant(entrant, 1);
+    tournamentBooked.setWinners(List.of(entrant));
+    Title contenderTitle = new Title();
+    contenderTitle.setId(8L);
+    contenderTitle.setName("World Title");
+    when(tournamentTemplateBookingService.bookShowAttachedTournamentSegments(show))
+        .thenReturn(
+            List.of(
+                new TournamentTemplateBookingService.TournamentBooking(
+                    tournamentBooked,
+                    new Tournament(),
+                    "Final — tournament-fed",
+                    false,
+                    contenderTitle)));
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+
+    showPlanningService.approveSegments(show, List.of(proposed));
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Segment>> segmentsCaptor = ArgumentCaptor.forClass(List.class);
+    verify(segmentRepository).saveAll(segmentsCaptor.capture());
+    Segment payoff = segmentsCaptor.getValue().get(1);
+    assertFalse(payoff.getIsTitleSegment(), "Contender designation: the title is NOT on the line");
+    assertTrue(payoff.isContenderMatch(), "The segment flags the contender designation");
+    assertTrue(payoff.getTitles().contains(contenderTitle), "The title attaches for designation");
+  }
+
+  @Test
   void testApproveSegments_noTournamentAssignment_normalPathUnaffected() {
     SegmentType singles = new SegmentType();
     singles.setId(30L);

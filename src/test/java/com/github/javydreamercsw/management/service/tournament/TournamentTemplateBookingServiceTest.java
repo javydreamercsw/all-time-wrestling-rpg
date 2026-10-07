@@ -1540,6 +1540,146 @@ class TournamentTemplateBookingServiceTest {
   }
 
   @Test
+  void bookShowPayoff_contenderDeciding_booksContenderMatchNotTitleMatch() {
+    // Contender-deciding tournament (ATW-ewrp) with a reigning champion: the final books at the
+    // payoff show as a CONTENDER match — the linked title attaches to the segment but is NOT on
+    // the line (isTitleSegment stays false), and adjudication designates the winner as #1
+    // contender. The booking carries titleMatch=false with the title, the contender-designation
+    // signal the approval flow reads.
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    Title title = new Title();
+    title.setId(7L);
+    tournament.setLinkedTitle(title);
+    tournament.setContenderDeciding(true);
+    TournamentMatch finalMatch =
+        match(
+            2,
+            entry(alice, 1, TournamentEntryStatus.ACTIVE),
+            entry(bob, 2, TournamentEntryStatus.ACTIVE));
+    TournamentRound finalRound = round(2, finalMatch);
+    finalRound.setRoundName("Final");
+    tournament.setRounds(new ArrayList<>(List.of(finalRound)));
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(new SegmentType()));
+    when(tournamentService.isTitleVacant(title)).thenReturn(false);
+    when(pacingService.payoffKindOf(tournament))
+        .thenReturn(TournamentPacingService.PayoffKind.CONTENDER_AT_PLE);
+    when(tournamentService.findFormat("SINGLE_ELIMINATION")).thenReturn(Optional.of(format));
+    when(format.estimateTotalMatches(tournament)).thenReturn(1);
+    Segment booked = singles(alice, bob, alice);
+    stubResolve(booked);
+
+    List<TournamentTemplateBookingService.TournamentBooking> bookings =
+        service.bookShowAttachedTournamentSegments(show);
+
+    assertEquals(1, bookings.size());
+    assertFalse(bookings.get(0).titleMatch(), "Contender payoff: the title is NOT on the line");
+    assertEquals(
+        title, bookings.get(0).title(), "The linked title designates the contender's title");
+    assertFalse(booked.getIsTitleSegment(), "Segment must not be a title segment");
+    assertTrue(booked.isContenderMatch(), "Segment must be a contender match");
+    assertTrue(booked.getTitles().contains(title), "The title attaches for contender designation");
+    verify(tournamentService).clearPayoffShow(tournament);
+  }
+
+  @Test
+  void bookShowPayoff_contenderDeciding_vacantTitle_fallsBackToTitleMatch() {
+    // Contender-deciding but the linked title is vacant: a vacant title needs a champion, not a
+    // contender — the payoff books as the vacant-title final (FINAL_AT_PLE semantics).
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    Title title = new Title();
+    title.setId(7L);
+    tournament.setLinkedTitle(title);
+    tournament.setContenderDeciding(true);
+    TournamentMatch finalMatch =
+        match(
+            2,
+            entry(alice, 1, TournamentEntryStatus.ACTIVE),
+            entry(bob, 2, TournamentEntryStatus.ACTIVE));
+    TournamentRound finalRound = round(2, finalMatch);
+    finalRound.setRoundName("Final");
+    tournament.setRounds(new ArrayList<>(List.of(finalRound)));
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(new SegmentType()));
+    when(tournamentService.isTitleVacant(title)).thenReturn(true);
+    when(tournamentService.findFormat("SINGLE_ELIMINATION")).thenReturn(Optional.of(format));
+    when(format.estimateTotalMatches(tournament)).thenReturn(1);
+    Segment booked = singles(alice, bob, alice);
+    stubResolve(booked);
+
+    List<TournamentTemplateBookingService.TournamentBooking> bookings =
+        service.bookShowAttachedTournamentSegments(show);
+
+    assertEquals(1, bookings.size());
+    assertTrue(bookings.get(0).titleMatch(), "Vacant title → the final IS the title match");
+    assertEquals(title, bookings.get(0).title());
+    assertTrue(booked.getIsTitleSegment());
+    assertFalse(booked.isContenderMatch());
+    verify(tournamentService).clearPayoffShow(tournament);
+  }
+
+  @Test
+  void bookShowPayoff_contenderDeciding_completeTournament_consumesWithoutShowcase() {
+    // Contender-deciding tournament whose bracket already completed: the contender was decided
+    // when the final played — no champion showcase (that path exists only for title-on-the-line
+    // tournaments), just consume the link so nothing re-books.
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.COMPLETE);
+    Title title = new Title();
+    title.setId(7L);
+    tournament.setLinkedTitle(title);
+    tournament.setContenderDeciding(true);
+    tournament.setEntries(new ArrayList<>(List.of(entry(alice, 1, TournamentEntryStatus.WINNER))));
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
+    when(tournamentService.isTitleVacant(title)).thenReturn(false);
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(new SegmentType()));
+
+    List<TournamentTemplateBookingService.TournamentBooking> bookings =
+        service.bookShowAttachedTournamentSegments(show);
+
+    assertTrue(bookings.isEmpty(), "No showcase for a contender-deciding tournament");
+    verify(tournamentService).clearPayoffShow(tournament);
+  }
+
+  @Test
+  void preview_contenderDeciding_showsContenderFinalWithoutTitle() {
+    // Contender-deciding tournament hosted here with a reigning champion: the preview row reads
+    // "Contender final", carries NO expected title (nothing is on the line), and still previews
+    // the final's real pairing.
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    Title title = new Title();
+    title.setId(7L);
+    tournament.setLinkedTitle(title);
+    tournament.setContenderDeciding(true);
+    TournamentMatch open =
+        match(
+            2,
+            entry(alice, 1, TournamentEntryStatus.ACTIVE),
+            entry(bob, 2, TournamentEntryStatus.ACTIVE));
+    TournamentRound finalRound = round(2, open);
+    finalRound.setRoundName("Final");
+    tournament.setRounds(new ArrayList<>(List.of(finalRound)));
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(new SegmentType()));
+    when(tournamentService.isTitleVacant(title)).thenReturn(false);
+
+    List<TournamentTemplateBookingService.TournamentSlotPreview> previews =
+        service.previewShowAttachedTournamentSlots(show);
+
+    assertEquals(1, previews.size());
+    assertEquals("Contender final", previews.get(0).shape());
+    assertNull(previews.get(0).expectedTitle(), "Nothing on the line in a contender final");
+    assertEquals(List.of(List.of("Alice"), List.of("Bob")), previews.get(0).teams());
+  }
+
+  @Test
   void preview_payoffTeamsOf_finalNotYetGenerated_resolvesWinnersFromProjection() {
     // All qualifiers decided, the lazily-generated final round does not exist yet (rounds only
     // hold decided qualifiers): the payoff preview must resolve the final's teams from the

@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -151,7 +152,7 @@ class TournamentListViewTest extends AbstractViewTest {
     lenient()
         .when(
             tournamentService.createTournament(
-                any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), anyBoolean()))
         .thenAnswer(
             inv -> {
               Tournament t = tournament();
@@ -248,7 +249,8 @@ class TournamentListViewTest extends AbstractViewTest {
             any(),
             any(),
             any(),
-            any());
+            any(),
+            eq(false));
     verify(tournamentService).seedAuto(any(Tournament.class), anyInt(), anyLong());
   }
 
@@ -322,7 +324,8 @@ class TournamentListViewTest extends AbstractViewTest {
             any(),
             any(),
             any(),
-            eq(true));
+            eq(true),
+            eq(false));
   }
 
   @Test
@@ -435,7 +438,8 @@ class TournamentListViewTest extends AbstractViewTest {
             eq(upcomingShow),
             eq(this.payoffType),
             any(),
-            any());
+            any(),
+            eq(false));
   }
 
   @Test

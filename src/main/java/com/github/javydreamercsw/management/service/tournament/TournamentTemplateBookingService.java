@@ -88,7 +88,10 @@ public class TournamentTemplateBookingService {
   /**
    * Result of a tournament-fed booking attempt. {@code titleMatch}/{@code title} mark the payoff:
    * the approval flow must set them on the segment (not the AI proposal's values) so the
-   * adjudication path awards or defends the championship.
+   * adjudication path awards or defends the championship. {@code title != null && !titleMatch}
+   * means CONTENDER DESIGNATION (ATW-ewrp): the title attaches to the segment but is not on the
+   * line — the approval flow sets contenderMatch=true and adds the title, and adjudication names
+   * the winner the #1 contender.
    */
   public record TournamentBooking(
       Segment segment, Tournament tournament, String detail, boolean titleMatch, Title title) {}
@@ -129,7 +132,12 @@ public class TournamentTemplateBookingService {
       // The bracket finished before the PLE (rounds paced onto weekly shows, or booked
       // manually). With a reigning champion the payoff is champion vs tournament winner;
       // without one the final itself already played — nothing left to book either way
-      // after a showcase.
+      // after a showcase. Contender-deciding tournaments (ATW-ewrp) never showcase: the
+      // contender was decided when the final played.
+      if (tournament.isContenderDeciding()) {
+        consumePairing(assignment, tournament, show, "contender already decided before the PLE");
+        return Optional.empty();
+      }
       Title linkedTitle = tournament.getLinkedTitle();
       if (linkedTitle != null && !tournamentService.isTitleVacant(linkedTitle)) {
         return bookChampionShowcase(
@@ -572,8 +580,10 @@ public class TournamentTemplateBookingService {
         continue; // COMPLETE with no champion to showcase — nothing would book
       }
       // The vacant-title payoff final carries the championship; the champion showcase does too.
+      // A contender final (ATW-ewrp) carries NOTHING — the title is not on the line.
       boolean titleOnTheLine =
           tournament.getLinkedTitle() != null
+              && !"Contender final".equals(shape)
               && ("Champion showcase".equals(shape)
                   || tournamentService.isTitleVacant(tournament.getLinkedTitle()));
       // Seeded/complete brackets preview real participants; unseeded ones show a placeholder.
@@ -713,7 +723,7 @@ public class TournamentTemplateBookingService {
       }
       return List.of(List.of("Champion"), List.of("Tournament winner"));
     }
-    if ("Payoff final".equals(shape)
+    if (("Payoff final".equals(shape) || "Contender final".equals(shape))
         && tournament.getStatus() == TournamentStatus.IN_PROGRESS
         && tournament.getRounds() != null) {
       TournamentMatch open =
@@ -739,18 +749,27 @@ public class TournamentTemplateBookingService {
   }
 
   /**
-   * The payoff's shape on this show: "Final" (bracket still running, or will start here — the final
-   * IS the payoff when the linked championship is vacant or absent) or "Champion showcase" (bracket
-   * finished, a champion reigns). Null when nothing would book: the bracket completed without a
-   * champion to showcase.
+   * The payoff's shape on this show: "Payoff final" (bracket still running, or will start here —
+   * the final IS the payoff when the linked championship is vacant or absent), "Contender final"
+   * (contender-deciding tournament with a reigning champion — the winner becomes the #1 contender,
+   * ATW-ewrp) or "Champion showcase" (bracket finished, a champion reigns). Null when nothing would
+   * book: the bracket completed without a champion to showcase.
    */
   private String payoffShapeOf(Tournament tournament) {
     if (tournament.getStatus() == TournamentStatus.COMPLETE) {
       Title linkedTitle = tournament.getLinkedTitle();
-      if (linkedTitle != null && !tournamentService.isTitleVacant(linkedTitle)) {
+      if (linkedTitle != null
+          && !tournament.isContenderDeciding()
+          && !tournamentService.isTitleVacant(linkedTitle)) {
         return "Champion showcase";
       }
       return null;
+    }
+    Title linkedTitle = tournament.getLinkedTitle();
+    if (tournament.isContenderDeciding()
+        && linkedTitle != null
+        && !tournamentService.isTitleVacant(linkedTitle)) {
+      return "Contender final";
     }
     return "Payoff final";
   }
@@ -823,6 +842,12 @@ public class TournamentTemplateBookingService {
   public Optional<TournamentBooking> bookShowPayoff(
       @NonNull final Tournament tournament, @NonNull final Show show) {
     if (tournament.getStatus() == TournamentStatus.COMPLETE) {
+      if (tournament.isContenderDeciding()) {
+        // Contender-deciding (ATW-ewrp): the contender was decided when the final played — no
+        // champion showcase (that payoff exists only for title-on-the-line tournaments).
+        consumeShowLink(tournament, show, "contender already decided before the host show");
+        return Optional.empty();
+      }
       Title linkedTitle = tournament.getLinkedTitle();
       if (linkedTitle != null && !tournamentService.isTitleVacant(linkedTitle)) {
         return bookChampionShowcase(
@@ -1028,11 +1053,18 @@ public class TournamentTemplateBookingService {
     TournamentPacingService.PayoffKind payoffKind = pacingService.payoffKindOf(tournament);
 
     // A reigning champion means the payoff is champion-vs-winner, not a bracket match — book the
-    // open match as a regular bout (pacing puts the final on the last weekly show). Vacant/no
-    // title: the final at the payoff show is the payoff (title match when vacant).
-    boolean payoff = payoffKind == TournamentPacingService.PayoffKind.FINAL_AT_PLE && isFinal;
+    // open match as a regular bout (pacing puts the final on the last weekly show). Contender-
+    // deciding tournaments (ATW-ewrp) stage their final AT the PLE like FINAL_AT_PLE, but the
+    // title is NOT on the line: the winner becomes the #1 contender. Vacant/no title: the final
+    // at the payoff show is the payoff (title match when vacant).
+    boolean payoff =
+        (payoffKind == TournamentPacingService.PayoffKind.FINAL_AT_PLE
+                || payoffKind == TournamentPacingService.PayoffKind.CONTENDER_AT_PLE)
+            && isFinal;
+    boolean contenderPayoff =
+        payoff && payoffKind == TournamentPacingService.PayoffKind.CONTENDER_AT_PLE;
     Title linkedTitle = tournament.getLinkedTitle();
-    boolean titleOnTheLine = payoff && linkedTitle != null;
+    boolean titleOnTheLine = payoff && linkedTitle != null && !contenderPayoff;
 
     // The stipulation: the spec final rule wins when this booking IS the bracket final (ATW-etws),
     // otherwise the row/pairing's payoff rule applies.
@@ -1041,6 +1073,13 @@ public class TournamentTemplateBookingService {
     Segment segment =
         resolveSegment(
             match, tournament, segmentType, show, stipulationOf(effectiveRule), titleOnTheLine);
+    if (contenderPayoff && linkedTitle != null) {
+      // Contender designation (ATW-ewrp): the title attaches WITHOUT being on the line —
+      // adjudication's applyContenderOutcomes reads this shape (isContenderMatch=true,
+      // isTitleSegment=false, title in titles) and names the winner the #1 contender.
+      segment.setContenderMatch(true);
+      segment.getTitles().add(linkedTitle);
+    }
 
     match.setSegment(segment);
     tournamentService.markRoundInProgress(match.getRound());
@@ -1058,14 +1097,14 @@ public class TournamentTemplateBookingService {
         show.getName(),
         match.getEntrant1().getWrestler().getName(),
         match.getEntrant2().getWrestler().getName(),
-        payoff ? " — PAYOFF" : "");
+        payoff ? (contenderPayoff ? " — CONTENDER PAYOFF" : " — PAYOFF") : "");
     return Optional.of(
         new TournamentBooking(
             segment,
             tournament,
             roundNameOf(match) + " — tournament-fed",
             titleOnTheLine,
-            titleOnTheLine ? linkedTitle : null));
+            (titleOnTheLine || contenderPayoff) ? linkedTitle : null));
   }
 
   /**

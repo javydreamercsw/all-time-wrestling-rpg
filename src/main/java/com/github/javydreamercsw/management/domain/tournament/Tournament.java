@@ -94,6 +94,16 @@ public class Tournament extends AbstractEntity<Long> {
   @Column(name = "qualifier_group_size")
   @Nullable private Integer qualifierGroupSize;
 
+  /**
+   * Contender-deciding payoff (ATW-ewrp): the winner becomes the #1 contender for the linked title
+   * instead of challenging — the payoff books as a contender match (title attached, NOT on the
+   * line), and adjudication designates the winner. Requires a reigning champion: when the linked
+   * title is vacant the payoff falls back to the vacant-title final (a vacant title needs a
+   * champion, not a contender). {@code false} = the classic title-on-the-line semantics.
+   */
+  @Column(name = "contender_deciding", nullable = false)
+  private boolean contenderDeciding = false;
+
   /** Format identifier matching {@code TournamentFormat#getFormatId()}. */
   @Column(name = "format_id", nullable = false, length = 64)
   private String formatId;
