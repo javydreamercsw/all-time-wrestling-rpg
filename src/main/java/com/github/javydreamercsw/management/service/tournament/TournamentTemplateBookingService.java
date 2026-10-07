@@ -664,6 +664,31 @@ public class TournamentTemplateBookingService {
   }
 
   /**
+   * The final's participant teams from the format's bracket projection, when the projection
+   * resolves every slot to a real name (all deciding matches played, e.g. qualifiers complete
+   * before the lazy final round generates). Empty when the format cannot project or any slot is
+   * still a placeholder — a partial list would understate the final's field; the caller falls back
+   * to the honest "Tournament bracket" layout.
+   */
+  private List<List<String>> projectedFinalTeamsOf(Tournament tournament) {
+    return tournamentService
+        .findFormat(tournament.getFormatId())
+        .flatMap(fmt -> fmt.projectBracket(tournament))
+        .map(TournamentFormat.BracketProjection::matches)
+        .flatMap(
+            matches ->
+                matches.stream()
+                    .max(Comparator.comparingInt(TournamentFormat.ProjectedMatch::roundNumber)))
+        .map(TournamentFormat.ProjectedMatch::slots)
+        .filter(
+            slots ->
+                slots.stream().allMatch(s -> s.entrantName() != null && !s.entrantName().isBlank()))
+        .map(slots -> slots.stream().map(s -> List.of(s.entrantName())).toList())
+        .filter(teams -> teams.size() >= 2)
+        .orElse(List.of());
+  }
+
+  /**
    * Real participant teams for the payoff preview when the bracket can supply them; placeholders
    * otherwise. Champion showcase: champion(s) vs tournament winner. Final: the bracket's last open
    * match (known only once the bracket reaches round N-1); a SCHEDULED+seeded bracket's round-1
@@ -700,6 +725,14 @@ public class TournamentTemplateBookingService {
               .orElse(null);
       if (open != null) {
         return entrantNamesOf(open);
+      }
+      // The final generates lazily (e.g. QUALIFIER_GROUPS round 2 only exists after the bracket
+      // advances): a fully-decided round 1 leaves no persisted open match. Resolve the final's
+      // teams from the format's bracket projection — the booking path advances the bracket at
+      // approval, so the winners are knowable now (ATW-yoo5).
+      List<List<String>> projected = projectedFinalTeamsOf(tournament);
+      if (!projected.isEmpty()) {
+        return projected;
       }
     }
     return List.of(List.of("Tournament bracket"), List.of("Tournament bracket"));

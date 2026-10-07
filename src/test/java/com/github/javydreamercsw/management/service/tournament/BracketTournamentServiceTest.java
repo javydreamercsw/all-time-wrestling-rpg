@@ -576,6 +576,70 @@ class BracketTournamentServiceTest {
         .hasMessageContaining("universe");
   }
 
+  @Test
+  void advanceToNextRound_attachesGeneratedMatchesToInMemoryCollection() {
+    // All round-1 matches decided, round 2 does not exist yet: advanceRound persists the next
+    // round through the repositories. The caller's instance is a detached-ish entity whose lazy
+    // rounds collection is already initialized — an initialized collection never re-queries, so
+    // advanceToNextRound must attach the generated matches to the in-memory collection (the same
+    // contract startTournament documents for round 1, ATW-oahn). Template-fed booking re-scans
+    // that collection right after advancing; without the attach it sees nothing and silently
+    // falls back to AI participants (ATW-yoo5).
+    TournamentEntry e1 = entry(1);
+    TournamentEntry e2 = entry(2);
+    TournamentEntry e3 = entry(3);
+    TournamentEntry e4 = entry(4);
+    TournamentMatch m1 = new TournamentMatch();
+    m1.setRound(null);
+    m1.setEntrant1(e1);
+    m1.setEntrant2(e2);
+    m1.setWinner(e1);
+    TournamentMatch m2 = new TournamentMatch();
+    m2.setEntrant1(e3);
+    m2.setEntrant2(e4);
+    m2.setWinner(e3);
+    TournamentRound round1 =
+        TournamentRound.builder()
+            .id(10L)
+            .tournament(tournament)
+            .roundNumber(1)
+            .roundName("Round 1")
+            .status(TournamentRoundStatus.COMPLETE)
+            .build();
+    m1.setRound(round1);
+    m2.setRound(round1);
+    round1.setMatches(new ArrayList<>(List.of(m1, m2)));
+    tournament.setRounds(new ArrayList<>(List.of(round1)));
+
+    TournamentMatch generatedFinal = new TournamentMatch();
+    generatedFinal.setEntrant1(e1);
+    generatedFinal.setEntrant2(e3);
+    TournamentRound finalRound =
+        TournamentRound.builder()
+            .id(11L)
+            .tournament(tournament)
+            .roundNumber(2)
+            .roundName("Final")
+            .status(TournamentRoundStatus.PENDING)
+            .build();
+    generatedFinal.setRound(finalRound);
+    finalRound.setMatches(new ArrayList<>(List.of(generatedFinal)));
+    when(format.advanceRound(any(Tournament.class), any(TournamentFormatContext.class)))
+        .thenReturn(List.of(generatedFinal));
+    when(format.isComplete(any(Tournament.class))).thenReturn(false);
+
+    List<TournamentMatch> result = tournamentService.advanceToNextRound(tournament);
+
+    assertThat(result).containsExactly(generatedFinal);
+    assertThat(tournament.getRounds())
+        .as("the generated final must be visible on the in-memory instance")
+        .anySatisfy(
+            r -> {
+              assertThat(r.getRoundNumber()).isEqualTo(2);
+              assertThat(r.getMatches()).contains(generatedFinal);
+            });
+  }
+
   private static TournamentEntry entry(long id) {
     Wrestler w = new Wrestler();
     w.setId(id);

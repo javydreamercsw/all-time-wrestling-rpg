@@ -1002,7 +1002,12 @@ public class TournamentService {
     }
   }
 
-  /** Advance to the next round (generates matches for single-elimination). */
+  /**
+   * Advance to the next round (generates matches for single-elimination). Generated matches are
+   * attached to the in-memory rounds collection so callers holding this instance (template-fed
+   * booking re-scans it right after advancing, ATW-yoo5) see them without re-fetching — the same
+   * contract {@link #startTournament} documents for round 1.
+   */
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public List<TournamentMatch> advanceToNextRound(Tournament tournament) {
@@ -1014,7 +1019,9 @@ public class TournamentService {
       markWinner(tournament);
       return List.of();
     }
-    return fmt.advanceRound(tournament, formatContext());
+    List<TournamentMatch> generated = fmt.advanceRound(tournament, formatContext());
+    attachGenerated(tournament, generated);
+    return generated;
   }
 
   private void markWinner(Tournament tournament) {

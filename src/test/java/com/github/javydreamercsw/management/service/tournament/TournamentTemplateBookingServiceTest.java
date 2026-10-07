@@ -1540,6 +1540,152 @@ class TournamentTemplateBookingServiceTest {
   }
 
   @Test
+  void preview_payoffTeamsOf_finalNotYetGenerated_resolvesWinnersFromProjection() {
+    // All qualifiers decided, the lazily-generated final round does not exist yet (rounds only
+    // hold decided qualifiers): the payoff preview must resolve the final's teams from the
+    // format's bracket projection — the booking path advances the bracket at approval, so the
+    // winners ARE knowable now. Placeholders here mislead the booker (ATW-yoo5).
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    TournamentMatch decided1 =
+        match(
+            1,
+            entry(alice, 1, TournamentEntryStatus.ELIMINATED),
+            entry(bob, 2, TournamentEntryStatus.ELIMINATED));
+    decided1.setWinner(decided1.getEntrant1());
+    Wrestler cara = wrestler(3L, "Cara");
+    Wrestler dave = wrestler(4L, "Dave");
+    TournamentMatch decided2 =
+        match(
+            1,
+            entry(cara, 3, TournamentEntryStatus.ELIMINATED),
+            entry(dave, 4, TournamentEntryStatus.ELIMINATED));
+    decided2.setWinner(decided2.getEntrant1());
+    tournament.setRounds(new ArrayList<>(List.of(round(1, decided1, decided2))));
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(new SegmentType()));
+    when(tournamentService.findFormat("SINGLE_ELIMINATION")).thenReturn(Optional.of(format));
+    when(format.projectBracket(tournament))
+        .thenReturn(
+            Optional.of(
+                new TournamentFormat.BracketProjection(
+                    List.of("Qualifiers", "Final"),
+                    List.of(
+                        new TournamentFormat.ProjectedMatch(
+                            3,
+                            2,
+                            List.of(
+                                new TournamentFormat.ProjectedSlot("Alice", 1L, 1, true),
+                                new TournamentFormat.ProjectedSlot("Cara", 3L, 2, true)),
+                            null,
+                            null)))));
+
+    List<TournamentTemplateBookingService.TournamentSlotPreview> previews =
+        service.previewShowAttachedTournamentSlots(show);
+
+    assertEquals(1, previews.size());
+    assertEquals("Payoff final", previews.get(0).shape());
+    assertEquals(List.of(List.of("Alice"), List.of("Cara")), previews.get(0).teams());
+  }
+
+  @Test
+  void preview_payoffTeamsOf_partiallyDecidedQualifiers_showsNextOpenMatch() {
+    // Only some qualifiers decided: a persisted open match still exists (the undecided
+    // qualifier), so the preview shows ITS real pairing — that is the match the booking path
+    // would book on this show if approved now. The projection fallback only applies once no
+    // open match remains (all qualifiers decided, final not yet generated).
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    TournamentMatch decided1 =
+        match(
+            1,
+            entry(alice, 1, TournamentEntryStatus.ELIMINATED),
+            entry(bob, 2, TournamentEntryStatus.ELIMINATED));
+    decided1.setWinner(decided1.getEntrant1());
+    TournamentMatch open2 =
+        match(
+            1,
+            entry(wrestler(3L, "Cara"), 3, TournamentEntryStatus.ACTIVE),
+            entry(wrestler(4L, "Dave"), 4, TournamentEntryStatus.ACTIVE));
+    tournament.setRounds(new ArrayList<>(List.of(round(1, decided1, open2))));
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(new SegmentType()));
+    when(tournamentService.findFormat("SINGLE_ELIMINATION")).thenReturn(Optional.of(format));
+    when(format.projectBracket(tournament))
+        .thenReturn(
+            Optional.of(
+                new TournamentFormat.BracketProjection(
+                    List.of("Qualifiers", "Final"),
+                    List.of(
+                        new TournamentFormat.ProjectedMatch(
+                            3,
+                            2,
+                            List.of(
+                                new TournamentFormat.ProjectedSlot("Alice", 1L, 1, true),
+                                new TournamentFormat.ProjectedSlot(null, null, 2, false)),
+                            null,
+                            null)))));
+
+    List<TournamentTemplateBookingService.TournamentSlotPreview> previews =
+        service.previewShowAttachedTournamentSlots(show);
+
+    assertEquals(1, previews.size());
+    assertEquals(List.of(List.of("Cara"), List.of("Dave")), previews.get(0).teams());
+  }
+
+  @Test
+  void
+      preview_payoffTeamsOf_bookedButUndecidedMatch_projectionWithUnresolvedSlots_staysPlaceholder() {
+    // A match booked onto a segment but not yet decided is NOT bookable (the open-match scan
+    // skips it), so the payoff path reaches the projection fallback — but the projection's
+    // final still holds an unresolved slot. A partial list would understate the final's field:
+    // keep the honest "Tournament bracket" layout.
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    TournamentMatch decided1 =
+        match(
+            1,
+            entry(alice, 1, TournamentEntryStatus.ELIMINATED),
+            entry(bob, 2, TournamentEntryStatus.ELIMINATED));
+    decided1.setWinner(decided1.getEntrant1());
+    TournamentMatch bookedUndecided =
+        match(
+            1,
+            entry(wrestler(3L, "Cara"), 3, TournamentEntryStatus.ACTIVE),
+            entry(wrestler(4L, "Dave"), 4, TournamentEntryStatus.ACTIVE));
+    bookedUndecided.setSegment(new Segment()); // booked elsewhere, result pending
+    tournament.setRounds(new ArrayList<>(List.of(round(1, decided1, bookedUndecided))));
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(new SegmentType()));
+    when(tournamentService.findFormat("SINGLE_ELIMINATION")).thenReturn(Optional.of(format));
+    when(format.projectBracket(tournament))
+        .thenReturn(
+            Optional.of(
+                new TournamentFormat.BracketProjection(
+                    List.of("Qualifiers", "Final"),
+                    List.of(
+                        new TournamentFormat.ProjectedMatch(
+                            3,
+                            2,
+                            List.of(
+                                new TournamentFormat.ProjectedSlot("Alice", 1L, 1, true),
+                                new TournamentFormat.ProjectedSlot(null, null, 2, false)),
+                            null,
+                            null)))));
+
+    List<TournamentTemplateBookingService.TournamentSlotPreview> previews =
+        service.previewShowAttachedTournamentSlots(show);
+
+    assertEquals(1, previews.size());
+    assertEquals(
+        List.of(List.of("Tournament bracket"), List.of("Tournament bracket")),
+        previews.get(0).teams());
+  }
+
+  @Test
   void preview_pacedRoundsPreviewRealPairings() {
     // IN_PROGRESS show-attached tournament with an open round match + future payoff: a weekly
     // show before the payoff previews the round match with the real pairing.
@@ -1608,6 +1754,57 @@ class TournamentTemplateBookingServiceTest {
         .thenReturn(List.of(tournament));
 
     assertTrue(service.previewShowAttachedTournamentSlots(show).isEmpty());
+  }
+
+  @Test
+  void bookShowPayoff_finalGeneratedOnAdvance_booksPayoff() {
+    // All round-1 matches decided, the final round does not exist yet: the booking path advances
+    // the bracket and re-scans. advanceToNextRound attaches the generated final to the in-memory
+    // rounds collection (TournamentService contract), so the re-scan finds it and the payoff
+    // books — before that fix the stale collection left nothing bookable and the payoff silently
+    // fell back to AI participants (ATW-yoo5).
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    Title title = new Title();
+    title.setId(7L);
+    tournament.setLinkedTitle(title);
+    TournamentMatch decided =
+        match(
+            1,
+            entry(alice, 1, TournamentEntryStatus.ELIMINATED),
+            entry(bob, 2, TournamentEntryStatus.ELIMINATED));
+    decided.setWinner(decided.getEntrant1());
+    tournament.setRounds(new ArrayList<>(List.of(round(1, decided))));
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(new SegmentType()));
+    when(tournamentService.isTitleVacant(title)).thenReturn(true);
+    when(tournamentService.findFormat("SINGLE_ELIMINATION")).thenReturn(Optional.of(format));
+    when(format.estimateTotalMatches(tournament)).thenReturn(2);
+    Wrestler cara = wrestler(3L, "Cara");
+    // Mirror the corrected advanceToNextRound: the generated final attaches to the in-memory
+    // rounds collection so the caller's re-scan sees it.
+    lenient()
+        .when(tournamentService.advanceToNextRound(tournament))
+        .thenAnswer(
+            invocation -> {
+              TournamentMatch finalMatch =
+                  match(
+                      2,
+                      entry(alice, 1, TournamentEntryStatus.ACTIVE),
+                      entry(cara, 3, TournamentEntryStatus.ACTIVE));
+              TournamentRound finalRound = round(2, finalMatch);
+              tournament.getRounds().add(finalRound);
+              return List.of(finalMatch);
+            });
+    Segment booked = singles(alice, cara, alice);
+    stubResolve(booked);
+
+    List<TournamentTemplateBookingService.TournamentBooking> bookings =
+        service.bookShowAttachedTournamentSegments(show);
+
+    assertEquals(1, bookings.size(), "The payoff must book via the advanced bracket");
+    verify(tournamentService).clearPayoffShow(tournament);
   }
 
   @Test
