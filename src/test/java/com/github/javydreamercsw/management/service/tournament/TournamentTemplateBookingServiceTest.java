@@ -1680,6 +1680,55 @@ class TournamentTemplateBookingServiceTest {
   }
 
   @Test
+  void bookTournamentFedSegment_contenderDecidingCompleteTournament_consumesWithoutShowcase() {
+    // Template-path mirror of the host-show guard: a COMPLETE contender-deciding tournament
+    // never books a champion showcase — the pairing is consumed instead (ATW-ewrp).
+    tournament.setStatus(TournamentStatus.COMPLETE);
+    Title title = new Title();
+    title.setId(7L);
+    tournament.setLinkedTitle(title);
+    tournament.setContenderDeciding(true);
+    tournament.setEntries(new ArrayList<>(List.of(entry(alice, 1, TournamentEntryStatus.WINNER))));
+    when(tournamentService.isTitleVacant(title)).thenReturn(false);
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(new SegmentType()));
+
+    assertTrue(
+        service.bookTournamentFedSegment(assignment, rumbleType, show).isEmpty(),
+        "COMPLETE contender tournament must not showcase");
+    assertNull(assignment.getTournament(), "Pairing consumed");
+  }
+
+  @Test
+  void preview_payoffTeamsOf_showcaseWithMissingWinner_returnsPlaceholderTeams() {
+    // Champion showcase where currentChampionsOf returns champions but no WINNER entry exists:
+    // the placeholder layout (Champion / Tournament winner) renders instead of real teams.
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.COMPLETE);
+    Title title = new Title();
+    title.setId(7L);
+    tournament.setLinkedTitle(title);
+    Wrestler champ = wrestler(31L, "Real Champ");
+    tournament.setEntries(
+        new ArrayList<>(List.of(entry(alice, 1, TournamentEntryStatus.ELIMINATED))));
+    when(tournamentService.isTitleVacant(title)).thenReturn(false);
+    when(tournamentService.currentChampionsOf(title)).thenReturn(List.of(champ));
+    SegmentType singlesType = new SegmentType();
+    singlesType.setName("One on One");
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(singlesType));
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
+
+    List<TournamentTemplateBookingService.TournamentSlotPreview> previews =
+        service.previewShowAttachedTournamentSlots(show);
+
+    assertEquals(1, previews.size());
+    assertEquals("Champion showcase", previews.get(0).shape());
+    assertEquals(
+        List.of(List.of("Champion"), List.of("Tournament winner")), previews.get(0).teams());
+  }
+
+  @Test
   void preview_payoffTeamsOf_finalNotYetGenerated_resolvesWinnersFromProjection() {
     // All qualifiers decided, the lazily-generated final round does not exist yet (rounds only
     // hold decided qualifiers): the payoff preview must resolve the final's teams from the

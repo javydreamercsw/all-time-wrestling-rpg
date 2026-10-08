@@ -27,6 +27,7 @@ import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -400,6 +401,84 @@ class ShowPlanningServiceTest {
     assertEquals(1, saved.get(0).getSegmentOrder());
     assertEquals("AI summary", saved.get(0).getSummary());
     assertEquals("AI narration", saved.get(0).getNarration());
+  }
+
+  @Test
+  void testApproveSegments_tournamentFed_titleMatchAndContenderArms() {
+    // The template path's title arms: a titleMatch=true booking flags the saved segment as a
+    // title segment with the title attached (ShowPlanningService 631-635); a contender-designation
+    // booking (titleMatch=false, title non-null) flags contenderMatch instead (636-641).
+    SegmentType rumbleType = new SegmentType();
+    rumbleType.setId(10L);
+    rumbleType.setName("Abu Dhabi Rumble");
+    when(segmentTypeService.findByName("Abu Dhabi Rumble")).thenReturn(Optional.of(rumbleType));
+
+    ShowTemplate template = new ShowTemplate();
+    template.setId(5L);
+    ShowTemplateSegmentAssignment assignment = new ShowTemplateSegmentAssignment();
+    assignment.setTemplate(template);
+    assignment.setSegmentType(rumbleType);
+    assignment.setTournament(new Tournament());
+    assignment.setMode(ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH);
+    template.getSegmentAssignments().add(assignment);
+    show.setTemplate(template);
+
+    ProposedSegment proposed = new ProposedSegment();
+    proposed.setType("Abu Dhabi Rumble");
+    proposed.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+    proposed.setWinners(List.of("Wrestler A"));
+
+    SegmentType singlesType = new SegmentType();
+    singlesType.setId(11L);
+    singlesType.setName("One on One");
+    Title title = new Title();
+    title.setId(7L);
+    title.setName("World Title");
+
+    Segment titleMatchBooked = new Segment();
+    titleMatchBooked.setSegmentType(singlesType);
+    Wrestler titleEntrant = wrestlerNamed(9L, "Title Entrant");
+    titleMatchBooked.addParticipant(titleEntrant, 1);
+    titleMatchBooked.setWinners(List.of(titleEntrant));
+    Segment contenderBooked = new Segment();
+    contenderBooked.setSegmentType(singlesType);
+    Wrestler contenderEntrant = wrestlerNamed(10L, "Contender Entrant");
+    contenderBooked.addParticipant(contenderEntrant, 1);
+    contenderBooked.setWinners(List.of(contenderEntrant));
+    when(tournamentTemplateBookingService.bookTournamentFedSegment(assignment, rumbleType, show))
+        .thenReturn(
+            Optional.of(
+                new TournamentTemplateBookingService.TournamentBooking(
+                    titleMatchBooked,
+                    assignment.getTournament(),
+                    "Final — tournament-fed",
+                    true,
+                    title)));
+    // Second approval: the same assignment books a contender-designation payoff.
+    showPlanningService.approveSegments(show, List.of(proposed));
+    when(tournamentTemplateBookingService.bookTournamentFedSegment(assignment, rumbleType, show))
+        .thenReturn(
+            Optional.of(
+                new TournamentTemplateBookingService.TournamentBooking(
+                    contenderBooked,
+                    assignment.getTournament(),
+                    "Final — tournament-fed",
+                    false,
+                    title)));
+    showPlanningService.approveSegments(show, List.of(proposed));
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Segment>> segmentsCaptor = ArgumentCaptor.forClass(List.class);
+    verify(segmentRepository, times(2)).saveAll(segmentsCaptor.capture());
+    List<List<Segment>> savedBatches = segmentsCaptor.getAllValues();
+    Segment titleSegment = savedBatches.get(0).get(0);
+    assertTrue(titleSegment.getIsTitleSegment(), "titleMatch=true → title segment");
+    assertTrue(titleSegment.getTitles().contains(title));
+    Segment contenderSegment = savedBatches.get(1).get(0);
+    assertFalse(
+        contenderSegment.getIsTitleSegment(), "contender designation is NOT a title segment");
+    assertTrue(contenderSegment.isContenderMatch(), "contender designation flags contenderMatch");
+    assertTrue(contenderSegment.getTitles().contains(title));
   }
 
   @Test
