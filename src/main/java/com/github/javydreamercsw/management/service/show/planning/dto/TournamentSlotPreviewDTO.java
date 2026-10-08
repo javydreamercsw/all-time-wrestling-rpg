@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.management.service.show.planning.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.github.javydreamercsw.management.domain.title.Title;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Data;
@@ -41,6 +43,15 @@ public class TournamentSlotPreviewDTO {
 
   /** Championship expected on the line for this slot, or null. */
   private String titleName;
+
+  /**
+   * The linked championship entity, when the slot puts a title on the line (or expects a contender
+   * designation) — rides the DTO detached so the planning card can attach it to the proposal and
+   * the Edit dialog's title selector pre-selects it. {@code @JsonIgnore} mirrors the {@code
+   * FeudScriptBeatDTO} pattern: entities reach the planning display detached, and serializing their
+   * lazy graphs throws {@code LazyInitializationException}.
+   */
+  @JsonIgnore private Title title;
 
   /**
    * Real match-up (one list per team) when the bracket can supply it — seeded brackets' open

@@ -752,6 +752,9 @@ class ShowPlanningServiceTest {
     assertEquals("No DQ", slot.getRuleName());
     assertEquals("Payoff final", slot.getShape());
     assertEquals("Crown Cup Title", slot.getTitleName());
+    // The linked Title entity must survive the DTO mapping so the planning card can attach it
+    // to the proposal (the title selector in the Edit dialog pre-selects it).
+    assertEquals(payoffTitle, slot.getTitle());
     assertEquals(List.of(List.of("Champion"), List.of("Winner")), slot.getTeams());
   }
 

@@ -26,6 +26,7 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.service.HolidayService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
@@ -904,6 +905,12 @@ class ShowPlanningAiServiceTest {
     payoff.setRuleName("Tables, Ladders and Chairs (TLC)");
     payoff.setShape("Payoff final");
     payoff.setTitleName("ATW World");
+    // The linked Title entity rides the DTO (FeudScriptBeatDTO pattern): the proposal must
+    // carry it so the Edit dialog's title selector pre-selects it.
+    Title worldTitle = new Title();
+    worldTitle.setId(11L);
+    worldTitle.setName("ATW World");
+    payoff.setTitle(worldTitle);
     TournamentSlotPreviewDTO rounds = new TournamentSlotPreviewDTO();
     rounds.setTournamentName("Crown's Cup");
     rounds.setTypeName("One on One");
@@ -938,6 +945,10 @@ class ShowPlanningAiServiceTest {
     assertEquals("Free-for-All", tournamentRows.get(0).getType());
     assertEquals(List.of("Tables, Ladders and Chairs (TLC)"), tournamentRows.get(0).getRules());
     assertTrue(tournamentRows.get(0).getIsTitleSegment());
+    // The Title entity attaches to the proposal (selector pre-selection at planning time).
+    assertTrue(
+        tournamentRows.get(0).getTitles().contains(worldTitle),
+        "The payoff proposal must carry the linked Title");
     assertTrue(tournamentRows.get(0).getSummary().contains("Crown's Cup"));
     assertTrue(tournamentRows.get(0).getSummary().contains("Payoff final"));
     assertEquals("One on One", tournamentRows.get(1).getType());

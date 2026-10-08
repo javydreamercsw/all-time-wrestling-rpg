@@ -347,6 +347,9 @@ public class ShowPlanningService {
                   slotDto.setShape(p.shape());
                   slotDto.setTitleName(
                       p.expectedTitle() != null ? p.expectedTitle().getName() : null);
+                  // The entity rides along (FeudScriptBeatDTO pattern): the proposal must carry
+                  // it so the Edit dialog's title selector pre-selects the championship.
+                  slotDto.setTitle(p.expectedTitle());
                   slotDto.setTeams(p.teams());
                   return slotDto;
                 })
