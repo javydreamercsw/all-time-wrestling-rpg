@@ -24,7 +24,7 @@
     "@webcomponents/shadycss": "1.11.2",
     "apexcharts": "3.54.1",
     "date-fns": "4.1.0",
-    "dompurify": "^3.4.13",
+    "dompurify": "^3.4.16",
     "ical.js": "2.0.1",
     "lit": "3.3.3",
     "moment": "2.31.0",
