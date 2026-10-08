@@ -45,6 +45,7 @@ import com.github.javydreamercsw.management.domain.show.reservation.ShowSegmentR
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentStatus;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -225,6 +226,7 @@ class FeudScriptServiceTest {
     ran.setId(1177L);
     ran.setStatus(SegmentStatus.COMPLETED);
     ran.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
+    ran.setSegmentType(segmentType("Tag Team", "tag_team"));
     ran.addParticipant(w1);
     ran.addParticipant(w2);
     when(segmentRepository.findCompletedByRivalryId(731L)).thenReturn(List.of(ran));
@@ -234,6 +236,39 @@ class FeudScriptServiceTest {
     verify(feudScriptBeatRepository, times(2)).save(beat1); // addBeat + completion
     assertThat(beat1.getBeatStatus()).isEqualTo(FeudScriptBeatStatus.COMPLETED);
     assertThat(beat1.getActualSegment()).isSameAs(ran);
+  }
+
+  @Test
+  void createScriptWithBeats_typeMismatchedBackfill_beatStaysPending() {
+    // The backfill must not credit a One-on-One beat with a promo that happens to feature both
+    // wrestlers — same guard as the auto-complete path (ATW-lxnn).
+    Wrestler w1 = wrestlerWith(1L, Gender.MALE);
+    Wrestler w2 = wrestlerWith(2L, Gender.MALE);
+    Rivalry rivalry = rivalry(w1, w2);
+    rivalry.setId(732L);
+    FeudScriptBeat beat1 = new FeudScriptBeat();
+    beat1.setSegmentType("One on One");
+    beat1.setBeatStatus(FeudScriptBeatStatus.PENDING);
+
+    when(gameSettingService.isIntergenderMatchesEnabled()).thenReturn(true);
+    when(rivalryService.getRivalryBetweenWrestlers(1L, 2L)).thenReturn(Optional.of(rivalry));
+    FeudScript persisted = rivalryScript(rivalry);
+    when(feudScriptRepository.save(any())).thenReturn(persisted);
+    when(feudScriptBeatRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    Segment promo = new Segment();
+    promo.setId(1217L);
+    promo.setStatus(SegmentStatus.COMPLETED);
+    promo.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
+    promo.setSegmentType(segmentType("Promo", "promo"));
+    promo.addParticipant(w1);
+    promo.addParticipant(w2);
+    when(segmentRepository.findCompletedByRivalryId(732L)).thenReturn(List.of(promo));
+
+    service.createScriptWithBeats("Mismatched Arc", List.of(w1, w2), 2, List.of(beat1));
+
+    assertThat(beat1.getBeatStatus()).isEqualTo(FeudScriptBeatStatus.PENDING);
+    assertThat(beat1.getActualSegment()).isNull();
   }
 
   @Test
@@ -395,6 +430,259 @@ class FeudScriptServiceTest {
 
     assertThat(script.getStatus()).isEqualTo(FeudScriptStatus.COMPLETED);
     verify(feudScriptRepository).save(script);
+  }
+
+  // ── auto-complete guards (ATW-lxnn): participant overlap alone must not complete a beat ──
+
+  @Test
+  void autoCompleteBeatForSegment_typeMismatch_doesNotCompleteBeat() {
+    // A promo featuring both rivalry wrestlers must not consume a One on One beat —
+    // production bug ATW-lxnn: the ladder-match title culmination was completed by a
+    // "lay down the law" promo on the wrong show.
+    Segment promo = new Segment();
+    promo.setId(55L);
+    promo.setSegmentType(segmentType("Promo", "promo"));
+    Wrestler w1 = new Wrestler();
+    w1.setId(1L);
+    Wrestler w2 = new Wrestler();
+    w2.setId(2L);
+    promo.addParticipant(w1);
+    promo.addParticipant(w2);
+
+    FeudScript script = new FeudScript();
+    script.setName("Rivalry Arc");
+    script.setStatus(FeudScriptStatus.ACTIVE);
+    FeudScriptBeat beat = new FeudScriptBeat();
+    beat.setBeatOrder(1);
+    beat.setBeatStatus(FeudScriptBeatStatus.PENDING);
+    beat.setSegmentType("One on One");
+    beat.setScript(script);
+    script.getBeats().add(beat);
+
+    when(feudScriptBeatRepository.findPendingBeatsForWrestlers(anyList()))
+        .thenReturn(List.of(beat));
+
+    Optional<FeudScriptBeat> result = service.autoCompleteBeatForSegment(promo);
+
+    assertThat(result).isEmpty();
+    assertThat(beat.getBeatStatus()).isEqualTo(FeudScriptBeatStatus.PENDING);
+    verify(feudScriptBeatRepository, never()).save(any());
+  }
+
+  @Test
+  void autoCompleteBeatForSegment_matchingType_completesBeat() {
+    // Same setup but the segment type MATCHES the beat — completion proceeds.
+    Segment match = new Segment();
+    match.setId(56L);
+    match.setSegmentType(segmentType("One on One", "one_on_one"));
+    Wrestler w1 = new Wrestler();
+    w1.setId(1L);
+    Wrestler w2 = new Wrestler();
+    w2.setId(2L);
+    match.addParticipant(w1);
+    match.addParticipant(w2);
+
+    FeudScript script = new FeudScript();
+    script.setName("Rivalry Arc");
+    script.setStatus(FeudScriptStatus.ACTIVE);
+    FeudScriptBeat beat = new FeudScriptBeat();
+    beat.setBeatOrder(1);
+    beat.setBeatStatus(FeudScriptBeatStatus.PENDING);
+    beat.setSegmentType("One on One");
+    beat.setScript(script);
+    script.getBeats().add(beat);
+
+    when(feudScriptBeatRepository.findPendingBeatsForWrestlers(anyList()))
+        .thenReturn(List.of(beat));
+    when(feudScriptBeatRepository.save(beat)).thenReturn(beat);
+
+    Optional<FeudScriptBeat> result = service.autoCompleteBeatForSegment(match);
+
+    assertThat(result).isPresent();
+    assertThat(result.get().getBeatStatus()).isEqualTo(FeudScriptBeatStatus.COMPLETED);
+  }
+
+  @Test
+  void autoCompleteBeatForSegment_targetShowMismatch_doesNotCompleteBeat() {
+    // A beat targeted at the PLE must not be consumed by a segment on an earlier weekly —
+    // production bug ATW-lxnn: the Quantum Quarrel culmination was completed by a Timeless promo.
+    Show targetShow = new Show();
+    targetShow.setId(452L);
+    Show otherShow = new Show();
+    otherShow.setId(355L);
+
+    Segment promo = new Segment();
+    promo.setId(57L);
+    promo.setShow(otherShow);
+    promo.setSegmentType(segmentType("Promo", "promo"));
+    Wrestler w1 = new Wrestler();
+    w1.setId(1L);
+    Wrestler w2 = new Wrestler();
+    w2.setId(2L);
+    promo.addParticipant(w1);
+    promo.addParticipant(w2);
+
+    FeudScript script = new FeudScript();
+    script.setName("Rivalry Arc");
+    script.setStatus(FeudScriptStatus.ACTIVE);
+    FeudScriptBeat beat = new FeudScriptBeat();
+    beat.setBeatOrder(1);
+    beat.setBeatStatus(FeudScriptBeatStatus.PENDING);
+    beat.setSegmentType("Promo");
+    beat.setTargetShow(targetShow);
+    beat.setScript(script);
+    script.getBeats().add(beat);
+
+    when(feudScriptBeatRepository.findPendingBeatsForWrestlers(anyList()))
+        .thenReturn(List.of(beat));
+
+    Optional<FeudScriptBeat> result = service.autoCompleteBeatForSegment(promo);
+
+    assertThat(result).isEmpty();
+    assertThat(beat.getBeatStatus()).isEqualTo(FeudScriptBeatStatus.PENDING);
+    verify(feudScriptBeatRepository, never()).save(any());
+  }
+
+  @Test
+  void autoCompleteBeatForSegment_targetShowMatch_completesBeat() {
+    // The segment IS on the beat's target show — completion proceeds even though the beat
+    // is show-targeted.
+    Show targetShow = new Show();
+    targetShow.setId(452L);
+
+    Segment promo = new Segment();
+    promo.setId(58L);
+    promo.setShow(targetShow);
+    promo.setSegmentType(segmentType("Promo", "promo"));
+    Wrestler w1 = new Wrestler();
+    w1.setId(1L);
+    Wrestler w2 = new Wrestler();
+    w2.setId(2L);
+    promo.addParticipant(w1);
+    promo.addParticipant(w2);
+
+    FeudScript script = new FeudScript();
+    script.setName("Rivalry Arc");
+    script.setStatus(FeudScriptStatus.ACTIVE);
+    FeudScriptBeat beat = new FeudScriptBeat();
+    beat.setBeatOrder(1);
+    beat.setBeatStatus(FeudScriptBeatStatus.PENDING);
+    beat.setSegmentType("Promo");
+    beat.setTargetShow(targetShow);
+    beat.setScript(script);
+    script.getBeats().add(beat);
+
+    when(feudScriptBeatRepository.findPendingBeatsForWrestlers(anyList()))
+        .thenReturn(List.of(beat));
+    when(feudScriptBeatRepository.save(beat)).thenReturn(beat);
+
+    Optional<FeudScriptBeat> result = service.autoCompleteBeatForSegment(promo);
+
+    assertThat(result).isPresent();
+    assertThat(result.get().getBeatStatus()).isEqualTo(FeudScriptBeatStatus.COMPLETED);
+  }
+
+  @Test
+  void autoCompleteBeatForSegment_untargetedCulminationOnWeekly_doesNotCompleteBeat() {
+    // An untargeted culmination is the arc's finale — it belongs on a PLE (same rule the
+    // beat-injection pass applies). A weekly match must not consume it.
+    Segment match = new Segment();
+    match.setId(59L);
+    match.setSegmentType(segmentType("One on One", "one_on_one"));
+    match.setShow(showWithCategory(355L, ShowCategory.WEEKLY));
+    Wrestler w1 = new Wrestler();
+    w1.setId(1L);
+    Wrestler w2 = new Wrestler();
+    w2.setId(2L);
+    match.addParticipant(w1);
+    match.addParticipant(w2);
+
+    FeudScript script = new FeudScript();
+    script.setName("Rivalry Arc");
+    script.setStatus(FeudScriptStatus.ACTIVE);
+    FeudScriptBeat beat = new FeudScriptBeat();
+    beat.setBeatOrder(1);
+    beat.setBeatStatus(FeudScriptBeatStatus.PENDING);
+    beat.setSegmentType("One on One");
+    beat.setCulmination(true);
+    beat.setScript(script);
+    script.getBeats().add(beat);
+
+    when(feudScriptBeatRepository.findPendingBeatsForWrestlers(anyList()))
+        .thenReturn(List.of(beat));
+
+    Optional<FeudScriptBeat> result = service.autoCompleteBeatForSegment(match);
+
+    assertThat(result).isEmpty();
+    assertThat(beat.getBeatStatus()).isEqualTo(FeudScriptBeatStatus.PENDING);
+  }
+
+  @Test
+  void autoCompleteBeatForSegment_untargetedCulminationOnPle_completesBeat() {
+    // The mirror: on a PLE the untargeted culmination completes normally.
+    Segment match = new Segment();
+    match.setId(60L);
+    match.setSegmentType(segmentType("One on One", "one_on_one"));
+    match.setShow(showWithCategory(452L, ShowCategory.PLE));
+    Wrestler w1 = new Wrestler();
+    w1.setId(1L);
+    Wrestler w2 = new Wrestler();
+    w2.setId(2L);
+    match.addParticipant(w1);
+    match.addParticipant(w2);
+
+    FeudScript script = new FeudScript();
+    script.setName("Rivalry Arc");
+    script.setStatus(FeudScriptStatus.ACTIVE);
+    FeudScriptBeat beat = new FeudScriptBeat();
+    beat.setBeatOrder(1);
+    beat.setBeatStatus(FeudScriptBeatStatus.PENDING);
+    beat.setSegmentType("One on One");
+    beat.setCulmination(true);
+    beat.setScript(script);
+    script.getBeats().add(beat);
+
+    when(feudScriptBeatRepository.findPendingBeatsForWrestlers(anyList()))
+        .thenReturn(List.of(beat));
+    when(feudScriptBeatRepository.save(beat)).thenReturn(beat);
+
+    Optional<FeudScriptBeat> result = service.autoCompleteBeatForSegment(match);
+
+    assertThat(result).isPresent();
+    assertThat(result.get().getBeatStatus()).isEqualTo(FeudScriptBeatStatus.COMPLETED);
+  }
+
+  @Test
+  void autoCompleteBeatForSegment_beatWithoutSegmentType_matchingShow_completesBeat() {
+    // A beat with no configured type keeps the old behavior (any completed segment with the
+    // participants counts) — the type guard only applies when the beat declares a type.
+    Segment any = new Segment();
+    any.setId(61L);
+    any.setSegmentType(segmentType("Tag Team", "tag_team"));
+    Wrestler w1 = new Wrestler();
+    w1.setId(1L);
+    Wrestler w2 = new Wrestler();
+    w2.setId(2L);
+    any.addParticipant(w1);
+    any.addParticipant(w2);
+
+    FeudScript script = new FeudScript();
+    script.setName("Rivalry Arc");
+    script.setStatus(FeudScriptStatus.ACTIVE);
+    FeudScriptBeat beat = new FeudScriptBeat();
+    beat.setBeatOrder(1);
+    beat.setBeatStatus(FeudScriptBeatStatus.PENDING);
+    beat.setSegmentType(null);
+    beat.setScript(script);
+    script.getBeats().add(beat);
+
+    when(feudScriptBeatRepository.findPendingBeatsForWrestlers(anyList()))
+        .thenReturn(List.of(beat));
+    when(feudScriptBeatRepository.save(beat)).thenReturn(beat);
+
+    Optional<FeudScriptBeat> result = service.autoCompleteBeatForSegment(any);
+
+    assertThat(result).isPresent();
   }
 
   // ── contender designation (CONTENDER_DESIGNATION beat outcome) ───────────
@@ -1069,6 +1357,7 @@ class FeudScriptServiceTest {
     Wrestler substitute = wrestlerWith(40L, Gender.MALE);
     Segment segment = new Segment();
     segment.setId(80L);
+    segment.setSegmentType(segmentType("Singles Match", "one_on_one"));
     segment.addParticipant(w1);
     segment.addParticipant(w2);
     segment.addParticipant(substitute); // show-time substitution for the planned external
@@ -1096,6 +1385,24 @@ class FeudScriptServiceTest {
     w.setId(id);
     w.setGender(gender);
     return w;
+  }
+
+  private SegmentType segmentType(String name, String code) {
+    SegmentType type = new SegmentType();
+    type.setName(name);
+    type.setCode(code);
+    return type;
+  }
+
+  private Show showWithCategory(Long id, ShowCategory category) {
+    ShowType type = new ShowType();
+    type.setCategory(category);
+    ShowTemplate template = new ShowTemplate();
+    template.setShowType(type);
+    Show show = new Show();
+    show.setId(id);
+    show.setTemplate(template);
+    return show;
   }
 
   // ── updateBeat (ATW-yux4) ─────────────────────────────────────────────────
