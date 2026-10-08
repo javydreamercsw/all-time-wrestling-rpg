@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -35,6 +36,7 @@ import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
@@ -53,6 +55,7 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -151,7 +154,7 @@ class TournamentListViewTest extends AbstractViewTest {
     lenient()
         .when(
             tournamentService.createTournament(
-                any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), anyBoolean()))
         .thenAnswer(
             inv -> {
               Tournament t = tournament();
@@ -248,7 +251,8 @@ class TournamentListViewTest extends AbstractViewTest {
             any(),
             any(),
             any(),
-            any());
+            any(),
+            eq(false));
     verify(tournamentService).seedAuto(any(Tournament.class), anyInt(), anyLong());
   }
 
@@ -322,7 +326,8 @@ class TournamentListViewTest extends AbstractViewTest {
             any(),
             any(),
             any(),
-            eq(true));
+            eq(true),
+            eq(false));
   }
 
   @Test
@@ -435,7 +440,8 @@ class TournamentListViewTest extends AbstractViewTest {
             eq(upcomingShow),
             eq(this.payoffType),
             any(),
-            any());
+            any(),
+            eq(false));
   }
 
   @Test
@@ -498,6 +504,92 @@ class TournamentListViewTest extends AbstractViewTest {
             ComboBox.class,
             spec -> spec.withLabel("Payoff Match Type (optional)"));
     assertEquals(payoffType, typeCombo.getValue());
+  }
+
+  @Test
+  @DisplayName("Edit dialog: contender checkbox reflects the flag, gated by the linked title")
+  void editDialog_contenderCheckbox_gatedByTitle() {
+    Tournament contender = tournament();
+    contender.setContenderDeciding(true);
+    Title linked = new Title();
+    linked.setId(7L);
+    linked.setName("World Title");
+    contender.setLinkedTitle(linked);
+    lenient().when(tournamentService.findByIdWithDetails(1L)).thenReturn(Optional.of(contender));
+
+    view.openEditDialogForTest(contender);
+
+    Checkbox contenderCheck =
+        _get(
+            UI.getCurrent(),
+            Checkbox.class,
+            spec -> spec.withLabel("Winner becomes #1 contender (title not on the line)"));
+    assertTrue(contenderCheck.getValue(), "The flag prefills the checkbox");
+    assertTrue(contenderCheck.isEnabled(), "A linked title enables the checkbox");
+
+    // Clearing the title disables the checkbox and unticks it — the mode needs a title.
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    ComboBox<Title> titleBox =
+        _get(
+            UI.getCurrent(),
+            ComboBox.class,
+            spec -> spec.withLabel("Linked Championship (optional)"));
+    titleBox.clear();
+    assertFalse(contenderCheck.isEnabled(), "No title → checkbox disabled");
+    assertFalse(contenderCheck.getValue(), "No title → checkbox unticked");
+
+    // Re-linking a title re-enables the checkbox (the listener's enabled arm runs again).
+    titleBox.setValue(linked);
+    assertTrue(contenderCheck.isEnabled(), "Title re-linked → checkbox enabled again");
+  }
+
+  @Test
+  @DisplayName("Creation wizard: picking a title enables the contender checkbox")
+  void wizard_contenderCheckbox_enablesWhenTitlePicked() {
+    view.openCreationWizardForTest();
+
+    Checkbox contenderCheck =
+        _get(
+            UI.getCurrent(),
+            Checkbox.class,
+            spec -> spec.withLabel("Winner becomes #1 contender (title not on the line)"));
+    assertFalse(contenderCheck.isEnabled(), "No title picked yet → disabled");
+
+    Title linked = new Title();
+    linked.setId(7L);
+    linked.setName("World Title");
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    ComboBox<Title> titleBox =
+        _get(
+            UI.getCurrent(),
+            ComboBox.class,
+            spec -> spec.withLabel("Linked Championship (optional)"));
+    titleBox.setValue(linked);
+    assertTrue(contenderCheck.isEnabled(), "Title picked → checkbox enabled");
+
+    // Clearing it disables the checkbox again (the listener's null arm).
+    titleBox.setValue(null);
+    assertFalse(contenderCheck.isEnabled(), "Title cleared → checkbox disabled");
+  }
+
+  @Test
+  @DisplayName("Edit save: a validation failure surfaces as an error notification")
+  void editDialog_saveError_showsNotification() {
+    // updateTournament throws (e.g. the contender-deciding validation): the dialog catches,
+    // logs, and shows an error instead of closing.
+    lenient()
+        .when(
+            tournamentService.updateTournament(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), eq(true), eq(false)))
+        .thenThrow(new IllegalArgumentException("A contender-deciding tournament needs a title"));
+
+    view.openEditDialogForTest(tournament());
+    _get(UI.getCurrent(), TextField.class, spec -> spec.withLabel("Tournament Name"))
+        .setValue("Renamed Cup");
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Save")).click();
+
+    Dialog editDialog = _get(UI.getCurrent(), Dialog.class);
+    assertTrue(editDialog.isOpened(), "A failed save keeps the dialog open");
   }
 
   /** Fires ConfirmDialog's confirm action via reflection (fireEvent is protected). */

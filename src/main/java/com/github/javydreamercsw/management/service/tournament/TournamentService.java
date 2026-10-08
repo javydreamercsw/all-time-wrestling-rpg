@@ -263,6 +263,44 @@ public class TournamentService {
       SegmentType payoffSegmentType,
       SegmentRule payoffSegmentRule,
       Gender gender) {
+    return createTournament(
+        name,
+        formatId,
+        universe,
+        linkedTitle,
+        startDate,
+        allowedRules,
+        payoffShow,
+        payoffSegmentType,
+        payoffSegmentRule,
+        gender,
+        false);
+  }
+
+  /**
+   * Full overload including the contender-deciding mode (ATW-ewrp). {@code contenderDeciding}
+   * requires a linked title — the winner becomes that title's #1 contender, so without a title the
+   * mode is meaningless and creation is rejected.
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public Tournament createTournament(
+      String name,
+      String formatId,
+      Universe universe,
+      Title linkedTitle,
+      LocalDate startDate,
+      List<SegmentRule> allowedRules,
+      Show payoffShow,
+      SegmentType payoffSegmentType,
+      SegmentRule payoffSegmentRule,
+      Gender gender,
+      boolean contenderDeciding) {
+    if (contenderDeciding && linkedTitle == null) {
+      throw new IllegalArgumentException(
+          "A contender-deciding tournament needs a linked title — the winner becomes its"
+              + " #1 contender");
+    }
     validatePayoffShow(universe, payoffShow);
     findFormat(formatId)
         .orElseThrow(() -> new IllegalArgumentException("Unknown format: " + formatId));
@@ -275,6 +313,7 @@ public class TournamentService {
     t.setPayoffSegmentType(payoffSegmentType);
     t.setPayoffSegmentRule(payoffSegmentRule);
     t.setGender(gender);
+    t.setContenderDeciding(contenderDeciding);
     t.setStartDate(startDate);
     t.setStatus(TournamentStatus.SCHEDULED);
     t.setEntries(new ArrayList<>());
@@ -314,6 +353,7 @@ public class TournamentService {
     next.setGender(completed.getGender());
     next.setDefaultEntrantCount(completed.getDefaultEntrantCount());
     next.setQualifierGroupSize(completed.getQualifierGroupSize());
+    next.setContenderDeciding(completed.isContenderDeciding());
     next.setParent(completed);
     next.setEditionOrdinal(nextOrdinal);
     next.setRecurrence(TournamentRecurrence.ANNUAL);
@@ -461,6 +501,39 @@ public class TournamentService {
       final SegmentType payoffSegmentType,
       final SegmentRule payoffSegmentRule,
       final boolean setPayoffFields) {
+    return updateTournament(
+        id,
+        name,
+        formatId,
+        linkedTitle,
+        startDate,
+        allowedRules,
+        payoffShow,
+        payoffSegmentType,
+        payoffSegmentRule,
+        setPayoffFields,
+        null);
+  }
+
+  /**
+   * Full update including the contender-deciding mode (ATW-ewrp). {@code contenderDeciding} null
+   * leaves the existing flag untouched (compat); a non-null value overwrites it — requiring a
+   * linked title when true.
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public Tournament updateTournament(
+      @NonNull final Long id,
+      @NonNull final String name,
+      final String formatId,
+      final Title linkedTitle,
+      final LocalDate startDate,
+      final List<SegmentRule> allowedRules,
+      final Show payoffShow,
+      final SegmentType payoffSegmentType,
+      final SegmentRule payoffSegmentRule,
+      final boolean setPayoffFields,
+      final Boolean contenderDeciding) {
     Tournament t =
         tournamentRepository
             .findById(id)
@@ -471,6 +544,14 @@ public class TournamentService {
     }
     if (setPayoffFields) {
       validatePayoffShow(t.getUniverse(), payoffShow);
+    }
+    boolean effectiveContenderDeciding =
+        contenderDeciding != null ? contenderDeciding : t.isContenderDeciding();
+    Title effectiveTitle = linkedTitle != null ? linkedTitle : t.getLinkedTitle();
+    if (effectiveContenderDeciding && effectiveTitle == null) {
+      throw new IllegalArgumentException(
+          "A contender-deciding tournament needs a linked title — the winner becomes its"
+              + " #1 contender");
     }
     t.setName(name);
     if (formatId != null && !formatId.equals(t.getFormatId())) {
@@ -485,6 +566,9 @@ public class TournamentService {
     t.setLinkedTitle(linkedTitle);
     t.setStartDate(startDate);
     t.setAllowedRules(allowedRules != null ? new ArrayList<>(allowedRules) : new ArrayList<>());
+    if (contenderDeciding != null) {
+      t.setContenderDeciding(contenderDeciding);
+    }
     if (setPayoffFields) {
       t.setPayoffShow(payoffShow);
       t.setPayoffSegmentType(payoffSegmentType);

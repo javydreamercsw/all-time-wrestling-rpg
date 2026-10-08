@@ -59,7 +59,14 @@ public class TournamentPacingService {
      * the PLE (like every other round), and the PLE hosts champion vs tournament winner as the
      * title match.
      */
-    CHAMPION_SHOWCASE_AT_PLE
+    CHAMPION_SHOWCASE_AT_PLE,
+    /**
+     * Contender-deciding tournament (ATW-ewrp): a reigning champion holds the linked title and the
+     * tournament exists to crown a challenger — the PLE hosts the final as a contender match (the
+     * winner becomes the #1 contender; the title is NOT on the line). Vacant title falls back to
+     * {@link #FINAL_AT_PLE}: a vacant title needs a champion, not a contender.
+     */
+    CONTENDER_AT_PLE
   }
 
   /** The pacing plan for one tournament feeding one PLE. */
@@ -116,10 +123,11 @@ public class TournamentPacingService {
     int booked = countBooked(tournament);
     int remaining = Math.max(0, total - booked);
     // The payoff match itself plays at the PLE; everything else paces across the weekly slots.
-    // With a reigning champion the bracket's own final also plays on a weekly show, so ALL
-    // remaining matches are round matches.
+    // With a reigning champion (showcase) the bracket's own final also plays on a weekly show, so
+    // ALL remaining matches are round matches. FINAL_AT_PLE and CONTENDER_AT_PLE (ATW-ewrp) both
+    // stage their final AT the PLE — only the showcase keeps it on the weekly calendar.
     int remainingNonFinal =
-        payoffKind == PayoffKind.FINAL_AT_PLE ? Math.max(0, remaining - 1) : remaining;
+        payoffKind == PayoffKind.CHAMPION_SHOWCASE_AT_PLE ? remaining : Math.max(0, remaining - 1);
     return new PacingPlan(
         payoffKind,
         weeklyShowSlotsBefore(ple, LocalDate.now(clock)),
@@ -130,12 +138,17 @@ public class TournamentPacingService {
 
   /**
    * The payoff shape: FINAL_AT_PLE when no title is linked or the linked championship is vacant;
-   * CHAMPION_SHOWCASE_AT_PLE when a champion reigns.
+   * CHAMPION_SHOWCASE_AT_PLE when a champion reigns; CONTENDER_AT_PLE when the tournament is
+   * contender-deciding AND a champion reigns — a vacant title falls back to FINAL_AT_PLE (a vacant
+   * title needs a champion, not a contender, ATW-ewrp).
    */
   public PayoffKind payoffKindOf(@NonNull final Tournament tournament) {
-    return tournament.getLinkedTitle() == null
-            || tournamentService.isTitleVacant(tournament.getLinkedTitle())
-        ? PayoffKind.FINAL_AT_PLE
+    if (tournament.getLinkedTitle() == null
+        || tournamentService.isTitleVacant(tournament.getLinkedTitle())) {
+      return PayoffKind.FINAL_AT_PLE;
+    }
+    return tournament.isContenderDeciding()
+        ? PayoffKind.CONTENDER_AT_PLE
         : PayoffKind.CHAMPION_SHOWCASE_AT_PLE;
   }
 

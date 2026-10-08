@@ -480,6 +480,186 @@ class BracketTournamentServiceTest {
   }
 
   @Test
+  void createTournament_genderOverload_defaultsContenderDecidingFalse() {
+    // The gender-only overload (the wizard's pre-ATW-ewrp call shape) delegates with
+    // contenderDeciding=false — the classic title-on-the-line semantics.
+    Universe universe = new Universe();
+    universe.setId(1L);
+    when(tournamentRepository.save(any(Tournament.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    Tournament created =
+        tournamentService.createTournament(
+            "Classic Cup",
+            "SINGLE_ELIMINATION",
+            universe,
+            null,
+            LocalDate.of(2026, 6, 1),
+            List.of(),
+            null,
+            null,
+            null,
+            Gender.MALE);
+
+    assertThat(created.isContenderDeciding()).isFalse();
+  }
+
+  @Test
+  void updateTournament_compatOverload_leavesContenderDecidingUntouched() {
+    // The 10-arg compat delegate passes contenderDeciding=null: the flag on the managed
+    // entity survives the edit.
+    Universe universe = new Universe();
+    universe.setId(1L);
+    Title linked = new Title();
+    linked.setId(7L);
+    Tournament existing = new Tournament();
+    existing.setId(1L);
+    existing.setName("Crown Cup");
+    existing.setFormatId("SINGLE_ELIMINATION");
+    existing.setUniverse(universe);
+    existing.setLinkedTitle(linked);
+    existing.setContenderDeciding(true);
+    when(tournamentRepository.findById(1L)).thenReturn(Optional.of(existing));
+    when(tournamentRepository.save(any(Tournament.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    Tournament updated =
+        tournamentService.updateTournament(
+            1L, "Renamed", null, linked, null, List.of(), null, null, null, true);
+
+    assertThat(updated.isContenderDeciding())
+        .as("compat update leaves the existing flag untouched")
+        .isTrue();
+  }
+
+  @Test
+  void updateTournament_contenderDecidingWithoutTitle_rejected() {
+    // Editing a contender-deciding mode onto a tournament with no linked title is rejected.
+    Universe universe = new Universe();
+    universe.setId(1L);
+    Tournament existing = new Tournament();
+    existing.setId(1L);
+    existing.setName("Crown Cup");
+    existing.setFormatId("SINGLE_ELIMINATION");
+    existing.setUniverse(universe);
+    when(tournamentRepository.findById(1L)).thenReturn(Optional.of(existing));
+
+    Assertions.assertThatThrownBy(
+            () ->
+                tournamentService.updateTournament(
+                    1L, "Crown Cup", null, null, null, List.of(), null, null, null, true, true))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("title");
+  }
+
+  @Test
+  void updateTournament_nullRequiredFields_rejected() {
+    // The 11-arg overload's @NonNull guard rejects a missing id/name outright.
+    Assertions.assertThatThrownBy(
+            () ->
+                tournamentService.updateTournament(
+                    null, "Crown Cup", null, null, null, List.of(), null, null, null, true, true))
+        .isInstanceOf(NullPointerException.class);
+    Assertions.assertThatThrownBy(
+            () ->
+                tournamentService.updateTournament(
+                    1L, null, null, null, null, List.of(), null, null, null, true, true))
+        .isInstanceOf(NullPointerException.class);
+  }
+
+  @Test
+  void createTournament_contenderDeciding_persistsFlag() {
+    // Contender-deciding tournaments (ATW-ewrp): the flag rides through creation.
+    Universe universe = new Universe();
+    universe.setId(1L);
+    Title linked = new Title();
+    linked.setId(7L);
+    when(tournamentRepository.save(any(Tournament.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    Tournament created =
+        tournamentService.createTournament(
+            "Contender Cup",
+            "SINGLE_ELIMINATION",
+            universe,
+            linked,
+            LocalDate.of(2026, 6, 1),
+            List.of(),
+            null,
+            null,
+            null,
+            null,
+            true);
+
+    assertThat(created.isContenderDeciding()).isTrue();
+  }
+
+  @Test
+  void createTournament_contenderDecidingWithoutTitle_rejected() {
+    // A contender-deciding tournament needs a linked title — there is nothing to become #1
+    // contender of otherwise. Validated at creation time.
+    Universe universe = new Universe();
+    universe.setId(1L);
+
+    Assertions.assertThatThrownBy(
+            () ->
+                tournamentService.createTournament(
+                    "Contender Cup",
+                    "SINGLE_ELIMINATION",
+                    universe,
+                    null,
+                    LocalDate.of(2026, 6, 1),
+                    List.of(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    true))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("title");
+  }
+
+  @Test
+  void updateTournament_contenderDeciding_persistsFlag() {
+    // The wizard's edit save: the contender-deciding flag lands on the managed entity.
+    Universe universe = new Universe();
+    universe.setId(1L);
+    Title linked = new Title();
+    linked.setId(7L);
+    Tournament existing = new Tournament();
+    existing.setId(1L);
+    existing.setName("Crown Cup");
+    existing.setFormatId("SINGLE_ELIMINATION");
+    existing.setUniverse(universe);
+    existing.setLinkedTitle(linked);
+    when(tournamentRepository.findById(1L)).thenReturn(Optional.of(existing));
+    when(tournamentRepository.save(any(Tournament.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    Tournament updated =
+        tournamentService.updateTournament(
+            1L, "Crown Cup", null, linked, null, List.of(), null, null, null, true, true);
+
+    assertThat(updated.isContenderDeciding()).isTrue();
+  }
+
+  @Test
+  void createNextEdition_copiesContenderDeciding() {
+    // Recurring chains keep the mode: the next edition inherits contender-deciding.
+    Universe universe = new Universe();
+    universe.setId(1L);
+    Title title = new Title();
+    title.setId(5L);
+    tournament.setName("Crown Cup");
+    tournament.setFormatId("SINGLE_ELIMINATION");
+    tournament.setUniverse(universe);
+    tournament.setLinkedTitle(title);
+    tournament.setRecurrence(TournamentRecurrence.ANNUAL);
+    tournament.setContenderDeciding(true);
+
+    Optional<Tournament> next = tournamentService.createNextEdition(tournament);
+
+    assertThat(next).isPresent();
+    assertThat(next.get().isContenderDeciding()).isTrue();
+  }
+
+  @Test
   void createTournament_hostShowFromAnotherUniverse_rejected() {
     // The host show must live in the tournament's universe — validated at creation time.
     Universe universe = new Universe();

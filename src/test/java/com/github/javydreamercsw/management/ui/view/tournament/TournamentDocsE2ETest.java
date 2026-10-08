@@ -194,6 +194,8 @@ class TournamentDocsE2ETest extends AbstractDocsE2ETest {
         "Create a tournament in two steps. Step 1 names the tournament and picks the format"
             + " (Single Elimination or Round Robin), an optional linked championship, start"
             + " date, and allowed rules — the seeding step stays locked until these are set."
+            + " Linking a championship also unlocks the contender-deciding option: the"
+            + " tournament winner becomes the title's #1 contender instead of challenging."
             + " Step 2 chooses how entrants are seeded: automatically by fan count (with a"
             + " live match-up preview of what Create will build), manual wrestler picking,"
             + " or deferred so a paired show can seed it on approval.",

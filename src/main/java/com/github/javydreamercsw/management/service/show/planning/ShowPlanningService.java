@@ -624,7 +624,10 @@ public class ShowPlanningService {
           booked.setRivalryId(proposedSegment.getRivalryId());
           // Title-segment state comes from the tournament payoff, not the AI proposal — the
           // adjudication path awards or defends the linked championship off these fields
-          // (ATW-z963: final at the PLE / champion showcase).
+          // (ATW-z963: final at the PLE / champion showcase). titleMatch=false with a non-null
+          // title means contender designation (ATW-ewrp): the title attaches WITHOUT being on
+          // the line and the segment flags contenderMatch, so adjudication names the winner the
+          // #1 contender.
           if (tournamentBooking.get().titleMatch()) {
             booked.setIsTitleSegment(true);
             if (tournamentBooking.get().title() != null) {
@@ -632,6 +635,10 @@ public class ShowPlanningService {
             }
           } else {
             booked.setIsTitleSegment(false);
+            if (tournamentBooking.get().title() != null) {
+              booked.setContenderMatch(true);
+              booked.getTitles().add(tournamentBooking.get().title());
+            }
           }
           segmentsToSave.add(booked);
           log.info(
@@ -802,6 +809,8 @@ public class ShowPlanningService {
       Segment booked = booking.segment();
       booked.setSegmentOrder(segmentRepository.findByShow(show).size() + 1 + segmentsToSave.size());
       booked.setSegmentDate(show.getShowDate().atStartOfDay(clock.getZone()).toInstant());
+      // Same contract as the template path: titleMatch=true puts the title on the line;
+      // titleMatch=false with a title designates a contender (ATW-ewrp).
       if (booking.titleMatch()) {
         booked.setIsTitleSegment(true);
         if (booking.title() != null) {
@@ -809,6 +818,10 @@ public class ShowPlanningService {
         }
       } else {
         booked.setIsTitleSegment(false);
+        if (booking.title() != null) {
+          booked.setContenderMatch(true);
+          booked.getTitles().add(booking.title());
+        }
       }
       segmentsToSave.add(booked);
       log.info(

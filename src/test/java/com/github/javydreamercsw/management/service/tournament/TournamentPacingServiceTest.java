@@ -108,6 +108,37 @@ class TournamentPacingServiceTest {
   }
 
   @Test
+  @DisplayName("Contender-deciding + reigning champion → CONTENDER_AT_PLE")
+  void payoffKind_contenderDeciding_reigningChampion() {
+    Title title = new Title();
+    title.setId(7L);
+    tournament.setLinkedTitle(title);
+    tournament.setContenderDeciding(true);
+    lenient().when(tournamentService.isTitleVacant(title)).thenReturn(false);
+    assertEquals(
+        TournamentPacingService.PayoffKind.CONTENDER_AT_PLE, service.payoffKindOf(tournament));
+  }
+
+  @Test
+  @DisplayName("Contender-deciding + vacant title falls back to FINAL_AT_PLE")
+  void payoffKind_contenderDeciding_vacantTitle_fallsBackToFinal() {
+    // A vacant title needs a champion, not a contender — the vacant-title final wins.
+    Title title = new Title();
+    title.setId(7L);
+    tournament.setLinkedTitle(title);
+    tournament.setContenderDeciding(true);
+    lenient().when(tournamentService.isTitleVacant(title)).thenReturn(true);
+    assertEquals(TournamentPacingService.PayoffKind.FINAL_AT_PLE, service.payoffKindOf(tournament));
+  }
+
+  @Test
+  @DisplayName("Contender-deciding + no linked title → FINAL_AT_PLE")
+  void payoffKind_contenderDeciding_noTitle_fallsBackToFinal() {
+    tournament.setContenderDeciding(true);
+    assertEquals(TournamentPacingService.PayoffKind.FINAL_AT_PLE, service.payoffKindOf(tournament));
+  }
+
+  @Test
   @DisplayName("Slots exclude PLEs and anything on/after the PLE date")
   void slots_excludePlesAndLater() {
     Show week1 = show(2L, "Week 1", LocalDate.of(2026, 6, 8), weeklyType);
@@ -165,6 +196,26 @@ class TournamentPacingServiceTest {
     assertEquals(TournamentPacingService.PayoffKind.CHAMPION_SHOWCASE_AT_PLE, plan.payoffKind());
     // All 3 remaining matches (including the bracket final) pace onto weekly shows.
     assertEquals(3, plan.remainingNonFinal());
+  }
+
+  @Test
+  @DisplayName("CONTENDER_AT_PLE: the contender final plays at the PLE, like FINAL_AT_PLE")
+  void plan_contenderAtPle_finalExcludedFromWeeklyPacing() {
+    Title title = new Title();
+    title.setId(7L);
+    tournament.setLinkedTitle(title);
+    tournament.setContenderDeciding(true);
+    lenient().when(tournamentService.isTitleVacant(title)).thenReturn(false);
+    tournament.getEntries().add(TournamentEntry.builder().seed(1).build());
+    tournament.getEntries().add(TournamentEntry.builder().seed(2).build());
+    lenient().when(format.estimateTotalMatches(tournament)).thenReturn(3);
+    lenient().when(showService.getShowsByDateRange(any(), any())).thenReturn(List.of());
+
+    TournamentPacingService.PacingPlan plan = service.planFor(tournament, ple);
+
+    assertEquals(TournamentPacingService.PayoffKind.CONTENDER_AT_PLE, plan.payoffKind());
+    // 3 remaining; the contender final plays at the PLE → 2 round matches pace weekly.
+    assertEquals(2, plan.remainingNonFinal());
   }
 
   @Test

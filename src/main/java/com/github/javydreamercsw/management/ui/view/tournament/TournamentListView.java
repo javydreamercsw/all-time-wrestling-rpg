@@ -219,6 +219,23 @@ public class TournamentListView extends VerticalLayout {
     titleCombo.setWidthFull();
     titleCombo.setClearButtonVisible(true);
 
+    // Contender-deciding mode (ATW-ewrp) — only meaningful with a title linked.
+    Checkbox contenderDecidingCheck =
+        new Checkbox("Winner becomes #1 contender (title not on the line)");
+    contenderDecidingCheck.setValue(managed.isContenderDeciding());
+    contenderDecidingCheck.setEnabled(managed.getLinkedTitle() != null);
+    contenderDecidingCheck.setHelperText(
+        "Requires a linked championship with a reigning champion: the payoff books as a"
+            + " contender match and the winner is named the #1 contender instead of"
+            + " challenging. A vacant title falls back to a vacant-title final.");
+    titleCombo.addValueChangeListener(
+        e -> {
+          contenderDecidingCheck.setEnabled(e.getValue() != null);
+          if (e.getValue() == null) {
+            contenderDecidingCheck.setValue(false);
+          }
+        });
+
     // One-time host-show binding (ATW-xbn4).
     ComboBox<Show> hostShowCombo = new ComboBox<>("Host Show (optional)");
     hostShowCombo.setItems(showFacade.getShowService().getUpcomingShows(50));
@@ -284,7 +301,8 @@ public class TournamentListView extends VerticalLayout {
                     hostShowCombo.getValue(),
                     payoffTypeCombo.getValue(),
                     payoffRuleCombo.getValue(),
-                    true);
+                    true,
+                    contenderDecidingCheck.getValue());
                 dialog.close();
                 refresh();
                 Notification.show("Tournament updated!", 3000, Notification.Position.BOTTOM_CENTER)
@@ -303,6 +321,7 @@ public class TournamentListView extends VerticalLayout {
             nameField,
             formatCombo,
             titleCombo,
+            contenderDecidingCheck,
             hostShowCombo,
             payoffTypeCombo,
             payoffRuleCombo,
@@ -516,6 +535,17 @@ public class TournamentListView extends VerticalLayout {
     genderCombo.setHelperText(
         "Restricts entrants to one gender. The linked championship's own constraint also applies.");
 
+    // Contender-deciding mode (ATW-ewrp): the winner becomes the linked title's #1 contender
+    // instead of challenging — only meaningful with a title linked.
+    Checkbox contenderDecidingCheck =
+        new Checkbox("Winner becomes #1 contender (title not on the line)");
+    contenderDecidingCheck.setEnabled(false);
+    contenderDecidingCheck.setHelperText(
+        "Requires a linked championship with a reigning champion: the payoff books as a"
+            + " contender match and the winner is named the #1 contender instead of"
+            + " challenging. A vacant title falls back to a vacant-title final.");
+    titleCombo.addValueChangeListener(e -> contenderDecidingCheck.setEnabled(e.getValue() != null));
+
     VerticalLayout tab1Content =
         new VerticalLayout(
             nameField,
@@ -526,7 +556,8 @@ public class TournamentListView extends VerticalLayout {
             payoffTypeCombo,
             payoffRuleCombo,
             recurrenceCombo,
-            rulesPicker);
+            rulesPicker,
+            contenderDecidingCheck);
     tab1Content.setPadding(false);
 
     // Tab 2: Seeding
@@ -719,7 +750,8 @@ public class TournamentListView extends VerticalLayout {
                         hostShowCombo.getValue(),
                         payoffTypeCombo.getValue(),
                         payoffRuleCombo.getValue(),
-                        genderCombo.getValue());
+                        genderCombo.getValue(),
+                        contenderDecidingCheck.getValue());
                 t.setRecurrence(recurrenceCombo.getValue());
                 t.setQualifierGroupSize(groupSizeField.getValue());
                 tournamentService.save(t);

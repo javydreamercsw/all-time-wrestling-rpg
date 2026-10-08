@@ -193,6 +193,7 @@ A tournament can be attached to a **particular show** (its *host show*) instead 
 ### Booking Behavior
 
 - **Payoff:** the tournament's payoff (its final, or a champion-vs-winner showcase) books on the host show exactly once, then the host-show link is consumed so it can never fire twice. When the linked championship is vacant, the final itself is the title match at the host show.
+- **Contender-deciding tournaments:** with the "Winner becomes #1 contender" option (and a reigning champion on the linked title), the payoff books as a **contender match** — the title is attached but NOT on the line, and adjudication names the winner the title's #1 contender instead of booking a challenge. A vacant title falls back to the vacant-title final (a vacant title needs a champion, not a contender). The champion showcase never applies to contender-deciding tournaments: once the bracket completes, the contender is decided.
 - **Rounds:** the non-final rounds pace automatically onto the non-PLE shows scheduled before the host show — no weekly template row needed. The system divides the remaining matches across the slots remaining and books that many per show (never more than what remains).
 - **Payoff match type and rule:** configurable on the tournament (defaulting to One-on-One). This is what enables payoffs the PLE-template path cannot express — for example, a 6-man Free-for-All TLC match for a title at a one-off show.
 
