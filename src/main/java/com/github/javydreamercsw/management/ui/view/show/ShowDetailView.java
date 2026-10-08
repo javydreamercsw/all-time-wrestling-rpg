@@ -1077,48 +1077,6 @@ public class ShowDetailView extends Main
         .setSortable(false)
         .setFlexGrow(2);
 
-    // Source badge — shows where the segment came from: a story-arc beat, a tournament slot
-    // (fed from the bracket), or nothing for AI-proposed/manual segments.
-    grid.addComponentColumn(
-            segment -> {
-              Span badge = new Span();
-              var beat = feudScriptService.findBeatForSegment(segment);
-              if (beat.isPresent()) {
-                String arcName = beat.get().getScript().getName();
-                badge.setText("🎭 " + arcName);
-                badge.getElement().getThemeList().add("badge contrast");
-                badge.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.FontWeight.SEMIBOLD);
-                badge
-                    .getElement()
-                    .setAttribute(
-                        "title",
-                        "Story Arc beat #"
-                            + beat.get().getBeatOrder()
-                            + " — "
-                            + beat.get().getScript().getName());
-                return (Component) badge;
-              }
-              var tournamentMatch = tournamentMatchRepository.findBySegmentId(segment.getId());
-              if (tournamentMatch.isPresent()) {
-                badge.setText("🏆 " + tournamentMatch.get().getRound().getTournament().getName());
-                badge.getElement().getThemeList().add("badge success");
-                badge.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.FontWeight.SEMIBOLD);
-                badge
-                    .getElement()
-                    .setAttribute(
-                        "title",
-                        "Tournament match — "
-                            + tournamentMatch.get().getRound().getRoundName()
-                            + " of "
-                            + tournamentMatch.get().getRound().getTournament().getName());
-                return (Component) badge;
-              }
-              return (Component) badge;
-            })
-        .setHeader("Source")
-        .setAutoWidth(true)
-        .setFlexGrow(0);
-
     // Segment type column — carries a gold star when this is a #1 contender match
     // Per-segment quality score column — shown as stars matching the show header
     grid.addComponentColumn(
@@ -1230,11 +1188,14 @@ public class ShowDetailView extends Main
         .setAutoWidth(true)
         .setFlexGrow(0);
 
-    grid.addComponentColumn(this::createActionButtons).setHeader("Actions").setFlexGrow(1);
+    // Control columns size to their content (ATW-gusw): pure flex-grow lets the wide
+    // data columns squeeze them below content width on small screens, clipping the
+    // move up/down arrows and action buttons.
+    grid.addComponentColumn(this::createActionButtons).setHeader("Actions").setAutoWidth(true);
 
     grid.addComponentColumn(this::createOrderButtons)
         .setHeader("Order")
-        .setFlexGrow(1)
+        .setAutoWidth(true)
         .setKey("order");
 
     grid.addComponentColumn(
@@ -1264,6 +1225,7 @@ public class ShowDetailView extends Main
               return new Span();
             })
         .setHeader("Main Event")
+        .setAutoWidth(true)
         .setFlexGrow(1);
     return grid;
   }

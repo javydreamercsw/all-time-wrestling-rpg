@@ -576,6 +576,82 @@ class ShowDetailViewTest extends AbstractViewTest {
   }
 
   @Test
+  void segmentGrid_sourceColumn_appearsOnce() {
+    // ATW-gusw: the 2.9.0 column merge accidentally added the Source column twice.
+    // The duplicate widens the grid past its 860px budget and squeezes the
+    // Actions/Order controls below content width on small screens.
+    ShowType showType = new ShowType();
+    showType.setName("Test");
+    Show show = new Show();
+    show.setId(30L);
+    show.setName("Source Dup Show");
+    show.setType(showType);
+
+    Segment segment = new Segment();
+    segment.setId(21L);
+    segment.setSegmentType(new SegmentType());
+    segment.setSegmentDate(Instant.parse("2026-09-03T00:00:00Z"));
+
+    Mockito.when(showService.getShowById(any())).thenReturn(Optional.of(show));
+    Mockito.when(segmentRepository.findByShowOrderBySegmentOrderAsc(any(Show.class)))
+        .thenReturn(List.of(segment));
+    Mockito.when(segmentRepository.findByShow(any(Show.class))).thenReturn(List.of(segment));
+    Mockito.when(feudScriptService.findBeatForSegment(segment)).thenReturn(Optional.empty());
+
+    ShowDetailView view = buildView(mock(SecurityUtils.class));
+    BeforeEvent event = Mockito.mock(BeforeEvent.class);
+    Mockito.when(event.getLocation()).thenReturn(new Location(""));
+    view.setParameter(event, 30L);
+
+    Grid<Segment> grid = LocatorJ._get(view, Grid.class, spec -> spec.withId("segments-grid"));
+    long sourceColumns =
+        grid.getColumns().stream().filter(c -> "Source".equals(c.getHeaderText())).count();
+    Assertions.assertThat(sourceColumns).as("Source column count").isEqualTo(1);
+  }
+
+  @Test
+  void segmentGrid_controlColumns_autoWidthToContent() {
+    // ATW-gusw: Actions/Order/Main Event must size to their content (auto-width);
+    // pure flex-grow lets the wider data columns squeeze them below content width
+    // as the viewport shrinks, clipping the move up/down arrows and action buttons.
+    ShowType showType = new ShowType();
+    showType.setName("Test");
+    Show show = new Show();
+    show.setId(31L);
+    show.setName("Auto Width Show");
+    show.setType(showType);
+
+    Segment segment = new Segment();
+    segment.setId(22L);
+    segment.setSegmentType(new SegmentType());
+    segment.setSegmentDate(Instant.parse("2026-09-03T00:00:00Z"));
+
+    Mockito.when(showService.getShowById(any())).thenReturn(Optional.of(show));
+    Mockito.when(segmentRepository.findByShowOrderBySegmentOrderAsc(any(Show.class)))
+        .thenReturn(List.of(segment));
+    Mockito.when(segmentRepository.findByShow(any(Show.class))).thenReturn(List.of(segment));
+    Mockito.when(feudScriptService.findBeatForSegment(segment)).thenReturn(Optional.empty());
+
+    ShowDetailView view = buildView(mock(SecurityUtils.class));
+    BeforeEvent event = Mockito.mock(BeforeEvent.class);
+    Mockito.when(event.getLocation()).thenReturn(new Location(""));
+    view.setParameter(event, 31L);
+
+    Grid<Segment> grid = LocatorJ._get(view, Grid.class, spec -> spec.withId("segments-grid"));
+    for (String header : List.of("Actions", "Order", "Main Event")) {
+      Grid.Column<Segment> column =
+          grid.getColumns().stream()
+              .filter(c -> header.equals(c.getHeaderText()))
+              .findFirst()
+              .orElse(null);
+      Assertions.assertThat(column).as(header + " column").isNotNull();
+      Assertions.assertThat(column.isAutoWidth())
+          .as(header + " column must use auto-width so its controls are never squeezed")
+          .isTrue();
+    }
+  }
+
+  @Test
   void tournamentIndicator_payoffHostBinding_showsTournamentRow() {
     // ATW-xbn4: a show hosting a one-time tournament's payoff lists it in the details card.
     ShowType showType = new ShowType();
