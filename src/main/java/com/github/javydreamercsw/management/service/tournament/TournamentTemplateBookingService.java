@@ -723,9 +723,7 @@ public class TournamentTemplateBookingService {
       }
       return List.of(List.of("Champion"), List.of("Tournament winner"));
     }
-    if (("Payoff final".equals(shape) || "Contender final".equals(shape))
-        && tournament.getStatus() == TournamentStatus.IN_PROGRESS
-        && tournament.getRounds() != null) {
+    if (tournament.getStatus() == TournamentStatus.IN_PROGRESS && tournament.getRounds() != null) {
       TournamentMatch open =
           tournament.getRounds().stream()
               .filter(r -> r.getStatus() != TournamentRoundStatus.COMPLETE)

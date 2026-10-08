@@ -1680,6 +1680,235 @@ class TournamentTemplateBookingServiceTest {
   }
 
   @Test
+  void preview_contenderDeciding_vacantTitle_fallsBackToPayoffFinalRow() {
+    // Contender-deciding but the linked title is vacant: a vacant title needs a champion, not a
+    // contender — the preview reads "Payoff final" with the vacant title on the line.
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    Title title = new Title();
+    title.setId(7L);
+    tournament.setLinkedTitle(title);
+    tournament.setContenderDeciding(true);
+    TournamentMatch open =
+        match(
+            2,
+            entry(alice, 1, TournamentEntryStatus.ACTIVE),
+            entry(bob, 2, TournamentEntryStatus.ACTIVE));
+    TournamentRound finalRound = round(2, open);
+    finalRound.setRoundName("Final");
+    tournament.setRounds(new ArrayList<>(List.of(finalRound)));
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(new SegmentType()));
+    when(tournamentService.isTitleVacant(title)).thenReturn(true);
+
+    List<TournamentTemplateBookingService.TournamentSlotPreview> previews =
+        service.previewShowAttachedTournamentSlots(show);
+
+    assertEquals(1, previews.size());
+    assertEquals("Payoff final", previews.get(0).shape());
+    assertEquals(title, previews.get(0).expectedTitle(), "Vacant title → on the line");
+    assertEquals(List.of(List.of("Alice"), List.of("Bob")), previews.get(0).teams());
+  }
+
+  @Test
+  void preview_contenderDecidingWithoutTitle_fallsBackToPayoffFinalRow() {
+    // Contender-deciding flag with no linked title: no contender designation is possible —
+    // the preview reads "Payoff final" with nothing on the line.
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    tournament.setContenderDeciding(true);
+    TournamentMatch open =
+        match(
+            2,
+            entry(alice, 1, TournamentEntryStatus.ACTIVE),
+            entry(bob, 2, TournamentEntryStatus.ACTIVE));
+    TournamentRound finalRound = round(2, open);
+    finalRound.setRoundName("Final");
+    tournament.setRounds(new ArrayList<>(List.of(finalRound)));
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(new SegmentType()));
+
+    List<TournamentTemplateBookingService.TournamentSlotPreview> previews =
+        service.previewShowAttachedTournamentSlots(show);
+
+    assertEquals(1, previews.size());
+    assertEquals("Payoff final", previews.get(0).shape());
+    assertNull(previews.get(0).expectedTitle());
+  }
+
+  @Test
+  void preview_completeWithoutLinkedTitle_yieldsNoRow() {
+    // COMPLETE with no linked title: nothing to showcase — the preview renders no row.
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.COMPLETE);
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
+
+    assertTrue(service.previewShowAttachedTournamentSlots(show).isEmpty());
+  }
+
+  @Test
+  void preview_completeContenderDeciding_yieldsNoRow() {
+    // COMPLETE contender-deciding tournament: the contender was decided when the final played —
+    // no champion showcase row even with a reigning champion.
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.COMPLETE);
+    Title title = new Title();
+    title.setId(7L);
+    tournament.setLinkedTitle(title);
+    tournament.setContenderDeciding(true);
+    when(tournamentService.isTitleVacant(title)).thenReturn(false);
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
+
+    assertTrue(service.previewShowAttachedTournamentSlots(show).isEmpty());
+  }
+
+  @Test
+  void preview_inProgressWithoutRounds_yieldsPlaceholderTeams() {
+    // IN_PROGRESS bracket with no generated rounds (null rounds — JPA may leave the collection
+    // unset): the preview cannot name participants — it renders the placeholder layout instead
+    // of real teams.
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    tournament.setRounds(null);
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(new SegmentType()));
+
+    List<TournamentTemplateBookingService.TournamentSlotPreview> previews =
+        service.previewShowAttachedTournamentSlots(show);
+
+    assertEquals(1, previews.size());
+    assertEquals("Payoff final", previews.get(0).shape());
+    assertEquals(
+        List.of(List.of("Tournament bracket"), List.of("Tournament bracket")),
+        previews.get(0).teams());
+  }
+
+  @Test
+  void preview_scheduledHostedTournament_showsPayoffFinalPlaceholderRow() {
+    // SCHEDULED tournament hosted here (auto-starts at its payoff show): the bracket does not
+    // exist yet — the preview renders a "Payoff final" row with placeholder teams.
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.SCHEDULED);
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(new SegmentType()));
+
+    List<TournamentTemplateBookingService.TournamentSlotPreview> previews =
+        service.previewShowAttachedTournamentSlots(show);
+
+    assertEquals(1, previews.size());
+    assertEquals("Payoff final", previews.get(0).shape());
+    assertEquals(
+        List.of(List.of("Tournament bracket"), List.of("Tournament bracket")),
+        previews.get(0).teams());
+  }
+
+  @Test
+  void preview_cancelledHostedTournament_showsPlaceholderRowNotRealTeams() {
+    // CANCELLED tournament hosted here: no bracket match will ever play — the preview renders
+    // the placeholder layout rather than the stale bracket's pairings (the booking path would
+    // warn and skip).
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.CANCELLED);
+    TournamentMatch stale =
+        match(
+            1,
+            entry(alice, 1, TournamentEntryStatus.ACTIVE),
+            entry(bob, 2, TournamentEntryStatus.ACTIVE));
+    tournament.setRounds(new ArrayList<>(List.of(round(1, stale))));
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(new SegmentType()));
+
+    List<TournamentTemplateBookingService.TournamentSlotPreview> previews =
+        service.previewShowAttachedTournamentSlots(show);
+
+    assertEquals(1, previews.size());
+    assertEquals("Payoff final", previews.get(0).shape());
+    assertEquals(
+        List.of(List.of("Tournament bracket"), List.of("Tournament bracket")),
+        previews.get(0).teams(),
+        "A cancelled tournament must not preview real pairings");
+  }
+
+  @Test
+  void bookShowPayoff_championShowcaseKind_finalBooksAsRegularBout() {
+    // IN_PROGRESS + reigning champion (CHAMPION_SHOWCASE_AT_PLE pacing): the bracket final plays
+    // as a regular bout on the PLE — nothing is on the line and the host link is not consumed
+    // (the champion-vs-winner showcase books once the bracket completes).
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    Title title = new Title();
+    title.setId(7L);
+    tournament.setLinkedTitle(title);
+    TournamentMatch finalMatch =
+        match(
+            2,
+            entry(alice, 1, TournamentEntryStatus.ACTIVE),
+            entry(bob, 2, TournamentEntryStatus.ACTIVE));
+    TournamentRound finalRound = round(2, finalMatch);
+    finalRound.setRoundName("Final");
+    tournament.setRounds(new ArrayList<>(List.of(finalRound)));
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(new SegmentType()));
+    when(tournamentService.isTitleVacant(title)).thenReturn(false);
+    when(pacingService.payoffKindOf(tournament))
+        .thenReturn(TournamentPacingService.PayoffKind.CHAMPION_SHOWCASE_AT_PLE);
+    when(tournamentService.findFormat("SINGLE_ELIMINATION")).thenReturn(Optional.of(format));
+    when(format.estimateTotalMatches(tournament)).thenReturn(1);
+    Segment booked = singles(alice, bob, alice);
+    stubResolve(booked);
+
+    List<TournamentTemplateBookingService.TournamentBooking> bookings =
+        service.bookShowAttachedTournamentSegments(show);
+
+    assertEquals(1, bookings.size());
+    assertFalse(bookings.get(0).titleMatch(), "Champion-showcase pacing: regular bout");
+    assertNull(bookings.get(0).title());
+    assertFalse(booked.getIsTitleSegment());
+    verify(tournamentService, never()).clearPayoffShow(any());
+  }
+
+  @Test
+  void bookShowPayoff_contenderKindWithoutLinkedTitle_booksRegularPayoff() {
+    // Defensive: pacing reports CONTENDER_AT_PLE but no title is linked (payoffKindOf's contract
+    // never produces that, but the booking must not NPE) — the payoff degrades to a regular bout
+    // with no contender designation and still consumes the link.
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    TournamentMatch finalMatch =
+        match(
+            2,
+            entry(alice, 1, TournamentEntryStatus.ACTIVE),
+            entry(bob, 2, TournamentEntryStatus.ACTIVE));
+    TournamentRound finalRound = round(2, finalMatch);
+    finalRound.setRoundName("Final");
+    tournament.setRounds(new ArrayList<>(List.of(finalRound)));
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(new SegmentType()));
+    when(pacingService.payoffKindOf(tournament))
+        .thenReturn(TournamentPacingService.PayoffKind.CONTENDER_AT_PLE);
+    when(tournamentService.findFormat("SINGLE_ELIMINATION")).thenReturn(Optional.of(format));
+    when(format.estimateTotalMatches(tournament)).thenReturn(1);
+    Segment booked = singles(alice, bob, alice);
+    stubResolve(booked);
+
+    List<TournamentTemplateBookingService.TournamentBooking> bookings =
+        service.bookShowAttachedTournamentSegments(show);
+
+    assertEquals(1, bookings.size());
+    assertFalse(bookings.get(0).titleMatch());
+    assertNull(bookings.get(0).title(), "No linked title → no designation");
+    assertFalse(booked.isContenderMatch());
+    assertFalse(booked.getIsTitleSegment());
+  }
+
+  @Test
   void bookTournamentFedSegment_contenderDecidingCompleteTournament_consumesWithoutShowcase() {
     // Template-path mirror of the host-show guard: a COMPLETE contender-deciding tournament
     // never books a champion showcase — the pairing is consumed instead (ATW-ewrp).
@@ -2045,6 +2274,25 @@ class TournamentTemplateBookingServiceTest {
     assertEquals(1, bookings.size());
     assertTrue(bookings.get(0).titleMatch());
     assertEquals(title, bookings.get(0).title());
+    verify(tournamentService).clearPayoffShow(tournament);
+  }
+
+  @Test
+  void bookShowPayoff_completeVacantTitle_consumesLinkWithoutShowcase() {
+    // COMPLETE but the linked title is vacant: the final already played and there is no champion
+    // to showcase — the host link is consumed so nothing re-books later.
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.COMPLETE);
+    Title title = new Title();
+    title.setId(7L);
+    tournament.setLinkedTitle(title);
+    when(tournamentService.isTitleVacant(title)).thenReturn(true);
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
+
+    List<TournamentTemplateBookingService.TournamentBooking> bookings =
+        service.bookShowAttachedTournamentSegments(show);
+
+    assertTrue(bookings.isEmpty(), "Vacant title → no showcase to book");
     verify(tournamentService).clearPayoffShow(tournament);
   }
 
