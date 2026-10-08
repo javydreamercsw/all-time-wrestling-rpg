@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.reservation.ShowSegmentReservationPurpose;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -391,6 +392,9 @@ public class FeudScriptService {
       Segment match =
           candidates.stream()
               .filter(segment -> coversParticipants(segment, participants))
+              // Same guards as the auto-complete path (ATW-lxnn): the backfill must not credit a
+              // Ladder-match culmination with a promo from the wrong show.
+              .filter(segment -> segmentFitsBeat(beat, segment))
               .findFirst()
               .orElse(null);
       if (match == null) {
@@ -504,6 +508,7 @@ public class FeudScriptService {
     FeudScriptBeat beat =
         candidates.stream()
             .filter(b -> wrestlerIds.containsAll(participantIdsOf(b)))
+            .filter(b -> segmentFitsBeat(b, segment))
             .findFirst()
             .orElse(null);
     if (beat == null) {
@@ -511,6 +516,81 @@ public class FeudScriptService {
     }
     completeBeatInternal(beat, segment);
     return Optional.of(beat);
+  }
+
+  /**
+   * Whether a completed segment may consume a pending beat automatically (ATW-lxnn). Participant
+   * overlap alone once completed a Ladder-match title culmination with a random promo on the wrong
+   * show — three guards now apply, mirroring the beat-injection rules:
+   *
+   * <ul>
+   *   <li>A beat with an explicit target show only completes from a segment on that show — a
+   *       segment anywhere else would book the beat's payoff onto a card the booker did not pick.
+   *   <li>The segment's type must match the beat's booked type (name/code aware, AI-heuristic
+   *       tolerant) — a promo must never complete a One-on-One beat. Beats without a configured
+   *       type keep the old behavior.
+   *   <li>An untargeted Culmination beat only completes on a PLE — the arc's finale belongs on the
+   *       big stage, exactly as {@code getUpcomingBeatsForShowWithExclusions} injects it.
+   * </ul>
+   *
+   * <p>The manual paths ({@link #resolveAndCompleteBeat}, the arc card's Complete dialog) stay
+   * unguarded: there the booker picks the segment explicitly.
+   */
+  private boolean segmentFitsBeat(FeudScriptBeat beat, Segment segment) {
+    if (beat.getTargetShow() != null
+        && (segment.getShow() == null
+            || !beat.getTargetShow().getId().equals(segment.getShow().getId()))) {
+      log.info(
+          "Beat #{} of arc '{}' not auto-completed: segment {} is on show '{}' but the beat"
+              + " targets '{}'",
+          beat.getBeatOrder(),
+          beat.getScript().getName(),
+          segment.getId(),
+          segment.getShow() != null ? segment.getShow().getName() : "none",
+          beat.getTargetShow().getName());
+      return false;
+    }
+    if (beat.getSegmentType() != null
+        && !beat.getSegmentType().isBlank()
+        && !isSegmentTypeOf(beat.getSegmentType(), segment)) {
+      log.info(
+          "Beat #{} of arc '{}' not auto-completed: segment {} is a {} but the beat books a {}",
+          beat.getBeatOrder(),
+          beat.getScript().getName(),
+          segment.getId(),
+          segment.getSegmentType() != null ? segment.getSegmentType().getName() : "unknown",
+          beat.getSegmentType());
+      return false;
+    }
+    if (beat.isCulmination()
+        && beat.getTargetShow() == null
+        && (segment.getShow() == null || !segment.getShow().isPremiumLiveEvent())) {
+      log.info(
+          "Beat #{} of arc '{}' not auto-completed: untargeted culmination is reserved for a PLE",
+          beat.getBeatOrder(),
+          beat.getScript().getName());
+      return false;
+    }
+    return true;
+  }
+
+  /** Type comparison tolerant of naming drift: exact name, well-known code, then substring. */
+  private boolean isSegmentTypeOf(String beatType, Segment segment) {
+    if (segment.getSegmentType() == null) {
+      return false;
+    }
+    SegmentType type = segment.getSegmentType();
+    String beat = beatType.trim();
+    if (beat.equalsIgnoreCase(type.getName())) {
+      return true;
+    }
+    return segmentTypeService
+        .findByName(beat)
+        .map(resolved -> resolved.getCode() != null && resolved.getCode().equals(type.getCode()))
+        .orElseGet(
+            () ->
+                type.getName() != null
+                    && type.getName().toLowerCase().contains(beat.toLowerCase()));
   }
 
   /**
