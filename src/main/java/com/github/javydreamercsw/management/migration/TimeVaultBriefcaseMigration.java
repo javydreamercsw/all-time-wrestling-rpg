@@ -152,6 +152,7 @@ public class TimeVaultBriefcaseMigration implements DataMigration {
     }
     segmentRepository.flush();
     titleRepository.flush();
+    tournamentRepository.flush();
     Title current = titleRepository.findById(placeholder.getId()).orElse(null);
     if (current == null) {
       return; // already gone (e.g. orphanRemoval cascaded the delete)
@@ -191,7 +192,7 @@ public class TimeVaultBriefcaseMigration implements DataMigration {
 
   private boolean vaultsStillLinking(Title placeholder) {
     return tournamentRepository.findByNameStartingWithIgnoreCase(TOURNAMENT_NAME_PREFIX).stream()
-        .noneMatch(
+        .anyMatch(
             t ->
                 t.getLinkedTitle() != null
                     && t.getLinkedTitle().getId().equals(placeholder.getId()));
