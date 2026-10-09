@@ -55,11 +55,11 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
 import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
@@ -154,7 +154,18 @@ class TournamentListViewTest extends AbstractViewTest {
     lenient()
         .when(
             tournamentService.createTournament(
-                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), anyBoolean()))
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                anyBoolean(),
+                anyBoolean()))
         .thenAnswer(
             inv -> {
               Tournament t = tournament();
@@ -252,6 +263,7 @@ class TournamentListViewTest extends AbstractViewTest {
             any(),
             any(),
             any(),
+            eq(false),
             eq(false));
     verify(tournamentService).seedAuto(any(Tournament.class), anyInt(), anyLong());
   }
@@ -327,6 +339,7 @@ class TournamentListViewTest extends AbstractViewTest {
             any(),
             any(),
             eq(true),
+            eq(false),
             eq(false));
   }
 
@@ -441,6 +454,7 @@ class TournamentListViewTest extends AbstractViewTest {
             eq(this.payoffType),
             any(),
             any(),
+            eq(false),
             eq(false));
   }
 
@@ -507,8 +521,8 @@ class TournamentListViewTest extends AbstractViewTest {
   }
 
   @Test
-  @DisplayName("Edit dialog: contender checkbox reflects the flag, gated by the linked title")
-  void editDialog_contenderCheckbox_gatedByTitle() {
+  @DisplayName("Edit dialog: payoff mode reflects the flags; briefcase disables the title combo")
+  void editDialog_payoffMode_reflectsFlags() {
     Tournament contender = tournament();
     contender.setContenderDeciding(true);
     Title linked = new Title();
@@ -519,57 +533,56 @@ class TournamentListViewTest extends AbstractViewTest {
 
     view.openEditDialogForTest(contender);
 
-    Checkbox contenderCheck =
-        _get(
-            UI.getCurrent(),
-            Checkbox.class,
-            spec -> spec.withLabel("Winner becomes #1 contender (title not on the line)"));
-    assertTrue(contenderCheck.getValue(), "The flag prefills the checkbox");
-    assertTrue(contenderCheck.isEnabled(), "A linked title enables the checkbox");
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    RadioButtonGroup<String> payoffMode =
+        _get(UI.getCurrent(), RadioButtonGroup.class, spec -> spec.withLabel("Payoff"));
+    assertEquals(
+        "Winner becomes #1 contender",
+        payoffMode.getValue(),
+        "The contender flag prefills the payoff mode");
 
-    // Clearing the title disables the checkbox and unticks it — the mode needs a title.
+    // Switching to the briefcase mode clears and disables the title combo — no linked title.
+    payoffMode.setValue("Winner earns the briefcase");
     @SuppressWarnings({"rawtypes", "unchecked"})
     ComboBox<Title> titleBox =
         _get(
             UI.getCurrent(),
             ComboBox.class,
             spec -> spec.withLabel("Linked Championship (optional)"));
-    titleBox.clear();
-    assertFalse(contenderCheck.isEnabled(), "No title → checkbox disabled");
-    assertFalse(contenderCheck.getValue(), "No title → checkbox unticked");
+    assertFalse(titleBox.isEnabled(), "Briefcase mode disables the title combo");
 
-    // Re-linking a title re-enables the checkbox (the listener's enabled arm runs again).
-    titleBox.setValue(linked);
-    assertTrue(contenderCheck.isEnabled(), "Title re-linked → checkbox enabled again");
+    // Switching back to contender re-enables the title combo.
+    payoffMode.setValue("Winner becomes #1 contender");
+    assertTrue(titleBox.isEnabled(), "Contender mode re-enables the title combo");
   }
 
   @Test
-  @DisplayName("Creation wizard: picking a title enables the contender checkbox")
-  void wizard_contenderCheckbox_enablesWhenTitlePicked() {
+  @DisplayName("Creation wizard: payoff mode defaults to title-on-the-line; briefcase clears title")
+  void wizard_payoffMode_defaultAndBriefcaseToggle() {
     view.openCreationWizardForTest();
 
-    Checkbox contenderCheck =
-        _get(
-            UI.getCurrent(),
-            Checkbox.class,
-            spec -> spec.withLabel("Winner becomes #1 contender (title not on the line)"));
-    assertFalse(contenderCheck.isEnabled(), "No title picked yet → disabled");
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    RadioButtonGroup<String> payoffMode =
+        _get(UI.getCurrent(), RadioButtonGroup.class, spec -> spec.withLabel("Payoff"));
+    assertEquals(
+        "Title on the line", payoffMode.getValue(), "Default payoff mode is title on the line");
 
-    Title linked = new Title();
-    linked.setId(7L);
-    linked.setName("World Title");
     @SuppressWarnings({"rawtypes", "unchecked"})
     ComboBox<Title> titleBox =
         _get(
             UI.getCurrent(),
             ComboBox.class,
             spec -> spec.withLabel("Linked Championship (optional)"));
+    Title linked = new Title();
+    linked.setId(7L);
+    linked.setName("World Title");
     titleBox.setValue(linked);
-    assertTrue(contenderCheck.isEnabled(), "Title picked → checkbox enabled");
 
-    // Clearing it disables the checkbox again (the listener's null arm).
-    titleBox.setValue(null);
-    assertFalse(contenderCheck.isEnabled(), "Title cleared → checkbox disabled");
+    payoffMode.setValue("Winner earns the briefcase");
+    assertFalse(titleBox.isEnabled(), "Briefcase mode clears and disables the title combo");
+
+    payoffMode.setValue("Title on the line");
+    assertTrue(titleBox.isEnabled(), "Back to title-on-the-line re-enables the title combo");
   }
 
   @Test
@@ -580,7 +593,8 @@ class TournamentListViewTest extends AbstractViewTest {
     lenient()
         .when(
             tournamentService.updateTournament(
-                any(), any(), any(), any(), any(), any(), any(), any(), any(), eq(true), eq(false)))
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), eq(true), eq(false),
+                eq(false)))
         .thenThrow(new IllegalArgumentException("A contender-deciding tournament needs a title"));
 
     view.openEditDialogForTest(tournament());
