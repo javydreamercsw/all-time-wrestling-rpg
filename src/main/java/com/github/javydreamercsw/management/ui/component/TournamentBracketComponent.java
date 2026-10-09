@@ -548,7 +548,9 @@ public class TournamentBracketComponent extends HorizontalLayout {
       winnerCol.setAlignItems(Alignment.CENTER);
       winnerCol.setJustifyContentMode(JustifyContentMode.CENTER);
 
-      Span title = new Span("CHAMPION");
+      // "CHAMPION" only when a championship was actually at stake — a briefcase/contender
+      // tournament crowns a WINNER, not a champion (ATW-leq6).
+      Span title = new Span(Boolean.TRUE.equals(model.isTitleOnTheLine()) ? "CHAMPION" : "WINNER");
       title.addClassNames(LumoUtility.TextColor.SUCCESS, LumoUtility.FontWeight.BOLD);
 
       String winnerName =

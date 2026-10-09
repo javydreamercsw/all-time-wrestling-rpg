@@ -28,29 +28,24 @@ import com.github.appreciated.apexcharts.helper.Series;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerStats;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.injury.Injury;
-import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleOpportunity;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateHistory;
 import com.github.javydreamercsw.management.service.show.ShowFacade;
-import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
 import com.github.javydreamercsw.management.ui.ViewContext;
+import com.github.javydreamercsw.management.ui.component.BriefcaseCashInDialog;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -350,7 +345,8 @@ public class WrestlerCareerView extends Main implements BeforeEnterObserver {
         opportunities.stream().filter(TitleOpportunity::isHeld).findFirst();
     if (held.isPresent()) {
       TitleOpportunity current = held.get();
-      Span badge = new Span("💼 " + current.getName() + " — HELD");
+      String division = current.getGender() != null ? " — " + current.getGender() : "";
+      Span badge = new Span("💼 " + current.getName() + division + " — HELD");
       badge
           .getElement()
           .setAttribute(
@@ -406,79 +402,18 @@ public class WrestlerCareerView extends Main implements BeforeEnterObserver {
   }
 
   /**
-   * The cash-in dialog: pick the championship to challenge (active, same universe, reigning
-   * champion) and the show to book on. Validation errors surface as notifications.
+   * The cash-in dialog (shared component): pick the championship to challenge (active, reigning
+   * champion, division-eligible) and the show to book on. Validation errors surface as
+   * notifications.
    */
   private void openCashInDialog(TitleOpportunity opportunity) {
-    Dialog dialog = new Dialog();
-    dialog.setHeaderTitle("Cash In: " + opportunity.getName());
-
-    TitleOpportunityService titleOpportunityService = wrestlerFacade.getTitleOpportunityService();
-
-    // Cashable championships: active titles that currently have a reigning champion. The title's
-    // denormalized champion list is fine here — the combo renders before any cash-in call, and the
-    // service re-validates from the reign table inside the transaction.
-    ComboBox<Title> titleCombo = new ComboBox<>("Championship");
-    List<Title> cashable =
-        wrestlerFacade.getTitleService().findAll().stream()
-            .filter(t -> Boolean.TRUE.equals(t.getIsActive()) && !t.getCurrentChampions().isEmpty())
-            .toList();
-    titleCombo.setItems(cashable);
-    titleCombo.setItemLabelGenerator(Title::getName);
-    titleCombo.setWidthFull();
-    titleCombo.setAllowCustomValue(false);
-
-    ComboBox<Show> showCombo = new ComboBox<>("Show");
-    showCombo.setItems(showFacade.getShowService().getUpcomingShows(50));
-    showCombo.setItemLabelGenerator(
-        s -> s.getName() + (s.getShowDate() != null ? " — " + s.getShowDate() : ""));
-    showCombo.setWidthFull();
-    showCombo.setAllowCustomValue(false);
-
-    Span warning =
-        new Span(
-            "The briefcase is spent when the match is booked — win or lose. The winner takes the"
-                + " championship.");
-    warning.getStyle().set("color", "var(--lumo-error-text-color)");
-
-    Button cancel = new Button("Cancel", e -> dialog.close());
-    Button confirm =
-        new Button(
-            "Cash In",
-            e -> {
-              if (titleCombo.getValue() == null || showCombo.getValue() == null) {
-                Notification.show(
-                    "Select a championship and a show.", 3000, Notification.Position.MIDDLE);
-                return;
-              }
-              try {
-                titleOpportunityService.cashIn(
-                    opportunity.getId(),
-                    titleCombo.getValue().getId(),
-                    showCombo.getValue().getId());
-                dialog.close();
-                Notification.show(
-                        "Cash-in booked on " + showCombo.getValue().getName() + "!",
-                        3000,
-                        Notification.Position.BOTTOM_CENTER)
-                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-                buildView();
-              } catch (Exception ex) {
-                log.error("Error cashing in briefcase", ex);
-                Notification.show("Error: " + ex.getMessage(), 5000, Notification.Position.MIDDLE)
-                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
-              }
-            });
-    confirm.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-    confirm.setEnabled(false);
-    titleCombo.addValueChangeListener(
-        e -> confirm.setEnabled(e.getValue() != null && showCombo.getValue() != null));
-    showCombo.addValueChangeListener(
-        e -> confirm.setEnabled(e.getValue() != null && titleCombo.getValue() != null));
-
-    dialog.add(new VerticalLayout(titleCombo, showCombo, warning));
-    dialog.getFooter().add(cancel, confirm);
-    dialog.open();
+    new BriefcaseCashInDialog(
+            opportunity,
+            wrestlerFacade.getTitleOpportunityService(),
+            wrestlerFacade.getTitleService(),
+            showFacade.getShowService(),
+            this::buildView)
+        .open();
   }
 
   private Component buildInjuryLogSection() {

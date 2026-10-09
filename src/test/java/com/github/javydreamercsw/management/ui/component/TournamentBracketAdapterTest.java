@@ -18,8 +18,10 @@ package com.github.javydreamercsw.management.ui.component;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
@@ -862,8 +864,12 @@ public class TournamentBracketAdapterTest {
 
   @Test
   void component_completeBracket_showsChampionBox() {
-    // A finished bracket (single-elimination final decided) still crowns its champion.
+    // A finished bracket (single-elimination final decided, title linked) crowns its champion.
     Tournament t = tournamentEntity("SINGLE_ELIMINATION");
+    Title title = new Title();
+    title.setId(50L);
+    title.setName("ATW World");
+    t.setLinkedTitle(title);
     Wrestler w1 = wrestler(1L, "Rocky");
     Wrestler w2 = wrestler(2L, "Austin");
     TournamentEntry e1 = entry(w1);
@@ -887,6 +893,136 @@ public class TournamentBracketAdapterTest {
     List<String> texts = descendantTexts(component);
     assertThat(texts).contains("CHAMPION");
     assertThat(texts).contains("Rocky");
+  }
+
+  @Test
+  void component_titlelessTournament_winnerBoxSaysWinner() {
+    // A tournament with no championship at stake (e.g. briefcase-deciding) crowns a WINNER,
+    // not a CHAMPION (ATW-leq6).
+    Tournament t = tournamentEntity("SINGLE_ELIMINATION");
+    t.setBriefcaseDeciding(true);
+    Wrestler w1 = wrestler(1L, "Mukundi Shumba");
+    Wrestler w2 = wrestler(2L, "Austin");
+    TournamentEntry e1 = entry(w1);
+    TournamentEntry e2 = entry(w2);
+    TournamentMatch finalMatch =
+        TournamentMatch.builder().entrant1(e1).entrant2(e2).winner(e1).build();
+    TournamentRound finalRound =
+        TournamentRound.builder()
+            .roundNumber(1)
+            .roundName("Final")
+            .status(TournamentRoundStatus.COMPLETE)
+            .matches(new ArrayList<>(List.of(finalMatch)))
+            .build();
+    t.setRounds(new ArrayList<>(List.of(finalRound)));
+    t.setEntries(List.of(e1, e2));
+
+    TournamentEntityAdapter adapter =
+        new TournamentEntityAdapter(t, List.of(new SingleEliminationFormat()));
+    TournamentBracketComponent component = new TournamentBracketComponent(adapter);
+
+    List<String> texts = descendantTexts(component);
+    assertThat(texts).contains("WINNER");
+    assertThat(texts).doesNotContain("CHAMPION");
+    assertThat(texts).contains("Mukundi Shumba");
+  }
+
+  @Test
+  void component_unadjudicatedBooking_winnerHidden() {
+    // THE ATW-ip8v bug: booking pre-picks a winner (segment carries winners + winner stamped on
+    // the bracket) but the segment is still PENDING — the bracket must NOT show the winner or
+    // the champion box until adjudication makes the result official.
+    Tournament t = tournamentEntity("SINGLE_ELIMINATION");
+    Wrestler w1 = wrestler(1L, "Rocky");
+    Wrestler w2 = wrestler(2L, "Austin");
+    TournamentEntry e1 = entry(w1);
+    TournamentEntry e2 = entry(w2);
+    Segment pendingSegment = new Segment();
+    pendingSegment.setAdjudicationStatus(AdjudicationStatus.PENDING);
+    TournamentMatch finalMatch =
+        TournamentMatch.builder().entrant1(e1).entrant2(e2).winner(e1).build();
+    finalMatch.setSegment(pendingSegment);
+    TournamentRound finalRound =
+        TournamentRound.builder()
+            .roundNumber(1)
+            .roundName("Final")
+            .status(TournamentRoundStatus.IN_PROGRESS)
+            .matches(new ArrayList<>(List.of(finalMatch)))
+            .build();
+    t.setRounds(new ArrayList<>(List.of(finalRound)));
+    t.setEntries(List.of(e1, e2));
+
+    TournamentEntityAdapter adapter =
+        new TournamentEntityAdapter(t, List.of(new SingleEliminationFormat()));
+    TournamentBracketComponent component = new TournamentBracketComponent(adapter);
+
+    List<String> texts = descendantTexts(component);
+    // Neither the match card's winner highlight nor a champion box may render.
+    assertThat(texts).doesNotContain("CHAMPION");
+    assertThat(adapter.getMatches().getFirst().getWinnerId()).isNull();
+  }
+
+  @Test
+  void component_adjudicatedBooking_winnerShown() {
+    // Once the segment is ADJUDICATED the recorded winner is official and renders.
+    Tournament t = tournamentEntity("SINGLE_ELIMINATION");
+    Title linked = new Title();
+    linked.setId(51L);
+    linked.setName("ATW World");
+    t.setLinkedTitle(linked);
+    Wrestler w1 = wrestler(1L, "Rocky");
+    Wrestler w2 = wrestler(2L, "Austin");
+    TournamentEntry e1 = entry(w1);
+    TournamentEntry e2 = entry(w2);
+    Segment adjudicated = new Segment();
+    adjudicated.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
+    TournamentMatch finalMatch =
+        TournamentMatch.builder().entrant1(e1).entrant2(e2).winner(e1).build();
+    finalMatch.setSegment(adjudicated);
+    TournamentRound finalRound =
+        TournamentRound.builder()
+            .roundNumber(1)
+            .roundName("Final")
+            .status(TournamentRoundStatus.COMPLETE)
+            .matches(new ArrayList<>(List.of(finalMatch)))
+            .build();
+    t.setRounds(new ArrayList<>(List.of(finalRound)));
+    t.setEntries(List.of(e1, e2));
+
+    TournamentEntityAdapter adapter =
+        new TournamentEntityAdapter(t, List.of(new SingleEliminationFormat()));
+    TournamentBracketComponent component = new TournamentBracketComponent(adapter);
+
+    List<String> texts = descendantTexts(component);
+    assertThat(adapter.getMatches().getFirst().getWinnerId()).isEqualTo(1L);
+    assertThat(texts).contains("CHAMPION");
+    assertThat(texts).contains("Rocky");
+  }
+
+  @Test
+  void component_handRecordedWinner_noSegment_rendersOfficial() {
+    // Manual completion records the bracket winner with no segment — that IS the result.
+    Tournament t = tournamentEntity("SINGLE_ELIMINATION");
+    Wrestler w1 = wrestler(1L, "Rocky");
+    Wrestler w2 = wrestler(2L, "Austin");
+    TournamentEntry e1 = entry(w1);
+    TournamentEntry e2 = entry(w2);
+    TournamentMatch finalMatch =
+        TournamentMatch.builder().entrant1(e1).entrant2(e2).winner(e1).build();
+    TournamentRound finalRound =
+        TournamentRound.builder()
+            .roundNumber(1)
+            .roundName("Final")
+            .status(TournamentRoundStatus.COMPLETE)
+            .matches(new ArrayList<>(List.of(finalMatch)))
+            .build();
+    t.setRounds(new ArrayList<>(List.of(finalRound)));
+    t.setEntries(List.of(e1, e2));
+
+    TournamentEntityAdapter adapter =
+        new TournamentEntityAdapter(t, List.of(new SingleEliminationFormat()));
+
+    assertThat(adapter.getMatches().getFirst().getWinnerId()).isEqualTo(1L);
   }
 
   /** Depth-first walk over all descendant text nodes (component tree, not just direct children). */

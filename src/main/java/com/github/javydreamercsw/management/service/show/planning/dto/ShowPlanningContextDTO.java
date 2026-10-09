@@ -36,6 +36,10 @@ public class ShowPlanningContextDTO {
   private boolean isPremiumLiveEvent;
   private boolean intergenderAllowed;
   private List<String> recentDramaEvents = new ArrayList<>();
+
+  /** Currently held Money in the Bank-style briefcases ("holder — name" lines, ATW-brrz). */
+  private List<String> heldBriefcases = new ArrayList<>();
+
   private List<FeudScriptBeatDTO> upcomingScriptedBeats;
 
   /**

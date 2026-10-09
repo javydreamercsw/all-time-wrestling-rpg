@@ -37,6 +37,7 @@ import com.github.javydreamercsw.management.service.ringside.RingsideActionServi
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
@@ -88,6 +89,7 @@ public class NarrationDialog extends Dialog {
   private final UniverseContextService universeContextService;
   private final NotificationService notificationService;
   private final DramaEventService dramaEventService;
+  private final TitleOpportunityService titleOpportunityService;
 
   private final ProgressBar progressBar;
   private final Pre narrationDisplay;
@@ -120,7 +122,8 @@ public class NarrationDialog extends Dialog {
       final UniverseContextService universeContextService,
       final NotificationService notificationService,
       final WrestlerStatsService wrestlerStatsService,
-      final DramaEventService dramaEventService) {
+      final DramaEventService dramaEventService,
+      final TitleOpportunityService titleOpportunityService) {
     this.segmentService = segmentService;
     this.segment = preloaded.segment();
     this.allWrestlerDTOs = preloaded.allWrestlerDTOs();
@@ -137,6 +140,7 @@ public class NarrationDialog extends Dialog {
     this.universeContextService = universeContextService;
     this.wrestlerStatsService = wrestlerStatsService;
     this.dramaEventService = dramaEventService;
+    this.titleOpportunityService = titleOpportunityService;
 
     setHeaderTitle("Generate Narration for: " + this.segment.getSegmentType().getName());
     setWidth("min(900px, 95vw)");
@@ -558,6 +562,9 @@ public class NarrationDialog extends Dialog {
                               rel.getIsStoryline() ? ", Storyline" : ""));
                 });
         wc.setRelationships(relationships);
+
+        // Briefcase holder context (ATW-brrz): narration introduces a holder like a champion.
+        wc.setHeldBriefcase(titleOpportunityService.heldBriefcaseContextOf(wrestler.getId()));
 
         wrestlerContexts.add(wc);
       }

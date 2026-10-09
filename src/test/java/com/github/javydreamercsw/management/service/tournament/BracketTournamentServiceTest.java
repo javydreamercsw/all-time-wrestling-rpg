@@ -939,12 +939,21 @@ class BracketTournamentServiceTest {
     Title title = new Title();
     title.setId(5L);
     title.setName("Crown Cup Championship");
+    SegmentType payoffType = new SegmentType();
+    payoffType.setId(10L);
+    payoffType.setName("Free-for-All");
+    SegmentRule payoffRule = new SegmentRule();
+    payoffRule.setId(20L);
+    payoffRule.setName("TLC");
     tournament.setName("Crown Cup");
     tournament.setFormatId("SINGLE_ELIMINATION");
     tournament.setUniverse(universe);
     tournament.setLinkedTitle(title);
     tournament.setDefaultEntrantCount(8);
     tournament.setQualifierGroupSize(3);
+    tournament.setPayoffShow(new Show());
+    tournament.setPayoffSegmentType(payoffType);
+    tournament.setPayoffSegmentRule(payoffRule);
     tournament.setEditionOrdinal(1);
     tournament.setRecurrence(TournamentRecurrence.ANNUAL);
 
@@ -964,7 +973,11 @@ class BracketTournamentServiceTest {
     assertThat(edition.getStatus()).isEqualTo(TournamentStatus.SCHEDULED);
     assertThat(edition.getEntries()).isEmpty();
     assertThat(edition.getRounds()).isEmpty();
+    // The payoff match type and stipulation are tournament identity (ATW-lj3d); the host show
+    // is deliberately NOT copied — next year's PLE is scheduled separately.
     assertThat(edition.getPayoffShow()).isNull();
+    assertThat(edition.getPayoffSegmentType()).isSameAs(payoffType);
+    assertThat(edition.getPayoffSegmentRule()).isSameAs(payoffRule);
   }
 
   @Test

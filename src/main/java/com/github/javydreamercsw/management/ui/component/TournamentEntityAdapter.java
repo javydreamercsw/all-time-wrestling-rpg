@@ -61,6 +61,15 @@ public class TournamentEntityAdapter implements TournamentBracketModel {
   }
 
   @Override
+  public boolean isTitleOnTheLine() {
+    // A briefcase-deciding or contender-deciding tournament puts no championship at stake —
+    // its winner is not a champion (ATW-leq6).
+    return tournament.getLinkedTitle() != null
+        && !tournament.isBriefcaseDeciding()
+        && !tournament.isContenderDeciding();
+  }
+
+  @Override
   public String getRoundName(int round) {
     return tournament.getRounds().stream()
         .filter(r -> r.getRoundNumber() == round)
@@ -267,7 +276,12 @@ public class TournamentEntityAdapter implements TournamentBracketModel {
 
     @Override
     public Long getWinnerId() {
-      return match.getWinner() != null ? match.getWinner().getWrestler().getId() : null;
+      // A booking-time projection is not a result: booking pre-picks a winner so the bracket
+      // advances in lockstep with the card, but the match isn't official until adjudicated —
+      // showing it early would crown winners of matches that haven't happened (ATW-ip8v).
+      return match.isResultOfficial() && match.getWinner() != null
+          ? match.getWinner().getWrestler().getId()
+          : null;
     }
 
     @Override

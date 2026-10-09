@@ -41,6 +41,15 @@ public interface TournamentBracketModel {
   }
 
   /**
+   * Whether a championship was on the line in this tournament. Governs the winner-box label:
+   * "CHAMPION" when true, "WINNER" otherwise (briefcase/contender tournaments crown no champion,
+   * ATW-leq6). Defaults true — legacy models (campaign DTOs) assumed a title.
+   */
+  default boolean isTitleOnTheLine() {
+    return true;
+  }
+
+  /**
    * The persisted display name for a round ("Qualifiers", "Final"), or null when the model does not
    * carry real round names and the component should label positionally (Finals, Semi-Finals…).
    */

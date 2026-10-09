@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.domain.title;
 
 import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.universe.Universe;
@@ -75,6 +76,11 @@ public class TitleOpportunity extends AbstractEntity<Long> {
   /** Kayfabe date the opportunity was earned (the tournament's endDate). */
   @Column(name = "earned_at", nullable = false)
   private LocalDate earnedAt;
+
+  /** Division the case belongs to, copied from the granting tournament. Null = all genders. */
+  @Column(name = "gender")
+  @Enumerated(EnumType.STRING)
+  @Nullable private Gender gender;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "earned_from_tournament_id")

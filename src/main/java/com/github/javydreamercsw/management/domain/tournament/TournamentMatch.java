@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.tournament;
 
+import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
@@ -116,4 +117,19 @@ public class TournamentMatch {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "winner_entry_id")
   @Nullable private TournamentEntry winner;
+
+  /**
+   * Whether {@link #getWinner()} is an official result: booking pre-picks a probable winner so the
+   * bracket advances in lockstep with the card (TournamentTemplateBookingService.recordMatchResult
+   * at booking), but the match is not actually played until its segment is adjudicated — the
+   * projection can still change. Only an adjudicated segment (or a hand-recorded result with no
+   * segment at all, the manual-completion path) makes the winner real. Display code must gate on
+   * this: a bracket should not crown anything off a projection.
+   */
+  public boolean isResultOfficial() {
+    if (segment == null) {
+      return true; // hand-recorded result — no segment, the recorded winner IS the result
+    }
+    return segment.getAdjudicationStatus() == AdjudicationStatus.ADJUDICATED;
+  }
 }

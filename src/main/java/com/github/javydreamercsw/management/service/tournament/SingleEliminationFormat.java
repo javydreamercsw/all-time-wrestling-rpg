@@ -259,14 +259,20 @@ public class SingleEliminationFormat implements TournamentFormat {
   }
 
   private Long winnerIdOf(TournamentMatch match) {
-    return match != null && match.getWinner() != null && match.getWinner().getWrestler() != null
-        ? match.getWinner().getWrestler().getId()
-        : null;
+    return officialWinner(match) != null ? officialWinner(match).getWrestler().getId() : null;
   }
 
   private String winnerNameOf(TournamentMatch match) {
-    return match != null && match.getWinner() != null && match.getWinner().getWrestler() != null
-        ? match.getWinner().getWrestler().getName()
-        : null;
+    TournamentEntry winner = officialWinner(match);
+    return winner != null && winner.getWrestler() != null ? winner.getWrestler().getName() : null;
+  }
+
+  /**
+   * The match's winner only when the result is official — booking pre-picks a winner so the bracket
+   * advances in lockstep, but the projection must not show it until the segment is adjudicated
+   * (ATW-ip8v).
+   */
+  private TournamentEntry officialWinner(TournamentMatch match) {
+    return match != null && match.isResultOfficial() ? match.getWinner() : null;
   }
 }

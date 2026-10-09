@@ -38,6 +38,9 @@ public interface TitleOpportunityRepository extends JpaRepository<TitleOpportuni
   Optional<TitleOpportunity> findFirstByWrestlerIdAndStatus(
       Long wrestlerId, TitleOpportunityStatus status);
 
+  /** All currently HELD opportunities (booker dashboard panel, ATW-3fhh). */
+  List<TitleOpportunity> findByStatus(TitleOpportunityStatus status);
+
   /** Career-view history, newest first. */
   List<TitleOpportunity> findByWrestlerIdOrderByEarnedAtDesc(Long wrestlerId);
 

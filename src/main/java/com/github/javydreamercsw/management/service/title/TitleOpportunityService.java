@@ -16,9 +16,12 @@
 */
 package com.github.javydreamercsw.management.service.title;
 
+import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
@@ -42,6 +45,7 @@ import com.github.javydreamercsw.management.service.segment.SegmentTeam;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -72,6 +76,7 @@ public class TitleOpportunityService {
   private final TitleReignRepository titleReignRepository;
   private final ShowRepository showRepository;
   private final SegmentTypeRepository segmentTypeRepository;
+  private final SegmentRepository segmentRepository;
   private final SegmentRuleRepository segmentRuleRepository;
   private final NPCSegmentResolutionService segmentResolutionService;
   private final GameSettingService gameSettingService;
@@ -117,6 +122,7 @@ public class TitleOpportunityService {
     opportunity.setStatus(TitleOpportunityStatus.HELD);
     opportunity.setWrestler(winner);
     opportunity.setUniverse(tournament.getUniverse());
+    opportunity.setGender(tournament.getGender());
     opportunity.setEarnedAt(earnedAt);
     opportunity.setEarnedFromTournament(tournament);
     opportunity.setExpiryDate(earnedAt.plusDays(gameSettingService.getBriefcaseExpiryDays()));
@@ -144,13 +150,239 @@ public class TitleOpportunityService {
    * @return the booked cash-in segment
    */
   @Transactional
-  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  @PreAuthorize(
+      """
+      hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or\
+       @permissionService.isOwner(#opportunityId, 'TitleOpportunity')\
+      """)
   public Segment cashIn(long opportunityId, long titleId, long showId) {
     TitleOpportunity opportunity =
         opportunityRepository
             .findById(opportunityId)
             .orElseThrow(
                 () -> new IllegalArgumentException("Briefcase not found: " + opportunityId));
+    Title title = validateCashIn(opportunity, titleId);
+    // The champion check reads the reign table, not the detached title's in-memory champion list
+    // (the same lazy-collection trap TournamentService.currentChampionsOf avoids).
+    List<Wrestler> champions =
+        titleReignRepository.findByTitleIdAndEndDateIsNull(title.getId()).stream()
+            .flatMap(reign -> reign.getChampions().stream())
+            .distinct()
+            .toList();
+    Show show =
+        showRepository
+            .findById(showId)
+            .orElseThrow(() -> new IllegalArgumentException("Show not found: " + showId));
+
+    // Book the cash-in match: champion(s) vs holder, title on the line — the same shape as the
+    // tournament champion showcase. Adjudication's applyTitleChange handles win/loss from here.
+    SegmentTeam championTeam = new SegmentTeam(champions, title.getName() + " Champion");
+    return bookCashIn(
+        opportunity,
+        title,
+        show,
+        championTeam,
+        champions,
+        " The match was booked on the spot — narrate the surprise arrival and the champion's"
+            + " reaction.");
+  }
+
+  /**
+   * Shared booking tail for the standard cash-in and the post-match ambush (ATW-p8ij): books the
+   * title segment with the (possibly wear-penalized) champion team, spends the case, and publishes
+   * the event. Callers have already run every validation — a failure past this point is a bug.
+   */
+  private Segment bookCashIn(
+      TitleOpportunity opportunity,
+      Title title,
+      Show show,
+      SegmentTeam championTeam,
+      List<Wrestler> champions,
+      String narrationTail) {
+    Wrestler holder = opportunity.getWrestler();
+    SegmentType segmentType =
+        segmentTypeRepository
+            .findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode())
+            .orElseThrow(
+                () ->
+                    new IllegalStateException(
+                        "One on One segment type is missing — cannot book a cash-in"));
+    SegmentRule noRule = null; // stipulation resolved as "Standard Match" by the resolver
+    Segment segment =
+        segmentResolutionService.resolveTeamSegment(
+            championTeam, new SegmentTeam(holder), segmentType, show, stipulationOf(noRule));
+    segment.setIsTitleSegment(true);
+    segment.getTitles().add(title);
+    segment.setNarration(
+        "Briefcase cash-in: "
+            + holder.getName()
+            + " cashes in '"
+            + opportunity.getName()
+            + "' for a "
+            + title.getName()
+            + " opportunity against the reigning champion"
+            + (champions.size() > 1 ? "s" : "")
+            + "."
+            + narrationTail);
+
+    opportunity.markCashedIn(title, segment, gameDate());
+    opportunityRepository.save(opportunity);
+    eventPublisher.publishEvent(new BriefcaseCashedInEvent(this, opportunity));
+    log.info(
+        "Cashed in '{}' on show '{}': {} vs {} for {}",
+        opportunity.getName(),
+        show.getName(),
+        champions.stream().map(Wrestler::getName).collect(Collectors.joining(" & ")),
+        holder.getName(),
+        title.getName());
+    return segment;
+  }
+
+  // ── Post-match ambush (ATW-p8ij) ─────────────────────────────────────────
+
+  /** Flat breather the champion recovers between their match and the ambush (ATW-p8ij). */
+  static final int AMBUSH_BREATHER = 2;
+
+  /**
+   * The classic WWE ambush: the holder cashes in immediately AFTER the champion has already
+   * wrestled on the same show, entering fresh against a worn-down champion. The champion's
+   * same-show wear (their adjudicated final health/stamina) is carried over as an extra penalty on
+   * the champion's team weight — minus a small between-segments breather.
+   *
+   * <p>All cash-in validations apply (HELD, not expired, active holder, eligible title, reigning
+   * champion). On top: the champion(s) must have wrestled earlier on this show, their earlier match
+   * must still belong to them (a title change voids the ambush — the case is not spent), and they
+   * must not be in a promo (no wear).
+   *
+   * @param opportunityId the held briefcase
+   * @param titleId the championship to challenge
+   * @param showId the show where both the earlier match and the ambush book
+   * @param championSegmentId the champion's earlier segment on this show
+   * @return the booked ambush segment
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public Segment cashInAmbush(
+      long opportunityId, long titleId, long showId, long championSegmentId) {
+    Show show =
+        showRepository
+            .findById(showId)
+            .orElseThrow(() -> new IllegalArgumentException("Show not found: " + showId));
+    Segment championSegment =
+        segmentRepository
+            .findById(championSegmentId)
+            .orElseThrow(
+                () -> new IllegalArgumentException("Segment not found: " + championSegmentId));
+    if (championSegment.getShow() == null
+        || !championSegment.getShow().getId().equals(show.getId())) {
+      throw new IllegalArgumentException(
+          "The champion's segment is not on the same show — an ambush targets a match"
+              + " earlier on the same card");
+    }
+    if (WellKnownSegmentType.PROMO.matches(championSegment.getSegmentType())) {
+      throw new IllegalStateException(
+          "The champion's earlier segment is a promo — no wear to exploit, no ambush");
+    }
+    if (championSegment.getAdjudicationStatus() != AdjudicationStatus.ADJUDICATED) {
+      throw new IllegalStateException(
+          "The champion's earlier match has not been adjudicated yet — there is no final"
+              + " wear to carry over");
+    }
+    // A champion who LOST a title match earlier no longer reigns — the reign-table read below
+    // returns the new champion, who did not wrestle this segment, and the wear loop rejects the
+    // ambush (the case is not spent on a stolen-credential setup).
+
+    // Resolve the current champions BEFORE booking (needed for the wear penalty).
+    Title title =
+        titleRepository
+            .findById(titleId)
+            .orElseThrow(() -> new IllegalArgumentException("Title not found: " + titleId));
+    List<Wrestler> champions =
+        titleReignRepository.findByTitleIdAndEndDateIsNull(title.getId()).stream()
+            .flatMap(reign -> reign.getChampions().stream())
+            .distinct()
+            .toList();
+    if (champions.isEmpty()) {
+      throw new IllegalStateException(
+          "'" + title.getName() + "' is vacant — no champion to ambush");
+    }
+
+    // Same-show wear carry-over: the champions' adjudicated final health/stamina from their
+    // earlier match feeds an extra team penalty (breather subtracted). A champion who didn't
+    // wrestle on this card gets no ambush (nothing to exploit).
+    int wearPenalty = 0;
+    for (Wrestler champion : champions) {
+      Integer finalHealth =
+          championSegment.getParticipants().stream()
+              .filter(
+                  p -> p.getWrestler() != null && champion.getId().equals(p.getWrestler().getId()))
+              .map(SegmentParticipant::getFinalHealth)
+              .filter(Objects::nonNull)
+              .findFirst()
+              .orElse(null);
+      if (finalHealth == null) {
+        boolean wrestledHere =
+            championSegment.getWrestlers().stream()
+                .anyMatch(w -> champion.getId().equals(w.getId()));
+        if (!wrestledHere) {
+          throw new IllegalStateException(
+              champion.getName()
+                  + " has not wrestled on this show yet — the ambush needs a worn-down"
+                  + " champion");
+        }
+        continue; // wrestled but no reported health (NPC) — no specific carry-over number
+      }
+      // Percent of starting health lost, scaled the same way adjudication scales wear, minus
+      // the breather. Floor at 0 (a breathered champion is effectively fresh).
+      int startingHealth = Math.max(1, champion.getStartingHealth());
+      int lossPercent = Math.max(0, (startingHealth - finalHealth) * 100 / startingHealth);
+      wearPenalty += Math.max(0, lossPercent / 10 - AMBUSH_BREATHER);
+    }
+    if (wearPenalty <= 0) {
+      throw new IllegalStateException(
+          "The champion showed no wear in their earlier match — no ambush advantage");
+    }
+
+    // Run every standard cash-in validation first (HELD, expiry, holder, title eligibility,
+    // reigning champion) WITHOUT booking — a validation failure must not spend the case.
+    TitleOpportunity opportunity =
+        opportunityRepository
+            .findById(opportunityId)
+            .orElseThrow(
+                () -> new IllegalArgumentException("Briefcase not found: " + opportunityId));
+    validateCashIn(opportunity, titleId);
+
+    // Book with the wear-penalized champion team and spend (clamped here — the setter is plain).
+    SegmentTeam championTeam = new SegmentTeam(champions, title.getName() + " Champion");
+    championTeam.setExtraWearPenalty(Math.max(0, wearPenalty));
+    Segment segment =
+        bookCashIn(
+            opportunity,
+            title,
+            show,
+            championTeam,
+            champions,
+            " The ambush came moments after the champion's match — narrate the chaos and the"
+                + " exhausted champion's fate.");
+    segment.setNarration(
+        "Briefcase ambush: "
+            + opportunity.getWrestler().getName()
+            + " blindsides the exhausted "
+            + title.getName()
+            + " champion"
+            + (champions.size() > 1 ? "s" : "")
+            + " after their match, cashing in '"
+            + opportunity.getName()
+            + "'. The champion is worn down from their earlier fight — narrate the chaos.");
+    return segment;
+  }
+
+  /**
+   * The validation block of {@link #cashIn(long, long, long)} (everything up to booking), shared
+   * with the ambush path so both surfaces enforce identical rules. Loads and returns the title —
+   * the holder checks run before the lookup to preserve cash-in's validation order.
+   */
+  private Title validateCashIn(TitleOpportunity opportunity, long titleId) {
     if (!opportunity.isHeld()) {
       throw new IllegalStateException(
           "This briefcase is not cashable — its status is " + opportunity.getStatus());
@@ -197,8 +429,22 @@ public class TitleOpportunityService {
               + title.getGender()
               + " championship");
     }
-    // The champion check reads the reign table, not the detached title's in-memory champion list
-    // (the same lazy-collection trap TournamentService.currentChampionsOf avoids).
+    // A gendered briefcase is a division credential: it challenges its own division's titles
+    // (or an ungendered title), never the other division's (ATW-hq8d).
+    if (opportunity.getGender() != null
+        && title.getGender() != null
+        && opportunity.getGender() != title.getGender()) {
+      throw new IllegalStateException(
+          "'"
+              + opportunity.getName()
+              + "' is a "
+              + opportunity.getGender()
+              + " division briefcase and cannot be cashed in for '"
+              + title.getName()
+              + "' — it is a "
+              + title.getGender()
+              + " championship");
+    }
     List<Wrestler> champions =
         titleReignRepository.findByTitleIdAndEndDateIsNull(title.getId()).stream()
             .flatMap(reign -> reign.getChampions().stream())
@@ -211,53 +457,7 @@ public class TitleOpportunityService {
               + "' is vacant — a briefcase needs a reigning champion to cash in"
               + " against");
     }
-    Show show =
-        showRepository
-            .findById(showId)
-            .orElseThrow(() -> new IllegalArgumentException("Show not found: " + showId));
-
-    // Book the cash-in match: champion(s) vs holder, title on the line — the same shape as the
-    // tournament champion showcase. Adjudication's applyTitleChange handles win/loss from here.
-    SegmentType segmentType =
-        segmentTypeRepository
-            .findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode())
-            .orElseThrow(
-                () ->
-                    new IllegalStateException(
-                        "One on One segment type is missing — cannot book a cash-in"));
-    SegmentRule noRule = null; // stipulation resolved as "Standard Match" by the resolver
-    Segment segment =
-        segmentResolutionService.resolveTeamSegment(
-            new SegmentTeam(champions, title.getName() + " Champion"),
-            new SegmentTeam(holder),
-            segmentType,
-            show,
-            stipulationOf(noRule));
-    segment.setIsTitleSegment(true);
-    segment.getTitles().add(title);
-    segment.setNarration(
-        "Briefcase cash-in: "
-            + holder.getName()
-            + " cashes in '"
-            + opportunity.getName()
-            + "' for a "
-            + title.getName()
-            + " opportunity against the reigning champion"
-            + (champions.size() > 1 ? "s" : "")
-            + ". The match was booked on the spot — narrate the surprise arrival and the"
-            + " champion's reaction.");
-
-    opportunity.markCashedIn(title, segment, gameDate);
-    opportunityRepository.save(opportunity);
-    eventPublisher.publishEvent(new BriefcaseCashedInEvent(this, opportunity));
-    log.info(
-        "Cashed in '{}' on show '{}': {} vs {} for {}",
-        opportunity.getName(),
-        show.getName(),
-        champions.stream().map(Wrestler::getName).collect(Collectors.joining(" & ")),
-        holder.getName(),
-        title.getName());
-    return segment;
+    return title;
   }
 
   // ── Expiry ───────────────────────────────────────────────────────────────
@@ -299,6 +499,32 @@ public class TitleOpportunityService {
   public Optional<TitleOpportunity> findHeldByWrestler(Long wrestlerId) {
     return opportunityRepository.findFirstByWrestlerIdAndStatus(
         wrestlerId, TitleOpportunityStatus.HELD);
+  }
+
+  /** Every currently HELD briefcase, oldest first (booker dashboard panel, ATW-3fhh). */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public List<TitleOpportunity> findHeld() {
+    return opportunityRepository.findByStatus(TitleOpportunityStatus.HELD);
+  }
+
+  /**
+   * Narration-context line for a wrestler's held briefcase (ATW-brrz): "Time Vault briefcase —
+   * cashable against any reigning champion until 2027-10-08", or null when they hold none. The AI
+   * narration should introduce a holder the same way it introduces a champion.
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  @Nullable public String heldBriefcaseContextOf(Long wrestlerId) {
+    return findHeldByWrestler(wrestlerId)
+        .map(
+            opportunity ->
+                opportunity.getName()
+                    + " — cashable against any reigning champion"
+                    + (opportunity.getExpiryDate() != null
+                        ? " until " + opportunity.getExpiryDate()
+                        : ""))
+        .orElse(null);
   }
 
   private LocalDate gameDate() {

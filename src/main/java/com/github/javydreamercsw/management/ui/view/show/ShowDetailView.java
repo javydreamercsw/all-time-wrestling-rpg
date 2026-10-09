@@ -67,6 +67,7 @@ import com.github.javydreamercsw.management.service.show.planning.ShowPlanningSe
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.team.TeamService;
+import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
@@ -152,6 +153,7 @@ public class ShowDetailView extends Main
   private final NpcService npcService;
   private final WrestlerService wrestlerService;
   private final WrestlerStatsService wrestlerStatsService;
+  private final TitleOpportunityService titleOpportunityService;
   private final TitleService titleService;
   private final ShowTypeService showTypeService;
   private final SeasonService seasonService;
@@ -227,6 +229,7 @@ public class ShowDetailView extends Main
     this.npcService = showFacade.getNpcService();
     this.wrestlerService = wrestlerFacade.getWrestlerService();
     this.wrestlerStatsService = wrestlerFacade.getWrestlerStatsService();
+    this.titleOpportunityService = wrestlerFacade.getTitleOpportunityService();
     this.titleService = titleService;
     this.showTypeService = showContextFacade.getShowTypeService();
     this.seasonService = showContextFacade.getSeasonService();
@@ -1430,7 +1433,8 @@ public class ShowDetailView extends Main
                                       universeContextService,
                                       notificationService,
                                       wrestlerStatsService,
-                                      dramaEventService)
+                                      dramaEventService,
+                                      titleOpportunityService)
                                   .open()))
               .exceptionally(
                   ex -> {
