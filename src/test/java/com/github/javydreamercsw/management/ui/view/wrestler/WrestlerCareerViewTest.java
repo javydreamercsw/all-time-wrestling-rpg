@@ -39,6 +39,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateHistory;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.show.ShowFacade;
+import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
@@ -62,6 +63,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -75,7 +77,7 @@ class WrestlerCareerViewTest extends AbstractViewTest {
   @Mock private TitleService titleService;
   @Mock private TitleOpportunityService titleOpportunityService;
   @Mock private InjuryService injuryService;
-  @Mock private com.github.javydreamercsw.management.service.show.ShowService careerShowService;
+  @Mock private ShowService careerShowService;
   @Mock private UniverseContextService universeContextService;
 
   private Wrestler wrestler;
@@ -282,8 +284,7 @@ class WrestlerCareerViewTest extends AbstractViewTest {
     when(titleOpportunityService.findByWrestler(anyLong())).thenReturn(List.of(cashed, held));
     when(titleService.getTitleById(2L)).thenReturn(Optional.of(title));
     when(showFacade.getShowService()).thenReturn(careerShowService);
-    when(careerShowService.getUpcomingShows(org.mockito.ArgumentMatchers.anyInt()))
-        .thenReturn(List.of());
+    when(careerShowService.getUpcomingShows(ArgumentMatchers.anyInt())).thenReturn(List.of());
 
     buildViewWith(42L);
 
@@ -304,8 +305,7 @@ class WrestlerCareerViewTest extends AbstractViewTest {
     cashed.setEarnedAt(LocalDate.now().minusDays(400));
     when(titleOpportunityService.findByWrestler(anyLong())).thenReturn(List.of(cashed));
     when(showFacade.getShowService()).thenReturn(careerShowService);
-    when(careerShowService.getUpcomingShows(org.mockito.ArgumentMatchers.anyInt()))
-        .thenReturn(List.of());
+    when(careerShowService.getUpcomingShows(ArgumentMatchers.anyInt())).thenReturn(List.of());
 
     buildViewWith(42L);
 
@@ -347,7 +347,7 @@ class WrestlerCareerViewTest extends AbstractViewTest {
     upcoming.setId(5L);
     upcoming.setName("Saturday Slam");
     upcoming.setShowDate(LocalDate.now().plusDays(7));
-    when(careerShowService.getUpcomingShows(org.mockito.ArgumentMatchers.anyInt()))
+    when(careerShowService.getUpcomingShows(ArgumentMatchers.anyInt()))
         .thenReturn(List.of(upcoming));
   }
 

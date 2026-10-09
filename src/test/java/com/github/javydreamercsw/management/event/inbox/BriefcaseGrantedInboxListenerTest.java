@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.domain.title.TitleOpportunity;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.BriefcaseGrantedEvent;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -82,8 +83,8 @@ class BriefcaseGrantedInboxListenerTest {
             eq(InboxItem.Urgency.INFO),
             eq("8"),
             eq(InboxItemTarget.TargetType.WRESTLER));
-    org.junit.jupiter.api.Assertions.assertEquals("NAVIGATE", item.getValue().getActionType());
-    org.junit.jupiter.api.Assertions.assertEquals(
+    Assertions.assertEquals("NAVIGATE", item.getValue().getActionType());
+    Assertions.assertEquals(
         "{\"route\":\"wrestler-career/8\"}", item.getValue().getActionPayload());
     verify(eventPublisher).publishEvent(any(InboxUpdateEvent.class));
     verify(inboxUpdateBroadcaster).broadcast(any(InboxUpdateEvent.class));

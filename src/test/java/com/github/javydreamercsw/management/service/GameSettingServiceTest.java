@@ -30,9 +30,11 @@ import com.github.javydreamercsw.management.service.universe.UniverseContextServ
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -420,7 +422,7 @@ class GameSettingServiceTest {
                         && s.getUniverseId() == null));
   }
 
-  private GameSetting assertThatCaptorMatches(java.util.function.Predicate<GameSetting> match) {
-    return org.mockito.ArgumentMatchers.argThat(s -> match.test(s));
+  private GameSetting assertThatCaptorMatches(Predicate<GameSetting> match) {
+    return ArgumentMatchers.argThat(s -> match.test(s));
   }
 }
