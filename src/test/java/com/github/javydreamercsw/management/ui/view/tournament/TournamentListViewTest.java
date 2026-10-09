@@ -31,6 +31,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -304,6 +305,131 @@ class TournamentListViewTest extends AbstractViewTest {
     ArgumentCaptor<Tournament> created = ArgumentCaptor.forClass(Tournament.class);
     verify(tournamentService).save(created.capture());
     assertEquals(3, created.getValue().getQualifierGroupSize());
+  }
+
+  // ── Payoff-mode radio group (ATW-8p72) ───────────────────────────────────
+
+  @Test
+  @DisplayName("Wizard briefcase mode passes briefcase=true to createTournament")
+  void wizardCreate_briefcaseMode() {
+    view.openCreationWizardForTest();
+    fillDetailsStep();
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    RadioButtonGroup<String> payoffMode =
+        _get(UI.getCurrent(), RadioButtonGroup.class, spec -> spec.withLabel("Payoff"));
+    payoffMode.setValue("Winner earns the briefcase");
+
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Next")).click();
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Create Tournament")).click();
+
+    verify(tournamentService)
+        .createTournament(
+            eq("Fed Cup"),
+            eq("SINGLE_ELIMINATION"),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            eq(false),
+            eq(true));
+  }
+
+  @Test
+  @DisplayName("Wizard contender mode passes contender=true to createTournament")
+  void wizardCreate_contenderMode() {
+    view.openCreationWizardForTest();
+    fillDetailsStep();
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    RadioButtonGroup<String> payoffMode =
+        _get(UI.getCurrent(), RadioButtonGroup.class, spec -> spec.withLabel("Payoff"));
+    payoffMode.setValue("Winner becomes #1 contender");
+
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Next")).click();
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Create Tournament")).click();
+
+    verify(tournamentService)
+        .createTournament(
+            eq("Fed Cup"),
+            eq("SINGLE_ELIMINATION"),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            eq(true),
+            eq(false));
+  }
+
+  @Test
+  @DisplayName("Briefcase mode clears and disables the linked-title combo; other modes re-enable")
+  void wizardBriefcaseMode_disablesTitleCombo() {
+    view.openCreationWizardForTest();
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    RadioButtonGroup<String> payoffMode =
+        _get(UI.getCurrent(), RadioButtonGroup.class, spec -> spec.withLabel("Payoff"));
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    ComboBox<Title> titleCombo =
+        _get(
+            UI.getCurrent(),
+            ComboBox.class,
+            spec -> spec.withLabel("Linked Championship (optional)"));
+
+    titleCombo.setEnabled(true);
+    payoffMode.setValue("Winner earns the briefcase");
+    assertFalse(titleCombo.isEnabled(), "Briefcase mode must disable the title combo");
+
+    payoffMode.setValue("Title on the line");
+    assertTrue(titleCombo.isEnabled(), "Title mode must re-enable the title combo");
+  }
+
+  @Test
+  @DisplayName("Edit dialog pre-selects the tournament's briefcase payoff mode")
+  void editDialog_briefcasePreselected() {
+    Tournament briefcase = tournament();
+    briefcase.setBriefcaseDeciding(true);
+    // The dialog re-reads the tournament by id before binding the dialog fields.
+    when(tournamentService.findByIdWithDetails(1L)).thenReturn(Optional.of(briefcase));
+    view.openEditDialogForTest(briefcase);
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    RadioButtonGroup<String> payoffMode =
+        _get(UI.getCurrent(), RadioButtonGroup.class, spec -> spec.withLabel("Payoff"));
+    assertEquals("Winner earns the briefcase", payoffMode.getValue());
+  }
+
+  @Test
+  @DisplayName("Edit dialog saving with briefcase mode passes briefcase=true")
+  void editDialog_briefcaseSave() {
+    view.openEditDialogForTest(tournament());
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    RadioButtonGroup<String> payoffMode =
+        _get(UI.getCurrent(), RadioButtonGroup.class, spec -> spec.withLabel("Payoff"));
+    payoffMode.setValue("Winner earns the briefcase");
+
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Save")).click();
+
+    verify(tournamentService)
+        .updateTournament(
+            eq(1L),
+            eq("Crown Cup"),
+            eq("SINGLE_ELIMINATION"),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            eq(true),
+            eq(false),
+            eq(true));
   }
 
   @Test

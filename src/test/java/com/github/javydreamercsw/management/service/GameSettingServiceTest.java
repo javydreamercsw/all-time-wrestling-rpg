@@ -387,4 +387,40 @@ class GameSettingServiceTest {
         .thenReturn(Optional.empty());
     assertThat(service.isTutorialEnabled(Universe.UniverseType.GLOBAL)).isTrue();
   }
+
+  // ── Briefcase expiry (ATW-8p72) ──────────────────────────────────────────
+
+  @Test
+  void getBriefcaseExpiryDays_settingMissing_returnsDefault365() {
+    when(repository.findGlobal(GameSettingService.BRIEFCASE_EXPIRY_DAYS_KEY))
+        .thenReturn(Optional.empty());
+    assertThat(service.getBriefcaseExpiryDays()).isEqualTo(365);
+  }
+
+  @Test
+  void getBriefcaseExpiryDays_settingExists_returnsValue() {
+    when(repository.findGlobal(GameSettingService.BRIEFCASE_EXPIRY_DAYS_KEY))
+        .thenReturn(Optional.of(setting(GameSettingService.BRIEFCASE_EXPIRY_DAYS_KEY, "180")));
+    assertThat(service.getBriefcaseExpiryDays()).isEqualTo(180);
+  }
+
+  @Test
+  void setBriefcaseExpiryDays_savesGlobalSetting() {
+    when(repository.findGlobal(GameSettingService.BRIEFCASE_EXPIRY_DAYS_KEY))
+        .thenReturn(Optional.empty());
+
+    service.setBriefcaseExpiryDays(120);
+
+    verify(repository)
+        .save(
+            assertThatCaptorMatches(
+                s ->
+                    GameSettingService.BRIEFCASE_EXPIRY_DAYS_KEY.equals(s.getSettingKey())
+                        && "120".equals(s.getValue())
+                        && s.getUniverseId() == null));
+  }
+
+  private GameSetting assertThatCaptorMatches(java.util.function.Predicate<GameSetting> match) {
+    return org.mockito.ArgumentMatchers.argThat(s -> match.test(s));
+  }
 }
