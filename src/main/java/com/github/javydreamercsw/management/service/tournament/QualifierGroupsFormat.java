@@ -173,10 +173,12 @@ public class QualifierGroupsFormat implements TournamentFormat {
     List<ProjectedMatch> matches = new ArrayList<>();
     int matchNumber = 1;
     for (List<TournamentEntry> group : groups) {
-      // Prefer the real match's played state when one exists at this position.
+      // Prefer the real match's played state when one exists at this position. A booking-time
+      // projection is not a result — only an adjudicated (or segment-less, hand-recorded) winner
+      // renders (ATW-ip8v).
       TournamentMatch real =
           matchNumber - 1 < round1Real.size() ? round1Real.get(matchNumber - 1) : null;
-      TournamentEntry realWinner = real != null ? real.getWinner() : null;
+      TournamentEntry realWinner = officialWinner(real);
       List<ProjectedSlot> slots = new ArrayList<>();
       for (TournamentEntry entry : group) {
         slots.add(new ProjectedSlot(nameOf(entry), wrestlerIdOf(entry), null, false));
@@ -196,9 +198,10 @@ public class QualifierGroupsFormat implements TournamentFormat {
     int qualifierCount = groups.size();
     List<ProjectedSlot> finalSlots = new ArrayList<>();
     for (int g = 0; g < qualifierCount; g++) {
-      // Winner of qualifier g+1: the persisted round-1 match at position g, when decided.
+      // Winner of qualifier g+1: the persisted round-1 match at position g, when decided (and
+      // official — a booking-time projection stays hidden, ATW-ip8v).
       TournamentMatch qualifierReal = g < round1Real.size() ? round1Real.get(g) : null;
-      TournamentEntry qualifierWinner = qualifierReal != null ? qualifierReal.getWinner() : null;
+      TournamentEntry qualifierWinner = officialWinner(qualifierReal);
       if (qualifierWinner != null) {
         finalSlots.add(
             new ProjectedSlot(
@@ -211,7 +214,7 @@ public class QualifierGroupsFormat implements TournamentFormat {
       }
     }
     TournamentMatch played = finalReal.orElse(null);
-    TournamentEntry finalWinner = played != null ? played.getWinner() : null;
+    TournamentEntry finalWinner = officialWinner(played);
     matches.add(
         new ProjectedMatch(
             matchNumber,
@@ -221,6 +224,15 @@ public class QualifierGroupsFormat implements TournamentFormat {
             finalWinner != null ? finalWinner.getWrestler().getName() : null));
 
     return Optional.of(new BracketProjection(List.of("Qualifiers", "Final"), matches));
+  }
+
+  /**
+   * The match's winner only when the result is official — booking pre-picks a winner so the bracket
+   * advances in lockstep, but the projection must not show it until the segment is adjudicated
+   * (ATW-ip8v).
+   */
+  private TournamentEntry officialWinner(TournamentMatch match) {
+    return match != null && match.isResultOfficial() ? match.getWinner() : null;
   }
 
   private String nameOf(TournamentEntry entry) {

@@ -373,11 +373,13 @@ public class TournamentService {
 
   /**
    * Create the next edition of a recurring tournament (ATW-o4ad): copies format, allowed rules,
-   * linked title, universe, and default entrant count; names it with the base name (any trailing
-   * Roman numeral stripped) plus the successor ordinal in Roman numerals ("Time Vault" → "Time
-   * Vault II"); sets parent + ordinal; SCHEDULED, no host show, no entries/rounds. Recurrence
-   * carries over so the chain continues. Idempotent: returns empty when a successor of {@code
-   * completed} already exists (re-approval of the same payoff must not mint duplicate editions).
+   * linked title, universe, default entrant count, and the payoff match type + rule (tournament
+   * identity, ATW-lj3d); names it with the base name (any trailing Roman numeral stripped) plus the
+   * successor ordinal in Roman numerals ("Time Vault" → "Time Vault II"); sets parent + ordinal;
+   * SCHEDULED, no host show (next year's PLE is scheduled separately), no entries/rounds.
+   * Recurrence carries over so the chain continues. Idempotent: returns empty when a successor of
+   * {@code completed} already exists (re-approval of the same payoff must not mint duplicate
+   * editions).
    *
    * @param completed the edition whose payoff just booked
    * @return the new edition, or empty when one already exists or the tournament is not recurring
@@ -404,6 +406,11 @@ public class TournamentService {
     next.setQualifierGroupSize(completed.getQualifierGroupSize());
     next.setContenderDeciding(completed.isContenderDeciding());
     next.setBriefcaseDeciding(completed.isBriefcaseDeciding());
+    // The payoff match type and stipulation are tournament identity — the successor's PLE books
+    // the same kind of payoff match (ATW-lj3d). The host SHOW is not copied: next year's PLE is
+    // scheduled separately, and the template pairing re-pointed to this edition carries its show.
+    next.setPayoffSegmentType(completed.getPayoffSegmentType());
+    next.setPayoffSegmentRule(completed.getPayoffSegmentRule());
     next.setParent(completed);
     next.setEditionOrdinal(nextOrdinal);
     next.setRecurrence(TournamentRecurrence.ANNUAL);
