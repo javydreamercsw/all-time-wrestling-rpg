@@ -20,12 +20,8 @@ import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
-import com.github.javydreamercsw.management.domain.tournament.Tournament;
-import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
-import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
-import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
-import com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus;
-import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
+import com.github.javydreamercsw.management.domain.title.TitleOpportunity;
+import com.github.javydreamercsw.management.domain.tournament.*;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.show.ShowFacade;
@@ -33,6 +29,7 @@ import com.github.javydreamercsw.management.service.tournament.QualifierGroupsFo
 import com.github.javydreamercsw.management.service.tournament.TournamentFormat;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
 import com.github.javydreamercsw.management.ui.ViewContext;
 import com.github.javydreamercsw.management.ui.component.TournamentBracketComponent;
 import com.github.javydreamercsw.management.ui.component.TournamentBracketPreviewModel;
@@ -77,6 +74,7 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
   private final SegmentRuleService segmentRuleService;
   private final UniverseContextService universeContextService;
   private final ShowRepository showRepository;
+  private final WrestlerFacade wrestlerFacade;
 
   private Tournament tournament;
 
@@ -87,10 +85,12 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
       TournamentService tournamentService,
       ShowRepository showRepository,
       ShowFacade showFacade,
+      WrestlerFacade wrestlerFacade,
       ViewContext viewContext) {
     this.tournamentService = tournamentService;
     this.segmentRuleService = showFacade.getSegmentRuleService();
     this.showRepository = showRepository;
+    this.wrestlerFacade = wrestlerFacade;
     this.universeContextService = viewContext.getUniverseContextService();
 
     setSizeFull();
@@ -232,6 +232,13 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
         info.add(new Span("Previous edition: " + tournament.getParent().getName()));
       }
     }
+    if (tournament.isBriefcaseDeciding()) {
+      info.add(
+          new Span(
+              "Payoff: briefcase — the winner earns a cashable title shot against any"
+                  + " reigning champion"));
+      buildBriefcaseStatus(info);
+    }
     if (tournament.getLinkedTitle() != null) {
       info.add(new Span("Championship: " + tournament.getLinkedTitle().getName()));
     }
@@ -263,6 +270,50 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
       info.add(chips);
     }
     return info;
+  }
+
+  /**
+   * Briefcase status line for a briefcase-deciding tournament: which wrestler holds the case and
+   * what became of it (HELD with expiry / CASHED_IN / EXPIRED). Only shown once a winner exists.
+   */
+  private void buildBriefcaseStatus(VerticalLayout info) {
+    if (tournament.getStatus() != TournamentStatus.COMPLETE) {
+      return;
+    }
+    Wrestler winner =
+        tournament.getEntries().stream()
+            .filter(e -> e.getStatus() == TournamentEntryStatus.WINNER)
+            .map(e -> e.getWrestler())
+            .findFirst()
+            .orElse(null);
+    if (winner == null) {
+      return;
+    }
+    TitleOpportunity opportunity =
+        wrestlerFacade.getTitleOpportunityService().findByWrestler(winner.getId()).stream()
+            .filter(
+                o ->
+                    o.getEarnedFromTournamentId() != null
+                        && o.getEarnedFromTournamentId().equals(tournament.getId()))
+            .findFirst()
+            .orElse(null);
+    if (opportunity == null) {
+      info.add(
+          new Span("Briefcase: not yet granted (grants when the payoff final is adjudicated)"));
+      return;
+    }
+    String statusText =
+        switch (opportunity.getStatus()) {
+          case HELD ->
+              "HELD — cashable until "
+                  + (opportunity.getExpiryDate() != null ? opportunity.getExpiryDate() : "never");
+          case CASHED_IN ->
+              "CASHED IN"
+                  + (opportunity.getCashedAt() != null ? " on " + opportunity.getCashedAt() : "");
+          case EXPIRED -> "EXPIRED unspent";
+          case VOIDED -> "VOIDED";
+        };
+    info.add(new Span("Briefcase: " + winner.getName() + " — " + statusText));
   }
 
   private VerticalLayout buildEntrantsGrid() {

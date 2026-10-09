@@ -66,7 +66,14 @@ public class TournamentPacingService {
      * winner becomes the #1 contender; the title is NOT on the line). Vacant title falls back to
      * {@link #FINAL_AT_PLE}: a vacant title needs a champion, not a contender.
      */
-    CONTENDER_AT_PLE
+    CONTENDER_AT_PLE,
+    /**
+     * Briefcase-deciding tournament (ATW-8p72): nothing is on the line at the PLE — the final is a
+     * plain match and the winner earns the cashable briefcase (a TitleOpportunity). Briefcase
+     * tournaments never link a title, so this never falls back: the briefcase needs no champion,
+     * unlike {@link #CONTENDER_AT_PLE}.
+     */
+    BRIEFCASE_AT_PLE
   }
 
   /** The pacing plan for one tournament feeding one PLE. */
@@ -124,8 +131,9 @@ public class TournamentPacingService {
     int remaining = Math.max(0, total - booked);
     // The payoff match itself plays at the PLE; everything else paces across the weekly slots.
     // With a reigning champion (showcase) the bracket's own final also plays on a weekly show, so
-    // ALL remaining matches are round matches. FINAL_AT_PLE and CONTENDER_AT_PLE (ATW-ewrp) both
-    // stage their final AT the PLE — only the showcase keeps it on the weekly calendar.
+    // ALL remaining matches are round matches. FINAL_AT_PLE, CONTENDER_AT_PLE (ATW-ewrp) and
+    // BRIEFCASE_AT_PLE (ATW-8p72) all stage their final AT the PLE — only the showcase keeps it on
+    // the weekly calendar.
     int remainingNonFinal =
         payoffKind == PayoffKind.CHAMPION_SHOWCASE_AT_PLE ? remaining : Math.max(0, remaining - 1);
     return new PacingPlan(
@@ -137,12 +145,17 @@ public class TournamentPacingService {
   }
 
   /**
-   * The payoff shape: FINAL_AT_PLE when no title is linked or the linked championship is vacant;
-   * CHAMPION_SHOWCASE_AT_PLE when a champion reigns; CONTENDER_AT_PLE when the tournament is
-   * contender-deciding AND a champion reigns — a vacant title falls back to FINAL_AT_PLE (a vacant
-   * title needs a champion, not a contender, ATW-ewrp).
+   * The payoff shape: BRIEFCASE_AT_PLE for briefcase-deciding tournaments (checked first — they
+   * never link a title and would otherwise misclassify as FINAL_AT_PLE); FINAL_AT_PLE when no title
+   * is linked or the linked championship is vacant; CHAMPION_SHOWCASE_AT_PLE when a champion
+   * reigns; CONTENDER_AT_PLE when the tournament is contender-deciding AND a champion reigns — a
+   * vacant title falls back to FINAL_AT_PLE (a vacant title needs a champion, not a contender,
+   * ATW-ewrp).
    */
   public PayoffKind payoffKindOf(@NonNull final Tournament tournament) {
+    if (tournament.isBriefcaseDeciding()) {
+      return PayoffKind.BRIEFCASE_AT_PLE;
+    }
     if (tournament.getLinkedTitle() == null
         || tournamentService.isTitleVacant(tournament.getLinkedTitle())) {
       return PayoffKind.FINAL_AT_PLE;

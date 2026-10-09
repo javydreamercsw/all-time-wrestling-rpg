@@ -139,6 +139,14 @@ class TournamentPacingServiceTest {
   }
 
   @Test
+  @DisplayName("Briefcase-deciding → BRIEFCASE_AT_PLE (never misclassified FINAL_AT_PLE)")
+  void payoffKind_briefcaseDeciding() {
+    tournament.setBriefcaseDeciding(true);
+    assertEquals(
+        TournamentPacingService.PayoffKind.BRIEFCASE_AT_PLE, service.payoffKindOf(tournament));
+  }
+
+  @Test
   @DisplayName("Slots exclude PLEs and anything on/after the PLE date")
   void slots_excludePlesAndLater() {
     Show week1 = show(2L, "Week 1", LocalDate.of(2026, 6, 8), weeklyType);

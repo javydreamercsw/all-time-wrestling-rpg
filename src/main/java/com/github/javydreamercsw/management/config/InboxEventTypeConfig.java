@@ -155,4 +155,14 @@ public class InboxEventTypeConfig {
   public InboxEventType contenderTieDetected() {
     return new InboxEventType("CONTENDER_TIE_DETECTED", "Contender Tie Detected");
   }
+
+  @Bean
+  public InboxEventType briefcaseGranted() {
+    return new InboxEventType("BRIEFCASE_GRANTED", "Briefcase Granted");
+  }
+
+  @Bean
+  public InboxEventType briefcaseCashedIn() {
+    return new InboxEventType("BRIEFCASE_CASHED_IN", "Briefcase Cashed In");
+  }
 }

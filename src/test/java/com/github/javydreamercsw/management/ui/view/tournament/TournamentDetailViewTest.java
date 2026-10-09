@@ -32,8 +32,11 @@ import static org.mockito.Mockito.verify;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
+import com.github.javydreamercsw.management.domain.title.TitleOpportunity;
+import com.github.javydreamercsw.management.domain.title.TitleOpportunityStatus;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
+import com.github.javydreamercsw.management.domain.tournament.TournamentEntryStatus;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus;
@@ -41,9 +44,11 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.show.ShowFacade;
+import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.tournament.TournamentFormat;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
 import com.github.javydreamercsw.management.ui.ViewContext;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.Component;
@@ -81,6 +86,7 @@ class TournamentDetailViewTest extends AbstractViewTest {
   @Mock private TournamentService tournamentService;
   @Mock private ShowRepository showRepository;
   @Mock private ShowFacade showFacade;
+  @Mock private WrestlerFacade wrestlerFacade;
   @Mock private ViewContext viewContext;
   @Mock private SegmentRuleService segmentRuleService;
   @Mock private UniverseContextService universeContextService;
@@ -147,7 +153,9 @@ class TournamentDetailViewTest extends AbstractViewTest {
   }
 
   private void buildView() {
-    view = new TournamentDetailView(tournamentService, showRepository, showFacade, viewContext);
+    view =
+        new TournamentDetailView(
+            tournamentService, showRepository, showFacade, wrestlerFacade, viewContext);
     view.setTournamentForTest(tournament);
     view.buildContentForTest();
     UI.getCurrent().add(view);
@@ -245,6 +253,197 @@ class TournamentDetailViewTest extends AbstractViewTest {
                                 && span.getText().contains("Qualifier group size")))
             .size(),
         "SINGLE_ELIMINATION must not render the group-size row");
+  }
+
+  // ── Briefcase status (ATW-8p72) ───────────────────────────────────────────
+
+  @Test
+  @DisplayName("Briefcase-deciding tournament before completion shows no briefcase row")
+  void briefcaseStatus_notComplete_showsNothing() {
+    tournament.setBriefcaseDeciding(true);
+
+    buildView();
+
+    assertEquals(
+        0,
+        _find(
+                view,
+                Span.class,
+                spec ->
+                    spec.withPredicate(
+                        span -> span.getText() != null && span.getText().contains("Briefcase:")))
+            .size(),
+        "No briefcase status line until the tournament completes");
+  }
+
+  @Test
+  @DisplayName("Completed briefcase tournament without a winner entry shows nothing")
+  void briefcaseStatus_completeNoWinner_showsNothing() {
+    tournament.setBriefcaseDeciding(true);
+    tournament.setStatus(TournamentStatus.COMPLETE);
+
+    buildView();
+
+    assertEquals(
+        0,
+        _find(
+                view,
+                Span.class,
+                spec ->
+                    spec.withPredicate(
+                        span -> span.getText() != null && span.getText().contains("Briefcase:")))
+            .size());
+  }
+
+  private Span briefcaseStatusSpan() {
+    List<Span> spans =
+        _find(
+            view,
+            Span.class,
+            spec ->
+                spec.withPredicate(
+                    span -> span.getText() != null && span.getText().startsWith("Briefcase:")));
+    return spans.isEmpty() ? null : spans.getFirst();
+  }
+
+  @Test
+  @DisplayName("Completed briefcase tournament with a HELD case shows the holder and expiry")
+  void briefcaseStatus_held_showsHolderAndExpiry() {
+    Wrestler champion = wrestler(7L, "Mukundi Shumba");
+    entries.add(TournamentEntry.builder().id(9L).wrestler(champion).seed(5).build());
+    champion = entries.getLast().getWrestler();
+    entries.getLast().setStatus(TournamentEntryStatus.WINNER);
+    tournament.setBriefcaseDeciding(true);
+    tournament.setStatus(TournamentStatus.COMPLETE);
+
+    TitleOpportunity held = new TitleOpportunity();
+    held.setId(20L);
+    held.setName("Crown Cup briefcase");
+    held.setStatus(TitleOpportunityStatus.HELD);
+    held.setWrestler(champion);
+    held.setEarnedFromTournament(tournament);
+    held.setEarnedAt(LocalDate.of(2026, 6, 22));
+    held.setExpiryDate(LocalDate.of(2027, 6, 22));
+    TitleOpportunityService titleOpportunityService = Mockito.mock(TitleOpportunityService.class);
+    Mockito.when(titleOpportunityService.findByWrestler(champion.getId()))
+        .thenReturn(List.of(held));
+    Mockito.when(wrestlerFacade.getTitleOpportunityService()).thenReturn(titleOpportunityService);
+
+    buildView();
+
+    Span status = briefcaseStatusSpan();
+    assertNotNull(status, "The briefcase status line must render for a completed tournament");
+    assertTrue(status.getText().contains("Mukundi Shumba"));
+    assertTrue(
+        status.getText().contains("HELD"), "Expected HELD status in: '" + status.getText() + "'");
+  }
+
+  @Test
+  @DisplayName("Completed briefcase tournament with a CASHED_IN case shows the cash-in date")
+  void briefcaseStatus_cashedIn_showsDate() {
+    Wrestler champion = wrestler(7L, "Mukundi Shumba");
+    entries.add(TournamentEntry.builder().id(9L).wrestler(champion).seed(5).build());
+    champion = entries.getLast().getWrestler();
+    entries.getLast().setStatus(TournamentEntryStatus.WINNER);
+    tournament.setBriefcaseDeciding(true);
+    tournament.setStatus(TournamentStatus.COMPLETE);
+
+    TitleOpportunity cashed = new TitleOpportunity();
+    cashed.setId(21L);
+    cashed.setName("Crown Cup briefcase");
+    cashed.setStatus(TitleOpportunityStatus.CASHED_IN);
+    cashed.setWrestler(champion);
+    cashed.setEarnedFromTournament(tournament);
+    cashed.setCashedAt(LocalDate.of(2026, 8, 1));
+    TitleOpportunityService titleOpportunityService = Mockito.mock(TitleOpportunityService.class);
+    Mockito.when(titleOpportunityService.findByWrestler(champion.getId()))
+        .thenReturn(List.of(cashed));
+    Mockito.when(wrestlerFacade.getTitleOpportunityService()).thenReturn(titleOpportunityService);
+
+    buildView();
+
+    Span status = briefcaseStatusSpan();
+    assertNotNull(status);
+    assertTrue(status.getText().contains("CASHED IN on 2026-08-01"));
+  }
+
+  @Test
+  @DisplayName("Winner with no granted briefcase yet shows the pending-grant line")
+  void briefcaseStatus_notYetGranted_showsPendingLine() {
+    Wrestler champion = wrestler(7L, "Mukundi Shumba");
+    entries.add(TournamentEntry.builder().id(9L).wrestler(champion).seed(5).build());
+    champion = entries.getLast().getWrestler();
+    entries.getLast().setStatus(TournamentEntryStatus.WINNER);
+    tournament.setBriefcaseDeciding(true);
+    tournament.setStatus(TournamentStatus.COMPLETE);
+
+    TitleOpportunityService titleOpportunityService = Mockito.mock(TitleOpportunityService.class);
+    Mockito.when(titleOpportunityService.findByWrestler(champion.getId())).thenReturn(List.of());
+    Mockito.when(wrestlerFacade.getTitleOpportunityService()).thenReturn(titleOpportunityService);
+
+    buildView();
+
+    Span status = briefcaseStatusSpan();
+    assertNotNull(status);
+    assertTrue(status.getText().contains("not yet granted"));
+  }
+
+  @Test
+  @DisplayName("Briefcase from a different tournament does not satisfy the status line")
+  void briefcaseStatus_unrelatedOpportunity_showsPendingLine() {
+    Wrestler champion = wrestler(7L, "Mukundi Shumba");
+    entries.add(TournamentEntry.builder().id(9L).wrestler(champion).seed(5).build());
+    champion = entries.getLast().getWrestler();
+    entries.getLast().setStatus(TournamentEntryStatus.WINNER);
+    tournament.setBriefcaseDeciding(true);
+    tournament.setStatus(TournamentStatus.COMPLETE);
+
+    TitleOpportunity unrelated = new TitleOpportunity();
+    unrelated.setId(22L);
+    unrelated.setName("Other briefcase");
+    unrelated.setStatus(TitleOpportunityStatus.HELD);
+    unrelated.setWrestler(champion);
+    Tournament otherTournament = new Tournament();
+    otherTournament.setId(999L);
+    unrelated.setEarnedFromTournament(otherTournament); // a different tournament
+    TitleOpportunityService titleOpportunityService = Mockito.mock(TitleOpportunityService.class);
+    Mockito.when(titleOpportunityService.findByWrestler(champion.getId()))
+        .thenReturn(List.of(unrelated));
+    Mockito.when(wrestlerFacade.getTitleOpportunityService()).thenReturn(titleOpportunityService);
+
+    buildView();
+
+    Span status = briefcaseStatusSpan();
+    assertNotNull(status);
+    assertTrue(status.getText().contains("not yet granted"));
+  }
+
+  @Test
+  @DisplayName("EXPIRED case shows the expired label")
+  void briefcaseStatus_expired_showsLabel() {
+    Wrestler champion = wrestler(7L, "Mukundi Shumba");
+    entries.add(TournamentEntry.builder().id(9L).wrestler(champion).seed(5).build());
+    champion = entries.getLast().getWrestler();
+    entries.getLast().setStatus(TournamentEntryStatus.WINNER);
+    tournament.setBriefcaseDeciding(true);
+    tournament.setStatus(TournamentStatus.COMPLETE);
+
+    TitleOpportunity expired = new TitleOpportunity();
+    expired.setId(23L);
+    expired.setName("Crown Cup briefcase");
+    expired.setStatus(TitleOpportunityStatus.EXPIRED);
+    expired.setWrestler(champion);
+    expired.setEarnedFromTournament(tournament);
+    TitleOpportunityService titleOpportunityService = Mockito.mock(TitleOpportunityService.class);
+    Mockito.when(titleOpportunityService.findByWrestler(champion.getId()))
+        .thenReturn(List.of(expired));
+    Mockito.when(wrestlerFacade.getTitleOpportunityService()).thenReturn(titleOpportunityService);
+
+    buildView();
+
+    Span status = briefcaseStatusSpan();
+    assertNotNull(status);
+    assertTrue(status.getText().contains("EXPIRED unspent"));
   }
 
   private static List<Button> buttonsWithTooltip(Component root, String tooltipSubstring) {

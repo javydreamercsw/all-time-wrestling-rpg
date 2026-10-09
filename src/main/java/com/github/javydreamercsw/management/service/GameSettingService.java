@@ -99,6 +99,12 @@ public class GameSettingService {
       "contender.failed_challenge_cooldown_defenses";
 
   /**
+   * Days a briefcase (held title opportunity, ATW-8p72) stays cashable after being earned. Default:
+   * 365 (one in-game year).
+   */
+  public static final String BRIEFCASE_EXPIRY_DAYS_KEY = "briefcase.expiry.days";
+
+  /**
    * Keys that are strictly per-universe credentials. They are NEVER inherited from the global
    * defaults — each universe must configure its own. Reading without an active universe returns
    * empty.
@@ -461,6 +467,18 @@ public class GameSettingService {
   @Transactional
   public void setIntergenderMatchesEnabled(final boolean enabled) {
     saveInternal(INTERGENDER_MATCHES_ENABLED_KEY, String.valueOf(enabled));
+  }
+
+  /** Days a briefcase stays cashable after being earned. Default: 365 (one in-game year). */
+  @PreAuthorize("permitAll()")
+  public int getBriefcaseExpiryDays() {
+    return resolveValue(BRIEFCASE_EXPIRY_DAYS_KEY).map(Integer::parseInt).orElse(365);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public void setBriefcaseExpiryDays(final int days) {
+    saveInternal(BRIEFCASE_EXPIRY_DAYS_KEY, String.valueOf(days));
   }
 
   @PreAuthorize("permitAll()")

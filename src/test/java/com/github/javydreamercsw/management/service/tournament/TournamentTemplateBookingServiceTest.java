@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.tournament;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -24,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
@@ -1746,6 +1748,78 @@ class TournamentTemplateBookingServiceTest {
     when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
 
     assertTrue(service.previewShowAttachedTournamentSlots(show).isEmpty());
+  }
+
+  @Test
+  void preview_briefcaseDeciding_showsBriefcaseFinalWithoutTitle() {
+    // Briefcase-deciding tournament (ATW-8p72) hosted here: the preview row reads "Briefcase
+    // final", carries NO expected title (nothing is on the line — the winner earns the case),
+    // and still previews the final's real pairing.
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    tournament.setBriefcaseDeciding(true);
+    TournamentMatch open =
+        match(
+            2,
+            entry(alice, 1, TournamentEntryStatus.ACTIVE),
+            entry(bob, 2, TournamentEntryStatus.ACTIVE));
+    TournamentRound finalRound = round(2, open);
+    finalRound.setRoundName("Final");
+    tournament.setRounds(new ArrayList<>(List.of(finalRound)));
+    when(pacingService.payoffKindOf(tournament))
+        .thenReturn(TournamentPacingService.PayoffKind.BRIEFCASE_AT_PLE);
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(new SegmentType()));
+
+    List<TournamentTemplateBookingService.TournamentSlotPreview> previews =
+        service.previewShowAttachedTournamentSlots(show);
+
+    assertEquals(1, previews.size());
+    assertEquals("Briefcase final", previews.get(0).shape());
+    assertNull(previews.get(0).expectedTitle(), "Nothing on the line — the payoff is the case");
+    assertEquals(List.of(List.of("Alice"), List.of("Bob")), previews.get(0).teams());
+  }
+
+  @Test
+  void bookShowPayoff_briefcaseDeciding_booksFinalWithoutTitleOrContender() {
+    // Briefcase-deciding IN_PROGRESS tournament at its PLE: the final books as a plain match —
+    // NOT a title match (no linked title exists) and NOT a contender match (the grant happens
+    // at adjudication via applyBriefcaseOutcomes, not here). The narration names the cashable
+    // prize.
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    tournament.setBriefcaseDeciding(true);
+    TournamentMatch finalMatch =
+        match(
+            2,
+            entry(alice, 1, TournamentEntryStatus.ACTIVE),
+            entry(bob, 2, TournamentEntryStatus.ACTIVE));
+    TournamentRound finalRound = round(2, finalMatch);
+    finalRound.setRoundName("Final");
+    tournament.setRounds(new ArrayList<>(List.of(finalRound)));
+    when(pacingService.payoffKindOf(tournament))
+        .thenReturn(TournamentPacingService.PayoffKind.BRIEFCASE_AT_PLE);
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(new SegmentType()));
+    when(segmentResolutionService.resolveTeamSegment(any(), any(), any(), any(), anyString()))
+        .thenAnswer(
+            inv -> {
+              Segment s = new Segment();
+              s.setSegmentType(inv.getArgument(2));
+              return s;
+            });
+
+    List<TournamentTemplateBookingService.TournamentBooking> bookings =
+        service.bookShowAttachedTournamentSegments(show);
+
+    assertEquals(1, bookings.size());
+    assertFalse(bookings.get(0).titleMatch(), "Briefcase payoff: nothing on the line");
+    assertNull(bookings.get(0).title());
+    Segment booked = bookings.get(0).segment();
+    assertThat(booked).isNotNull();
+    assertThat(booked.getNarration()).contains("briefcase").contains("cashable");
   }
 
   @Test

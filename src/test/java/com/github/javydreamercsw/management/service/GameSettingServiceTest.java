@@ -30,9 +30,11 @@ import com.github.javydreamercsw.management.service.universe.UniverseContextServ
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -386,5 +388,41 @@ class GameSettingServiceTest {
     when(repository.findGlobal(GameSettingService.TUTORIAL_ENABLED_GLOBAL_KEY))
         .thenReturn(Optional.empty());
     assertThat(service.isTutorialEnabled(Universe.UniverseType.GLOBAL)).isTrue();
+  }
+
+  // ── Briefcase expiry (ATW-8p72) ──────────────────────────────────────────
+
+  @Test
+  void getBriefcaseExpiryDays_settingMissing_returnsDefault365() {
+    when(repository.findGlobal(GameSettingService.BRIEFCASE_EXPIRY_DAYS_KEY))
+        .thenReturn(Optional.empty());
+    assertThat(service.getBriefcaseExpiryDays()).isEqualTo(365);
+  }
+
+  @Test
+  void getBriefcaseExpiryDays_settingExists_returnsValue() {
+    when(repository.findGlobal(GameSettingService.BRIEFCASE_EXPIRY_DAYS_KEY))
+        .thenReturn(Optional.of(setting(GameSettingService.BRIEFCASE_EXPIRY_DAYS_KEY, "180")));
+    assertThat(service.getBriefcaseExpiryDays()).isEqualTo(180);
+  }
+
+  @Test
+  void setBriefcaseExpiryDays_savesGlobalSetting() {
+    when(repository.findGlobal(GameSettingService.BRIEFCASE_EXPIRY_DAYS_KEY))
+        .thenReturn(Optional.empty());
+
+    service.setBriefcaseExpiryDays(120);
+
+    verify(repository)
+        .save(
+            assertThatCaptorMatches(
+                s ->
+                    GameSettingService.BRIEFCASE_EXPIRY_DAYS_KEY.equals(s.getSettingKey())
+                        && "120".equals(s.getValue())
+                        && s.getUniverseId() == null));
+  }
+
+  private GameSetting assertThatCaptorMatches(Predicate<GameSetting> match) {
+    return ArgumentMatchers.argThat(s -> match.test(s));
   }
 }

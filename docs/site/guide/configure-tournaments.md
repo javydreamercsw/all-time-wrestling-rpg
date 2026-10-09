@@ -19,7 +19,11 @@ Open **Tournaments** from the navigation and click **New Tournament**. The wizar
 
 - **Tournament Name** — required. Recurring editions get Roman numerals appended automatically ("Time Vault" → "Time Vault II").
 - **Format** — how the bracket is shaped (single elimination, qualifier groups, …). The list comes from the game's installed formats; each shows its entrant range.
-- **Linked Championship (optional)** — award a title to the winner. The current champion(s) are automatically excluded from seeding — they can't win the belt from themselves. If the title has a gender constraint, eligibility respects it.
+- **Payoff** — what the winner gets:
+  - **Title on the line** (default) — the final (or the champion showcase when a champion reigns) is a title match.
+  - **Winner becomes #1 contender** — needs a linked championship with a reigning champion; the payoff books as a contender match and the winner is named its #1 contender. A vacant title falls back to a vacant-title final.
+  - **Winner earns the briefcase** — no linked championship. The winner earns a cashable briefcase (a Money in the Bank-style prize): at any time before it expires (default one in-game year, configurable via the `briefcase.expiry.days` game setting) the holder can cash it in from their career page for a title match against the reigning champion of **any** active championship — booked on the spot, spent whether the match is won or lost.
+- **Linked Championship (optional)** — award a title to the winner. Hidden/disabled when the payoff mode is the briefcase. The current champion(s) are automatically excluded from seeding — they can't win the belt from themselves. If the title has a gender constraint, eligibility respects it.
 - **Gender Filter (optional)** — restrict entrants to a division (men's/women's) even when the tournament isn't tied to a gendered title. Both constraints apply together.
 - **Host Show (optional)** — for one-time tournaments: the payoff books on this show exactly once, and the earlier rounds pace automatically onto the weekly shows before it. Picking a host enables the payoff match type and rule pickers.
 - **Payoff Match Type / Rule (optional)** — the segment type (defaults to One on One) and stipulation for the final.
@@ -77,3 +81,4 @@ Completed earlier editions stay in the list; tick **Show past editions** on the 
 - [Run a Season](./run-a-season) — filling the calendar the rounds pace against.
 - [Report Match Results](./report-match-results) — resolving the individual matches.
 - The auto-generated [General Manager](./general-manager) guide covers seasons, rivalries, and the wider booking picture.
+- The wrestler **career page** is where a briefcase holder cashes in — see the [Money in the Bank briefcase](./configure-tournaments#step-1--create-the-tournament) payoff description above.

@@ -1,0 +1,337 @@
+/*
+* Copyright (C) 2026 Software Consulting Dreams LLC
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <www.gnu.org>.
+*/
+package com.github.javydreamercsw.management.service.title;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.ShowRepository;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
+import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleOpportunity;
+import com.github.javydreamercsw.management.domain.title.TitleOpportunityRepository;
+import com.github.javydreamercsw.management.domain.title.TitleOpportunityStatus;
+import com.github.javydreamercsw.management.domain.title.TitleReign;
+import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.tournament.Tournament;
+import com.github.javydreamercsw.management.domain.tournament.TournamentRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.event.BriefcaseCashedInEvent;
+import com.github.javydreamercsw.management.event.BriefcaseGrantedEvent;
+import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.segment.NPCSegmentResolutionService;
+import com.github.javydreamercsw.management.service.segment.SegmentTeam;
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
+
+/** Unit tests for the briefcase service (ATW-8p72): grant idempotency and cash-in validation. */
+@ExtendWith(MockitoExtension.class)
+class TitleOpportunityServiceTest {
+
+  private static final LocalDate GAME_DATE = LocalDate.of(2026, 10, 8);
+
+  @Mock private TitleOpportunityRepository opportunityRepository;
+  @Mock private TournamentRepository tournamentRepository;
+  @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private TitleRepository titleRepository;
+  @Mock private TitleReignRepository titleReignRepository;
+  @Mock private ShowRepository showRepository;
+  @Mock private SegmentTypeRepository segmentTypeRepository;
+  @Mock private SegmentRuleRepository segmentRuleRepository;
+  @Mock private NPCSegmentResolutionService segmentResolutionService;
+  @Mock private GameSettingService gameSettingService;
+  @Mock private ApplicationEventPublisher eventPublisher;
+
+  private TitleOpportunityService service;
+  private Tournament tournament;
+  private Wrestler winner;
+  private Title title;
+  private Universe universe;
+
+  private final Clock fixedClock =
+      Clock.fixed(
+          GAME_DATE.atStartOfDay(ZoneId.systemDefault()).toInstant(), ZoneId.systemDefault());
+
+  @BeforeEach
+  void setUp() {
+    service =
+        new TitleOpportunityService(
+            opportunityRepository,
+            tournamentRepository,
+            wrestlerRepository,
+            titleRepository,
+            titleReignRepository,
+            showRepository,
+            segmentTypeRepository,
+            segmentRuleRepository,
+            segmentResolutionService,
+            gameSettingService,
+            fixedClock,
+            eventPublisher);
+
+    winner = new Wrestler();
+    winner.setId(8L);
+    winner.setName("Mukundi Shumba");
+    winner.setActive(true);
+    winner.setGender(Gender.MALE);
+
+    universe = new Universe();
+    universe.setId(1L);
+
+    tournament = new Tournament();
+    tournament.setId(1L);
+    tournament.setName("Time Vault");
+    tournament.setUniverse(universe);
+    tournament.setEndDate(GAME_DATE);
+
+    title = new Title();
+    title.setId(2L);
+    title.setName("ATW World");
+    title.setIsActive(true);
+    title.setUniverse(universe);
+
+    lenient().when(gameSettingService.getCurrentGameDate()).thenReturn(GAME_DATE);
+    lenient().when(gameSettingService.getBriefcaseExpiryDays()).thenReturn(365);
+    lenient()
+        .when(opportunityRepository.save(any(TitleOpportunity.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
+  }
+
+  // ── Grant ────────────────────────────────────────────────────────────────
+
+  @Test
+  @DisplayName("Grant creates a HELD briefcase with expiry earnedAt + 365 days")
+  void grantCreatesHeldOpportunity() {
+    when(opportunityRepository.existsByEarnedFromTournamentId(1L)).thenReturn(false);
+    when(opportunityRepository.findFirstByWrestlerIdAndStatus(8L, TitleOpportunityStatus.HELD))
+        .thenReturn(Optional.empty());
+
+    Optional<TitleOpportunity> result = service.grantFromTournament(tournament, winner);
+
+    assertTrue(result.isPresent());
+    assertEquals(TitleOpportunityStatus.HELD, result.get().getStatus());
+    assertEquals("Time Vault briefcase", result.get().getName());
+    assertEquals(GAME_DATE, result.get().getEarnedAt());
+    assertEquals(GAME_DATE.plusDays(365), result.get().getExpiryDate());
+    assertEquals(tournament, result.get().getEarnedFromTournament());
+    verify(eventPublisher).publishEvent(any(BriefcaseGrantedEvent.class));
+  }
+
+  @Test
+  @DisplayName("Grant is idempotent: a second grant for the same tournament is skipped")
+  void grantIsIdempotent() {
+    when(opportunityRepository.existsByEarnedFromTournamentId(1L)).thenReturn(true);
+
+    Optional<TitleOpportunity> result = service.grantFromTournament(tournament, winner);
+
+    assertTrue(result.isEmpty());
+    verify(opportunityRepository, never()).save(any(TitleOpportunity.class));
+    verify(eventPublisher, never()).publishEvent(any());
+  }
+
+  @Test
+  @DisplayName("Grant is skipped when the winner already holds a briefcase")
+  void grantSkippedWhenHolderAlreadyHoldsOne() {
+    when(opportunityRepository.existsByEarnedFromTournamentId(1L)).thenReturn(false);
+    when(opportunityRepository.findFirstByWrestlerIdAndStatus(8L, TitleOpportunityStatus.HELD))
+        .thenReturn(Optional.of(new TitleOpportunity()));
+
+    Optional<TitleOpportunity> result = service.grantFromTournament(tournament, winner);
+
+    assertTrue(result.isEmpty());
+    verify(opportunityRepository, never()).save(any(TitleOpportunity.class));
+  }
+
+  // ── Cash in ──────────────────────────────────────────────────────────────
+
+  private TitleOpportunity heldOpportunity() {
+    TitleOpportunity opportunity = new TitleOpportunity();
+    opportunity.setId(10L);
+    opportunity.setName("Time Vault briefcase");
+    opportunity.setStatus(TitleOpportunityStatus.HELD);
+    opportunity.setWrestler(winner);
+    opportunity.setUniverse(universe);
+    opportunity.setEarnedAt(GAME_DATE.minusDays(30));
+    opportunity.setExpiryDate(GAME_DATE.plusDays(335));
+    return opportunity;
+  }
+
+  @Test
+  @DisplayName("Cash-in books a title segment against the reigning champion and spends the case")
+  void cashInBooksTitleSegment() {
+    TitleOpportunity opportunity = heldOpportunity();
+    when(opportunityRepository.findById(10L)).thenReturn(Optional.of(opportunity));
+    when(titleRepository.findById(2L)).thenReturn(Optional.of(title));
+    when(titleReignRepository.findByTitleIdAndEndDateIsNull(2L))
+        .thenReturn(List.of(reignWith(winner.getName()))); // champion exists
+    when(showRepository.findById(5L)).thenReturn(Optional.of(new Show()));
+
+    SegmentType oneOnOne = new SegmentType();
+    when(segmentTypeRepository.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(oneOnOne));
+    Segment booked = new Segment();
+    when(segmentResolutionService.resolveTeamSegment(
+            any(SegmentTeam.class),
+            any(SegmentTeam.class),
+            any(SegmentType.class),
+            any(Show.class),
+            anyString()))
+        .thenReturn(booked);
+
+    Segment result = service.cashIn(10L, 2L, 5L);
+
+    assertEquals(booked, result);
+    assertTrue(booked.getIsTitleSegment());
+    assertEquals(1, booked.getTitles().size());
+    assertEquals(TitleOpportunityStatus.CASHED_IN, opportunity.getStatus());
+    assertEquals(title, opportunity.getCashedAgainstTitle());
+    assertEquals(booked, opportunity.getCashedAtSegment());
+    assertNotNull(opportunity.getCashedAt());
+    verify(eventPublisher).publishEvent(any(BriefcaseCashedInEvent.class));
+  }
+
+  @Test
+  @DisplayName("Cash-in rejects a non-HELD briefcase")
+  void cashInRejectsNonHeld() {
+    TitleOpportunity opportunity = heldOpportunity();
+    opportunity.setStatus(TitleOpportunityStatus.CASHED_IN);
+    when(opportunityRepository.findById(10L)).thenReturn(Optional.of(opportunity));
+
+    assertThrows(IllegalStateException.class, () -> service.cashIn(10L, 2L, 5L));
+    verify(eventPublisher, never()).publishEvent(any());
+  }
+
+  @Test
+  @DisplayName("Cash-in rejects an expired briefcase and flips it to EXPIRED")
+  void cashInRejectsExpired() {
+    TitleOpportunity opportunity = heldOpportunity();
+    opportunity.setExpiryDate(GAME_DATE.minusDays(1));
+    when(opportunityRepository.findById(10L)).thenReturn(Optional.of(opportunity));
+
+    assertThrows(IllegalStateException.class, () -> service.cashIn(10L, 2L, 5L));
+    assertEquals(TitleOpportunityStatus.EXPIRED, opportunity.getStatus());
+    verify(opportunityRepository).save(opportunity);
+  }
+
+  @Test
+  @DisplayName("Cash-in rejects an inactive holder")
+  void cashInRejectsInactiveHolder() {
+    TitleOpportunity opportunity = heldOpportunity();
+    winner.setActive(false);
+    when(opportunityRepository.findById(10L)).thenReturn(Optional.of(opportunity));
+
+    assertThrows(IllegalStateException.class, () -> service.cashIn(10L, 2L, 5L));
+  }
+
+  @Test
+  @DisplayName("Cash-in rejects a retired title")
+  void cashInRejectsRetiredTitle() {
+    TitleOpportunity opportunity = heldOpportunity();
+    title.setIsActive(false);
+    when(opportunityRepository.findById(10L)).thenReturn(Optional.of(opportunity));
+    when(titleRepository.findById(2L)).thenReturn(Optional.of(title));
+
+    assertThrows(IllegalStateException.class, () -> service.cashIn(10L, 2L, 5L));
+  }
+
+  @Test
+  @DisplayName("Cash-in rejects a title from a different universe")
+  void cashInRejectsUniverseMismatch() {
+    TitleOpportunity opportunity = heldOpportunity();
+    Universe otherUniverse = new Universe();
+    otherUniverse.setId(2L);
+    title.setUniverse(otherUniverse);
+    when(opportunityRepository.findById(10L)).thenReturn(Optional.of(opportunity));
+    when(titleRepository.findById(2L)).thenReturn(Optional.of(title));
+
+    assertThrows(IllegalStateException.class, () -> service.cashIn(10L, 2L, 5L));
+  }
+
+  @Test
+  @DisplayName("Cash-in rejects a gender-mismatched championship")
+  void cashInRejectsGenderMismatch() {
+    TitleOpportunity opportunity = heldOpportunity();
+    title.setGender(Gender.FEMALE);
+    when(opportunityRepository.findById(10L)).thenReturn(Optional.of(opportunity));
+    when(titleRepository.findById(2L)).thenReturn(Optional.of(title));
+
+    assertThrows(IllegalStateException.class, () -> service.cashIn(10L, 2L, 5L));
+  }
+
+  @Test
+  @DisplayName("Cash-in rejects a vacant title")
+  void cashInRejectsVacantTitle() {
+    TitleOpportunity opportunity = heldOpportunity();
+    when(opportunityRepository.findById(10L)).thenReturn(Optional.of(opportunity));
+    when(titleRepository.findById(2L)).thenReturn(Optional.of(title));
+    when(titleReignRepository.findByTitleIdAndEndDateIsNull(2L)).thenReturn(List.of());
+
+    assertThrows(IllegalStateException.class, () -> service.cashIn(10L, 2L, 5L));
+  }
+
+  // ── Expiry sweep ─────────────────────────────────────────────────────────
+
+  @Test
+  @DisplayName("expireOverdue flips held past expiry to EXPIRED")
+  void expireOverdueFlipsStatus() {
+    TitleOpportunity overdue = heldOpportunity();
+    when(opportunityRepository.findByStatusAndExpiryDateBefore(
+            TitleOpportunityStatus.HELD, GAME_DATE))
+        .thenReturn(List.of(overdue));
+
+    int count = service.expireOverdue();
+
+    assertEquals(1, count);
+    assertEquals(TitleOpportunityStatus.EXPIRED, overdue.getStatus());
+  }
+
+  private TitleReign reignWith(String championName) {
+    Wrestler champion = new Wrestler();
+    champion.setId(99L);
+    champion.setName(championName);
+    TitleReign reign = new TitleReign();
+    reign.getChampions().add(champion);
+    return reign;
+  }
+}
