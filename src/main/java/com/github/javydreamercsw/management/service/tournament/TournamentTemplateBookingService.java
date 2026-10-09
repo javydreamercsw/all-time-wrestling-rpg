@@ -750,18 +750,23 @@ public class TournamentTemplateBookingService {
    * The payoff's shape on this show: "Payoff final" (bracket still running, or will start here —
    * the final IS the payoff when the linked championship is vacant or absent), "Contender final"
    * (contender-deciding tournament with a reigning champion — the winner becomes the #1 contender,
-   * ATW-ewrp) or "Champion showcase" (bracket finished, a champion reigns). Null when nothing would
-   * book: the bracket completed without a champion to showcase.
+   * ATW-ewrp), "Briefcase final" (briefcase-deciding tournament — the winner earns the cashable
+   * briefcase, ATW-8p72) or "Champion showcase" (bracket finished, a champion reigns). Null when
+   * nothing would book: the bracket completed without a champion to showcase.
    */
   private String payoffShapeOf(Tournament tournament) {
     if (tournament.getStatus() == TournamentStatus.COMPLETE) {
       Title linkedTitle = tournament.getLinkedTitle();
       if (linkedTitle != null
           && !tournament.isContenderDeciding()
+          && !tournament.isBriefcaseDeciding()
           && !tournamentService.isTitleVacant(linkedTitle)) {
         return "Champion showcase";
       }
       return null;
+    }
+    if (tournament.isBriefcaseDeciding()) {
+      return "Briefcase final";
     }
     Title linkedTitle = tournament.getLinkedTitle();
     if (tournament.isContenderDeciding()
@@ -1054,11 +1059,14 @@ public class TournamentTemplateBookingService {
     // open match as a regular bout (pacing puts the final on the last weekly show). Contender-
     // deciding tournaments (ATW-ewrp) stage their final AT the PLE like FINAL_AT_PLE, but the
     // title is NOT on the line: the winner becomes the #1 contender. Vacant/no title: the final
-    // at the payoff show is the payoff (title match when vacant).
+    // at the payoff show is the payoff (title match when vacant). Briefcase-deciding tournaments
+    // (ATW-8p72) also stage their final AT the PLE with nothing on the line — the winner earns the
+    // cashable briefcase via adjudication (applyBriefcaseOutcomes).
     boolean payoff =
         isFinal
             && (payoffKind == TournamentPacingService.PayoffKind.FINAL_AT_PLE
-                || payoffKind == TournamentPacingService.PayoffKind.CONTENDER_AT_PLE);
+                || payoffKind == TournamentPacingService.PayoffKind.CONTENDER_AT_PLE
+                || payoffKind == TournamentPacingService.PayoffKind.BRIEFCASE_AT_PLE);
     boolean contenderPayoff =
         payoff && payoffKind == TournamentPacingService.PayoffKind.CONTENDER_AT_PLE;
     Title linkedTitle = tournament.getLinkedTitle();
@@ -1458,7 +1466,13 @@ public class TournamentTemplateBookingService {
     } else {
       notes.append("The winner advances in the tournament. ");
     }
-    if (tournament.getLinkedTitle() != null && !titleOnTheLine) {
+    if (tournament.isBriefcaseDeciding()) {
+      notes
+          .append("The winner earns the ")
+          .append(tournament.getName())
+          .append(" briefcase: a cashable opportunity for a title match against any reigning")
+          .append(" champion. ");
+    } else if (tournament.getLinkedTitle() != null && !titleOnTheLine) {
       notes
           .append("The tournament winner earns a ")
           .append(tournament.getLinkedTitle().getName())

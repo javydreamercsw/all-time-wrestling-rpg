@@ -37,4 +37,10 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long> {
 
   /** The successor edition of a recurring chain (ATW-o4ad) — the idempotency guard. */
   Optional<Tournament> findByParentId(Long parentId);
+
+  /**
+   * Tournaments whose name starts with the given prefix, case-insensitive — the Tier-2 Time-Vault
+   * repair's defensive lookup (ATW-8p72).
+   */
+  List<Tournament> findByNameStartingWithIgnoreCase(String prefix);
 }

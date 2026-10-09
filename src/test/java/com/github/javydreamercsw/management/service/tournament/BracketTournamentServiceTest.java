@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.tournament;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -51,6 +52,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.show.ShowBookingService;
 import com.github.javydreamercsw.management.service.show.ShowSegmentReservationService;
+import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -102,6 +104,7 @@ class BracketTournamentServiceTest {
             reservationService,
             titleReignRepository,
             segmentRuleRepository,
+            mock(TitleOpportunityService.class),
             List.of(format));
 
     tournament = new Tournament();

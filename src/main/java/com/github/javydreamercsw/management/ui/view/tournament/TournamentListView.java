@@ -54,6 +54,7 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.component.textfield.IntegerField;
@@ -219,21 +220,32 @@ public class TournamentListView extends VerticalLayout {
     titleCombo.setWidthFull();
     titleCombo.setClearButtonVisible(true);
 
-    // Contender-deciding mode (ATW-ewrp) — only meaningful with a title linked.
-    Checkbox contenderDecidingCheck =
-        new Checkbox("Winner becomes #1 contender (title not on the line)");
-    contenderDecidingCheck.setValue(managed.isContenderDeciding());
-    contenderDecidingCheck.setEnabled(managed.getLinkedTitle() != null);
-    contenderDecidingCheck.setHelperText(
-        "Requires a linked championship with a reigning champion: the payoff books as a"
-            + " contender match and the winner is named the #1 contender instead of"
-            + " challenging. A vacant title falls back to a vacant-title final.");
+    // Payoff mode (ATW-ewrp / ATW-8p72): classic title-on-the-line, contender-deciding, or
+    // briefcase-deciding. Briefcase clears and disables the title combo (no linked title).
+    RadioButtonGroup<String> payoffMode = new RadioButtonGroup<>("Payoff");
+    payoffMode.setItems(
+        "Title on the line", "Winner becomes #1 contender", "Winner earns the briefcase");
+    payoffMode.setValue(
+        managed.isBriefcaseDeciding()
+            ? "Winner earns the briefcase"
+            : managed.isContenderDeciding() ? "Winner becomes #1 contender" : "Title on the line");
+    payoffMode.setHelperText(
+        "Contender: needs a linked championship with a reigning champion — the winner becomes its"
+            + " #1 contender. Briefcase: no linked championship — the winner earns a cashable"
+            + " title shot against ANY reigning champion.");
     titleCombo.addValueChangeListener(
         e -> {
-          contenderDecidingCheck.setEnabled(e.getValue() != null);
-          if (e.getValue() == null) {
-            contenderDecidingCheck.setValue(false);
+          if (e.getValue() != null && "Winner earns the briefcase".equals(payoffMode.getValue())) {
+            payoffMode.setValue("Title on the line");
           }
+        });
+    payoffMode.addValueChangeListener(
+        e -> {
+          boolean briefcase = "Winner earns the briefcase".equals(e.getValue());
+          if (briefcase) {
+            titleCombo.clear();
+          }
+          titleCombo.setEnabled(!briefcase);
         });
 
     // One-time host-show binding (ATW-xbn4).
@@ -291,18 +303,23 @@ public class TournamentListView extends VerticalLayout {
                 return;
               }
               try {
+                boolean briefcaseSelected =
+                    "Winner earns the briefcase".equals(payoffMode.getValue());
+                boolean contenderSelected =
+                    "Winner becomes #1 contender".equals(payoffMode.getValue());
                 tournamentService.updateTournament(
                     tournament.getId(),
                     nameField.getValue(),
                     formatCombo.getValue() != null ? formatCombo.getValue().getFormatId() : null,
-                    titleCombo.getValue(),
+                    briefcaseSelected ? null : titleCombo.getValue(),
                     managed.getStartDate(),
                     new ArrayList<>(rulesPicker.getSelectedItems()),
                     hostShowCombo.getValue(),
                     payoffTypeCombo.getValue(),
                     payoffRuleCombo.getValue(),
                     true,
-                    contenderDecidingCheck.getValue());
+                    contenderSelected,
+                    briefcaseSelected);
                 dialog.close();
                 refresh();
                 Notification.show("Tournament updated!", 3000, Notification.Position.BOTTOM_CENTER)
@@ -320,8 +337,8 @@ public class TournamentListView extends VerticalLayout {
         new VerticalLayout(
             nameField,
             formatCombo,
+            payoffMode,
             titleCombo,
-            contenderDecidingCheck,
             hostShowCombo,
             payoffTypeCombo,
             payoffRuleCombo,
@@ -535,29 +552,43 @@ public class TournamentListView extends VerticalLayout {
     genderCombo.setHelperText(
         "Restricts entrants to one gender. The linked championship's own constraint also applies.");
 
-    // Contender-deciding mode (ATW-ewrp): the winner becomes the linked title's #1 contender
-    // instead of challenging — only meaningful with a title linked.
-    Checkbox contenderDecidingCheck =
-        new Checkbox("Winner becomes #1 contender (title not on the line)");
-    contenderDecidingCheck.setEnabled(false);
-    contenderDecidingCheck.setHelperText(
-        "Requires a linked championship with a reigning champion: the payoff books as a"
-            + " contender match and the winner is named the #1 contender instead of"
-            + " challenging. A vacant title falls back to a vacant-title final.");
-    titleCombo.addValueChangeListener(e -> contenderDecidingCheck.setEnabled(e.getValue() != null));
+    // Payoff mode (ATW-ewrp / ATW-8p72): classic title-on-the-line, contender-deciding, or
+    // briefcase-deciding. Briefcase clears and disables the title combo (no linked title).
+    RadioButtonGroup<String> payoffMode = new RadioButtonGroup<>("Payoff");
+    payoffMode.setItems(
+        "Title on the line", "Winner becomes #1 contender", "Winner earns the briefcase");
+    payoffMode.setValue("Title on the line");
+    payoffMode.setHelperText(
+        "Contender: needs a linked championship with a reigning champion — the winner becomes its"
+            + " #1 contender. Briefcase: no linked championship — the winner earns a cashable"
+            + " title shot against ANY reigning champion.");
+    titleCombo.addValueChangeListener(
+        e -> {
+          if (e.getValue() != null && "Winner earns the briefcase".equals(payoffMode.getValue())) {
+            payoffMode.setValue("Title on the line");
+          }
+        });
+    payoffMode.addValueChangeListener(
+        e -> {
+          boolean briefcase = "Winner earns the briefcase".equals(e.getValue());
+          if (briefcase) {
+            titleCombo.clear();
+          }
+          titleCombo.setEnabled(!briefcase);
+        });
 
     VerticalLayout tab1Content =
         new VerticalLayout(
             nameField,
             formatCombo,
+            payoffMode,
             titleCombo,
             genderCombo,
             hostShowCombo,
             payoffTypeCombo,
             payoffRuleCombo,
             recurrenceCombo,
-            rulesPicker,
-            contenderDecidingCheck);
+            rulesPicker);
     tab1Content.setPadding(false);
 
     // Tab 2: Seeding
@@ -739,19 +770,24 @@ public class TournamentListView extends VerticalLayout {
               }
               try {
                 Optional<Universe> universe = universeContextService.getCurrentUniverse();
+                boolean briefcaseSelected =
+                    "Winner earns the briefcase".equals(payoffMode.getValue());
+                boolean contenderSelected =
+                    "Winner becomes #1 contender".equals(payoffMode.getValue());
                 Tournament t =
                     tournamentService.createTournament(
                         nameField.getValue(),
                         formatCombo.getValue().getFormatId(),
                         universe.orElse(null),
-                        titleCombo.getValue(),
+                        briefcaseSelected ? null : titleCombo.getValue(),
                         LocalDate.now(),
                         new ArrayList<>(rulesPicker.getSelectedItems()),
                         hostShowCombo.getValue(),
                         payoffTypeCombo.getValue(),
                         payoffRuleCombo.getValue(),
                         genderCombo.getValue(),
-                        contenderDecidingCheck.getValue());
+                        contenderSelected,
+                        briefcaseSelected);
                 t.setRecurrence(recurrenceCombo.getValue());
                 t.setQualifierGroupSize(groupSizeField.getValue());
                 tournamentService.save(t);

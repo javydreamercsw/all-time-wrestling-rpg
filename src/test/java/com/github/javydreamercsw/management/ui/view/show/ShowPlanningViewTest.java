@@ -57,6 +57,7 @@ import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanni
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.team.TeamService;
+import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.service.tournament.TournamentTemplateBookingService;
@@ -143,6 +144,7 @@ class ShowPlanningViewTest extends AbstractViewTest {
             teamService,
             mock(InjuryService.class),
             mock(TitleService.class),
+            mock(TitleOpportunityService.class),
             mock(WrestlerStateHistoryService.class),
             mock(AbilityReminderTextService.class));
     ViewContext viewContext =

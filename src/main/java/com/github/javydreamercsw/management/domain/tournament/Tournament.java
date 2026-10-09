@@ -104,6 +104,16 @@ public class Tournament extends AbstractEntity<Long> {
   @Column(name = "contender_deciding", nullable = false)
   private boolean contenderDeciding = false;
 
+  /**
+   * Briefcase-deciding payoff (ATW-8p72): the winner earns a cashable {@link
+   * com.github.javydreamercsw.management.domain.title.TitleOpportunity} (the Money in the
+   * Bank-style briefcase) instead of a title or a contender slot. Briefcase tournaments never link
+   * a title — the winner may cash in against any reigning champion. Mutually exclusive with {@code
+   * contenderDeciding}.
+   */
+  @Column(name = "briefcase_deciding", nullable = false)
+  private boolean briefcaseDeciding = false;
+
   /** Format identifier matching {@code TournamentFormat#getFormatId()}. */
   @Column(name = "format_id", nullable = false, length = 64)
   private String formatId;

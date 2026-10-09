@@ -44,6 +44,7 @@ import com.github.javydreamercsw.management.service.show.ShowFacade;
 import com.github.javydreamercsw.management.service.tournament.TournamentFormat;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
 import com.github.javydreamercsw.management.ui.ViewContext;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.Component;
@@ -81,6 +82,7 @@ class TournamentDetailViewTest extends AbstractViewTest {
   @Mock private TournamentService tournamentService;
   @Mock private ShowRepository showRepository;
   @Mock private ShowFacade showFacade;
+  @Mock private WrestlerFacade wrestlerFacade;
   @Mock private ViewContext viewContext;
   @Mock private SegmentRuleService segmentRuleService;
   @Mock private UniverseContextService universeContextService;
@@ -147,7 +149,9 @@ class TournamentDetailViewTest extends AbstractViewTest {
   }
 
   private void buildView() {
-    view = new TournamentDetailView(tournamentService, showRepository, showFacade, viewContext);
+    view =
+        new TournamentDetailView(
+            tournamentService, showRepository, showFacade, wrestlerFacade, viewContext);
     view.setTournamentForTest(tournament);
     view.buildContentForTest();
     UI.getCurrent().add(view);

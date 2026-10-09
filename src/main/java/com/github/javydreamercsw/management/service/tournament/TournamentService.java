@@ -42,6 +42,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.show.ShowBookingService;
 import com.github.javydreamercsw.management.service.show.ShowSegmentReservationService;
+import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import jakarta.annotation.Nullable;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -75,6 +76,7 @@ public class TournamentService {
   private final ShowSegmentReservationService reservationService;
   private final TitleReignRepository titleReignRepository;
   private final SegmentRuleRepository segmentRuleRepository;
+  private final TitleOpportunityService titleOpportunityService;
   private final List<TournamentFormat> formats;
 
   private TournamentFormatContext formatContext() {
@@ -296,10 +298,56 @@ public class TournamentService {
       SegmentRule payoffSegmentRule,
       Gender gender,
       boolean contenderDeciding) {
+    return createTournament(
+        name,
+        formatId,
+        universe,
+        linkedTitle,
+        startDate,
+        allowedRules,
+        payoffShow,
+        payoffSegmentType,
+        payoffSegmentRule,
+        gender,
+        contenderDeciding,
+        false);
+  }
+
+  /**
+   * Full overload including the payoff mode (ATW-ewrp contender / ATW-8p72 briefcase). The modes
+   * are mutually exclusive: {@code contenderDeciding} requires a linked title (the winner becomes
+   * its #1 contender); {@code briefcaseDeciding} forbids one (the winner earns a cashable shot at
+   * ANY championship — a linked title would be meaningless).
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public Tournament createTournament(
+      String name,
+      String formatId,
+      Universe universe,
+      Title linkedTitle,
+      LocalDate startDate,
+      List<SegmentRule> allowedRules,
+      Show payoffShow,
+      SegmentType payoffSegmentType,
+      SegmentRule payoffSegmentRule,
+      Gender gender,
+      boolean contenderDeciding,
+      boolean briefcaseDeciding) {
+    if (contenderDeciding && briefcaseDeciding) {
+      throw new IllegalArgumentException(
+          "Choose one payoff mode — a tournament cannot be both contender-deciding and"
+              + " briefcase-deciding");
+    }
     if (contenderDeciding && linkedTitle == null) {
       throw new IllegalArgumentException(
           "A contender-deciding tournament needs a linked title — the winner becomes its"
               + " #1 contender");
+    }
+    if (briefcaseDeciding && linkedTitle != null) {
+      throw new IllegalArgumentException(
+          "A briefcase-deciding tournament must not link a title — the winner can cash in against"
+              + " any champion");
     }
     validatePayoffShow(universe, payoffShow);
     findFormat(formatId)
@@ -308,12 +356,13 @@ public class TournamentService {
     t.setName(name);
     t.setFormatId(formatId);
     t.setUniverse(universe);
-    t.setLinkedTitle(linkedTitle);
+    t.setLinkedTitle(briefcaseDeciding ? null : linkedTitle);
     t.setPayoffShow(payoffShow);
     t.setPayoffSegmentType(payoffSegmentType);
     t.setPayoffSegmentRule(payoffSegmentRule);
     t.setGender(gender);
     t.setContenderDeciding(contenderDeciding);
+    t.setBriefcaseDeciding(briefcaseDeciding);
     t.setStartDate(startDate);
     t.setStatus(TournamentStatus.SCHEDULED);
     t.setEntries(new ArrayList<>());
@@ -354,6 +403,7 @@ public class TournamentService {
     next.setDefaultEntrantCount(completed.getDefaultEntrantCount());
     next.setQualifierGroupSize(completed.getQualifierGroupSize());
     next.setContenderDeciding(completed.isContenderDeciding());
+    next.setBriefcaseDeciding(completed.isBriefcaseDeciding());
     next.setParent(completed);
     next.setEditionOrdinal(nextOrdinal);
     next.setRecurrence(TournamentRecurrence.ANNUAL);
@@ -516,9 +566,10 @@ public class TournamentService {
   }
 
   /**
-   * Full update including the contender-deciding mode (ATW-ewrp). {@code contenderDeciding} null
-   * leaves the existing flag untouched (compat); a non-null value overwrites it — requiring a
-   * linked title when true.
+   * Full update including the payoff modes (ATW-ewrp contender / ATW-8p72 briefcase). {@code
+   * contenderDeciding}/{@code briefcaseDeciding} null leaves the existing flag untouched (compat);
+   * a non-null value overwrites it. Contender-deciding requires a linked title when true;
+   * briefcase-deciding forbids one.
    */
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
@@ -534,6 +585,40 @@ public class TournamentService {
       final SegmentRule payoffSegmentRule,
       final boolean setPayoffFields,
       final Boolean contenderDeciding) {
+    return updateTournament(
+        id,
+        name,
+        formatId,
+        linkedTitle,
+        startDate,
+        allowedRules,
+        payoffShow,
+        payoffSegmentType,
+        payoffSegmentRule,
+        setPayoffFields,
+        contenderDeciding,
+        null);
+  }
+
+  /**
+   * Full update including both payoff-mode flags. {@code briefcaseDeciding} null leaves the
+   * existing flag untouched (compat); a non-null value overwrites it.
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public Tournament updateTournament(
+      @NonNull final Long id,
+      @NonNull final String name,
+      final String formatId,
+      final Title linkedTitle,
+      final LocalDate startDate,
+      final List<SegmentRule> allowedRules,
+      final Show payoffShow,
+      final SegmentType payoffSegmentType,
+      final SegmentRule payoffSegmentRule,
+      final boolean setPayoffFields,
+      final Boolean contenderDeciding,
+      final Boolean briefcaseDeciding) {
     Tournament t =
         tournamentRepository
             .findById(id)
@@ -547,11 +632,23 @@ public class TournamentService {
     }
     boolean effectiveContenderDeciding =
         contenderDeciding != null ? contenderDeciding : t.isContenderDeciding();
+    boolean effectiveBriefcaseDeciding =
+        briefcaseDeciding != null ? briefcaseDeciding : t.isBriefcaseDeciding();
     Title effectiveTitle = linkedTitle != null ? linkedTitle : t.getLinkedTitle();
+    if (effectiveContenderDeciding && effectiveBriefcaseDeciding) {
+      throw new IllegalArgumentException(
+          "Choose one payoff mode — a tournament cannot be both contender-deciding and"
+              + " briefcase-deciding");
+    }
     if (effectiveContenderDeciding && effectiveTitle == null) {
       throw new IllegalArgumentException(
           "A contender-deciding tournament needs a linked title — the winner becomes its"
               + " #1 contender");
+    }
+    if (effectiveBriefcaseDeciding && effectiveTitle != null) {
+      throw new IllegalArgumentException(
+          "A briefcase-deciding tournament must not link a title — the winner can cash in against"
+              + " any champion");
     }
     t.setName(name);
     if (formatId != null && !formatId.equals(t.getFormatId())) {
@@ -568,6 +665,9 @@ public class TournamentService {
     t.setAllowedRules(allowedRules != null ? new ArrayList<>(allowedRules) : new ArrayList<>());
     if (contenderDeciding != null) {
       t.setContenderDeciding(contenderDeciding);
+    }
+    if (briefcaseDeciding != null) {
+      t.setBriefcaseDeciding(briefcaseDeciding);
     }
     if (setPayoffFields) {
       t.setPayoffShow(payoffShow);
@@ -1120,7 +1220,46 @@ public class TournamentService {
             entry -> {
               entry.setStatus(TournamentEntryStatus.WINNER);
               entryRepository.save(entry);
+              grantBriefcaseOnManualCompletion(tournament, entry.getWrestler());
             });
+  }
+
+  /**
+   * Manual-completion briefcase grant (ATW-8p72): when a briefcase-deciding tournament completes
+   * without the final's segment ever being booked (results recorded by hand in the detail view),
+   * adjudication will never fire for it — the grant happens here instead. The booking path is
+   * untouched: its final has a segment and the grant flows through adjudication. Best-effort — a
+   * failed grant is logged, never thrown (the tournament completion itself must not break).
+   */
+  private void grantBriefcaseOnManualCompletion(Tournament tournament, Wrestler winner) {
+    if (!tournament.isBriefcaseDeciding()) {
+      return;
+    }
+    boolean anySegmentBooked =
+        tournament.getRounds().stream()
+            .flatMap(r -> r.getMatches().stream())
+            .anyMatch(m -> m.getSegment() != null);
+    if (anySegmentBooked) {
+      return; // bracket was played on shows — adjudication grants the briefcase
+    }
+    try {
+      titleOpportunityService
+          .grantFromTournament(tournament, winner)
+          .ifPresentOrElse(
+              opportunity ->
+                  log.info(
+                      "Granted briefcase '{}' to {} on manual completion of '{}'",
+                      opportunity.getName(),
+                      winner.getName(),
+                      tournament.getName()),
+              () ->
+                  log.info(
+                      "Briefcase grant for '{}' skipped (already granted or holder already holds"
+                          + " one)",
+                      tournament.getName()));
+    } catch (Exception e) {
+      log.error("Manual-completion briefcase grant failed for '{}'", tournament.getName(), e);
+    }
   }
 
   /** Find the next upcoming show after today for use in the creation wizard. */
