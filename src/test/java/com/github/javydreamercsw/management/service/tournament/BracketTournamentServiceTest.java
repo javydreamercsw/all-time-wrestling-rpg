@@ -19,7 +19,6 @@ package com.github.javydreamercsw.management.service.tournament;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -27,6 +26,7 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
@@ -82,6 +82,8 @@ class BracketTournamentServiceTest {
 
   @Mock private TournamentFormat format;
 
+  @Mock private TitleOpportunityService titleOpportunityService;
+
   private TournamentService tournamentService;
 
   private Tournament tournament;
@@ -104,7 +106,7 @@ class BracketTournamentServiceTest {
             reservationService,
             titleReignRepository,
             segmentRuleRepository,
-            mock(TitleOpportunityService.class),
+            titleOpportunityService,
             List.of(format));
 
     tournament = new Tournament();
@@ -821,6 +823,75 @@ class BracketTournamentServiceTest {
               assertThat(r.getRoundNumber()).isEqualTo(2);
               assertThat(r.getMatches()).contains(generatedFinal);
             });
+  }
+
+  // --- Manual-completion briefcase grant (ATW-8p72) ---
+
+  @Test
+  void markWinner_briefcaseTournamentNeverBooked_grantsBriefcase() {
+    // Hand-recorded bracket: no match ever had a segment, so adjudication will never fire —
+    // the grant happens on manual completion instead.
+    Wrestler winner = wrestler(10L, "Hand Winner", Gender.MALE, 500L);
+    tournament.setBriefcaseDeciding(true);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS); // markWinner flips it to COMPLETE
+    when(format.isComplete(any(Tournament.class))).thenReturn(true);
+    TournamentEntry active = new TournamentEntry();
+    active.setWrestler(winner);
+    active.setStatus(TournamentEntryStatus.ACTIVE);
+    tournament.getEntries().add(active);
+    when(entryRepository.findByTournamentIdAndStatus(1L, TournamentEntryStatus.ACTIVE))
+        .thenReturn(List.of(active));
+    when(titleOpportunityService.grantFromTournament(any(Tournament.class), any(Wrestler.class)))
+        .thenReturn(Optional.empty());
+
+    tournamentService.advanceToNextRound(tournament);
+
+    verify(titleOpportunityService).grantFromTournament(tournament, winner);
+    assertThat(tournament.getStatus()).isEqualTo(TournamentStatus.COMPLETE);
+    assertThat(active.getStatus()).isEqualTo(TournamentEntryStatus.WINNER);
+  }
+
+  @Test
+  void markWinner_briefcaseTournamentWithBookedFinal_doesNotGrant() {
+    // The final was booked on a show: the grant flows through adjudication, never from here.
+    Wrestler winner = wrestler(11L, "Bracket Winner", Gender.MALE, 500L);
+    tournament.setBriefcaseDeciding(true);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    when(format.isComplete(any(Tournament.class))).thenReturn(true);
+    TournamentEntry active = new TournamentEntry();
+    active.setWrestler(winner);
+    active.setStatus(TournamentEntryStatus.ACTIVE);
+    tournament.getEntries().add(active);
+    when(entryRepository.findByTournamentIdAndStatus(1L, TournamentEntryStatus.ACTIVE))
+        .thenReturn(List.of(active));
+    TournamentMatch bookedFinal = new TournamentMatch();
+    bookedFinal.setSegment(new Segment());
+    TournamentRound round = new TournamentRound();
+    round.getMatches().add(bookedFinal);
+    tournament.getRounds().add(round);
+
+    tournamentService.advanceToNextRound(tournament);
+
+    verify(titleOpportunityService, never()).grantFromTournament(any(), any());
+    assertThat(tournament.getStatus()).isEqualTo(TournamentStatus.COMPLETE);
+  }
+
+  @Test
+  void markWinner_nonBriefcaseTournament_doesNotGrant() {
+    Wrestler winner = wrestler(12L, "Cup Winner", Gender.MALE, 500L);
+    tournament.setBriefcaseDeciding(false);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    when(format.isComplete(any(Tournament.class))).thenReturn(true);
+    TournamentEntry active = new TournamentEntry();
+    active.setWrestler(winner);
+    active.setStatus(TournamentEntryStatus.ACTIVE);
+    tournament.getEntries().add(active);
+    when(entryRepository.findByTournamentIdAndStatus(1L, TournamentEntryStatus.ACTIVE))
+        .thenReturn(List.of(active));
+
+    tournamentService.advanceToNextRound(tournament);
+
+    verify(titleOpportunityService, never()).grantFromTournament(any(), any());
   }
 
   private static TournamentEntry entry(long id) {
