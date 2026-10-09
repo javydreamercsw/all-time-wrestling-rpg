@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentReposito
 import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -140,27 +141,52 @@ public class TimeVaultBriefcaseMigration implements DataMigration {
    * Deletes the placeholder when it is provably unused (inactive, no reigns, no champions, no
    * challengers, no remaining tournament/segment references); otherwise leaves it deactivated. Any
    * TitleOpportunity referencing the title (a cash-in against it) also blocks deletion.
+   *
+   * <p>The detach step mutates in-memory entities; the reference queries below hit the database, so
+   * the pending changes are flushed (and the placeholder re-read) first — otherwise a just detached
+   * segment_title row still counts and the delete is skipped (seen on the sandbox run, 2026-10-08).
    */
   private void retirePlaceholder(Title placeholder) {
     if (placeholder == null) {
       return;
     }
-    boolean referenced =
-        vaultsStillLinking(placeholder)
-            || !segmentRepository.findByTitle(placeholder).isEmpty()
-            || !titleOpportunityRepository.findByCashedAgainstTitleId(placeholder.getId()).isEmpty()
-            || Boolean.TRUE.equals(placeholder.getIsActive())
-            || !placeholder.getTitleReigns().isEmpty()
-            || !placeholder.getChampion().isEmpty()
-            || !placeholder.getChallengers().isEmpty();
-    if (referenced) {
+    segmentRepository.flush();
+    titleRepository.flush();
+    Title current = titleRepository.findById(placeholder.getId()).orElse(null);
+    if (current == null) {
+      return; // already gone (e.g. orphanRemoval cascaded the delete)
+    }
+    List<String> blockers = new ArrayList<>();
+    if (vaultsStillLinking(current)) {
+      blockers.add("tournament link");
+    }
+    if (!segmentRepository.findByTitle(current).isEmpty()) {
+      blockers.add("segment_title rows");
+    }
+    if (!titleOpportunityRepository.findByCashedAgainstTitleId(current.getId()).isEmpty()) {
+      blockers.add("cashed-in opportunities");
+    }
+    if (Boolean.TRUE.equals(current.getIsActive())) {
+      blockers.add("still active");
+    }
+    if (!current.getTitleReigns().isEmpty()) {
+      blockers.add("reign history");
+    }
+    if (!current.getChampion().isEmpty()) {
+      blockers.add("current champions");
+    }
+    if (!current.getChallengers().isEmpty()) {
+      blockers.add("challengers");
+    }
+    if (!blockers.isEmpty()) {
       log.info(
-          "Placeholder title '{}' still has references or history — left in place",
-          placeholder.getName());
+          "Placeholder title '{}' not deleted — {} (left in place, inactive)",
+          current.getName(),
+          String.join(", ", blockers));
       return;
     }
-    titleRepository.delete(placeholder);
-    log.info("Deleted unused placeholder title '{}'", placeholder.getName());
+    titleRepository.delete(current);
+    log.info("Deleted unused placeholder title '{}'", current.getName());
   }
 
   private boolean vaultsStillLinking(Title placeholder) {
