@@ -20,12 +20,8 @@ import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
-import com.github.javydreamercsw.management.domain.tournament.Tournament;
-import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
-import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
-import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
-import com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus;
-import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
+import com.github.javydreamercsw.management.domain.title.TitleOpportunity;
+import com.github.javydreamercsw.management.domain.tournament.*;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.show.ShowFacade;
@@ -286,27 +282,24 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
     }
     Wrestler winner =
         tournament.getEntries().stream()
-            .filter(
-                e ->
-                    e.getStatus()
-                        == com.github.javydreamercsw.management.domain.tournament
-                            .TournamentEntryStatus.WINNER)
+            .filter(e -> e.getStatus() == TournamentEntryStatus.WINNER)
             .map(e -> e.getWrestler())
             .findFirst()
             .orElse(null);
     if (winner == null) {
       return;
     }
-    com.github.javydreamercsw.management.domain.title.TitleOpportunity opportunity =
+    TitleOpportunity opportunity =
         wrestlerFacade.getTitleOpportunityService().findByWrestler(winner.getId()).stream()
             .filter(
                 o ->
-                    o.getEarnedFromTournament() != null
-                        && o.getEarnedFromTournament().getId().equals(tournament.getId()))
+                    o.getEarnedFromTournamentId() != null
+                        && o.getEarnedFromTournamentId().equals(tournament.getId()))
             .findFirst()
             .orElse(null);
     if (opportunity == null) {
-      info.add(new Span("Briefcase: not yet granted"));
+      info.add(
+          new Span("Briefcase: not yet granted (grants when the payoff final is adjudicated)"));
       return;
     }
     String statusText =

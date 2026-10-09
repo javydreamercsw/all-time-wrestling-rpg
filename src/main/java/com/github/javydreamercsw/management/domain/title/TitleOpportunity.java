@@ -80,6 +80,11 @@ public class TitleOpportunity extends AbstractEntity<Long> {
   @JoinColumn(name = "earned_from_tournament_id")
   @Nullable private Tournament earnedFromTournament;
 
+  /** Session-safe tournament id for detached reads (the lazy proxy would throw). */
+  @Nullable public Long getEarnedFromTournamentId() {
+    return earnedFromTournament != null ? earnedFromTournament.getId() : null;
+  }
+
   /** Kayfabe date after which the opportunity can no longer be cashed in; null = no expiry. */
   @Column(name = "expiry_date")
   @Nullable private LocalDate expiryDate;

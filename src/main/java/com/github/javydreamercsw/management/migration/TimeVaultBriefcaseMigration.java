@@ -16,18 +16,22 @@
 */
 package com.github.javydreamercsw.management.migration;
 
+import com.github.javydreamercsw.management.domain.AdjudicationStatus;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleOpportunityRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntryStatus;
+import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRepository;
 import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -106,9 +110,21 @@ public class TimeVaultBriefcaseMigration implements DataMigration {
     }
     retirePlaceholder(placeholder);
 
-    // 3: backfill a held briefcase for each COMPLETE edition's winner (idempotent).
+    // 3: backfill a held briefcase for each COMPLETE edition's winner (idempotent). The bracket
+    // winner stamped at booking is PROVISIONAL — the grant only fires once the payoff final is
+    // actually adjudicated (or was never booked on a show, i.e. a hand-recorded bracket with no
+    // segments at all). Otherwise an unadjudicated final would mint a briefcase for a winner the
+    // adjudicated result may not confirm (the sandbox's Time Vault final was pending — ATW-8p72
+    // sandbox verification, 2026-10-08).
     for (Tournament vault : vaults) {
       if (vault.getStatus() != TournamentStatus.COMPLETE) {
+        continue;
+      }
+      if (!finalAdjudicatedOrNeverBooked(vault)) {
+        log.info(
+            "Payoff final of '{}' is booked but not yet adjudicated — briefcase backfill deferred"
+                + " (grants at adjudication)",
+            vault.getName());
         continue;
       }
       Optional<Wrestler> winner =
@@ -135,6 +151,26 @@ public class TimeVaultBriefcaseMigration implements DataMigration {
                       "Briefcase for '{}' already granted — backfill skipped (idempotent)",
                       vault.getName()));
     }
+  }
+
+  /**
+   * Whether the bracket's payoff result is trustworthy for a grant: either no match ever had a
+   * segment (hand-recorded bracket — the manual-completion fallback path) or every booked match,
+   * including the final, is adjudicated. The provisional bracket winner must never mint a briefcase
+   * on its own.
+   */
+  private boolean finalAdjudicatedOrNeverBooked(Tournament vault) {
+    List<Segment> bookedSegments =
+        vault.getRounds().stream()
+            .flatMap(r -> r.getMatches().stream())
+            .map(TournamentMatch::getSegment)
+            .filter(Objects::nonNull)
+            .toList();
+    if (bookedSegments.isEmpty()) {
+      return true; // hand-recorded bracket: no segments, the recorded winner IS the result
+    }
+    return bookedSegments.stream()
+        .allMatch(s -> s.getAdjudicationStatus() == AdjudicationStatus.ADJUDICATED);
   }
 
   /**

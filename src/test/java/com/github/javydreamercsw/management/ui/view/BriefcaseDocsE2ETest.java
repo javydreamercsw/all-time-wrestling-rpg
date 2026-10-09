@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.ui.view;
 
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
+import com.github.javydreamercsw.management.domain.tournament.TournamentEntryStatus;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
@@ -89,11 +90,7 @@ class BriefcaseDocsE2ETest extends AbstractDocsE2ETest {
             .orElseThrow()
             .getEntries()
             .stream()
-            .filter(
-                e ->
-                    e.getStatus()
-                        == com.github.javydreamercsw.management.domain.tournament
-                            .TournamentEntryStatus.WINNER)
+            .filter(e -> e.getStatus() == TournamentEntryStatus.WINNER)
             .map(e -> e.getWrestler())
             .findFirst()
             .orElseThrow(() -> new IllegalStateException("No winner recorded"));

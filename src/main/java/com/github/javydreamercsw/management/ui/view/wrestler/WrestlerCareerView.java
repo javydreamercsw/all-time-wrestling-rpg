@@ -51,6 +51,7 @@ import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.*;
@@ -61,7 +62,9 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 
@@ -286,8 +289,24 @@ public class WrestlerCareerView extends Main implements BeforeEnterObserver {
       return section;
     }
 
+    // Resolve titles eagerly while the session is open: the grid's value providers run outside
+    // any transaction and the reign's lazy title proxy would throw LazyInitializationException
+    // (seen on prod-shaped data, ATW-8p72 sandbox verification).
+    Map<Long, String> titleNames = new HashMap<>();
+    reigns.forEach(
+        r ->
+            titleNames.put(
+                r.getId(),
+                wrestlerFacade
+                    .getTitleService()
+                    .getTitleById(r.getTitle().getId())
+                    .map(Title::getName)
+                    .orElse("?")));
+
     Grid<TitleReign> grid = new Grid<>();
-    grid.addColumn(r -> r.getTitle().getName()).setHeader("Title").setAutoWidth(true);
+    grid.addColumn(r -> titleNames.getOrDefault(r.getId(), "?"))
+        .setHeader("Title")
+        .setAutoWidth(true);
     grid.addColumn(r -> "Reign #" + r.getReignNumber())
         .setHeader("Reign")
         .setAutoWidth(true)
@@ -339,7 +358,7 @@ public class WrestlerCareerView extends Main implements BeforeEnterObserver {
               "background:var(--lumo-primary-color-10pct);border-radius:var(--lumo-border-radius-m);padding:4px"
                   + " 10px;font-weight:600");
       HorizontalLayout heldRow = new HorizontalLayout(badge);
-      heldRow.setAlignItems(com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.CENTER);
+      heldRow.setAlignItems(FlexComponent.Alignment.CENTER);
       Span expiry =
           new Span(
               "Earned "
@@ -362,8 +381,21 @@ public class WrestlerCareerView extends Main implements BeforeEnterObserver {
     grid.addColumn(TitleOpportunity::getName).setHeader("Opportunity").setAutoWidth(true);
     grid.addColumn(o -> DATE_FMT.format(o.getEarnedAt())).setHeader("Earned").setAutoWidth(true);
     grid.addColumn(o -> o.getStatus().name()).setHeader("Status").setAutoWidth(true);
-    grid.addColumn(
-            o -> o.getCashedAgainstTitle() != null ? o.getCashedAgainstTitle().getName() : "—")
+    // Same eager-resolution discipline as the title-reign grid: the cashed-against title is a
+    // lazy proxy and grid value providers run outside a transaction.
+    Map<Long, String> cashedAgainst = new HashMap<>();
+    opportunities.stream()
+        .filter(o -> o.getCashedAgainstTitle() != null)
+        .forEach(
+            o ->
+                cashedAgainst.put(
+                    o.getId(),
+                    wrestlerFacade
+                        .getTitleService()
+                        .getTitleById(o.getCashedAgainstTitle().getId())
+                        .map(Title::getName)
+                        .orElse("?")));
+    grid.addColumn(o -> cashedAgainst.getOrDefault(o.getId(), "—"))
         .setHeader("Cashed Against")
         .setAutoWidth(true);
     grid.setItems(opportunities);
