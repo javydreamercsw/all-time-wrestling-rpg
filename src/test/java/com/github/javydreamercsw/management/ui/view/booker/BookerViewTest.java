@@ -23,6 +23,8 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.management.service.news.NewsService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
+import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
@@ -42,6 +44,8 @@ class BookerViewTest extends AbstractViewTest {
   @Mock private RivalryService rivalryService;
   @Mock private WrestlerService wrestlerService;
   @Mock private NewsService newsService;
+  @Mock private TitleOpportunityService titleOpportunityService;
+  @Mock private TitleService titleService;
   @Mock private UniverseContextService universeContextService;
 
   private BookerView view;
@@ -54,7 +58,13 @@ class BookerViewTest extends AbstractViewTest {
     when(newsService.getLatestNews()).thenReturn(Collections.emptyList());
     view =
         new BookerView(
-            showService, rivalryService, wrestlerService, newsService, universeContextService);
+            showService,
+            rivalryService,
+            wrestlerService,
+            newsService,
+            universeContextService,
+            titleOpportunityService,
+            titleService);
     UI.getCurrent().add(view);
   }
 

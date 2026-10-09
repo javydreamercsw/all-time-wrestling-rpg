@@ -313,7 +313,8 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
           case EXPIRED -> "EXPIRED unspent";
           case VOIDED -> "VOIDED";
         };
-    info.add(new Span("Briefcase: " + winner.getName() + " — " + statusText));
+    String division = opportunity.getGender() != null ? " — " + opportunity.getGender() : "";
+    info.add(new Span("Briefcase: " + winner.getName() + division + " — " + statusText));
   }
 
   private VerticalLayout buildEntrantsGrid() {

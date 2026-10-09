@@ -49,6 +49,8 @@ import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonStatsService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
+import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
@@ -90,6 +92,8 @@ class PlayerViewTest extends AbstractViewTest {
   @Mock private SeasonRepository seasonRepository;
   @Mock private UniverseContextService universeContextService;
   @Mock private CampaignService campaignService;
+  @Mock private TitleOpportunityService titleOpportunityService;
+  @Mock private TitleService titleService;
 
   @SuppressWarnings("unchecked")
   private PlayerDashboardView buildView() {
@@ -117,7 +121,9 @@ class PlayerViewTest extends AbstractViewTest {
             seasonStatsService,
             seasonRepository,
             universeContextService,
-            campaignService);
+            campaignService,
+            titleOpportunityService,
+            titleService);
     UI.getCurrent().add(view);
     return view;
   }
@@ -229,7 +235,9 @@ class PlayerViewTest extends AbstractViewTest {
               seasonStatsService,
               seasonRepository,
               universeContextService,
-              campaignService);
+              campaignService,
+              titleOpportunityService,
+              titleService);
       UI.getCurrent().add(built);
       return built;
     }

@@ -183,6 +183,20 @@ class TitleOpportunityServiceTest {
     verify(opportunityRepository, never()).save(any(TitleOpportunity.class));
   }
 
+  @Test
+  @DisplayName("Grant copies the tournament's gender division onto the briefcase")
+  void grantCopiesTournamentGender() {
+    tournament.setGender(Gender.MALE);
+    when(opportunityRepository.existsByEarnedFromTournamentId(1L)).thenReturn(false);
+    when(opportunityRepository.findFirstByWrestlerIdAndStatus(8L, TitleOpportunityStatus.HELD))
+        .thenReturn(Optional.empty());
+
+    Optional<TitleOpportunity> result = service.grantFromTournament(tournament, winner);
+
+    assertTrue(result.isPresent());
+    assertEquals(Gender.MALE, result.get().getGender());
+  }
+
   // ── Cash in ──────────────────────────────────────────────────────────────
 
   private TitleOpportunity heldOpportunity() {
@@ -308,6 +322,47 @@ class TitleOpportunityServiceTest {
     when(titleReignRepository.findByTitleIdAndEndDateIsNull(2L)).thenReturn(List.of());
 
     assertThrows(IllegalStateException.class, () -> service.cashIn(10L, 2L, 5L));
+  }
+
+  @Test
+  @DisplayName("Cash-in rejects a division mismatch between gendered briefcase and title")
+  void cashInRejectsDivisionMismatch() {
+    // A men's briefcase cannot challenge a women's championship even though the holder
+    // (a male wrestler) would pass the holder-gender check (ATW-hq8d).
+    TitleOpportunity opportunity = heldOpportunity();
+    opportunity.setGender(Gender.MALE);
+    title.setGender(Gender.FEMALE);
+    when(opportunityRepository.findById(10L)).thenReturn(Optional.of(opportunity));
+    when(titleRepository.findById(2L)).thenReturn(Optional.of(title));
+
+    assertThrows(IllegalStateException.class, () -> service.cashIn(10L, 2L, 5L));
+    verify(eventPublisher, never()).publishEvent(any());
+  }
+
+  @Test
+  @DisplayName("Cash-in allows a gendered briefcase against an ungendered title")
+  void cashInAllowsGenderedBriefcaseOnUngenderedTitle() {
+    TitleOpportunity opportunity = heldOpportunity();
+    opportunity.setGender(Gender.MALE);
+    when(opportunityRepository.findById(10L)).thenReturn(Optional.of(opportunity));
+    when(titleRepository.findById(2L)).thenReturn(Optional.of(title));
+    when(titleReignRepository.findByTitleIdAndEndDateIsNull(2L))
+        .thenReturn(List.of(reignWith("Champ")));
+    when(showRepository.findById(5L)).thenReturn(Optional.of(new Show()));
+    when(segmentTypeRepository.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(new SegmentType()));
+    when(segmentResolutionService.resolveTeamSegment(
+            any(SegmentTeam.class),
+            any(SegmentTeam.class),
+            any(SegmentType.class),
+            any(Show.class),
+            anyString()))
+        .thenReturn(new Segment());
+
+    Segment result = service.cashIn(10L, 2L, 5L);
+
+    assertNotNull(result);
+    assertEquals(TitleOpportunityStatus.CASHED_IN, opportunity.getStatus());
   }
 
   // ── Expiry sweep ─────────────────────────────────────────────────────────

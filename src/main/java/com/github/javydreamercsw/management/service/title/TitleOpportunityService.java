@@ -117,6 +117,7 @@ public class TitleOpportunityService {
     opportunity.setStatus(TitleOpportunityStatus.HELD);
     opportunity.setWrestler(winner);
     opportunity.setUniverse(tournament.getUniverse());
+    opportunity.setGender(tournament.getGender());
     opportunity.setEarnedAt(earnedAt);
     opportunity.setEarnedFromTournament(tournament);
     opportunity.setExpiryDate(earnedAt.plusDays(gameSettingService.getBriefcaseExpiryDays()));
@@ -144,7 +145,11 @@ public class TitleOpportunityService {
    * @return the booked cash-in segment
    */
   @Transactional
-  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  @PreAuthorize(
+      """
+      hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or\
+       @permissionService.isOwner(#opportunityId, 'TitleOpportunity')\
+      """)
   public Segment cashIn(long opportunityId, long titleId, long showId) {
     TitleOpportunity opportunity =
         opportunityRepository
@@ -192,6 +197,22 @@ public class TitleOpportunityService {
       throw new IllegalStateException(
           holder.getName()
               + " cannot cash in for '"
+              + title.getName()
+              + "' — it is a "
+              + title.getGender()
+              + " championship");
+    }
+    // A gendered briefcase is a division credential: it challenges its own division's titles
+    // (or an ungendered title), never the other division's (ATW-hq8d).
+    if (opportunity.getGender() != null
+        && title.getGender() != null
+        && opportunity.getGender() != title.getGender()) {
+      throw new IllegalStateException(
+          "'"
+              + opportunity.getName()
+              + "' is a "
+              + opportunity.getGender()
+              + " division briefcase and cannot be cashed in for '"
               + title.getName()
               + "' — it is a "
               + title.getGender()
@@ -299,6 +320,13 @@ public class TitleOpportunityService {
   public Optional<TitleOpportunity> findHeldByWrestler(Long wrestlerId) {
     return opportunityRepository.findFirstByWrestlerIdAndStatus(
         wrestlerId, TitleOpportunityStatus.HELD);
+  }
+
+  /** Every currently HELD briefcase, oldest first (booker dashboard panel, ATW-3fhh). */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public List<TitleOpportunity> findHeld() {
+    return opportunityRepository.findByStatus(TitleOpportunityStatus.HELD);
   }
 
   private LocalDate gameDate() {

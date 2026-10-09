@@ -28,6 +28,7 @@ import com.github.javydreamercsw.management.domain.deck.DeckCard;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
+import com.github.javydreamercsw.management.domain.title.TitleOpportunityRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseMembership;
 import com.github.javydreamercsw.management.domain.universe.UniverseMembershipRepository;
@@ -50,6 +51,7 @@ class PermissionServiceTest {
   private AccountRepository accountRepository;
   private DeckRepository deckRepository;
   private UniverseMembershipRepository universeMembershipRepository;
+  private TitleOpportunityRepository titleOpportunityRepository;
   private PermissionService permissionService;
 
   @BeforeEach
@@ -58,9 +60,14 @@ class PermissionServiceTest {
     accountRepository = mock(AccountRepository.class);
     deckRepository = mock(DeckRepository.class);
     universeMembershipRepository = mock(UniverseMembershipRepository.class);
+    titleOpportunityRepository = mock(TitleOpportunityRepository.class);
     permissionService =
         new PermissionService(
-            wrestlerRepository, accountRepository, deckRepository, universeMembershipRepository);
+            wrestlerRepository,
+            accountRepository,
+            deckRepository,
+            universeMembershipRepository,
+            titleOpportunityRepository);
 
     UserDetails userDetails = new User("testuser", "password", Collections.emptyList());
     var auth = new UsernamePasswordAuthenticationToken(userDetails, null, Collections.emptyList());
