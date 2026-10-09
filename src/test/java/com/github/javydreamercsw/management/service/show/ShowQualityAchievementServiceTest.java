@@ -91,6 +91,27 @@ class ShowQualityAchievementServiceTest {
         .thenReturn(List.of());
   }
 
+  // ---------- mock sentinel account (runAs elevation) guard ----------
+
+  @Test
+  void sentinelAccountFromRunAsElevation_skipsLegacyCalls() {
+    // ATW-jvgj: adjudication runs inside GeneralSecurityUtils.runAsAdminAsync, whose principal
+    // wraps a mock Account with id -1 (never persisted). The listener must not pass it to
+    // LegacyService — findById(-1) throws and rolls back the whole adjudication transaction.
+    Account sentinel = new Account();
+    sentinel.setId(-1L);
+    when(securityUtils.getAuthenticatedUser())
+        .thenReturn(Optional.of(new CustomUserDetails(sentinel)));
+
+    show.setQualityScore(4.0);
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+
+    service.onApplicationEvent(new AdjudicationCompletedEvent(this, show));
+
+    verify(legacyService, never()).unlockAchievement(any(), any());
+    verify(legacyService, never()).updateLegacyScore(any());
+  }
+
   // ---------- null quality score guard ----------
 
   @Test
