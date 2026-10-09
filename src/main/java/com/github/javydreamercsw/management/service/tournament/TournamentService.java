@@ -439,6 +439,59 @@ public class TournamentService {
     return name.replaceFirst(" (?:[IVXLCDM]+)$", "");
   }
 
+  /**
+   * Auto-attach an unattached annual edition to a newly scheduled PLE (ATW-cpca): when a PLE is
+   * created in a tournament's universe, the earliest edition in a recurring chain that still has no
+   * host show claims it as its payoff show. Keeps the successor playable without a manual edit —
+   * seasons end before next year's PLE is scheduled, so nothing else can attach it in time.
+   *
+   * <p>Rules: the show must be a PLE with a date; the edition must be SCHEDULED or IN_PROGRESS
+   * (COMPLETE/CANCELLED ones never book a payoff); the show date must be after the edition's start
+   * date (a PLE before the tournament begins is not its payoff); and the earliest edition wins, so
+   * a chain with two unattached editions fills the older slot first — the next scheduled PLE then
+   * claims the second. Manual attach via the edit dialog always wins (an attached edition is never
+   * stolen). Never throws: scheduling a show must not fail over an advisory attach.
+   *
+   * @return the edition attached to this show, or empty when no candidate matched
+   */
+  @Transactional
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  public Optional<Tournament> autoAttachPayoffShow(@NonNull Show ple) {
+    if (!ple.isPremiumLiveEvent()
+        || ple.getShowDate() == null
+        || ple.getUniverse() == null
+        || ple.getUniverse().getId() == null) {
+      return Optional.empty();
+    }
+    List<Tournament> candidates =
+        tournamentRepository
+            .findByUniverseIdAndPayoffShowIsNullAndRecurrenceOrderByEditionOrdinalAsc(
+                ple.getUniverse().getId(), TournamentRecurrence.ANNUAL);
+    for (Tournament candidate : candidates) {
+      if (candidate.getStatus() != TournamentStatus.SCHEDULED
+          && candidate.getStatus() != TournamentStatus.IN_PROGRESS) {
+        continue;
+      }
+      // A PLE before the tournament starts cannot host its payoff (the bracket is not underway).
+      if (candidate.getStartDate() != null
+          && !ple.getShowDate().isAfter(candidate.getStartDate())) {
+        continue;
+      }
+      candidate.setPayoffShow(ple);
+      tournamentRepository.save(candidate);
+      log.info(
+          "Auto-attached PLE '{}' ({} ) as payoff show for annual edition '{}' (#{} — no host"
+              + " show was set; manual edit can still re-attach, ATW-cpca)",
+          ple.getName(),
+          ple.getShowDate(),
+          candidate.getName(),
+          candidate.getEditionOrdinal());
+      return Optional.of(candidate);
+    }
+    return Optional.empty();
+  }
+
   private static String romanNumeral(int value) {
     if (value <= 0) {
       throw new IllegalArgumentException("Edition ordinals start at 1: " + value);

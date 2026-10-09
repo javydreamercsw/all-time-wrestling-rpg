@@ -32,6 +32,13 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long> {
   /** Show-attached tournaments of a universe — the paced-rounds scan (ATW-xbn4). */
   List<Tournament> findByUniverseIdAndPayoffShowIsNotNull(Long universeId);
 
+  /**
+   * Unattached recurring tournaments of a universe — the PLE auto-attach scan (ATW-cpca). Ordered
+   * by edition ordinal so the earliest edition in a chain claims the newly scheduled PLE.
+   */
+  List<Tournament> findByUniverseIdAndPayoffShowIsNullAndRecurrenceOrderByEditionOrdinalAsc(
+      Long universeId, TournamentRecurrence recurrence);
+
   /** Catalog lookup by the stable seed code (tournaments.json / WellKnownTournament). */
   Optional<Tournament> findByCode(String code);
 

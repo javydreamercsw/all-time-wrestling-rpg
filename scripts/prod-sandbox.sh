@@ -303,7 +303,16 @@ cmd_start() {
   if [ -z "$jar" ]; then
     echo "Building candidate JAR (-Pproduction)..."
     (cd "$REPO_ROOT" && mvn -q -Pproduction package -DskipTests)
-    jar=$(ls -1t "${REPO_ROOT}"/target/*.jar 2>/dev/null | grep -v -E 'sources|javadoc|\.original' | head -1)
+    # Prefer the repackaged main artifact (the -Pproduction build output). A stale
+    # target/-exec.jar from an earlier -Pdesktop/-Pwar build must not win the
+    # ls -1t race — every jar shares the reproducible-build 1980 timestamp, so
+    # mtime ordering is meaningless and the wrong artifact could serve :8081.
+    local main_jar="${REPO_ROOT}/target/all-time-wrestling-rpg-*.jar"
+    if ls ${main_jar} >/dev/null 2>&1; then
+      jar=$(ls -1t ${main_jar} 2>/dev/null | grep -v -E 'sources|javadoc|\.original|exec\.jar|launcher\.jar' | head -1)
+    else
+      jar=$(ls -1t "${REPO_ROOT}"/target/*.jar 2>/dev/null | grep -v -E 'sources|javadoc|\.original|exec\.jar|launcher\.jar' | head -1)
+    fi
   fi
   if [ ! -f "$jar" ]; then
     echo "Candidate JAR not found: $jar" >&2

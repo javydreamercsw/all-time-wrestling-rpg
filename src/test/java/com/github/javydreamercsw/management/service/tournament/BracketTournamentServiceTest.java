@@ -30,6 +30,9 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
+import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
+import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
@@ -1027,5 +1030,154 @@ class BracketTournamentServiceTest {
     assertThat(TournamentService.editionName("Crown Cup", 1987)).isEqualTo("Crown Cup MCMLXXXVII");
     // Predecessor names already carrying an ordinal strip it before re-suffixing.
     assertThat(TournamentService.editionName("Crown Cup XLII", 43)).isEqualTo("Crown Cup XLIII");
+  }
+
+  // ── PLE auto-attach (ATW-cpca) ────────────────────────────────────────────
+
+  private Show ple(Long id, String name, LocalDate date, Universe universe) {
+    Show show = new Show();
+    show.setId(id);
+    show.setName(name);
+    show.setShowDate(date);
+    show.setUniverse(universe);
+    // isPremiumLiveEvent() reads template.showType.category == PLE
+    ShowType pleType = new ShowType();
+    pleType.setCategory(ShowCategory.PLE);
+    ShowTemplate template = new ShowTemplate();
+    template.setShowType(pleType);
+    show.setTemplate(template);
+    return show;
+  }
+
+  @Test
+  void autoAttach_earliestUnattachedAnnualEditionClaimsThePle() {
+    Universe universe = new Universe();
+    universe.setId(1L);
+    Show ple = ple(9L, "WrestlePalooza 2027", LocalDate.of(2027, 6, 20), universe);
+
+    Tournament edition2 = new Tournament();
+    edition2.setId(2L);
+    edition2.setName("Crown Cup II");
+    edition2.setUniverse(universe);
+    edition2.setStatus(TournamentStatus.SCHEDULED);
+    edition2.setEditionOrdinal(2);
+    edition2.setStartDate(LocalDate.of(2027, 1, 1));
+    Tournament edition3 = new Tournament();
+    edition3.setId(3L);
+    edition3.setName("Crown Cup III");
+    edition3.setUniverse(universe);
+    edition3.setStatus(TournamentStatus.SCHEDULED);
+    edition3.setEditionOrdinal(3);
+    edition3.setStartDate(LocalDate.of(2027, 1, 1));
+
+    when(tournamentRepository
+            .findByUniverseIdAndPayoffShowIsNullAndRecurrenceOrderByEditionOrdinalAsc(
+                1L, TournamentRecurrence.ANNUAL))
+        .thenReturn(List.of(edition2, edition3));
+
+    Optional<Tournament> attached = tournamentService.autoAttachPayoffShow(ple);
+
+    assertThat(attached).isPresent();
+    assertThat(attached.get().getId()).isEqualTo(2L); // the EARLIEST edition wins
+    assertThat(attached.get().getPayoffShow()).isSameAs(ple);
+    // The other edition stays unattached for the NEXT scheduled PLE.
+    assertThat(edition3.getPayoffShow()).isNull();
+  }
+
+  @Test
+  void autoAttach_nonPleShow_neverAttaches() {
+    Universe universe = new Universe();
+    universe.setId(1L);
+    Show weekly = new Show();
+    weekly.setId(4L);
+    weekly.setName("Weekly TV");
+    weekly.setShowDate(LocalDate.of(2027, 6, 14));
+    weekly.setUniverse(universe);
+    ShowType tvType = new ShowType();
+    tvType.setCategory(ShowCategory.WEEKLY);
+    ShowTemplate tvTemplate = new ShowTemplate();
+    tvTemplate.setShowType(tvType);
+    weekly.setTemplate(tvTemplate);
+
+    assertThat(tournamentService.autoAttachPayoffShow(weekly)).isEmpty();
+    verify(tournamentRepository, never()).save(any(Tournament.class));
+  }
+
+  @Test
+  void autoAttach_completeOrCancelledEditions_skipped() {
+    Universe universe = new Universe();
+    universe.setId(1L);
+    Show ple = ple(9L, "WrestlePalooza", LocalDate.of(2027, 6, 20), universe);
+
+    Tournament done = new Tournament();
+    done.setId(7L);
+    done.setName("Crown Cup II");
+    done.setUniverse(universe);
+    done.setStatus(TournamentStatus.COMPLETE);
+    done.setEditionOrdinal(2);
+    when(tournamentRepository
+            .findByUniverseIdAndPayoffShowIsNullAndRecurrenceOrderByEditionOrdinalAsc(
+                1L, TournamentRecurrence.ANNUAL))
+        .thenReturn(List.of(done));
+
+    assertThat(tournamentService.autoAttachPayoffShow(ple)).isEmpty();
+    verify(tournamentRepository, never()).save(any(Tournament.class));
+  }
+
+  @Test
+  void autoAttach_pleBeforeTournamentStart_skipped() {
+    Universe universe = new Universe();
+    universe.setId(1L);
+    Show earlyPle = ple(9L, "January PLE", LocalDate.of(2026, 12, 20), universe);
+
+    Tournament edition = new Tournament();
+    edition.setId(2L);
+    edition.setName("Crown Cup II");
+    edition.setUniverse(universe);
+    edition.setStatus(TournamentStatus.SCHEDULED);
+    edition.setEditionOrdinal(2);
+    edition.setStartDate(LocalDate.of(2027, 1, 1)); // the PLE is BEFORE this
+    when(tournamentRepository
+            .findByUniverseIdAndPayoffShowIsNullAndRecurrenceOrderByEditionOrdinalAsc(
+                1L, TournamentRecurrence.ANNUAL))
+        .thenReturn(List.of(edition));
+
+    assertThat(tournamentService.autoAttachPayoffShow(earlyPle)).isEmpty();
+    verify(tournamentRepository, never()).save(any(Tournament.class));
+  }
+
+  @Test
+  void autoAttach_missingShowDate_neverAttaches() {
+    Universe universe = new Universe();
+    universe.setId(1L);
+    Show undated = ple(9L, "Unscheduled PLE", null, universe);
+
+    assertThat(tournamentService.autoAttachPayoffShow(undated)).isEmpty();
+    verify(tournamentRepository, never()).save(any(Tournament.class));
+  }
+
+  @Test
+  void autoAttach_inProgressEdition_attaches() {
+    // An edition already running its bracket still needs a host for the final.
+    Universe universe = new Universe();
+    universe.setId(1L);
+    Show ple = ple(9L, "WrestlePalooza", LocalDate.of(2027, 6, 20), universe);
+
+    Tournament running = new Tournament();
+    running.setId(5L);
+    running.setName("Crown Cup II");
+    running.setUniverse(universe);
+    running.setStatus(TournamentStatus.IN_PROGRESS);
+    running.setEditionOrdinal(2);
+    running.setStartDate(LocalDate.of(2027, 1, 1));
+    when(tournamentRepository
+            .findByUniverseIdAndPayoffShowIsNullAndRecurrenceOrderByEditionOrdinalAsc(
+                1L, TournamentRecurrence.ANNUAL))
+        .thenReturn(List.of(running));
+
+    Optional<Tournament> attached = tournamentService.autoAttachPayoffShow(ple);
+
+    assertThat(attached).isPresent();
+    assertThat(attached.get().getPayoffShow()).isSameAs(ple);
   }
 }
