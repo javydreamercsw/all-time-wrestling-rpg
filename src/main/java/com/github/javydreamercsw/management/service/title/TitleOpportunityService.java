@@ -352,9 +352,9 @@ public class TitleOpportunityService {
                 () -> new IllegalArgumentException("Briefcase not found: " + opportunityId));
     validateCashIn(opportunity, titleId);
 
-    // Book with the wear-penalized champion team and spend.
+    // Book with the wear-penalized champion team and spend (clamped here — the setter is plain).
     SegmentTeam championTeam = new SegmentTeam(champions, title.getName() + " Champion");
-    championTeam.setExtraWearPenalty(wearPenalty);
+    championTeam.setExtraWearPenalty(Math.max(0, wearPenalty));
     Segment segment =
         bookCashIn(
             opportunity,
