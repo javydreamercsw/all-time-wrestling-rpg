@@ -31,6 +31,7 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebElement;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * Docs capture of the Money in the Bank-style briefcase (ATW-8p72): seeds a briefcase-deciding
@@ -45,6 +46,7 @@ class BriefcaseDocsE2ETest extends AbstractDocsE2ETest {
   @Autowired private WrestlerService wrestlerService;
   @Autowired private UniverseService universeService;
   @Autowired private TitleOpportunityService titleOpportunityService;
+  @Autowired private TransactionTemplate transactionTemplate;
 
   @Test
   void captureBriefcase() throws InterruptedException {
@@ -72,18 +74,28 @@ class BriefcaseDocsE2ETest extends AbstractDocsE2ETest {
     tournament = tournamentService.startTournament(tournament);
 
     // Complete the bracket by hand: no segments were booked, so the manual-completion path
-    // grants the briefcase directly (adjudication only fires for booked finals).
-    tournament =
-        tournamentService
-            .findByIdWithDetails(tournament.getId())
-            .orElseThrow(() -> new IllegalStateException("Tournament vanished"));
-    var round1Matches = tournament.getRounds().get(0).getMatches();
-    round1Matches.forEach(match -> tournamentService.recordMatchResult(match, match.getEntrant1()));
-    // Advance generates the final (the bracket isn't complete until it is decided); record it,
-    // then advance again — that call flips COMPLETE and grants the briefcase.
-    var finalMatches = tournamentService.advanceToNextRound(tournament);
-    finalMatches.forEach(match -> tournamentService.recordMatchResult(match, match.getEntrant1()));
-    tournamentService.advanceToNextRound(tournament);
+    // grants the briefcase directly (adjudication only fires for booked finals). The whole
+    // sequence runs in ONE transaction: advanceRound returns the final with its entrants as
+    // lazy proxies bound to its own (now closed) session — recording its result from a fresh
+    // transaction would throw LazyInitializationException on entry.setStatus (production never
+    // hits this because open-session-in-view spans the request).
+    final Long tournamentId = tournament.getId();
+    transactionTemplate.executeWithoutResult(
+        tx -> {
+          Tournament inTx =
+              tournamentService
+                  .findByIdWithDetails(tournamentId)
+                  .orElseThrow(() -> new IllegalStateException("Tournament vanished"));
+          var round1Matches = inTx.getRounds().get(0).getMatches();
+          round1Matches.forEach(
+              match -> tournamentService.recordMatchResult(match, match.getEntrant1()));
+          // Advance generates the final (the bracket isn't complete until it is decided);
+          // record it, then advance again — that call flips COMPLETE and grants the briefcase.
+          var finalMatches = tournamentService.advanceToNextRound(inTx);
+          finalMatches.forEach(
+              match -> tournamentService.recordMatchResult(match, match.getEntrant1()));
+          tournamentService.advanceToNextRound(inTx);
+        });
     Wrestler winner =
         tournamentService
             .findByIdWithDetails(tournament.getId())

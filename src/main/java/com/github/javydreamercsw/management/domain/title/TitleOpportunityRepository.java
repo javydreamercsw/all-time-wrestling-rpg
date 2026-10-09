@@ -20,11 +20,19 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface TitleOpportunityRepository extends JpaRepository<TitleOpportunity, Long> {
 
-  /** Grant idempotency: one opportunity per awarding tournament (re-runs are no-ops). */
-  boolean existsByEarnedFromTournamentId(Long tournamentId);
+  /**
+   * Grant idempotency: one opportunity per awarding tournament (re-runs are no-ops). Explicit JPQL
+   * because the entity's session-safe {@code getEarnedFromTournamentId()} getter shadows the
+   * property path — a derived {@code existsByEarnedFromTournamentId} fails to resolve
+   * (UnknownPathException against the real metamodel).
+   */
+  @Query("SELECT COUNT(t) > 0 FROM TitleOpportunity t WHERE t.earnedFromTournament.id = :id")
+  boolean existsByEarnedFromTournamentId(@Param("id") Long tournamentId);
 
   /** One-HELD guard and badge lookup for a wrestler's current case. */
   Optional<TitleOpportunity> findFirstByWrestlerIdAndStatus(
