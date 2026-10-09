@@ -329,6 +329,25 @@ public class TitleOpportunityService {
     return opportunityRepository.findByStatus(TitleOpportunityStatus.HELD);
   }
 
+  /**
+   * Narration-context line for a wrestler's held briefcase (ATW-brrz): "Time Vault briefcase —
+   * cashable against any reigning champion until 2027-10-08", or null when they hold none. The AI
+   * narration should introduce a holder the same way it introduces a champion.
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  @Nullable public String heldBriefcaseContextOf(Long wrestlerId) {
+    return findHeldByWrestler(wrestlerId)
+        .map(
+            opportunity ->
+                opportunity.getName()
+                    + " — cashable against any reigning champion"
+                    + (opportunity.getExpiryDate() != null
+                        ? " until " + opportunity.getExpiryDate()
+                        : ""))
+        .orElse(null);
+  }
+
   private LocalDate gameDate() {
     return gameSettingService.getCurrentGameDate();
   }

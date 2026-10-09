@@ -49,6 +49,7 @@ import com.github.javydreamercsw.management.service.ringside.RingsideActionServi
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
@@ -88,6 +89,7 @@ class NarrationDialogTest {
   @Mock private UniverseContextService universeContextService;
 
   @Mock private DramaEventService dramaEventService;
+  @Mock private TitleOpportunityService titleOpportunityService;
 
   @Mock private MultiSelectComboBox<WrestlerDTO> mockWrestlersCombo;
 
@@ -134,7 +136,8 @@ class NarrationDialogTest {
             universeContextService,
             notificationService,
             wrestlerStatsService,
-            dramaEventService);
+            dramaEventService,
+            titleOpportunityService);
   }
 
   @Test
@@ -435,6 +438,7 @@ class NarrationDialogTest {
         universeContextService,
         notificationService,
         wrestlerStatsService,
-        mock(DramaEventService.class));
+        mock(DramaEventService.class),
+        mock(TitleOpportunityService.class));
   }
 }

@@ -70,6 +70,7 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningDtoMapper;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRivalryDTO;
+import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.tournament.TournamentTemplateBookingService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -117,6 +118,7 @@ class ShowPlanningServiceTest {
   @Mock private FeudScriptService feudScriptService;
   @Mock private ShowTemplateRepository showTemplateRepository;
   @Mock private TournamentTemplateBookingService tournamentTemplateBookingService;
+  @Mock private TitleOpportunityService titleOpportunityService;
 
   @InjectMocks private ShowPlanningService showPlanningService;
 

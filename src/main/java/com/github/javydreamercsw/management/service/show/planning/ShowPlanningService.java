@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSe
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleOpportunity;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -51,6 +52,7 @@ import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanni
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningDtoMapper;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRivalryDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.TournamentSlotPreviewDTO;
+import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.tournament.TournamentTemplateBookingService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -100,6 +102,7 @@ public class ShowPlanningService {
   private final FeudScriptService feudScriptService;
   private final ShowTemplateRepository showTemplateRepository;
   private final TournamentTemplateBookingService tournamentTemplateBookingService;
+  private final TitleOpportunityService titleOpportunityService;
 
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
@@ -268,6 +271,18 @@ public class ShowPlanningService {
       championships.add(championship);
     }
     context.setChampionships(championships);
+
+    // Held briefcases (ATW-brrz): a cash-in or champion-vs-holder angle is a strong proposal
+    // candidate — give the planning AI the same visibility champions get.
+    for (TitleOpportunity opportunity : titleOpportunityService.findHeld()) {
+      Wrestler holder = opportunity.getWrestler();
+      if (holder != null && holder.getId() != null) {
+        wrestlerRepository
+            .findById(holder.getId())
+            .ifPresent(
+                w -> context.getHeldBriefcases().add(w.getName() + " — " + opportunity.getName()));
+      }
+    }
 
     // Get all wrestlers, excluding injured/low-condition (they should rest)
     Long universeId = show.getUniverse().getId();

@@ -169,6 +169,14 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
         """);
     prompt.append(
         """
+        If a wrestler's `heldBriefcase` is set, they are a Money in the Bank-style briefcase\
+         holder: introduce and reference them with the same prestige as a current champion\
+         (e.g. "current holder of the Time Vault briefcase, cashable against any reigning\
+         champion"). A holder in a match against a champion carries looming cash-in drama.
+
+        """);
+    prompt.append(
+        """
         If campaignContext is present, incorporate the wrestler's alignment (FACE/HEEL), \
         current chapter, and any injuries into the narrative tone. \
         A high HEEL alignment should result in more aggressive behavior. \

@@ -28,6 +28,7 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentRepositor
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -69,7 +70,8 @@ class NewsGenerationServiceLazyInitTest {
             aggregationService,
             wrestlerRepository,
             npcRepository,
-            titleReignRepository);
+            titleReignRepository,
+            mock(TitleOpportunityService.class));
   }
 
   @Test

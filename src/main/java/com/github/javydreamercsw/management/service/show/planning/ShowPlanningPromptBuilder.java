@@ -326,6 +326,15 @@ public class ShowPlanningPromptBuilder {
                       .append("\n"));
     }
 
+    if (context.getHeldBriefcases() != null && !context.getHeldBriefcases().isEmpty()) {
+      prompt.append("\nHeld Briefcases (Money in the Bank style — a cashable title shot against");
+      prompt.append(" any reigning champion; a cash-in or champion-vs-holder angle is a strong");
+      prompt.append(" proposal candidate):\n");
+      context
+          .getHeldBriefcases()
+          .forEach(line -> prompt.append("- ").append(sanitize(line)).append("\n"));
+    }
+
     if (context.getFullRoster() != null && !context.getFullRoster().isEmpty()) {
       // Wrestlers already locked into pre-determined slots (scripted beats, real-participant
       // tournament rows) are removed from the rendered roster — the deterministic passes book

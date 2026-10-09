@@ -43,6 +43,7 @@ import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -90,7 +91,8 @@ class NewsGenerationServiceTest {
             aggregationService,
             wrestlerRepository,
             npcRepository,
-            titleReignRepository);
+            titleReignRepository,
+            mock(TitleOpportunityService.class));
 
     when(aiFactory.getBestAvailableService()).thenReturn(aiService);
     when(aiService.isAvailable()).thenReturn(true);
