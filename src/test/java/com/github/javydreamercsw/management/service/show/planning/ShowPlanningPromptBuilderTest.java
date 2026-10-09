@@ -720,4 +720,25 @@ class ShowPlanningPromptBuilderTest {
     dto.setWinnerControl("AI_PICKS");
     return dto;
   }
+
+  @Test
+  void build_heldBriefcases_listsCasesWithAngleHint() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ctx.setHeldBriefcases(List.of("Mukundi Shumba — Time Vault briefcase"));
+
+    String prompt = builder.build(ctx);
+
+    assertTrue(prompt.contains("Held Briefcases"), "The held-briefcases section must render");
+    assertTrue(prompt.contains("Mukundi Shumba — Time Vault briefcase"));
+    assertTrue(prompt.contains("Money in the Bank"), "The cash-in angle hint must be present");
+  }
+
+  @Test
+  void build_noHeldBriefcases_noSection() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+
+    String prompt = builder.build(ctx);
+
+    assertFalse(prompt.contains("Held Briefcases"));
+  }
 }

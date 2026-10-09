@@ -49,6 +49,7 @@ import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSeg
 import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleOpportunity;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
@@ -692,6 +693,64 @@ class ShowPlanningServiceTest {
     ShowPlanningContext capturedContext = showPlanningContextCaptor.getValue();
     assertEquals("Test Show", capturedContext.getShowTemplate().getShowName());
     assertEquals(1, capturedContext.getFullRoster().size());
+  }
+
+  @Test
+  void testGetShowPlanningContext_heldBriefcasesFeedTheContext() {
+    // ATW-brrz: a held briefcase surfaces in the planning context as
+    // "<holder> — <briefcase>" so the AI can propose cash-in angles.
+    when(segmentRepository.findBySegmentDateBetween(any(), any())).thenReturn(new ArrayList<>());
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
+        .thenReturn(List.of(activeWrestler));
+    when(rivalryService.getActiveRivalries()).thenReturn(new ArrayList<>());
+    when(titleService.getActiveTitles()).thenReturn(new ArrayList<>());
+    when(factionService.findAll()).thenReturn(new ArrayList<>());
+    when(showService.getUpcomingShows(10)).thenReturn(new ArrayList<>());
+    when(mapper.toDto(any(ShowPlanningContext.class))).thenReturn(new ShowPlanningContextDTO());
+
+    TitleOpportunity held = new TitleOpportunity();
+    held.setId(10L);
+    held.setName("Time Vault briefcase");
+    held.setWrestler(activeWrestler);
+    when(titleOpportunityService.findHeld()).thenReturn(List.of(held));
+    when(wrestlerRepository.findById(activeWrestler.getId()))
+        .thenReturn(Optional.of(activeWrestler));
+
+    showPlanningService.getShowPlanningContext(show);
+
+    ArgumentCaptor<ShowPlanningContext> captor = ArgumentCaptor.forClass(ShowPlanningContext.class);
+    verify(mapper).toDto(captor.capture());
+    assertEquals(
+        List.of(activeWrestler.getName() + " — Time Vault briefcase"),
+        captor.getValue().getHeldBriefcases());
+  }
+
+  @Test
+  void testGetShowPlanningContext_holderMissing_noBriefcaseLine() {
+    // A briefcase whose holder cannot be re-read (deleted wrestler) contributes nothing.
+    when(segmentRepository.findBySegmentDateBetween(any(), any())).thenReturn(new ArrayList<>());
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
+        .thenReturn(List.of(activeWrestler));
+    when(rivalryService.getActiveRivalries()).thenReturn(new ArrayList<>());
+    when(titleService.getActiveTitles()).thenReturn(new ArrayList<>());
+    when(factionService.findAll()).thenReturn(new ArrayList<>());
+    when(showService.getUpcomingShows(10)).thenReturn(new ArrayList<>());
+    when(mapper.toDto(any(ShowPlanningContext.class))).thenReturn(new ShowPlanningContextDTO());
+
+    TitleOpportunity orphaned = new TitleOpportunity();
+    orphaned.setId(11L);
+    orphaned.setName("Orphaned case");
+    Wrestler ghost = new Wrestler();
+    ghost.setId(999L);
+    orphaned.setWrestler(ghost);
+    when(titleOpportunityService.findHeld()).thenReturn(List.of(orphaned));
+    when(wrestlerRepository.findById(999L)).thenReturn(Optional.empty());
+
+    showPlanningService.getShowPlanningContext(show);
+
+    ArgumentCaptor<ShowPlanningContext> captor = ArgumentCaptor.forClass(ShowPlanningContext.class);
+    verify(mapper).toDto(captor.capture());
+    assertTrue(captor.getValue().getHeldBriefcases().isEmpty());
   }
 
   @Test

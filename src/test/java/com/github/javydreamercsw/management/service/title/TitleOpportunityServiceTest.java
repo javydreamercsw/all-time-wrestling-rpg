@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.title;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -509,6 +510,113 @@ class TitleOpportunityServiceTest {
 
     assertThrows(IllegalArgumentException.class, () -> service.cashInAmbush(10L, 2L, 5L, 20L));
     verify(eventPublisher, never()).publishEvent(any());
+  }
+
+  @Test
+  @DisplayName("Ambush rejects a champion who has not wrestled on the show")
+  void ambushRejectsChampionNotOnCard() {
+    when(opportunityRepository.findById(10L)).thenReturn(Optional.of(heldOpportunity()));
+    Show show = new Show();
+    show.setId(5L);
+    // The champion (winner) is the reigning champion but never appears in the segment's
+    // participants or wrestler list — nothing to exploit.
+    Segment elsewhere = new Segment();
+    elsewhere.setId(20L);
+    elsewhere.setShow(show);
+    elsewhere.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
+    when(showRepository.findById(5L)).thenReturn(Optional.of(show));
+    when(segmentRepository.findById(20L)).thenReturn(Optional.of(elsewhere));
+    when(titleRepository.findById(2L)).thenReturn(Optional.of(title));
+    when(titleReignRepository.findByTitleIdAndEndDateIsNull(2L))
+        .thenReturn(List.of(reignWith(winner)));
+
+    assertThrows(IllegalStateException.class, () -> service.cashInAmbush(10L, 2L, 5L, 20L));
+    verify(eventPublisher, never()).publishEvent(any());
+  }
+
+  @Test
+  @DisplayName("Ambush rejects a vacant title")
+  void ambushRejectsVacantTitle() {
+    when(opportunityRepository.findById(10L)).thenReturn(Optional.of(heldOpportunity()));
+    stubAmbushHappyPath(championSegmentWithHealth(6), 20);
+    when(titleReignRepository.findByTitleIdAndEndDateIsNull(2L)).thenReturn(List.of());
+
+    assertThrows(IllegalStateException.class, () -> service.cashInAmbush(10L, 2L, 5L, 20L));
+    verify(eventPublisher, never()).publishEvent(any());
+  }
+
+  @Test
+  @DisplayName("Ambush rejects a missing champion segment")
+  void ambushRejectsMissingSegment() {
+    when(opportunityRepository.findById(10L)).thenReturn(Optional.of(heldOpportunity()));
+    when(showRepository.findById(5L)).thenReturn(Optional.of(new Show()));
+    when(segmentRepository.findById(20L)).thenReturn(Optional.empty());
+
+    assertThrows(IllegalArgumentException.class, () -> service.cashInAmbush(10L, 2L, 5L, 20L));
+    verify(eventPublisher, never()).publishEvent(any());
+  }
+
+  @Test
+  @DisplayName("Ambush by a gendered briefcase against the other division's title rejects")
+  void ambushRejectsDivisionMismatch() {
+    when(opportunityRepository.findById(10L)).thenReturn(Optional.of(heldOpportunity()));
+    heldOpportunity().setGender(Gender.FEMALE);
+    title.setGender(Gender.MALE);
+    stubAmbushHappyPath(championSegmentWithHealth(6), 20);
+
+    assertThrows(IllegalStateException.class, () -> service.cashInAmbush(10L, 2L, 5L, 20L));
+    verify(eventPublisher, never()).publishEvent(any());
+  }
+
+  @Test
+  @DisplayName("Cash-in rejects an unknown briefcase id")
+  void cashInRejectsUnknownBriefcase() {
+    when(opportunityRepository.findById(999L)).thenReturn(Optional.empty());
+
+    assertThrows(IllegalArgumentException.class, () -> service.cashIn(999L, 2L, 5L));
+    verify(eventPublisher, never()).publishEvent(any());
+  }
+
+  @Test
+  @DisplayName("Cash-in rejects when the One on One segment type is missing")
+  void cashInRejectsMissingSegmentType() {
+    when(opportunityRepository.findById(10L)).thenReturn(Optional.of(heldOpportunity()));
+    when(titleRepository.findById(2L)).thenReturn(Optional.of(title));
+    when(titleReignRepository.findByTitleIdAndEndDateIsNull(2L))
+        .thenReturn(List.of(reignWith(winner.getName())));
+    when(showRepository.findById(5L)).thenReturn(Optional.of(new Show()));
+    when(segmentTypeRepository.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.empty());
+
+    assertThrows(IllegalStateException.class, () -> service.cashIn(10L, 2L, 5L));
+    verify(eventPublisher, never()).publishEvent(any());
+  }
+
+  // ── Narration context (ATW-brrz) ─────────────────────────────────────────
+
+  @Test
+  @DisplayName("heldBriefcaseContextOf describes the case with its expiry")
+  void heldBriefcaseContext_describesCase() {
+    TitleOpportunity held = heldOpportunity();
+    held.setExpiryDate(LocalDate.of(2027, 10, 8));
+    when(opportunityRepository.findFirstByWrestlerIdAndStatus(8L, TitleOpportunityStatus.HELD))
+        .thenReturn(Optional.of(held));
+
+    String context = service.heldBriefcaseContextOf(8L);
+
+    assertNotNull(context);
+    assertTrue(context.contains("Time Vault briefcase"));
+    assertTrue(context.contains("cashable against any reigning champion"));
+    assertTrue(context.contains("until 2027-10-08"));
+  }
+
+  @Test
+  @DisplayName("heldBriefcaseContextOf returns null without a held case")
+  void heldBriefcaseContext_none_returnsNull() {
+    when(opportunityRepository.findFirstByWrestlerIdAndStatus(8L, TitleOpportunityStatus.HELD))
+        .thenReturn(Optional.empty());
+
+    assertNull(service.heldBriefcaseContextOf(8L));
   }
 
   // ── Expiry sweep ─────────────────────────────────────────────────────────

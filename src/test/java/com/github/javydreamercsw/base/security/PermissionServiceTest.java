@@ -28,6 +28,7 @@ import com.github.javydreamercsw.management.domain.deck.DeckCard;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
+import com.github.javydreamercsw.management.domain.title.TitleOpportunity;
 import com.github.javydreamercsw.management.domain.title.TitleOpportunityRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseMembership;
@@ -186,6 +187,39 @@ class PermissionServiceTest {
     assertThat(permissionService.isOwner(10L, "Deck")).isTrue();
 
     assertThat(permissionService.isOwner(1L, "Unknown")).isFalse();
+  }
+
+  @Test
+  void testIsOwnerTitleOpportunity() {
+    // A briefcase belongs to its holder: owning the holder's wrestler owns the case.
+    Account account = new Account("testuser", "password", "test@example.com");
+    Wrestler holder = new Wrestler();
+    holder.setId(1L);
+    Wrestler other = new Wrestler();
+    other.setId(2L);
+    when(accountRepository.findByUsername("testuser")).thenReturn(Optional.of(account));
+    when(wrestlerRepository.findByAccount(account)).thenReturn(List.of(holder));
+
+    TitleOpportunity mine = new TitleOpportunity();
+    mine.setId(10L);
+    mine.setWrestler(holder);
+    assertThat(permissionService.isOwner(mine)).isTrue();
+
+    TitleOpportunity theirs = new TitleOpportunity();
+    theirs.setId(11L);
+    theirs.setWrestler(other);
+    assertThat(permissionService.isOwner(theirs)).isFalse();
+
+    // By-id path resolves through the TitleOpportunityRepository.
+    when(titleOpportunityRepository.findById(10L)).thenReturn(Optional.of(mine));
+    assertThat(permissionService.isOwner(10L, "TitleOpportunity")).isTrue();
+    when(titleOpportunityRepository.findById(11L)).thenReturn(Optional.of(theirs));
+    assertThat(permissionService.isOwner(11L, "TitleOpportunity")).isFalse();
+
+    // A case with no holder (defensive) is never owned.
+    TitleOpportunity unassigned = new TitleOpportunity();
+    unassigned.setId(12L);
+    assertThat(permissionService.isOwner(unassigned)).isFalse();
   }
 
   @Test

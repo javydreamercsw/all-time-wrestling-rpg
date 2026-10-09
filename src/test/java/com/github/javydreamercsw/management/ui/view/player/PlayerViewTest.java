@@ -39,6 +39,8 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignPhase;
 import com.github.javydreamercsw.management.domain.campaign.CampaignState;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.title.TitleOpportunity;
+import com.github.javydreamercsw.management.domain.title.TitleOpportunityStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.AccountService;
@@ -387,6 +389,35 @@ class PlayerViewTest extends AbstractViewTest {
       Button cta = _get(built, Button.class, spec -> spec.withId("continue-campaign-cta"));
       cta.click();
       Assertions.assertTrue(cta.isEnabled());
+    }
+
+    @Test
+    @DisplayName("Held briefcase renders the HELD badge and cash-in CTA")
+    void heldBriefcase_showsBadgeAndCashInCta() {
+      TitleOpportunity held = new TitleOpportunity();
+      held.setId(10L);
+      held.setName("Time Vault briefcase");
+      held.setStatus(TitleOpportunityStatus.HELD);
+      held.setWrestler(wrestler);
+      when(titleOpportunityService.findHeldByWrestler(42L)).thenReturn(Optional.of(held));
+
+      PlayerDashboardView built = buildView();
+
+      Button cashIn = _get(built, Button.class, spec -> spec.withId("cash-in-cta"));
+      Assertions.assertNotNull(cashIn, "Cash In CTA should render for a held briefcase");
+      Assertions.assertTrue(cashIn.isEnabled());
+    }
+
+    @Test
+    @DisplayName("No held briefcase renders no cash-in CTA")
+    void noHeldBriefcase_noCashInCta() {
+      when(titleOpportunityService.findHeldByWrestler(42L)).thenReturn(Optional.empty());
+
+      PlayerDashboardView built = buildView();
+
+      Assertions.assertTrue(
+          _find(built, Button.class, spec -> spec.withId("cash-in-cta")).isEmpty(),
+          "Cash In CTA must not render without a held briefcase");
     }
   }
 
