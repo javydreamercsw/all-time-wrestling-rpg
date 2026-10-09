@@ -46,6 +46,7 @@ import com.github.javydreamercsw.management.service.gm.GmModeService;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.news.NewsGenerationService;
+import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -95,8 +96,7 @@ public class ShowService {
   private final ArenaRepository arenaRepository;
   private final GmModeService gmModeService;
   private final ShowQualityService showQualityService;
-  private final com.github.javydreamercsw.management.service.tournament.TournamentService
-      tournamentService;
+  private final TournamentService tournamentService;
 
   ShowService(
       final CampaignRepository campaignRepository,
@@ -120,8 +120,7 @@ public class ShowService {
       final ArenaRepository arenaRepository,
       final GmModeService gmModeService,
       final ShowQualityService showQualityService,
-      final com.github.javydreamercsw.management.service.tournament.TournamentService
-          tournamentService) {
+      final TournamentService tournamentService) {
     this.campaignRepository = campaignRepository;
     this.showRepository = showRepository;
     this.showTypeRepository = showTypeRepository;
