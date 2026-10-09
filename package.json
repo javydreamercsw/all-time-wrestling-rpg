@@ -28,7 +28,7 @@
     "dompurify": "^3.4.16",
     "ical.js": "2.0.1",
     "lit": "3.3.3",
-    "moment": "2.31.0",
+    "moment": "2.30.1",
     "moment-timezone": "0.6.0",
     "onecolor": "4.1.0",
     "react": "19.2.8",
@@ -182,7 +182,7 @@
       "date-fns": "4.1.0",
       "ical.js": "2.0.1",
       "lit": "3.3.3",
-      "moment": "2.31.0",
+      "moment": "2.30.1",
       "moment-timezone": "0.6.0",
       "onecolor": "4.1.0",
       "react": "19.2.8",
@@ -211,6 +211,6 @@
       "vite": "8.0.16",
       "vite-plugin-checker": "0.14.5"
     },
-    "hash": "f55768aeabc816e3190a591c1c5eed0445b226a5af8b3051a147106593ac62f4"
+    "hash": "4a2864e6c69807b91fbad0b4585bfc4f53dcc49450d0fe3f63a65b694616fe91"
   }
 }
