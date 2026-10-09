@@ -29,24 +29,20 @@ import com.github.javydreamercsw.base.domain.wrestler.WrestlerStats;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.title.Title;
-import com.github.javydreamercsw.management.domain.title.TitleOpportunity;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateHistory;
 import com.github.javydreamercsw.management.service.show.ShowFacade;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
 import com.github.javydreamercsw.management.ui.ViewContext;
-import com.github.javydreamercsw.management.ui.component.BriefcaseCashInDialog;
+import com.github.javydreamercsw.management.ui.component.BriefcaseSection;
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Main;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.*;
@@ -323,97 +319,16 @@ public class WrestlerCareerView extends Main implements BeforeEnterObserver {
   }
 
   /**
-   * The Money in the Bank-style briefcase section (ATW-8p72): held cases with a Cash In action,
-   * plus the CASHED_IN/EXPIRED history. Cash-in books a title match on a chosen show against a
-   * chosen championship's reigning champion.
+   * The Money in the Bank-style briefcase section (ATW-8p72): delegated to the shared {@link
+   * BriefcaseSection} component (ATW-312z) so the wrestler profile renders the same thing.
    */
   private Component buildBriefcaseSection() {
-    VerticalLayout section = new VerticalLayout();
-    section.setPadding(false);
-    section.setSpacing(true);
-    section.add(new H3("Briefcase"));
-
-    List<TitleOpportunity> opportunities =
-        wrestlerFacade.getTitleOpportunityService().findByWrestler(wrestler.getId());
-
-    if (opportunities.isEmpty()) {
-      section.add(new Paragraph("No briefcase opportunities on record."));
-      return section;
-    }
-
-    Optional<TitleOpportunity> held =
-        opportunities.stream().filter(TitleOpportunity::isHeld).findFirst();
-    if (held.isPresent()) {
-      TitleOpportunity current = held.get();
-      String division = current.getGender() != null ? " — " + current.getGender() : "";
-      Span badge = new Span("💼 " + current.getName() + division + " — HELD");
-      badge
-          .getElement()
-          .setAttribute(
-              "style",
-              "background:var(--lumo-primary-color-10pct);border-radius:var(--lumo-border-radius-m);padding:4px"
-                  + " 10px;font-weight:600");
-      HorizontalLayout heldRow = new HorizontalLayout(badge);
-      heldRow.setAlignItems(FlexComponent.Alignment.CENTER);
-      Span expiry =
-          new Span(
-              "Earned "
-                  + current.getEarnedAt()
-                  + (current.getExpiryDate() != null
-                      ? " — cashable until " + current.getExpiryDate()
-                      : ""));
-      expiry.getStyle().set("color", "var(--lumo-secondary-text-color)");
-      heldRow.add(expiry);
-      Button cashInBtn = new Button("Cash In", e -> openCashInDialog(current));
-      cashInBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-      cashInBtn.setTooltipText(
-          "Book a title match on the spot against the reigning champion of any active"
-              + " championship. The briefcase is spent whether the match is won or lost.");
-      heldRow.add(cashInBtn);
-      section.add(heldRow);
-    }
-
-    Grid<TitleOpportunity> grid = new Grid<>();
-    grid.addColumn(TitleOpportunity::getName).setHeader("Opportunity").setAutoWidth(true);
-    grid.addColumn(o -> DATE_FMT.format(o.getEarnedAt())).setHeader("Earned").setAutoWidth(true);
-    grid.addColumn(o -> o.getStatus().name()).setHeader("Status").setAutoWidth(true);
-    // Same eager-resolution discipline as the title-reign grid: the cashed-against title is a
-    // lazy proxy and grid value providers run outside a transaction.
-    Map<Long, String> cashedAgainst = new HashMap<>();
-    opportunities.stream()
-        .filter(o -> o.getCashedAgainstTitle() != null)
-        .forEach(
-            o ->
-                cashedAgainst.put(
-                    o.getId(),
-                    wrestlerFacade
-                        .getTitleService()
-                        .getTitleById(o.getCashedAgainstTitle().getId())
-                        .map(Title::getName)
-                        .orElse("?")));
-    grid.addColumn(o -> cashedAgainst.getOrDefault(o.getId(), "—"))
-        .setHeader("Cashed Against")
-        .setAutoWidth(true);
-    grid.setItems(opportunities);
-    grid.setAllRowsVisible(true);
-    grid.setWidthFull();
-    section.add(grid);
-    return section;
-  }
-
-  /**
-   * The cash-in dialog (shared component): pick the championship to challenge (active, reigning
-   * champion, division-eligible) and the show to book on. Validation errors surface as
-   * notifications.
-   */
-  private void openCashInDialog(TitleOpportunity opportunity) {
-    new BriefcaseCashInDialog(
-            opportunity,
-            wrestlerFacade.getTitleOpportunityService(),
-            wrestlerFacade.getTitleService(),
-            showFacade.getShowService(),
-            this::buildView)
-        .open();
+    return new BriefcaseSection(
+        wrestler.getId(),
+        wrestlerFacade.getTitleOpportunityService(),
+        wrestlerFacade.getTitleService(),
+        showFacade.getShowService(),
+        this::buildView);
   }
 
   private Component buildInjuryLogSection() {

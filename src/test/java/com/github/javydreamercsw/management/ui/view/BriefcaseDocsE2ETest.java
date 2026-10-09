@@ -134,5 +134,24 @@ class BriefcaseDocsE2ETest extends AbstractDocsE2ETest {
             + " match books on the spot. The briefcase is spent whether the match is won or"
             + " lost.",
         "mechanic-briefcase-cash-in");
+
+    // Profile view (ATW-312z): the same briefcase section lives in the profile accordion, and
+    // the Career Dashboard link sits in the always-visible hero section.
+    navigateTo("wrestler-profile/" + winner.getId());
+    waitForVaadinElement(driver, By.xpath("//*[contains(., 'Career Dashboard')]"));
+    WebElement briefcasePanelHeader =
+        driver.findElement(
+            By.xpath("//vaadin-accordion-panel[.//text()[contains(., 'Briefcase')]]"));
+    ((JavascriptExecutor) driver)
+        .executeScript("arguments[0].scrollIntoView({block: 'center'});", briefcasePanelHeader);
+    Thread.sleep(500);
+    documentFeature(
+        "Game Mechanics",
+        "Briefcase on the Wrestler Profile",
+        "The wrestler profile carries the same Briefcase panel — held case, cashable-until date,"
+            + " and the Cash In action — next to Championships, so the prize is visible without"
+            + " leaving the profile. The Career Dashboard link in the hero section leads to the"
+            + " full career history.",
+        "mechanic-briefcase-profile");
   }
 }

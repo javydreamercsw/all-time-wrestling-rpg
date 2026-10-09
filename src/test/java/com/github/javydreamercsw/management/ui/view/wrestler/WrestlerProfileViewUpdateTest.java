@@ -113,6 +113,13 @@ class WrestlerProfileViewUpdateTest extends AbstractViewTest {
   @Mock private WrestlerStateRepository wrestlerStateRepository;
   @Mock private WrestlerAbilityRepository wrestlerAbilityRepository;
   @Mock private AlignmentService alignmentService;
+  @Mock private com.github.javydreamercsw.management.service.wrestler.WrestlerFacade wrestlerFacade;
+  @Mock private com.github.javydreamercsw.management.service.show.ShowFacade showFacade;
+
+  @Mock
+  private com.github.javydreamercsw.management.service.title.TitleOpportunityService
+      titleOpportunityService;
+
   @Mock private SecurityUtils securityUtils;
 
   private WrestlerProfileView view;
@@ -169,7 +176,18 @@ class WrestlerProfileViewUpdateTest extends AbstractViewTest {
             statusCardService,
             wrestlerStateRepository,
             wrestlerAbilityRepository,
-            alignmentService);
+            alignmentService,
+            wrestlerFacade,
+            showFacade);
+    // Briefcase panel wiring (ATW-312z): no opportunities by default.
+    when(wrestlerFacade.getTitleOpportunityService()).thenReturn(titleOpportunityService);
+    when(titleOpportunityService.findByWrestler(org.mockito.ArgumentMatchers.anyLong()))
+        .thenReturn(List.of());
+    com.github.javydreamercsw.management.service.show.ShowService briefcaseShowService =
+        org.mockito.Mockito.mock(
+            com.github.javydreamercsw.management.service.show.ShowService.class);
+    when(showFacade.getShowService()).thenReturn(briefcaseShowService);
+    when(briefcaseShowService.getUpcomingShows(50)).thenReturn(List.of());
     // securityUtils is field-injected (@Autowired), not constructor-injected, so the
     // mock has to be set reflectively before updateView() touches it.
     try {
