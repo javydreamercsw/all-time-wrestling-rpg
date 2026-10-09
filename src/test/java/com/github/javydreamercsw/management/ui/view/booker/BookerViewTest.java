@@ -33,10 +33,14 @@ import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.tabs.Tabs;
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -106,7 +110,7 @@ class BookerViewTest extends AbstractViewTest {
     selectBriefcasesTab(view);
 
     assertTrue(
-        _find(view, com.vaadin.flow.component.html.Span.class).stream()
+        _find(view, Span.class).stream()
             .anyMatch(
                 s ->
                     s.getText() != null
@@ -125,8 +129,8 @@ class BookerViewTest extends AbstractViewTest {
     held.setName("Time Vault briefcase");
     held.setStatus(TitleOpportunityStatus.HELD);
     held.setWrestler(holder);
-    held.setEarnedAt(java.time.LocalDate.now().minusDays(30));
-    held.setExpiryDate(java.time.LocalDate.now().plusDays(335));
+    held.setEarnedAt(LocalDate.now().minusDays(30));
+    held.setExpiryDate(LocalDate.now().plusDays(335));
     when(titleOpportunityService.findHeld()).thenReturn(List.of(held));
     when(wrestlerService.findById(8L)).thenReturn(Optional.of(holder));
     view = buildFreshView();
@@ -136,15 +140,11 @@ class BookerViewTest extends AbstractViewTest {
     assertTrue(grid.isVisible(), "The held-briefcases grid must render");
     // Component columns materialize per addressed cell — reach the Actions cell directly
     // through the column's runtime key (Actions is the 6th column of this grid).
-    com.vaadin.flow.component.grid.Grid.Column<
-            com.github.javydreamercsw.management.domain.title.TitleOpportunity>
-        actionsColumn =
-            ((Grid<com.github.javydreamercsw.management.domain.title.TitleOpportunity>) grid)
-                .getColumns()
-                .get(5);
+    Grid.Column<TitleOpportunity> actionsColumn =
+        ((Grid<TitleOpportunity>) grid).getColumns().get(5);
     actionsColumn.setKey("actions");
     String actionsKey = actionsColumn.getKey();
-    com.vaadin.flow.component.Component actionsCell = _getCellComponent(grid, 0, actionsKey);
+    Component actionsCell = _getCellComponent(grid, 0, actionsKey);
     assertTrue(
         !_find(actionsCell, Button.class, spec -> spec.withText("Cash In")).isEmpty(),
         "Each held briefcase row must expose a Cash In action");
@@ -152,8 +152,7 @@ class BookerViewTest extends AbstractViewTest {
 
   /** The Held Briefcases panel lives on the fourth tab (hidden by default). */
   private static void selectBriefcasesTab(BookerView target) {
-    com.vaadin.flow.component.tabs.Tabs tabs =
-        _get(target, com.vaadin.flow.component.tabs.Tabs.class);
+    Tabs tabs = _get(target, Tabs.class);
     tabs.setSelectedIndex(3);
   }
 

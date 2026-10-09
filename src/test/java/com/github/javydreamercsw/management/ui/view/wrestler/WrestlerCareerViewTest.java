@@ -28,11 +28,14 @@ import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleOpportunity;
+import com.github.javydreamercsw.management.domain.title.TitleOpportunityStatus;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateHistory;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.show.ShowFacade;
+import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
@@ -42,9 +45,12 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsServic
 import com.github.javydreamercsw.management.ui.ViewContext;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Paragraph;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
@@ -238,33 +244,29 @@ class WrestlerCareerViewTest extends AbstractViewTest {
   @Test
   @DisplayName("Cash In button opens the shared BriefcaseCashInDialog")
   void cashInButton_opensSharedDialog() {
-    com.github.javydreamercsw.management.domain.title.TitleOpportunity held =
-        new com.github.javydreamercsw.management.domain.title.TitleOpportunity();
+    TitleOpportunity held = new TitleOpportunity();
     held.setId(30L);
     held.setName("Time Vault briefcase");
-    held.setStatus(com.github.javydreamercsw.management.domain.title.TitleOpportunityStatus.HELD);
+    held.setStatus(TitleOpportunityStatus.HELD);
     held.setWrestler(wrestler);
-    held.setEarnedAt(java.time.LocalDate.now().minusDays(30));
+    held.setEarnedAt(LocalDate.now().minusDays(30));
     when(titleOpportunityService.findByWrestler(anyLong())).thenReturn(List.of(held));
     when(titleService.findAll()).thenReturn(List.of());
-    com.github.javydreamercsw.management.service.show.ShowService careerShowService =
-        mock(com.github.javydreamercsw.management.service.show.ShowService.class);
+    ShowService careerShowService = mock(ShowService.class);
     when(showFacade.getShowService()).thenReturn(careerShowService);
     when(careerShowService.getUpcomingShows(50)).thenReturn(List.of());
 
     buildViewWith(42L);
 
-    List<com.vaadin.flow.component.button.Button> buttons =
-        _find(view, com.vaadin.flow.component.button.Button.class);
-    com.vaadin.flow.component.button.Button cashIn =
+    List<Button> buttons = _find(view, Button.class);
+    Button cashIn =
         buttons.stream()
             .filter(b -> "Cash In".equals(b.getText()))
             .findFirst()
             .orElseThrow(() -> new AssertionError("Cash In button not rendered"));
     cashIn.click();
 
-    List<com.vaadin.flow.component.dialog.Dialog> dialogs =
-        _find(UI.getCurrent(), com.vaadin.flow.component.dialog.Dialog.class);
+    List<Dialog> dialogs = _find(UI.getCurrent(), Dialog.class);
     assertThat(dialogs).isNotEmpty();
     assertThat(dialogs.getFirst().getHeaderTitle()).isEqualTo("Cash In: Time Vault briefcase");
   }
