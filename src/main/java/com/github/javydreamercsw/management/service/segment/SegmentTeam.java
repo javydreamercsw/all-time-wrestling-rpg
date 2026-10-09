@@ -35,6 +35,14 @@ public class SegmentTeam {
   private double averageTierBonus;
   private int totalHealthPenalty;
 
+  /**
+   * Extra per-team wear penalty subtracted from the team's weight during resolution (ATW-p8ij): a
+   * post-match ambush sets this on the champion's team so the wear they just accumulated makes them
+   * easier to beat. Static penalties (bumps, injuries) already flow through {@code
+   * totalHealthPenalty}; this is the same-show carry-over on top.
+   */
+  private int extraWearPenalty;
+
   /** Create a team with a single wrestler (for singles matches). */
   public SegmentTeam(@NonNull final Wrestler wrestler) {
     this.members = List.of(wrestler);
@@ -69,9 +77,15 @@ public class SegmentTeam {
   /** Calculate team statistics for segment resolution. */
   public void calculateTeamStats(
       @NonNull final NPCSegmentResolutionService.TeamStatsCalculator calculator) {
-    this.totalWeight = calculator.calculateTeamWeight(this);
-    this.averageTierBonus = calculator.calculateAverageTierBonus(this);
     this.totalHealthPenalty = calculator.calculateTeamHealthPenalty(this);
+    this.totalWeight =
+        calculator.calculateTeamWeight(this) - extraWearPenalty; // ambush carry-over (ATW-p8ij)
+    this.averageTierBonus = calculator.calculateAverageTierBonus(this);
+  }
+
+  /** Same-show wear carry-over for a post-match ambush (ATW-p8ij); subtracted from the weight. */
+  public void setExtraWearPenalty(int extraWearPenalty) {
+    this.extraWearPenalty = Math.max(0, extraWearPenalty);
   }
 
   /** Check if this is a singles team (1 member). */
