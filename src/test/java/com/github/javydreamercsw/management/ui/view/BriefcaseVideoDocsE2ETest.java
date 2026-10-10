@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.service.tournament.TournamentService
 import com.github.javydreamercsw.management.service.universe.UniverseService;
 import java.time.LocalDate;
 import java.util.Comparator;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -141,7 +142,7 @@ class BriefcaseVideoDocsE2ETest extends AbstractDocsE2ETest {
     // with a reigning champion, and the docs seed may not have one (the panel also may have
     // collapsed on the click). The walkthrough's dialog step is best-effort: capture it when
     // it opened, otherwise capture the panel state and explain the precondition.
-    java.util.List<WebElement> overlays = waitForVaadinDialogOrSkip();
+    List<WebElement> overlays = waitForVaadinDialogOrSkip();
     captureCaption(
         "Clicking Cash In opens the shared dialog: pick the championship to challenge — any"
             + " active title with a reigning champion, division-checked — and the show to book"
@@ -179,15 +180,14 @@ class BriefcaseVideoDocsE2ETest extends AbstractDocsE2ETest {
   }
 
   /** Polls briefly for the cash-in dialog; empty when it never opened (precondition missing). */
-  private java.util.List<WebElement> waitForVaadinDialogOrSkip() {
+  private List<WebElement> waitForVaadinDialogOrSkip() {
     for (int attempt = 0; attempt < 10; attempt++) {
-      java.util.List<WebElement> overlays =
-          driver.findElements(By.tagName("vaadin-dialog-overlay"));
+      List<WebElement> overlays = driver.findElements(By.tagName("vaadin-dialog-overlay"));
       if (!overlays.isEmpty()) {
         return overlays;
       }
       sleep(500);
     }
-    return java.util.List.of();
+    return List.of();
   }
 }
