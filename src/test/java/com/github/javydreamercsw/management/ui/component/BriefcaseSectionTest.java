@@ -119,6 +119,42 @@ class BriefcaseSectionTest extends AbstractViewTest {
   }
 
   @Test
+  @DisplayName("Held case with an image renders the artwork instead of the emoji badge")
+  void heldCase_withImage_rendersArtwork() {
+    TitleOpportunity held = heldCase();
+    held.setImageUrl("img://briefcase.png");
+    when(titleOpportunityService.findByWrestler(anyLong())).thenReturn(List.of(held));
+
+    BriefcaseSection section =
+        new BriefcaseSection(
+            wrestler.getId(), titleOpportunityService, titleService, showService, () -> {});
+    UI.getCurrent().add(section);
+
+    List<com.vaadin.flow.component.html.Image> images =
+        _find(section, com.vaadin.flow.component.html.Image.class);
+    assertThat(images)
+        .as("the held badge row should show the uploaded artwork")
+        .anyMatch(i -> "img://briefcase.png".equals(i.getSrc()));
+  }
+
+  @Test
+  @DisplayName("Held case without an image keeps the emoji badge")
+  void heldCase_withoutImage_keepsEmojiBadge() {
+    TitleOpportunity held = heldCase(); // no imageUrl
+    when(titleOpportunityService.findByWrestler(anyLong())).thenReturn(List.of(held));
+
+    BriefcaseSection section =
+        new BriefcaseSection(
+            wrestler.getId(), titleOpportunityService, titleService, showService, () -> {});
+    UI.getCurrent().add(section);
+
+    assertThat(_find(section, com.vaadin.flow.component.html.Image.class)).isEmpty();
+    List<Span> spans = _find(section, Span.class);
+    assertThat(spans.stream().anyMatch(s -> s.getText() != null && s.getText().contains("💼")))
+        .isTrue();
+  }
+
+  @Test
   @DisplayName("No opportunities renders the empty-state paragraph and no grid")
   void noOpportunities_rendersEmptyState() {
     when(titleOpportunityService.findByWrestler(anyLong())).thenReturn(List.of());

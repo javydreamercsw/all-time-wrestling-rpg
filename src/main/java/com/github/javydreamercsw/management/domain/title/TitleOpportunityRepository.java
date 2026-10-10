@@ -50,4 +50,21 @@ public interface TitleOpportunityRepository extends JpaRepository<TitleOpportuni
 
   /** Opportunities that cashed in against the given title — reference check for repairs. */
   List<TitleOpportunity> findByCashedAgainstTitleId(Long titleId);
+
+  /**
+   * Detached-safe full fetch for the CRUD view (ATW-jpki): holder, universe and tournament load
+   * inside the transaction so the dialog and grid can read them.
+   */
+  @Query("SELECT o FROM TitleOpportunity o LEFT JOIN FETCH o.wrestler LEFT JOIN FETCH o.universe")
+  List<TitleOpportunity> findAllWithDetails();
+
+  /** Newest first, for the CRUD grid (ATW-jpki). */
+  List<TitleOpportunity> findAllByOrderByEarnedAtDesc();
+
+  /**
+   * Detached-safe single fetch with holder resolved — the CRUD dialog reads the holder after the
+   * transaction (ATW-jpki).
+   */
+  @Query("SELECT o FROM TitleOpportunity o LEFT JOIN FETCH o.wrestler WHERE o.id = :id")
+  Optional<TitleOpportunity> findByIdWithDetails(@Param("id") Long id);
 }

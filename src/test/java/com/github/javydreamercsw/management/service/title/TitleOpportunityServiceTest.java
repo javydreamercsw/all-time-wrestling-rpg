@@ -649,4 +649,147 @@ class TitleOpportunityServiceTest {
     reign.getChampions().add(champion);
     return reign;
   }
+
+  // ── Admin CRUD (ATW-jpki) ────────────────────────────────────────────────
+
+  private TitleOpportunity heldOpportunityForCrud() {
+    TitleOpportunity held = new TitleOpportunity();
+    held.setId(40L);
+    held.setName("Manual briefcase");
+    held.setStatus(TitleOpportunityStatus.HELD);
+    held.setWrestler(winner);
+    held.setUniverse(universe);
+    held.setEarnedAt(GAME_DATE);
+    return held;
+  }
+
+  @Test
+  @DisplayName("create grants a manual HELD case with holder, universe and dates")
+  void adminCreate_heldCase() {
+    when(opportunityRepository.findFirstByWrestlerIdAndStatus(8L, TitleOpportunityStatus.HELD))
+        .thenReturn(Optional.empty());
+
+    TitleOpportunity created =
+        service.adminCreate(
+            "Golden case", winner, universe, Gender.MALE, GAME_DATE.minusDays(10), null, null);
+
+    assertEquals(TitleOpportunityStatus.HELD, created.getStatus());
+    assertEquals("Golden case", created.getName());
+    assertEquals(winner, created.getWrestler());
+    assertEquals(universe, created.getUniverse());
+    assertEquals(GAME_DATE.minusDays(10), created.getEarnedAt());
+    // Default expiry applies when none supplied.
+    assertEquals(GAME_DATE.minusDays(10).plusDays(365), created.getExpiryDate());
+  }
+
+  @Test
+  @DisplayName("create rejects a second HELD case for a wrestler who already holds one")
+  void adminCreate_rejectsSecondHeldCase() {
+    when(opportunityRepository.findFirstByWrestlerIdAndStatus(8L, TitleOpportunityStatus.HELD))
+        .thenReturn(Optional.of(heldOpportunityForCrud()));
+
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            service.adminCreate(
+                "Golden case", winner, universe, Gender.MALE, GAME_DATE, null, null));
+  }
+
+  @Test
+  @DisplayName("create rejects an inactive holder")
+  void adminCreate_rejectsInactiveHolder() {
+    winner.setActive(false);
+
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            service.adminCreate(
+                "Golden case", winner, universe, Gender.MALE, GAME_DATE, null, null));
+  }
+
+  @Test
+  @DisplayName("create rejects a future earned-at date")
+  void adminCreate_rejectsFutureEarnedAt() {
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            service.adminCreate(
+                "Golden case", winner, universe, Gender.MALE, GAME_DATE.plusDays(1), null, null));
+  }
+
+  @Test
+  @DisplayName("create honours an explicit expiry override")
+  void adminCreate_expiryOverride() {
+    LocalDate expiry = GAME_DATE.plusDays(30);
+    when(opportunityRepository.findFirstByWrestlerIdAndStatus(8L, TitleOpportunityStatus.HELD))
+        .thenReturn(Optional.empty());
+
+    TitleOpportunity created =
+        service.adminCreate("Golden case", winner, universe, null, GAME_DATE, expiry, null);
+
+    assertEquals(expiry, created.getExpiryDate());
+  }
+
+  @Test
+  @DisplayName("update edits name, expiry, image and earned-at of a HELD case")
+  void adminUpdate_heldCase() {
+    TitleOpportunity held = heldOpportunityForCrud();
+    when(opportunityRepository.findByIdWithDetails(40L)).thenReturn(Optional.of(held));
+
+    TitleOpportunity updated =
+        service.adminUpdate(
+            40L, "Renamed case", GAME_DATE.plusDays(90), "img://case.png", GAME_DATE.minusDays(5));
+
+    assertEquals("Renamed case", updated.getName());
+    assertEquals(GAME_DATE.plusDays(90), updated.getExpiryDate());
+    assertEquals("img://case.png", updated.getImageUrl());
+    assertEquals(GAME_DATE.minusDays(5), updated.getEarnedAt());
+    verify(opportunityRepository).save(held);
+  }
+
+  @Test
+  @DisplayName("update rejects CASHED_IN rows — history is immutable")
+  void adminUpdate_rejectsCashedIn() {
+    TitleOpportunity cashed = heldOpportunityForCrud();
+    cashed.setStatus(TitleOpportunityStatus.CASHED_IN);
+    when(opportunityRepository.findByIdWithDetails(40L)).thenReturn(Optional.of(cashed));
+
+    assertThrows(
+        IllegalArgumentException.class, () -> service.adminUpdate(40L, "x", null, null, null));
+    verify(opportunityRepository, never()).save(any(TitleOpportunity.class));
+  }
+
+  @Test
+  @DisplayName("update rejects EXPIRED rows too — only live cases are editable")
+  void adminUpdate_rejectsExpired() {
+    TitleOpportunity expired = heldOpportunityForCrud();
+    expired.setStatus(TitleOpportunityStatus.EXPIRED);
+    when(opportunityRepository.findByIdWithDetails(40L)).thenReturn(Optional.of(expired));
+
+    assertThrows(
+        IllegalArgumentException.class, () -> service.adminUpdate(40L, "x", null, null, null));
+  }
+
+  @Test
+  @DisplayName("void flips a HELD case to VOIDED")
+  void adminVoid_heldCase() {
+    TitleOpportunity held = heldOpportunityForCrud();
+    when(opportunityRepository.findByIdWithDetails(40L)).thenReturn(Optional.of(held));
+
+    service.adminVoid(40L);
+
+    assertEquals(TitleOpportunityStatus.VOIDED, held.getStatus());
+    verify(opportunityRepository).save(held);
+  }
+
+  @Test
+  @DisplayName("void rejects non-HELD rows")
+  void adminVoid_rejectsNonHeld() {
+    TitleOpportunity cashed = heldOpportunityForCrud();
+    cashed.setStatus(TitleOpportunityStatus.CASHED_IN);
+    when(opportunityRepository.findByIdWithDetails(40L)).thenReturn(Optional.of(cashed));
+
+    assertThrows(IllegalArgumentException.class, () -> service.adminVoid(40L));
+    verify(opportunityRepository, never()).save(any(TitleOpportunity.class));
+  }
 }
