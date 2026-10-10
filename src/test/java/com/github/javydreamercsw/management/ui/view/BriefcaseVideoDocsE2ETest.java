@@ -118,12 +118,10 @@ class BriefcaseVideoDocsE2ETest extends AbstractDocsE2ETest {
         4500);
 
     // Step 2: open the Briefcase panel (Match Logs is the default-open accordion panel) and
-    // click Cash In inside it. The panel title renders in a vaadin-details-summary slot.
+    // click Cash In inside it. Match the summary by its own text — the panel element is a
+    // <vaadin-details> whose shadow-DOM internals Selenium can't reliably descend into.
     WebElement panelSummary =
-        driver.findElement(
-            By.xpath(
-                "//vaadin-accordion-panel[.//text()[contains(., 'Briefcase')]]"
-                    + "//vaadin-details-summary"));
+        driver.findElement(By.xpath("//vaadin-details-summary[normalize-space(.)='Briefcase']"));
     clickElement(panelSummary);
     Thread.sleep(800);
 
