@@ -60,8 +60,12 @@ import com.github.javydreamercsw.management.service.relationship.WrestlerRelatio
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
+import com.github.javydreamercsw.management.service.show.ShowFacade;
+import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
@@ -81,7 +85,9 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.springframework.data.domain.Page;
 
 /**
@@ -113,12 +119,10 @@ class WrestlerProfileViewUpdateTest extends AbstractViewTest {
   @Mock private WrestlerStateRepository wrestlerStateRepository;
   @Mock private WrestlerAbilityRepository wrestlerAbilityRepository;
   @Mock private AlignmentService alignmentService;
-  @Mock private com.github.javydreamercsw.management.service.wrestler.WrestlerFacade wrestlerFacade;
-  @Mock private com.github.javydreamercsw.management.service.show.ShowFacade showFacade;
+  @Mock private WrestlerFacade wrestlerFacade;
+  @Mock private ShowFacade showFacade;
 
-  @Mock
-  private com.github.javydreamercsw.management.service.title.TitleOpportunityService
-      titleOpportunityService;
+  @Mock private TitleOpportunityService titleOpportunityService;
 
   @Mock private SecurityUtils securityUtils;
 
@@ -181,11 +185,8 @@ class WrestlerProfileViewUpdateTest extends AbstractViewTest {
             showFacade);
     // Briefcase panel wiring (ATW-312z): no opportunities by default.
     when(wrestlerFacade.getTitleOpportunityService()).thenReturn(titleOpportunityService);
-    when(titleOpportunityService.findByWrestler(org.mockito.ArgumentMatchers.anyLong()))
-        .thenReturn(List.of());
-    com.github.javydreamercsw.management.service.show.ShowService briefcaseShowService =
-        org.mockito.Mockito.mock(
-            com.github.javydreamercsw.management.service.show.ShowService.class);
+    when(titleOpportunityService.findByWrestler(ArgumentMatchers.anyLong())).thenReturn(List.of());
+    ShowService briefcaseShowService = Mockito.mock(ShowService.class);
     when(showFacade.getShowService()).thenReturn(briefcaseShowService);
     when(briefcaseShowService.getUpcomingShows(50)).thenReturn(List.of());
     // securityUtils is field-injected (@Autowired), not constructor-injected, so the

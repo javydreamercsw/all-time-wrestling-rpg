@@ -21,6 +21,7 @@ import com.github.javydreamercsw.management.domain.title.TitleOpportunity;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.grid.Grid;
@@ -77,7 +78,7 @@ public class BriefcaseSection extends VerticalLayout {
     add(historyGrid(opportunities, titleService));
   }
 
-  private com.vaadin.flow.component.Component heldRow(
+  private Component heldRow(
       TitleOpportunity current,
       TitleOpportunityService titleOpportunityService,
       TitleService titleService,

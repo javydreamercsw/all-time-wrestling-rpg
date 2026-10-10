@@ -33,11 +33,13 @@ import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -111,8 +113,7 @@ class BriefcaseSectionTest extends AbstractViewTest {
         .orElseThrow()
         .click();
 
-    List<com.vaadin.flow.component.dialog.Dialog> dialogs =
-        _find(UI.getCurrent(), com.vaadin.flow.component.dialog.Dialog.class);
+    List<Dialog> dialogs = _find(UI.getCurrent(), Dialog.class);
     assertThat(dialogs).isNotEmpty();
     assertThat(dialogs.getFirst().getHeaderTitle()).isEqualTo("Cash In: Time Vault briefcase");
   }
@@ -151,7 +152,7 @@ class BriefcaseSectionTest extends AbstractViewTest {
     cashedAgainst.setName("ATW Championship");
     cashed.setCashedAgainstTitle(cashedAgainst);
     when(titleOpportunityService.findByWrestler(anyLong())).thenReturn(List.of(held, cashed));
-    when(titleService.getTitleById(7L)).thenReturn(java.util.Optional.of(cashedAgainst));
+    when(titleService.getTitleById(7L)).thenReturn(Optional.of(cashedAgainst));
 
     BriefcaseSection section =
         new BriefcaseSection(
@@ -194,8 +195,7 @@ class BriefcaseSectionTest extends AbstractViewTest {
         .orElseThrow()
         .click();
 
-    List<com.vaadin.flow.component.dialog.Dialog> dialogs =
-        _find(UI.getCurrent(), com.vaadin.flow.component.dialog.Dialog.class);
+    List<Dialog> dialogs = _find(UI.getCurrent(), Dialog.class);
     assertThat(dialogs).isNotEmpty();
     // The callback only fires after a successful cash-in inside the dialog; opening must not
     // have triggered it.

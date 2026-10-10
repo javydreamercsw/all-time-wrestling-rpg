@@ -58,12 +58,7 @@ import com.github.javydreamercsw.management.service.universe.UniverseContextServ
 import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
-import com.github.javydreamercsw.management.ui.component.AlignmentTrackComponent;
-import com.github.javydreamercsw.management.ui.component.HistoryTimelineComponent;
-import com.github.javydreamercsw.management.ui.component.ReignCardComponent;
-import com.github.javydreamercsw.management.ui.component.StatusBar;
-import com.github.javydreamercsw.management.ui.component.WrestlerAbilityPanel;
-import com.github.javydreamercsw.management.ui.component.WrestlerActionMenu;
+import com.github.javydreamercsw.management.ui.component.*;
 import com.vaadin.flow.component.accordion.Accordion;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -440,7 +435,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       // ATW-312z: same shared briefcase section the career view renders.
       briefcaseLayout.removeAll();
       briefcaseLayout.add(
-          new com.github.javydreamercsw.management.ui.component.BriefcaseSection(
+          new BriefcaseSection(
               wrestler.getId(),
               wrestlerFacade.getTitleOpportunityService(),
               wrestlerFacade.getTitleService(),
