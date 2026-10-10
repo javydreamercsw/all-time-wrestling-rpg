@@ -318,6 +318,39 @@ class TitleServiceTest {
   }
 
   @Test
+  void save_newTitle_stampsCustom() {
+    Title newTitle = new Title();
+    newTitle.setName("Custom Belt");
+    newTitle.setExpansionCode("BASE_GAME");
+    when(titleRepository.save(newTitle)).thenReturn(newTitle);
+
+    titleService.save(newTitle);
+
+    assertThat(newTitle.getExpansionCode()).isEqualTo("CUSTOM");
+  }
+
+  @Test
+  void save_newTitleWithExplicitCustomCode_keepsIt() {
+    Title newTitle = new Title();
+    newTitle.setName("Already Custom");
+    newTitle.setExpansionCode("CUSTOM");
+    when(titleRepository.save(newTitle)).thenReturn(newTitle);
+
+    titleService.save(newTitle);
+
+    assertThat(newTitle.getExpansionCode()).isEqualTo("CUSTOM");
+  }
+
+  @Test
+  void save_existingTitle_preservesExpansionCode() {
+    title.setExpansionCode("RUMBLE");
+
+    titleService.save(title);
+
+    assertThat(title.getExpansionCode()).isEqualTo("RUMBLE");
+  }
+
+  @Test
   void saveAll_delegatesToRepository() {
     List<Title> titles = List.of(title);
     when(titleRepository.saveAll(titles)).thenReturn(titles);
@@ -353,6 +386,19 @@ class TitleServiceTest {
     when(expansionService.getEnabledExpansionCodes()).thenReturn(List.of("BASE_GAME"));
 
     assertThat(titleService.findAll()).isEmpty();
+  }
+
+  @Test
+  void findAllByExpansionCode_delegatesToRepository() {
+    Title customTitle = new Title();
+    customTitle.setName("Custom Belt");
+    customTitle.setExpansionCode("CUSTOM");
+    when(titleRepository.findByExpansionCodeOrderByNameAsc("CUSTOM"))
+        .thenReturn(List.of(customTitle));
+
+    List<Title> result = titleService.findAllByExpansionCode("CUSTOM");
+
+    assertThat(result).containsExactly(customTitle);
   }
 
   @Test

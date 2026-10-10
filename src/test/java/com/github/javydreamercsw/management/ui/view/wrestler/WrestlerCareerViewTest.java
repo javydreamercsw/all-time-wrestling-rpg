@@ -28,10 +28,15 @@ import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjurySeverity;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleOpportunity;
+import com.github.javydreamercsw.management.domain.title.TitleOpportunityStatus;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateHistory;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
+import com.github.javydreamercsw.management.service.show.ShowFacade;
+import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
@@ -40,9 +45,12 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsServic
 import com.github.javydreamercsw.management.ui.ViewContext;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Paragraph;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
@@ -55,10 +63,12 @@ import org.springframework.test.util.ReflectionTestUtils;
 class WrestlerCareerViewTest extends AbstractViewTest {
 
   @Mock private WrestlerFacade wrestlerFacade;
+  @Mock private ShowFacade showFacade;
   @Mock private ViewContext viewContext;
   @Mock private WrestlerStatsService wrestlerStatsService;
   @Mock private WrestlerStateHistoryService wrestlerStateHistoryService;
   @Mock private TitleService titleService;
+  @Mock private TitleOpportunityService titleOpportunityService;
   @Mock private InjuryService injuryService;
   @Mock private UniverseContextService universeContextService;
 
@@ -74,6 +84,8 @@ class WrestlerCareerViewTest extends AbstractViewTest {
     when(wrestlerFacade.getWrestlerStatsService()).thenReturn(wrestlerStatsService);
     when(wrestlerFacade.getWrestlerStateHistoryService()).thenReturn(wrestlerStateHistoryService);
     when(wrestlerFacade.getTitleService()).thenReturn(titleService);
+    when(wrestlerFacade.getTitleOpportunityService()).thenReturn(titleOpportunityService);
+    when(titleOpportunityService.findByWrestler(anyLong())).thenReturn(List.of());
     when(wrestlerFacade.getInjuryService()).thenReturn(injuryService);
     when(viewContext.getUniverseContextService()).thenReturn(universeContextService);
     when(universeContextService.getCurrentUniverseId()).thenReturn(42L);
@@ -84,7 +96,7 @@ class WrestlerCareerViewTest extends AbstractViewTest {
     when(titleService.findReignsByChampion(any())).thenReturn(List.of());
     when(injuryService.getAllInjuriesForWrestler(anyLong(), anyLong())).thenReturn(List.of());
 
-    view = new WrestlerCareerView(wrestlerFacade, viewContext);
+    view = new WrestlerCareerView(wrestlerFacade, showFacade, viewContext);
     UI.getCurrent().add(view);
   }
 
@@ -225,5 +237,37 @@ class WrestlerCareerViewTest extends AbstractViewTest {
     buildViewWith(42L);
 
     assertThat(view).isNotNull();
+  }
+
+  // ── Briefcase section (ATW-8p72 / ATW-3fhh) ──────────────────────────────
+
+  @Test
+  @DisplayName("Cash In button opens the shared BriefcaseCashInDialog")
+  void cashInButton_opensSharedDialog() {
+    TitleOpportunity held = new TitleOpportunity();
+    held.setId(30L);
+    held.setName("Time Vault briefcase");
+    held.setStatus(TitleOpportunityStatus.HELD);
+    held.setWrestler(wrestler);
+    held.setEarnedAt(LocalDate.now().minusDays(30));
+    when(titleOpportunityService.findByWrestler(anyLong())).thenReturn(List.of(held));
+    when(titleService.findAll()).thenReturn(List.of());
+    ShowService careerShowService = mock(ShowService.class);
+    when(showFacade.getShowService()).thenReturn(careerShowService);
+    when(careerShowService.getUpcomingShows(50)).thenReturn(List.of());
+
+    buildViewWith(42L);
+
+    List<Button> buttons = _find(view, Button.class);
+    Button cashIn =
+        buttons.stream()
+            .filter(b -> "Cash In".equals(b.getText()))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Cash In button not rendered"));
+    cashIn.click();
+
+    List<Dialog> dialogs = _find(UI.getCurrent(), Dialog.class);
+    assertThat(dialogs).isNotEmpty();
+    assertThat(dialogs.getFirst().getHeaderTitle()).isEqualTo("Cash In: Time Vault briefcase");
   }
 }

@@ -6,4 +6,46 @@
   "recurrenceType": "WEEKLY",
   "dayOfWeek": "MONDAY",
   "durationDays": 1
+}, {
+  "name": "Timeless",
+  "description": "Classic prestige and grand rivalries. Timeless is your flagship show, focused on legacy, honor, and intergenerational conflict. This is where main-event feuds are born and wrestling tradition is sacred — even when it's broken.",
+  "showTypeName": "Weekly",
+  "commentaryTeamName": "All-Time Broadcast Team",
+  "recurrenceType": "WEEKLY",
+  "dayOfWeek": "FRIDAY",
+  "durationDays": 1
+}, {
+  "name": "All Time Rumble",
+  "description": "Massive battle royal across eras. Winner gets guaranteed shot at the ATW World Title.",
+  "showTypeName": "Premium Live Event (PLE)",
+  "commentaryTeamName": "All-Time Broadcast Team",
+  "recurrenceType": "ANNUAL",
+  "dayOfWeek": "SUNDAY",
+  "weekOfMonth": -1,
+  "month": "JANUARY",
+  "durationDays": 1,
+  "requiredExpansions": [ "RUMBLE" ],
+  "assignments": [ {
+    "segmentTypeName": "Abu Dhabi Rumble",
+    "mode": "AUTO_ATTACH"
+  } ]
+}, {
+  "name": "Valentine's Day Massacre",
+  "description": "Love is a battlefield — literally. The most brutal night of the wrestling calendar lands in the sweetest month: the Deadly Combat tournament crowns its winner amid hearts, roses, and barbwire.",
+  "showTypeName": "Premium Live Event (PLE)",
+  "commentaryTeamName": "All-Time Broadcast Team",
+  "recurrenceType": "ANNUAL",
+  "dayOfWeek": "SUNDAY",
+  "weekOfMonth": 2,
+  "month": "FEBRUARY",
+  "durationDays": 1,
+  "assignments": [ {
+    "segmentTypeName": "One on One",
+    "specName": "Deadly Combat",
+    "specFormatId": "SINGLE_ELIMINATION",
+    "specEntrantCount": 8,
+    "specFinalRuleName": "Barbwire Exploding Deathmatch",
+    "allowedRuleNames": [ "Last Man Standing", "Cage", "No DQ" ],
+    "mode": "AUTO_ATTACH"
+  } ]
 } ]

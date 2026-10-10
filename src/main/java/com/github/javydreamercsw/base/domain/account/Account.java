@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.base.domain.account;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
@@ -93,6 +94,10 @@ public class Account {
       name = "account_achievement",
       joinColumns = @JoinColumn(name = "account_id"),
       inverseJoinColumns = @JoinColumn(name = "achievement_id"))
+  // LAZY collection — serializing Account (e.g. Wrestler → account in a planning-context DTO)
+  // after its session closed blew up here with a LazyInitializationException. Views that need
+  // achievements read them directly (Hibernate.initialize inside their transaction).
+  @JsonIgnore
   private Set<Achievement> achievements = new HashSet<>();
 
   @Column private LocalDateTime lockedUntil;

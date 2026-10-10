@@ -115,8 +115,14 @@ run_mysql() {
 run_mysqldump() {
   # --skip-dump-date keeps dumps deterministic so identical data hashes identically
   # (the freeze-rule check in `promote` depends on this).
+  # --set-gtid-purged=OFF: since the MySQL 26.7 upgrade the server has GTIDs enabled,
+  # so mysqldump stamps SET @@GLOBAL.GTID_PURGED into every dump — and restoring it
+  # fails with ER_GTID_PURGED_CHANGED (3546) because the snapshot's own DROP/CREATE
+  # round-trip already advanced gtid_executed past the stamped set. The sandbox's
+  # GTID lineage is irrelevant; the dump's own GTID warning suggests this flag.
   # shellcheck disable=SC2046
-  mysqldump $(mysql_args) --single-transaction --routines --triggers --skip-dump-date "$@"
+  mysqldump $(mysql_args) --single-transaction --routines --triggers --skip-dump-date \
+    --set-gtid-purged=OFF "$@"
 }
 
 dump_sha() { shasum -a 256 "$1" | awk '{print $1}'; }
@@ -303,7 +309,16 @@ cmd_start() {
   if [ -z "$jar" ]; then
     echo "Building candidate JAR (-Pproduction)..."
     (cd "$REPO_ROOT" && mvn -q -Pproduction package -DskipTests)
-    jar=$(ls -1t "${REPO_ROOT}"/target/*.jar 2>/dev/null | grep -v -E 'sources|javadoc|\.original' | head -1)
+    # Prefer the repackaged main artifact (the -Pproduction build output). A stale
+    # target/-exec.jar from an earlier -Pdesktop/-Pwar build must not win the
+    # ls -1t race — every jar shares the reproducible-build 1980 timestamp, so
+    # mtime ordering is meaningless and the wrong artifact could serve :8081.
+    local main_jar="${REPO_ROOT}/target/all-time-wrestling-rpg-*.jar"
+    if ls ${main_jar} >/dev/null 2>&1; then
+      jar=$(ls -1t ${main_jar} 2>/dev/null | grep -v -E 'sources|javadoc|\.original|exec\.jar|launcher\.jar' | head -1)
+    else
+      jar=$(ls -1t "${REPO_ROOT}"/target/*.jar 2>/dev/null | grep -v -E 'sources|javadoc|\.original|exec\.jar|launcher\.jar' | head -1)
+    fi
   fi
   if [ ! -f "$jar" ]; then
     echo "Candidate JAR not found: $jar" >&2

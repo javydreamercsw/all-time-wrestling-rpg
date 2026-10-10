@@ -57,9 +57,11 @@ public interface FeudScriptBeatRepository extends JpaRepository<FeudScriptBeat, 
   List<FeudScriptBeat> findPendingBeatsForWrestlers(@Param("wrestlerIds") List<Long> wrestlerIds);
 
   /**
-   * Next pending beat (lowest beatOrder) of every ACTIVE script, regardless of target show. Beats
+   * Next pending beat (lowest beatOrder) of every ACTIVE script that has NO target show. Beats
    * without a targetShow never match {@link #findPendingBeatsForShow}, so planning falls back to
-   * this to keep arcs moving.
+   * this to keep arcs moving. Beats with a targetShow are served exclusively by {@link
+   * #findPendingBeatsForShow} when that show is planned — injecting them anywhere else would book a
+   * beat onto a show the booker did not pick (e.g. a PLE-bound blowoff landing on a weekly).
    */
   @Query(
       value =
@@ -67,6 +69,7 @@ public interface FeudScriptBeatRepository extends JpaRepository<FeudScriptBeat, 
               + " JOIN feud_script s ON s.feud_script_id = b.script_id"
               + " WHERE s.status = 'ACTIVE'"
               + " AND b.beat_status = 'PENDING'"
+              + " AND b.target_show_id IS NULL"
               + " AND b.beat_order = (SELECT MIN(b2.beat_order) FROM feud_script_beat b2"
               + "   WHERE b2.script_id = b.script_id AND b2.beat_status = 'PENDING')",
       nativeQuery = true)

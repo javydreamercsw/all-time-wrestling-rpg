@@ -123,9 +123,9 @@ public class NPCSegmentResolutionService {
     applySegmentRules(result, finalStipulation);
     result.setIsNpcGenerated(true);
 
-    // Add all participants from both teams
-    addTeamParticipants(result, team1);
-    addTeamParticipants(result, team2);
+    // Add all participants from both teams, preserving the team layout the card shows.
+    addTeamParticipants(result, team1, 1);
+    addTeamParticipants(result, team2, 2);
     result.setWinners(winningTeam.getMembers());
 
     // Save and return
@@ -192,9 +192,9 @@ public class NPCSegmentResolutionService {
     applySegmentRules(result, finalStipulation);
     result.setIsNpcGenerated(true);
 
-    // Add all participants from all teams
-    for (SegmentTeam team : teams) {
-      addTeamParticipants(result, team);
+    // Add all participants from all teams, one-based team numbers in list order.
+    for (int i = 0; i < teams.size(); i++) {
+      addTeamParticipants(result, teams.get(i), i + 1);
     }
     result.setWinners(winningTeam.getMembers());
 
@@ -299,10 +299,13 @@ public class NPCSegmentResolutionService {
     return modifier;
   }
 
-  /** Add all team members as participants in the segment. */
-  private void addTeamParticipants(@NonNull final Segment result, @NonNull final SegmentTeam team) {
+  /** Add all team members as participants in the segment under the given team number. */
+  private void addTeamParticipants(
+      @NonNull final Segment result, @NonNull final SegmentTeam team, final int teamNumber) {
     for (Wrestler wrestler : team.getMembers()) {
-      wrestlerRepository.findById(wrestler.getId()).ifPresent(result::addParticipant);
+      wrestlerRepository
+          .findById(wrestler.getId())
+          .ifPresent(wrestler1 -> result.addParticipant(wrestler1, teamNumber));
     }
   }
 

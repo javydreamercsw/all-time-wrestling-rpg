@@ -46,6 +46,7 @@ import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.AfterEach;
@@ -170,6 +171,12 @@ class NPCSegmentResolutionServiceTest extends ManagementIntegrationTest {
     // Verify participants
     List<Wrestler> participants = result.getWrestlers();
     assertThat(participants).containsExactlyInAnyOrder(rookie1, rookie2);
+
+    // Opposing sides land on distinct teams — one wrestler per team, never both on Team 1.
+    Map<Integer, List<Wrestler>> byTeam = result.getWrestlersByTeam();
+    assertThat(byTeam).hasSize(2);
+    assertThat(byTeam.get(1)).hasSize(1);
+    assertThat(byTeam.get(2)).hasSize(1);
   }
 
   @Test

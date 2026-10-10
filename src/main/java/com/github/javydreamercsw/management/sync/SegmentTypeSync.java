@@ -66,7 +66,8 @@ public class SegmentTypeSync implements DataSyncContributor {
                   dto.getDescription(),
                   dto.getExpansionCode() != null ? dto.getExpansionCode() : "BASE_GAME",
                   dto.getGuide(),
-                  dto.getCode());
+                  dto.getCode(),
+                  dto.getEventOnly());
           log.debug(
               "Loaded segment type: {} (Players: {})",
               segmentType.getName(),

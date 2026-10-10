@@ -46,6 +46,13 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.BumpSource;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.tournament.Tournament;
+import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
+import com.github.javydreamercsw.management.domain.tournament.TournamentEntryStatus;
+import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
+import com.github.javydreamercsw.management.domain.tournament.TournamentMatchRepository;
+import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
+import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
@@ -63,6 +70,7 @@ import com.github.javydreamercsw.management.service.resolution.ResolutionResult;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
+import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
@@ -120,6 +128,8 @@ class SegmentAdjudicationServiceTest {
   @Mock private ApplicationEventPublisher eventPublisher;
   @Mock private WrestlerStatusService wrestlerStatusService;
   @Mock private UniverseContextService universeContextService;
+  @Mock private TitleOpportunityService titleOpportunityService;
+  @Mock private TournamentMatchRepository tournamentMatchRepository;
 
   private SegmentAdjudicationService segmentAdjudicationService;
   @Mock private Universe universe;
@@ -153,6 +163,10 @@ class SegmentAdjudicationServiceTest {
                 universeContextService,
                 random));
     ReflectionTestUtils.setField(segmentAdjudicationService, "eventPublisher", eventPublisher);
+    ReflectionTestUtils.setField(
+        segmentAdjudicationService, "titleOpportunityService", titleOpportunityService);
+    ReflectionTestUtils.setField(
+        segmentAdjudicationService, "tournamentMatchRepository", tournamentMatchRepository);
 
     when(universe.getId()).thenReturn(1L);
     when(show.getUniverse()).thenReturn(universe);
@@ -460,6 +474,119 @@ class SegmentAdjudicationServiceTest {
     verify(rivalryService, atLeastOnce()).getRivalryBetweenWrestlers(eq(1L), eq(2L));
     // Direct resolution must NOT be called with a specific id
     verify(rivalryService, never()).attemptResolution(anyLong(), anyInt(), anyInt(), anyInt());
+  }
+
+  // --- Briefcase grant at adjudication (ATW-8p72) ---
+
+  private void stubTournamentSegment(Tournament tournament, Long segmentId) {
+    when(segment.getId()).thenReturn(segmentId);
+    when(tournament.isBriefcaseDeciding()).thenReturn(true);
+    when(tournament.getStatus()).thenReturn(TournamentStatus.COMPLETE);
+    when(tournament.getName()).thenReturn("Time Vault");
+    TournamentRound round = new TournamentRound();
+    round.setTournament(tournament);
+    TournamentMatch match = new TournamentMatch();
+    match.setRound(round);
+    when(tournamentMatchRepository.findBySegmentId(segmentId)).thenReturn(Optional.of(match));
+  }
+
+  @Test
+  void adjudicateMatch_briefcaseFinalComplete_grantsToBracketWinner() {
+    Tournament tournament = mock(Tournament.class);
+    Wrestler bracketWinner = mock(Wrestler.class);
+    when(bracketWinner.getName()).thenReturn("Mukundi Shumba");
+    TournamentEntry winnerEntry = new TournamentEntry();
+    winnerEntry.setWrestler(bracketWinner);
+    winnerEntry.setStatus(TournamentEntryStatus.WINNER);
+    when(tournament.getEntries()).thenReturn(List.of(winnerEntry));
+    stubTournamentSegment(tournament, 777L);
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    verify(titleOpportunityService).grantFromTournament(tournament, bracketWinner);
+  }
+
+  @Test
+  void adjudicateMatch_segmentWinnerDiffersFromBracket_grantStillUsesBracket() {
+    // The bracket's WINNER entry is authoritative even if the adjudicated segment disagrees
+    // (a double-check guard, not a hard block).
+    Tournament tournament = mock(Tournament.class);
+    Wrestler bracketWinner = mock(Wrestler.class);
+    when(bracketWinner.getName()).thenReturn("Bracket Winner");
+    TournamentEntry winnerEntry = new TournamentEntry();
+    winnerEntry.setWrestler(bracketWinner);
+    winnerEntry.setStatus(TournamentEntryStatus.WINNER);
+    when(tournament.getEntries()).thenReturn(List.of(winnerEntry));
+    stubTournamentSegment(tournament, 778L);
+    // segment.getWinners() stubbed to `winner` (≠ bracketWinner) in setUp.
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    verify(titleOpportunityService).grantFromTournament(tournament, bracketWinner);
+  }
+
+  @Test
+  void adjudicateMatch_segmentNotInTournament_noGrant() {
+    when(segment.getId()).thenReturn(779L);
+    when(tournamentMatchRepository.findBySegmentId(779L)).thenReturn(Optional.empty());
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    verify(titleOpportunityService, never()).grantFromTournament(any(), any());
+  }
+
+  @Test
+  void adjudicateMatch_tournamentNotBriefcaseDeciding_noGrant() {
+    Tournament tournament = mock(Tournament.class);
+    when(tournament.isBriefcaseDeciding()).thenReturn(false);
+    stubTournamentSegment(tournament, 780L);
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    verify(titleOpportunityService, never()).grantFromTournament(any(), any());
+  }
+
+  @Test
+  void adjudicateMatch_briefcaseTournamentStillScheduled_noGrant() {
+    Tournament tournament = mock(Tournament.class);
+    when(tournament.isBriefcaseDeciding()).thenReturn(true);
+    when(tournament.getStatus()).thenReturn(TournamentStatus.SCHEDULED);
+    when(tournament.getName()).thenReturn("Time Vault II");
+    stubTournamentSegment(tournament, 781L);
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    verify(titleOpportunityService, never()).grantFromTournament(any(), any());
+  }
+
+  @Test
+  void adjudicateMatch_briefcaseTournamentWithoutWinnerEntry_noGrantAndWarns() {
+    Tournament tournament = mock(Tournament.class);
+    when(tournament.getEntries()).thenReturn(List.of());
+    stubTournamentSegment(tournament, 782L);
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    verify(titleOpportunityService, never()).grantFromTournament(any(), any());
+  }
+
+  @Test
+  void adjudicateMatch_grantFailure_neverFailsAdjudication() {
+    // Failure isolation: a grant problem must never bubble into the adjudication flow.
+    Tournament tournament = mock(Tournament.class);
+    Wrestler bracketWinner = mock(Wrestler.class);
+    when(bracketWinner.getName()).thenReturn("Mukundi Shumba");
+    TournamentEntry winnerEntry = new TournamentEntry();
+    winnerEntry.setWrestler(bracketWinner);
+    winnerEntry.setStatus(TournamentEntryStatus.WINNER);
+    when(tournament.getEntries()).thenReturn(List.of(winnerEntry));
+    stubTournamentSegment(tournament, 783L);
+    when(titleOpportunityService.grantFromTournament(any(), any()))
+        .thenThrow(new IllegalStateException("one-HELD guard tripped"));
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    verify(titleOpportunityService).grantFromTournament(tournament, bracketWinner);
   }
 
   // --- Health-based bump tests ---

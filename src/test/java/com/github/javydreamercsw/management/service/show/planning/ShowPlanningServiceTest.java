@@ -26,6 +26,8 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -42,11 +44,15 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
 import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleOpportunity;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
+import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -65,7 +71,9 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningDtoMapper;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRivalryDTO;
+import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.tournament.TournamentTemplateBookingService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.Instant;
@@ -109,6 +117,9 @@ class ShowPlanningServiceTest {
   @Mock private GameSettingService gameSettingService;
   @Mock private DramaEventService dramaEventService;
   @Mock private FeudScriptService feudScriptService;
+  @Mock private ShowTemplateRepository showTemplateRepository;
+  @Mock private TournamentTemplateBookingService tournamentTemplateBookingService;
+  @Mock private TitleOpportunityService titleOpportunityService;
 
   @InjectMocks private ShowPlanningService showPlanningService;
 
@@ -223,6 +234,436 @@ class ShowPlanningServiceTest {
   }
 
   @Test
+  void testApproveSegments_autoAttachesTypePairedTemplateRule() {
+    // A PLE template with Abu Dhabi Rumble type paired with Rumble rules (AUTO_ATTACH).
+    SegmentType rumbleType = new SegmentType();
+    rumbleType.setId(10L);
+    rumbleType.setName("Abu Dhabi Rumble");
+    when(segmentTypeService.findByName("Abu Dhabi Rumble")).thenReturn(Optional.of(rumbleType));
+    SegmentRule rumbleRule = new SegmentRule();
+    rumbleRule.setId(20L);
+    rumbleRule.setName("Rumble Rules");
+    when(segmentRuleRepository.findByName("Rumble Rules")).thenReturn(Optional.of(rumbleRule));
+
+    ShowType pleType = new ShowType();
+    pleType.setName("PLE");
+    ShowTemplate template = new ShowTemplate();
+    template.setId(5L);
+    template.setName("Big PLE");
+    template.setShowType(pleType);
+    ShowTemplateSegmentAssignment assignment = new ShowTemplateSegmentAssignment();
+    assignment.setTemplate(template);
+    assignment.setSegmentType(rumbleType);
+    assignment.setSegmentRule(rumbleRule);
+    assignment.setMode(ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH);
+    template.getSegmentAssignments().add(assignment);
+    show.setTemplate(template);
+
+    ProposedSegment proposed = new ProposedSegment();
+    proposed.setType("Abu Dhabi Rumble");
+    proposed.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+    proposed.setWinners(List.of("Wrestler A"));
+
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+    when(wrestlerRepository.findByName("Wrestler A"))
+        .thenReturn(Optional.of(wrestlerNamed(1L, "Wrestler A")));
+    when(wrestlerRepository.findByName("Wrestler B"))
+        .thenReturn(Optional.of(wrestlerNamed(2L, "Wrestler B")));
+
+    showPlanningService.approveSegments(show, List.of(proposed));
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Segment>> segmentsCaptor = ArgumentCaptor.forClass(List.class);
+    verify(segmentRepository).saveAll(segmentsCaptor.capture());
+    Segment saved = segmentsCaptor.getValue().get(0);
+    assertEquals(
+        1,
+        saved.getSegmentRules().size(),
+        "Type-paired AUTO_ATTACH rule must merge at approval time");
+    assertEquals("Rumble Rules", saved.getSegmentRules().iterator().next().getName());
+  }
+
+  @Test
+  void testApproveSegments_ruleOnlyAutoAttach_appliesToAllMatchesAndDedupes() {
+    SegmentType singles = new SegmentType();
+    singles.setId(30L);
+    singles.setName("One on One");
+    when(segmentTypeService.findByName("One on One")).thenReturn(Optional.of(singles));
+    SegmentRule themedRule = new SegmentRule();
+    themedRule.setId(40L);
+    themedRule.setName("Exploding Barbed Wire");
+    when(segmentRuleRepository.findByName("Exploding Barbed Wire"))
+        .thenReturn(Optional.of(themedRule));
+
+    ShowTemplate template = new ShowTemplate();
+    template.setId(6L);
+    ShowTemplateSegmentAssignment ruleOnly = new ShowTemplateSegmentAssignment();
+    ruleOnly.setTemplate(template);
+    ruleOnly.setSegmentRule(themedRule);
+    ruleOnly.setMode(ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH);
+    template.getSegmentAssignments().add(ruleOnly);
+    show.setTemplate(template);
+
+    // AI already proposed the same rule — must not duplicate.
+    ProposedSegment withRule = new ProposedSegment();
+    withRule.setType("One on One");
+    withRule.setRules(List.of("Exploding Barbed Wire"));
+    withRule.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+    withRule.setWinners(List.of("Wrestler A"));
+    ProposedSegment withoutRule = new ProposedSegment();
+    withoutRule.setType("One on One");
+    withoutRule.setTeams(List.of(List.of("Wrestler C"), List.of("Wrestler D")));
+    withoutRule.setWinners(List.of("Wrestler C"));
+
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+    when(wrestlerRepository.findByName("Wrestler A"))
+        .thenReturn(Optional.of(wrestlerNamed(1L, "Wrestler A")));
+    when(wrestlerRepository.findByName("Wrestler B"))
+        .thenReturn(Optional.of(wrestlerNamed(2L, "Wrestler B")));
+    when(wrestlerRepository.findByName("Wrestler C"))
+        .thenReturn(Optional.of(wrestlerNamed(3L, "Wrestler C")));
+    when(wrestlerRepository.findByName("Wrestler D"))
+        .thenReturn(Optional.of(wrestlerNamed(4L, "Wrestler D")));
+
+    showPlanningService.approveSegments(show, List.of(withRule, withoutRule));
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Segment>> segmentsCaptor = ArgumentCaptor.forClass(List.class);
+    verify(segmentRepository).saveAll(segmentsCaptor.capture());
+    List<Segment> saved = segmentsCaptor.getValue();
+    assertEquals(
+        1, saved.get(0).getSegmentRules().size(), "Already-proposed rule must not duplicate");
+    assertEquals(
+        1,
+        saved.get(1).getSegmentRules().size(),
+        "Rule-only AUTO_ATTACH rule must attach to every match segment");
+  }
+
+  private static Wrestler wrestlerNamed(Long id, String name) {
+    Wrestler w = new Wrestler();
+    w.setId(id);
+    w.setName(name);
+    return w;
+  }
+
+  @Test
+  void testApproveSegments_tournamentFedBooking_replacesAiParticipants() {
+    SegmentType rumbleType = new SegmentType();
+    rumbleType.setId(10L);
+    rumbleType.setName("Abu Dhabi Rumble");
+    when(segmentTypeService.findByName("Abu Dhabi Rumble")).thenReturn(Optional.of(rumbleType));
+
+    ShowTemplate template = new ShowTemplate();
+    template.setId(5L);
+    ShowTemplateSegmentAssignment assignment = new ShowTemplateSegmentAssignment();
+    assignment.setTemplate(template);
+    assignment.setSegmentType(rumbleType);
+    assignment.setTournament(new Tournament());
+    assignment.setMode(ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH);
+    template.getSegmentAssignments().add(assignment);
+    show.setTemplate(template);
+
+    ProposedSegment proposed = new ProposedSegment();
+    proposed.setType("Abu Dhabi Rumble");
+    proposed.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+    proposed.setWinners(List.of("Wrestler A"));
+    proposed.setSummary("AI summary");
+    proposed.setNarration("AI narration");
+
+    Segment tournamentBooked = new Segment();
+    tournamentBooked.setSegmentType(rumbleType);
+    Wrestler entrant = wrestlerNamed(9L, "Tournament Entrant");
+    tournamentBooked.addParticipant(entrant, 1);
+    tournamentBooked.setWinners(List.of(entrant));
+    when(tournamentTemplateBookingService.bookTournamentFedSegment(assignment, rumbleType, show))
+        .thenReturn(
+            Optional.of(
+                new TournamentTemplateBookingService.TournamentBooking(
+                    tournamentBooked,
+                    assignment.getTournament(),
+                    "Round 1 — tournament-fed",
+                    false,
+                    null)));
+
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+
+    showPlanningService.approveSegments(show, List.of(proposed));
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Segment>> segmentsCaptor = ArgumentCaptor.forClass(List.class);
+    verify(segmentRepository).saveAll(segmentsCaptor.capture());
+    List<Segment> saved = segmentsCaptor.getValue();
+    assertEquals(1, saved.size());
+    // The tournament's booking replaces the AI-proposed participants entirely.
+    assertEquals(
+        "Tournament Entrant",
+        saved.get(0).getParticipants().iterator().next().getWrestler().getName());
+    assertEquals(1, saved.get(0).getWinners().size());
+    assertEquals("Tournament Entrant", saved.get(0).getWinners().iterator().next().getName());
+    // Proposal placement metadata is inherited.
+    assertEquals(1, saved.get(0).getSegmentOrder());
+    assertEquals("AI summary", saved.get(0).getSummary());
+    assertEquals("AI narration", saved.get(0).getNarration());
+  }
+
+  @Test
+  void testApproveSegments_tournamentFed_titleMatchAndContenderArms() {
+    // The template path's title arms: a titleMatch=true booking flags the saved segment as a
+    // title segment with the title attached (ShowPlanningService 631-635); a contender-designation
+    // booking (titleMatch=false, title non-null) flags contenderMatch instead (636-641).
+    SegmentType rumbleType = new SegmentType();
+    rumbleType.setId(10L);
+    rumbleType.setName("Abu Dhabi Rumble");
+    when(segmentTypeService.findByName("Abu Dhabi Rumble")).thenReturn(Optional.of(rumbleType));
+
+    ShowTemplate template = new ShowTemplate();
+    template.setId(5L);
+    ShowTemplateSegmentAssignment assignment = new ShowTemplateSegmentAssignment();
+    assignment.setTemplate(template);
+    assignment.setSegmentType(rumbleType);
+    assignment.setTournament(new Tournament());
+    assignment.setMode(ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH);
+    template.getSegmentAssignments().add(assignment);
+    show.setTemplate(template);
+
+    ProposedSegment proposed = new ProposedSegment();
+    proposed.setType("Abu Dhabi Rumble");
+    proposed.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+    proposed.setWinners(List.of("Wrestler A"));
+
+    SegmentType singlesType = new SegmentType();
+    singlesType.setId(11L);
+    singlesType.setName("One on One");
+    Title title = new Title();
+    title.setId(7L);
+    title.setName("World Title");
+
+    Segment titleMatchBooked = new Segment();
+    titleMatchBooked.setSegmentType(singlesType);
+    Wrestler titleEntrant = wrestlerNamed(9L, "Title Entrant");
+    titleMatchBooked.addParticipant(titleEntrant, 1);
+    titleMatchBooked.setWinners(List.of(titleEntrant));
+    Segment contenderBooked = new Segment();
+    contenderBooked.setSegmentType(singlesType);
+    Wrestler contenderEntrant = wrestlerNamed(10L, "Contender Entrant");
+    contenderBooked.addParticipant(contenderEntrant, 1);
+    contenderBooked.setWinners(List.of(contenderEntrant));
+    when(tournamentTemplateBookingService.bookTournamentFedSegment(assignment, rumbleType, show))
+        .thenReturn(
+            Optional.of(
+                new TournamentTemplateBookingService.TournamentBooking(
+                    titleMatchBooked,
+                    assignment.getTournament(),
+                    "Final — tournament-fed",
+                    true,
+                    title)));
+    // Second approval: the same assignment books a contender-designation payoff.
+    showPlanningService.approveSegments(show, List.of(proposed));
+    when(tournamentTemplateBookingService.bookTournamentFedSegment(assignment, rumbleType, show))
+        .thenReturn(
+            Optional.of(
+                new TournamentTemplateBookingService.TournamentBooking(
+                    contenderBooked,
+                    assignment.getTournament(),
+                    "Final — tournament-fed",
+                    false,
+                    title)));
+    showPlanningService.approveSegments(show, List.of(proposed));
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Segment>> segmentsCaptor = ArgumentCaptor.forClass(List.class);
+    verify(segmentRepository, times(2)).saveAll(segmentsCaptor.capture());
+    List<List<Segment>> savedBatches = segmentsCaptor.getAllValues();
+    Segment titleSegment = savedBatches.get(0).get(0);
+    assertTrue(titleSegment.getIsTitleSegment(), "titleMatch=true → title segment");
+    assertTrue(titleSegment.getTitles().contains(title));
+    Segment contenderSegment = savedBatches.get(1).get(0);
+    assertFalse(
+        contenderSegment.getIsTitleSegment(), "contender designation is NOT a title segment");
+    assertTrue(contenderSegment.isContenderMatch(), "contender designation flags contenderMatch");
+    assertTrue(contenderSegment.getTitles().contains(title));
+  }
+
+  @Test
+  void testApproveSegments_tournamentFallback_keepsAiParticipants() {
+    SegmentType rumbleType = new SegmentType();
+    rumbleType.setId(10L);
+    rumbleType.setName("Abu Dhabi Rumble");
+    when(segmentTypeService.findByName("Abu Dhabi Rumble")).thenReturn(Optional.of(rumbleType));
+
+    ShowTemplate template = new ShowTemplate();
+    template.setId(5L);
+    ShowTemplateSegmentAssignment assignment = new ShowTemplateSegmentAssignment();
+    assignment.setTemplate(template);
+    assignment.setSegmentType(rumbleType);
+    assignment.setTournament(new Tournament());
+    assignment.setMode(ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH);
+    template.getSegmentAssignments().add(assignment);
+    show.setTemplate(template);
+
+    ProposedSegment proposed = new ProposedSegment();
+    proposed.setType("Abu Dhabi Rumble");
+    proposed.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+    proposed.setWinners(List.of("Wrestler A"));
+
+    // The tournament cannot supply participants — the AI path must proceed unchanged.
+    when(tournamentTemplateBookingService.bookTournamentFedSegment(assignment, rumbleType, show))
+        .thenReturn(Optional.empty());
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+    when(wrestlerRepository.findByName("Wrestler A"))
+        .thenReturn(Optional.of(wrestlerNamed(1L, "Wrestler A")));
+    when(wrestlerRepository.findByName("Wrestler B"))
+        .thenReturn(Optional.of(wrestlerNamed(2L, "Wrestler B")));
+
+    showPlanningService.approveSegments(show, List.of(proposed));
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Segment>> segmentsCaptor = ArgumentCaptor.forClass(List.class);
+    verify(segmentRepository).saveAll(segmentsCaptor.capture());
+    Segment saved = segmentsCaptor.getValue().get(0);
+    assertEquals(
+        2, saved.getParticipants().size(), "Fallback must keep the AI-proposed participants");
+    assertEquals("Wrestler A", saved.getWinners().iterator().next().getName());
+  }
+
+  @Test
+  void testApproveSegments_showAttachedTournamentBooking_addsExtraSegment() {
+    // One-time show-attached tournament (ATW-xbn4): the trigger's bookings land on the card as
+    // extra segments with order/date/title flags applied — the AI never proposes them.
+    ShowTemplate template = new ShowTemplate();
+    template.setId(5L);
+    show.setTemplate(template);
+
+    ProposedSegment proposed = new ProposedSegment();
+    proposed.setType("One on One");
+    proposed.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+    proposed.setWinners(List.of("Wrestler A"));
+    when(segmentTypeService.findByName("One on One")).thenReturn(Optional.of(new SegmentType()));
+    when(wrestlerRepository.findByName("Wrestler A"))
+        .thenReturn(Optional.of(wrestlerNamed(1L, "Wrestler A")));
+    when(wrestlerRepository.findByName("Wrestler B"))
+        .thenReturn(Optional.of(wrestlerNamed(2L, "Wrestler B")));
+
+    SegmentType singlesType = new SegmentType();
+    singlesType.setId(11L);
+    singlesType.setName("One on One");
+    Segment tournamentBooked = new Segment();
+    tournamentBooked.setSegmentType(singlesType);
+    Wrestler entrant = wrestlerNamed(9L, "Cup Entrant");
+    tournamentBooked.addParticipant(entrant, 1);
+    tournamentBooked.setWinners(List.of(entrant));
+    Title title = new Title();
+    title.setId(7L);
+    title.setName("World Title");
+    when(tournamentTemplateBookingService.bookShowAttachedTournamentSegments(show))
+        .thenReturn(
+            List.of(
+                new TournamentTemplateBookingService.TournamentBooking(
+                    tournamentBooked, new Tournament(), "Final — tournament-fed", true, title)));
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+
+    showPlanningService.approveSegments(show, List.of(proposed));
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Segment>> segmentsCaptor = ArgumentCaptor.forClass(List.class);
+    verify(segmentRepository).saveAll(segmentsCaptor.capture());
+    List<Segment> saved = segmentsCaptor.getValue();
+    assertEquals(
+        2, saved.size(), "The show-attached tournament's payoff joins the AI-proposed segment");
+    Segment payoff = saved.get(1);
+    assertEquals("Cup Entrant", payoff.getParticipants().iterator().next().getWrestler().getName());
+    assertEquals(2, payoff.getSegmentOrder(), "Extra segment slots after the AI-proposed ones");
+    assertTrue(payoff.getIsTitleSegment(), "Payoff title flags apply to the saved segment");
+    assertTrue(payoff.getTitles().contains(title));
+    verify(tournamentTemplateBookingService).bookShowAttachedTournamentSegments(show);
+  }
+
+  @Test
+  void testApproveSegments_contenderDesignationBooking_setsContenderMatch() {
+    // Contender-deciding tournament (ATW-ewrp): a booking with titleMatch=false but a non-null
+    // title means CONTENDER DESIGNATION — the saved segment carries the title WITHOUT being a
+    // title segment, flagged as a contender match so adjudication names the winner the #1
+    // contender.
+    ShowTemplate template = new ShowTemplate();
+    template.setId(5L);
+    show.setTemplate(template);
+
+    ProposedSegment proposed = new ProposedSegment();
+    proposed.setType("One on One");
+    proposed.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+    proposed.setWinners(List.of("Wrestler A"));
+    when(segmentTypeService.findByName("One on One")).thenReturn(Optional.of(new SegmentType()));
+    when(wrestlerRepository.findByName("Wrestler A"))
+        .thenReturn(Optional.of(wrestlerNamed(1L, "Wrestler A")));
+    when(wrestlerRepository.findByName("Wrestler B"))
+        .thenReturn(Optional.of(wrestlerNamed(2L, "Wrestler B")));
+
+    SegmentType singlesType = new SegmentType();
+    singlesType.setId(11L);
+    singlesType.setName("One on One");
+    Segment tournamentBooked = new Segment();
+    tournamentBooked.setSegmentType(singlesType);
+    Wrestler entrant = wrestlerNamed(9L, "Cup Entrant");
+    tournamentBooked.addParticipant(entrant, 1);
+    tournamentBooked.setWinners(List.of(entrant));
+    Title contenderTitle = new Title();
+    contenderTitle.setId(8L);
+    contenderTitle.setName("World Title");
+    when(tournamentTemplateBookingService.bookShowAttachedTournamentSegments(show))
+        .thenReturn(
+            List.of(
+                new TournamentTemplateBookingService.TournamentBooking(
+                    tournamentBooked,
+                    new Tournament(),
+                    "Final — tournament-fed",
+                    false,
+                    contenderTitle)));
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+
+    showPlanningService.approveSegments(show, List.of(proposed));
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Segment>> segmentsCaptor = ArgumentCaptor.forClass(List.class);
+    verify(segmentRepository).saveAll(segmentsCaptor.capture());
+    Segment payoff = segmentsCaptor.getValue().get(1);
+    assertFalse(payoff.getIsTitleSegment(), "Contender designation: the title is NOT on the line");
+    assertTrue(payoff.isContenderMatch(), "The segment flags the contender designation");
+    assertTrue(payoff.getTitles().contains(contenderTitle), "The title attaches for designation");
+  }
+
+  @Test
+  void testApproveSegments_noTournamentAssignment_normalPathUnaffected() {
+    SegmentType singles = new SegmentType();
+    singles.setId(30L);
+    singles.setName("One on One");
+    when(segmentTypeService.findByName("One on One")).thenReturn(Optional.of(singles));
+
+    ShowTemplate template = new ShowTemplate();
+    template.setId(7L);
+    // Template exists but has no tournament paired with this type.
+    show.setTemplate(template);
+
+    ProposedSegment proposed = new ProposedSegment();
+    proposed.setType("One on One");
+    proposed.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+    proposed.setWinners(List.of("Wrestler A"));
+
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+    when(wrestlerRepository.findByName("Wrestler A"))
+        .thenReturn(Optional.of(wrestlerNamed(1L, "Wrestler A")));
+    when(wrestlerRepository.findByName("Wrestler B"))
+        .thenReturn(Optional.of(wrestlerNamed(2L, "Wrestler B")));
+
+    showPlanningService.approveSegments(show, List.of(proposed));
+
+    verify(tournamentTemplateBookingService, never()).bookTournamentFedSegment(any(), any(), any());
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Segment>> segmentsCaptor = ArgumentCaptor.forClass(List.class);
+    verify(segmentRepository).saveAll(segmentsCaptor.capture());
+    assertEquals(1, segmentsCaptor.getValue().size());
+  }
+
+  @Test
   void testGetShowPlanningContext_FiltersInactiveWrestlers() {
     // activeWrestler, show, universe, and showType are all set up in setUp()
     // This test documents that inactive wrestlers are excluded via WrestlerService.findAllFiltered
@@ -252,6 +693,64 @@ class ShowPlanningServiceTest {
     ShowPlanningContext capturedContext = showPlanningContextCaptor.getValue();
     assertEquals("Test Show", capturedContext.getShowTemplate().getShowName());
     assertEquals(1, capturedContext.getFullRoster().size());
+  }
+
+  @Test
+  void testGetShowPlanningContext_heldBriefcasesFeedTheContext() {
+    // ATW-brrz: a held briefcase surfaces in the planning context as
+    // "<holder> — <briefcase>" so the AI can propose cash-in angles.
+    when(segmentRepository.findBySegmentDateBetween(any(), any())).thenReturn(new ArrayList<>());
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
+        .thenReturn(List.of(activeWrestler));
+    when(rivalryService.getActiveRivalries()).thenReturn(new ArrayList<>());
+    when(titleService.getActiveTitles()).thenReturn(new ArrayList<>());
+    when(factionService.findAll()).thenReturn(new ArrayList<>());
+    when(showService.getUpcomingShows(10)).thenReturn(new ArrayList<>());
+    when(mapper.toDto(any(ShowPlanningContext.class))).thenReturn(new ShowPlanningContextDTO());
+
+    TitleOpportunity held = new TitleOpportunity();
+    held.setId(10L);
+    held.setName("Time Vault briefcase");
+    held.setWrestler(activeWrestler);
+    when(titleOpportunityService.findHeld()).thenReturn(List.of(held));
+    when(wrestlerRepository.findById(activeWrestler.getId()))
+        .thenReturn(Optional.of(activeWrestler));
+
+    showPlanningService.getShowPlanningContext(show);
+
+    ArgumentCaptor<ShowPlanningContext> captor = ArgumentCaptor.forClass(ShowPlanningContext.class);
+    verify(mapper).toDto(captor.capture());
+    assertEquals(
+        List.of(activeWrestler.getName() + " — Time Vault briefcase"),
+        captor.getValue().getHeldBriefcases());
+  }
+
+  @Test
+  void testGetShowPlanningContext_holderMissing_noBriefcaseLine() {
+    // A briefcase whose holder cannot be re-read (deleted wrestler) contributes nothing.
+    when(segmentRepository.findBySegmentDateBetween(any(), any())).thenReturn(new ArrayList<>());
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
+        .thenReturn(List.of(activeWrestler));
+    when(rivalryService.getActiveRivalries()).thenReturn(new ArrayList<>());
+    when(titleService.getActiveTitles()).thenReturn(new ArrayList<>());
+    when(factionService.findAll()).thenReturn(new ArrayList<>());
+    when(showService.getUpcomingShows(10)).thenReturn(new ArrayList<>());
+    when(mapper.toDto(any(ShowPlanningContext.class))).thenReturn(new ShowPlanningContextDTO());
+
+    TitleOpportunity orphaned = new TitleOpportunity();
+    orphaned.setId(11L);
+    orphaned.setName("Orphaned case");
+    Wrestler ghost = new Wrestler();
+    ghost.setId(999L);
+    orphaned.setWrestler(ghost);
+    when(titleOpportunityService.findHeld()).thenReturn(List.of(orphaned));
+    when(wrestlerRepository.findById(999L)).thenReturn(Optional.empty());
+
+    showPlanningService.getShowPlanningContext(show);
+
+    ArgumentCaptor<ShowPlanningContext> captor = ArgumentCaptor.forClass(ShowPlanningContext.class);
+    verify(mapper).toDto(captor.capture());
+    assertTrue(captor.getValue().getHeldBriefcases().isEmpty());
   }
 
   @Test
@@ -354,6 +853,100 @@ class ShowPlanningServiceTest {
     ShowPlanningContextDTO result = showPlanningService.getShowPlanningContext(show);
 
     assertTrue(result.getExcludedBeatWarnings().isEmpty());
+  }
+
+  @Test
+  void getShowPlanningContext_previewsTournamentSlots() {
+    // ATW-xbn4: show-attached tournament slots due on this card surface as preview rows in the
+    // planning context — the booker sees them next to the scripted beats.
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
+        .thenReturn(List.of(activeWrestler));
+    when(rivalryService.getActiveRivalries()).thenReturn(new ArrayList<>());
+    when(titleService.getActiveTitles()).thenReturn(new ArrayList<>());
+    when(factionService.findAll()).thenReturn(new ArrayList<>());
+    when(showService.getUpcomingShows(10)).thenReturn(new ArrayList<>());
+    when(mapper.toDto(any(ShowPlanningContext.class))).thenReturn(new ShowPlanningContextDTO());
+    when(segmentRepository.findBySegmentDateBetween(any(), any())).thenReturn(new ArrayList<>());
+    when(feudScriptService.getUpcomingBeatDTOsWithExclusionsForShow(any(), anySet()))
+        .thenReturn(new FeudScriptService.UpcomingBeatDTOs(List.of(), List.of()));
+    Title payoffTitle = new Title();
+    payoffTitle.setId(7L);
+    payoffTitle.setName("Crown Cup Title");
+    when(tournamentTemplateBookingService.previewShowAttachedTournamentSlots(show))
+        .thenReturn(
+            List.of(
+                new TournamentTemplateBookingService.TournamentSlotPreview(
+                    "Crown Cup",
+                    "One on One",
+                    "No DQ",
+                    "Payoff final",
+                    payoffTitle,
+                    List.of(List.of("Champion"), List.of("Winner")))));
+
+    ShowPlanningContextDTO result = showPlanningService.getShowPlanningContext(show);
+
+    assertEquals(1, result.getTournamentSlots().size());
+    var slot = result.getTournamentSlots().get(0);
+    assertEquals("Crown Cup", slot.getTournamentName());
+    assertEquals("One on One", slot.getTypeName());
+    assertEquals("No DQ", slot.getRuleName());
+    assertEquals("Payoff final", slot.getShape());
+    assertEquals("Crown Cup Title", slot.getTitleName());
+    // The linked Title entity must survive the DTO mapping so the planning card can attach it
+    // to the proposal (the title selector in the Edit dialog pre-selects it).
+    assertEquals(payoffTitle, slot.getTitle());
+    assertEquals(List.of(List.of("Champion"), List.of("Winner")), slot.getTeams());
+  }
+
+  @Test
+  void approveSegments_tournamentConsentTrimmed_skipsTrimmedBooking() {
+    // ATW-xbn4: Tournament-marker preview rows are consents. When the booker deletes a round row
+    // from the card, the matching booking is trimmed too — here 2 round rows consent but only 1
+    // One-on-One booking matches, so exactly one books.
+    ShowTemplate template = new ShowTemplate();
+    template.setId(5L);
+    show.setTemplate(template);
+
+    ProposedSegment consent = new ProposedSegment();
+    consent.setType("One on One");
+    consent.setSource("Tournament");
+    // A second AI-proposed match stays on the card untouched.
+    ProposedSegment proposed = new ProposedSegment();
+    proposed.setType("One on One");
+    proposed.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+    proposed.setWinners(List.of("Wrestler A"));
+    when(segmentTypeService.findByName("One on One")).thenReturn(Optional.of(new SegmentType()));
+    when(wrestlerRepository.findByName("Wrestler A"))
+        .thenReturn(Optional.of(wrestlerNamed(1L, "Wrestler A")));
+    when(wrestlerRepository.findByName("Wrestler B"))
+        .thenReturn(Optional.of(wrestlerNamed(2L, "Wrestler B")));
+
+    SegmentType singlesType = new SegmentType();
+    singlesType.setId(11L);
+    singlesType.setName("One on One");
+    Segment tournamentBooked = new Segment();
+    tournamentBooked.setSegmentType(singlesType);
+    Wrestler entrant = wrestlerNamed(9L, "Cup Entrant");
+    tournamentBooked.addParticipant(entrant, 1);
+    tournamentBooked.setWinners(List.of(entrant));
+    when(tournamentTemplateBookingService.bookShowAttachedTournamentSegments(show))
+        .thenReturn(
+            List.of(
+                new TournamentTemplateBookingService.TournamentBooking(
+                    tournamentBooked, new Tournament(), "Round 1 — tournament-fed", false, null)));
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+
+    showPlanningService.approveSegments(show, List.of(consent, proposed));
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Segment>> segmentsCaptor = ArgumentCaptor.forClass(List.class);
+    verify(segmentRepository).saveAll(segmentsCaptor.capture());
+    List<Segment> saved = segmentsCaptor.getValue();
+    // The consent row is stripped from the card; the AI segment + the consented booking remain.
+    assertEquals(2, saved.size());
+    assertEquals(
+        "Cup Entrant", saved.get(1).getParticipants().iterator().next().getWrestler().getName());
+    assertFalse(saved.get(1).getIsTitleSegment());
   }
 
   @Test

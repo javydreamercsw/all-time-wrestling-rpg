@@ -417,8 +417,41 @@ class InjuryServiceTest {
   }
 
   @Test
-  void testAttemptHealing_PublishesEvent() {
-    // Given
+  void getInjuryStats_lowCondition_noHiddenConditionPenalty() {
+    // ATW-11d3 regression: the wear-and-tear HP penalty was removed in ATW-xz4 (condition now
+    // manifests as a per-match bump roll instead), but getInjuryStatsForWrestler kept subtracting
+    // the dead formula — 90% condition wrongly showed effective health 2 points below base.
+    Universe universe = Universe.builder().name("Test Universe").build();
+    universe.setId(1L);
+
+    Wrestler wrestler = new Wrestler();
+    wrestler.setId(1L);
+    wrestler.setName("Eddie");
+    wrestler.setStartingHealth(15);
+    WrestlerState state =
+        WrestlerState.builder()
+            .wrestler(wrestler)
+            .universe(universe)
+            .tier(WrestlerTier.ROOKIE)
+            .fans(0L)
+            .bumps(0)
+            .physicalCondition(90)
+            .build();
+    when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(1L, 1L))
+        .thenReturn(Optional.of(state));
+    when(injuryRepository.findActiveInjuriesForWrestler(wrestler, universe))
+        .thenReturn(Collections.emptyList());
+    when(injuryRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Collections.emptyList());
+
+    InjuryService.InjuryStats stats = injuryService.getInjuryStatsForWrestler(1L, 1L);
+
+    // 90% condition (and even 0%): no condition deduction — only bumps and injuries reduce HP.
+    assertThat(stats.effectiveHealth()).isEqualTo(15);
+  }
+
+  @Test
+  void testAttemptHealing_PublishesEvent() { // Given
     Universe universe = Universe.builder().name("Test Universe").build();
     universe.setId(1L);
 

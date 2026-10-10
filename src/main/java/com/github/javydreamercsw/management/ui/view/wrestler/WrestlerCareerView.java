@@ -28,11 +28,14 @@ import com.github.appreciated.apexcharts.helper.Series;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerStats;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.injury.Injury;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateHistory;
+import com.github.javydreamercsw.management.service.show.ShowFacade;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
 import com.github.javydreamercsw.management.ui.ViewContext;
+import com.github.javydreamercsw.management.ui.component.BriefcaseSection;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
@@ -50,25 +53,34 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 
 @Route("wrestler-career/:wrestlerId")
 @PageTitle("Wrestler Career")
 @PermitAll
+@Slf4j
 public class WrestlerCareerView extends Main implements BeforeEnterObserver {
 
   private static final DateTimeFormatter DATE_FMT =
       DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
 
   private final WrestlerFacade wrestlerFacade;
+  private final ShowFacade showFacade;
   private final ViewContext viewContext;
 
   private Wrestler wrestler;
   private Long universeId;
 
-  public WrestlerCareerView(final WrestlerFacade wrestlerFacade, final ViewContext viewContext) {
+  public WrestlerCareerView(
+      final WrestlerFacade wrestlerFacade,
+      final ShowFacade showFacade,
+      final ViewContext viewContext) {
     this.wrestlerFacade = wrestlerFacade;
+    this.showFacade = showFacade;
     this.viewContext = viewContext;
     setSizeFull();
   }
@@ -116,6 +128,7 @@ public class WrestlerCareerView extends Main implements BeforeEnterObserver {
     content.add(buildFanGrowthSection(history));
     content.add(buildTierProgressionSection(history));
     content.add(buildTitleReignSection());
+    content.add(buildBriefcaseSection());
     content.add(buildInjuryLogSection());
 
     add(content);
@@ -267,8 +280,24 @@ public class WrestlerCareerView extends Main implements BeforeEnterObserver {
       return section;
     }
 
+    // Resolve titles eagerly while the session is open: the grid's value providers run outside
+    // any transaction and the reign's lazy title proxy would throw LazyInitializationException
+    // (seen on prod-shaped data, ATW-8p72 sandbox verification).
+    Map<Long, String> titleNames = new HashMap<>();
+    reigns.forEach(
+        r ->
+            titleNames.put(
+                r.getId(),
+                wrestlerFacade
+                    .getTitleService()
+                    .getTitleById(r.getTitle().getId())
+                    .map(Title::getName)
+                    .orElse("?")));
+
     Grid<TitleReign> grid = new Grid<>();
-    grid.addColumn(r -> r.getTitle().getName()).setHeader("Title").setAutoWidth(true);
+    grid.addColumn(r -> titleNames.getOrDefault(r.getId(), "?"))
+        .setHeader("Title")
+        .setAutoWidth(true);
     grid.addColumn(r -> "Reign #" + r.getReignNumber())
         .setHeader("Reign")
         .setAutoWidth(true)
@@ -287,6 +316,19 @@ public class WrestlerCareerView extends Main implements BeforeEnterObserver {
 
     section.add(grid);
     return section;
+  }
+
+  /**
+   * The Money in the Bank-style briefcase section (ATW-8p72): delegated to the shared {@link
+   * BriefcaseSection} component (ATW-312z) so the wrestler profile renders the same thing.
+   */
+  private Component buildBriefcaseSection() {
+    return new BriefcaseSection(
+        wrestler.getId(),
+        wrestlerFacade.getTitleOpportunityService(),
+        wrestlerFacade.getTitleService(),
+        showFacade.getShowService(),
+        this::buildView);
   }
 
   private Component buildInjuryLogSection() {

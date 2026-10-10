@@ -36,15 +36,12 @@ class WrestlerProfileRedesignDocsE2ETest extends AbstractDocsE2ETest {
             .findByName("Johnny All Time")
             .orElseThrow(() -> new RuntimeException("Johnny All Time not found"));
 
-    driver.get(
-        "http://localhost:"
-            + serverPort
-            + getContextPath()
-            + "/wrestler-profile/"
-            + wrestler.getId());
-    waitForVaadinClientToLoad();
+    // navigateToAndWaitForElement retries cold deep-route loads that bounce to the app root
+    // (documented e2e-route-init flake) — bare driver.get() + waitForVaadinClientToLoad() does
+    // not, and timed out in CI (2026-10-09).
+    navigateToAndWaitForElement(
+        "wrestler-profile/" + wrestler.getId(), By.xpath("//*[contains(., 'Biography')]"));
 
-    waitForText("Biography");
     waitForText("Career Stats");
 
     documentFeature(

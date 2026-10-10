@@ -1,0 +1,1 @@
+var e=`/screenshots/booker-show-planning.png`,t=`/screenshots/booker-show-planning-proposed-card.png`,n=`/screenshots/booker-show-detail-qr-code-share.png`;export{t as n,e as r,n as t};

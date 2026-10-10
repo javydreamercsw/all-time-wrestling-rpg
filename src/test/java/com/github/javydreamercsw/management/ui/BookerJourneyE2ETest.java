@@ -58,6 +58,7 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 @Slf4j
 public class BookerJourneyE2ETest extends AbstractE2ETest {
@@ -72,6 +73,7 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
   @Autowired private SegmentRuleService segmentRuleService;
   @Autowired private SegmentService segmentService;
   @Autowired private CampaignRepository campaignRepository;
+  @Autowired private JdbcTemplate jdbcTemplate;
   @Autowired private CampaignStateRepository campaignStateRepository;
   @Autowired private BackstageActionHistoryRepository backstageActionHistoryRepository;
   @Autowired private CampaignEncounterRepository campaignEncounterRepository;
@@ -104,6 +106,11 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     showRepository.deleteAll();
     wrestlerRepository.deleteAll();
     seasonRepository.deleteAll();
+    // Assignment/join child tables reference show_template (ATW-cpuu/ATW-xtf0 seed rows) —
+    // clear them before the bulk template delete or FK_STA_TEMPLATE fires.
+    jdbcTemplate.execute("DELETE FROM show_template_segment_assignment");
+    jdbcTemplate.execute("DELETE FROM show_template_assignment_rule");
+    jdbcTemplate.execute("DELETE FROM show_template_required_expansion");
     showTemplateRepository.deleteAll();
     showTypeRepository.deleteAll();
     rivalryRepository.deleteAll();
@@ -346,9 +353,11 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
 
       // Approve segments
       log.info("Approving segments");
+      // Wait for clickable, not just visible — the button starts disabled and is only
+      // re-enabled once proposeSegments()'s async callback populates the grid and calls
+      // approveButton.setEnabled(true); visibility alone can be true a moment before that.
       WebElement approveButton =
-          wait.until(
-              ExpectedConditions.visibilityOfElementLocated(By.id("approve-segments-button")));
+          wait.until(ExpectedConditions.elementToBeClickable(By.id("approve-segments-button")));
       Assertions.assertNotNull(approveButton);
       clickElement(approveButton);
 

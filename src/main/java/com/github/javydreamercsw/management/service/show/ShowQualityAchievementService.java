@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.service.show;
 
 import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
@@ -82,9 +83,14 @@ public class ShowQualityAchievementService
       }
     }
 
+    // SecurityUtils.getAuthenticatedUser() can return the mock sentinel principal installed by
+    // GeneralSecurityUtils.runAs elevation (id -1, never persisted). Passing it to LegacyService
+    // throws "Account not found: -1" inside this @Transactional listener and rolls back the whole
+    // adjudication transaction (ATW-jvgj) — skip it like ShowService.adjudicateShow does.
     securityUtils
         .getAuthenticatedUser()
-        .map(details -> details.getAccount())
+        .filter(details -> details.getId() != null && details.getId() > 0)
+        .map(CustomUserDetails::getAccount)
         .ifPresent(
             account -> {
               unlockShowAchievements(account, qualityScore);

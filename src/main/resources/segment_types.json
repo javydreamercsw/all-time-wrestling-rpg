@@ -72,6 +72,7 @@
   "description": "Large-scale elimination match with timed entries",
   "expansion_code": "RUMBLE",
   "code": "abu_dhabi_rumble",
+  "event_only": true,
   "playerAmount": -1,
   "guide": {
     "solo": {

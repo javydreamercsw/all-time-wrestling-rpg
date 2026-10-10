@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.wrestler;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
 import com.github.javydreamercsw.management.service.team.TeamService;
+import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,7 @@ public class WrestlerFacade {
   private final TeamService teamService;
   private final InjuryService injuryService;
   private final TitleService titleService;
+  private final TitleOpportunityService titleOpportunityService;
   private final WrestlerStateHistoryService wrestlerStateHistoryService;
   private final AbilityReminderTextService abilityReminderTextService;
 }

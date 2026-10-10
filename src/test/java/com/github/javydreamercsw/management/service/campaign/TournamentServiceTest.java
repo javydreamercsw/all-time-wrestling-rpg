@@ -101,6 +101,38 @@ class TournamentServiceTest {
   }
 
   @Test
+  void testInitializeTournament_stampsCodeFromChapter() {
+    List<Wrestler> roster = new ArrayList<>();
+    Wrestler opponent = new Wrestler();
+    opponent.setId(2L);
+    opponent.setName("Opponent");
+    roster.add(opponent);
+    when(wrestlerRepository.findAll()).thenReturn(roster);
+
+    tournamentService.initializeTournament(campaign, "deadly_combat");
+
+    TournamentDTO tournament = tournamentService.getTournamentState(campaign);
+    assertThat(tournament).isNotNull();
+    assertThat(tournament.getCode()).isEqualTo("deadly_combat");
+  }
+
+  @Test
+  void testInitializeTournament_noCodeStaysNull() {
+    List<Wrestler> roster = new ArrayList<>();
+    Wrestler opponent = new Wrestler();
+    opponent.setId(2L);
+    opponent.setName("Opponent");
+    roster.add(opponent);
+    when(wrestlerRepository.findAll()).thenReturn(roster);
+
+    tournamentService.initializeTournament(campaign);
+
+    TournamentDTO tournament = tournamentService.getTournamentState(campaign);
+    assertThat(tournament).isNotNull();
+    assertThat(tournament.getCode()).isNull();
+  }
+
+  @Test
   void testInitializeTournament_AlreadyInitialized() throws Exception {
     TournamentDTO existing = new TournamentDTO();
     String json = "{\"tournamentState\":" + objectMapper.writeValueAsString(existing) + "}";

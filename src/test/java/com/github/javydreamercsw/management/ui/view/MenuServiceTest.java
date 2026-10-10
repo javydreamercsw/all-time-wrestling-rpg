@@ -145,6 +145,25 @@ class MenuServiceTest {
   }
 
   @Test
+  void getMenuItems_entitiesSectionContainsTournaments() {
+    // TournamentListView must be reachable from the sidebar (ATW-oahn): the Entities section
+    // is hand-built in MenuService — @Menu on the view alone does not add it.
+    when(securityUtils.hasRole(any(RoleName.class))).thenReturn(true);
+
+    List<MenuItem> items = menuService.getMenuItems();
+
+    MenuItem entities =
+        items.stream()
+            .filter(item -> "Entities".equals(item.getTitle()))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Entities menu not found"));
+
+    assertThat(entities.getChildren().stream().map(MenuItem::getPath))
+        .as("Tournaments must be listed under Entities pointing at tournament-list")
+        .contains("tournament-list");
+  }
+
+  @Test
   void getMenuItems_nonAdminDoesNotSeeConfigurationMenu() {
     when(securityUtils.hasRole(RoleName.ADMIN)).thenReturn(false);
     when(securityUtils.hasRole(RoleName.BOOKER)).thenReturn(false);

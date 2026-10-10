@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.domain.tournament;
 
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface TournamentRepository extends JpaRepository<Tournament, Long> {
@@ -24,4 +25,29 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long> {
   List<Tournament> findByUniverseIdOrderByStartDateDesc(Long universeId);
 
   List<Tournament> findByStatus(TournamentStatus status);
+
+  /** One-time tournaments whose payoff books on the given show (ATW-xbn4). */
+  List<Tournament> findByPayoffShowId(Long payoffShowId);
+
+  /** Show-attached tournaments of a universe — the paced-rounds scan (ATW-xbn4). */
+  List<Tournament> findByUniverseIdAndPayoffShowIsNotNull(Long universeId);
+
+  /**
+   * Unattached recurring tournaments of a universe — the PLE auto-attach scan (ATW-cpca). Ordered
+   * by edition ordinal so the earliest edition in a chain claims the newly scheduled PLE.
+   */
+  List<Tournament> findByUniverseIdAndPayoffShowIsNullAndRecurrenceOrderByEditionOrdinalAsc(
+      Long universeId, TournamentRecurrence recurrence);
+
+  /** Catalog lookup by the stable seed code (tournaments.json / WellKnownTournament). */
+  Optional<Tournament> findByCode(String code);
+
+  /** The successor edition of a recurring chain (ATW-o4ad) — the idempotency guard. */
+  Optional<Tournament> findByParentId(Long parentId);
+
+  /**
+   * Tournaments whose name starts with the given prefix, case-insensitive — the Tier-2 Time-Vault
+   * repair's defensive lookup (ATW-8p72).
+   */
+  List<Tournament> findByNameStartingWithIgnoreCase(String prefix);
 }

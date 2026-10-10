@@ -19,6 +19,10 @@ package com.github.javydreamercsw.management.ui.view.show.template;
 import com.github.javydreamercsw.management.domain.show.template.RecurrenceType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
+import com.github.javydreamercsw.management.domain.tournament.Tournament;
+import com.github.javydreamercsw.management.domain.tournament.TournamentRepository;
+import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.ui.view.AbstractDocsE2ETest;
 import java.time.Duration;
@@ -34,6 +38,7 @@ class ShowTemplateDocsE2ETest extends AbstractDocsE2ETest {
 
   @Autowired private ShowTemplateService showTemplateService;
   @Autowired private ShowTemplateRepository showTemplateRepository;
+  @Autowired private TournamentRepository tournamentRepository;
 
   private ShowTemplate template;
 
@@ -101,5 +106,56 @@ class ShowTemplateDocsE2ETest extends AbstractDocsE2ETest {
          booking interface and calendar.\
         """,
         "admin-show-template-art-generation");
+  }
+
+  @Test
+  void testCaptureTemplateTournamentAssignment() {
+    // Seed a tournament and pair it with the docs template's assignment row (ATW-oahn).
+    Tournament cup =
+        tournamentRepository.findAll().stream()
+            .filter(t -> "Docs Crown Cup".equals(t.getName()))
+            .findFirst()
+            .orElseGet(
+                () -> {
+                  Tournament t = new Tournament();
+                  t.setName("Docs Crown Cup");
+                  t.setFormatId("SINGLE_ELIMINATION");
+                  t.setStatus(TournamentStatus.SCHEDULED);
+                  return tournamentRepository.saveAndFlush(t);
+                });
+
+    ShowTemplate managed =
+        showTemplateService.getTemplateWithAssignments(template.getId()).orElseThrow();
+    managed.getSegmentAssignments().clear();
+    ShowTemplateSegmentAssignment row = new ShowTemplateSegmentAssignment();
+    // The assignment is the owning side of the mapping — template must be set on the row
+    // itself, or the insert carries a NULL template_id and violates the FK.
+    row.setTemplate(managed);
+    row.setTournament(cup);
+    row.setMode(ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH);
+    managed.getSegmentAssignments().add(row);
+    showTemplateService.save(managed);
+
+    navigateTo("show-template-list");
+    waitForGridToPopulate("template-grid");
+
+    WebElement editButton = waitForVaadinElement(driver, By.id("edit-btn-" + template.getId()));
+    clickElement(editButton);
+
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
+    wait.until(
+        ExpectedConditions.presenceOfElementLocated(
+            By.xpath("//*[contains(text(), 'Template Assignments')]")));
+
+    documentFeature(
+        "Admin",
+        "Tournament-Fed Template Assignments",
+        """
+        Pair a tournament with a show template so its bracket feeds the participants of the\
+         auto-attached segment. When a show of this template is approved, the tournament\
+         resolves that match's entrants instead of the AI — an in-progress tournament fills\
+         the next open bracket match, and a completed one books a winner showcase.\
+        """,
+        "admin-show-template-tournament-assignment");
   }
 }

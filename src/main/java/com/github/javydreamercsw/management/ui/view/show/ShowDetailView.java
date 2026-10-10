@@ -39,7 +39,11 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentRepositor
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.tournament.Tournament;
+import com.github.javydreamercsw.management.domain.tournament.TournamentMatchRepository;
+import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
@@ -63,7 +67,9 @@ import com.github.javydreamercsw.management.service.show.planning.ShowPlanningSe
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.team.TeamService;
+import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
@@ -147,6 +153,7 @@ public class ShowDetailView extends Main
   private final NpcService npcService;
   private final WrestlerService wrestlerService;
   private final WrestlerStatsService wrestlerStatsService;
+  private final TitleOpportunityService titleOpportunityService;
   private final TitleService titleService;
   private final ShowTypeService showTypeService;
   private final SeasonService seasonService;
@@ -166,6 +173,7 @@ public class ShowDetailView extends Main
   private final ExpansionService expansionService;
   private final TeamService teamService;
   private final GameSettingService gameSettingService;
+  private final TournamentService tournamentService;
 
   private Button backButton;
   private Registration backButtonListener;
@@ -193,6 +201,7 @@ public class ShowDetailView extends Main
   private final NarrationParserService narrationParserService;
   private final DramaEventService dramaEventService;
   private final FeudScriptService feudScriptService;
+  private final TournamentMatchRepository tournamentMatchRepository;
 
   @Autowired
   public ShowDetailView(
@@ -210,7 +219,8 @@ public class ShowDetailView extends Main
       final CommentaryTeamRepository commentaryTeamRepository,
       final RingsideActionService ringsideActionService,
       final ShowExportService exportService,
-      final LeagueRepository leagueRepository) {
+      final LeagueRepository leagueRepository,
+      final TournamentMatchRepository tournamentMatchRepository) {
     this.showService = showFacade.getShowService();
     this.segmentService = showFacade.getSegmentService();
     this.segmentRepository = segmentRepository;
@@ -219,6 +229,7 @@ public class ShowDetailView extends Main
     this.npcService = showFacade.getNpcService();
     this.wrestlerService = wrestlerFacade.getWrestlerService();
     this.wrestlerStatsService = wrestlerFacade.getWrestlerStatsService();
+    this.titleOpportunityService = wrestlerFacade.getTitleOpportunityService();
     this.titleService = titleService;
     this.showTypeService = showContextFacade.getShowTypeService();
     this.seasonService = showContextFacade.getSeasonService();
@@ -243,8 +254,10 @@ public class ShowDetailView extends Main
     this.narrationParserService = showFacade.getNarrationParserService();
     this.dramaEventService = showFacade.getDramaEventService();
     this.feudScriptService = showFacade.getFeudScriptService();
+    this.tournamentMatchRepository = tournamentMatchRepository;
     this.expansionService = viewContext.getExpansionService();
     this.gameSettingService = viewContext.getGameSettingService();
+    this.tournamentService = showContextFacade.getTournamentService();
     initializeComponents();
   }
 
@@ -502,6 +515,10 @@ public class ShowDetailView extends Main
       detailsLayout.add(weeklyLayout);
     }
 
+    // Tournaments attached to this show (payoff host binding or the template's AUTO_ATTACH
+    // pairing) — surfaced so the card shows what the tournament booking path will bring.
+    addTournamentRows(show, detailsLayout);
+
     // Creation date
     if (show.getCreationDate() != null) {
       HorizontalLayout createdLayout =
@@ -560,12 +577,66 @@ public class ShowDetailView extends Main
     return card;
   }
 
+  /**
+   * Adds one row per tournament attached to this show, or nothing when none. Two attachment paths
+   * feed the row set: the one-time host-show binding ({@code Tournament#payoffShow}, ATW-xbn4) and
+   * the show template's tournament AUTO_ATTACH assignments (ATW-oahn/ATW-etws). Each row links to
+   * the tournament's detail view.
+   */
+  private void addTournamentRows(@NonNull final Show show, final VerticalLayout detailsLayout) {
+    // Payoff-host binding: tournaments that book their payoff on this show.
+    List<Tournament> attached = new ArrayList<>(tournamentService.findByPayoffShowId(show.getId()));
+
+    // Template-driven: tournaments referenced by (or specified on) this show's template.
+    if (show.getTemplate() != null && show.getTemplate().getId() != null) {
+      showTemplateService
+          .getTemplateWithAssignments(show.getTemplate().getId())
+          .map(ShowTemplate::getTournamentAssignments)
+          .ifPresent(
+              assignments ->
+                  assignments.forEach(
+                      a -> {
+                        Tournament t = a.getTournament();
+                        if (t != null && attached.stream().noneMatch(e -> e.equals(t))) {
+                          attached.add(t);
+                        }
+                      }));
+    }
+
+    if (attached.isEmpty()) {
+      return;
+    }
+
+    HorizontalLayout tournamentValues = new HorizontalLayout();
+    tournamentValues.setSpacing(true);
+    attached.forEach(
+        t ->
+            tournamentValues.add(
+                createTournamentLink(t, t.getStatus() == TournamentStatus.COMPLETE)));
+
+    detailsLayout.add(createDetailRow("Tournaments:", tournamentValues));
+  }
+
+  private Span createTournamentLink(@NonNull final Tournament tournament, final boolean complete) {
+    Span link = new Span(tournament.getName() + (complete ? " (complete)" : ""));
+    link.addClassNames(LumoUtility.TextColor.PRIMARY, LumoUtility.FontWeight.SEMIBOLD);
+    link.getStyle().set("cursor", "pointer");
+    link.getElement().setAttribute("title", "View tournament");
+    link.addClickListener(
+        e -> getUI().ifPresent(ui -> ui.navigate("tournament-detail/" + tournament.getId())));
+    return link;
+  }
+
   private HorizontalLayout createDetailRow(
       @NonNull final String label, @NonNull final String value) {
+    return createDetailRow(label, new Span(value));
+  }
+
+  private HorizontalLayout createDetailRow(
+      @NonNull final String label, @NonNull final Component value) {
     Span labelSpan = new Span(label);
     labelSpan.addClassNames(LumoUtility.FontWeight.SEMIBOLD, LumoUtility.TextColor.SECONDARY);
-    Span valueSpan = new Span(value);
-    HorizontalLayout layout = new HorizontalLayout(labelSpan, valueSpan);
+    HorizontalLayout layout = new HorizontalLayout(labelSpan, value);
     layout.setSpacing(true);
     return layout;
   }
@@ -933,29 +1004,46 @@ public class ShowDetailView extends Main
                   });
         });
 
-    // Story arc badge — shown when the segment was produced by a FeudScriptBeat
+    // Source badge — shows where the segment came from: a story-arc beat, a tournament slot
+    // (fed from the bracket), or nothing for AI-proposed/manual segments.
     grid.addComponentColumn(
             segment -> {
-              return feudScriptService
-                  .findBeatForSegment(segment)
-                  .map(
-                      beat -> {
-                        String arcName = beat.getScript().getName();
-                        Span badge = new Span("🎭 " + arcName);
-                        badge.getElement().getThemeList().add("badge contrast");
-                        badge.addClassNames(
-                            LumoUtility.FontSize.XSMALL, LumoUtility.FontWeight.SEMIBOLD);
-                        Tooltip.forComponent(badge)
-                            .setText(
-                                "Story Arc beat #"
-                                    + beat.getBeatOrder()
-                                    + " — "
-                                    + beat.getScript().getName());
-                        return (Component) badge;
-                      })
-                  .orElse(new Span(""));
+              Span badge = new Span();
+              var beat = feudScriptService.findBeatForSegment(segment);
+              if (beat.isPresent()) {
+                String arcName = beat.get().getScript().getName();
+                badge.setText("🎭 " + arcName);
+                badge.getElement().getThemeList().add("badge contrast");
+                badge.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.FontWeight.SEMIBOLD);
+                badge
+                    .getElement()
+                    .setAttribute(
+                        "title",
+                        "Story Arc beat #"
+                            + beat.get().getBeatOrder()
+                            + " — "
+                            + beat.get().getScript().getName());
+                return (Component) badge;
+              }
+              // Tournament-fed segment: it belongs to a bracket match booked on this show.
+              var tournamentMatch = tournamentMatchRepository.findBySegmentId(segment.getId());
+              if (tournamentMatch.isPresent()) {
+                badge.setText("🏆 " + tournamentMatch.get().getRound().getTournament().getName());
+                badge.getElement().getThemeList().add("badge success");
+                badge.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.FontWeight.SEMIBOLD);
+                badge
+                    .getElement()
+                    .setAttribute(
+                        "title",
+                        "Tournament match — "
+                            + tournamentMatch.get().getRound().getRoundName()
+                            + " of "
+                            + tournamentMatch.get().getRound().getTournament().getName());
+                return (Component) badge;
+              }
+              return (Component) badge;
             })
-        .setHeader("Arc")
+        .setHeader("Source")
         .setAutoWidth(true)
         .setFlexGrow(0);
 
@@ -991,32 +1079,6 @@ public class ShowDetailView extends Main
         .setHeader("Segment")
         .setSortable(false)
         .setFlexGrow(2);
-
-    // Story arc badge — shown when the segment was produced by a FeudScriptBeat
-    grid.addComponentColumn(
-            segment -> {
-              return feudScriptService
-                  .findBeatForSegment(segment)
-                  .map(
-                      beat -> {
-                        String arcName = beat.getScript().getName();
-                        Span badge = new Span("🎭 " + arcName);
-                        badge.getElement().getThemeList().add("badge contrast");
-                        badge.addClassNames(
-                            LumoUtility.FontSize.XSMALL, LumoUtility.FontWeight.SEMIBOLD);
-                        Tooltip.forComponent(badge)
-                            .setText(
-                                "Story Arc beat #"
-                                    + beat.getBeatOrder()
-                                    + " — "
-                                    + beat.getScript().getName());
-                        return (Component) badge;
-                      })
-                  .orElse(new Span(""));
-            })
-        .setHeader("Arc")
-        .setAutoWidth(true)
-        .setFlexGrow(0);
 
     // Segment type column — carries a gold star when this is a #1 contender match
     // Per-segment quality score column — shown as stars matching the show header
@@ -1129,11 +1191,14 @@ public class ShowDetailView extends Main
         .setAutoWidth(true)
         .setFlexGrow(0);
 
-    grid.addComponentColumn(this::createActionButtons).setHeader("Actions").setFlexGrow(1);
+    // Control columns size to their content (ATW-gusw): pure flex-grow lets the wide
+    // data columns squeeze them below content width on small screens, clipping the
+    // move up/down arrows and action buttons.
+    grid.addComponentColumn(this::createActionButtons).setHeader("Actions").setAutoWidth(true);
 
     grid.addComponentColumn(this::createOrderButtons)
         .setHeader("Order")
-        .setFlexGrow(1)
+        .setAutoWidth(true)
         .setKey("order");
 
     grid.addComponentColumn(
@@ -1163,6 +1228,7 @@ public class ShowDetailView extends Main
               return new Span();
             })
         .setHeader("Main Event")
+        .setAutoWidth(true)
         .setFlexGrow(1);
     return grid;
   }
@@ -1367,7 +1433,8 @@ public class ShowDetailView extends Main
                                       universeContextService,
                                       notificationService,
                                       wrestlerStatsService,
-                                      dramaEventService)
+                                      dramaEventService,
+                                      titleOpportunityService)
                                   .open()))
               .exceptionally(
                   ex -> {

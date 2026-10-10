@@ -20,6 +20,7 @@ import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.template.RecurrenceType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import java.time.LocalDate;
@@ -43,6 +44,7 @@ public class ShowSchedulerService {
   private final ShowService showService;
   private final ShowTemplateService showTemplateService;
   private final ArenaService arenaService;
+  private final ExpansionService expansionService;
 
   /**
    * Generates empty show shells for a season based on available show templates and their recurrence
@@ -78,6 +80,19 @@ public class ShowSchedulerService {
 
     for (ShowTemplate template : templates) {
       if (template.getRecurrenceType() == RecurrenceType.NONE) {
+        continue;
+      }
+
+      // Expansion gating (ATW-xtf0): a template whose required expansions are not all enabled
+      // produces no shows at all — no empty shells either. Mirrors the campaign chapter gating.
+      if (!template.getRequiredExpansions().isEmpty()
+          && template.getRequiredExpansions().stream()
+              .anyMatch(code -> !expansionService.isExpansionEnabled(code))) {
+        log.info(
+            "Skipping show generation for template '{}': required expansion(s) {} not all"
+                + " enabled",
+            template.getName(),
+            template.getRequiredExpansions());
         continue;
       }
 

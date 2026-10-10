@@ -350,6 +350,105 @@ Segment rules define stipulations or special conditions applied to a segment (No
 
 The optional `rules` field holds in-game play instructions. See [Play Guide Format](#play-guide-format) below.
 
+## Tournaments
+
+Tournaments seed the tournament catalog and are loaded from `src/main/resources/tournaments.json` by `TournamentSync` (@Order 55, after SegmentRuleSync so the rules pool can resolve). The sync is **skipped when tournaments already exist** (skip-if-not-empty gate); on a fresh install each entry is upserted by its stable `code` — re-syncing never touches lifecycle state (status, entries, rounds, payoff), so a consumed or completed tournament cannot be resurrected.
+
+**Structure:**
+
+```json
+[
+  {
+    "name": "Deadly Combat",
+    "code": "deadly_combat",
+    "formatId": "SINGLE_ELIMINATION",
+    "defaultEntrantCount": 8,
+    "allowedRules": ["Submission", "Last Man Standing", "Barbwire Exploding Deathmatch", "No DQ"]
+  }
+]
+```
+
+|         Field         |                                                    Purpose                                                    |
+|-----------------------|---------------------------------------------------------------------------------------------------------------|
+| `name`                | Display name                                                                                                  |
+| `code`                | Stable machine identifier (unique); campaign chapters reference this via `tournamentCode`                     |
+| `formatId`            | A registered format id (see [Tournament Format System](DEVELOPER_GUIDE.md#tournament-format-system))          |
+| `defaultEntrantCount` | Bracket-size hint used by auto-seeding when no explicit count applies                                         |
+| `allowedRules`        | Segment rule names resolved via `SegmentRuleRepository.findByName` — unknown names are skipped with a warning |
+
+Every code here must have a matching `WellKnownTournament` enum constant (enforced by `WellKnownTournamentTest`).
+
+## Show Templates
+
+Show templates seed the recurring-show structure and are loaded from `src/main/resources/show_templates.json` by `ShowTemplateSync` (@Order 60). Like the tournament catalog, the sync is **skipped when templates already exist** — the file applies to fresh installs; existing installs edit templates through the admin UI.
+
+**Structure:**
+
+```json
+[
+  {
+    "name": "Continuum",
+    "description": "...",
+    "showTypeName": "Weekly",
+    "commentaryTeamName": "All-Time Broadcast Team",
+    "recurrenceType": "WEEKLY",
+    "dayOfWeek": "MONDAY",
+    "durationDays": 1,
+    "requiredExpansions": [],
+    "assignments": []
+  }
+]
+```
+
+|                        Field                         |                                                                                        Purpose                                                                                        |
+|------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `name` / `description`                               | Template identity                                                                                                                                                                     |
+| `showTypeName`                                       | Must match a seeded show type ("Weekly", "Premium Live Event (PLE)", …)                                                                                                               |
+| `commentaryTeamName`                                 | Optional; resolved by name                                                                                                                                                            |
+| `recurrenceType`                                     | `NONE`, `WEEKLY`, `MONTHLY`, or `ANNUAL`                                                                                                                                              |
+| `dayOfWeek` / `dayOfMonth` / `weekOfMonth` / `month` | Recurrence detail. For ANNUAL/MONTHLY: `dayOfMonth: 14` = on the 14th, or `dayOfWeek` + `weekOfMonth` (1–4 = Nth weekday, **-1 = last weekday of the month**) + `month` (ANNUAL only) |
+| `genderConstraint`                                   | Optional wrestler gender filter                                                                                                                                                       |
+| `requiredExpansions`                                 | Expansion codes that must ALL be enabled (Expansion Management view) before this template's shows are created; empty = base game (ATW-xtf0)                                           |
+| `assignments`                                        | Segment-assignment rows seeded onto the template — see below                                                                                                                          |
+
+### Assignment rows in the seed
+
+Each `assignments` entry becomes a `ShowTemplateSegmentAssignment` on the template. Targets resolve **by name/code** — SegmentRuleSync (@Order 30), SegmentTypeSync (@Order 40) and TournamentSync (@Order 55) run before this sync, so names resolve; unknown names skip that row with a warning, never failing the template.
+
+|                      Field                       |                                                            Purpose                                                             |
+|--------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| `segmentTypeName`                                | Segment type name (e.g. "Abu Dhabi Rumble")                                                                                    |
+| `segmentRuleName`                                | Segment rule name (type+rule pairing, or rule-only row)                                                                        |
+| `tournamentCode`                                 | A `tournaments.json` catalog code (e.g. `deadly_combat`) to attach as an existing tournament                                   |
+| `specName` / `specFormatId` / `specEntrantCount` | Full tournament spec — the booking path creates ONE tournament from it on first use. Mutually exclusive with `tournamentCode`. |
+| `specFinalRuleName`                              | Rule forced onto the bracket final (e.g. "Barbwire Exploding Deathmatch")                                                      |
+| `allowedRuleNames`                               | Allowed-rules pool for the other rounds (resolved by name, order preserved)                                                    |
+| `mode`                                           | `AUTO_ATTACH` (deterministic merge at approval) or `ENCOURAGED` (AI preference). Tournament rows require AUTO_ATTACH.          |
+
+A row targets a segment type and/or rule, a tournament, or a spec — at least one must resolve, or the row is skipped. Tournament spec fields are the full booker-facing configuration (see [Tournament Spec Rows on Templates](GAME_MECHANICS.md#tournament-spec-rows-on-templates) for the booking semantics); the seed simply ships them.
+
+**Example — the seeded special events:**
+
+```json
+{
+  "name": "Valentine's Day Massacre",
+  "showTypeName": "Premium Live Event (PLE)",
+  "recurrenceType": "ANNUAL",
+  "dayOfWeek": "SUNDAY",
+  "weekOfMonth": 2,
+  "month": "FEBRUARY",
+  "assignments": [ {
+    "segmentTypeName": "One on One",
+    "specName": "Deadly Combat",
+    "specFormatId": "SINGLE_ELIMINATION",
+    "specEntrantCount": 8,
+    "specFinalRuleName": "Barbwire Exploding Deathmatch",
+    "allowedRuleNames": ["Last Man Standing", "Cage", "No DQ"],
+    "mode": "AUTO_ATTACH"
+  } ]
+}
+```
+
 ## Play Guide Format
 
 Both segment types (`guide`) and segment rules (`rules`) share the same play guide structure. It is rendered in the **How to Play** dialog during a match — type sections appear first as "Base Rules", followed by any applied rule's sections.

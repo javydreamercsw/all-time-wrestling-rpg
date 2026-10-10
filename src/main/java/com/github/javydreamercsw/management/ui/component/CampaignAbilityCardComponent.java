@@ -87,7 +87,7 @@ public class CampaignAbilityCardComponent extends Div {
     if (card.getSecondaryEffectScript() != null && !card.getSecondaryEffectScript().isBlank()) {
       Div divider = new Div();
       divider.setHeight("1px");
-      divider.getStyle().set("background-color", "rgba(0,0,0,0.1)");
+      divider.getStyle().set("background-color", "var(--lumo-contrast-10pct)");
       divider.addClassNames(LumoUtility.Margin.Vertical.SMALL);
       add(divider);
       addEffect(
