@@ -128,11 +128,12 @@ class BriefcaseVideoDocsE2ETest extends AbstractDocsE2ETest {
         .click();
     Thread.sleep(800);
 
+    // The button's tag element is behind the same shadow boundary — find it by scrolling text.
     WebElement cashInBtn =
-        driver.findElement(
-            By.xpath(
-                "//vaadin-accordion-panel[.//text()[contains(., 'Briefcase')]]"
-                    + "//vaadin-button[normalize-space(.)='Cash In']"));
+        driver.findElements(By.tagName("vaadin-button")).stream()
+            .filter(b -> b.getText() != null && b.getText().contains("Cash In"))
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("Cash In button not found"));
     clickElement(cashInBtn);
     waitForVaadinClientToLoad();
     waitForVaadinElement(driver, By.tagName("vaadin-dialog-overlay"));
