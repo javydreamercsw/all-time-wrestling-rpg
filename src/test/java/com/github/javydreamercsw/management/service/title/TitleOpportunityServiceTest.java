@@ -710,20 +710,27 @@ class TitleOpportunityServiceTest {
   @Test
   @DisplayName("create rejects a future earned-at date")
   void adminCreate_rejectsFutureEarnedAt() {
-    // The anchor is the real clock, not the kayfabe game date: the Time Vault case in the
-    // sandbox was earned 2026-10-08 while its universe's game date sat at 2026-07-07 — a
-    // kayfabe-past, wall-clock-present date that must stay editable.
+    // The anchor is the kayfabe game date: earned-at is in-universe fiction, so "future" means
+    // after the game's current date, not after the wall clock.
     assertThrows(
         IllegalArgumentException.class,
         () ->
             service.adminCreate(
-                "Golden case",
-                winner,
-                universe,
-                Gender.MALE,
-                LocalDate.now().plusDays(1),
-                null,
-                null));
+                "Golden case", winner, universe, Gender.MALE, GAME_DATE.plusDays(1), null, null));
+  }
+
+  @Test
+  @DisplayName("update with a null earned-at leaves the stored date untouched")
+  void adminUpdate_nullEarnedAt_keepsStoredDate() {
+    TitleOpportunity held = heldOpportunityForCrud(); // earned 2026-10-08
+    when(opportunityRepository.findByIdWithDetails(40L)).thenReturn(Optional.of(held));
+
+    // The dialog sends null when the field is untouched — the stored date must survive even
+    // though it sits after this test's kayfabe game date.
+    TitleOpportunity updated = service.adminUpdate(40L, "Same case", null, null, null);
+
+    assertEquals(GAME_DATE, updated.getEarnedAt());
+    verify(opportunityRepository).save(held);
   }
 
   @Test

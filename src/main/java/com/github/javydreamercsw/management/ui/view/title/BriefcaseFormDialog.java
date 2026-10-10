@@ -170,12 +170,19 @@ public class BriefcaseFormDialog extends Dialog {
             expiryDate.getValue(),
             imageUrl.getValue().isEmpty() ? null : imageUrl.getValue());
       } else {
+        // Only send earned-at when the booker actually changed it — the stored date (a real
+        // tournament date) can legitimately sit after a universe's kayfabe game date, and
+        // re-asserting the untouched value would trip the game-date guard.
+        LocalDate editedEarnedAt =
+            earnedAt.getValue() != null && !earnedAt.getValue().equals(opportunity.getEarnedAt())
+                ? earnedAt.getValue()
+                : null;
         titleOpportunityService.adminUpdate(
             opportunity.getId(),
             name.getValue().trim(),
             expiryDate.getValue(),
             imageUrl.getValue().isEmpty() ? null : imageUrl.getValue(),
-            earnedAt.getValue());
+            editedEarnedAt);
         // Holder and division are editable on a HELD case (ATW-jpki): reassignment keeps the
         // one-HELD invariant inside the service; division no-op when unchanged.
         if (holder.getValue() != null

@@ -145,9 +145,8 @@ public class TitleOpportunityService {
   /**
    * Manually creates a HELD briefcase (booker compensation case, custom prizes). Validates the same
    * invariants {@link #grantFromTournament} enforces: one HELD case per wrestler, active holder.
-   * Earned-at may not be ahead of the real clock — the kayfabe game date runs behind it in some
-   * universes, and a case legitimately earned on a real date (e.g. a PLE two nights ago) can sit in
-   * that universe's kayfabe future without being wrong.
+   * Earned-at may not be in the kayfabe future (after the game's current date) — in-universe
+   * fiction is anchored to the game clock, not the wall clock.
    *
    * @param expiryDate explicit cashable-until date, or null to default to earnedAt + the configured
    *     expiry window
@@ -171,7 +170,7 @@ public class TitleOpportunityService {
       throw new IllegalArgumentException(
           holder.getName() + " already holds a briefcase — only one HELD case per wrestler");
     }
-    if (earnedAt.isAfter(LocalDate.now())) {
+    if (earnedAt.isAfter(gameDate())) {
       throw new IllegalArgumentException("Earned-at date cannot be in the future: " + earnedAt);
     }
     TitleOpportunity opportunity = new TitleOpportunity();
@@ -212,7 +211,7 @@ public class TitleOpportunityService {
     }
     opportunity.setImageUrl(imageUrl);
     if (earnedAt != null) {
-      if (earnedAt.isAfter(LocalDate.now())) {
+      if (earnedAt.isAfter(gameDate())) {
         throw new IllegalArgumentException("Earned-at date cannot be in the future: " + earnedAt);
       }
       opportunity.setEarnedAt(earnedAt);
