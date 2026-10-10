@@ -115,8 +115,14 @@ run_mysql() {
 run_mysqldump() {
   # --skip-dump-date keeps dumps deterministic so identical data hashes identically
   # (the freeze-rule check in `promote` depends on this).
+  # --set-gtid-purged=OFF: since the MySQL 26.7 upgrade the server has GTIDs enabled,
+  # so mysqldump stamps SET @@GLOBAL.GTID_PURGED into every dump — and restoring it
+  # fails with ER_GTID_PURGED_CHANGED (3546) because the snapshot's own DROP/CREATE
+  # round-trip already advanced gtid_executed past the stamped set. The sandbox's
+  # GTID lineage is irrelevant; the dump's own GTID warning suggests this flag.
   # shellcheck disable=SC2046
-  mysqldump $(mysql_args) --single-transaction --routines --triggers --skip-dump-date "$@"
+  mysqldump $(mysql_args) --single-transaction --routines --triggers --skip-dump-date \
+    --set-gtid-purged=OFF "$@"
 }
 
 dump_sha() { shasum -a 256 "$1" | awk '{print $1}'; }
