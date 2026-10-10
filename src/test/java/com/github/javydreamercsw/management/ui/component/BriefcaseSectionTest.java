@@ -35,6 +35,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import java.time.LocalDate;
@@ -130,8 +131,7 @@ class BriefcaseSectionTest extends AbstractViewTest {
             wrestler.getId(), titleOpportunityService, titleService, showService, () -> {});
     UI.getCurrent().add(section);
 
-    List<com.vaadin.flow.component.html.Image> images =
-        _find(section, com.vaadin.flow.component.html.Image.class);
+    List<Image> images = _find(section, Image.class);
     assertThat(images)
         .as("the held badge row should show the uploaded artwork")
         .anyMatch(i -> "img://briefcase.png".equals(i.getSrc()));
@@ -148,7 +148,7 @@ class BriefcaseSectionTest extends AbstractViewTest {
             wrestler.getId(), titleOpportunityService, titleService, showService, () -> {});
     UI.getCurrent().add(section);
 
-    assertThat(_find(section, com.vaadin.flow.component.html.Image.class)).isEmpty();
+    assertThat(_find(section, Image.class)).isEmpty();
     List<Span> spans = _find(section, Span.class);
     assertThat(spans.stream().anyMatch(s -> s.getText() != null && s.getText().contains("💼")))
         .isTrue();

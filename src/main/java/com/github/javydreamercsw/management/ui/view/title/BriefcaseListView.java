@@ -47,6 +47,7 @@ import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
@@ -71,7 +72,7 @@ public class BriefcaseListView extends Main {
   private final ImageStorageService imageStorageService;
   private final TextField searchField = new TextField();
   private final ComboBox<TitleOpportunityStatus> statusFilter = new ComboBox<>("Status");
-  private final Grid<TitleOpportunity> grid = new Grid<>(TitleOpportunity.class, false);
+  @Getter private final Grid<TitleOpportunity> grid = new Grid<>(TitleOpportunity.class, false);
   private List<TitleOpportunity> allCache = List.of();
 
   public BriefcaseListView(
@@ -224,11 +225,6 @@ public class BriefcaseListView extends Main {
           refreshGrid();
         });
     confirmDialog.open();
-  }
-
-  /** Visible-for-testing: the actions-column tests render cells through the grid's renderer. */
-  public Grid<TitleOpportunity> getGrid() {
-    return grid;
   }
 
   public void refreshGrid() {

@@ -38,7 +38,6 @@ import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.data.binder.Binder;
 import java.time.LocalDate;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -65,7 +64,6 @@ public class BriefcaseFormDialog extends Dialog {
   private final TextField imageUrl = new TextField("Image URL");
   private final Image previewImage = new Image();
   private final Span statusNote = new Span();
-  private final Binder<TitleOpportunity> binder = new Binder<>(TitleOpportunity.class);
   private TitleOpportunity opportunity;
 
   public BriefcaseFormDialog(

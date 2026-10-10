@@ -32,12 +32,16 @@ import com.github.javydreamercsw.management.domain.title.TitleOpportunityReposit
 import com.github.javydreamercsw.management.domain.title.TitleOpportunityStatus;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
+import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.data.renderer.ComponentRenderer;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -52,9 +56,7 @@ class BriefcaseListViewTest extends AbstractViewTest {
   @Mock private TitleOpportunityService titleOpportunityService;
   @Mock private TitleOpportunityRepository opportunityRepository;
 
-  @Mock
-  private com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository
-      wrestlerRepository;
+  @Mock private WrestlerRepository wrestlerRepository;
 
   @Mock private SecurityUtils securityUtils;
   @Mock private ImageStorageService imageStorageService;
@@ -132,13 +134,9 @@ class BriefcaseListViewTest extends AbstractViewTest {
   void voidButton_confirmsThenVoids() {
     view.refreshGrid();
     // Render the actions cell for the held row (TitleListViewTest pattern: buttons by position).
-    com.vaadin.flow.data.renderer.ComponentRenderer<
-            com.vaadin.flow.component.Component, TitleOpportunity>
-        renderer =
-            (com.vaadin.flow.data.renderer.ComponentRenderer<
-                    com.vaadin.flow.component.Component, TitleOpportunity>)
-                actionsColumn().getRenderer();
-    com.vaadin.flow.component.Component cell = renderer.createComponent(held);
+    ComponentRenderer<Component, TitleOpportunity> renderer =
+        (ComponentRenderer<Component, TitleOpportunity>) actionsColumn().getRenderer();
+    Component cell = renderer.createComponent(held);
 
     Button voidBtn =
         cell.getChildren()
@@ -157,9 +155,7 @@ class BriefcaseListViewTest extends AbstractViewTest {
       var ctor = eventClass.getDeclaredConstructor(ConfirmDialog.class, boolean.class);
       ctor.setAccessible(true);
       var event = ctor.newInstance(confirm, true);
-      var method =
-          com.vaadin.flow.component.Component.class.getDeclaredMethod(
-              "fireEvent", com.vaadin.flow.component.ComponentEvent.class);
+      var method = Component.class.getDeclaredMethod("fireEvent", ComponentEvent.class);
       method.setAccessible(true);
       method.invoke(confirm, event);
     } catch (ReflectiveOperationException e) {
@@ -169,7 +165,7 @@ class BriefcaseListViewTest extends AbstractViewTest {
     verify(titleOpportunityService).adminVoid(40L);
   }
 
-  private com.vaadin.flow.component.grid.Grid.Column<TitleOpportunity> actionsColumn() {
+  private Grid.Column<TitleOpportunity> actionsColumn() {
     return view.getGrid().getColumns().stream()
         .filter(c -> "Actions".equals(c.getHeaderText()))
         .findFirst()
@@ -183,13 +179,9 @@ class BriefcaseListViewTest extends AbstractViewTest {
     view.refreshGrid();
     when(titleOpportunityService.findByIdWithDetails(40L)).thenReturn(Optional.of(held));
 
-    com.vaadin.flow.data.renderer.ComponentRenderer<
-            com.vaadin.flow.component.Component, TitleOpportunity>
-        renderer =
-            (com.vaadin.flow.data.renderer.ComponentRenderer<
-                    com.vaadin.flow.component.Component, TitleOpportunity>)
-                actionsColumn().getRenderer();
-    com.vaadin.flow.component.Component cell = renderer.createComponent(held);
+    ComponentRenderer<Component, TitleOpportunity> renderer =
+        (ComponentRenderer<Component, TitleOpportunity>) actionsColumn().getRenderer();
+    Component cell = renderer.createComponent(held);
 
     Button editBtn =
         cell.getChildren()
