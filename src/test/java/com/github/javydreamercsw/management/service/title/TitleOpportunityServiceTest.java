@@ -748,6 +748,59 @@ class TitleOpportunityServiceTest {
   }
 
   @Test
+  @DisplayName("update can reassign the holder of a HELD case")
+  void adminUpdate_reassignsHolder() {
+    TitleOpportunity held = heldOpportunityForCrud();
+    when(opportunityRepository.findByIdWithDetails(40L)).thenReturn(Optional.of(held));
+    Wrestler newHolder = new Wrestler();
+    newHolder.setId(9L);
+    newHolder.setName("New Holder");
+    newHolder.setActive(true);
+    when(opportunityRepository.findFirstByWrestlerIdAndStatus(9L, TitleOpportunityStatus.HELD))
+        .thenReturn(Optional.empty());
+    when(wrestlerRepository.findById(9L)).thenReturn(Optional.of(newHolder));
+
+    TitleOpportunity updated = service.adminUpdateHolder(40L, 9L);
+
+    assertEquals(newHolder, updated.getWrestler());
+    verify(opportunityRepository).save(held);
+  }
+
+  @Test
+  @DisplayName("holder reassignment keeps the one-HELD invariant and active-holder rule")
+  void adminUpdateHolder_rejectsAlreadyHoldingAndInactive() {
+    // The fixture's holder is wrestler 8; reassign to wrestler 12 to exercise the guards.
+    TitleOpportunity held = heldOpportunityForCrud();
+    when(opportunityRepository.findByIdWithDetails(40L)).thenReturn(Optional.of(held));
+    when(opportunityRepository.findFirstByWrestlerIdAndStatus(12L, TitleOpportunityStatus.HELD))
+        .thenReturn(Optional.of(new TitleOpportunity()));
+    assertThrows(IllegalArgumentException.class, () -> service.adminUpdateHolder(40L, 12L));
+
+    when(opportunityRepository.findFirstByWrestlerIdAndStatus(12L, TitleOpportunityStatus.HELD))
+        .thenReturn(Optional.empty());
+    Wrestler inactive = new Wrestler();
+    inactive.setId(12L);
+    inactive.setName("Inactive");
+    inactive.setActive(false);
+    when(wrestlerRepository.findById(12L)).thenReturn(Optional.of(inactive));
+    assertThrows(IllegalArgumentException.class, () -> service.adminUpdateHolder(40L, 12L));
+    verify(opportunityRepository, never()).save(any(TitleOpportunity.class));
+  }
+
+  @Test
+  @DisplayName("update can change the division of a HELD case")
+  void adminUpdate_changesDivision() {
+    TitleOpportunity held = heldOpportunityForCrud();
+    held.setGender(Gender.MALE);
+    when(opportunityRepository.findByIdWithDetails(40L)).thenReturn(Optional.of(held));
+
+    TitleOpportunity updated = service.adminUpdateDivision(40L, Gender.FEMALE);
+
+    assertEquals(Gender.FEMALE, updated.getGender());
+    verify(opportunityRepository).save(held);
+  }
+
+  @Test
   @DisplayName("update rejects CASHED_IN rows — history is immutable")
   void adminUpdate_rejectsCashedIn() {
     TitleOpportunity cashed = heldOpportunityForCrud();

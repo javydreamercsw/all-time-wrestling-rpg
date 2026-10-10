@@ -221,6 +221,54 @@ public class TitleOpportunityService {
   }
 
   /**
+   * Reassigns a HELD case to a different holder (the ATW-jpki dialog's wrestler picker). Enforces
+   * the same invariants as {@link #adminCreate}: active wrestler, one HELD case per wrestler.
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public TitleOpportunity adminUpdateHolder(@NonNull Long id, @NonNull Long newHolderId) {
+    TitleOpportunity opportunity = loadEditable(id);
+    if (opportunity.getWrestler() != null
+        && newHolderId.equals(opportunity.getWrestler().getId())) {
+      return opportunity; // same holder — nothing to do
+    }
+    Wrestler newHolder =
+        wrestlerRepository
+            .findById(newHolderId)
+            .orElseThrow(() -> new IllegalArgumentException("Wrestler not found: " + newHolderId));
+    if (!Boolean.TRUE.equals(newHolder.getActive())) {
+      throw new IllegalArgumentException("Briefcase holder must be an active wrestler");
+    }
+    opportunityRepository
+        .findFirstByWrestlerIdAndStatus(newHolderId, TitleOpportunityStatus.HELD)
+        .ifPresent(
+            existing -> {
+              throw new IllegalArgumentException(
+                  newHolder.getName()
+                      + " already holds a briefcase — only one HELD case per"
+                      + " wrestler");
+            });
+    opportunity.setWrestler(newHolder);
+    TitleOpportunity saved = opportunityRepository.save(opportunity);
+    log.info("Admin reassigned briefcase {} to {}", id, newHolder.getName());
+    return saved;
+  }
+
+  /** Changes the division (gender filter) of a HELD case — which titles it can cash in against. */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public TitleOpportunity adminUpdateDivision(@NonNull Long id, @Nullable Gender gender) {
+    TitleOpportunity opportunity = loadEditable(id);
+    if (opportunity.getGender() == gender) {
+      return opportunity; // unchanged — don't save (null means "leave as-is" for the dialog)
+    }
+    opportunity.setGender(gender);
+    TitleOpportunity saved = opportunityRepository.save(opportunity);
+    log.info("Admin changed briefcase {} division to {}", id, gender);
+    return saved;
+  }
+
+  /**
    * Manually cancels a HELD case (mistaken grant, unwanted prize) — HELD → VOIDED only. History
    * rows are never edited and nothing is ever deleted.
    */

@@ -137,9 +137,6 @@ public class BriefcaseFormDialog extends Dialog {
       updatePreviewImage(opportunity.getImageUrl());
     }
     if (!createMode) {
-      // Holder and division are identity fields of a granted case — not editable.
-      holder.setEnabled(false);
-      gender.setEnabled(false);
       earnedAt.setRequiredIndicatorVisible(false);
     }
 
@@ -179,6 +176,14 @@ public class BriefcaseFormDialog extends Dialog {
             expiryDate.getValue(),
             imageUrl.getValue().isEmpty() ? null : imageUrl.getValue(),
             earnedAt.getValue());
+        // Holder and division are editable on a HELD case (ATW-jpki): reassignment keeps the
+        // one-HELD invariant inside the service; division no-op when unchanged.
+        if (holder.getValue() != null
+            && !holder.getValue().getId().equals(opportunity.getWrestler().getId())) {
+          titleOpportunityService.adminUpdateHolder(opportunity.getId(), holder.getValue().getId());
+        }
+        titleOpportunityService.adminUpdateDivision(
+            opportunity.getId(), gender.getValue() != null ? gender.getValue() : null);
       }
       close();
       onSave.run();
