@@ -710,11 +710,20 @@ class TitleOpportunityServiceTest {
   @Test
   @DisplayName("create rejects a future earned-at date")
   void adminCreate_rejectsFutureEarnedAt() {
+    // The anchor is the real clock, not the kayfabe game date: the Time Vault case in the
+    // sandbox was earned 2026-10-08 while its universe's game date sat at 2026-07-07 — a
+    // kayfabe-past, wall-clock-present date that must stay editable.
     assertThrows(
         IllegalArgumentException.class,
         () ->
             service.adminCreate(
-                "Golden case", winner, universe, Gender.MALE, GAME_DATE.plusDays(1), null, null));
+                "Golden case",
+                winner,
+                universe,
+                Gender.MALE,
+                LocalDate.now().plusDays(1),
+                null,
+                null));
   }
 
   @Test
