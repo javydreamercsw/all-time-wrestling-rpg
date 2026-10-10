@@ -117,9 +117,21 @@ class BriefcaseVideoDocsE2ETest extends AbstractDocsE2ETest {
             + " with its cashable-until date — the prize is visible without leaving the profile.",
         4500);
 
-    // Step 2: open the Cash In dialog.
+    // Step 2: open the Briefcase panel (Match Logs is the default-open accordion panel) and
+    // click Cash In inside it.
+    WebElement panelSummary =
+        driver.findElement(
+            By.xpath(
+                "//vaadin-accordion-panel[.//text()[contains(., 'Briefcase')]]"
+                    + "//*[local-name()='summary']/*"));
+    clickElement(panelSummary);
+    Thread.sleep(800);
+
     WebElement cashInBtn =
-        driver.findElement(By.xpath("//vaadin-button[.//*[text()='Cash In' or text()='Cash In']]"));
+        driver.findElement(
+            By.xpath(
+                "//vaadin-accordion-panel[.//text()[contains(., 'Briefcase')]]"
+                    + "//vaadin-button[normalize-space(.)='Cash In']"));
     clickElement(cashInBtn);
     waitForVaadinClientToLoad();
     waitForVaadinElement(driver, By.tagName("vaadin-dialog-overlay"));
