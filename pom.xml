@@ -1252,6 +1252,29 @@
       </properties>
       <build>
         <plugins>
+          <!-- Invalidate a stale src/main/bundles/prod.bundle before Vaadin's
+               build-frontend runs: a bundle older than any hand-written source makes
+               Vaadin silently skip the frontend build and ship chunks missing newer
+               views (ATW-sjhq). -->
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>invalidate-stale-frontend-bundle</id>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <phase>initialize</phase>
+                <configuration>
+                  <executable>bash</executable>
+                  <arguments>
+                    <argument>${project.basedir}/scripts/check-frontend-bundle-freshness.sh</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
           <plugin>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-maven-plugin</artifactId>
