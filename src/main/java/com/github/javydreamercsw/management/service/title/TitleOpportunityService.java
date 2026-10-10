@@ -614,7 +614,10 @@ public class TitleOpportunityService {
   @Transactional(readOnly = true)
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public List<TitleOpportunity> findAllWithDetails() {
-    return opportunityRepository.findAllByOrderByEarnedAtDesc();
+    // The fetch-joined query — the plain findAllByOrderByEarnedAtDesc leaves the holder a lazy
+    // proxy and the grid's value providers run with no session (LazyInitializationException on
+    // the briefcase list, seen in the sandbox 2026-10-10).
+    return opportunityRepository.findAllWithDetails();
   }
 
   /** One briefcase with holder resolved — the CRUD edit dialog (ATW-jpki). */
