@@ -26,6 +26,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
@@ -94,6 +95,14 @@ public class BriefcaseSection extends VerticalLayout {
                 + " 10px;font-weight:600");
     HorizontalLayout heldRow = new HorizontalLayout(badge);
     heldRow.setAlignItems(FlexComponent.Alignment.CENTER);
+    // Uploaded artwork (ATW-jpki) replaces the emoji prefix visually — show it at the row start.
+    if (current.getImageUrl() != null && !current.getImageUrl().isBlank()) {
+      Image artwork = new Image(current.getImageUrl(), current.getName() + " briefcase");
+      artwork.setHeight("48px");
+      artwork.setWidth("48px");
+      artwork.addClassNames("border-radius-m");
+      heldRow.addComponentAsFirst(artwork);
+    }
     Span expiry =
         new Span(
             "Earned "

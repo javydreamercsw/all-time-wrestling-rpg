@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.title;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
@@ -35,6 +36,7 @@ import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.BriefcaseCashedInEvent;
@@ -48,6 +50,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
@@ -135,6 +138,120 @@ public class TitleOpportunityService {
         opportunity.getExpiryDate());
     eventPublisher.publishEvent(new BriefcaseGrantedEvent(this, opportunity));
     return Optional.of(opportunity);
+  }
+
+  // ── Admin CRUD (ATW-jpki) ────────────────────────────────────────────────
+
+  /**
+   * Manually creates a HELD briefcase (booker compensation case, custom prizes). Validates the same
+   * invariants {@link #grantFromTournament} enforces: one HELD case per wrestler, active holder.
+   * Earned-at may not be in the kayfabe future.
+   *
+   * @param expiryDate explicit cashable-until date, or null to default to earnedAt + the configured
+   *     expiry window
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public TitleOpportunity adminCreate(
+      @NonNull String name,
+      @NonNull Wrestler holder,
+      @Nullable Universe universe,
+      @Nullable Gender gender,
+      @NonNull LocalDate earnedAt,
+      @Nullable LocalDate expiryDate,
+      @Nullable String imageUrl) {
+    if (holder.getId() == null || !Boolean.TRUE.equals(holder.getActive())) {
+      throw new IllegalArgumentException("Briefcase holder must be an active wrestler");
+    }
+    if (opportunityRepository
+        .findFirstByWrestlerIdAndStatus(holder.getId(), TitleOpportunityStatus.HELD)
+        .isPresent()) {
+      throw new IllegalArgumentException(
+          holder.getName() + " already holds a briefcase — only one HELD case per wrestler");
+    }
+    if (earnedAt.isAfter(gameDate())) {
+      throw new IllegalArgumentException("Earned-at date cannot be in the future: " + earnedAt);
+    }
+    TitleOpportunity opportunity = new TitleOpportunity();
+    opportunity.setName(name);
+    opportunity.setStatus(TitleOpportunityStatus.HELD);
+    opportunity.setWrestler(holder);
+    opportunity.setUniverse(universe);
+    opportunity.setGender(gender);
+    opportunity.setEarnedAt(earnedAt);
+    opportunity.setExpiryDate(expiryDate != null ? expiryDate : earnedAt.plusDays(expiryDays()));
+    opportunity.setImageUrl(imageUrl);
+    opportunity = opportunityRepository.save(opportunity);
+    log.info(
+        "Admin created briefcase '{}' for {} (earned {}, expires {})",
+        name,
+        holder.getName(),
+        earnedAt,
+        opportunity.getExpiryDate());
+    return opportunity;
+  }
+
+  /**
+   * Edits a live (HELD) case's details: name, expiry override, image, earned-at correction.
+   * CASHED_IN/EXPIRED/VOIDED rows are history and stay immutable.
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public TitleOpportunity adminUpdate(
+      @NonNull Long id,
+      @NonNull String name,
+      @Nullable LocalDate expiryDate,
+      @Nullable String imageUrl,
+      @Nullable LocalDate earnedAt) {
+    TitleOpportunity opportunity = loadEditable(id);
+    opportunity.setName(name);
+    if (expiryDate != null) {
+      opportunity.setExpiryDate(expiryDate);
+    }
+    opportunity.setImageUrl(imageUrl);
+    if (earnedAt != null) {
+      if (earnedAt.isAfter(gameDate())) {
+        throw new IllegalArgumentException("Earned-at date cannot be in the future: " + earnedAt);
+      }
+      opportunity.setEarnedAt(earnedAt);
+    }
+    TitleOpportunity saved = opportunityRepository.save(opportunity);
+    log.info("Admin updated briefcase {}: '{}'", id, saved.getName());
+    return saved;
+  }
+
+  /**
+   * Manually cancels a HELD case (mistaken grant, unwanted prize) — HELD → VOIDED only. History
+   * rows are never edited and nothing is ever deleted.
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public void adminVoid(@NonNull Long id) {
+    TitleOpportunity opportunity = loadEditable(id);
+    opportunity.setStatus(TitleOpportunityStatus.VOIDED);
+    opportunityRepository.save(opportunity);
+    log.info("Admin voided briefcase {} ('{}')", id, opportunity.getName());
+  }
+
+  /** Loads a live case for editing — only HELD rows are mutable. */
+  private TitleOpportunity loadEditable(Long id) {
+    TitleOpportunity opportunity =
+        opportunityRepository
+            .findByIdWithDetails(id)
+            .orElseThrow(() -> new IllegalArgumentException("Briefcase not found: " + id));
+    if (!opportunity.isHeld()) {
+      throw new IllegalArgumentException(
+          "Briefcase "
+              + id
+              + " is "
+              + opportunity.getStatus()
+              + " — only HELD cases can be edited or voided");
+    }
+    return opportunity;
+  }
+
+  private int expiryDays() {
+    return gameSettingService.getBriefcaseExpiryDays();
   }
 
   // ── Cash in ──────────────────────────────────────────────────────────────
@@ -491,6 +608,20 @@ public class TitleOpportunityService {
   @PreAuthorize("isAuthenticated()")
   public List<TitleOpportunity> findByWrestler(Long wrestlerId) {
     return opportunityRepository.findByWrestlerIdOrderByEarnedAtDesc(wrestlerId);
+  }
+
+  /** Every briefcase with holder resolved — the CRUD grid (ATW-jpki). */
+  @Transactional(readOnly = true)
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public List<TitleOpportunity> findAllWithDetails() {
+    return opportunityRepository.findAllByOrderByEarnedAtDesc();
+  }
+
+  /** One briefcase with holder resolved — the CRUD edit dialog (ATW-jpki). */
+  @Transactional(readOnly = true)
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public Optional<TitleOpportunity> findByIdWithDetails(Long id) {
+    return opportunityRepository.findByIdWithDetails(id);
   }
 
   /** The wrestler's current held briefcase, if any. */

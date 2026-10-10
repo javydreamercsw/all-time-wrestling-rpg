@@ -117,6 +117,7 @@ public class MenuService {
     entities.addChild(new MenuItem("Teams", VaadinIcon.USERS, "teams"));
     entities.addChild(new MenuItem("Titles", VaadinIcon.TROPHY, "title-list"));
     entities.addChild(new MenuItem("Title Reigns", VaadinIcon.MEDAL, "title-reign-list"));
+    entities.addChild(new MenuItem("Briefcases", VaadinIcon.BRIEFCASE, "briefcase-list"));
     // SITEMAP (a tree diagram) reads as a tournament bracket — TROPHY belongs to Titles.
     entities.addChild(new MenuItem("Tournaments", VaadinIcon.SITEMAP, "tournament-list"));
     entities.addChild(new MenuItem("Universes", VaadinIcon.GLOBE_WIRE, "universe-list"));

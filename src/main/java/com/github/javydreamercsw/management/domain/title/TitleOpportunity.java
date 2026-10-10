@@ -109,6 +109,10 @@ public class TitleOpportunity extends AbstractEntity<Long> {
   @JoinColumn(name = "cashed_against_title_id")
   @Nullable private Title cashedAgainstTitle;
 
+  /** Optional artwork for the briefcase badge (ATW-jpki); mirrors Title.imageUrl. */
+  @Column(name = "image_url", length = 512)
+  @Nullable private String imageUrl;
+
   public boolean isHeld() {
     return status == TitleOpportunityStatus.HELD;
   }
