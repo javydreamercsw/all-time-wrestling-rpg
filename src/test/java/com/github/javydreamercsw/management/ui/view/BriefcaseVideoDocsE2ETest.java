@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.service.universe.UniverseService;
 import java.time.LocalDate;
+import java.util.Comparator;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -82,7 +83,7 @@ class BriefcaseVideoDocsE2ETest extends AbstractDocsE2ETest {
                   .findByIdWithDetails(tournamentId)
                   .orElseThrow(() -> new IllegalStateException("Tournament vanished"));
           inTx.getRounds().get(0).getMatches().stream()
-              .sorted(java.util.Comparator.comparingLong(m -> m.getId() == null ? 0 : m.getId()))
+              .sorted(Comparator.comparingLong(m -> m.getId() == null ? 0 : m.getId()))
               .forEach(match -> tournamentService.recordMatchResult(match, match.getEntrant1()));
           var finalMatches = tournamentService.advanceToNextRound(inTx);
           finalMatches.forEach(

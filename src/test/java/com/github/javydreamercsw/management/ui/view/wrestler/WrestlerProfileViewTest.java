@@ -25,6 +25,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.image.ImageStorageService;
+import com.github.javydreamercsw.base.image.ImageResolution;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.account.AccountService;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
@@ -49,6 +50,7 @@ import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowFacade;
+import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
@@ -59,14 +61,19 @@ import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.accordion.Accordion;
+import com.vaadin.flow.component.accordion.AccordionPanel;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.router.RouterLink;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.springframework.data.domain.Page;
+import org.springframework.test.util.ReflectionTestUtils;
 
 class WrestlerProfileViewTest extends AbstractViewTest {
 
@@ -116,8 +123,7 @@ class WrestlerProfileViewTest extends AbstractViewTest {
     // Facade wiring for the briefcase panel (ATW-312z).
     when(wrestlerFacade.getTitleOpportunityService()).thenReturn(titleOpportunityService);
     when(titleOpportunityService.findByWrestler(anyLong())).thenReturn(List.of());
-    com.github.javydreamercsw.management.service.show.ShowService careerShowService =
-        mock(com.github.javydreamercsw.management.service.show.ShowService.class);
+    ShowService careerShowService = mock(ShowService.class);
     when(showFacade.getShowService()).thenReturn(careerShowService);
     when(careerShowService.getUpcomingShows(50)).thenReturn(List.of());
 
@@ -165,12 +171,7 @@ class WrestlerProfileViewTest extends AbstractViewTest {
     Accordion accordion = _get(view, Accordion.class);
     // AccordionPanel extends Details; the summary text is the panel title.
     List<String> summaries =
-        accordion
-            .getChildren()
-            .map(
-                panel ->
-                    ((com.vaadin.flow.component.accordion.AccordionPanel) panel).getSummaryText())
-            .toList();
+        accordion.getChildren().map(panel -> ((AccordionPanel) panel).getSummaryText()).toList();
     String panels = String.join(" | ", summaries);
     assertTrue(
         panels.contains("Briefcase"),
@@ -196,8 +197,8 @@ class WrestlerProfileViewTest extends AbstractViewTest {
     // The button sits deep in the accordion (view → accordion → panel → content → section row).
     List<Component> cashIns =
         allDescendants(view)
-            .filter(c -> c instanceof com.vaadin.flow.component.button.Button)
-            .map(com.vaadin.flow.component.button.Button.class::cast)
+            .filter(c -> c instanceof Button)
+            .map(Button.class::cast)
             .filter(b -> "Cash In".equals(b.getText()))
             .map(Component.class::cast)
             .toList();
@@ -214,8 +215,8 @@ class WrestlerProfileViewTest extends AbstractViewTest {
         accordion
             .getChildren()
             .flatMap(c -> c.getChildren())
-            .filter(c -> c instanceof com.vaadin.flow.router.RouterLink)
-            .map(l -> ((com.vaadin.flow.router.RouterLink) l).getText())
+            .filter(c -> c instanceof RouterLink)
+            .map(l -> ((RouterLink) l).getText())
             .anyMatch(t -> t != null && t.contains("Career"));
     assertTrue(
         !linkInsideAccordion,
@@ -224,8 +225,8 @@ class WrestlerProfileViewTest extends AbstractViewTest {
     List<Component> heroLinks =
         view.getChildren()
             .flatMap(this::allDescendants)
-            .filter(c -> c instanceof com.vaadin.flow.router.RouterLink)
-            .map(com.vaadin.flow.router.RouterLink.class::cast)
+            .filter(c -> c instanceof RouterLink)
+            .map(RouterLink.class::cast)
             .filter(l -> l.getText() != null && l.getText().contains("Career Dashboard"))
             .map(Component.class::cast)
             .toList();
@@ -234,20 +235,16 @@ class WrestlerProfileViewTest extends AbstractViewTest {
 
   private void buildViewFor(Wrestler w) {
     when(wrestlerService.findByIdWithDetails(w.getId())).thenReturn(Optional.of(w));
-    when(wrestlerService.getOrCreateState(anyLong(), anyLong()))
-        .thenReturn(new com.github.javydreamercsw.management.domain.wrestler.WrestlerState());
+    when(wrestlerService.getOrCreateState(anyLong(), anyLong())).thenReturn(new WrestlerState());
     when(wrestlerService.resolveWrestlerImage(any()))
-        .thenReturn(
-            new com.github.javydreamercsw.base.image.ImageResolution("test://img.png", true));
+        .thenReturn(new ImageResolution("test://img.png", true));
     // securityUtils is field-injected (@Autowired), not constructor-injected; the action menu
     // needs it, so set it reflectively like WrestlerProfileViewUpdateTest does.
-    org.springframework.test.util.ReflectionTestUtils.setField(
-        view, "securityUtils", securityUtils);
+    ReflectionTestUtils.setField(view, "securityUtils", securityUtils);
     view.updateViewForTest(w);
   }
 
-  private java.util.stream.Stream<Component> allDescendants(Component root) {
-    return java.util.stream.Stream.concat(
-        java.util.stream.Stream.of(root), root.getChildren().flatMap(this::allDescendants));
+  private Stream<Component> allDescendants(Component root) {
+    return Stream.concat(Stream.of(root), root.getChildren().flatMap(this::allDescendants));
   }
 }
