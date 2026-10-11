@@ -217,11 +217,12 @@ class BriefcaseCashInAdvisorTest {
   @Test
   @DisplayName("propose: above-threshold case proposes with PLANNED mode")
   void propose_aboveThreshold_proposesWithPlannedMode() {
-    // Hot fixture: ICON title, hot rivalry, stale reign, near expiry → well over threshold.
+    // Hot fixture: ICON title, warm (not run-in hot) rivalry, stale reign, near expiry → over
+    // threshold with a PLANNED mode (heat 60 < RUN_IN_HEAT_THRESHOLD 70).
     title.setTier(WrestlerTier.ICON);
     opportunity.setExpiryDate(GAME_DATE.plusDays(40));
     Rivalry rivalry = new Rivalry();
-    rivalry.setHeat(90);
+    rivalry.setHeat(60);
     lenient()
         .when(rivalryRepository.findActiveRivalryBetween(holder, champion))
         .thenReturn(Optional.of(rivalry));
@@ -393,11 +394,50 @@ class BriefcaseCashInAdvisorTest {
   }
 
   @Test
-  @DisplayName("RUN_IN mode is never selected by the advisor (inert until ATW-qsm9)")
-  void runIn_neverSelectedAndNeverBooks() {
+  @DisplayName("RUN_IN: a cold rivalry proposes PLANNED, never RUN_IN")
+  void runIn_coldRivalry_neverSelected() {
+    // Fixture rivalry: holder vs champion has no heat (Optional.empty stub in setUp).
     List<BriefcaseCashInAdvisorService.BriefcaseProposal> proposals = advisor.proposalsFor(show);
 
     assertThat(proposals)
         .allSatisfy(p -> assertThat(p.mode()).isNotEqualTo(BriefcaseCashInMode.RUN_IN));
+  }
+
+  @Test
+  @DisplayName("RUN_IN: a hot rivalry (heat >= 70) proposes RUN_IN instead of PLANNED")
+  void runIn_hotRivalry_proposesRunIn() {
+    Rivalry rivalry = new Rivalry();
+    rivalry.setHeat(85);
+    lenient()
+        .when(rivalryRepository.findActiveRivalryBetween(holder, champion))
+        .thenReturn(Optional.of(rivalry));
+    lenient()
+        .when(segmentRepository.findByTitle(title))
+        .thenReturn(List.of(segmentDefendedOn(GAME_DATE.minusDays(21))));
+    opportunity.setExpiryDate(GAME_DATE.plusDays(40));
+
+    List<BriefcaseCashInAdvisorService.BriefcaseProposal> proposals = advisor.proposalsFor(show);
+
+    assertThat(proposals).hasSize(1);
+    assertThat(proposals.get(0).mode()).isEqualTo(BriefcaseCashInMode.RUN_IN);
+  }
+
+  @Test
+  @DisplayName("RUN_IN: heat just below the threshold proposes PLANNED")
+  void runIn_heatBelowThreshold_proposesPlanned() {
+    Rivalry rivalry = new Rivalry();
+    rivalry.setHeat(69);
+    lenient()
+        .when(rivalryRepository.findActiveRivalryBetween(holder, champion))
+        .thenReturn(Optional.of(rivalry));
+    lenient()
+        .when(segmentRepository.findByTitle(title))
+        .thenReturn(List.of(segmentDefendedOn(GAME_DATE.minusDays(21))));
+    opportunity.setExpiryDate(GAME_DATE.plusDays(40));
+
+    List<BriefcaseCashInAdvisorService.BriefcaseProposal> proposals = advisor.proposalsFor(show);
+
+    assertThat(proposals).hasSize(1);
+    assertThat(proposals.get(0).mode()).isEqualTo(BriefcaseCashInMode.PLANNED);
   }
 }

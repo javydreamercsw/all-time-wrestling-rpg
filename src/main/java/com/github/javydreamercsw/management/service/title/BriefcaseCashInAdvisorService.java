@@ -57,6 +57,12 @@ public class BriefcaseCashInAdvisorService {
   /** Score threshold a candidate must clear to become a proposal. */
   static final int PROPOSAL_THRESHOLD = 50;
 
+  /**
+   * Rivalry heat at which the advisor proposes a RUN_IN (mid-match cash-in, ATW-qsm9) instead of a
+   * PLANNED one: a feud this hot justifies interrupting the champion's match itself.
+   */
+  static final int RUN_IN_HEAT_THRESHOLD = 70;
+
   /** Maximum score: 35 urgency + 25 heat + 20 prestige + 15 staleness + 5 PLE. */
   private static final int MAX_SCORE = 100;
 
@@ -267,8 +273,12 @@ public class BriefcaseCashInAdvisorService {
                 title.getEffectiveDefenseFrequencyType(),
                 show != null && show.isPremiumLiveEvent()));
 
-    return Optional.of(
-        new BriefcaseProposal(opportunity, title, champions, BriefcaseCashInMode.PLANNED, score));
+    // A feud this hot justifies interrupting the champion's match itself (ATW-qsm9): the proposal
+    // becomes a RUN_IN consent row — trigger armed at the title match, case spent only when the
+    // half-HP trigger actually fires.
+    BriefcaseCashInMode mode =
+        heat >= RUN_IN_HEAT_THRESHOLD ? BriefcaseCashInMode.RUN_IN : BriefcaseCashInMode.PLANNED;
+    return Optional.of(new BriefcaseProposal(opportunity, title, champions, mode, score));
   }
 
   /**

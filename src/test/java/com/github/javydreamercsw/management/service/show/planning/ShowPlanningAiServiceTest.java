@@ -1520,6 +1520,53 @@ class ShowPlanningAiServiceTest {
   }
 
   @Test
+  void planShow_runInRow_whenAdvisorProposesRunIn() {
+    // A hot-rivalry proposal (ATW-qsm9) carries mode RUN_IN: the row arms the half-HP trigger at
+    // the title match instead of booking a cash-in at approval.
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+
+    BriefcaseCashInPreviewDTO briefcase = new BriefcaseCashInPreviewDTO();
+    briefcase.setOpportunityId(7L);
+    briefcase.setTitleId(11L);
+    briefcase.setMode("RUN_IN");
+    briefcase.setHolderName("Case Holder");
+    briefcase.setTitleName("ATW World");
+    briefcase.setChampionNames(List.of("Reigning Champ"));
+    briefcase.setTeams(List.of(List.of("Reigning Champ"), List.of("Case Holder")));
+    context.setBriefcaseProposals(List.of(briefcase));
+
+    String aiResponseJson =
+        """
+        [
+          {
+            "segmentId": "seg1",
+            "type": "One on One",
+            "description": "Title match",
+            "outcome": "Champ wins",
+            "teams": [["Reigning Champ"], ["Challenger"]],
+            "teamIds": [[1], [2]]
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    List<ProposedSegment> briefcaseRows =
+        proposedShow.getSegments().stream()
+            .filter(s -> ProposedSegment.SOURCE_BRIEFCASE.equals(s.getSource()))
+            .toList();
+    assertEquals(1, briefcaseRows.size());
+    assertEquals(BriefcaseCashInMode.RUN_IN, briefcaseRows.get(0).getBriefcaseMode());
+    assertTrue(briefcaseRows.get(0).getSummary().contains("run-in"));
+  }
+
+  @Test
   void planShow_ambushRow_whenChampionSegmentOnCard() {
     // When the reigning champion already has a non-promo row on the assembled card, the
     // briefcase proposal becomes an AMBUSH: the holder strikes right after the champion's match.

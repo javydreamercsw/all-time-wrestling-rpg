@@ -151,9 +151,21 @@ public class ShowPlanningAiService {
                           && candidate.getTeams().stream()
                               .flatMap(List::stream)
                               .anyMatch(proposal.getChampionNames()::contains));
-      row.setBriefcaseMode(
-          championOnCard ? BriefcaseCashInMode.AMBUSH : BriefcaseCashInMode.PLANNED);
-      if (championOnCard) {
+      // The advisor's mode (RUN_IN when the rivalry is hot) wins; otherwise the champion-on-card
+      // check picks AMBUSH vs PLANNED (ATW-2b9u / ATW-qsm9).
+      BriefcaseCashInMode mode =
+          "RUN_IN".equals(proposal.getMode())
+              ? BriefcaseCashInMode.RUN_IN
+              : championOnCard ? BriefcaseCashInMode.AMBUSH : BriefcaseCashInMode.PLANNED;
+      row.setBriefcaseMode(mode);
+      if (mode == BriefcaseCashInMode.RUN_IN) {
+        // A RUN_IN row arms the half-HP trigger at the title match (ATW-qsm9): the case is only
+        // spent when the trigger actually fires during the match — deleting the row declines.
+        row.setSummary(
+            row.getSummary()
+                + " (run-in: the case is spent only if a wrestler hits half HP during the"
+                + " title match)");
+      } else if (championOnCard) {
         row.setSummary(
             row.getSummary() + " (ambush: right after the champion's match on this card)");
       }

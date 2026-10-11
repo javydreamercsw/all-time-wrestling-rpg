@@ -49,9 +49,11 @@ import com.github.javydreamercsw.management.service.segment.SegmentTeam;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -431,6 +433,159 @@ public class TitleOpportunityService {
             + opportunity.getName()
             + "'. The champion is worn down from their earlier fight — narrate the chaos.");
     return segment;
+  }
+
+  /** Flat breather the incumbents recover when a run-in interrupts their match (ATW-qsm9). */
+  static final int RUN_IN_BREATHER = 3;
+
+  /**
+   * Mid-match run-in cash-in (ATW-qsm9): the holder interrupts a title match IN PROGRESS — the
+   * encounter becomes a 3-team free-for-all (champion / challenger-if-any / fresh holder). The
+   * incumbents recover a flat breather from where the encounter left off (their recorded {@code
+   * finalHealth} minus {@link #RUN_IN_BREATHER} feeds each incumbent team's wear penalty); momentum
+   * is per-match so nothing resets. The winner takes the title regardless of who they pin —
+   * adjudication's applyTitleChange already handles a winners list with no champion.
+   *
+   * <p>Trigger: a wrestler reached HALF their starting HP in the interrupted encounter (the
+   * tabletop check, mirrored by MatchView's prompt). All standard cash-in validations apply; the
+   * case is spent at booking as usual.
+   *
+   * @param opportunityId the held briefcase
+   * @param titleId the championship on the line in the interrupted match
+   * @param showId the show the interrupted match belongs to
+   * @param interruptedSegment the in-progress title match (final health already recorded)
+   * @return the booked run-in segment (3-team FFA, title on the line)
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public Segment bookRunIn(
+      long opportunityId, long titleId, long showId, @NonNull Segment interruptedSegment) {
+    if (WellKnownSegmentType.PROMO.matches(interruptedSegment.getSegmentType())) {
+      throw new IllegalStateException("A run-in interrupts a match — not a promo");
+    }
+    Show show =
+        showRepository
+            .findById(showId)
+            .orElseThrow(() -> new IllegalArgumentException("Show not found: " + showId));
+    if (interruptedSegment.getShow() == null
+        || !interruptedSegment.getShow().getId().equals(show.getId())) {
+      throw new IllegalArgumentException(
+          "The interrupted match is not on the same show — a run-in targets a match on"
+              + " this card");
+    }
+    TitleOpportunity opportunity =
+        opportunityRepository
+            .findById(opportunityId)
+            .orElseThrow(
+                () -> new IllegalArgumentException("Briefcase not found: " + opportunityId));
+    Title title = validateCashIn(opportunity, titleId);
+
+    // The interrupted match's participants split into incumbent teams: the champion side and the
+    // challenger side (any participant who is not a current champion). The champion side must be
+    // present — a run-in targets the title holder's fight.
+    List<Wrestler> champions =
+        titleReignRepository.findByTitleIdAndEndDateIsNull(title.getId()).stream()
+            .flatMap(reign -> reign.getChampions().stream())
+            .distinct()
+            .toList();
+    if (champions.isEmpty()) {
+      throw new IllegalStateException(
+          "'" + title.getName() + "' is vacant — no match to run in on");
+    }
+    Set<Long> championIds = champions.stream().map(Wrestler::getId).collect(Collectors.toSet());
+    List<Wrestler> incumbentChampions =
+        interruptedSegment.getWrestlers().stream()
+            .filter(w -> w.getId() != null && championIds.contains(w.getId()))
+            .toList();
+    if (incumbentChampions.isEmpty()) {
+      throw new IllegalStateException(
+          "The interrupted match does not involve the reigning "
+              + title.getName()
+              + " champion — nothing to run in on");
+    }
+    List<Wrestler> challengers =
+        interruptedSegment.getWrestlers().stream()
+            .filter(w -> w.getId() != null && !championIds.contains(w.getId()))
+            .toList();
+    Wrestler holder = opportunity.getWrestler();
+
+    // The incumbents recover a flat breather from where the encounter left off: their recorded
+    // final health (+3) feeds each incumbent team's wear penalty. The holder enters fresh.
+    SegmentTeam championTeam = new SegmentTeam(incumbentChampions, title.getName() + " Champion");
+    championTeam.setExtraWearPenalty(incumbentWear(incumbentChampions, interruptedSegment));
+    List<SegmentTeam> teams = new ArrayList<>();
+    teams.add(championTeam);
+    if (!challengers.isEmpty()) {
+      SegmentTeam challengerTeam = new SegmentTeam(challengers, "Challenger");
+      challengerTeam.setExtraWearPenalty(incumbentWear(challengers, interruptedSegment));
+      teams.add(challengerTeam);
+    }
+    teams.add(new SegmentTeam(holder));
+
+    SegmentType segmentType =
+        segmentTypeRepository
+            .findByCode(WellKnownSegmentType.FREE_FOR_ALL.getCode())
+            .orElseThrow(
+                () ->
+                    new IllegalStateException(
+                        "Free-for-All segment type is missing — cannot book a run-in"
+                            + " cash-in"));
+    SegmentRule noRule = null; // stipulation resolved as "Standard Match" by the resolver
+    Segment segment =
+        segmentResolutionService.resolveMultiTeamSegment(
+            teams, segmentType, show, stipulationOf(noRule));
+    segment.setIsTitleSegment(true);
+    segment.getTitles().add(title);
+    segment.setNarration(
+        "Briefcase run-in: "
+            + holder.getName()
+            + " storms the ring mid-match and cashes in '"
+            + opportunity.getName()
+            + "', turning the "
+            + title.getName()
+            + " title fight into a free-for-all. The incumbent"
+            + (incumbentChampions.size() > 1 ? "s have" : " has")
+            + " already been through a war — narrate the chaos and who survives it.");
+    opportunity.setCashInMode(BriefcaseCashInMode.RUN_IN);
+    opportunity.markCashedIn(title, segment, gameDate());
+    opportunityRepository.save(opportunity);
+    eventPublisher.publishEvent(new BriefcaseCashedInEvent(this, opportunity));
+    log.info(
+        "Run-in cash-in of '{}' booked on show '{}': {} interrupts {} for the {}",
+        opportunity.getName(),
+        show.getName(),
+        holder.getName(),
+        interruptedSegment.getWrestlers().stream()
+            .map(Wrestler::getName)
+            .collect(Collectors.joining(" & ")),
+        title.getName());
+    return segment;
+  }
+
+  /**
+   * The incumbents' wear penalty from the interrupted encounter: percent of starting health lost
+   * from their recorded final health, minus the flat run-in breather, floored at 0. Wrestlers with
+   * no recorded health (NPC) contribute nothing.
+   */
+  private int incumbentWear(List<Wrestler> incumbents, Segment interruptedSegment) {
+    int wear = 0;
+    for (Wrestler incumbent : incumbents) {
+      Integer finalHealth =
+          interruptedSegment.getParticipants().stream()
+              .filter(
+                  p -> p.getWrestler() != null && incumbent.getId().equals(p.getWrestler().getId()))
+              .map(SegmentParticipant::getFinalHealth)
+              .filter(Objects::nonNull)
+              .findFirst()
+              .orElse(null);
+      if (finalHealth == null) {
+        continue;
+      }
+      int startingHealth = Math.max(1, incumbent.getStartingHealth());
+      int lossPercent = Math.max(0, (startingHealth - finalHealth) * 100 / startingHealth);
+      wear += Math.max(0, lossPercent / 10 - RUN_IN_BREATHER);
+    }
+    return wear;
   }
 
   /**
