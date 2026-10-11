@@ -89,6 +89,10 @@ class TitleOpportunityServiceTest {
   @Mock private SegmentTypeRepository segmentTypeRepository;
   @Mock private SegmentRuleRepository segmentRuleRepository;
   @Mock private NPCSegmentResolutionService segmentResolutionService;
+
+  @Mock
+  private com.github.javydreamercsw.management.service.wrestler.WrestlerService wrestlerService;
+
   @Mock private GameSettingService gameSettingService;
   @Mock private ApplicationEventPublisher eventPublisher;
 
@@ -116,6 +120,7 @@ class TitleOpportunityServiceTest {
             segmentRepository,
             segmentRuleRepository,
             segmentResolutionService,
+            wrestlerService,
             gameSettingService,
             fixedClock,
             eventPublisher);
@@ -859,6 +864,29 @@ class TitleOpportunityServiceTest {
     when(opportunityRepository.findByIdWithDetails(40L)).thenReturn(Optional.of(cashed));
 
     assertThrows(IllegalArgumentException.class, () -> service.adminVoid(40L));
+    verify(opportunityRepository, never()).save(any(TitleOpportunity.class));
+  }
+
+  // ── NPC cash-in advisor support (ATW-2b9u) ────────────────────────────────
+
+  @Test
+  @DisplayName("recordDecline sets lastDeclinedAt to the current game date and saves")
+  void recordDecline_setsLastDeclinedAt() {
+    TitleOpportunity held = heldOpportunityForCrud();
+    when(opportunityRepository.findById(40L)).thenReturn(Optional.of(held));
+
+    service.recordDecline(40L);
+
+    assertEquals(GAME_DATE, held.getLastDeclinedAt());
+    verify(opportunityRepository).save(held);
+  }
+
+  @Test
+  @DisplayName("recordDecline rejects unknown opportunity ids")
+  void recordDecline_rejectsUnknownId() {
+    when(opportunityRepository.findById(99L)).thenReturn(Optional.empty());
+
+    assertThrows(IllegalArgumentException.class, () -> service.recordDecline(99L));
     verify(opportunityRepository, never()).save(any(TitleOpportunity.class));
   }
 }

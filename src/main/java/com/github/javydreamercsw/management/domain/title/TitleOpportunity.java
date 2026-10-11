@@ -113,6 +113,18 @@ public class TitleOpportunity extends AbstractEntity<Long> {
   @Column(name = "image_url", length = 512)
   @Nullable private String imageUrl;
 
+  /**
+   * Kayfabe game date of the most recent booker decline of an advisor proposal (ATW-2b9u). Drives
+   * the re-proposal cooldown window; null = never declined.
+   */
+  @Column(name = "last_declined_at")
+  @Nullable private LocalDate lastDeclinedAt;
+
+  /** How this case was cashed in (ATW-2b9u); null for pre-advisor cash-ins and HELD cases. */
+  @Column(name = "cash_in_mode", length = 16)
+  @Enumerated(EnumType.STRING)
+  @Nullable private BriefcaseCashInMode cashInMode;
+
   public boolean isHeld() {
     return status == TitleOpportunityStatus.HELD;
   }

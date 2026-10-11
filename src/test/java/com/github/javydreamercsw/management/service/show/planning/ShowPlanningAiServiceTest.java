@@ -26,10 +26,12 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.title.BriefcaseCashInMode;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.service.HolidayService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
+import com.github.javydreamercsw.management.service.show.planning.dto.BriefcaseCashInPreviewDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.FeudScriptBeatDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningPleDTO;
@@ -1459,5 +1461,147 @@ class ShowPlanningAiServiceTest {
       dto.setTeams(List.of(List.of(team1), List.of(team2)));
     }
     return dto;
+  }
+
+  // ── NPC briefcase cash-in rows (ATW-2b9u) ──────────────────────────────────
+
+  @Test
+  void planShow_appendsBriefcaseRowsWithSource() {
+    // Briefcase proposals preview as consent rows on the card: keep = approve, delete = decline.
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+
+    BriefcaseCashInPreviewDTO briefcase = new BriefcaseCashInPreviewDTO();
+    briefcase.setOpportunityId(7L);
+    briefcase.setTitleId(11L);
+    briefcase.setMode("PLANNED");
+    briefcase.setHolderName("Case Holder");
+    briefcase.setTitleName("ATW World");
+    briefcase.setChampionNames(List.of("Reigning Champ"));
+    briefcase.setTeams(List.of(List.of("Reigning Champ"), List.of("Case Holder")));
+    briefcase.setSummary("NPC briefcase cash-in — Case Holder challenges for ATW World");
+    context.setBriefcaseProposals(List.of(briefcase));
+
+    String aiResponseJson =
+        """
+        [
+          {
+            "segmentId": "seg1",
+            "type": "One on One",
+            "description": "A match",
+            "outcome": "A wins",
+            "teams": [["A"], ["B"]],
+            "teamIds": [[1], [2]]
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    // Briefcase row + the AI's single segment.
+    assertEquals(2, proposedShow.getSegments().size());
+    List<ProposedSegment> briefcaseRows =
+        proposedShow.getSegments().stream()
+            .filter(s -> ProposedSegment.SOURCE_BRIEFCASE.equals(s.getSource()))
+            .toList();
+    assertEquals(1, briefcaseRows.size());
+    ProposedSegment row = briefcaseRows.get(0);
+    assertEquals("One on One", row.getType());
+    assertEquals(7L, row.getBriefcaseOpportunityId());
+    assertEquals(BriefcaseCashInMode.PLANNED, row.getBriefcaseMode());
+    assertEquals(List.of(List.of("Reigning Champ"), List.of("Case Holder")), row.getTeams());
+    assertTrue(row.getSummary().contains("ATW World"));
+    assertTrue(row.getNotes().contains("delete this row to decline"));
+  }
+
+  @Test
+  void planShow_ambushRow_whenChampionSegmentOnCard() {
+    // When the reigning champion already has a non-promo row on the assembled card, the
+    // briefcase proposal becomes an AMBUSH: the holder strikes right after the champion's match.
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+
+    BriefcaseCashInPreviewDTO briefcase = new BriefcaseCashInPreviewDTO();
+    briefcase.setOpportunityId(7L);
+    briefcase.setTitleId(11L);
+    briefcase.setMode("PLANNED");
+    briefcase.setHolderName("Case Holder");
+    briefcase.setTitleName("ATW World");
+    briefcase.setChampionNames(List.of("Reigning Champ"));
+    briefcase.setSummary("NPC briefcase cash-in");
+    context.setBriefcaseProposals(List.of(briefcase));
+
+    String aiResponseJson =
+        """
+        [
+          {
+            "segmentId": "seg1",
+            "type": "One on One",
+            "description": "Title defense",
+            "outcome": "Reigning Champ wins",
+            "teams": [["Reigning Champ"], ["Challenger"]],
+            "teamIds": [[1], [2]]
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    List<ProposedSegment> briefcaseRows =
+        proposedShow.getSegments().stream()
+            .filter(s -> ProposedSegment.SOURCE_BRIEFCASE.equals(s.getSource()))
+            .toList();
+    assertEquals(1, briefcaseRows.size());
+    assertEquals(BriefcaseCashInMode.AMBUSH, briefcaseRows.get(0).getBriefcaseMode());
+    assertTrue(briefcaseRows.get(0).getSummary().contains("ambush"));
+  }
+
+  @Test
+  void planNoSlots_stillAppliesBriefcaseRows() {
+    // The all-slots-pre-determined early return must still append briefcase rows — the
+    // advisor's rows are additive regardless of the slot accounting.
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    context.setHeldBriefcases(List.of("Case Holder — Time Vault briefcase"));
+
+    FeudScriptBeatDTO beat = new FeudScriptBeatDTO();
+    beat.setSegmentType("One on One");
+    beat.setParticipantNames("Reigning Champ, Challenger");
+    context.setUpcomingScriptedBeats(List.of(beat));
+
+    BriefcaseCashInPreviewDTO briefcase = new BriefcaseCashInPreviewDTO();
+    briefcase.setOpportunityId(7L);
+    briefcase.setTitleId(11L);
+    briefcase.setMode("PLANNED");
+    briefcase.setHolderName("Case Holder");
+    briefcase.setTitleName("ATW World");
+    briefcase.setChampionNames(List.of("Reigning Champ"));
+    briefcase.setTeams(List.of(List.of("Reigning Champ"), List.of("Case Holder")));
+    context.setBriefcaseProposals(List.of(briefcase));
+
+    when(segmentNarrationService.generateText(anyString())).thenReturn("[]");
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    List<ProposedSegment> briefcaseRows =
+        proposedShow.getSegments().stream()
+            .filter(s -> ProposedSegment.SOURCE_BRIEFCASE.equals(s.getSource()))
+            .toList();
+    assertEquals(1, briefcaseRows.size());
+    assertEquals(BriefcaseCashInMode.PLANNED, briefcaseRows.get(0).getBriefcaseMode());
   }
 }

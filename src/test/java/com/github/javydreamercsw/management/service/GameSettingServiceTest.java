@@ -422,6 +422,39 @@ class GameSettingServiceTest {
                         && s.getUniverseId() == null));
   }
 
+  // ── NPC briefcase cash-in advisor (ATW-2b9u) ──────────────────────────────
+
+  @Test
+  void npcBriefcaseCashInEnabled_defaultsTrue() {
+    when(repository.findGlobal(GameSettingService.BRIEFCASE_NPC_CASH_IN_ENABLED_KEY))
+        .thenReturn(Optional.empty());
+    assertThat(service.isNpcBriefcaseCashInEnabled()).isTrue();
+  }
+
+  @Test
+  void npcBriefcaseCashInEnabled_settingExists_returnsValue() {
+    when(repository.findGlobal(GameSettingService.BRIEFCASE_NPC_CASH_IN_ENABLED_KEY))
+        .thenReturn(
+            Optional.of(setting(GameSettingService.BRIEFCASE_NPC_CASH_IN_ENABLED_KEY, "false")));
+    assertThat(service.isNpcBriefcaseCashInEnabled()).isFalse();
+  }
+
+  @Test
+  void setNpcBriefcaseCashInEnabled_savesGlobalSetting() {
+    when(repository.findGlobal(GameSettingService.BRIEFCASE_NPC_CASH_IN_ENABLED_KEY))
+        .thenReturn(Optional.empty());
+
+    service.setNpcBriefcaseCashInEnabled(false);
+
+    verify(repository)
+        .save(
+            assertThatCaptorMatches(
+                s ->
+                    GameSettingService.BRIEFCASE_NPC_CASH_IN_ENABLED_KEY.equals(s.getSettingKey())
+                        && "false".equals(s.getValue())
+                        && s.getUniverseId() == null));
+  }
+
   private GameSetting assertThatCaptorMatches(Predicate<GameSetting> match) {
     return ArgumentMatchers.argThat(s -> match.test(s));
   }

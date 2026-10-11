@@ -28,6 +28,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
+import com.github.javydreamercsw.management.domain.title.BriefcaseCashInMode;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleOpportunity;
 import com.github.javydreamercsw.management.domain.title.TitleOpportunityRepository;
@@ -39,6 +40,7 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentReposito
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.event.BriefcaseCashedInEvent;
 import com.github.javydreamercsw.management.event.BriefcaseGrantedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
@@ -82,6 +84,8 @@ public class TitleOpportunityService {
   private final SegmentRepository segmentRepository;
   private final SegmentRuleRepository segmentRuleRepository;
   private final NPCSegmentResolutionService segmentResolutionService;
+  private final com.github.javydreamercsw.management.service.wrestler.WrestlerService
+      wrestlerService;
   private final GameSettingService gameSettingService;
   private final Clock clock;
   private final ApplicationEventPublisher eventPublisher;
@@ -343,14 +347,90 @@ public class TitleOpportunityService {
     // Book the cash-in match: champion(s) vs holder, title on the line — the same shape as the
     // tournament champion showcase. Adjudication's applyTitleChange handles win/loss from here.
     SegmentTeam championTeam = new SegmentTeam(champions, title.getName() + " Champion");
-    return bookCashIn(
-        opportunity,
-        title,
-        show,
-        championTeam,
-        champions,
-        " The match was booked on the spot — narrate the surprise arrival and the champion's"
-            + " reaction.");
+    Segment segment =
+        bookCashIn(
+            opportunity,
+            title,
+            show,
+            championTeam,
+            champions,
+            " The match was booked on the spot — narrate the surprise arrival and the champion's"
+                + " reaction.");
+    opportunity.setCashInMode(BriefcaseCashInMode.PLANNED);
+    opportunityRepository.save(opportunity);
+    return segment;
+  }
+
+  /**
+   * Advisor-path ambush booking (ATW-2b9u): books the holder's cash-in as a segment placed right
+   * after the champion's match on the SAME card, before either has been adjudicated. No wear is
+   * applied here — nothing is adjudicated yet; {@link #applyAmbushWearIfApplicable} carries the
+   * champion's wear over later, when this segment itself adjudicates. All standard cash-in
+   * validations apply (HELD, expiry, holder, title eligibility, reigning champion).
+   *
+   * @param opportunityId the held briefcase
+   * @param titleId the championship to challenge
+   * @param showId the show being approved
+   * @param championSegment the champion's (still pending) match on this card
+   * @return the booked ambush segment
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public Segment bookAmbush(
+      long opportunityId, long titleId, long showId, @NonNull Segment championSegment) {
+    Show show =
+        showRepository
+            .findById(showId)
+            .orElseThrow(() -> new IllegalArgumentException("Show not found: " + showId));
+    if (championSegment.getShow() == null
+        || !championSegment.getShow().getId().equals(show.getId())) {
+      throw new IllegalArgumentException(
+          "The champion's segment is not on the same show — an ambush targets a match"
+              + " on the same card");
+    }
+    if (WellKnownSegmentType.PROMO.matches(championSegment.getSegmentType())) {
+      throw new IllegalStateException(
+          "The champion's earlier segment is a promo — no ambush after a promo");
+    }
+    TitleOpportunity opportunity =
+        opportunityRepository
+            .findById(opportunityId)
+            .orElseThrow(
+                () -> new IllegalArgumentException("Briefcase not found: " + opportunityId));
+    Title title = validateCashIn(opportunity, titleId);
+    List<Wrestler> champions =
+        titleReignRepository.findByTitleIdAndEndDateIsNull(title.getId()).stream()
+            .flatMap(reign -> reign.getChampions().stream())
+            .distinct()
+            .toList();
+    if (champions.isEmpty()) {
+      throw new IllegalStateException(
+          "'" + title.getName() + "' is vacant — no champion to ambush");
+    }
+
+    SegmentTeam championTeam = new SegmentTeam(champions, title.getName() + " Champion");
+    Segment segment =
+        bookCashIn(
+            opportunity,
+            title,
+            show,
+            championTeam,
+            champions,
+            " The ambush was booked on the card right after the champion's match — narrate the"
+                + " chaos when it plays out.");
+    opportunity.setCashInMode(BriefcaseCashInMode.AMBUSH);
+    opportunityRepository.save(opportunity);
+    segment.setNarration(
+        "Briefcase ambush: "
+            + opportunity.getWrestler().getName()
+            + " blindsides the "
+            + title.getName()
+            + " champion"
+            + (champions.size() > 1 ? "s" : "")
+            + " right after their match, cashing in '"
+            + opportunity.getName()
+            + "'. The champion is worn down from their earlier fight — narrate the chaos.");
+    return segment;
   }
 
   /**
@@ -408,6 +488,114 @@ public class TitleOpportunityService {
 
   /** Flat breather the champion recovers between their match and the ambush (ATW-p8ij). */
   static final int AMBUSH_BREATHER = 2;
+
+  /**
+   * Carries the champion's same-show wear into an advisor-booked ambush at resolution time
+   * (ATW-2b9u). The ambush was booked before either segment was adjudicated, so the wear math
+   * (champion's final health → extra team penalty, breather subtracted) runs here, when the ambush
+   * segment itself adjudicates — by then the champion's earlier match is ADJUDICATED (the batch
+   * loop runs in segment order). No-op for non-ambush segments; logs and skips when the champion's
+   * match has no wear to carry (NPC matches report no final health) or was never adjudicated.
+   */
+  public void applyAmbushWearIfApplicable(@NonNull Segment segment) {
+    if (segment.getId() == null) {
+      return;
+    }
+    TitleOpportunity opportunity =
+        opportunityRepository.findByCashedAtSegmentId(segment.getId()).stream()
+            .filter(opp -> opp.getCashInMode() == BriefcaseCashInMode.AMBUSH)
+            .findFirst()
+            .orElse(null);
+    if (opportunity == null) {
+      return;
+    }
+    Title title = opportunity.getCashedAgainstTitle();
+    if (title == null) {
+      return;
+    }
+    try {
+      List<Wrestler> champions =
+          titleReignRepository.findByTitleIdAndEndDateIsNull(title.getId()).stream()
+              .flatMap(reign -> reign.getChampions().stream())
+              .distinct()
+              .toList();
+      Segment championSegment =
+          segmentRepository.findByShowOrderBySegmentOrderAsc(segment.getShow()).stream()
+              .filter(
+                  candidate ->
+                      candidate.getId() != null
+                          && !candidate.getId().equals(segment.getId())
+                          && candidate.getSegmentOrder() < segment.getSegmentOrder()
+                          && !WellKnownSegmentType.PROMO.matches(candidate.getSegmentType())
+                          && candidate.getAdjudicationStatus() == AdjudicationStatus.ADJUDICATED
+                          && candidate.getWrestlers().stream()
+                              .anyMatch(
+                                  w ->
+                                      champions.stream()
+                                          .anyMatch(c -> c.getId().equals(w.getId()))))
+              .reduce((first, second) -> second) // highest order
+              .orElse(null);
+      if (championSegment == null) {
+        log.info(
+            "Ambush segment {}: the champion's earlier match is not adjudicated yet — wear"
+                + " carry-over skipped",
+            segment.getId());
+        return;
+      }
+      int wearPenalty = computeChampionWear(champions, championSegment);
+      if (wearPenalty <= 0) {
+        log.info(
+            "Ambush segment {}: the champion showed no wear — no ambush advantage applied",
+            segment.getId());
+        return;
+      }
+      // Apply as extra wear-and-tear on the champions' condition: the same channel every
+      // match uses, scaled like the player-reported path (10% HP loss ≈ 1 condition point).
+      // The state is managed inside the caller's adjudication transaction — no explicit save
+      // (the same pattern applyWearAndTear relies on).
+      Long universeId =
+          segment.getShow().getUniverse() != null ? segment.getShow().getUniverse().getId() : 1L;
+      for (Wrestler champion : champions) {
+        WrestlerState state = wrestlerService.getOrCreateState(champion.getId(), universeId);
+        int newCondition = Math.max(0, state.getPhysicalCondition() - wearPenalty);
+        state.setPhysicalCondition(newCondition);
+        log.info(
+            "Ambush wear applied to {}: -{} condition points (new condition {})",
+            champion.getName(),
+            wearPenalty,
+            newCondition);
+      }
+    } catch (Exception e) {
+      log.error(
+          "Ambush wear carry-over failed for segment {} — adjudication continues",
+          segment.getId(),
+          e);
+    }
+  }
+
+  /** The champions' wear percentage from their earlier match, breather subtracted (ATW-p8ij). */
+  private int computeChampionWear(List<Wrestler> champions, Segment championSegment) {
+    int wearPenalty = 0;
+    for (Wrestler champion : champions) {
+      Integer finalHealth =
+          championSegment.getParticipants().stream()
+              .filter(
+                  p -> p.getWrestler() != null && champion.getId().equals(p.getWrestler().getId()))
+              .map(SegmentParticipant::getFinalHealth)
+              .filter(Objects::nonNull)
+              .findFirst()
+              .orElse(null);
+      if (finalHealth == null) {
+        continue; // wrestled but no reported health (NPC) — no specific carry-over number
+      }
+      // Percent of starting health lost, scaled the same way adjudication scales wear, minus
+      // the breather. Floor at 0 (a breathered champion is effectively fresh).
+      int startingHealth = Math.max(1, champion.getStartingHealth());
+      int lossPercent = Math.max(0, (startingHealth - finalHealth) * 100 / startingHealth);
+      wearPenalty += Math.max(0, lossPercent / 10 - AMBUSH_BREATHER);
+    }
+    return wearPenalty;
+  }
 
   /**
    * The classic WWE ambush: the holder cashes in immediately AFTER the champion has already
@@ -708,6 +896,23 @@ public class TitleOpportunityService {
                         ? " until " + opportunity.getExpiryDate()
                         : ""))
         .orElse(null);
+  }
+
+  /**
+   * Records that the booker declined (deleted) an advisor proposal for this briefcase (ATW-2b9u).
+   * Drives the advisor's re-proposal cooldown window.
+   */
+  @Transactional
+  public void recordDecline(long opportunityId) {
+    TitleOpportunity opportunity =
+        opportunityRepository
+            .findById(opportunityId)
+            .orElseThrow(
+                () ->
+                    new IllegalArgumentException(
+                        "Briefcase opportunity not found: " + opportunityId));
+    opportunity.setLastDeclinedAt(gameDate());
+    opportunityRepository.save(opportunity);
   }
 
   private LocalDate gameDate() {

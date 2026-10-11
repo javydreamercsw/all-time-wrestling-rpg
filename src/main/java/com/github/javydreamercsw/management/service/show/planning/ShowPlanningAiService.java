@@ -20,10 +20,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
+import com.github.javydreamercsw.management.domain.title.BriefcaseCashInMode;
 import com.github.javydreamercsw.management.service.HolidayService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.planning.dto.AiGeneratedSegmentDTO;
+import com.github.javydreamercsw.management.service.show.planning.dto.BriefcaseCashInPreviewDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.FeudScriptBeatDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.TournamentSlotPreviewDTO;
@@ -90,14 +92,85 @@ public class ShowPlanningAiService {
       ProposedShow proposedShow = new ProposedShow();
       applyScriptedBeats(proposedShow, context);
       applyTournamentSlots(proposedShow, context);
+      applyBriefcaseProposals(proposedShow, context);
       applyDefaultRules(proposedShow);
       return proposedShow;
     }
     ProposedShow proposedShow = planShowWithAi(context);
     applyScriptedBeats(proposedShow, context);
     applyTournamentSlots(proposedShow, context);
+    applyBriefcaseProposals(proposedShow, context);
     applyDefaultRules(proposedShow);
     return proposedShow;
+  }
+
+  /**
+   * NPC briefcase cash-in proposals (ATW-2b9u) preview as consent rows on the card, ahead of the
+   * AI's segments — keep row = approve, delete row = decline. The row's identity is the opportunity
+   * id; booker edits to teams/notes never change what books. Mode: AMBUSH when the reigning
+   * champion already has a non-promo row on the assembled card (the holder strikes right after
+   * their match), PLANNED otherwise.
+   */
+  private void applyBriefcaseProposals(ProposedShow proposedShow, ShowPlanningContextDTO context) {
+    List<BriefcaseCashInPreviewDTO> proposals = context.getBriefcaseProposals();
+    if (proposals == null || proposals.isEmpty()) {
+      return;
+    }
+    List<ProposedSegment> segments = proposedShow.getSegments();
+    List<ProposedSegment> briefcaseRows = new ArrayList<>();
+    for (BriefcaseCashInPreviewDTO proposal : proposals) {
+      ProposedSegment row = new ProposedSegment();
+      row.setType("One on One");
+      row.setSummary(
+          proposal.getSummary() != null && !proposal.getSummary().isBlank()
+              ? proposal.getSummary()
+              : "NPC briefcase cash-in — "
+                  + proposal.getHolderName()
+                  + " challenges for "
+                  + proposal.getTitleName());
+      row.setNotes(
+          "NPC briefcase cash-in ("
+              + proposal.getHolderName()
+              + " vs "
+              + String.join(" & ", proposal.getChampionNames())
+              + " for the "
+              + proposal.getTitleName()
+              + "). Keep this row to approve; delete this row to decline.");
+      row.setSource(ProposedSegment.SOURCE_BRIEFCASE);
+      row.setBriefcaseOpportunityId(proposal.getOpportunityId());
+      // Display-only team layout: champions then holder. Approval books from the advisor's
+      // data, not the row's names.
+      row.setTeams(new ArrayList<>(proposal.getTeams()));
+      boolean championOnCard =
+          segments.stream()
+              .anyMatch(
+                  candidate ->
+                      !isPromoRow(candidate)
+                          && candidate.getTeams() != null
+                          && candidate.getTeams().stream()
+                              .flatMap(List::stream)
+                              .anyMatch(proposal.getChampionNames()::contains));
+      row.setBriefcaseMode(
+          championOnCard ? BriefcaseCashInMode.AMBUSH : BriefcaseCashInMode.PLANNED);
+      if (championOnCard) {
+        row.setSummary(
+            row.getSummary() + " (ambush: right after the champion's match on this card)");
+      }
+      briefcaseRows.add(row);
+    }
+    // Briefcase rows land ahead of the card, like beats and tournament slots.
+    briefcaseRows.addAll(segments);
+    proposedShow.setSegments(briefcaseRows);
+    log.info(
+        "Applied {} briefcase cash-in row(s) deterministically; card now has {} segments",
+        briefcaseRows.size() - segments.size(),
+        briefcaseRows.size());
+  }
+
+  /** A row is a promo when its type says so (no segment-type lookup needed for preview). */
+  private boolean isPromoRow(ProposedSegment row) {
+    return row.getType() != null
+        && row.getType().toLowerCase(java.util.Locale.ROOT).contains("promo");
   }
 
   /**

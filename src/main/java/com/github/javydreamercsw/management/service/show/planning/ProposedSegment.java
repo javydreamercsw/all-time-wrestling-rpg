@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.show.planning;
 
+import com.github.javydreamercsw.management.domain.title.BriefcaseCashInMode;
 import com.github.javydreamercsw.management.domain.title.Title;
 import java.util.HashSet;
 import java.util.List;
@@ -42,12 +43,24 @@ public class ProposedSegment {
   private List<String> rules;
   private String refereeName;
 
+  /** Source stamps for the planning grid's badge; approval strips both as consent rows. */
+  public static final String SOURCE_TOURNAMENT = "Tournament";
+
+  public static final String SOURCE_BRIEFCASE = "Briefcase";
+
   /**
    * Where this row came from, for the planning grid's Source badge: "Scripted beat" (deterministic
-   * arc slot), "Tournament" (show-attached tournament slot — paced round or payoff), or null (the
-   * AI's own proposal). Badge display only — approval treats every row the same.
+   * arc slot), {@link #SOURCE_TOURNAMENT} (show-attached tournament slot — paced round or payoff),
+   * {@link #SOURCE_BRIEFCASE} (NPC briefcase cash-in proposal, ATW-2b9u), or null (the AI's own
+   * proposal). Badge display only — approval treats every row the same.
    */
   private String source;
+
+  /** Identity of the briefcase proposal this row consents to (ATW-2b9u); null for other rows. */
+  private Long briefcaseOpportunityId;
+
+  /** Proposed cash-in mode (ATW-2b9u): PLANNED / AMBUSH / RUN_IN. */
+  private BriefcaseCashInMode briefcaseMode;
 
   public void setTitles(final Set<Title> titles) {
     this.titles = titles;
