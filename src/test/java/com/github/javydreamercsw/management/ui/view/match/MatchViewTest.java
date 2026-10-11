@@ -1226,7 +1226,7 @@ class MatchViewTest extends AbstractViewTest {
 
     BeforeEnterEvent event = mock(BeforeEnterEvent.class);
     when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "31"));
-    when(segmentService.findByIdWithDetails(31L)).thenReturn(java.util.Optional.of(segment));
+    when(segmentService.findByIdWithDetails(31L)).thenReturn(Optional.of(segment));
     UI.getCurrent().add(matchView);
     matchView.beforeEnter(event);
 
@@ -1263,7 +1263,7 @@ class MatchViewTest extends AbstractViewTest {
 
     BeforeEnterEvent event = mock(BeforeEnterEvent.class);
     when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "32"));
-    when(segmentService.findByIdWithDetails(32L)).thenReturn(java.util.Optional.of(segment));
+    when(segmentService.findByIdWithDetails(32L)).thenReturn(Optional.of(segment));
     UI.getCurrent().add(matchView);
     matchView.beforeEnter(event);
 
@@ -1298,7 +1298,7 @@ class MatchViewTest extends AbstractViewTest {
 
     BeforeEnterEvent event = mock(BeforeEnterEvent.class);
     when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "33"));
-    when(segmentService.findByIdWithDetails(33L)).thenReturn(java.util.Optional.of(segment));
+    when(segmentService.findByIdWithDetails(33L)).thenReturn(Optional.of(segment));
     UI.getCurrent().add(matchView);
     matchView.beforeEnter(event);
 
@@ -1334,7 +1334,7 @@ class MatchViewTest extends AbstractViewTest {
 
     BeforeEnterEvent event = mock(BeforeEnterEvent.class);
     when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "34"));
-    when(segmentService.findByIdWithDetails(34L)).thenReturn(java.util.Optional.of(segment));
+    when(segmentService.findByIdWithDetails(34L)).thenReturn(Optional.of(segment));
     UI.getCurrent().add(matchView);
     matchView.beforeEnter(event);
 
@@ -1376,7 +1376,7 @@ class MatchViewTest extends AbstractViewTest {
 
     BeforeEnterEvent event = mock(BeforeEnterEvent.class);
     when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "35"));
-    when(segmentService.findByIdWithDetails(35L)).thenReturn(java.util.Optional.of(segment));
+    when(segmentService.findByIdWithDetails(35L)).thenReturn(Optional.of(segment));
     UI.getCurrent().add(matchView);
     matchView.beforeEnter(event);
 
