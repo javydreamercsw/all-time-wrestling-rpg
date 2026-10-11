@@ -341,6 +341,15 @@ public class SegmentAdjudicationService {
     applyTitleChange(segment, winners, losers);
     applyContenderOutcomes(segment, winners);
     applyBriefcaseOutcomes(segment, winners);
+    // Advisor-booked ambush (ATW-2b9u): carry the champion's same-show wear into the ambush
+    // resolution. Null-safe and exception-safe — never fails adjudication.
+    if (titleOpportunityService != null) {
+      try {
+        titleOpportunityService.applyAmbushWearIfApplicable(segment);
+      } catch (Exception e) {
+        log.error("Ambush wear carry-over failed for segment {}", segment.getId(), e);
+      }
+    }
 
     Long universeId =
         segment.getShow().getUniverse() != null ? segment.getShow().getUniverse().getId() : 1L;

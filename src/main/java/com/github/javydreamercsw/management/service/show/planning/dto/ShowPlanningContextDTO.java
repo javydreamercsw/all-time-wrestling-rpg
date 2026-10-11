@@ -50,6 +50,12 @@ public class ShowPlanningContextDTO {
   private List<TournamentSlotPreviewDTO> tournamentSlots = new ArrayList<>();
 
   /**
+   * Proposed NPC briefcase cash-ins for this show (ATW-2b9u): planning-card previews only —
+   * approval re-derives the bookings transactionally. Keep row = approve, delete = decline.
+   */
+  private List<BriefcaseCashInPreviewDTO> briefcaseProposals = new ArrayList<>();
+
+  /**
    * Booker-facing warnings for pending arc beats that were withheld from the planning context
    * because their participants are unavailable (injury, low condition, or show constraints).
    * Show-planning UIs render these next to the unbooked-rivalry warnings so a reserved beat missing

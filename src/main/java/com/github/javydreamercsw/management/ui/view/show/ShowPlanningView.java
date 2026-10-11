@@ -274,6 +274,16 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
                         "title",
                         "Tournament slot — participants come from the bracket at approval."
                             + " Delete this row to skip this slot on this show.");
+              } else if (ProposedSegment.SOURCE_BRIEFCASE.equals(s.getSource())) {
+                badge.setText("Briefcase");
+                badge.getElement().getThemeList().add("badge success");
+                badge
+                    .getElement()
+                    .setAttribute(
+                        "title",
+                        "NPC briefcase cash-in — booked as proposed when approved (the row's"
+                            + " teams are display-only). Keep this row to approve, delete to"
+                            + " decline.");
               }
               return badge;
             })

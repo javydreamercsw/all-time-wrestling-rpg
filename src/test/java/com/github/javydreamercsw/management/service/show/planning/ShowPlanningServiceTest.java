@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.show.planning;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -24,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
@@ -48,10 +50,7 @@ import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRep
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
 import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
-import com.github.javydreamercsw.management.domain.title.Title;
-import com.github.javydreamercsw.management.domain.title.TitleOpportunity;
-import com.github.javydreamercsw.management.domain.title.TitleReign;
-import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
+import com.github.javydreamercsw.management.domain.title.*;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -71,6 +70,7 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningDtoMapper;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRivalryDTO;
+import com.github.javydreamercsw.management.service.title.BriefcaseCashInAdvisorService;
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.tournament.TournamentTemplateBookingService;
@@ -120,6 +120,8 @@ class ShowPlanningServiceTest {
   @Mock private ShowTemplateRepository showTemplateRepository;
   @Mock private TournamentTemplateBookingService tournamentTemplateBookingService;
   @Mock private TitleOpportunityService titleOpportunityService;
+
+  @Mock private BriefcaseCashInAdvisorService briefcaseCashInAdvisorService;
 
   @InjectMocks private ShowPlanningService showPlanningService;
 
@@ -1675,5 +1677,261 @@ class ShowPlanningServiceTest {
 
     assertThrows(
         IllegalStateException.class, () -> showPlanningService.approveSegments(show, List.of(seg)));
+  }
+
+  // ── NPC briefcase cash-in approval (ATW-2b9u) ─────────────────────────────
+
+  private BriefcaseCashInAdvisorService.BriefcaseProposal briefcaseProposal(
+      TitleOpportunity opportunity, Title proposalTitle, Wrestler champion, int score) {
+    return new BriefcaseCashInAdvisorService.BriefcaseProposal(
+        opportunity, proposalTitle, List.of(champion), BriefcaseCashInMode.PLANNED, score);
+  }
+
+  private TitleOpportunity heldOpportunity(long id, Wrestler holder) {
+    var opportunity = new TitleOpportunity();
+    opportunity.setId(id);
+    opportunity.setName("Time Vault briefcase");
+    opportunity.setStatus(TitleOpportunityStatus.HELD);
+    opportunity.setWrestler(holder);
+    return opportunity;
+  }
+
+  private Title proposalTitle(long id, String name) {
+    Title t = new Title();
+    t.setId(id);
+    t.setName(name);
+    return t;
+  }
+
+  @Test
+  void approveSegments_briefcasePlannedRow_booksCashInSegment() {
+    when(gameSettingService.isNpcBriefcaseCashInEnabled()).thenReturn(true);
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+    Wrestler champion = new Wrestler();
+    champion.setId(2L);
+    champion.setName("Reigning Champ");
+    var opportunity = heldOpportunity(7L, activeWrestler);
+    Title worldTitle = proposalTitle(11L, "ATW World");
+    when(briefcaseCashInAdvisorService.proposalsFor(show))
+        .thenReturn(List.of(briefcaseProposal(opportunity, worldTitle, champion, 80)));
+
+    Segment cashInSegment = new Segment();
+    cashInSegment.setId(555L);
+    when(titleOpportunityService.cashIn(7L, 11L, 1L)).thenReturn(cashInSegment);
+
+    ProposedSegment row = new ProposedSegment();
+    row.setType("One on One");
+    row.setSource(ProposedSegment.SOURCE_BRIEFCASE);
+    row.setBriefcaseOpportunityId(7L);
+    row.setBriefcaseMode(BriefcaseCashInMode.PLANNED);
+
+    showPlanningService.approveSegments(show, List.of(row));
+
+    verify(titleOpportunityService).cashIn(7L, 11L, 1L);
+    ArgumentCaptor<List<Segment>> captor = ArgumentCaptor.forClass(List.class);
+    verify(segmentRepository).saveAll(captor.capture());
+    assertThat(captor.getValue()).contains(cashInSegment);
+    assertEquals(1, cashInSegment.getSegmentOrder());
+  }
+
+  @Test
+  void approveSegments_briefcaseAmbushRow_booksSegmentAfterChampionMatch() {
+    when(gameSettingService.isNpcBriefcaseCashInEnabled()).thenReturn(true);
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+    Wrestler champion = new Wrestler();
+    champion.setId(2L);
+    champion.setName("Reigning Champ");
+    var opportunity = heldOpportunity(7L, activeWrestler);
+    Title worldTitle = proposalTitle(11L, "ATW World");
+    when(briefcaseCashInAdvisorService.proposalsFor(show))
+        .thenReturn(List.of(briefcaseProposal(opportunity, worldTitle, champion, 80)));
+
+    Segment ambushSegment = new Segment();
+    ambushSegment.setId(556L);
+    when(titleOpportunityService.bookAmbush(eq(7L), eq(11L), eq(1L), any(Segment.class)))
+        .thenReturn(ambushSegment);
+
+    // Champion's match is a kept card segment at order 2.
+    ProposedSegment championMatch = new ProposedSegment();
+    championMatch.setType("One on One");
+    championMatch.setTeams(List.of(List.of("Reigning Champ"), List.of("Challenger")));
+    ProposedSegment ambushRow = new ProposedSegment();
+    ambushRow.setType("One on One");
+    ambushRow.setSource(ProposedSegment.SOURCE_BRIEFCASE);
+    ambushRow.setBriefcaseOpportunityId(7L);
+    ambushRow.setBriefcaseMode(BriefcaseCashInMode.AMBUSH);
+
+    when(wrestlerRepository.findByName("Reigning Champ")).thenReturn(Optional.of(champion));
+    when(wrestlerRepository.findByName("Challenger")).thenReturn(Optional.empty());
+    SegmentType singlesType = new SegmentType();
+    singlesType.setName("One on One");
+    when(segmentTypeService.findByName("One on One")).thenReturn(Optional.of(singlesType));
+
+    showPlanningService.approveSegments(show, List.of(championMatch, ambushRow));
+
+    // The champion's card match carries order 1; the ambush must slot in at order 2.
+    ArgumentCaptor<Segment> championCaptor = ArgumentCaptor.forClass(Segment.class);
+    verify(titleOpportunityService).bookAmbush(eq(7L), eq(11L), eq(1L), championCaptor.capture());
+    assertEquals(1, championCaptor.getValue().getSegmentOrder());
+    ArgumentCaptor<List<Segment>> captor = ArgumentCaptor.forClass(List.class);
+    verify(segmentRepository).saveAll(captor.capture());
+    assertThat(captor.getValue()).contains(ambushSegment);
+    assertEquals(2, ambushSegment.getSegmentOrder());
+    verify(titleOpportunityService, never()).cashIn(anyLong(), anyLong(), anyLong());
+  }
+
+  @Test
+  void approveSegments_briefcaseRowDeleted_marksDecline() {
+    when(gameSettingService.isNpcBriefcaseCashInEnabled()).thenReturn(true);
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+    Wrestler champion = new Wrestler();
+    champion.setId(2L);
+    champion.setName("Reigning Champ");
+    var opportunity = heldOpportunity(7L, activeWrestler);
+    Title worldTitle = proposalTitle(11L, "ATW World");
+    when(briefcaseCashInAdvisorService.proposalsFor(show))
+        .thenReturn(List.of(briefcaseProposal(opportunity, worldTitle, champion, 80)));
+
+    // Card contains NO briefcase row — the booker deleted it.
+    showPlanningService.approveSegments(show, List.of());
+
+    verify(titleOpportunityService).recordDecline(7L);
+    verify(titleOpportunityService, never()).cashIn(anyLong(), anyLong(), anyLong());
+  }
+
+  @Test
+  void approveSegments_briefcaseAmbushRowChampionRemovedFromCard_downgradesToPlanned() {
+    when(gameSettingService.isNpcBriefcaseCashInEnabled()).thenReturn(true);
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+    Wrestler champion = new Wrestler();
+    champion.setId(2L);
+    champion.setName("Reigning Champ");
+    var opportunity = heldOpportunity(7L, activeWrestler);
+    Title worldTitle = proposalTitle(11L, "ATW World");
+    when(briefcaseCashInAdvisorService.proposalsFor(show))
+        .thenReturn(List.of(briefcaseProposal(opportunity, worldTitle, champion, 80)));
+
+    Segment cashInSegment = new Segment();
+    cashInSegment.setId(557L);
+    when(titleOpportunityService.cashIn(7L, 11L, 1L)).thenReturn(cashInSegment);
+
+    // Kept AMBUSH row, but the champion's match was removed from the submitted card.
+    ProposedSegment ambushRow = new ProposedSegment();
+    ambushRow.setType("One on One");
+    ambushRow.setSource(ProposedSegment.SOURCE_BRIEFCASE);
+    ambushRow.setBriefcaseOpportunityId(7L);
+    ambushRow.setBriefcaseMode(BriefcaseCashInMode.AMBUSH);
+
+    showPlanningService.approveSegments(show, List.of(ambushRow));
+
+    verify(titleOpportunityService).cashIn(7L, 11L, 1L);
+    verify(titleOpportunityService, never()).bookAmbush(anyLong(), anyLong(), anyLong(), any());
+  }
+
+  @Test
+  void approveSegments_briefcaseRunInRow_isInert() {
+    when(gameSettingService.isNpcBriefcaseCashInEnabled()).thenReturn(true);
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+    Wrestler champion = new Wrestler();
+    champion.setId(2L);
+    champion.setName("Reigning Champ");
+    var opportunity = heldOpportunity(7L, activeWrestler);
+    Title worldTitle = proposalTitle(11L, "ATW World");
+    when(briefcaseCashInAdvisorService.proposalsFor(show))
+        .thenReturn(List.of(briefcaseProposal(opportunity, worldTitle, champion, 80)));
+
+    ProposedSegment runInRow = new ProposedSegment();
+    runInRow.setType("One on One");
+    runInRow.setSource(ProposedSegment.SOURCE_BRIEFCASE);
+    runInRow.setBriefcaseOpportunityId(7L);
+    runInRow.setBriefcaseMode(BriefcaseCashInMode.RUN_IN);
+
+    showPlanningService.approveSegments(show, List.of(runInRow));
+
+    verify(titleOpportunityService, never()).cashIn(anyLong(), anyLong(), anyLong());
+    verify(titleOpportunityService, never()).bookAmbush(anyLong(), anyLong(), anyLong(), any());
+    verify(titleOpportunityService, never()).recordDecline(anyLong());
+  }
+
+  @Test
+  void approveSegments_staleBriefcaseRow_ignored() {
+    when(gameSettingService.isNpcBriefcaseCashInEnabled()).thenReturn(true);
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+    // No advisor candidates — the proposal lapsed (vacant title, cooldown, etc.).
+    when(briefcaseCashInAdvisorService.proposalsFor(show)).thenReturn(List.of());
+
+    ProposedSegment staleRow = new ProposedSegment();
+    staleRow.setType("One on One");
+    staleRow.setSource(ProposedSegment.SOURCE_BRIEFCASE);
+    staleRow.setBriefcaseOpportunityId(9L);
+    staleRow.setBriefcaseMode(BriefcaseCashInMode.PLANNED);
+
+    showPlanningService.approveSegments(show, List.of(staleRow));
+
+    verify(titleOpportunityService, never()).cashIn(anyLong(), anyLong(), anyLong());
+    verify(titleOpportunityService, never()).recordDecline(anyLong());
+  }
+
+  @Test
+  void approveSegments_briefcaseRowsExcludedFromValidation() {
+    when(gameSettingService.isNpcBriefcaseCashInEnabled()).thenReturn(true);
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+    // A participant-less Briefcase row would break card validation if it slipped through;
+    // it must be stripped before the validators run.
+    when(briefcaseCashInAdvisorService.proposalsFor(show)).thenReturn(List.of());
+
+    ProposedSegment briefcaseRow = new ProposedSegment();
+    briefcaseRow.setType("One on One");
+    briefcaseRow.setSource(ProposedSegment.SOURCE_BRIEFCASE);
+    briefcaseRow.setBriefcaseOpportunityId(7L);
+
+    // No exception: the row never reaches validateCard/duplicate checks.
+    showPlanningService.approveSegments(show, List.of(briefcaseRow));
+  }
+
+  @Test
+  void approveSegments_briefcaseCashInFailure_doesNotFailApproval() {
+    when(gameSettingService.isNpcBriefcaseCashInEnabled()).thenReturn(true);
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+    Wrestler champion = new Wrestler();
+    champion.setId(2L);
+    champion.setName("Reigning Champ");
+    var opportunity = heldOpportunity(7L, activeWrestler);
+    Title worldTitle = proposalTitle(11L, "ATW World");
+    when(briefcaseCashInAdvisorService.proposalsFor(show))
+        .thenReturn(List.of(briefcaseProposal(opportunity, worldTitle, champion, 80)));
+    when(titleOpportunityService.cashIn(7L, 11L, 1L))
+        .thenThrow(new IllegalStateException("Title is vacant"));
+
+    ProposedSegment row = new ProposedSegment();
+    row.setType("One on One");
+    row.setSource(ProposedSegment.SOURCE_BRIEFCASE);
+    row.setBriefcaseOpportunityId(7L);
+    row.setBriefcaseMode(BriefcaseCashInMode.PLANNED);
+
+    // The approval completes; the failed cash-in is logged, not propagated.
+    showPlanningService.approveSegments(show, List.of(row));
+
+    verify(titleOpportunityService).cashIn(7L, 11L, 1L);
+  }
+
+  @Test
+  void approveSegments_briefcaseSettingDisabled_fullyInert() {
+    when(gameSettingService.isNpcBriefcaseCashInEnabled()).thenReturn(false);
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+    Wrestler champion = new Wrestler();
+    champion.setId(2L);
+    champion.setName("Reigning Champ");
+    var opportunity = heldOpportunity(7L, activeWrestler);
+    Title worldTitle = proposalTitle(11L, "ATW World");
+    when(briefcaseCashInAdvisorService.proposalsFor(show))
+        .thenReturn(List.of(briefcaseProposal(opportunity, worldTitle, champion, 80)));
+
+    // The advisor is never even consulted when the setting is off — and a deleted row is
+    // not punished with a cooldown while the feature is disabled.
+    showPlanningService.approveSegments(show, List.of());
+
+    verify(briefcaseCashInAdvisorService, never()).proposalsFor(any());
+    verify(titleOpportunityService, never()).recordDecline(anyLong());
   }
 }

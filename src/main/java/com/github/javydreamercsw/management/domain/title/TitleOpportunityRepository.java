@@ -51,6 +51,9 @@ public interface TitleOpportunityRepository extends JpaRepository<TitleOpportuni
   /** Opportunities that cashed in against the given title — reference check for repairs. */
   List<TitleOpportunity> findByCashedAgainstTitleId(Long titleId);
 
+  /** The opportunity cashed in via the given segment — ambush wear lookup (ATW-2b9u). */
+  List<TitleOpportunity> findByCashedAtSegmentId(Long segmentId);
+
   /**
    * Detached-safe full fetch for the CRUD view (ATW-jpki): holder, universe and tournament load
    * inside the transaction so the dialog and grid can read them.

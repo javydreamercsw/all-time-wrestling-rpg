@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
+import com.github.javydreamercsw.management.domain.title.BriefcaseCashInMode;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleOpportunity;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
@@ -48,10 +49,12 @@ import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.segment.SegmentSummaryService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.show.planning.dto.BriefcaseCashInPreviewDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningDtoMapper;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRivalryDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.TournamentSlotPreviewDTO;
+import com.github.javydreamercsw.management.service.title.BriefcaseCashInAdvisorService;
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.tournament.TournamentTemplateBookingService;
@@ -64,6 +67,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -103,6 +107,7 @@ public class ShowPlanningService {
   private final ShowTemplateRepository showTemplateRepository;
   private final TournamentTemplateBookingService tournamentTemplateBookingService;
   private final TitleOpportunityService titleOpportunityService;
+  private final BriefcaseCashInAdvisorService briefcaseCashInAdvisorService;
 
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
@@ -376,6 +381,11 @@ public class ShowPlanningService {
           show.getName(),
           tournamentSlots.size());
     }
+    // NPC briefcase cash-in proposals (ATW-2b9u): deterministic advisor output, previewed as
+    // consent rows on the card by ShowPlanningAiService.applyBriefcaseProposals.
+    briefcaseCashInAdvisorService
+        .proposalsFor(show)
+        .forEach(proposal -> dto.getBriefcaseProposals().add(briefcasePreviewOf(proposal)));
     // Booker-facing warnings for beats that were withheld — mirrors the MUST_BOOK warning style.
     dto.setExcludedBeatWarnings(
         beatInjection.exclusions().stream()
@@ -567,7 +577,12 @@ public class ShowPlanningService {
     // below. Strip them before reconciliation/validation so placeholder names cannot trip
     // duplicate-participant or intergender checks.
     List<ProposedSegment> cardSegments =
-        proposedSegments.stream().filter(ps -> !"Tournament".equals(ps.getSource())).toList();
+        proposedSegments.stream()
+            .filter(
+                ps ->
+                    !ProposedSegment.SOURCE_TOURNAMENT.equals(ps.getSource())
+                        && !ProposedSegment.SOURCE_BRIEFCASE.equals(ps.getSource()))
+            .toList();
 
     reconcileTeamsWithIds(cardSegments);
 
@@ -868,6 +883,14 @@ public class ShowPlanningService {
       }
     }
 
+    // NPC briefcase cash-in consent rows (ATW-2b9u): every kept row books its cash-in; a
+    // candidate with no row on the card was declined by the booker (cooldown). The setting gate
+    // makes the whole block inert when the feature is off. Never blocks approval: per-row
+    // try/catch — a failed cash-in is logged, not propagated.
+    if (gameSettingService.isNpcBriefcaseCashInEnabled()) {
+      bookBriefcaseConsents(show, proposedSegments, cardSegments, segmentsToSave);
+    }
+
     segmentRepository.saveAll(segmentsToSave);
     log.debug("Approved and saved {} segments for show: {}", segmentsToSave.size(), show.getName());
     // Auto-complete any pending arc beat whose participants match a saved card segment — this is
@@ -883,6 +906,195 @@ public class ShowPlanningService {
     // participant matching.
     feudScriptService.markBeatsBookedForShow(show);
     eventPublisher.publishEvent(new SegmentsApprovedEvent(this, show));
+  }
+
+  /**
+   * Books the briefcase cash-ins consented to on the approved card (ATW-2b9u). A kept row with a
+   * live advisor candidate books per its {@code briefcaseMode}: PLANNED appends a cash-in segment,
+   * AMBUSH inserts one right after the champion's card match (downgrading to PLANNED when the
+   * champion's match was removed), RUN_IN stays inert. A candidate with no row was declined — the
+   * cooldown records it. Identity is {@code briefcaseOpportunityId}: booker edits to a row never
+   * change what books.
+   */
+  private void bookBriefcaseConsents(
+      Show show,
+      List<ProposedSegment> proposedSegments,
+      List<ProposedSegment> cardSegments,
+      List<Segment> segmentsToSave) {
+    List<BriefcaseCashInAdvisorService.BriefcaseProposal> candidates =
+        briefcaseCashInAdvisorService.proposalsFor(show);
+    List<ProposedSegment> briefcaseRows =
+        proposedSegments.stream()
+            .filter(ps -> ProposedSegment.SOURCE_BRIEFCASE.equals(ps.getSource()))
+            .toList();
+    for (BriefcaseCashInAdvisorService.BriefcaseProposal candidate : candidates) {
+      Long opportunityId = candidate.opportunity().getId();
+      ProposedSegment keptRow =
+          briefcaseRows.stream()
+              .filter(ps -> opportunityId.equals(ps.getBriefcaseOpportunityId()))
+              .findFirst()
+              .orElse(null);
+      if (keptRow == null) {
+        try {
+          titleOpportunityService.recordDecline(opportunityId);
+          log.info(
+              "Briefcase proposal for '{}' declined on '{}' (row deleted) — cooldown recorded",
+              candidate.opportunity().getName(),
+              show.getName());
+        } catch (Exception e) {
+          log.warn(
+              "Failed to record briefcase decline for opportunity {}: {}",
+              opportunityId,
+              e.getMessage());
+        }
+        continue;
+      }
+      BriefcaseCashInMode mode =
+          keptRow.getBriefcaseMode() != null
+              ? keptRow.getBriefcaseMode()
+              : BriefcaseCashInMode.PLANNED;
+      switch (mode) {
+        case PLANNED -> bookPlannedCashIn(show, candidate, segmentsToSave);
+        case AMBUSH -> {
+          Segment championSegment =
+              championSegmentOnCard(show, cardSegments, segmentsToSave, candidate);
+          if (championSegment != null) {
+            bookAmbushAfterChampion(show, candidate, championSegment, segmentsToSave);
+          } else {
+            log.info(
+                "Ambush proposal for '{}' downgraded to PLANNED on '{}': the champion's match"
+                    + " is not on the submitted card",
+                candidate.opportunity().getName(),
+                show.getName());
+            bookPlannedCashIn(show, candidate, segmentsToSave);
+          }
+        }
+        case RUN_IN ->
+            log.info(
+                "RUN_IN briefcase proposal for '{}' is inert on '{}' (ATW-qsm9 wires the trigger)",
+                candidate.opportunity().getName(),
+                show.getName());
+      }
+    }
+    // Stale rows (candidate lapsed between card load and approval) are ignored — never booked,
+    // never declined.
+    for (ProposedSegment row : briefcaseRows) {
+      boolean hasCandidate =
+          candidates.stream()
+              .anyMatch(c -> c.opportunity().getId().equals(row.getBriefcaseOpportunityId()));
+      if (!hasCandidate) {
+        log.info(
+            "Ignoring stale briefcase row (opportunity {}) on '{}': no live advisor candidate",
+            row.getBriefcaseOpportunityId(),
+            show.getName());
+      }
+    }
+  }
+
+  /** Books a planned cash-in segment, appending it after the existing card. */
+  private void bookPlannedCashIn(
+      Show show,
+      BriefcaseCashInAdvisorService.BriefcaseProposal candidate,
+      List<Segment> segmentsToSave) {
+    try {
+      Segment segment =
+          titleOpportunityService.cashIn(
+              candidate.opportunity().getId(), candidate.title().getId(), show.getId());
+      segment.setSegmentOrder(
+          segmentRepository.findByShow(show).size() + 1 + segmentsToSave.size());
+      segment.setSegmentDate(show.getShowDate().atStartOfDay(clock.getZone()).toInstant());
+      segmentsToSave.add(segment);
+      log.info(
+          "Briefcase cash-in booked on '{}': {} challenges for {}",
+          show.getName(),
+          candidate.opportunity().getWrestler().getName(),
+          candidate.title().getName());
+    } catch (Exception e) {
+      log.warn(
+          "Briefcase cash-in for opportunity {} failed on '{}': {}",
+          candidate.opportunity().getId(),
+          show.getName(),
+          e.getMessage());
+    }
+  }
+
+  /** Books an ambush segment immediately after the champion's match on the card. */
+  private void bookAmbushAfterChampion(
+      Show show,
+      BriefcaseCashInAdvisorService.BriefcaseProposal candidate,
+      Segment championSegment,
+      List<Segment> segmentsToSave) {
+    try {
+      Segment segment =
+          titleOpportunityService.bookAmbush(
+              candidate.opportunity().getId(),
+              candidate.title().getId(),
+              show.getId(),
+              championSegment);
+      int championOrder = championSegment.getSegmentOrder();
+      // Bump every pending segment below the champion's match down one slot, then insert.
+      for (Segment pending : segmentsToSave) {
+        if (pending.getSegmentOrder() > championOrder) {
+          pending.setSegmentOrder(pending.getSegmentOrder() + 1);
+        }
+      }
+      segment.setSegmentOrder(championOrder + 1);
+      segment.setSegmentDate(show.getShowDate().atStartOfDay(clock.getZone()).toInstant());
+      segmentsToSave.add(segment);
+      log.info(
+          "Briefcase ambush booked on '{}' right after segment {}: {} vs {}",
+          show.getName(),
+          championOrder,
+          candidate.opportunity().getWrestler().getName(),
+          candidate.champions().stream().map(Wrestler::getName).collect(Collectors.joining(" & ")));
+    } catch (Exception e) {
+      log.warn(
+          "Briefcase ambush for opportunity {} failed on '{}': {}",
+          candidate.opportunity().getId(),
+          show.getName(),
+          e.getMessage());
+    }
+  }
+
+  /**
+   * The champion's non-promo match on the submitted card: an in-memory card segment carrying the
+   * champion's name (the card is reconciled but not yet persisted), or a segment already saved to
+   * the show by a previous approval.
+   */
+  private Segment championSegmentOnCard(
+      Show show,
+      List<ProposedSegment> cardSegments,
+      List<Segment> segmentsToSave,
+      BriefcaseCashInAdvisorService.BriefcaseProposal candidate) {
+    List<String> championNames = candidate.champions().stream().map(Wrestler::getName).toList();
+    // In-memory first: the champion's match may be part of this very approval.
+    for (ProposedSegment ps : cardSegments) {
+      if (ps.getTeams() == null
+          || (ps.getType() != null && ps.getType().toLowerCase(Locale.ROOT).contains("promo"))) {
+        continue;
+      }
+      boolean hasChampion =
+          ps.getTeams().stream().flatMap(List::stream).anyMatch(championNames::contains);
+      if (hasChampion) {
+        // Find the corresponding saved/pending segment (same approval saves them together).
+        return segmentsToSave.stream()
+            .filter(
+                s ->
+                    s.getWrestlers() != null
+                        && s.getWrestlers().stream()
+                            .anyMatch(w -> championNames.contains(w.getName())))
+            .findFirst()
+            .orElse(null);
+      }
+    }
+    // Fallback: already-persisted segments on the show (previous approval).
+    return segmentRepository.findByShowOrderBySegmentOrderAsc(show).stream()
+        .filter(
+            s ->
+                s.getWrestlers() != null
+                    && s.getWrestlers().stream().anyMatch(w -> championNames.contains(w.getName())))
+        .reduce((first, second) -> second) // highest order
+        .orElse(null);
   }
 
   /**
@@ -981,6 +1193,26 @@ public class ShowPlanningService {
       names.add(teamNames);
     }
     return names;
+  }
+
+  /** Maps an advisor proposal to the planning-card preview DTO (ATW-2b9u). */
+  private BriefcaseCashInPreviewDTO briefcasePreviewOf(
+      BriefcaseCashInAdvisorService.BriefcaseProposal proposal) {
+    BriefcaseCashInPreviewDTO dto = new BriefcaseCashInPreviewDTO();
+    dto.setOpportunityId(proposal.opportunity().getId());
+    dto.setTitleId(proposal.title().getId());
+    dto.setMode(proposal.mode().name());
+    dto.setHolderName(proposal.opportunity().getWrestler().getName());
+    dto.setTitleName(proposal.title().getName());
+    proposal.champions().forEach(champion -> dto.getChampionNames().add(champion.getName()));
+    proposal.champions().forEach(champion -> dto.getTeams().add(List.of(champion.getName())));
+    dto.getTeams().add(List.of(proposal.opportunity().getWrestler().getName()));
+    dto.setSummary(
+        "NPC briefcase cash-in — "
+            + proposal.opportunity().getWrestler().getName()
+            + " challenges for "
+            + proposal.title().getName());
+    return dto;
   }
 
   private void validateNoDuplicateParticipants(final List<ProposedSegment> proposedSegments) {

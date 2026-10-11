@@ -39,6 +39,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
+import com.github.javydreamercsw.management.domain.title.BriefcaseCashInMode;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleOpportunity;
 import com.github.javydreamercsw.management.domain.title.TitleOpportunityRepository;
@@ -56,6 +57,7 @@ import com.github.javydreamercsw.management.event.BriefcaseGrantedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.segment.NPCSegmentResolutionService;
 import com.github.javydreamercsw.management.service.segment.SegmentTeam;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -89,6 +91,9 @@ class TitleOpportunityServiceTest {
   @Mock private SegmentTypeRepository segmentTypeRepository;
   @Mock private SegmentRuleRepository segmentRuleRepository;
   @Mock private NPCSegmentResolutionService segmentResolutionService;
+
+  @Mock private WrestlerService wrestlerService;
+
   @Mock private GameSettingService gameSettingService;
   @Mock private ApplicationEventPublisher eventPublisher;
 
@@ -116,6 +121,7 @@ class TitleOpportunityServiceTest {
             segmentRepository,
             segmentRuleRepository,
             segmentResolutionService,
+            wrestlerService,
             gameSettingService,
             fixedClock,
             eventPublisher);
@@ -860,5 +866,169 @@ class TitleOpportunityServiceTest {
 
     assertThrows(IllegalArgumentException.class, () -> service.adminVoid(40L));
     verify(opportunityRepository, never()).save(any(TitleOpportunity.class));
+  }
+
+  // ── NPC cash-in advisor support (ATW-2b9u) ────────────────────────────────
+
+  @Test
+  @DisplayName("recordDecline sets lastDeclinedAt to the current game date and saves")
+  void recordDecline_setsLastDeclinedAt() {
+    TitleOpportunity held = heldOpportunityForCrud();
+    when(opportunityRepository.findById(40L)).thenReturn(Optional.of(held));
+
+    service.recordDecline(40L);
+
+    assertEquals(GAME_DATE, held.getLastDeclinedAt());
+    verify(opportunityRepository).save(held);
+  }
+
+  @Test
+  @DisplayName("recordDecline rejects unknown opportunity ids")
+  void recordDecline_rejectsUnknownId() {
+    when(opportunityRepository.findById(99L)).thenReturn(Optional.empty());
+
+    assertThrows(IllegalArgumentException.class, () -> service.recordDecline(99L));
+    verify(opportunityRepository, never()).save(any(TitleOpportunity.class));
+  }
+
+  // ── Mid-match run-in cash-in (ATW-qsm9) ───────────────────────────────────
+
+  private Segment interruptedTitleMatch(Wrestler champion, Wrestler challenger) {
+    SegmentType matchType = new SegmentType();
+    matchType.setName("One on One");
+    Segment interrupted = new Segment();
+    interrupted.setId(77L);
+    Show matchShow = new Show();
+    matchShow.setId(5L);
+    when(showRepository.findById(5L)).thenReturn(Optional.of(matchShow));
+    interrupted.setShow(matchShow);
+    interrupted.setSegmentType(matchType);
+    interrupted.setIsTitleSegment(true);
+    interrupted.addParticipant(champion, 1);
+    interrupted.addParticipant(challenger, 2);
+    return interrupted;
+  }
+
+  @Test
+  @DisplayName("bookRunIn builds a 3-team FFA: champion / challenger / fresh holder")
+  void bookRunIn_buildsThreeTeamFfa() {
+    Wrestler champion = new Wrestler();
+    champion.setId(101L);
+    champion.setName("Reigning Champ");
+    Wrestler challenger = new Wrestler();
+    challenger.setId(102L);
+    challenger.setName("Number One Contender");
+
+    TitleOpportunity held = heldOpportunity();
+    when(opportunityRepository.findById(10L)).thenReturn(Optional.of(held));
+    when(titleRepository.findById(2L)).thenReturn(Optional.of(title));
+    when(titleReignRepository.findByTitleIdAndEndDateIsNull(2L))
+        .thenReturn(List.of(reignWith(champion)));
+    Show show = new Show();
+    show.setId(5L);
+    when(showRepository.findById(5L)).thenReturn(Optional.of(show));
+    SegmentType ffaType = new SegmentType();
+    ffaType.setName("Free-for-All");
+    when(segmentTypeRepository.findByCode(WellKnownSegmentType.FREE_FOR_ALL.getCode()))
+        .thenReturn(Optional.of(ffaType));
+    when(segmentResolutionService.resolveMultiTeamSegment(any(), any(), any(), any()))
+        .thenAnswer(
+            invocation -> {
+              Segment s = new Segment();
+              s.setShow(invocation.getArgument(2));
+              s.setSegmentType(invocation.getArgument(1));
+              return s;
+            });
+
+    service.bookRunIn(10L, 2L, 5L, interruptedTitleMatch(champion, challenger));
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<SegmentTeam>> teamsCaptor = ArgumentCaptor.forClass(List.class);
+    verify(segmentResolutionService)
+        .resolveMultiTeamSegment(teamsCaptor.capture(), any(), any(), any());
+    List<SegmentTeam> teams = teamsCaptor.getValue();
+    assertEquals(3, teams.size());
+    // Team layout: champion(s), then the challenger(s), then the holder.
+    assertEquals(List.of(champion), teams.get(0).getMembers());
+    assertEquals(List.of(challenger), teams.get(1).getMembers());
+    assertEquals(List.of(winner), teams.get(2).getMembers());
+    // The case is spent with RUN_IN mode.
+    verify(opportunityRepository).save(held);
+    assertEquals(BriefcaseCashInMode.RUN_IN, held.getCashInMode());
+    // Event fires via bookCashIn.
+    verify(eventPublisher).publishEvent(any(BriefcaseCashedInEvent.class));
+  }
+
+  @Test
+  @DisplayName("bookRunIn applies the incumbents' recorded wear with the run-in breather")
+  void bookRunIn_appliesIncumbentWear() {
+    Wrestler champion = new Wrestler();
+    champion.setId(101L);
+    champion.setName("Reigning Champ");
+    champion.setStartingHealth(20);
+    Wrestler challenger = new Wrestler();
+    challenger.setId(102L);
+    challenger.setName("Number One Contender");
+    challenger.setStartingHealth(20);
+
+    when(opportunityRepository.findById(10L)).thenReturn(Optional.of(heldOpportunity()));
+    when(titleRepository.findById(2L)).thenReturn(Optional.of(title));
+    when(titleReignRepository.findByTitleIdAndEndDateIsNull(2L))
+        .thenReturn(List.of(reignWith(champion)));
+    when(showRepository.findById(5L)).thenReturn(Optional.of(new Show()));
+    SegmentType ffaType = new SegmentType();
+    ffaType.setName("Free-for-All");
+    when(segmentTypeRepository.findByCode(WellKnownSegmentType.FREE_FOR_ALL.getCode()))
+        .thenReturn(Optional.of(ffaType));
+    when(segmentResolutionService.resolveMultiTeamSegment(any(), any(), any(), any()))
+        .thenAnswer(
+            invocation -> {
+              Segment s = new Segment();
+              return s;
+            });
+
+    Segment interrupted = interruptedTitleMatch(champion, challenger);
+    // Champion recorded 10/20 (half — trigger fired), challenger 15/20.
+    for (var p : interrupted.getParticipants()) {
+      if (p.getWrestler().getId().equals(101L)) {
+        p.setFinalHealth(10);
+      } else {
+        p.setFinalHealth(15);
+      }
+    }
+
+    service.bookRunIn(10L, 2L, 5L, interrupted);
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<SegmentTeam>> teamsCaptor = ArgumentCaptor.forClass(List.class);
+    verify(segmentResolutionService)
+        .resolveMultiTeamSegment(teamsCaptor.capture(), any(), any(), any());
+    List<SegmentTeam> teams = teamsCaptor.getValue();
+    // Champion: 50% loss → 5 raw points − 3 breather = 2. Challenger: 25% → 2 − 3 → floor 0.
+    assertEquals(2, teams.get(0).getExtraWearPenalty());
+    assertEquals(0, teams.get(1).getExtraWearPenalty());
+    // The holder's team is fresh: no penalty.
+    assertEquals(0, teams.get(2).getExtraWearPenalty());
+  }
+
+  @Test
+  @DisplayName("bookRunIn rejects when the interrupted match has no champion participant")
+  void bookRunIn_rejectsMissingChampion() {
+    Wrestler outsider = new Wrestler();
+    outsider.setId(201L);
+    outsider.setName("Outsider");
+    Wrestler outsider2 = new Wrestler();
+    outsider2.setId(202L);
+    outsider2.setName("Outsider Two");
+
+    when(opportunityRepository.findById(10L)).thenReturn(Optional.of(heldOpportunity()));
+    when(titleRepository.findById(2L)).thenReturn(Optional.of(title));
+    when(titleReignRepository.findByTitleIdAndEndDateIsNull(2L))
+        .thenReturn(List.of(reignWith(new Wrestler())));
+
+    Segment interrupted = interruptedTitleMatch(outsider, outsider2);
+
+    assertThrows(IllegalStateException.class, () -> service.bookRunIn(10L, 2L, 5L, interrupted));
+    verify(eventPublisher, never()).publishEvent(any());
   }
 }

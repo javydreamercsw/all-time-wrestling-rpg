@@ -863,4 +863,21 @@ class SegmentAdjudicationServiceTest {
 
     verify(titleService, never()).recordSuccessfulDefense(any());
   }
+
+  // --- Ambush wear at adjudication (ATW-2b9u) ---
+
+  @Test
+  void adjudicateMatch_ambushSegment_appliesAmbushWear() {
+    when(segment.getId()).thenReturn(888L);
+    segmentAdjudicationService.adjudicateMatch(segment);
+    verify(titleOpportunityService).applyAmbushWearIfApplicable(segment);
+  }
+
+  @Test
+  void adjudicateMatch_titleOpportunityServiceNull_skipsAmbushWear() {
+    ReflectionTestUtils.setField(segmentAdjudicationService, "titleOpportunityService", null);
+    when(segment.getId()).thenReturn(889L);
+    // No exception: the hook is null-safe (unit tests).
+    segmentAdjudicationService.adjudicateMatch(segment);
+  }
 }

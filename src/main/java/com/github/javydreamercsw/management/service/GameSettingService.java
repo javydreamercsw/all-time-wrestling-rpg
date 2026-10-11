@@ -104,6 +104,8 @@ public class GameSettingService {
    */
   public static final String BRIEFCASE_EXPIRY_DAYS_KEY = "briefcase.expiry.days";
 
+  public static final String BRIEFCASE_NPC_CASH_IN_ENABLED_KEY = "briefcase.npc_cash_in_enabled";
+
   /**
    * Keys that are strictly per-universe credentials. They are NEVER inherited from the global
    * defaults — each universe must configure its own. Reading without an active universe returns
@@ -473,6 +475,21 @@ public class GameSettingService {
   @PreAuthorize("permitAll()")
   public int getBriefcaseExpiryDays() {
     return resolveValue(BRIEFCASE_EXPIRY_DAYS_KEY).map(Integer::parseInt).orElse(365);
+  }
+
+  /**
+   * Whether the NPC briefcase cash-in advisor proposes automatic cash-ins on show-planning cards
+   * (ATW-2b9u). Default: true.
+   */
+  @PreAuthorize("permitAll()")
+  public boolean isNpcBriefcaseCashInEnabled() {
+    return resolveValue(BRIEFCASE_NPC_CASH_IN_ENABLED_KEY).map(Boolean::parseBoolean).orElse(true);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public void setNpcBriefcaseCashInEnabled(final boolean enabled) {
+    saveInternal(BRIEFCASE_NPC_CASH_IN_ENABLED_KEY, String.valueOf(enabled));
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
