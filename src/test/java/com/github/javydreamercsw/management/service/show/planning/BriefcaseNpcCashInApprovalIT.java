@@ -19,8 +19,11 @@ package com.github.javydreamercsw.management.service.show.planning;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
+import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
+import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
@@ -30,12 +33,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSe
 import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
-import com.github.javydreamercsw.management.domain.title.BriefcaseCashInMode;
-import com.github.javydreamercsw.management.domain.title.Title;
-import com.github.javydreamercsw.management.domain.title.TitleOpportunity;
-import com.github.javydreamercsw.management.domain.title.TitleOpportunityRepository;
-import com.github.javydreamercsw.management.domain.title.TitleOpportunityStatus;
-import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.title.*;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -67,8 +65,7 @@ class BriefcaseNpcCashInApprovalIT extends ManagementIntegrationTest {
   @Autowired private TitleRepository titleRepository;
   @Autowired private TitleOpportunityRepository opportunityRepository;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.rivalry.RivalryRepository rivalryRepository;
+  @Autowired private RivalryRepository rivalryRepository;
 
   @Autowired private ShowPlanningService showPlanningService;
 
@@ -94,8 +91,7 @@ class BriefcaseNpcCashInApprovalIT extends ManagementIntegrationTest {
 
     // A hot active rivalry between the holder and the champion pushes the advisor's score over
     // the proposal threshold (heat is 25 of the 100-point scale).
-    com.github.javydreamercsw.management.domain.rivalry.Rivalry rivalry =
-        new com.github.javydreamercsw.management.domain.rivalry.Rivalry();
+    Rivalry rivalry = new Rivalry();
     rivalry.setWrestler1(holder);
     rivalry.setWrestler2(champion);
     rivalry.setHeat(90);
@@ -107,9 +103,8 @@ class BriefcaseNpcCashInApprovalIT extends ManagementIntegrationTest {
     worldTitle.setName("Briefcase IT World " + System.nanoTime());
     worldTitle.setIsActive(true);
     worldTitle.setUniverse(universe);
-    worldTitle.setChampionshipType(
-        com.github.javydreamercsw.management.domain.title.ChampionshipType.SINGLE);
-    worldTitle.setTier(com.github.javydreamercsw.base.domain.wrestler.WrestlerTier.ICON);
+    worldTitle.setChampionshipType(ChampionshipType.SINGLE);
+    worldTitle.setTier(WrestlerTier.ICON);
     worldTitle.awardTitleTo(List.of(champion), Instant.now());
     worldTitle = titleRepository.saveAndFlush(worldTitle);
 

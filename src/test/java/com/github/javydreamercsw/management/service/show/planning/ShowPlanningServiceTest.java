@@ -50,10 +50,7 @@ import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRep
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
 import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
-import com.github.javydreamercsw.management.domain.title.Title;
-import com.github.javydreamercsw.management.domain.title.TitleOpportunity;
-import com.github.javydreamercsw.management.domain.title.TitleReign;
-import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
+import com.github.javydreamercsw.management.domain.title.*;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -73,6 +70,7 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningDtoMapper;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRivalryDTO;
+import com.github.javydreamercsw.management.service.title.BriefcaseCashInAdvisorService;
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.tournament.TournamentTemplateBookingService;
@@ -123,9 +121,7 @@ class ShowPlanningServiceTest {
   @Mock private TournamentTemplateBookingService tournamentTemplateBookingService;
   @Mock private TitleOpportunityService titleOpportunityService;
 
-  @Mock
-  private com.github.javydreamercsw.management.service.title.BriefcaseCashInAdvisorService
-      briefcaseCashInAdvisorService;
+  @Mock private BriefcaseCashInAdvisorService briefcaseCashInAdvisorService;
 
   @InjectMocks private ShowPlanningService showPlanningService;
 
@@ -1685,29 +1681,17 @@ class ShowPlanningServiceTest {
 
   // ── NPC briefcase cash-in approval (ATW-2b9u) ─────────────────────────────
 
-  private com.github.javydreamercsw.management.service.title.BriefcaseCashInAdvisorService
-          .BriefcaseProposal
-      briefcaseProposal(
-          com.github.javydreamercsw.management.domain.title.TitleOpportunity opportunity,
-          Title proposalTitle,
-          Wrestler champion,
-          int score) {
-    return new com.github.javydreamercsw.management.service.title.BriefcaseCashInAdvisorService
-        .BriefcaseProposal(
-        opportunity,
-        proposalTitle,
-        List.of(champion),
-        com.github.javydreamercsw.management.domain.title.BriefcaseCashInMode.PLANNED,
-        score);
+  private BriefcaseCashInAdvisorService.BriefcaseProposal briefcaseProposal(
+      TitleOpportunity opportunity, Title proposalTitle, Wrestler champion, int score) {
+    return new BriefcaseCashInAdvisorService.BriefcaseProposal(
+        opportunity, proposalTitle, List.of(champion), BriefcaseCashInMode.PLANNED, score);
   }
 
-  private com.github.javydreamercsw.management.domain.title.TitleOpportunity heldOpportunity(
-      long id, Wrestler holder) {
-    var opportunity = new com.github.javydreamercsw.management.domain.title.TitleOpportunity();
+  private TitleOpportunity heldOpportunity(long id, Wrestler holder) {
+    var opportunity = new TitleOpportunity();
     opportunity.setId(id);
     opportunity.setName("Time Vault briefcase");
-    opportunity.setStatus(
-        com.github.javydreamercsw.management.domain.title.TitleOpportunityStatus.HELD);
+    opportunity.setStatus(TitleOpportunityStatus.HELD);
     opportunity.setWrestler(holder);
     return opportunity;
   }
@@ -1739,8 +1723,7 @@ class ShowPlanningServiceTest {
     row.setType("One on One");
     row.setSource(ProposedSegment.SOURCE_BRIEFCASE);
     row.setBriefcaseOpportunityId(7L);
-    row.setBriefcaseMode(
-        com.github.javydreamercsw.management.domain.title.BriefcaseCashInMode.PLANNED);
+    row.setBriefcaseMode(BriefcaseCashInMode.PLANNED);
 
     showPlanningService.approveSegments(show, List.of(row));
 
@@ -1776,8 +1759,7 @@ class ShowPlanningServiceTest {
     ambushRow.setType("One on One");
     ambushRow.setSource(ProposedSegment.SOURCE_BRIEFCASE);
     ambushRow.setBriefcaseOpportunityId(7L);
-    ambushRow.setBriefcaseMode(
-        com.github.javydreamercsw.management.domain.title.BriefcaseCashInMode.AMBUSH);
+    ambushRow.setBriefcaseMode(BriefcaseCashInMode.AMBUSH);
 
     when(wrestlerRepository.findByName("Reigning Champ")).thenReturn(Optional.of(champion));
     when(wrestlerRepository.findByName("Challenger")).thenReturn(Optional.empty());
@@ -1838,8 +1820,7 @@ class ShowPlanningServiceTest {
     ambushRow.setType("One on One");
     ambushRow.setSource(ProposedSegment.SOURCE_BRIEFCASE);
     ambushRow.setBriefcaseOpportunityId(7L);
-    ambushRow.setBriefcaseMode(
-        com.github.javydreamercsw.management.domain.title.BriefcaseCashInMode.AMBUSH);
+    ambushRow.setBriefcaseMode(BriefcaseCashInMode.AMBUSH);
 
     showPlanningService.approveSegments(show, List.of(ambushRow));
 
@@ -1863,8 +1844,7 @@ class ShowPlanningServiceTest {
     runInRow.setType("One on One");
     runInRow.setSource(ProposedSegment.SOURCE_BRIEFCASE);
     runInRow.setBriefcaseOpportunityId(7L);
-    runInRow.setBriefcaseMode(
-        com.github.javydreamercsw.management.domain.title.BriefcaseCashInMode.RUN_IN);
+    runInRow.setBriefcaseMode(BriefcaseCashInMode.RUN_IN);
 
     showPlanningService.approveSegments(show, List.of(runInRow));
 
@@ -1884,8 +1864,7 @@ class ShowPlanningServiceTest {
     staleRow.setType("One on One");
     staleRow.setSource(ProposedSegment.SOURCE_BRIEFCASE);
     staleRow.setBriefcaseOpportunityId(9L);
-    staleRow.setBriefcaseMode(
-        com.github.javydreamercsw.management.domain.title.BriefcaseCashInMode.PLANNED);
+    staleRow.setBriefcaseMode(BriefcaseCashInMode.PLANNED);
 
     showPlanningService.approveSegments(show, List.of(staleRow));
 
@@ -1928,8 +1907,7 @@ class ShowPlanningServiceTest {
     row.setType("One on One");
     row.setSource(ProposedSegment.SOURCE_BRIEFCASE);
     row.setBriefcaseOpportunityId(7L);
-    row.setBriefcaseMode(
-        com.github.javydreamercsw.management.domain.title.BriefcaseCashInMode.PLANNED);
+    row.setBriefcaseMode(BriefcaseCashInMode.PLANNED);
 
     // The approval completes; the failed cash-in is logged, not propagated.
     showPlanningService.approveSegments(show, List.of(row));

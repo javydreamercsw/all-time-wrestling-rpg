@@ -22,18 +22,12 @@ import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
-import com.github.javydreamercsw.management.domain.title.BriefcaseCashInMode;
-import com.github.javydreamercsw.management.domain.title.DefenseFrequencyType;
-import com.github.javydreamercsw.management.domain.title.Title;
-import com.github.javydreamercsw.management.domain.title.TitleOpportunity;
-import com.github.javydreamercsw.management.domain.title.TitleOpportunityRepository;
-import com.github.javydreamercsw.management.domain.title.TitleOpportunityStatus;
-import com.github.javydreamercsw.management.domain.title.TitleReign;
-import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
+import com.github.javydreamercsw.management.domain.title.*;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
@@ -69,7 +63,7 @@ public class BriefcaseCashInAdvisorService {
   private final TitleOpportunityRepository opportunityRepository;
   private final TitleReignRepository titleReignRepository;
   private final SegmentRepository segmentRepository;
-  private final com.github.javydreamercsw.management.domain.title.TitleRepository titleRepository;
+  private final TitleRepository titleRepository;
   private final RivalryRepository rivalryRepository;
   private final WrestlerRepository wrestlerRepository;
   private final GameSettingService gameSettingService;
@@ -282,12 +276,12 @@ public class BriefcaseCashInAdvisorService {
    * — the same recipe ShowPlanningService uses for its staleness display.
    */
   private int daysSinceLastDefense(Title title, LocalDate gameDate) {
-    java.time.Instant lastDefense =
+    Instant lastDefense =
         titleReignRepository.findByTitleAndEndDateIsNull(title).stream()
             .map(TitleReign::getStartDate)
             .findFirst()
             .orElse(null);
-    Optional<java.time.Instant> lastMatch =
+    Optional<Instant> lastMatch =
         segmentRepository.findByTitle(title).stream()
             .map(Segment::getSegmentDate)
             .max(Comparator.naturalOrder());

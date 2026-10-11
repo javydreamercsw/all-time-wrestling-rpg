@@ -67,6 +67,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -1069,8 +1070,7 @@ public class ShowPlanningService {
     // In-memory first: the champion's match may be part of this very approval.
     for (ProposedSegment ps : cardSegments) {
       if (ps.getTeams() == null
-          || (ps.getType() != null
-              && ps.getType().toLowerCase(java.util.Locale.ROOT).contains("promo"))) {
+          || (ps.getType() != null && ps.getType().toLowerCase(Locale.ROOT).contains("promo"))) {
         continue;
       }
       boolean hasChampion =
@@ -1197,9 +1197,7 @@ public class ShowPlanningService {
 
   /** Maps an advisor proposal to the planning-card preview DTO (ATW-2b9u). */
   private BriefcaseCashInPreviewDTO briefcasePreviewOf(
-      com.github.javydreamercsw.management.service.title.BriefcaseCashInAdvisorService
-              .BriefcaseProposal
-          proposal) {
+      BriefcaseCashInAdvisorService.BriefcaseProposal proposal) {
     BriefcaseCashInPreviewDTO dto = new BriefcaseCashInPreviewDTO();
     dto.setOpportunityId(proposal.opportunity().getId());
     dto.setTitleId(proposal.title().getId());

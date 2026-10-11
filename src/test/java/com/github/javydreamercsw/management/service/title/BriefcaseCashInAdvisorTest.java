@@ -19,25 +19,23 @@ package com.github.javydreamercsw.management.service.title;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.lenient;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
-import com.github.javydreamercsw.management.domain.title.BriefcaseCashInMode;
-import com.github.javydreamercsw.management.domain.title.DefenseFrequencyType;
-import com.github.javydreamercsw.management.domain.title.Title;
-import com.github.javydreamercsw.management.domain.title.TitleOpportunity;
-import com.github.javydreamercsw.management.domain.title.TitleOpportunityRepository;
-import com.github.javydreamercsw.management.domain.title.TitleOpportunityStatus;
-import com.github.javydreamercsw.management.domain.title.TitleReign;
-import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.title.*;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -61,16 +59,12 @@ class BriefcaseCashInAdvisorTest {
   @Mock private TitleOpportunityRepository opportunityRepository;
   @Mock private TitleReignRepository titleReignRepository;
 
-  @Mock
-  private com.github.javydreamercsw.management.domain.show.segment.SegmentRepository
-      segmentRepository;
+  @Mock private SegmentRepository segmentRepository;
 
-  @Mock private com.github.javydreamercsw.management.domain.title.TitleRepository titleRepository;
+  @Mock private TitleRepository titleRepository;
   @Mock private RivalryRepository rivalryRepository;
 
-  @Mock
-  private com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository
-      wrestlerRepository;
+  @Mock private WrestlerRepository wrestlerRepository;
 
   @Mock private GameSettingService gameSettingService;
 
@@ -119,7 +113,7 @@ class BriefcaseCashInAdvisorTest {
 
     TitleReign reign = new TitleReign();
     reign.setStartDate(GAME_DATE.atStartOfDay(ZoneId.systemDefault()).toInstant());
-    reign.setChampions(java.util.Set.of(champion));
+    reign.setChampions(Set.of(champion));
 
     lenient().when(gameSettingService.isNpcBriefcaseCashInEnabled()).thenReturn(true);
     lenient().when(gameSettingService.getCurrentGameDate()).thenReturn(GAME_DATE);
@@ -245,10 +239,8 @@ class BriefcaseCashInAdvisorTest {
     assertThat(proposals.get(0).champions()).containsExactly(champion);
   }
 
-  private com.github.javydreamercsw.management.domain.show.segment.Segment segmentDefendedOn(
-      LocalDate date) {
-    com.github.javydreamercsw.management.domain.show.segment.Segment segment =
-        new com.github.javydreamercsw.management.domain.show.segment.Segment();
+  private Segment segmentDefendedOn(LocalDate date) {
+    Segment segment = new Segment();
     segment.setSegmentDate(date.atStartOfDay(ZoneId.systemDefault()).toInstant());
     return segment;
   }
@@ -260,7 +252,7 @@ class BriefcaseCashInAdvisorTest {
     title.setTier(WrestlerTier.ROOKIE);
     TitleReign reign = new TitleReign();
     reign.setStartDate(GAME_DATE.atStartOfDay(ZoneId.systemDefault()).toInstant());
-    reign.setChampions(java.util.Set.of(champion));
+    reign.setChampions(Set.of(champion));
     lenient()
         .when(titleReignRepository.findByTitleIdAndEndDateIsNull(title.getId()))
         .thenReturn(List.of(reign));
@@ -305,13 +297,13 @@ class BriefcaseCashInAdvisorTest {
   @Test
   @DisplayName("propose: respects gender division rules")
   void propose_respectsGenderDivisionRules() {
-    holder.setGender(com.github.javydreamercsw.base.domain.wrestler.Gender.MALE);
-    title.setGender(com.github.javydreamercsw.base.domain.wrestler.Gender.FEMALE);
+    holder.setGender(Gender.MALE);
+    title.setGender(Gender.FEMALE);
     assertThat(advisor.proposalsFor(show)).isEmpty();
 
     // A gendered briefcase never challenges the other division's title.
-    title.setGender(com.github.javydreamercsw.base.domain.wrestler.Gender.MALE);
-    opportunity.setGender(com.github.javydreamercsw.base.domain.wrestler.Gender.FEMALE);
+    title.setGender(Gender.MALE);
+    opportunity.setGender(Gender.FEMALE);
     assertThat(advisor.proposalsFor(show)).isEmpty();
   }
 
@@ -363,10 +355,10 @@ class BriefcaseCashInAdvisorTest {
 
     TitleReign iconReign = new TitleReign();
     iconReign.setStartDate(GAME_DATE.atStartOfDay(ZoneId.systemDefault()).toInstant());
-    iconReign.setChampions(java.util.Set.of(champion));
+    iconReign.setChampions(Set.of(champion));
     TitleReign rookieReign = new TitleReign();
     rookieReign.setStartDate(GAME_DATE.atStartOfDay(ZoneId.systemDefault()).toInstant());
-    rookieReign.setChampions(java.util.Set.of(champion));
+    rookieReign.setChampions(Set.of(champion));
 
     // Hot shared inputs so both clear the threshold and only prestige separates them.
     Rivalry rivalry = new Rivalry();

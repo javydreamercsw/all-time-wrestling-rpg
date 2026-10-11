@@ -56,6 +56,7 @@ import com.github.javydreamercsw.management.event.BriefcaseGrantedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.segment.NPCSegmentResolutionService;
 import com.github.javydreamercsw.management.service.segment.SegmentTeam;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -90,8 +91,7 @@ class TitleOpportunityServiceTest {
   @Mock private SegmentRuleRepository segmentRuleRepository;
   @Mock private NPCSegmentResolutionService segmentResolutionService;
 
-  @Mock
-  private com.github.javydreamercsw.management.service.wrestler.WrestlerService wrestlerService;
+  @Mock private WrestlerService wrestlerService;
 
   @Mock private GameSettingService gameSettingService;
   @Mock private ApplicationEventPublisher eventPublisher;

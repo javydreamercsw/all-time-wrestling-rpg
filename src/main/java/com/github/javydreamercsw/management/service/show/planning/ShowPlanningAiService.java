@@ -32,6 +32,7 @@ import com.github.javydreamercsw.management.service.show.planning.dto.Tournament
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -169,8 +170,7 @@ public class ShowPlanningAiService {
 
   /** A row is a promo when its type says so (no segment-type lookup needed for preview). */
   private boolean isPromoRow(ProposedSegment row) {
-    return row.getType() != null
-        && row.getType().toLowerCase(java.util.Locale.ROOT).contains("promo");
+    return row.getType() != null && row.getType().toLowerCase(Locale.ROOT).contains("promo");
   }
 
   /**
