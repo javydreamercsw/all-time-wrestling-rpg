@@ -114,11 +114,11 @@ public class BriefcaseCashInAdvisorService {
    * Deterministic and side-effect-free so tests can pin each component.
    */
   public int scoreOf(BriefcaseInputs in) {
-    int score = 0;
-    score += urgencyPoints(in.daysUntilExpiry(), in.expiryWindow());
-    score += Math.round(25f * Math.min(in.rivalryHeat(), 100) / 100f);
-    score += prestigePoints(in.titleTier());
-    score += stalenessPoints(in.daysSinceLastDefense(), in.defenseFrequency());
+    int score =
+        (((0 + urgencyPoints(in.daysUntilExpiry(), in.expiryWindow()))
+                    + Math.round(25f * Math.min(in.rivalryHeat(), 100) / 100f))
+                + prestigePoints(in.titleTier()))
+            + stalenessPoints(in.daysSinceLastDefense(), in.defenseFrequency());
     if (in.premiumLiveEvent()) {
       score += 5;
     }
