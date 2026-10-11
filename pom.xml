@@ -17,7 +17,7 @@
   <name>All Time Wrestling RPG</name>
 
   <properties>
-    <archunit.version>1.5.0</archunit.version>
+    <archunit.version>1.5.1</archunit.version>
 
     <!--
       Hard gate for E2E tests:
