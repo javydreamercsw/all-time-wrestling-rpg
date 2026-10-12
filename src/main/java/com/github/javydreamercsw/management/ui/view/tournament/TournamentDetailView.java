@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.show.ShowFacade;
 import com.github.javydreamercsw.management.service.tournament.QualifierGroupsFormat;
+import com.github.javydreamercsw.management.service.tournament.SingleEliminationFormat;
 import com.github.javydreamercsw.management.service.tournament.TournamentFormat;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
@@ -40,6 +41,7 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.dnd.GridDropMode;
 import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -78,6 +80,9 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
 
   private Tournament tournament;
 
+  /** Row currently being dragged on the entrants grid (cleared on drop and drag end). */
+  private TournamentEntry draggedEntry;
+
   private final VerticalLayout content = new VerticalLayout();
 
   @Autowired
@@ -110,6 +115,11 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
 
   void openReplaceDialogForTest(TournamentEntry entry) {
     openReplaceDialog(entry);
+  }
+
+  /** Test hooks: open the Arrange Match-ups dialog directly (Karibu tests). */
+  void openArrangeMatchupsDialogForTest() {
+    openArrangeMatchupsDialog();
   }
 
   @Override
@@ -155,6 +165,18 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
 
     if (tournament.getStatus() == TournamentStatus.SCHEDULED
         && !tournament.getEntries().isEmpty()) {
+      // Per-match opponent selection (ATW-hw6m): hand-picking round-1 pairings only makes sense
+      // for single elimination — round robin faces everyone anyway; ≥2 entrants or there are no
+      // matches to arrange.
+      if (SingleEliminationFormat.FORMAT_ID.equals(tournament.getFormatId())
+          && tournament.getEntries().size() >= 2) {
+        Button arrangeBtn = new Button("Arrange Match-ups", e -> openArrangeMatchupsDialog());
+        arrangeBtn.setTooltipText(
+            "Hand-pick the round-1 opponents, or drag rows on the entrants grid to reorder"
+                + " seeds");
+        actions.add(arrangeBtn);
+      }
+
       Button previewBtn = new Button("Preview Bracket", e -> showBracketPreview());
       previewBtn.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
       previewBtn.setTooltipText("Show the match-ups 'Start Tournament' will generate");
@@ -330,10 +352,28 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
     grid.setItems(tournament.getEntries());
 
     // Seeds are editable until the bracket is generated (ATW-hw6m): move an entrant up/down to
-    // change its seed, or swap in a different wrestler. The round-1 pairing is 1 vs last,
-    // 2 vs second-to-last, ... so reordering changes the match-ups Start will generate.
+    // change its seed, drag rows onto each other to reorder, or swap in a different wrestler.
+    // The round-1 pairing is 1 vs last, 2 vs second-to-last, ... so reordering changes the
+    // match-ups Start will generate.
     if (tournament.getStatus() == TournamentStatus.SCHEDULED
         && !tournament.getEntries().isEmpty()) {
+      grid.setRowsDraggable(true);
+      grid.setDropMode(GridDropMode.BETWEEN);
+      grid.addDragStartListener(
+          e -> e.getDraggedItems().stream().findFirst().ifPresent(item -> draggedEntry = item));
+      grid.addDragEndListener(e -> draggedEntry = null);
+      grid.addDropListener(
+          e ->
+              e.getDropTargetItem()
+                  .ifPresent(
+                      target -> {
+                        if (draggedEntry != null && !draggedEntry.getId().equals(target.getId())) {
+                          reorderTo(draggedEntry, target);
+                        }
+                        // The grid re-renders after a persisted reorder, which detaches it
+                        // mid-drag — dragEnd may never fire, so clear the state here too.
+                        draggedEntry = null;
+                      }));
       grid.addComponentColumn(this::buildSeedControls)
           .setHeader("Reorder")
           .setWidth("140px")
@@ -378,16 +418,32 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
 
   /** Swap the entry with whichever entry currently holds {@code targetSeed} and persist. */
   private void moveSeed(TournamentEntry entry, int targetSeed) {
+    List<TournamentEntry> entries = tournament.getEntries();
+    List<TournamentEntry> reordered = new ArrayList<>(entries);
+    reordered.remove(entry);
+    reordered.add(targetSeed - 1, entry);
+    applySeedOrder(reordered);
+  }
+
+  /**
+   * Drag-and-drop reorder (ATW-hw6m): move {@code dragged} to sit immediately before {@code target}
+   * (GridDropMode.BETWEEN semantics) and persist the resulting seed order.
+   */
+  void reorderTo(TournamentEntry dragged, TournamentEntry target) {
+    List<TournamentEntry> reordered = new ArrayList<>(tournament.getEntries());
+    reordered.remove(dragged);
+    reordered.add(reordered.indexOf(target), dragged);
+    applySeedOrder(reordered);
+  }
+
+  /** Persist a full seed order through the service and refresh the view. */
+  private void applySeedOrder(List<TournamentEntry> ordered) {
     try {
-      List<Long> reordered = new ArrayList<>();
-      List<TournamentEntry> entries = tournament.getEntries();
-      for (int seed = 1; seed < entries.size() + 1; seed++) {
-        reordered.add(seed == targetSeed ? entry.getId() : entries.get(seed - 1).getId());
+      List<Long> ids = new ArrayList<>();
+      for (TournamentEntry entry : ordered) {
+        ids.add(entry.getId());
       }
-      // The swapped-out entry takes the moved entry's original position.
-      int original = entry.getSeed();
-      reordered.set(original - 1, entries.get(targetSeed - 1).getId());
-      tournamentService.reorderSeeds(tournament.getId(), reordered);
+      tournamentService.reorderSeeds(tournament.getId(), ids);
       refreshAfterSeedingEdit();
       Notification.show("Seed order updated", 2000, Notification.Position.BOTTOM_CENTER)
           .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
@@ -628,6 +684,32 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
         .findFormat(tournament.getFormatId())
         .map(TournamentFormat::renderMode)
         .orElse(TournamentFormat.RenderMode.TREE);
+  }
+
+  /**
+   * Per-match opponent selection (ATW-hw6m): pick the round-1 opponents, persisting them as a seed
+   * order so the seed list remains the single source of truth for bracket generation.
+   */
+  private void openArrangeMatchupsDialog() {
+    ArrangeMatchupsDialog dialog =
+        new ArrangeMatchupsDialog(
+            tournament,
+            ordered -> {
+              try {
+                tournamentService.reorderSeeds(
+                    tournament.getId(),
+                    ordered.stream().map(Long::longValue).collect(Collectors.toList()));
+                refreshAfterSeedingEdit();
+                Notification.show(
+                        "Round-1 match-ups arranged", 2000, Notification.Position.BOTTOM_CENTER)
+                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+              } catch (Exception ex) {
+                log.error("Error arranging match-ups", ex);
+                Notification.show("Error: " + ex.getMessage(), 5000, Notification.Position.MIDDLE)
+                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
+              }
+            });
+    dialog.open();
   }
 
   private void advanceRound() {
