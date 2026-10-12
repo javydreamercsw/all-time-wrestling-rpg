@@ -38,6 +38,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.segment.promo.PromoHookDTO;
 import com.github.javydreamercsw.management.dto.segment.promo.PromoOutcomeDTO;
 import com.github.javydreamercsw.management.dto.segment.promo.SmartPromoResponseDTO;
+import com.github.javydreamercsw.management.service.GameClock;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
@@ -60,6 +61,7 @@ class SmartPromoServiceTest {
   private SegmentRuleRepository segmentRuleRepository;
   private RivalryService rivalryService;
   private MultiWrestlerFeudService feudService;
+  private GameClock gameClock;
 
   @BeforeEach
   public void setUp() {
@@ -77,6 +79,8 @@ class SmartPromoServiceTest {
     segmentRuleRepository = mock(SegmentRuleRepository.class);
     rivalryService = mock(RivalryService.class);
     feudService = mock(MultiWrestlerFeudService.class);
+    gameClock = mock(GameClock.class);
+    when(gameClock.gameNowOn(any())).thenReturn(java.time.Instant.parse("2026-07-07T00:00:00Z"));
 
     smartPromoService =
         new SmartPromoService(
@@ -89,7 +93,8 @@ class SmartPromoServiceTest {
             wrestlerRepository,
             segmentRuleRepository,
             rivalryService,
-            feudService);
+            feudService,
+            gameClock);
   }
 
   @Test

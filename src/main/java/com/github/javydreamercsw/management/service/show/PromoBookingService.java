@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.show;
 
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.service.GameClock;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.PromoType;
@@ -27,7 +28,6 @@ import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSe
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
-import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -55,7 +55,7 @@ public class PromoBookingService {
   @Autowired private SegmentTypeRepository segmentTypeRepository;
   @Autowired private RivalryService rivalryService;
   @Autowired private SegmentRuleService segmentRuleService;
-  @Autowired private Clock clock;
+  @Autowired private GameClock gameClock;
   @Autowired private Random random = new Random();
 
   /**
@@ -197,7 +197,7 @@ public class PromoBookingService {
       Segment promo = new Segment();
       promo.setShow(show);
       promo.setSegmentType(promoSegmentType);
-      promo.setSegmentDate(clock.instant());
+      promo.setSegmentDate(gameClock.gameNowOn(show.getShowDate()));
       promo.setIsNpcGenerated(true);
 
       // Add wrestlers as participants
