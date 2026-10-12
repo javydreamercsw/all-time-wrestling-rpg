@@ -38,6 +38,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -103,8 +104,7 @@ class GameDateReAnchorMigrationTest {
             });
   }
 
-  private final java.util.concurrent.atomic.AtomicLong staggerCounter =
-      new java.util.concurrent.atomic.AtomicLong();
+  private final AtomicLong staggerCounter = new AtomicLong();
 
   // ── Pass A: segment_date normalization ─────────────────────────────────────
 

@@ -22,6 +22,7 @@ import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
 import com.github.javydreamercsw.management.domain.news.NewsItem;
 import com.github.javydreamercsw.management.domain.news.NewsRepository;
+import com.github.javydreamercsw.management.domain.rivalry.HeatEvent;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.rivalry.heatevent.HeatEventRepository;
@@ -134,9 +135,8 @@ public class GameDateReAnchorMigration implements DataMigration {
   }
 
   private void reAnchorHeatEvents(Instant gameNow, Map<Long, Instant> rivalryAnchors) {
-    List<com.github.javydreamercsw.management.domain.rivalry.HeatEvent> changed = new ArrayList<>();
-    for (com.github.javydreamercsw.management.domain.rivalry.HeatEvent event :
-        heatEventRepository.findAll()) {
+    List<HeatEvent> changed = new ArrayList<>();
+    for (HeatEvent event : heatEventRepository.findAll()) {
       if (event.getEventDate() != null && !event.getEventDate().isAfter(gameNow)) {
         continue; // already on the game timeline
       }
