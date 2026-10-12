@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.event.listener;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -27,6 +28,7 @@ import com.github.javydreamercsw.management.domain.feud.FeudScript;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.event.FeudScriptCompletedEvent;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -90,7 +92,7 @@ class FeudScriptCompletedRivalryListenerTest {
 
     var script = rivalryScript(1L, "Rerun arc");
 
-    org.junit.jupiter.api.Assertions.assertDoesNotThrow(
+    assertDoesNotThrow(
         () -> listener.onFeudScriptCompleted(new FeudScriptCompletedEvent(this, script)));
   }
 
@@ -101,7 +103,7 @@ class FeudScriptCompletedRivalryListenerTest {
     // be restored afterwards — including when the service call throws.
     var callerAuth =
         new UsernamePasswordAuthenticationToken(
-            "booker", null, java.util.List.of(new SimpleGrantedAuthority("ROLE_BOOKER")));
+            "booker", null, List.of(new SimpleGrantedAuthority("ROLE_BOOKER")));
     SecurityContextHolder.getContext().setAuthentication(callerAuth);
 
     doThrow(new RuntimeException("boom")).when(rivalryService).endRivalry(anyLong(), any());
