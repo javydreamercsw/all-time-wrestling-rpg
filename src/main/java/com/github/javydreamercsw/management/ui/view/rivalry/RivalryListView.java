@@ -20,7 +20,6 @@ import static com.vaadin.flow.spring.data.VaadinSpringDataHelpers.toSpringPageRe
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
-import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.rivalry.RivalryDTO;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
@@ -29,6 +28,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
@@ -71,7 +71,6 @@ public class RivalryListView extends Main {
   }
 
   private final RivalryService rivalryService;
-  private final RivalryRepository rivalryRepository;
   private final WrestlerService wrestlerService;
   private final SecurityUtils securityUtils;
 
@@ -80,11 +79,9 @@ public class RivalryListView extends Main {
 
   public RivalryListView(
       @NonNull final RivalryService rivalryService,
-      @NonNull final RivalryRepository rivalryRepository,
       @NonNull final WrestlerService wrestlerService,
       @NonNull final SecurityUtils securityUtils) {
     this.rivalryService = rivalryService;
-    this.rivalryRepository = rivalryRepository;
     this.wrestlerService = wrestlerService;
     this.securityUtils = securityUtils;
 
@@ -217,10 +214,20 @@ public class RivalryListView extends Main {
               deleteButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
               deleteButton.addClickListener(
                   e -> {
-                    rivalryRepository.deleteById(rivalry.getId());
-                    rivalryGrid.getDataProvider().refreshAll();
-                    Notification.show("Rivalry deleted", 2000, Notification.Position.BOTTOM_END)
-                        .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                    // Deletion is permanent — confirm before calling the service (ATW-gaxw): the
+                    // service clears segment references AND evicts the rivalries cache, which the
+                    // old direct-repository delete skipped (deleted rivalries kept appearing in
+                    // show-planning context for the cache TTL).
+                    ConfirmDialog confirm = new ConfirmDialog();
+                    confirm.setHeader("Delete rivalry?");
+                    confirm.setText(
+                        "Permanently delete the rivalry between "
+                            + rivalry.getWrestler1().getName()
+                            + " and "
+                            + rivalry.getWrestler2().getName()
+                            + "? Its heat history and segment links are removed.");
+                    confirm.setConfirmButton("Delete", ev -> deleteRivalry(rivalry.getId()));
+                    confirm.open();
                   });
               deleteButton.setVisible(securityUtils.canDelete());
               return deleteButton;
@@ -248,5 +255,13 @@ public class RivalryListView extends Main {
     Div gridWrapper = new Div(rivalryGrid);
     gridWrapper.addClassName("grid-scroll-container");
     add(gridWrapper);
+  }
+
+  /** Confirmed delete: goes through the service so the rivalries cache is evicted (ATW-gaxw). */
+  void deleteRivalry(Long rivalryId) {
+    rivalryService.deleteRivalry(rivalryId);
+    rivalryGrid.getDataProvider().refreshAll();
+    Notification.show("Rivalry deleted", 2000, Notification.Position.BOTTOM_END)
+        .addThemeVariants(NotificationVariant.LUMO_ERROR);
   }
 }

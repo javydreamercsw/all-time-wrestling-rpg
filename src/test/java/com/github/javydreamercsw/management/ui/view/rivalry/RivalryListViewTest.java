@@ -28,7 +28,6 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
-import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.mapper.RivalryMapper;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -47,7 +46,6 @@ import org.springframework.data.domain.Pageable;
 class RivalryListViewTest extends AbstractViewTest {
 
   @Mock private RivalryService rivalryService;
-  @Mock private RivalryRepository rivalryRepository;
   @Mock private WrestlerService wrestlerService;
   @Mock private SecurityUtils securityUtils;
   @Mock private RivalryMapper rivalryMapper;
@@ -64,7 +62,7 @@ class RivalryListViewTest extends AbstractViewTest {
         .thenReturn(Page.empty());
     when(rivalryService.getRivalryMapper()).thenReturn(rivalryMapper);
 
-    view = new RivalryListView(rivalryService, rivalryRepository, wrestlerService, securityUtils);
+    view = new RivalryListView(rivalryService, wrestlerService, securityUtils);
     UI.getCurrent().add(view);
   }
 
@@ -105,5 +103,16 @@ class RivalryListViewTest extends AbstractViewTest {
     verify(rivalryService, times(3))
         .getAllRivalriesWithWrestlers(any(Pageable.class), active.capture());
     assertEquals(Boolean.FALSE, active.getValue());
+  }
+
+  @Test
+  @DisplayName("Confirmed delete routes through the service (cache-evicting path, ATW-gaxw)")
+  void deleteRivalry_routesThroughService() {
+    // The confirm callback (wired to ConfirmDialog in the view) must use the service — the old
+    // direct-repository delete skipped the @CacheEvict and planning kept serving the deleted
+    // rivalry for the cache TTL.
+    view.deleteRivalry(731L);
+
+    verify(rivalryService).deleteRivalry(731L);
   }
 }

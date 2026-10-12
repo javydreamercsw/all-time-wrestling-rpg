@@ -28,6 +28,7 @@ import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryIntensity;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.rivalry.heatevent.HeatEventRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -62,6 +63,7 @@ class RivalryServiceTest {
 
   @Mock private RivalryRepository rivalryRepository;
   @Mock private HeatEventRepository heatEventRepository;
+  @Mock private SegmentRepository segmentRepository;
   @Mock private WrestlerRepository wrestlerRepository;
 
   @Mock private UniverseRepository universeRepository;
@@ -637,6 +639,27 @@ class RivalryServiceTest {
 
     assertThat(result.rivalriesProcessed()).isZero();
     assertThat(result.eventsDeleted()).isZero();
+  }
+
+  @Test
+  @DisplayName("deleteRivalry: clears segment references before deleting the row (ATW-gaxw)")
+  void deleteRivalry_clearsSegmentReferences_thenDeletes() {
+    // Order matters: with no FK on segment.rivalry_id (V80), the reference cleanup is the only
+    // thing keeping historical segments from pointing at a deleted row.
+    rivalryService.deleteRivalry(731L);
+
+    var inOrder = Mockito.inOrder(segmentRepository, rivalryRepository);
+    inOrder.verify(segmentRepository).clearRivalryReference(731L);
+    inOrder.verify(rivalryRepository).deleteById(731L);
+  }
+
+  @Test
+  @DisplayName("deleteRivalry: unknown id is a safe no-op (deleteById contract)")
+  void deleteRivalry_unknownId_stillSafe() {
+    rivalryService.deleteRivalry(999_999L);
+
+    verify(segmentRepository).clearRivalryReference(999_999L);
+    verify(rivalryRepository).deleteById(999_999L);
   }
 
   private Rivalry createRivalry(

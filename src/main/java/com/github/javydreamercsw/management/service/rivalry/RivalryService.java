@@ -21,6 +21,7 @@ import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryIntensity;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.rivalry.heatevent.HeatEventRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -64,6 +65,7 @@ public class RivalryService {
   @Autowired private HeatEventRepository heatEventRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private UniverseRepository universeRepository;
+  @Autowired private SegmentRepository segmentRepository;
   @Autowired @Getter private RivalryMapper rivalryMapper;
   @Autowired private GameClock gameClock;
   @Autowired private ApplicationEventPublisher eventPublisher;
@@ -347,6 +349,22 @@ public class RivalryService {
   @Cacheable(value = CacheConfig.RIVALRIES_CACHE, key = "#rivalryId")
   public Optional<Rivalry> getRivalryById(@NonNull final Long rivalryId) {
     return rivalryRepository.findById(rivalryId);
+  }
+
+  /**
+   * Permanently deletes a rivalry. Detaches historical segments first so no dangling {@code
+   * segment.rivalry_id} remains (the column has no FK — V80 — and adjudication/quality reads would
+   * otherwise look up a row that no longer exists). Evicts the rivalries cache; going through this
+   * service method instead of the repository directly is what keeps show-planning context from
+   * serving the deleted rivalry for the cache TTL (ATW-gaxw).
+   */
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  @CacheEvict(value = CacheConfig.RIVALRIES_CACHE, allEntries = true)
+  public void deleteRivalry(@NonNull final Long rivalryId) {
+    segmentRepository.clearRivalryReference(rivalryId);
+    rivalryRepository.deleteById(rivalryId);
+    log.info("Deleted rivalry {} (segment references cleared, rivalries cache evicted)", rivalryId);
   }
 
   /** Loads a rivalry by ID with wrestlers eagerly fetched — safe to use outside a transaction. */

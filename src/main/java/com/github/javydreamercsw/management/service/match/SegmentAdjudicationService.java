@@ -652,22 +652,50 @@ public class SegmentAdjudicationService {
         });
   }
 
+  /**
+   * Whether the two wrestlers are current members of the same faction in the given universe. Shared
+   * by the AI-targeted heat guard and the generic pair-scan: faction-mates don't build rivalry heat
+   * from booked segments.
+   */
+  private boolean areFactionMates(Wrestler a, Wrestler b, @NonNull final Long universeId) {
+    Faction fa = a.getState(universeId).map(WrestlerState::getFaction).orElse(null);
+    Faction fb = b.getState(universeId).map(WrestlerState::getFaction).orElse(null);
+    return fa != null && fa.equals(fb);
+  }
+
   private void applyHeatToRivaltiesAndFeuds(
       @NonNull final Segment segment,
       @NonNull final List<Wrestler> participants,
       @NonNull final Long universeId) {
     // If the AI tagged a specific rivalry, boost its heat directly before the generic pair-scan.
     if (segment.getRivalryId() != null) {
-      int targetedHeat = segment.getShow().isPremiumLiveEvent() ? 3 : 2;
-      rivalryService.addHeat(
-          segment.getRivalryId(),
-          targetedHeat,
-          "AI-booked segment: " + segment.getSegmentType().getName());
-      log.debug(
-          "Added {} heat to rivalry {} from AI-booked segment {}",
-          targetedHeat,
-          segment.getRivalryId(),
-          segment.getId());
+      // Same-faction rivalries are modeling errors (e.g. two stablemates at 117 heat): heating
+      // them keeps the planner proposing stablemate matches forever, and heat decay never fires
+      // because every segment re-heats them. Parity with the generic pair-scan's faction-mate
+      // skip below. An unloadable rivalry (deleted) keeps today's behavior — addHeat no-ops.
+      boolean factionMates =
+          rivalryService
+              .getRivalryByIdWithWrestlers(segment.getRivalryId())
+              .map(
+                  rivalry ->
+                      areFactionMates(rivalry.getWrestler1(), rivalry.getWrestler2(), universeId))
+              .orElse(false);
+      if (factionMates) {
+        log.debug(
+            "Skipping targeted heat for rivalry {} — participants are faction-mates",
+            segment.getRivalryId());
+      } else {
+        int targetedHeat = segment.getShow().isPremiumLiveEvent() ? 3 : 2;
+        rivalryService.addHeat(
+            segment.getRivalryId(),
+            targetedHeat,
+            "AI-booked segment: " + segment.getSegmentType().getName());
+        log.debug(
+            "Added {} heat to rivalry {} from AI-booked segment {}",
+            targetedHeat,
+            segment.getRivalryId(),
+            segment.getId());
+      }
     }
 
     // Add heat to rivalries
@@ -694,6 +722,7 @@ public class SegmentAdjudicationService {
                 fi.getName());
             continue;
           }
+          // (areFactionMates() helper shares this check with the targeted-heat path above.)
           if (isPromo || isAiTargeted) {
             // Promos and AI-targeted segments may create a new rivalry if none exists.
             rivalryService.addHeatBetweenWrestlers(
