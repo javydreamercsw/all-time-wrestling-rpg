@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.dto.rivalry.RivalryDTO;
 import com.github.javydreamercsw.management.event.HeatChangeEvent;
 import com.github.javydreamercsw.management.event.RivalryCompletedEvent;
 import com.github.javydreamercsw.management.event.RivalryContinuesEvent;
+import com.github.javydreamercsw.management.event.RivalryPurgedEvent;
 import com.github.javydreamercsw.management.mapper.RivalryMapper;
 import com.github.javydreamercsw.management.service.GameClock;
 import com.github.javydreamercsw.management.service.GameSettingService;
@@ -111,6 +112,9 @@ public class RivalryService {
     // wrestlers must block creation no matter which order the ids were passed
     // in. The repository query already matches both orderings; the second
     // lookup guards against a positional-only repository regression (ATW-9o4g).
+    // The probe is not atomic (no partial unique index exists on either H2 or
+    // MySQL), so two concurrent opposite-order creations can theoretically
+    // race past it — accepted; production shows zero duplicate-actives.
     Optional<Rivalry> existingRivalry =
         rivalryRepository
             .findActiveRivalryBetween(wrestler1, wrestler2)
@@ -119,9 +123,18 @@ public class RivalryService {
       return existingRivalry;
     }
 
+    // Canonical pair order (ATW-8nc8): wrestler1 always holds the lower id.
+    // Nothing reads the order semantically (resolution only sums rolls, the
+    // repository probes both orders, getOpponent is symmetric), so storing
+    // canonical order makes the pair key simply (wrestler1, wrestler2) — what
+    // the grouped-grid representative query relies on. Old rows are flipped
+    // only in display order by the 'canonicalize-rivalry-pairs' migration.
+    Wrestler low = wrestler1.getId() <= wrestler2.getId() ? wrestler1 : wrestler2;
+    Wrestler high = low == wrestler1 ? wrestler2 : wrestler1;
+
     Rivalry rivalry = new Rivalry();
-    rivalry.setWrestler1(wrestler1);
-    rivalry.setWrestler2(wrestler2);
+    rivalry.setWrestler1(low);
+    rivalry.setWrestler2(high);
     rivalry.setUniverse(universeOpt.get());
     rivalry.setHeat(0);
     rivalry.setIsActive(true);
@@ -411,6 +424,37 @@ public class RivalryService {
     return rivalryRepository.findAllWithWrestlers(pageable, active);
   }
 
+  /**
+   * One row per canonical wrestler pair — the active rivalry when the pair has one, otherwise the
+   * latest ended cycle — backing the grouped Rivalry List (ATW-8nc8). Tri-state {@code active}:
+   * null = every pair, true = pairs with an active rivalry, false = pairs whose current cycle is
+   * ended. See {@link RivalryRepository#findRepresentativePerPair}.
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public Page<Rivalry> getRepresentativeRivalriesWithWrestlers(
+      @NonNull final Pageable pageable, @NonNull final Boolean active) {
+    return rivalryRepository.findRepresentativePerPair(pageable, active);
+  }
+
+  /**
+   * Every rivalry cycle between two wrestlers regardless of stored order, newest first — the pair's
+   * history behind the grouped grid's expandable rows (ATW-8nc8).
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public List<Rivalry> getRivalryHistoryBetween(
+      @NonNull final Long wrestler1Id, @NonNull final Long wrestler2Id) {
+    return wrestlerRepository
+        .findById(wrestler1Id)
+        .flatMap(
+            w1 ->
+                wrestlerRepository
+                    .findById(wrestler2Id)
+                    .map(w2 -> rivalryRepository.findAllBetweenWrestlers(w1, w2)))
+        .orElse(List.of());
+  }
+
   /** Get active rivalries. */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
@@ -584,6 +628,48 @@ public class RivalryService {
 
   /** Result of a heat-event cleanup run. */
   public record HeatEventCleanupResult(int rivalriesProcessed, int eventsDeleted) {}
+
+  /**
+   * Deletes ENDED rivalries whose endedDate is older than the retention window (ATW-8nc8). Per row:
+   * clears segment.rivalry_id references (plain BIGINT, no FK — V80), then bulk-deletes the rows —
+   * heat_events go via the DB FK cascade (V1) and feud_script.rivalry_id is nulled by its ON DELETE
+   * SET NULL FK (V138).
+   *
+   * <p>Trade-off (accepted, no code change): purged rows vanish from {@link
+   * RivalryRepository#hasRivalryHistory} (the feud wizard's "these two feuded before" check) and
+   * from the RIVALRIES universe export.
+   *
+   * <p>Called through the Spring proxy by {@code RivalryRetentionScheduler} so the @CacheEvict
+   * actually fires — a call from another method of this bean would self-invoke and skip it.
+   */
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @CacheEvict(value = CacheConfig.RIVALRIES_CACHE, allEntries = true)
+  public RivalryRetentionResult purgeEndedRivalries(final int retentionDays) {
+    if (retentionDays <= 0) {
+      return new RivalryRetentionResult(0, 0);
+    }
+    Instant cutoff = gameClock.gameNow().minus(retentionDays, ChronoUnit.DAYS);
+    List<Rivalry> stale = rivalryRepository.findByIsActiveFalseAndEndedDateBefore(cutoff);
+    if (stale.isEmpty()) {
+      return new RivalryRetentionResult(0, 0);
+    }
+    int unlinked = 0;
+    for (Rivalry rivalry : stale) {
+      unlinked += segmentRepository.clearRivalryReference(rivalry.getId());
+    }
+    rivalryRepository.deleteAllInBatch(stale);
+    eventPublisher.publishEvent(new RivalryPurgedEvent(this, stale.size(), unlinked, cutoff));
+    log.info(
+        "Rivalry retention purge: removed {} ended rivalries ended before {} ({} segment"
+            + " references cleared)",
+        stale.size(),
+        cutoff,
+        unlinked);
+    return new RivalryRetentionResult(stale.size(), unlinked);
+  }
+
+  /** Result of a retention purge run. */
+  public record RivalryRetentionResult(int rivalriesPurged, int segmentsUnlinked) {}
 
   /** Rivalry statistics data class. */
   public record RivalryStats(

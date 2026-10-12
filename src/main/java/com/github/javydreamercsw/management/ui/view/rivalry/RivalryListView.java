@@ -38,6 +38,7 @@ import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
@@ -144,13 +145,18 @@ public class RivalryListView extends Main {
     newRivalryButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     newRivalryButton.setVisible(securityUtils.canCreate());
 
+    // Grouped view (ATW-8nc8): one row per wrestler pair — the active rivalry when the pair
+    // has one, otherwise the latest ended cycle. The expander column (last) reveals the pair's
+    // full feud-cycle history.
     rivalryGrid.setItems(
         query ->
             rivalryService
-                .getAllRivalriesWithWrestlers(
+                .getRepresentativeRivalriesWithWrestlers(
                     toSpringPageRequest(query), statusFilter.getValue().toIsActive())
                 .map(rivalryService.getRivalryMapper()::toRivalryDTO)
                 .stream());
+    // Expandable feud-cycle history per pair (ATW-8nc8); toggled by the chevron column below.
+    rivalryGrid.setItemDetailsRenderer(new ComponentRenderer<>(this::buildPairHistoryDetails));
     rivalryGrid
         .addColumn(rivalry -> rivalry.getWrestler1().getName())
         .setHeader("Wrestler 1")
@@ -234,6 +240,21 @@ public class RivalryListView extends Main {
             })
         .setHeader("Delete");
 
+    // Expander column LAST (ATW-8nc8) so the E2E tests' fixed column indexes (Heat = index 2)
+    // stay stable.
+    rivalryGrid
+        .addComponentColumn(
+            rivalry -> {
+              Button expander = new Button("History");
+              expander.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+              expander.addClickListener(
+                  e ->
+                      rivalryGrid.setDetailsVisible(
+                          rivalry, !Boolean.TRUE.equals(rivalryGrid.isDetailsVisible(rivalry))));
+              return expander;
+            })
+        .setHeader("");
+
     rivalryGrid.addItemClickListener(
         e -> UI.getCurrent().navigate(RivalryDetailView.class, e.getItem().getId()));
     rivalryGrid.getStyle().set("cursor", "pointer");
@@ -263,5 +284,39 @@ public class RivalryListView extends Main {
     rivalryGrid.getDataProvider().refreshAll();
     Notification.show("Rivalry deleted", 2000, Notification.Position.BOTTOM_END)
         .addThemeVariants(NotificationVariant.LUMO_ERROR);
+  }
+
+  /** Test bridge for the private details builder. */
+  com.vaadin.flow.component.Component pairHistoryDetailsForTest(RivalryDTO rivalry) {
+    return buildPairHistoryDetails(rivalry);
+  }
+
+  /**
+   * The pair's full feud-cycle history (active + ended rows, newest first) for the expandable
+   * details row (ATW-8nc8).
+   */
+  private com.vaadin.flow.component.Component buildPairHistoryDetails(RivalryDTO rivalry) {
+    List<RivalryDTO> history =
+        rivalryService
+            .getRivalryHistoryBetween(
+                rivalry.getWrestler1().getId(), rivalry.getWrestler2().getId())
+            .stream()
+            .map(rivalryService.getRivalryMapper()::toRivalryDTO)
+            .toList();
+    VerticalLayout details = new VerticalLayout();
+    details.setPadding(false);
+    details.setSpacing(false);
+    if (history.size() <= 1) {
+      details.add(new com.vaadin.flow.component.html.Span("First feud cycle for this pair."));
+      return details;
+    }
+    Grid<RivalryDTO> historyGrid = new Grid<>();
+    historyGrid.addColumn(RivalryDTO::getHeat).setHeader("Heat").setWidth("80px");
+    historyGrid.addColumn(RivalryDTO::getStartedDate).setHeader("Start").setWidth("170px");
+    historyGrid.addColumn(RivalryDTO::getEndedDate).setHeader("End").setWidth("170px");
+    historyGrid.addColumn(RivalryDTO::getStorylineNotes).setHeader("Notes").setFlexGrow(1);
+    historyGrid.setItems(history);
+    details.add(historyGrid);
+    return details;
   }
 }

@@ -49,6 +49,7 @@ import com.github.javydreamercsw.management.service.title.ContenderSelectionServ
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import jakarta.persistence.EntityNotFoundException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -62,6 +63,7 @@ import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.LazyInitializationException;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -244,15 +246,26 @@ public class FeudScriptService {
   private Map<Long, String> participantsOf(@NonNull FeudScriptBeat beat) {
     FeudScript script = beat.getScript();
     Map<Long, String> participants = new LinkedHashMap<>();
-    if (script.getRivalry() != null) {
-      Rivalry rivalry = script.getRivalry();
-      if (rivalry.getWrestler1() != null) {
-        participants.put(rivalry.getWrestler1().getId(), rivalry.getWrestler1().getName());
+    // The rivalry link can reference a row the retention purge deleted (the FK nulls it at the
+    // DB level, but a stale in-session proxy may still throw on access) — fall through to the
+    // feud branch / empty rather than failing the beat (ATW-8nc8).
+    try {
+      if (script.getRivalry() != null) {
+        Rivalry rivalry = script.getRivalry();
+        if (rivalry.getWrestler1() != null) {
+          participants.put(rivalry.getWrestler1().getId(), rivalry.getWrestler1().getName());
+        }
+        if (rivalry.getWrestler2() != null) {
+          participants.put(rivalry.getWrestler2().getId(), rivalry.getWrestler2().getName());
+        }
+        return participants;
       }
-      if (rivalry.getWrestler2() != null) {
-        participants.put(rivalry.getWrestler2().getId(), rivalry.getWrestler2().getName());
-      }
-      return participants;
+    } catch (EntityNotFoundException | LazyInitializationException e) {
+      log.debug(
+          "Beat #{} script '{}' rivalry link unresolvable (purged or stale) — {}",
+          beat.getBeatOrder(),
+          script.getName(),
+          e.getClass().getSimpleName());
     }
     if (script.getFeud() != null) {
       script.getFeud().getParticipants().stream()
@@ -1190,8 +1203,17 @@ public class FeudScriptService {
   /** The beat's feud wrestlers (rivalry pair or active feud members); empty when unresolvable. */
   private List<Wrestler> feudParticipantsOf(FeudScriptBeat beat) {
     FeudScript script = beat.getScript();
-    if (script.getRivalry() != null) {
-      return List.of(script.getRivalry().getWrestler1(), script.getRivalry().getWrestler2());
+    // Same purge/stale-proxy hardening as participantsOf (ATW-8nc8).
+    try {
+      if (script.getRivalry() != null) {
+        return List.of(script.getRivalry().getWrestler1(), script.getRivalry().getWrestler2());
+      }
+    } catch (EntityNotFoundException | LazyInitializationException e) {
+      log.debug(
+          "Beat #{} script '{}' rivalry link unresolvable (purged or stale) — {}",
+          beat.getBeatOrder(),
+          script.getName(),
+          e.getClass().getSimpleName());
     }
     if (script.getFeud() != null) {
       return script.getFeud().getParticipants().stream()

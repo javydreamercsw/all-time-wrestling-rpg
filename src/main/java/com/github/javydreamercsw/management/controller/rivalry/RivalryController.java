@@ -141,6 +141,17 @@ public class RivalryController {
     return ResponseEntity.ok(rivalries.stream().map(rivalryMapper::toRivalryDTO).toList());
   }
 
+  @Operation(
+      summary = "Get rivalry history between two wrestlers",
+      description = "Gets every rivalry cycle between the pair regardless of order, newest first")
+  @GetMapping("/pair/{wrestler1Id}/{wrestler2Id}")
+  @Transactional(readOnly = true)
+  public ResponseEntity<List<RivalryDTO>> getRivalryHistoryBetween(
+      @PathVariable final Long wrestler1Id, @PathVariable final Long wrestler2Id) {
+    List<Rivalry> rivalries = rivalryService.getRivalryHistoryBetween(wrestler1Id, wrestler2Id);
+    return ResponseEntity.ok(rivalries.stream().map(rivalryMapper::toRivalryDTO).toList());
+  }
+
   @Operation(summary = "Add heat to rivalry", description = "Adds heat to an existing rivalry")
   @PostMapping("/{id}/heat")
   @Transactional

@@ -35,6 +35,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.event.HeatChangeEvent;
+import com.github.javydreamercsw.management.event.RivalryPurgedEvent;
 import com.github.javydreamercsw.management.service.GameClock;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.resolution.ResolutionResult;
@@ -203,6 +204,60 @@ class RivalryServiceTest {
     assertThat(result).isEmpty();
     verify(rivalryRepository, never()).findActiveRivalryBetween(any(), any());
     verify(rivalryRepository, never()).saveAndFlush(any(Rivalry.class));
+  }
+
+  @Test
+  @DisplayName("Should store canonical pair order when ids are passed reversed (ATW-8nc8)")
+  void shouldCreateRivalryWithCanonicalPairOrderWhenIdsPassedReversed() {
+    // Given: ids passed high-then-low
+    Wrestler wrestlerA = createWrestler("Wrestler A", 2L);
+    Wrestler wrestlerB = createWrestler("Wrestler B", 5L);
+
+    when(wrestlerRepository.findById(5L)).thenReturn(Optional.of(wrestlerB));
+    when(wrestlerRepository.findById(2L)).thenReturn(Optional.of(wrestlerA));
+    when(rivalryRepository.findActiveRivalryBetween(any(), any())).thenReturn(Optional.empty());
+    when(rivalryRepository.saveAndFlush(any(Rivalry.class)))
+        .thenAnswer(
+            invocation -> {
+              Rivalry rivalry = invocation.getArgument(0);
+              rivalry.setId(9L);
+              return rivalry;
+            });
+
+    // When
+    Optional<Rivalry> result = rivalryService.createRivalry(5L, 2L, "Reversed request");
+
+    // Then: the stored row is canonical — wrestler1 holds the lower id (2)
+    assertThat(result).isPresent();
+    assertThat(result.get().getWrestler1()).isEqualTo(wrestlerA);
+    assertThat(result.get().getWrestler2()).isEqualTo(wrestlerB);
+  }
+
+  @Test
+  @DisplayName("Canonical pair order is a no-op when ids are passed in order (ATW-8nc8)")
+  void shouldCreateRivalryWithCanonicalPairOrderWhenIdsPassedInOrder() {
+    // Given: ids passed low-then-high (already canonical)
+    Wrestler wrestlerA = createWrestler("Wrestler A", 2L);
+    Wrestler wrestlerB = createWrestler("Wrestler B", 5L);
+
+    when(wrestlerRepository.findById(2L)).thenReturn(Optional.of(wrestlerA));
+    when(wrestlerRepository.findById(5L)).thenReturn(Optional.of(wrestlerB));
+    when(rivalryRepository.findActiveRivalryBetween(any(), any())).thenReturn(Optional.empty());
+    when(rivalryRepository.saveAndFlush(any(Rivalry.class)))
+        .thenAnswer(
+            invocation -> {
+              Rivalry rivalry = invocation.getArgument(0);
+              rivalry.setId(9L);
+              return rivalry;
+            });
+
+    // When
+    Optional<Rivalry> result = rivalryService.createRivalry(2L, 5L, "Ordered request");
+
+    // Then
+    assertThat(result).isPresent();
+    assertThat(result.get().getWrestler1()).isEqualTo(wrestlerA);
+    assertThat(result.get().getWrestler2()).isEqualTo(wrestlerB);
   }
 
   @Test
@@ -660,6 +715,48 @@ class RivalryServiceTest {
 
     verify(segmentRepository).clearRivalryReference(999_999L);
     verify(rivalryRepository).deleteById(999_999L);
+  }
+
+  @Test
+  @DisplayName("purgeEndedRivalries: retention disabled (<=0) purges nothing")
+  void purgeEndedRivalries_disabledPurgesNothing() {
+    RivalryService.RivalryRetentionResult result = rivalryService.purgeEndedRivalries(0);
+
+    assertThat(result.rivalriesPurged()).isZero();
+    verify(rivalryRepository, never()).findByIsActiveFalseAndEndedDateBefore(any());
+  }
+
+  @Test
+  @DisplayName("purgeEndedRivalries: clears segment refs then bulk-deletes stale ended rows")
+  void purgeEndedRivalries_clearsSegmentsAndDeletesStaleRows() {
+    when(gameClock.gameNow()).thenReturn(Instant.parse("2026-08-10T10:00:00Z"));
+    Rivalry stale = createRivalry(createWrestler("Old A", 1L), createWrestler("Old B", 2L), 10);
+    stale.setIsActive(false);
+    stale.setEndedDate(Instant.parse("2026-01-01T00:00:00Z"));
+    when(rivalryRepository.findByIsActiveFalseAndEndedDateBefore(any())).thenReturn(List.of(stale));
+    when(segmentRepository.clearRivalryReference(1L)).thenReturn(2);
+
+    RivalryService.RivalryRetentionResult result = rivalryService.purgeEndedRivalries(180);
+
+    assertThat(result.rivalriesPurged()).isEqualTo(1);
+    assertThat(result.segmentsUnlinked()).isEqualTo(2);
+    var inOrder = Mockito.inOrder(segmentRepository, rivalryRepository);
+    inOrder.verify(segmentRepository).clearRivalryReference(1L);
+    inOrder.verify(rivalryRepository).deleteAllInBatch(List.of(stale));
+    verify(eventPublisher).publishEvent(any(RivalryPurgedEvent.class));
+  }
+
+  @Test
+  @DisplayName("purgeEndedRivalries: no stale rivalries → zero result, no event")
+  void purgeEndedRivalries_nothingStale() {
+    when(gameClock.gameNow()).thenReturn(Instant.parse("2026-08-10T10:00:00Z"));
+    when(rivalryRepository.findByIsActiveFalseAndEndedDateBefore(any())).thenReturn(List.of());
+
+    RivalryService.RivalryRetentionResult result = rivalryService.purgeEndedRivalries(180);
+
+    assertThat(result.rivalriesPurged()).isZero();
+    verify(rivalryRepository, never()).deleteAllInBatch(any());
+    verify(eventPublisher, never()).publishEvent(any(RivalryPurgedEvent.class));
   }
 
   private Rivalry createRivalry(

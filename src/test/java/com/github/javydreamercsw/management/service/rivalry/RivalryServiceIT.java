@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.rivalry;
 
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -39,6 +40,11 @@ class RivalryServiceIT extends ManagementIntegrationTest {
   @Test
   @DisplayName("Test that createRivalry evicts cache")
   void testCreateRivalryEvictsCache() {
+    // Startup migrations (e.g. GameDateReAnchorMigration) call rivalryRepository.findAll()
+    // during context initialization — each IT context has a fresh in-memory DB, so the
+    // exactly-once migration always runs and the spy counts it. Clear recorded invocations so
+    // the counts below reflect only this test's own calls.
+    clearInvocations(rivalryRepository);
     // First call, should hit the repository
     rivalryRepository.findAll();
     verify(rivalryRepository, times(1)).findAll();

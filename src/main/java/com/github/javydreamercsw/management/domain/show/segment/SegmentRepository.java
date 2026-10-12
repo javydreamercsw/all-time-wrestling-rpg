@@ -131,7 +131,7 @@ public interface SegmentRepository
   /** Nulls the rivalry reference on every segment pointing at the given rivalry id. */
   @Query("UPDATE Segment s SET s.rivalryId = null WHERE s.rivalryId = :rivalryId")
   @Modifying
-  void clearRivalryReference(@Param("rivalryId") Long rivalryId);
+  int clearRivalryReference(@Param("rivalryId") Long rivalryId);
 
   /**
    * Completed segments involving any of the given wrestlers that no story-arc beat is linked to —
