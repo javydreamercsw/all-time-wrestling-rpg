@@ -43,7 +43,7 @@
     <maven.compiler.release>25</maven.compiler.release>
     <maven.compiler.source>25</maven.compiler.source>
     <maven.compiler.target>25</maven.compiler.target>
-    <selenium.version>4.50.0</selenium.version>
+    <selenium.version>4.51.0</selenium.version>
     <skipTests>false</skipTests>
     <surefire.skip>${skipTests}</surefire.skip>
     <surefireArgLine/>
@@ -81,7 +81,7 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-bom</artifactId>
-        <version>4.2.18.Final</version>
+        <version>4.2.19.Final</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -227,7 +227,7 @@
     <dependency>
       <groupId>com.github.oshi</groupId>
       <artifactId>oshi-core</artifactId>
-      <version>7.7.0</version>
+      <version>7.7.1</version>
     </dependency>
     <dependency>
       <groupId>com.github.appreciated</groupId>
@@ -393,7 +393,7 @@
     <dependency>
       <groupId>org.apache.tomcat</groupId>
       <artifactId>tomcat-annotations-api</artifactId>
-      <version>11.0.26</version>
+      <version>11.0.27</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
