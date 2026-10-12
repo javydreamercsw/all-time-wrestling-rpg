@@ -57,6 +57,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.dnd.GridDropMode;
 import com.vaadin.flow.component.html.Span;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -545,6 +546,127 @@ class TournamentDetailViewTest extends AbstractViewTest {
     assertEquals(0, buttonsWithTooltip(view, "Move up one seed").size());
     assertEquals(0, _find(view, Button.class, spec -> spec.withText("Replace")).size());
     verify(tournamentService, never()).reorderSeeds(anyLong(), any());
+  }
+
+  // ── Arrange Match-ups (ATW-hw6m) ──────────────────────────────────────────
+
+  @Test
+  @DisplayName("Scheduled SE tournament shows the Arrange Match-ups button")
+  void scheduledSingleElimination_showsArrangeMatchupsButton() {
+    assertEquals(1, _find(view, Button.class, spec -> spec.withText("Arrange Match-ups")).size());
+  }
+
+  @Test
+  @DisplayName("Round-robin format hides the Arrange Match-ups button")
+  void roundRobinFormat_hidesArrangeMatchupsButton() {
+    tournament.setFormatId("ROUND_ROBIN");
+    buildView();
+
+    assertEquals(0, _find(view, Button.class, spec -> spec.withText("Arrange Match-ups")).size());
+  }
+
+  @Test
+  @DisplayName("In-progress tournament hides the Arrange Match-ups button")
+  void inProgressTournament_hidesArrangeMatchupsButton() {
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    buildView();
+
+    assertEquals(0, _find(view, Button.class, spec -> spec.withText("Arrange Match-ups")).size());
+  }
+
+  @Test
+  @DisplayName("Arrange dialog opens with one picker pair per round-1 match")
+  void arrangeDialog_opensWithOneRowPerRound1Match() {
+    view.openArrangeMatchupsDialogForTest();
+
+    Dialog dialog = _get(UI.getCurrent(), Dialog.class);
+    // 4 entrants → 2 matches → 4 ComboBoxes (the replace dialog's single picker is scoped
+    // away by searching inside the arrange dialog specifically).
+    assertEquals(4, _find(dialog, ComboBox.class).size());
+  }
+
+  @Test
+  @DisplayName("Arrange dialog shows a bye label for an odd entrant count")
+  void arrangeDialog_oddEntrants_showsByeLabel() {
+    Wrestler foxtrot = wrestler(6L, "Foxtrot");
+    TournamentEntry fifth = TournamentEntry.builder().id(6L).wrestler(foxtrot).seed(5).build();
+    entries.add(fifth);
+    buildView();
+
+    view.openArrangeMatchupsDialogForTest();
+
+    Dialog dialog = _get(UI.getCurrent(), Dialog.class);
+    assertTrue(_find(dialog, Span.class).stream().anyMatch(s -> s.getText().contains("Bye:")));
+  }
+
+  @Test
+  @DisplayName("Saving arranged pairings persists the mapped seed order")
+  void arrangeDialog_savePersistsSeedOrderMappedFromPairings() {
+    view.openArrangeMatchupsDialogForTest();
+
+    Dialog dialog = _get(UI.getCurrent(), Dialog.class);
+    @SuppressWarnings("rawtypes")
+    List<ComboBox> pickers = _find(dialog, ComboBox.class);
+    // match1 = B vs C, match2 = A vs D → seeds [2,1,4,3].
+    pickers.get(0).setValue(entries.get(1));
+    pickers.get(1).setValue(entries.get(2));
+    pickers.get(2).setValue(entries.get(0));
+    pickers.get(3).setValue(entries.get(3));
+
+    _get(dialog, Button.class, spec -> spec.withText("Save Pairings")).click();
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Long>> captor = ArgumentCaptor.forClass((Class) List.class);
+    verify(tournamentService).reorderSeeds(anyLong(), captor.capture());
+    assertEquals(List.of(2L, 1L, 4L, 3L), captor.getValue());
+  }
+
+  @Test
+  @DisplayName("Duplicate selection disables Save and never calls the service")
+  void arrangeDialog_duplicateSelection_saveDisabledAndServiceNeverCalled() {
+    view.openArrangeMatchupsDialogForTest();
+
+    Dialog dialog = _get(UI.getCurrent(), Dialog.class);
+    @SuppressWarnings("rawtypes")
+    List<ComboBox> pickers = _find(dialog, ComboBox.class);
+    // Pick Alpha (already slotted as match-2's A) into match-1's B — duplicate.
+    pickers.get(1).setValue(entries.get(0));
+
+    Button save = _get(dialog, Button.class, spec -> spec.withText("Save Pairings"));
+    assertFalse(save.isEnabled());
+    verify(tournamentService, never()).reorderSeeds(anyLong(), any());
+  }
+
+  // ── Drag-and-drop seed reordering (ATW-hw6m) ──────────────────────────────
+
+  @Test
+  @DisplayName("Scheduled tournament grid is draggable with BETWEEN drop mode")
+  void scheduledTournament_gridIsDraggableWithBetweenDropMode() {
+    Grid<TournamentEntry> grid = _get(view, Grid.class);
+    assertTrue(grid.isRowsDraggable());
+    assertEquals(GridDropMode.BETWEEN, grid.getDropMode());
+  }
+
+  @Test
+  @DisplayName("In-progress tournament grid is not draggable")
+  void inProgressTournament_gridNotDraggable() {
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    buildView();
+
+    Grid<TournamentEntry> grid = _get(view, Grid.class);
+    assertFalse(grid.isRowsDraggable());
+  }
+
+  @Test
+  @DisplayName("Dropping an entrant before a target persists the full reordered seed list")
+  void dragReorder_persistsFullSeedOrder() {
+    // Drag Alpha (seed 1) and drop between Bravo and Charlie: [A,B,C,D] → [B,A,C,D].
+    view.reorderTo(entries.get(0), entries.get(2));
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Long>> captor = ArgumentCaptor.forClass((Class) List.class);
+    verify(tournamentService).reorderSeeds(anyLong(), captor.capture());
+    assertEquals(List.of(2L, 1L, 3L, 4L), captor.getValue());
   }
 
   @Test

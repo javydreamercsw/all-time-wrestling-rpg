@@ -224,6 +224,25 @@ class TournamentDocsE2ETest extends AbstractDocsE2ETest {
   }
 
   @Test
+  void captureArrangeMatchupsDialog() {
+    navigateToAndWaitForElement(
+        "tournament-detail/" + scheduledId, By.xpath("//*[contains(., 'Grand Prix Tournament')]"));
+    // The arrange button only renders on SCHEDULED single-elimination tournaments.
+    waitForVaadinElement(driver, By.xpath("//*[contains(text(), 'Arrange Match-ups')]"));
+    clickButtonByText("Arrange Match-ups");
+    waitForVaadinElement(driver, By.xpath("//*[contains(text(), 'Round 1 match-ups')]"));
+
+    documentFeature(
+        "Booker",
+        "Tournament Bracket Generator — Arrange Match-ups",
+        "Beyond dragging rows to reorder seeds, the round-1 opponents can be hand-picked:"
+            + " each match pairs its wrestlers at the outer seed positions (1 vs last,"
+            + " 2 vs second-to-last), so Start Tournament generates exactly the arranged"
+            + " match-ups. Odd-sized brackets keep a bye at the middle seed.",
+        "booker-tournament-arrange-matchups");
+  }
+
+  @Test
   void captureTournamentCreationWizardHostShow() {
     navigateToAndWaitForElement("tournament-list", By.tagName("vaadin-grid"));
     clickButtonByText("New Tournament");
