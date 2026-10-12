@@ -55,6 +55,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.StaticEncounterDTO.StaticChoiceDTO.BonusVpCondition;
 import com.github.javydreamercsw.management.dto.campaign.TournamentDTO;
+import com.github.javydreamercsw.management.service.GameClock;
 import com.github.javydreamercsw.management.service.achievement.ScriptedAchievementEvaluator;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
@@ -108,6 +109,7 @@ public class MatchResultProcessorService {
   private final FeatureDataService featureDataService;
   private final ScriptedAchievementEvaluator scriptedAchievementEvaluator;
   private final LegacyService legacyService;
+  private final GameClock gameClock;
 
   // Field-injected with @Lazy to break circular dependency with CampaignService
   @Autowired @Lazy private CampaignService campaignService;
@@ -184,7 +186,8 @@ public class MatchResultProcessorService {
     Segment newSegment = new Segment();
     newSegment.setShow(show);
     newSegment.setSegmentType(type);
-    newSegment.setSegmentDate(Instant.now());
+    // Kayfabe: the encounter sits on the show's in-game date, not the wall clock (ATW-07hw).
+    newSegment.setSegmentDate(gameClock.gameNowOn(show.getShowDate()));
     newSegment.setIsTitleSegment(false);
     newSegment.setTitles(new HashSet<>());
     final Segment segment = segmentRepository.save(newSegment);
@@ -660,11 +663,11 @@ public class MatchResultProcessorService {
             .orElseThrow(() -> new IllegalStateException("ATW World Championship not found"));
 
     // Use the show's in-game date (kayfabe date) rather than the real-world moment this ran, so
-    // reign history reflects the fictional timeline.
+    // reign history reflects the fictional timeline (ATW-07hw).
     Instant awardDate =
         wonAtShow != null && wonAtShow.getShowDate() != null
-            ? wonAtShow.getShowDate().atStartOfDay(ZoneOffset.UTC).toInstant()
-            : Instant.now();
+            ? gameClock.gameNowOn(wonAtShow.getShowDate())
+            : gameClock.gameNow();
 
     titleReignRepository
         .findByTitleAndEndDateIsNull(title)

@@ -28,10 +28,9 @@ import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudReposit
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.FeudHeatChangeEvent;
+import com.github.javydreamercsw.management.service.GameClock;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
-import java.time.Clock;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -55,7 +54,7 @@ class MultiWrestlerFeudServiceTest {
   @Mock private MultiWrestlerFeudRepository multiWrestlerFeudRepository;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private UniverseContextService universeContextService;
-  @Mock private Clock clock;
+  @Mock private GameClock gameClock;
   @Mock private ApplicationEventPublisher eventPublisher;
 
   @InjectMocks private MultiWrestlerFeudService multiWrestlerFeudService;
@@ -69,8 +68,7 @@ class MultiWrestlerFeudServiceTest {
 
   @BeforeEach
   void setUp() {
-    when(clock.instant()).thenReturn(FIXED_INSTANT);
-    when(clock.getZone()).thenReturn(ZoneId.of("UTC"));
+    when(gameClock.gameNow()).thenReturn(FIXED_INSTANT);
 
     wrestler1 = new Wrestler();
     wrestler1.setId(1L);

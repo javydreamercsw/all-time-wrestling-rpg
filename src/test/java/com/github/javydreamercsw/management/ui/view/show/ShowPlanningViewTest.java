@@ -33,6 +33,7 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.GameClock;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
@@ -153,7 +154,8 @@ class ShowPlanningViewTest extends AbstractViewTest {
             null,
             universeContextService,
             expansionService,
-            mock(GameSettingService.class));
+            mock(GameSettingService.class),
+            mock(GameClock.class));
 
     showPlanningView =
         new ShowPlanningView(

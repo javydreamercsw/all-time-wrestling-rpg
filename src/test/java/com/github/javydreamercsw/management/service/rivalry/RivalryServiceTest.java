@@ -34,9 +34,9 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.event.HeatChangeEvent;
+import com.github.javydreamercsw.management.service.GameClock;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.resolution.ResolutionResult;
-import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -66,7 +66,7 @@ class RivalryServiceTest {
 
   @Mock private UniverseRepository universeRepository;
 
-  @Mock private Clock clock;
+  @Mock private GameClock gameClock;
   @Mock private Random random;
   @Mock private ApplicationEventPublisher eventPublisher;
   @Mock private GameSettingService gameSettingService;
@@ -75,7 +75,7 @@ class RivalryServiceTest {
 
   @BeforeEach
   public void setUp() {
-    lenient().when(clock.instant()).thenReturn(Instant.parse("2024-01-01T00:00:00Z"));
+    lenient().when(gameClock.gameNow()).thenReturn(Instant.parse("2024-01-01T00:00:00Z"));
     lenient().when(gameSettingService.getRivalryResolutionThresholdPle()).thenReturn(30);
     lenient().when(gameSettingService.getRivalryResolutionMinHeat()).thenReturn(10);
     Universe defaultUniverse = Mockito.mock(Universe.class);
@@ -607,7 +607,7 @@ class RivalryServiceTest {
   @DisplayName("purgeClosedRivalryHeatEvents: deletes events for stale closed rivalries")
   void purgeClosedRivalryHeatEvents_deletesEventsForStaleRivalries() {
     Instant now = Instant.parse("2026-08-10T10:00:00Z");
-    when(clock.instant()).thenReturn(now);
+    when(gameClock.gameNow()).thenReturn(now);
 
     Rivalry stale = createRivalry(createWrestler("A", 1L), createWrestler("B", 2L), 0);
     stale.setIsActive(false);
@@ -628,7 +628,7 @@ class RivalryServiceTest {
   @DisplayName("purgeClosedRivalryHeatEvents: returns zero when no stale rivalries exist")
   void purgeClosedRivalryHeatEvents_returnsZeroWhenNothingToClean() {
     Instant now = Instant.parse("2026-08-10T10:00:00Z");
-    when(clock.instant()).thenReturn(now);
+    when(gameClock.gameNow()).thenReturn(now);
 
     when(rivalryRepository.findByIsActiveFalseAndEndedDateBefore(any(Instant.class)))
         .thenReturn(List.of());
@@ -647,7 +647,7 @@ class RivalryServiceTest {
     rivalry.setWrestler2(wrestler2);
     rivalry.setHeat(heat);
     rivalry.setIsActive(true);
-    rivalry.setStartedDate(Instant.now(clock));
+    rivalry.setStartedDate(Instant.now());
     return rivalry;
   }
 }

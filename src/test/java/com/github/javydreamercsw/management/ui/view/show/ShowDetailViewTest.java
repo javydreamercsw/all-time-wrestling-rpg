@@ -54,6 +54,7 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.GameClock;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
@@ -435,7 +436,8 @@ class ShowDetailViewTest extends AbstractViewTest {
             su,
             universeContextService,
             expansionService,
-            mock(GameSettingService.class));
+            mock(GameSettingService.class),
+            mock(GameClock.class));
     return new ShowDetailView(
         showFacade,
         showContextFacade,

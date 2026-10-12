@@ -27,8 +27,8 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
-import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.GameClock;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
 import java.util.ArrayList;
@@ -75,7 +75,7 @@ public class FactionService {
       final ExpansionService expansionService,
       final UniverseContextService universeContextService,
       final UniverseSettingsService universeSettingsService,
-      final Clock clock,
+      final GameClock gameClock,
       final DefaultImageService imageService) {
     this.factionRepository = factionRepository;
     this.wrestlerRepository = wrestlerRepository;
@@ -84,7 +84,7 @@ public class FactionService {
     this.expansionService = expansionService;
     this.universeContextService = universeContextService;
     this.universeSettingsService = universeSettingsService;
-    this.clock = clock;
+    this.gameClock = gameClock;
     this.imageService = imageService;
   }
 

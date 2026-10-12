@@ -363,7 +363,8 @@ public class DramaEventService {
   public DramaEventCleanupResult purgeOldEvents(
       final int processedRetentionDays, final int unprocessedRetentionDays) {
     Instant processedCutoff = gameClock.gameNow().minus(processedRetentionDays, ChronoUnit.DAYS);
-    Instant unprocessedCutoff = gameClock.gameNow().minus(unprocessedRetentionDays, ChronoUnit.DAYS);
+    Instant unprocessedCutoff =
+        gameClock.gameNow().minus(unprocessedRetentionDays, ChronoUnit.DAYS);
 
     int processed = dramaEventRepository.deleteProcessedOlderThan(processedCutoff);
     int unprocessed = dramaEventRepository.deleteUnprocessedOlderThan(unprocessedCutoff);

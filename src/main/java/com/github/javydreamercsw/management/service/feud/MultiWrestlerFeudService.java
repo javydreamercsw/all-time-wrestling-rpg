@@ -384,10 +384,7 @@ public class MultiWrestlerFeudService {
   public List<MultiWrestlerFeud> getRecentFeuds(final int days) {
     // Game-anchored: feud timestamps are kayfabe, so the "recent" window reads from the in-game
     // clock too (ATW-07hw).
-    Instant sinceDate =
-        gameClock
-            .gameNow()
-            .minusSeconds((long) days * 24L * 3600L);
+    Instant sinceDate = gameClock.gameNow().minusSeconds((long) days * 24L * 3600L);
     return multiWrestlerFeudRepository.findRecentFeuds(sinceDate);
   }
 
