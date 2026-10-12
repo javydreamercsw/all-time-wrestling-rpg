@@ -1,0 +1,162 @@
+- generic [ref=e2]:
+  - heading "Show Template — Tournament Spec UI mock" [level=1] [ref=e3]
+  - paragraph [ref=e4]: "Three surfaces change: the assignment editor inside the Show Template dialog (spec fields appear when Tournament is left empty), the assignments grid (a \"Spec\" badge), and how the row reads after the payoff is consumed. Dashed amber = NEW in this feature; everything else is today's UI."
+  - heading "1 · Template editor — assignment rows, \"build a new tournament\" mode" [level=2] [ref=e5]
+  - generic [ref=e6]:
+    - generic [ref=e7]:
+      - 'heading "Edit Show Template: Quantum Quarrel" [level=3] [ref=e8]'
+      - generic [ref=e9]: Premium Live Event (PLE)
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - generic [ref=e12]: Segment Type (event-only)
+        - generic [ref=e13]:
+          - generic [ref=e14]: Free-for-All
+          - generic [ref=e15]: ▼
+      - generic [ref=e16]:
+        - generic [ref=e17]: Segment Rule
+        - generic [ref=e18]:
+          - generic [ref=e19]: Optional
+          - generic [ref=e20]: ▼
+      - generic [ref=e21]:
+        - generic [ref=e22]: Mode
+        - generic [ref=e23]:
+          - generic [ref=e24]: AUTO_ATTACH
+          - generic [ref=e25]: ▼
+      - generic [ref=e26]:
+        - generic [ref=e27]: Tournament
+        - generic [ref=e28]:
+          - generic [ref=e29]: Optional — empty = spec below
+          - generic [ref=e30]: ▼
+    - generic [ref=e31]:
+      - generic [ref=e32]: Tournament spec — creates one tournament on first use
+      - generic [ref=e33]:
+        - generic [ref=e34]:
+          - generic [ref=e35]: Spec Name
+          - generic [ref=e36]: Crown's Cup
+        - generic [ref=e37]:
+          - generic [ref=e38]: Format
+          - generic [ref=e39]:
+            - generic [ref=e40]: Qualifier Groups
+            - generic [ref=e41]: ▼
+        - generic [ref=e42]:
+          - generic [ref=e43]: Entrants
+          - generic [ref=e44]:
+            - text: "12"
+            - generic [ref=e45]: (4–25 for this format)
+        - generic [ref=e46]:
+          - generic [ref=e47]: Linked Championship (optional)
+          - generic [ref=e48]:
+            - generic [ref=e49]: ATW World
+            - generic [ref=e50]: ▼
+      - generic [ref=e51]:
+        - generic [ref=e52]:
+          - generic [ref=e53]: Final Rule (optional)
+          - generic [ref=e54]:
+            - generic [ref=e55]: Tables, Ladders and Chairs (TLC)
+            - generic [ref=e56]: ▼
+        - generic [ref=e57]:
+          - generic [ref=e58]: Allowed Rules Pool (optional — random per round)
+          - generic [ref=e59]:
+            - generic [ref=e60]: Submission · Last Man Standing · No DQ
+            - generic [ref=e61]: ▼
+      - generic [ref=e62]:
+        - generic [ref=e63]:
+          - generic [ref=e64]: Preset (optional)
+          - generic [ref=e65]:
+            - generic [ref=e66]: Deadly Combat — from tournaments.json
+            - generic [ref=e67]: ▼
+        - generic [ref=e68]: + Add Assignment
+      - paragraph [ref=e70]: Preset pre-fills name, format, entrant count and the rules pool from the seeded catalog (deadly_combat → Single Elimination, 8 entrants, high-intensity pool). Anything you overwrite wins.
+    - separator [ref=e71]
+    - table [ref=e73]:
+      - rowgroup [ref=e74]:
+        - row [ref=e75]:
+          - columnheader "Segment Type (event-only)" [ref=e76]
+          - columnheader "Segment Rule" [ref=e77]
+          - columnheader "Tournament" [ref=e78]
+          - columnheader "Spec" [ref=e79]
+          - columnheader "Mode" [ref=e80]
+          - columnheader [ref=e81]
+        - row [ref=e82]:
+          - cell "Free-for-All" [ref=e83]
+          - cell "—" [ref=e84]
+          - cell "Crown's Cup · spec" [ref=e85]
+          - cell "AUTO_ATTACH" [ref=e87]
+          - cell "🗑" [ref=e89]
+        - row [ref=e90]:
+          - cell "Abu Dhabi Rumble" [ref=e91]
+          - cell "—" [ref=e92]
+          - cell "All Time Rumble" [ref=e93]
+          - cell "AUTO_ATTACH" [ref=e94]
+          - cell "🗑" [ref=e96]
+        - row [ref=e97]:
+          - cell "—" [ref=e98]
+          - cell "Promo" [ref=e99]
+          - cell "—" [ref=e100]
+          - cell "ENCOURAGED" [ref=e101]
+          - cell "🗑" [ref=e103]
+    - generic [ref=e104]:
+      - generic [ref=e105]: new spec row (dashed badge)
+      - generic [ref=e107]: existing tournament pairing
+      - generic [ref=e109]: unchanged rows
+  - heading "2 · Row lifecycle — what the editor shows over time" [level=2] [ref=e111]
+  - generic [ref=e112]:
+    - table [ref=e114]:
+      - rowgroup [ref=e115]:
+        - row [ref=e116]:
+          - columnheader "State" [ref=e117]
+          - columnheader "Tournament cell" [ref=e118]
+          - columnheader "Behavior on PLE approval" [ref=e119]
+        - row [ref=e120]:
+          - cell "Paired (today's model)" [ref=e121]
+          - cell "All Time Rumble" [ref=e122]
+          - cell "Books that existing tournament's bracket exactly as today — unchanged." [ref=e123]
+        - row [ref=e124]:
+          - cell "Spec (new)" [ref=e125]
+          - cell "Crown's Cup · spec" [ref=e126]
+          - cell "First approval creates one SCHEDULED tournament from the spec and stores it back on the row (the Tournament cell switches from the spec badge to the tournament name). Entrant count, final rule and rules pool come from the spec." [ref=e128]
+        - row [ref=e129]:
+          - cell "Consumed" [ref=e130]
+          - cell "— (cleared)" [ref=e131]
+          - 'cell "After the payoff the row degrades to a plain type/rule row: tournament and all spec fields cleared, so it can never mint a second instance. Spec-only rows are removed entirely." [ref=e132]'
+    - paragraph [ref=e133]: Editing the spec is only possible while the instance is SCHEDULED (the instance follows the standard tournament edit rules). Once IN_PROGRESS or COMPLETE the spec fields display read-only.
+  - heading "3 · Preset picker detail" [level=2] [ref=e134]
+  - generic [ref=e135]:
+    - generic [ref=e136]:
+      - generic [ref=e137]:
+        - generic [ref=e138]: Preset (optional)
+        - generic [ref=e139]:
+          - generic [ref=e140]:
+            - generic [ref=e141]: Deadly Combat
+            - generic [ref=e142]: ✓
+          - generic [ref=e143]: More presets appear as tournaments.json grows
+      - generic [ref=e145]: Fill spec from preset
+    - paragraph [ref=e148]:
+      - text: Preset = the
+      - code [ref=e149]: deadly_combat
+      - text: row of
+      - code [ref=e150]: tournaments.json
+      - text: ": Single Elimination, 8 entrants, pool of Submission · Last Man Standing · Barbwire Exploding Deathmatch · No DQ. Picking a preset fills the spec fields; you can still override any of them before adding the row."
+  - heading "4 · Where seeded tournaments appear" [level=2] [ref=e151]
+  - generic [ref=e152]:
+    - paragraph [ref=e153]:
+      - text: The catalog also seeds real
+      - code [ref=e154]: Tournament
+      - text: "rows at startup (universe-less, SCHEDULED, no entries — like segment type seeds), so the two places that list tournaments see them without any template involvement:"
+    - generic [ref=e155]:
+      - generic [ref=e156]:
+        - generic [ref=e157]: Template editor — Tournament combo
+        - generic [ref=e158]:
+          - generic [ref=e159]: All Time Rumble
+          - generic [ref=e161]: Deadly Combat · seeded
+      - generic [ref=e163]:
+        - generic [ref=e164]: Tournament list view
+        - generic [ref=e165]:
+          - generic [ref=e166]: Crown's Cup — SCHEDULED
+          - generic [ref=e168]: Deadly Combat — SCHEDULED (seeded)
+    - paragraph [ref=e170]:
+      - text: "Pairing the seeded Deadly Combat row with a weekly template is the zero-config route: no spec needed, the campaign's"
+      - code [ref=e171]: deadlyCombatWins
+      - text: counter only advances for tournaments carrying the
+      - code [ref=e172]: deadly_combat
+      - text: code.

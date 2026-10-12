@@ -1,0 +1,98 @@
+- generic [ref=e1]:
+  - generic [ref=e4]:
+    - button "Toggle navigation panel" [expanded] [ref=e6]:
+      - generic [ref=e7]: 
+      - text: 
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - img "ATW Logo" [ref=e12]
+        - generic [ref=e13]: All Time Wrestling RPG
+      - generic [ref=e14]:
+        - generic:
+          - generic:
+            - generic: Active Universe
+            - generic:
+              - generic:
+                - generic:
+                  - combobox "Active Universe" [disabled]
+              - generic:
+                - text: 
+                - generic [aria-hidden]: 
+      - navigation [ref=e16]:
+        - list [ref=e17]:
+          - generic:
+            - listitem [ref=e18]:
+              - generic [ref=e19]:
+                - generic [ref=e20]: Card Game
+                - button "Card Game Toggle child items" [ref=e29]: 
+              - generic: Cards
+              - text: 
+            - listitem [ref=e30]:
+              - generic [ref=e31]:
+                - generic [ref=e32]: Dashboards
+                - button "Dashboards Toggle child items" [ref=e41]: 
+              - generic: Championship Rankings
+              - text: 
+              - generic: Hall of Fame
+              - text: 
+              - generic: Home
+              - text: 
+              - generic: Inbox
+              - text: 
+              - generic: News & Rumors
+              - text: 
+              - generic: Show Calendar
+              - text: 
+              - generic: Weekly Challenges
+              - text: 
+              - generic: Wrestler Rankings
+              - text: 
+              - generic: Wrestling World Feed
+              - text: 
+            - listitem [ref=e42]:
+              - generic [ref=e43]:
+                - generic [ref=e44]: Help
+                - button "Help Toggle child items" [ref=e52]: 
+              - generic: Game Guide
+              - text: 
+      - generic [ref=e53]:
+        - generic [ref=e54]: "Version: 2.11.0-SNAPSHOT"
+        - link "Source Code" [ref=e55] [cursor=pointer]:
+          - /url: https://github.com/javydreamercsw/all-time-wrestling-rpg
+    - generic [ref=e57]:
+      - generic:
+        - generic [ref=e58]:
+          - img "All Time Wrestling RPG Logo" [ref=e59]
+          - heading "All Time Wrestling RPG" [level=1] [ref=e60]
+          - paragraph [ref=e61]: Manage your wrestling promotion
+        - region [ref=e63]:
+          - generic:
+            - heading [level=1]
+          - text: 
+          - generic [ref=e64]:
+            - generic [ref=e66]:
+              - generic [ref=e67]:
+                - generic: Username
+                - text: •
+              - generic [ref=e68]:
+                - textbox "Username" [ref=e69]: admin
+                - generic: 
+            - generic [ref=e71]:
+              - generic [ref=e72]:
+                - generic: Password
+                - text: •
+              - generic [ref=e73]:
+                - textbox "Password" [active] [ref=e74]
+                - generic:
+                  - text: 
+                  - generic [ref=e75]:
+                    - text: 
+                    - button "Show password" [ref=e76]
+          - button "Sign In" [ref=e77]
+          - button "Forgot password?" [ref=e80]
+          - generic [ref=e83]: "Default accounts: admin/admin123, viewer/viewer123"
+        - generic [ref=e86]:
+          - generic [aria-hidden] [ref=e87]: 
+          - checkbox "Remember me for 7 days" [ref=e88]
+          - generic [ref=e89]: Remember me for 7 days
+  - generic [ref=e91]: Online

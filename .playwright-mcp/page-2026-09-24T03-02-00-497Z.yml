@@ -1,0 +1,5 @@
+- generic [active] [ref=f2e1]:
+  - heading "Whitelabel Error Page" [level=1] [ref=f2e2]
+  - paragraph [ref=f2e3]: This application has no explicit mapping for /error, so you are seeing this as a fallback.
+  - generic [ref=f2e4]: Wed Sep 23 22:02:00 CDT 2026
+  - generic [ref=f2e5]: There was an unexpected error (type=Forbidden, status=403).

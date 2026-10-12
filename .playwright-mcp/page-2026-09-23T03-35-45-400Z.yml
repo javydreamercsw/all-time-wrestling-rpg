@@ -1,0 +1,460 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e4]:
+    - generic [ref=f1e5]:
+      - generic:
+        - button "Toggle navigation panel" [expanded] [ref=f1e6]:
+          - generic [ref=f1e7]: 
+          - text: 
+        - generic [ref=f1e9]:
+          - img "a" [ref=f1e10]:
+            - text: 
+            - img [aria-hidden] [ref=f1e11]:
+              - generic [ref=f1e12]: a
+          - generic [ref=f1e13]: admin
+          - button "Open inbox" [ref=f1e14]:
+            - generic [ref=f1e15]: Inbox
+          - button "Open profile" [ref=f1e27]:
+            - generic [ref=f1e28]: Profile
+          - button "Logout" [ref=f1e36]
+    - generic [ref=f1e47]:
+      - generic [ref=f1e48]:
+        - img "ATW Logo" [ref=f1e49]
+        - generic [ref=f1e50]: All Time Wrestling RPG
+      - generic [ref=f1e53]:
+        - generic [ref=f1e54]: Active Universe
+        - generic [ref=f1e55]:
+          - combobox "Active Universe" [ref=f1e56]: Default Universe
+          - generic:
+            - text: 
+            - generic [aria-hidden] [ref=f1e57]: 
+      - navigation [ref=f1e59]:
+        - list [ref=f1e60]:
+          - generic:
+            - listitem [ref=f1e61]:
+              - generic [ref=f1e62]:
+                - link "Booker Dashboard" [ref=f1e63] [cursor=pointer]:
+                  - /url: booker
+                - text: 
+            - listitem [ref=f1e71]:
+              - generic [ref=f1e72]:
+                - generic [ref=f1e73]: Campaign
+                - button "Campaign Toggle child items" [ref=f1e81]: 
+              - generic: Campaigns
+              - text: 
+              - generic: Card Export
+              - text: 
+              - generic: Dashboard
+              - text: 
+            - listitem [ref=f1e82]:
+              - generic [ref=f1e83]:
+                - generic [ref=f1e84]: Card Game
+                - button "Card Game Toggle child items" [ref=f1e93]: 
+              - generic: Cards
+              - text: 
+              - generic: Decks
+              - text: 
+            - listitem [ref=f1e94]:
+              - generic [ref=f1e95]:
+                - generic [ref=f1e96]: Configuration
+                - button "Configuration Toggle child items" [ref=f1e105]: 
+              - generic: Admin
+              - text: 
+              - generic: Data Transfer
+              - text: 
+            - listitem [ref=f1e106]:
+              - generic [ref=f1e107]:
+                - generic [ref=f1e108]: Dashboards
+                - button "Dashboards Toggle child items" [expanded] [ref=f1e117]: 
+              - list [ref=f1e118]:
+                - generic:
+                  - listitem [ref=f1e119]:
+                    - generic [ref=f1e120]:
+                      - link "Championship Rankings" [ref=f1e121] [cursor=pointer]:
+                        - /url: championship-rankings
+                      - text: 
+                  - listitem [ref=f1e129]:
+                    - generic [ref=f1e130]:
+                      - link "Hall of Fame" [ref=f1e131] [cursor=pointer]:
+                        - /url: hall-of-fame
+                      - text: 
+                  - listitem [ref=f1e141]:
+                    - generic [ref=f1e142]:
+                      - link "Home" [ref=f1e143] [cursor=pointer]:
+                        - /url: ""
+                      - text: 
+                  - listitem [ref=f1e152]:
+                    - generic [ref=f1e153]:
+                      - link "Inbox" [ref=f1e154] [cursor=pointer]:
+                        - /url: inbox
+                      - text: 
+                  - listitem [ref=f1e163]:
+                    - generic [ref=f1e164]:
+                      - link "News & Rumors" [ref=f1e165] [cursor=pointer]:
+                        - /url: news
+                      - text: 
+                  - listitem [ref=f1e181]:
+                    - generic [ref=f1e182]:
+                      - link "Show Calendar" [ref=f1e183] [cursor=pointer]:
+                        - /url: show-calendar
+                      - text: 
+                  - listitem [ref=f1e193]:
+                    - generic [ref=f1e194]:
+                      - link "Weekly Challenges" [ref=f1e195] [cursor=pointer]:
+                        - /url: challenges
+                      - text: 
+                  - listitem [ref=f1e203]:
+                    - generic [ref=f1e204]:
+                      - link "Wrestler Rankings" [ref=f1e205] [cursor=pointer]:
+                        - /url: wrestler-rankings
+                      - text: 
+                  - listitem [ref=f1e213]:
+                    - generic [ref=f1e214]:
+                      - link "Wrestling World Feed" [ref=f1e215] [cursor=pointer]:
+                        - /url: news/feed
+                      - text: 
+            - listitem [ref=f1e223]:
+              - generic [ref=f1e224]:
+                - generic [ref=f1e225]: Entities
+                - button "Entities Toggle child items" [ref=f1e236]: 
+              - generic: Accounts
+              - text: 
+              - generic: Arenas
+              - text: 
+              - generic: Faction Rivalries
+              - text: 
+              - generic: Factions
+              - text: 
+              - generic: Injury Types
+              - text: 
+              - generic: Locations
+              - text: 
+              - generic: NPCs
+              - text: 
+              - generic: Rivalries
+              - text: 
+              - generic: Seasons
+              - text: 
+              - generic: Segment Rules
+              - text: 
+              - generic: Segment Types
+              - text: 
+              - generic: Show Templates
+              - text: 
+              - generic: Shows
+              - text: 
+              - generic: Teams
+              - text: 
+              - generic: Title Reigns
+              - text: 
+              - generic: Titles
+              - text: 
+              - generic: Tournaments
+              - text: 
+              - generic: Universes
+              - text: 
+              - generic: Wrestlers
+              - text: 
+            - listitem [ref=f1e237]:
+              - generic [ref=f1e238]:
+                - generic [ref=f1e239]: General Manager
+                - button "General Manager Toggle child items" [ref=f1e247]: 
+              - generic: Contract Management
+              - text: 
+              - generic: GM Dashboard
+              - text: 
+            - listitem [ref=f1e248]:
+              - generic [ref=f1e249]:
+                - generic [ref=f1e250]: Help
+                - button "Help Toggle child items" [ref=f1e258]: 
+              - generic: Game Guide
+              - text: 
+              - generic: Tutorial
+              - text: 
+            - listitem [ref=f1e259]:
+              - generic [ref=f1e260]:
+                - generic [ref=f1e261]: Multiplayer
+                - button "Multiplayer Toggle child items" [ref=f1e270]: 
+              - generic: My Leagues
+              - text: 
+            - listitem [ref=f1e271]:
+              - generic [ref=f1e272]:
+                - link "Player Dashboard" [ref=f1e273] [cursor=pointer]:
+                  - /url: player
+                - text: 
+            - listitem [ref=f1e285]:
+              - generic [ref=f1e286]:
+                - generic [ref=f1e287]: Share QR Code
+                - text: 
+      - generic [ref=f1e320]:
+        - generic [ref=f1e321]: "Version: 2.11.0-SNAPSHOT"
+        - link "Source Code" [ref=f1e322] [cursor=pointer]:
+          - /url: https://github.com/javydreamercsw/all-time-wrestling-rpg
+    - main [ref=f1e324]:
+      - generic [ref=f1e325]:
+        - heading "Show Calendar" [level=1] [ref=f1e327]
+        - generic [ref=f1e330]:
+          - generic:
+            - button [ref=f1e331]
+            - heading "June 2026" [level=5] [ref=f1e339]
+            - button [ref=f1e340]
+            - generic [ref=f1e348]:
+              - generic [ref=f1e350]:
+                - button [ref=f1e351]
+                - generic [aria-hidden] [ref=f1e356]: 
+              - generic:
+                - text: 
+                - generic: "2021"
+                - text: 
+                - generic: "2022"
+                - text: 
+                - generic: "2023"
+                - text: 
+                - generic: "2024"
+                - text: 
+                - generic: "2025"
+                - text: 
+                - generic: "2026"
+                - text: 
+                - generic: "2027"
+                - text: 
+                - generic: "2028"
+                - text: 
+                - generic: "2029"
+                - text: 
+                - generic: "2030"
+                - text: 
+                - generic: "2031"
+            - generic [ref=f1e358]:
+              - generic [ref=f1e360]:
+                - button [ref=f1e361]
+                - generic [aria-hidden] [ref=f1e366]: 
+              - generic:
+                - text: 
+                - generic: January
+                - text: 
+                - generic: February
+                - text: 
+                - generic: March
+                - text: 
+                - generic: April
+                - text: 
+                - generic: May
+                - text: 
+                - generic: June
+                - text: 
+                - generic: July
+                - text: 
+                - generic: August
+                - text: 
+                - generic: September
+                - text: 
+                - generic: October
+                - text: 
+                - generic: November
+                - text: 
+                - generic: December
+            - button "Today" [ref=f1e368]
+      - generic [ref=f1e371]:
+        - generic:
+          - grid [ref=f1e376]:
+            - rowgroup [ref=f1e377]:
+              - row [ref=f1e381]:
+                - columnheader "Sunday" [ref=f1e382]:
+                  - generic "Sunday" [ref=f1e384]: Sun
+                - columnheader "Monday" [ref=f1e385]:
+                  - generic "Monday" [ref=f1e387]: Mon
+                - columnheader "Tuesday" [ref=f1e388]:
+                  - generic "Tuesday" [ref=f1e390]: Tue
+                - columnheader "Wednesday" [ref=f1e391]:
+                  - generic "Wednesday" [ref=f1e393]: Wed
+                - columnheader "Thursday" [ref=f1e394]:
+                  - generic "Thursday" [ref=f1e396]: Thu
+                - columnheader "Friday" [ref=f1e397]:
+                  - generic "Friday" [ref=f1e399]: Fri
+                - columnheader "Saturday" [ref=f1e400]:
+                  - generic "Saturday" [ref=f1e402]: Sat
+            - rowgroup [ref=f1e403]:
+              - generic [ref=f1e406]:
+                - row [ref=f1e408]:
+                  - gridcell "May 31, 2026" [ref=f1e409]:
+                    - generic [ref=f1e410]:
+                      - generic "Week 23" [ref=f1e411]: W23
+                      - generic "May 31, 2026" [ref=f1e413]: "31"
+                      - generic [ref=f1e414]: Legends Converge
+                  - gridcell "June 1, 2026" [ref=f1e421]:
+                    - generic [ref=f1e422]:
+                      - generic "June 1, 2026" [ref=f1e424]: "1"
+                      - generic [ref=f1e425]: Timeless
+                  - gridcell "June 2, 2026" [ref=f1e432]:
+                    - generic "June 2, 2026" [ref=f1e435]: "2"
+                  - gridcell "June 3, 2026" [ref=f1e437]:
+                    - generic "June 3, 2026" [ref=f1e440]: "3"
+                  - gridcell "June 4, 2026" [ref=f1e442]:
+                    - generic "June 4, 2026" [ref=f1e445]: "4"
+                  - gridcell "June 5, 2026" [ref=f1e447]:
+                    - generic [ref=f1e448]:
+                      - generic "June 5, 2026" [ref=f1e450]: "5"
+                      - generic [ref=f1e451]: Continuum
+                  - gridcell "June 6, 2026" [ref=f1e458]:
+                    - generic "June 6, 2026" [ref=f1e461]: "6"
+                - row [ref=f1e465]:
+                  - gridcell "June 7, 2026" [ref=f1e466]:
+                    - generic [ref=f1e467]:
+                      - generic "Week 24" [ref=f1e468]: W24
+                      - generic "June 7, 2026" [ref=f1e470]: "7"
+                  - gridcell "June 8, 2026" [ref=f1e472]:
+                    - generic [ref=f1e473]:
+                      - generic "June 8, 2026" [ref=f1e475]: "8"
+                      - generic [ref=f1e476]: Timeless
+                  - gridcell "June 9, 2026" [ref=f1e483]:
+                    - generic "June 9, 2026" [ref=f1e486]: "9"
+                  - gridcell "June 10, 2026" [ref=f1e488]:
+                    - generic "June 10, 2026" [ref=f1e491]: "10"
+                  - gridcell "June 11, 2026" [ref=f1e493]:
+                    - generic "June 11, 2026" [ref=f1e496]: "11"
+                  - gridcell "June 12, 2026" [ref=f1e498]:
+                    - generic [ref=f1e499]:
+                      - generic "June 12, 2026" [ref=f1e501]: "12"
+                      - generic [ref=f1e502]: Continuum
+                  - gridcell "June 13, 2026" [ref=f1e509]:
+                    - generic "June 13, 2026" [ref=f1e512]: "13"
+                - row [ref=f1e514]:
+                  - gridcell "June 14, 2026" [ref=f1e515]:
+                    - generic [ref=f1e516]:
+                      - generic "Week 25" [ref=f1e517]: W25
+                      - generic "June 14, 2026" [ref=f1e519]: "14"
+                  - gridcell "June 15, 2026" [ref=f1e521]:
+                    - generic [ref=f1e522]:
+                      - generic "June 15, 2026" [ref=f1e524]: "15"
+                      - generic [ref=f1e525]: Timeless
+                  - gridcell "June 16, 2026" [ref=f1e532]:
+                    - generic "June 16, 2026" [ref=f1e535]: "16"
+                  - gridcell "June 17, 2026" [ref=f1e537]:
+                    - generic "June 17, 2026" [ref=f1e540]: "17"
+                  - gridcell "June 18, 2026" [ref=f1e542]:
+                    - generic "June 18, 2026" [ref=f1e545]: "18"
+                  - gridcell "June 19, 2026" [ref=f1e547]:
+                    - generic [ref=f1e548]:
+                      - generic "June 19, 2026" [ref=f1e550]: "19"
+                      - generic [ref=f1e551]: Continuum
+                  - gridcell "June 20, 2026" [ref=f1e558]:
+                    - generic "June 20, 2026" [ref=f1e561]: "20"
+                - row [ref=f1e563]:
+                  - gridcell "June 21, 2026" [ref=f1e564]:
+                    - generic [ref=f1e565]:
+                      - generic "Week 26" [ref=f1e566]: W26
+                      - generic "June 21, 2026" [ref=f1e568]: "21"
+                  - gridcell "June 22, 2026" [ref=f1e570]:
+                    - generic [ref=f1e571]:
+                      - generic "June 22, 2026" [ref=f1e573]: "22"
+                      - generic [ref=f1e574]: Timeless
+                  - gridcell "June 23, 2026" [ref=f1e581]:
+                    - generic "June 23, 2026" [ref=f1e584]: "23"
+                  - gridcell "June 24, 2026" [ref=f1e586]:
+                    - generic "June 24, 2026" [ref=f1e589]: "24"
+                  - gridcell "June 25, 2026" [ref=f1e591]:
+                    - generic "June 25, 2026" [ref=f1e594]: "25"
+                  - gridcell "June 26, 2026" [ref=f1e596]:
+                    - generic [ref=f1e597]:
+                      - generic "June 26, 2026" [ref=f1e599]: "26"
+                      - generic [ref=f1e600]: Continuum
+                  - gridcell "June 27, 2026" [ref=f1e607]:
+                    - generic "June 27, 2026" [ref=f1e610]: "27"
+                - row [ref=f1e612]:
+                  - gridcell "June 28, 2026" [ref=f1e613]:
+                    - generic [ref=f1e614]:
+                      - generic "Week 27" [ref=f1e615]: W27
+                      - generic "June 28, 2026" [ref=f1e617]: "28"
+                      - generic [ref=f1e618]: Quantum Quarrel
+                  - gridcell "June 29, 2026" [ref=f1e625]:
+                    - generic [ref=f1e626]:
+                      - generic "June 29, 2026" [ref=f1e628]: "29"
+                      - generic [ref=f1e629]: Timeless
+                  - gridcell "June 30, 2026" [ref=f1e636]:
+                    - generic "June 30, 2026" [ref=f1e639]: "30"
+                  - gridcell "July 1, 2026" [ref=f1e641]:
+                    - generic "July 1, 2026" [ref=f1e644]: "1"
+                  - gridcell "July 2, 2026" [ref=f1e646]:
+                    - generic "July 2, 2026" [ref=f1e649]: "2"
+                  - gridcell "July 3, 2026" [ref=f1e651]:
+                    - generic [ref=f1e652]:
+                      - generic "July 3, 2026" [ref=f1e654]: "3"
+                      - generic [ref=f1e655]: Continuum
+                  - gridcell "July 4, 2026" [ref=f1e662]:
+                    - generic "July 4, 2026" [ref=f1e665]: "4"
+                - row [ref=f1e667]:
+                  - gridcell "July 5, 2026" [ref=f1e668]:
+                    - generic [ref=f1e669]:
+                      - generic "Week 28" [ref=f1e670]: W28
+                      - generic "July 5, 2026" [ref=f1e672]: "5"
+                  - gridcell "July 6, 2026" [ref=f1e674]:
+                    - generic [ref=f1e675]:
+                      - generic "July 6, 2026" [ref=f1e677]: "6"
+                      - generic [ref=f1e678]: Timeless
+                  - gridcell "July 7, 2026" [ref=f1e685]:
+                    - generic "July 7, 2026" [ref=f1e688]: "7"
+                  - gridcell "July 8, 2026" [ref=f1e690]:
+                    - generic "July 8, 2026" [ref=f1e693]: "8"
+                  - gridcell "July 9, 2026" [ref=f1e695]:
+                    - generic "July 9, 2026" [ref=f1e698]: "9"
+                  - gridcell "July 10, 2026" [ref=f1e700]:
+                    - generic [ref=f1e701]:
+                      - generic "July 10, 2026" [ref=f1e703]: "10"
+                      - generic [ref=f1e704]: Continuum
+                  - gridcell "July 11, 2026" [ref=f1e711]:
+                    - generic "July 11, 2026" [ref=f1e714]: "11"
+          - generic [ref=f1e716]:
+            - generic:
+              - heading "Upcoming Shows" [level=4] [ref=f1e717]
+              - generic [ref=f1e721] [cursor=pointer]:
+                - generic:
+                  - generic [ref=f1e722]: Timeless
+                  - generic [ref=f1e723]: Jun 8, 2026
+                  - generic [ref=f1e724]: Weekly
+                  - generic [ref=f1e725]: ★☆☆☆☆ 1.0
+              - generic [ref=f1e729] [cursor=pointer]:
+                - generic:
+                  - generic [ref=f1e730]: Continuum
+                  - generic [ref=f1e731]: Jun 12, 2026
+                  - generic [ref=f1e732]: Weekly
+              - generic [ref=f1e736] [cursor=pointer]:
+                - generic:
+                  - generic [ref=f1e737]: Timeless
+                  - generic [ref=f1e738]: Jun 15, 2026
+                  - generic [ref=f1e739]: Weekly
+              - generic [ref=f1e743] [cursor=pointer]:
+                - generic:
+                  - generic [ref=f1e744]: Continuum
+                  - generic [ref=f1e745]: Jun 19, 2026
+                  - generic [ref=f1e746]: Weekly
+              - generic [ref=f1e750] [cursor=pointer]:
+                - generic:
+                  - generic [ref=f1e751]: Timeless
+                  - generic [ref=f1e752]: Jun 22, 2026
+                  - generic [ref=f1e753]: Weekly
+              - generic [ref=f1e757] [cursor=pointer]:
+                - generic:
+                  - generic [ref=f1e758]: Continuum
+                  - generic [ref=f1e759]: Jun 26, 2026
+                  - generic [ref=f1e760]: Weekly
+              - generic [ref=f1e764] [cursor=pointer]:
+                - generic:
+                  - generic [ref=f1e765]: Quantum Quarrel
+                  - generic [ref=f1e766]: Jun 28, 2026
+                  - generic [ref=f1e767]: Premium Live Event (PLE)
+              - generic [ref=f1e771] [cursor=pointer]:
+                - generic:
+                  - generic [ref=f1e772]: Timeless
+                  - generic [ref=f1e773]: Jun 29, 2026
+                  - generic [ref=f1e774]: Weekly
+              - generic [ref=f1e778] [cursor=pointer]:
+                - generic:
+                  - generic [ref=f1e779]: Continuum
+                  - generic [ref=f1e780]: Jul 3, 2026
+                  - generic [ref=f1e781]: Weekly
+              - generic [ref=f1e785] [cursor=pointer]:
+                - generic:
+                  - generic [ref=f1e786]: Timeless
+                  - generic [ref=f1e787]: Jul 6, 2026
+                  - generic [ref=f1e788]: Weekly
+  - generic [ref=f1e789]: Online

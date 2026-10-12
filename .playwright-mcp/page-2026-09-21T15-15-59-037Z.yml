@@ -1,0 +1,517 @@
+- generic:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - button "Toggle navigation panel" [expanded]:
+              - generic: 
+              - text: 
+            - generic:
+              - img "a":
+                - text: 
+                - img [aria-hidden]:
+                  - generic: a
+              - generic: admin
+              - button "Open inbox":
+                - generic: Inbox
+              - button "Open profile":
+                - generic: Profile
+              - button "Logout"
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - img "ATW Logo"
+                - generic: All Time Wrestling RPG
+              - generic:
+                - generic:
+                  - generic:
+                    - generic: Active Universe
+                    - generic:
+                      - generic:
+                        - generic:
+                          - combobox "Active Universe": Default Universe
+                      - generic:
+                        - text: 
+                        - generic [aria-hidden]: 
+              - generic:
+                - generic:
+                  - navigation:
+                    - list:
+                      - generic:
+                        - listitem:
+                          - generic:
+                            - link "Booker Dashboard":
+                              - /url: booker
+                            - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Campaign
+                            - button "Campaign Toggle child items": 
+                          - generic: Campaigns
+                          - text: 
+                          - generic: Card Export
+                          - text: 
+                          - generic: Dashboard
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Card Game
+                            - button "Card Game Toggle child items": 
+                          - generic: Cards
+                          - text: 
+                          - generic: Decks
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Configuration
+                            - button "Configuration Toggle child items": 
+                          - generic: Admin
+                          - text: 
+                          - generic: Data Transfer
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Dashboards
+                            - button "Dashboards Toggle child items": 
+                          - generic: Championship Rankings
+                          - text: 
+                          - generic: Hall of Fame
+                          - text: 
+                          - generic: Home
+                          - text: 
+                          - generic: Inbox
+                          - text: 
+                          - generic: News & Rumors
+                          - text: 
+                          - generic: Show Calendar
+                          - text: 
+                          - generic: Weekly Challenges
+                          - text: 
+                          - generic: Wrestler Rankings
+                          - text: 
+                          - generic: Wrestling World Feed
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Entities
+                            - button "Entities Toggle child items" [expanded]: 
+                          - list:
+                            - generic:
+                              - listitem:
+                                - generic:
+                                  - link "Accounts":
+                                    - /url: account-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Arenas":
+                                    - /url: arena-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Faction Rivalries":
+                                    - /url: faction-rivalry-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Factions":
+                                    - /url: faction-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Injury Types":
+                                    - /url: injury-types
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Locations":
+                                    - /url: location-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "NPCs":
+                                    - /url: npc-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Rivalries":
+                                    - /url: rivalry-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Seasons":
+                                    - /url: season-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Segment Rules":
+                                    - /url: segment-rule-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Segment Types":
+                                    - /url: segment-type-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Show Templates":
+                                    - /url: show-template-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Shows":
+                                    - /url: show-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Teams":
+                                    - /url: teams
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Title Reigns":
+                                    - /url: title-reign-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Titles":
+                                    - /url: title-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Tournaments":
+                                    - /url: tournament-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Universes":
+                                    - /url: universe-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Wrestlers":
+                                    - /url: wrestler-list
+                                  - text: 
+                        - listitem:
+                          - generic:
+                            - generic: General Manager
+                            - button "General Manager Toggle child items": 
+                          - generic: Contract Management
+                          - text: 
+                          - generic: GM Dashboard
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Help
+                            - button "Help Toggle child items": 
+                          - generic: Game Guide
+                          - text: 
+                          - generic: Tutorial
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Multiplayer
+                            - button "Multiplayer Toggle child items": 
+                          - generic: My Leagues
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - link "Player Dashboard":
+                              - /url: player
+                            - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Share QR Code
+                            - text: 
+              - generic:
+                - generic: "Version: 2.11.0-SNAPSHOT"
+                - link "Source Code":
+                  - /url: https://github.com/javydreamercsw/all-time-wrestling-rpg
+        - generic:
+          - generic:
+            - main:
+              - generic:
+                - generic:
+                  - heading "Rivalry List" [level=1]
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: Status
+                        - generic:
+                          - generic:
+                            - generic:
+                              - combobox "Status": Active
+                          - generic:
+                            - text: 
+                            - generic [aria-hidden]: 
+                    - button "New Rivalry"
+              - generic:
+                - generic:
+                  - generic:
+                    - treegrid:
+                      - rowgroup:
+                        - row "Sort by Wrestler 1 Sort by Wrestler 2 Sort by Heat Sort by Notes Sort by Start Date Sort by End Date Actions Delete":
+                          - columnheader "Sort by Wrestler 1":
+                            - generic:
+                              - generic:
+                                - generic "Sort by Wrestler 1":
+                                  - generic: Wrestler 1
+                                  - generic: 
+                          - columnheader "Sort by Wrestler 2":
+                            - generic:
+                              - generic:
+                                - generic "Sort by Wrestler 2":
+                                  - generic: Wrestler 2
+                                  - generic: 
+                          - columnheader "Sort by Heat":
+                            - generic:
+                              - generic:
+                                - generic "Sort by Heat":
+                                  - generic: Heat
+                                  - generic: 
+                          - columnheader "Sort by Notes":
+                            - generic:
+                              - generic:
+                                - generic "Sort by Notes":
+                                  - generic: Notes
+                                  - generic: 
+                          - columnheader "Sort by Start Date":
+                            - generic:
+                              - generic:
+                                - generic "Sort by Start Date":
+                                  - generic: Start Date
+                                  - generic: 
+                          - columnheader "Sort by End Date":
+                            - generic:
+                              - generic:
+                                - generic "Sort by End Date":
+                                  - generic: End Date
+                                  - generic: 
+                          - columnheader "Actions"
+                          - columnheader "Delete"
+                      - rowgroup:
+                        - row "Mukundi Shumba Randy Savage 0 Auto-generated from heat event 2026-06-22T16:48:52Z Add Heat Delete":
+                          - gridcell "Mukundi Shumba"
+                          - gridcell "Randy Savage"
+                          - gridcell "0"
+                          - gridcell "Auto-generated from heat event"
+                          - gridcell "2026-06-22T16:48:52Z"
+                          - gridcell
+                          - gridcell "Add Heat":
+                            - generic:
+                              - generic:
+                                - button "Add Heat" [active]
+                          - gridcell "Delete":
+                            - generic:
+                              - generic:
+                                - button "Delete"
+                        - row "Gilgamesh André the Giant 0 Auto-generated from heat event 2026-06-22T16:49:06Z Add Heat Delete":
+                          - gridcell "Gilgamesh"
+                          - gridcell "André the Giant"
+                          - gridcell "0"
+                          - gridcell "Auto-generated from heat event"
+                          - gridcell "2026-06-22T16:49:06Z"
+                          - gridcell
+                          - gridcell "Add Heat":
+                            - generic:
+                              - generic:
+                                - button "Add Heat"
+                          - gridcell "Delete":
+                            - generic:
+                              - generic:
+                                - button "Delete"
+                        - row "Sgt. Slaughter Kamala 0 Auto-generated from heat event 2026-06-26T21:05:51Z Add Heat Delete":
+                          - gridcell "Sgt. Slaughter"
+                          - gridcell "Kamala"
+                          - gridcell "0"
+                          - gridcell "Auto-generated from heat event"
+                          - gridcell "2026-06-26T21:05:51Z"
+                          - gridcell
+                          - gridcell "Add Heat":
+                            - generic:
+                              - generic:
+                                - button "Add Heat"
+                          - gridcell "Delete":
+                            - generic:
+                              - generic:
+                                - button "Delete"
+                        - row "Rey Jaguar OMZ 0 Auto-generated from heat event 2026-06-26T21:05:52Z Add Heat Delete":
+                          - gridcell "Rey Jaguar"
+                          - gridcell "OMZ"
+                          - gridcell "0"
+                          - gridcell "Auto-generated from heat event"
+                          - gridcell "2026-06-26T21:05:52Z"
+                          - gridcell
+                          - gridcell "Add Heat":
+                            - generic:
+                              - generic:
+                                - button "Add Heat"
+                          - gridcell "Delete":
+                            - generic:
+                              - generic:
+                                - button "Delete"
+                        - row "André the Giant Johnny All Time 0 Auto-generated from heat event 2026-06-26T21:05:52Z Add Heat Delete":
+                          - gridcell "André the Giant"
+                          - gridcell "Johnny All Time"
+                          - gridcell "0"
+                          - gridcell "Auto-generated from heat event"
+                          - gridcell "2026-06-26T21:05:52Z"
+                          - gridcell
+                          - gridcell "Add Heat":
+                            - generic:
+                              - generic:
+                                - button "Add Heat"
+                          - gridcell "Delete":
+                            - generic:
+                              - generic:
+                                - button "Delete"
+                        - row "André the Giant Matt Cardona 0 Auto-generated from heat event 2026-06-26T21:05:52Z Add Heat Delete":
+                          - gridcell "André the Giant"
+                          - gridcell "Matt Cardona"
+                          - gridcell "0"
+                          - gridcell "Auto-generated from heat event"
+                          - gridcell "2026-06-26T21:05:52Z"
+                          - gridcell
+                          - gridcell "Add Heat":
+                            - generic:
+                              - generic:
+                                - button "Add Heat"
+                          - gridcell "Delete":
+                            - generic:
+                              - generic:
+                                - button "Delete"
+                        - row "André the Giant Daemon 0 Auto-generated from heat event 2026-06-26T21:05:52Z Add Heat Delete":
+                          - gridcell "André the Giant"
+                          - gridcell "Daemon"
+                          - gridcell "0"
+                          - gridcell "Auto-generated from heat event"
+                          - gridcell "2026-06-26T21:05:52Z"
+                          - gridcell
+                          - gridcell "Add Heat":
+                            - generic:
+                              - generic:
+                                - button "Add Heat"
+                          - gridcell "Delete":
+                            - generic:
+                              - generic:
+                                - button "Delete"
+                        - row "Matt Cardona Johnny All Time 3 Auto-generated from heat event 2026-06-26T21:05:52Z Add Heat Delete":
+                          - gridcell "Matt Cardona"
+                          - gridcell "Johnny All Time"
+                          - gridcell "3"
+                          - gridcell "Auto-generated from heat event"
+                          - gridcell "2026-06-26T21:05:52Z"
+                          - gridcell
+                          - gridcell "Add Heat":
+                            - generic:
+                              - generic:
+                                - button "Add Heat"
+                          - gridcell "Delete":
+                            - generic:
+                              - generic:
+                                - button "Delete"
+                        - row "Matt Cardona Daemon 0 Auto-generated from heat event 2026-06-26T21:05:52Z Add Heat Delete":
+                          - gridcell "Matt Cardona"
+                          - gridcell "Daemon"
+                          - gridcell "0"
+                          - gridcell "Auto-generated from heat event"
+                          - gridcell "2026-06-26T21:05:52Z"
+                          - gridcell
+                          - gridcell "Add Heat":
+                            - generic:
+                              - generic:
+                                - button "Add Heat"
+                          - gridcell "Delete":
+                            - generic:
+                              - generic:
+                                - button "Delete"
+                        - row "Johnny All Time Daemon 0 Auto-generated from heat event 2026-06-26T21:05:52Z Add Heat Delete":
+                          - gridcell "Johnny All Time"
+                          - gridcell "Daemon"
+                          - gridcell "0"
+                          - gridcell "Auto-generated from heat event"
+                          - gridcell "2026-06-26T21:05:52Z"
+                          - gridcell
+                          - gridcell "Add Heat":
+                            - generic:
+                              - generic:
+                                - button "Add Heat"
+                          - gridcell "Delete":
+                            - generic:
+                              - generic:
+                                - button "Delete"
+                        - row "Kurt Angle Bobby Lashley 0 Auto-generated from heat event 2026-06-26T21:05:52Z Add Heat Delete":
+                          - gridcell "Kurt Angle"
+                          - gridcell "Bobby Lashley"
+                          - gridcell "0"
+                          - gridcell "Auto-generated from heat event"
+                          - gridcell "2026-06-26T21:05:52Z"
+                          - gridcell
+                          - gridcell "Add Heat":
+                            - generic:
+                              - generic:
+                                - button "Add Heat"
+                          - gridcell "Delete":
+                            - generic:
+                              - generic:
+                                - button "Delete"
+                        - row "Kurt Angle Shelton Benjamin 0 Auto-generated from heat event 2026-06-26T21:05:52Z Add Heat Delete":
+                          - gridcell "Kurt Angle"
+                          - gridcell "Shelton Benjamin"
+                          - gridcell "0"
+                          - gridcell "Auto-generated from heat event"
+                          - gridcell "2026-06-26T21:05:52Z"
+                          - gridcell
+                          - gridcell "Add Heat":
+                            - generic:
+                              - generic:
+                                - button "Add Heat"
+                          - gridcell "Delete":
+                            - generic:
+                              - generic:
+                                - button "Delete"
+                        - row "Kurt Angle Dynamite Kid 0 Auto-generated from heat event 2026-06-26T21:05:52Z Add Heat Delete":
+                          - gridcell "Kurt Angle"
+                          - gridcell "Dynamite Kid"
+                          - gridcell "0"
+                          - gridcell "Auto-generated from heat event"
+                          - gridcell "2026-06-26T21:05:52Z"
+                          - gridcell
+                          - gridcell "Add Heat":
+                            - generic:
+                              - generic:
+                                - button "Add Heat"
+                          - gridcell "Delete":
+                            - generic:
+                              - generic:
+                                - button "Delete"
+                        - row "Brian Pillman Eddie Guerrero 0 Auto-generated from heat event 2026-06-26T21:05:53Z Add Heat Delete":
+                          - gridcell "Brian Pillman"
+                          - gridcell "Eddie Guerrero"
+                          - gridcell "0"
+                          - gridcell "Auto-generated from heat event"
+                          - gridcell "2026-06-26T21:05:53Z"
+                          - gridcell
+                          - gridcell "Add Heat":
+                            - generic:
+                              - generic:
+                                - button "Add Heat"
+                          - gridcell "Delete":
+                            - generic:
+                              - generic:
+                                - button "Delete"
+                      - rowgroup
+  - generic: Online
+  - dialog:
+    - generic [ref=f12e370]:
+      - generic:
+        - generic [ref=f12e372]:
+          - generic [ref=f12e373]: Heat to Add
+          - generic [ref=f12e374]:
+            - generic: 
+            - spinbutton "Heat to Add" [ref=f12e375]
+            - generic:  
+        - button "Save" [ref=f12e376]

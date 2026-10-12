@@ -1,0 +1,396 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e4]:
+    - generic [ref=f1e5]:
+      - generic:
+        - button "Toggle navigation panel" [expanded] [ref=f1e6]:
+          - generic [ref=f1e7]: 
+          - text: 
+        - generic [ref=f1e9]:
+          - img "a" [ref=f1e10]:
+            - text: 
+            - img [aria-hidden] [ref=f1e11]:
+              - generic [ref=f1e12]: a
+          - generic [ref=f1e13]: admin
+          - button "Open inbox" [ref=f1e14]:
+            - generic [ref=f1e15]: Inbox
+          - button "Open profile" [ref=f1e27]:
+            - generic [ref=f1e28]: Profile
+          - button "Logout" [ref=f1e36]
+    - generic [ref=f1e47]:
+      - generic [ref=f1e48]:
+        - img "ATW Logo" [ref=f1e49]
+        - generic [ref=f1e50]: All Time Wrestling RPG
+      - generic [ref=f1e53]:
+        - generic [ref=f1e54]: Active Universe
+        - generic [ref=f1e55]:
+          - combobox "Active Universe" [ref=f1e56]: Default Universe
+          - generic:
+            - text: 
+            - generic [aria-hidden] [ref=f1e57]: 
+      - navigation [ref=f1e59]:
+        - list [ref=f1e60]:
+          - generic:
+            - listitem [ref=f1e61]:
+              - generic [ref=f1e62]:
+                - link "Booker Dashboard" [ref=f1e63] [cursor=pointer]:
+                  - /url: booker
+                - text: 
+            - listitem [ref=f1e71]:
+              - generic [ref=f1e72]:
+                - generic [ref=f1e73]: Campaign
+                - button "Campaign Toggle child items" [ref=f1e81]: 
+              - generic: Campaigns
+              - text: 
+              - generic: Card Export
+              - text: 
+              - generic: Dashboard
+              - text: 
+            - listitem [ref=f1e82]:
+              - generic [ref=f1e83]:
+                - generic [ref=f1e84]: Card Game
+                - button "Card Game Toggle child items" [ref=f1e93]: 
+              - generic: Cards
+              - text: 
+              - generic: Decks
+              - text: 
+            - listitem [ref=f1e94]:
+              - generic [ref=f1e95]:
+                - generic [ref=f1e96]: Configuration
+                - button "Configuration Toggle child items" [ref=f1e105]: 
+              - generic: Admin
+              - text: 
+              - generic: Data Transfer
+              - text: 
+            - listitem [ref=f1e106]:
+              - generic [ref=f1e107]:
+                - generic [ref=f1e108]: Dashboards
+                - button "Dashboards Toggle child items" [ref=f1e117]: 
+              - generic: Championship Rankings
+              - text: 
+              - generic: Hall of Fame
+              - text: 
+              - generic: Home
+              - text: 
+              - generic: Inbox
+              - text: 
+              - generic: News & Rumors
+              - text: 
+              - generic: Show Calendar
+              - text: 
+              - generic: Weekly Challenges
+              - text: 
+              - generic: Wrestler Rankings
+              - text: 
+              - generic: Wrestling World Feed
+              - text: 
+            - listitem [ref=f1e118]:
+              - generic [ref=f1e119]:
+                - generic [ref=f1e120]: Entities
+                - button "Entities Toggle child items" [ref=f1e131]: 
+              - generic: Accounts
+              - text: 
+              - generic: Arenas
+              - text: 
+              - generic: Faction Rivalries
+              - text: 
+              - generic: Factions
+              - text: 
+              - generic: Injury Types
+              - text: 
+              - generic: Locations
+              - text: 
+              - generic: NPCs
+              - text: 
+              - generic: Rivalries
+              - text: 
+              - generic: Seasons
+              - text: 
+              - generic: Segment Rules
+              - text: 
+              - generic: Segment Types
+              - text: 
+              - generic: Show Templates
+              - text: 
+              - generic: Shows
+              - text: 
+              - generic: Teams
+              - text: 
+              - generic: Title Reigns
+              - text: 
+              - generic: Titles
+              - text: 
+              - generic: Tournaments
+              - text: 
+              - generic: Universes
+              - text: 
+              - generic: Wrestlers
+              - text: 
+            - listitem [ref=f1e132]:
+              - generic [ref=f1e133]:
+                - generic [ref=f1e134]: General Manager
+                - button "General Manager Toggle child items" [ref=f1e142]: 
+              - generic: Contract Management
+              - text: 
+              - generic: GM Dashboard
+              - text: 
+            - listitem [ref=f1e143]:
+              - generic [ref=f1e144]:
+                - generic [ref=f1e145]: Help
+                - button "Help Toggle child items" [ref=f1e153]: 
+              - generic: Game Guide
+              - text: 
+              - generic: Tutorial
+              - text: 
+            - listitem [ref=f1e154]:
+              - generic [ref=f1e155]:
+                - generic [ref=f1e156]: Multiplayer
+                - button "Multiplayer Toggle child items" [ref=f1e165]: 
+              - generic: My Leagues
+              - text: 
+            - listitem [ref=f1e166]:
+              - generic [ref=f1e167]:
+                - link "Player Dashboard" [ref=f1e168] [cursor=pointer]:
+                  - /url: player
+                - text: 
+            - listitem [ref=f1e180]:
+              - generic [ref=f1e181]:
+                - generic [ref=f1e182]: Share QR Code
+                - text: 
+      - generic [ref=f1e215]:
+        - generic [ref=f1e216]: "Version: 2.11.0-SNAPSHOT"
+        - link "Source Code" [ref=f1e217] [cursor=pointer]:
+          - /url: https://github.com/javydreamercsw/all-time-wrestling-rpg
+    - generic [ref=f1e339]:
+      - generic:
+        - banner [ref=f1e340]:
+          - heading "Time Vault" [level=1] [ref=f1e342]
+          - generic [ref=f1e343]:
+            - button "← Back" [ref=f1e345]
+            - generic [ref=f1e349]:
+              - generic:
+                - button "Preview Bracket" [ref=f1e350]
+                - button "Start Tournament" [ref=f1e353]
+        - generic [ref=f1e356]:
+          - generic:
+            - generic [ref=f1e357]: "Status: SCHEDULED"
+            - generic [ref=f1e358]: "Format: QUALIFIER GROUPS"
+            - generic [ref=f1e359]: "Entrants: 18"
+            - generic [ref=f1e360]: "Championship: Time Vault"
+            - generic [ref=f1e361]: "Allowed Rules:"
+            - generic [ref=f1e362]:
+              - generic [ref=f1e363]: No DQ
+              - generic [ref=f1e364]: Over the Top Rope Elimination
+              - generic [ref=f1e365]: Free-For-All
+              - generic [ref=f1e366]: Gauntlet
+        - generic [ref=f1e367]:
+          - generic:
+            - heading "Entrants" [level=4] [ref=f1e368]
+            - treegrid [ref=f1e371]:
+              - rowgroup [ref=f1e372]:
+                - row [ref=f1e373]:
+                  - columnheader "Seed" [ref=f1e374]
+                  - columnheader "Wrestler" [ref=f1e376]
+                  - columnheader "Status" [ref=f1e378]
+                  - columnheader "Reorder" [ref=f1e380]
+                  - columnheader "Swap" [ref=f1e382]
+              - rowgroup [ref=f1e384]:
+                - row [ref=f1e385]:
+                  - gridcell "1" [ref=f1e386]
+                  - gridcell "Mukundi Shumba" [ref=f1e388]
+                  - gridcell "ACTIVE" [ref=f1e390]
+                  - gridcell [ref=f1e392]:
+                    - generic [ref=f1e394]:
+                      - generic:
+                        - button [disabled]
+                        - button [ref=f1e395]
+                  - gridcell [ref=f1e403]:
+                    - button "Replace" [ref=f1e405]
+                - row [ref=f1e408]:
+                  - gridcell "2" [ref=f1e409]
+                  - gridcell "Johnny All Time" [ref=f1e411]
+                  - gridcell "ACTIVE" [ref=f1e413]
+                  - gridcell [ref=f1e415]:
+                    - generic [ref=f1e417]:
+                      - generic:
+                        - button [ref=f1e418]
+                        - button [ref=f1e426]
+                  - gridcell [ref=f1e434]:
+                    - button "Replace" [ref=f1e436]
+                - row [ref=f1e439]:
+                  - gridcell "3" [ref=f1e440]
+                  - gridcell "Nick Aldis" [ref=f1e442]
+                  - gridcell "ACTIVE" [ref=f1e444]
+                  - gridcell [ref=f1e446]:
+                    - generic [ref=f1e448]:
+                      - generic:
+                        - button [ref=f1e449]
+                        - button [ref=f1e457]
+                  - gridcell [ref=f1e465]:
+                    - button "Replace" [ref=f1e467]
+                - row [ref=f1e470]:
+                  - gridcell "4" [ref=f1e471]
+                  - gridcell "The British Bulldog" [ref=f1e473]
+                  - gridcell "ACTIVE" [ref=f1e475]
+                  - gridcell [ref=f1e477]:
+                    - generic [ref=f1e479]:
+                      - generic:
+                        - button [ref=f1e480]
+                        - button [ref=f1e488]
+                  - gridcell [ref=f1e496]:
+                    - button "Replace" [ref=f1e498]
+                - row [ref=f1e501]:
+                  - gridcell "5" [ref=f1e502]
+                  - gridcell "Rob Van Dam" [ref=f1e504]
+                  - gridcell "ACTIVE" [ref=f1e506]
+                  - gridcell [ref=f1e508]:
+                    - generic [ref=f1e510]:
+                      - generic:
+                        - button [ref=f1e511]
+                        - button [ref=f1e519]
+                  - gridcell [ref=f1e527]:
+                    - button "Replace" [ref=f1e529]
+                - row [ref=f1e532]:
+                  - gridcell "6" [ref=f1e533]
+                  - gridcell "Eddie Guerrero" [ref=f1e535]
+                  - gridcell "ACTIVE" [ref=f1e537]
+                  - gridcell [ref=f1e539]:
+                    - generic [ref=f1e541]:
+                      - generic:
+                        - button [ref=f1e542]
+                        - button [ref=f1e550]
+                  - gridcell [ref=f1e558]:
+                    - button "Replace" [ref=f1e560]
+                - row [ref=f1e563]:
+                  - gridcell "7" [ref=f1e564]
+                  - gridcell "Brian Pillman" [ref=f1e566]
+                  - gridcell "ACTIVE" [ref=f1e568]
+                  - gridcell [ref=f1e570]:
+                    - generic [ref=f1e572]:
+                      - generic:
+                        - button [ref=f1e573]
+                        - button [ref=f1e581]
+                  - gridcell [ref=f1e589]:
+                    - button "Replace" [ref=f1e591]
+                - row [ref=f1e594]:
+                  - gridcell "8" [ref=f1e595]
+                  - gridcell "Sabu" [ref=f1e597]
+                  - gridcell "ACTIVE" [ref=f1e599]
+                  - gridcell [ref=f1e601]:
+                    - generic [ref=f1e603]:
+                      - generic:
+                        - button [ref=f1e604]
+                        - button [ref=f1e612]
+                  - gridcell [ref=f1e620]:
+                    - button "Replace" [ref=f1e622]
+                - row [ref=f1e625]:
+                  - gridcell "9" [ref=f1e626]
+                  - gridcell "Matt Cardona" [ref=f1e628]
+                  - gridcell "ACTIVE" [ref=f1e630]
+                  - gridcell [ref=f1e632]:
+                    - generic [ref=f1e634]:
+                      - generic:
+                        - button [ref=f1e635]
+                        - button [ref=f1e643]
+                  - gridcell [ref=f1e651]:
+                    - button "Replace" [ref=f1e653]
+                - row [ref=f1e656]:
+                  - gridcell "10" [ref=f1e657]
+                  - gridcell "Gilgamesh" [ref=f1e659]
+                  - gridcell "ACTIVE" [ref=f1e661]
+                  - gridcell [ref=f1e663]:
+                    - generic [ref=f1e665]:
+                      - generic:
+                        - button [ref=f1e666]
+                        - button [ref=f1e674]
+                  - gridcell [ref=f1e682]:
+                    - button "Replace" [ref=f1e684]
+                - row [ref=f1e687]:
+                  - gridcell "11" [ref=f1e688]
+                  - gridcell "Raven" [ref=f1e690]
+                  - gridcell "ACTIVE" [ref=f1e692]
+                  - gridcell [ref=f1e694]:
+                    - generic [ref=f1e696]:
+                      - generic:
+                        - button [ref=f1e697]
+                        - button [ref=f1e705]
+                  - gridcell [ref=f1e713]:
+                    - button "Replace" [ref=f1e715]
+                - row [ref=f1e718]:
+                  - gridcell "12" [ref=f1e719]
+                  - gridcell "Kurt Angle" [ref=f1e721]
+                  - gridcell "ACTIVE" [ref=f1e723]
+                  - gridcell [ref=f1e725]:
+                    - generic [ref=f1e727]:
+                      - generic:
+                        - button [ref=f1e728]
+                        - button [ref=f1e736]
+                  - gridcell [ref=f1e744]:
+                    - button "Replace" [ref=f1e746]
+                - row [ref=f1e749]:
+                  - gridcell "13" [ref=f1e750]
+                  - gridcell "OMZ" [ref=f1e752]
+                  - gridcell "ACTIVE" [ref=f1e754]
+                  - gridcell [ref=f1e756]:
+                    - generic [ref=f1e758]:
+                      - generic:
+                        - button [ref=f1e759]
+                        - button [ref=f1e767]
+                  - gridcell [ref=f1e775]:
+                    - button "Replace" [ref=f1e777]
+                - row [ref=f1e780]:
+                  - gridcell "14" [ref=f1e781]
+                  - gridcell "Junkyard Dog" [ref=f1e783]
+                  - gridcell "ACTIVE" [ref=f1e785]
+                  - gridcell [ref=f1e787]:
+                    - generic [ref=f1e789]:
+                      - generic:
+                        - button [ref=f1e790]
+                        - button [ref=f1e798]
+                  - gridcell [ref=f1e806]:
+                    - button "Replace" [ref=f1e808]
+                - row [ref=f1e811]:
+                  - gridcell "15" [ref=f1e812]
+                  - gridcell "Sgt. Slaughter" [ref=f1e814]
+                  - gridcell "ACTIVE" [ref=f1e816]
+                  - gridcell [ref=f1e818]:
+                    - generic [ref=f1e820]:
+                      - generic:
+                        - button [ref=f1e821]
+                        - button [ref=f1e829]
+                  - gridcell [ref=f1e837]:
+                    - button "Replace" [ref=f1e839]
+                - row [ref=f1e842]:
+                  - gridcell "16" [ref=f1e843]
+                  - gridcell "Daemon" [ref=f1e845]
+                  - gridcell "ACTIVE" [ref=f1e847]
+                  - gridcell [ref=f1e849]:
+                    - generic [ref=f1e851]:
+                      - generic:
+                        - button [ref=f1e852]
+                        - button [ref=f1e860]
+                  - gridcell [ref=f1e868]:
+                    - button "Replace" [ref=f1e870]
+                - row [ref=f1e873]:
+                  - gridcell "17" [ref=f1e874]
+                  - gridcell "Randy Savage" [ref=f1e876]
+                  - gridcell "ACTIVE" [ref=f1e878]
+                  - gridcell [ref=f1e880]:
+                    - generic [ref=f1e882]:
+                      - generic:
+                        - button [ref=f1e883]
+                        - button [ref=f1e891]
+                  - gridcell [ref=f1e899]:
+                    - button "Replace" [ref=f1e901]
+                - row [ref=f1e904]:
+                  - gridcell "18" [ref=f1e905]
+                  - gridcell "Jax Felix" [ref=f1e907]
+                  - gridcell "ACTIVE" [ref=f1e909]
+                  - gridcell [ref=f1e911]:
+                    - generic [ref=f1e913]:
+                      - generic:
+                        - button [ref=f1e914]
+                        - button [disabled]
+                  - gridcell [ref=f1e922]:
+                    - button "Replace" [ref=f1e924]
+              - rowgroup
+  - generic [ref=f1e271]: Online

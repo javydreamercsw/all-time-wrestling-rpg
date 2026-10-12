@@ -1,0 +1,14 @@
+- generic [active] [ref=f7e1]:
+  - generic:
+    - generic [ref=f7e3]:
+      - radiogroup "Mode" [ref=f7e5]:
+        - generic [ref=f7e7]:
+          - generic:
+            - radio [ref=f7e10]
+            - radio [ref=f7e19]
+            - radio [ref=f7e28]
+            - radio [checked] [ref=f7e37]
+      - button "DevTools" [ref=f7e51]
+    - generic:
+      - region "Notifications"
+  - generic: Online

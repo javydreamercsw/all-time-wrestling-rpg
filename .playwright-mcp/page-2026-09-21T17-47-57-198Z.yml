@@ -1,0 +1,207 @@
+- generic [ref=f1e1]:
+  - generic [ref=f1e4]:
+    - generic [ref=f1e5]:
+      - generic:
+        - button "Toggle navigation panel" [expanded] [ref=f1e6]:
+          - generic [ref=f1e7]: 
+          - text: 
+        - generic [ref=f1e9]:
+          - img "a" [ref=f1e10]:
+            - text: 
+            - img [aria-hidden] [ref=f1e11]:
+              - generic [ref=f1e12]: a
+          - generic [ref=f1e13]: admin
+          - button "Open inbox" [ref=f1e14]:
+            - generic [ref=f1e15]: Inbox
+          - button "Open profile" [ref=f1e27]:
+            - generic [ref=f1e28]: Profile
+          - button "Logout" [ref=f1e36]
+    - generic [ref=f1e47]:
+      - generic [ref=f1e48]:
+        - img "ATW Logo" [ref=f1e49]
+        - generic [ref=f1e50]: All Time Wrestling RPG
+      - generic [ref=f1e53]:
+        - generic [ref=f1e54]: Active Universe
+        - generic [ref=f1e55]:
+          - combobox "Active Universe" [ref=f1e56]: Default Universe
+          - generic:
+            - text: 
+            - generic [aria-hidden] [ref=f1e57]: 
+      - navigation [ref=f1e59]:
+        - list [ref=f1e60]:
+          - generic:
+            - listitem [ref=f1e61]:
+              - generic [ref=f1e62]:
+                - link "Booker Dashboard" [ref=f1e63] [cursor=pointer]:
+                  - /url: booker
+                - text: 
+            - listitem [ref=f1e71]:
+              - generic [ref=f1e72]:
+                - generic [ref=f1e73]: Campaign
+                - button "Campaign Toggle child items" [ref=f1e81]: 
+              - generic: Campaigns
+              - text: 
+              - generic: Card Export
+              - text: 
+              - generic: Dashboard
+              - text: 
+            - listitem [ref=f1e82]:
+              - generic [ref=f1e83]:
+                - generic [ref=f1e84]: Card Game
+                - button "Card Game Toggle child items" [ref=f1e93]: 
+              - generic: Cards
+              - text: 
+              - generic: Decks
+              - text: 
+            - listitem [ref=f1e94]:
+              - generic [ref=f1e95]:
+                - generic [ref=f1e96]: Configuration
+                - button "Configuration Toggle child items" [ref=f1e105]: 
+              - generic: Admin
+              - text: 
+              - generic: Data Transfer
+              - text: 
+            - listitem [ref=f1e106]:
+              - generic [ref=f1e107]:
+                - generic [ref=f1e108]: Dashboards
+                - button "Dashboards Toggle child items" [ref=f1e117]: 
+              - generic: Championship Rankings
+              - text: 
+              - generic: Hall of Fame
+              - text: 
+              - generic: Home
+              - text: 
+              - generic: Inbox
+              - text: 
+              - generic: News & Rumors
+              - text: 
+              - generic: Show Calendar
+              - text: 
+              - generic: Weekly Challenges
+              - text: 
+              - generic: Wrestler Rankings
+              - text: 
+              - generic: Wrestling World Feed
+              - text: 
+            - listitem [ref=f1e118]:
+              - generic [ref=f1e119]:
+                - generic [ref=f1e120]: Entities
+                - button "Entities Toggle child items" [ref=f1e131]: 
+              - generic: Accounts
+              - text: 
+              - generic: Arenas
+              - text: 
+              - generic: Faction Rivalries
+              - text: 
+              - generic: Factions
+              - text: 
+              - generic: Injury Types
+              - text: 
+              - generic: Locations
+              - text: 
+              - generic: NPCs
+              - text: 
+              - generic: Rivalries
+              - text: 
+              - generic: Seasons
+              - text: 
+              - generic: Segment Rules
+              - text: 
+              - generic: Segment Types
+              - text: 
+              - generic: Show Templates
+              - text: 
+              - generic: Shows
+              - text: 
+              - generic: Teams
+              - text: 
+              - generic: Title Reigns
+              - text: 
+              - generic: Titles
+              - text: 
+              - generic: Tournaments
+              - text: 
+              - generic: Universes
+              - text: 
+              - generic: Wrestlers
+              - text: 
+            - listitem [ref=f1e132]:
+              - generic [ref=f1e133]:
+                - generic [ref=f1e134]: General Manager
+                - button "General Manager Toggle child items" [ref=f1e142]: 
+              - generic: Contract Management
+              - text: 
+              - generic: GM Dashboard
+              - text: 
+            - listitem [ref=f1e143]:
+              - generic [ref=f1e144]:
+                - generic [ref=f1e145]: Help
+                - button "Help Toggle child items" [ref=f1e153]: 
+              - generic: Game Guide
+              - text: 
+              - generic: Tutorial
+              - text: 
+            - listitem [ref=f1e154]:
+              - generic [ref=f1e155]:
+                - generic [ref=f1e156]: Multiplayer
+                - button "Multiplayer Toggle child items" [ref=f1e165]: 
+              - generic: My Leagues
+              - text: 
+            - listitem [ref=f1e166]:
+              - generic [ref=f1e167]:
+                - link "Player Dashboard" [ref=f1e168] [cursor=pointer]:
+                  - /url: player
+                - text: 
+            - listitem [ref=f1e180]:
+              - generic [ref=f1e181]:
+                - generic [ref=f1e182]: Share QR Code
+                - text: 
+      - generic [ref=f1e215]:
+        - generic [ref=f1e216]: "Version: 2.11.0-SNAPSHOT"
+        - link "Source Code" [ref=f1e217] [cursor=pointer]:
+          - /url: https://github.com/javydreamercsw/all-time-wrestling-rpg
+    - main [ref=f1e219]:
+      - heading "Show Planning" [level=1] [ref=f1e222]
+      - generic [ref=f1e223]:
+        - generic:
+          - generic [ref=f1e224]:
+            - generic:
+              - heading "Show Planning" [level=2] [ref=f1e225]
+              - generic [ref=f1e226]:
+                - generic:
+                  - generic [ref=f1e227]:
+                    - generic [ref=f1e228]:
+                      - generic [ref=f1e229]: Select Show
+                      - generic [ref=f1e230]:
+                        - combobox "Select Show" [active] [ref=f1e231]: Quantum Quarrel (2026-06-28)
+                        - generic:
+                          - text: 
+                          - generic [aria-hidden] [ref=f1e232]: 
+                    - generic:          
+                  - button "Loading..." [disabled]
+                  - button "View Show Details" [ref=f1e302]
+              - paragraph [ref=f1e233]: 1. Pick a show, then let the AI draft a card you can edit.
+              - button "AI Propose Segments" [disabled]
+              - generic [ref=f1e234]:
+                - button "Planning Context (technical)" [ref=f1e235]:
+                  - generic [aria-hidden] [ref=f1e236]: 
+                - text: 
+          - generic [ref=f1e238]:
+            - generic:
+              - heading "Proposed Segments" [level=2] [ref=f1e239]
+              - treegrid [ref=f1e242]:
+                - rowgroup [ref=f1e243]:
+                  - row [ref=f1e244]:
+                    - columnheader "#" [ref=f1e245]
+                    - columnheader "Type" [ref=f1e247]
+                    - columnheader "Summary" [ref=f1e250]
+                    - columnheader "Description" [ref=f1e252]
+                    - columnheader "Participants" [ref=f1e254]
+                    - columnheader "Rules" [ref=f1e256]
+                    - columnheader "Source" [ref=f1e259]
+                    - columnheader [ref=f1e262]
+                    - columnheader [ref=f1e264]
+                - rowgroup [ref=f1e266]
+                - rowgroup
+              - button "Approve & Create Segments" [disabled]
+  - generic [ref=f1e267]: Online

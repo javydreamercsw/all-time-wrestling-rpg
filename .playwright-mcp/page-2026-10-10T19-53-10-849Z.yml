@@ -1,0 +1,397 @@
+- generic:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - button "Toggle navigation panel" [expanded]:
+              - generic: 
+              - text: 
+            - generic:
+              - img "a":
+                - text: 
+                - img [aria-hidden]:
+                  - generic: a
+              - generic: admin
+              - button "Open inbox":
+                - generic: Inbox
+              - button "Open profile":
+                - generic: Profile
+              - button "Logout"
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - img "ATW Logo"
+                - generic: All Time Wrestling RPG
+              - generic:
+                - generic:
+                  - generic:
+                    - generic: Active Universe
+                    - generic:
+                      - generic:
+                        - generic:
+                          - combobox "Active Universe": Default Universe
+                      - generic:
+                        - text: 
+                        - generic [aria-hidden]: 
+              - generic:
+                - generic:
+                  - navigation:
+                    - list:
+                      - generic:
+                        - listitem:
+                          - generic:
+                            - link "Booker Dashboard":
+                              - /url: booker
+                            - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Campaign
+                            - button "Campaign Toggle child items": 
+                          - generic: Campaigns
+                          - text: 
+                          - generic: Card Export
+                          - text: 
+                          - generic: Dashboard
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Card Game
+                            - button "Card Game Toggle child items": 
+                          - generic: Cards
+                          - text: 
+                          - generic: Decks
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Configuration
+                            - button "Configuration Toggle child items": 
+                          - generic: Admin
+                          - text: 
+                          - generic: Data Transfer
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Dashboards
+                            - button "Dashboards Toggle child items": 
+                          - generic: Championship Rankings
+                          - text: 
+                          - generic: Hall of Fame
+                          - text: 
+                          - generic: Home
+                          - text: 
+                          - generic: Inbox
+                          - text: 
+                          - generic: News & Rumors
+                          - text: 
+                          - generic: Show Calendar
+                          - text: 
+                          - generic: Weekly Challenges
+                          - text: 
+                          - generic: Wrestler Rankings
+                          - text: 
+                          - generic: Wrestling World Feed
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Entities
+                            - button "Entities Toggle child items" [expanded]: 
+                          - list:
+                            - generic:
+                              - listitem:
+                                - generic:
+                                  - link "Accounts":
+                                    - /url: account-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Arenas":
+                                    - /url: arena-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Briefcases":
+                                    - /url: briefcase-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Faction Rivalries":
+                                    - /url: faction-rivalry-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Factions":
+                                    - /url: faction-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Injury Types":
+                                    - /url: injury-types
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Locations":
+                                    - /url: location-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "NPCs":
+                                    - /url: npc-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Rivalries":
+                                    - /url: rivalry-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Seasons":
+                                    - /url: season-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Segment Rules":
+                                    - /url: segment-rule-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Segment Types":
+                                    - /url: segment-type-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Show Templates":
+                                    - /url: show-template-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Shows":
+                                    - /url: show-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Teams":
+                                    - /url: teams
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Title Reigns":
+                                    - /url: title-reign-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Titles":
+                                    - /url: title-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Tournaments":
+                                    - /url: tournament-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Universes":
+                                    - /url: universe-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Wrestlers":
+                                    - /url: wrestler-list
+                                  - text: 
+                        - listitem:
+                          - generic:
+                            - generic: General Manager
+                            - button "General Manager Toggle child items": 
+                          - generic: Contract Management
+                          - text: 
+                          - generic: GM Dashboard
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Help
+                            - button "Help Toggle child items": 
+                          - generic: Game Guide
+                          - text: 
+                          - generic: Tutorial
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Multiplayer
+                            - button "Multiplayer Toggle child items": 
+                          - generic: My Leagues
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - link "Player Dashboard":
+                              - /url: player
+                            - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Share QR Code
+                            - text: 
+              - generic:
+                - generic: "Version: 2.11.0-SNAPSHOT"
+                - link "Source Code":
+                  - /url: https://github.com/javydreamercsw/all-time-wrestling-rpg
+        - generic:
+          - generic:
+            - main:
+              - generic:
+                - generic:
+                  - heading "Briefcase List" [level=1]
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: Status
+                        - generic:
+                          - generic:
+                            - generic:
+                              - combobox "Status"
+                          - generic:
+                            - text: 
+                            - generic [aria-hidden]: 
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - textbox:
+                                - /placeholder: Search briefcases...
+                          - generic: 
+                    - button "New Briefcase"
+              - generic:
+                - generic:
+                  - generic:
+                    - treegrid:
+                      - rowgroup:
+                        - row "Sort by Name Sort by Holder Sort by Division Sort by Status Sort by Earned Sort by Cashable Until Actions":
+                          - columnheader
+                          - columnheader "Sort by Name":
+                            - generic:
+                              - generic:
+                                - generic "Sort by Name":
+                                  - generic: Name
+                                  - generic: 
+                          - columnheader "Sort by Holder":
+                            - generic:
+                              - generic:
+                                - generic "Sort by Holder":
+                                  - generic: Holder
+                                  - generic: 
+                          - columnheader "Sort by Division":
+                            - generic:
+                              - generic:
+                                - generic "Sort by Division":
+                                  - generic: Division
+                                  - generic: 
+                          - columnheader "Sort by Status":
+                            - generic:
+                              - generic:
+                                - generic "Sort by Status":
+                                  - generic: Status
+                                  - generic: 
+                          - columnheader "Sort by Earned":
+                            - generic:
+                              - generic:
+                                - generic "Sort by Earned":
+                                  - generic: Earned
+                                  - generic: 
+                          - columnheader "Sort by Cashable Until":
+                            - generic:
+                              - generic:
+                                - generic "Sort by Cashable Until":
+                                  - generic: Cashable Until
+                                  - generic: 
+                          - columnheader "Actions"
+                      - rowgroup:
+                        - row "Time Vault briefcase Mukundi Shumba MALE HELD 2026-10-08 2027-10-08 Edit Void":
+                          - gridcell
+                          - gridcell "Time Vault briefcase"
+                          - gridcell "Mukundi Shumba"
+                          - gridcell "MALE"
+                          - gridcell "HELD"
+                          - gridcell "2026-10-08"
+                          - gridcell "2027-10-08"
+                          - gridcell "Edit Void":
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - button "Edit"
+                                    - button "Void"
+                      - rowgroup
+  - generic: Online
+  - alert: "test-briefcase.png: 100%"
+  - 'dialog "Edit Briefcase: Time Vault briefcase"':
+    - generic [ref=f26e556]:
+      - 'heading "Edit Briefcase: Time Vault briefcase" [level=2] [ref=f26e557]'
+      - generic [ref=f26e559]:
+        - text: Only HELD cases are editable; CASHED_IN/EXPIRED rows are history.
+        - generic [ref=f26e561]:
+          - generic:
+            - generic [ref=f26e563]:
+              - generic [ref=f26e564]:
+                - generic: Name
+                - text: •
+              - generic [ref=f26e565]:
+                - textbox "Name" [ref=f26e566]: Time Vault briefcase
+                - generic: 
+            - generic [ref=f26e568]:
+              - generic [ref=f26e569]:
+                - generic: Holder
+                - text: •
+              - generic [ref=f26e570]:
+                - combobox "Holder" [ref=f26e571]: Mukundi Shumba
+                - generic:
+                  - text: 
+                  - generic [aria-hidden] [ref=f26e572]: 
+            - generic [ref=f26e574]:
+              - generic [ref=f26e575]: Division
+              - generic [ref=f26e576]:
+                - combobox "Division" [ref=f26e577]: MALE
+                - generic:
+                  - text: 
+                  - generic [aria-hidden] [ref=f26e578]: 
+            - generic [ref=f26e580]:
+              - generic [ref=f26e581]: Earned
+              - generic [ref=f26e582]:
+                - combobox "Earned" [ref=f26e583]: 10/8/2026
+                - generic:
+                  - text: 
+                  - generic [aria-hidden] [ref=f26e584]: 
+            - generic [ref=f26e586]:
+              - generic [ref=f26e587]: Cashable Until
+              - generic [ref=f26e588]:
+                - combobox "Cashable Until" [ref=f26e589]: 10/8/2027
+                - generic:
+                  - text: 
+                  - generic [aria-hidden] [ref=f26e590]: 
+            - generic [ref=f26e592]:
+              - generic [ref=f26e593]: Image URL
+              - generic [ref=f26e594]:
+                - textbox "Image URL" [ref=f26e595]: images/generated/ca43d783-ca9e-41ad-938a-6d9e558feb97.png
+                - generic: 
+        - generic [ref=f26e596]:
+          - generic:
+            - img "Briefcase Preview" [ref=f26e613]
+            - generic [ref=f26e598]:
+              - generic [ref=f26e599]:
+                - button "Upload Image" [active] [ref=f26e600]
+                - generic [aria-hidden] [ref=f26e603]:
+                  - generic [ref=f26e604]: 
+                  - generic [ref=f26e605]: Drop file here
+              - generic:
+                - generic:
+                  - list
+        - generic [ref=f26e606]:
+          - generic:
+            - button "Cancel" [ref=f26e607]
+            - button "Save" [ref=f26e610]
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - alert:
+            - generic [ref=f26e614]: Image uploaded successfully

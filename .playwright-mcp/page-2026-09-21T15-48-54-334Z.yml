@@ -1,0 +1,269 @@
+- generic [ref=f2e1]:
+  - generic [ref=f2e97]:
+    - generic [ref=f2e98]:
+      - generic:
+        - button "Toggle navigation panel" [expanded] [ref=f2e99]:
+          - generic [ref=f2e100]: 
+          - text: 
+        - generic [ref=f2e102]:
+          - img "a" [ref=f2e103]:
+            - text: 
+            - img [aria-hidden] [ref=f2e104]:
+              - generic [ref=f2e105]: a
+          - generic [ref=f2e106]: admin
+          - button "Open inbox" [ref=f2e107]:
+            - generic [ref=f2e108]: Inbox
+          - button "Open profile" [ref=f2e120]:
+            - generic [ref=f2e121]: Profile
+          - button "Logout" [ref=f2e129]
+    - generic [ref=f2e140]:
+      - generic [ref=f2e141]:
+        - img "ATW Logo" [ref=f2e142]
+        - generic [ref=f2e143]: All Time Wrestling RPG
+      - generic [ref=f2e146]:
+        - generic [ref=f2e147]: Active Universe
+        - generic [ref=f2e148]:
+          - combobox "Active Universe" [ref=f2e149]: Default Universe
+          - generic:
+            - text: 
+            - generic [aria-hidden] [ref=f2e150]: 
+      - navigation [ref=f2e152]:
+        - list [ref=f2e153]:
+          - generic:
+            - listitem [ref=f2e154]:
+              - generic [ref=f2e155]:
+                - link "Booker Dashboard" [ref=f2e156] [cursor=pointer]:
+                  - /url: booker
+                - text: 
+            - listitem [ref=f2e164]:
+              - generic [ref=f2e165]:
+                - generic [ref=f2e166]: Campaign
+                - button "Campaign Toggle child items" [ref=f2e174]: 
+              - generic: Campaigns
+              - text: 
+              - generic: Card Export
+              - text: 
+              - generic: Dashboard
+              - text: 
+            - listitem [ref=f2e175]:
+              - generic [ref=f2e176]:
+                - generic [ref=f2e177]: Card Game
+                - button "Card Game Toggle child items" [ref=f2e186]: 
+              - generic: Cards
+              - text: 
+              - generic: Decks
+              - text: 
+            - listitem [ref=f2e187]:
+              - generic [ref=f2e188]:
+                - generic [ref=f2e189]: Configuration
+                - button "Configuration Toggle child items" [ref=f2e198]: 
+              - generic: Admin
+              - text: 
+              - generic: Data Transfer
+              - text: 
+            - listitem [ref=f2e199]:
+              - generic [ref=f2e200]:
+                - generic [ref=f2e201]: Dashboards
+                - button "Dashboards Toggle child items" [ref=f2e210]: 
+              - generic: Championship Rankings
+              - text: 
+              - generic: Hall of Fame
+              - text: 
+              - generic: Home
+              - text: 
+              - generic: Inbox
+              - text: 
+              - generic: News & Rumors
+              - text: 
+              - generic: Show Calendar
+              - text: 
+              - generic: Weekly Challenges
+              - text: 
+              - generic: Wrestler Rankings
+              - text: 
+              - generic: Wrestling World Feed
+              - text: 
+            - listitem [ref=f2e211]:
+              - generic [ref=f2e212]:
+                - generic [ref=f2e213]: Entities
+                - button "Entities Toggle child items" [expanded] [ref=f2e224]: 
+              - list [ref=f2e225]:
+                - generic:
+                  - listitem [ref=f2e226]:
+                    - generic [ref=f2e227]:
+                      - link "Accounts" [ref=f2e228] [cursor=pointer]:
+                        - /url: account-list
+                      - text: 
+                  - listitem [ref=f2e237]:
+                    - generic [ref=f2e238]:
+                      - link "Arenas" [ref=f2e239] [cursor=pointer]:
+                        - /url: arena-list
+                      - text: 
+                  - listitem [ref=f2e247]:
+                    - generic [ref=f2e248]:
+                      - link "Faction Rivalries" [ref=f2e249] [cursor=pointer]:
+                        - /url: faction-rivalry-list
+                      - text: 
+                  - listitem [ref=f2e260]:
+                    - generic [ref=f2e261]:
+                      - link "Factions" [ref=f2e262] [cursor=pointer]:
+                        - /url: faction-list
+                      - text: 
+                  - listitem [ref=f2e273]:
+                    - generic [ref=f2e274]:
+                      - link "Injury Types" [ref=f2e275] [cursor=pointer]:
+                        - /url: injury-types
+                      - text: 
+                  - listitem [ref=f2e283]:
+                    - generic [ref=f2e284]:
+                      - link "Locations" [ref=f2e285] [cursor=pointer]:
+                        - /url: location-list
+                      - text: 
+                  - listitem [ref=f2e293]:
+                    - generic [ref=f2e294]:
+                      - link "NPCs" [ref=f2e295] [cursor=pointer]:
+                        - /url: npc-list
+                      - text: 
+                  - listitem [ref=f2e304]:
+                    - generic [ref=f2e305]:
+                      - link "Rivalries" [ref=f2e306] [cursor=pointer]:
+                        - /url: rivalry-list
+                      - text: 
+                  - listitem [ref=f2e315]:
+                    - generic [ref=f2e316]:
+                      - link "Seasons" [ref=f2e317] [cursor=pointer]:
+                        - /url: season-list
+                      - text: 
+                  - listitem [ref=f2e329]:
+                    - generic [ref=f2e330]:
+                      - link "Segment Rules" [ref=f2e331] [cursor=pointer]:
+                        - /url: segment-rule-list
+                      - text: 
+                  - listitem [ref=f2e344]:
+                    - generic [ref=f2e345]:
+                      - link "Segment Types" [ref=f2e346] [cursor=pointer]:
+                        - /url: segment-type-list
+                      - text: 
+                  - listitem [ref=f2e354]:
+                    - generic [ref=f2e355]:
+                      - link "Show Templates" [ref=f2e356] [cursor=pointer]:
+                        - /url: show-template-list
+                      - text: 
+                  - listitem [ref=f2e367]:
+                    - generic [ref=f2e368]:
+                      - link "Shows" [ref=f2e369] [cursor=pointer]:
+                        - /url: show-list
+                      - text: 
+                  - listitem [ref=f2e379]:
+                    - generic [ref=f2e380]:
+                      - link "Teams" [ref=f2e381] [cursor=pointer]:
+                        - /url: teams
+                      - text: 
+                  - listitem [ref=f2e390]:
+                    - generic [ref=f2e391]:
+                      - link "Title Reigns" [ref=f2e392] [cursor=pointer]:
+                        - /url: title-reign-list
+                      - text: 
+                  - listitem [ref=f2e402]:
+                    - generic [ref=f2e403]:
+                      - link "Titles" [ref=f2e404] [cursor=pointer]:
+                        - /url: title-list
+                      - text: 
+                  - listitem [ref=f2e412]:
+                    - generic [ref=f2e413]:
+                      - link "Tournaments" [ref=f2e414] [cursor=pointer]:
+                        - /url: tournament-list
+                      - text: 
+                  - listitem [ref=f2e422]:
+                    - generic [ref=f2e423]:
+                      - link "Universes" [ref=f2e424] [cursor=pointer]:
+                        - /url: universe-list
+                      - text: 
+                  - listitem [ref=f2e432]:
+                    - generic [ref=f2e433]:
+                      - link "Wrestlers" [ref=f2e434] [cursor=pointer]:
+                        - /url: wrestler-list
+                      - text: 
+            - listitem [ref=f2e442]:
+              - generic [ref=f2e443]:
+                - generic [ref=f2e444]: General Manager
+                - button "General Manager Toggle child items" [ref=f2e452]: 
+              - generic: Contract Management
+              - text: 
+              - generic: GM Dashboard
+              - text: 
+            - listitem [ref=f2e453]:
+              - generic [ref=f2e454]:
+                - generic [ref=f2e455]: Help
+                - button "Help Toggle child items" [ref=f2e463]: 
+              - generic: Game Guide
+              - text: 
+              - generic: Tutorial
+              - text: 
+            - listitem [ref=f2e464]:
+              - generic [ref=f2e465]:
+                - generic [ref=f2e466]: Multiplayer
+                - button "Multiplayer Toggle child items" [ref=f2e475]: 
+              - generic: My Leagues
+              - text: 
+            - listitem [ref=f2e476]:
+              - generic [ref=f2e477]:
+                - link "Player Dashboard" [ref=f2e478] [cursor=pointer]:
+                  - /url: player
+                - text: 
+            - listitem [ref=f2e490]:
+              - generic [ref=f2e491]:
+                - generic [ref=f2e492]: Share QR Code
+                - text: 
+      - generic [ref=f2e525]:
+        - generic [ref=f2e526]: "Version: 2.11.0-SNAPSHOT"
+        - link "Source Code" [ref=f2e527] [cursor=pointer]:
+          - /url: https://github.com/javydreamercsw/all-time-wrestling-rpg
+    - generic [ref=f2e529]:
+      - generic:
+        - banner [ref=f2e530]:
+          - heading "Tournaments" [level=1] [ref=f2e532]
+          - button "New Tournament" [ref=f2e535]
+        - treegrid [ref=f2e5]:
+          - rowgroup [ref=f2e6]:
+            - row [ref=f2e7]:
+              - columnheader [ref=f2e8]:
+                - generic "Sort by Name" [ref=f2e10]:
+                  - generic [ref=f2e11]: Name
+                  - generic [ref=f2e12]: 
+              - columnheader [ref=f2e13]:
+                - generic "Sort by Format" [ref=f2e15]:
+                  - generic [ref=f2e16]: Format
+                  - generic [ref=f2e17]: 
+              - columnheader "Entrants" [ref=f2e18]
+              - columnheader [ref=f2e20]:
+                - generic "Sort by Status" [ref=f2e22]:
+                  - generic [ref=f2e23]: Status
+                  - generic [ref=f2e24]: 
+              - columnheader "Host Show" [ref=f2e25]
+              - columnheader "Actions" [ref=f2e27]
+          - rowgroup [ref=f2e29]:
+            - row [ref=f2e30]:
+              - gridcell "Time Vault" [ref=f2e31]
+              - gridcell "QUALIFIER GROUPS" [ref=f2e33]
+              - gridcell "18" [ref=f2e35]
+              - gridcell "SCHEDULED" [ref=f2e37]
+              - gridcell "Clash of Eternities — 2026-07-26" [ref=f2e39]
+              - gridcell [ref=f2e41]:
+                - generic [ref=f2e43]:
+                  - generic:
+                    - button "Edit" [active] [ref=f2e44]
+                    - button "Delete" [ref=f2e53]
+            - row [ref=f2e63]:
+              - gridcell "Crown's Cup" [ref=f2e64]
+              - gridcell "SINGLE ELIMINATION" [ref=f2e66]
+              - gridcell "8" [ref=f2e68]
+              - gridcell "IN_PROGRESS" [ref=f2e70]
+              - gridcell "Quantum Quarrel — 2026-06-28" [ref=f2e72]
+              - gridcell [ref=f2e74]:
+                - generic [ref=f2e76]:
+                  - generic:
+                    - button "Edit" [ref=f2e77]
+                    - button "Delete" [ref=f2e86]
+          - rowgroup
+  - generic [ref=f2e539]: Online
