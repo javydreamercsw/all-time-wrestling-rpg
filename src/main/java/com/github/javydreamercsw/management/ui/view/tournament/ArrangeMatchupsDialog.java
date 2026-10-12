@@ -23,9 +23,11 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -108,7 +110,7 @@ public class ArrangeMatchupsDialog extends Dialog {
 
     List<TournamentEntry> bySeed =
         tournament.getEntries().stream()
-            .sorted(java.util.Comparator.comparingInt(TournamentEntry::getSeed))
+            .sorted(Comparator.comparingInt(TournamentEntry::getSeed))
             .toList();
     this.bySeed = bySeed;
     int n = bySeed.size();
@@ -147,7 +149,7 @@ public class ArrangeMatchupsDialog extends Dialog {
   private HorizontalLayout buildMatchRow(
       int matchNumber, List<TournamentEntry> bySeed, TournamentEntry slotA, TournamentEntry slotB) {
     HorizontalLayout row = new HorizontalLayout();
-    row.setAlignItems(com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.CENTER);
+    row.setAlignItems(FlexComponent.Alignment.CENTER);
     row.add(new Span("Match " + matchNumber + ":"));
     row.add(picker(bySeed, slotA));
     row.add(new Span("vs"));

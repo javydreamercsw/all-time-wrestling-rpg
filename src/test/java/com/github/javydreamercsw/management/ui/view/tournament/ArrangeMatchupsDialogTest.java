@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.util.List;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -45,21 +46,17 @@ class ArrangeMatchupsDialogTest {
 
   /** 8 entrants, seeds 1..8, ids 1..8 — bySeed.get(i) has seed i+1. */
   private static List<TournamentEntry> eightBySeed() {
-    return java.util.stream.IntStream.rangeClosed(1, 8)
-        .mapToObj(i -> entry(i, i, wrestler(i, "W" + i)))
-        .toList();
+    return IntStream.rangeClosed(1, 8).mapToObj(i -> entry(i, i, wrestler(i, "W" + i))).toList();
   }
 
   private static List<TournamentEntry> fiveBySeed() {
-    return java.util.stream.IntStream.rangeClosed(1, 5)
-        .mapToObj(i -> entry(i, i, wrestler(i, "W" + i)))
-        .toList();
+    return IntStream.rangeClosed(1, 5).mapToObj(i -> entry(i, i, wrestler(i, "W" + i))).toList();
   }
 
   /** Default pairings for n entrants: match j = (seed j, seed n+1-j) — the current template. */
   private static List<TournamentEntry[]> defaultPairings(List<TournamentEntry> bySeed) {
     int n = bySeed.size();
-    return java.util.stream.IntStream.range(0, n / 2)
+    return IntStream.range(0, n / 2)
         .mapToObj(i -> new TournamentEntry[] {bySeed.get(i), bySeed.get(n - 1 - i)})
         .toList();
   }
