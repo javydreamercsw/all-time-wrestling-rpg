@@ -30,9 +30,9 @@ import com.github.javydreamercsw.management.event.HeatChangeEvent;
 import com.github.javydreamercsw.management.event.RivalryCompletedEvent;
 import com.github.javydreamercsw.management.event.RivalryContinuesEvent;
 import com.github.javydreamercsw.management.mapper.RivalryMapper;
+import com.github.javydreamercsw.management.service.GameClock;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.resolution.ResolutionResult;
-import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -65,7 +65,7 @@ public class RivalryService {
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private UniverseRepository universeRepository;
   @Autowired @Getter private RivalryMapper rivalryMapper;
-  @Autowired private Clock clock;
+  @Autowired private GameClock gameClock;
   @Autowired private ApplicationEventPublisher eventPublisher;
   @Autowired private GameSettingService gameSettingService;
 
@@ -123,9 +123,9 @@ public class RivalryService {
     rivalry.setUniverse(universeOpt.get());
     rivalry.setHeat(0);
     rivalry.setIsActive(true);
-    rivalry.setStartedDate(Instant.now(clock));
+    rivalry.setStartedDate(gameClock.gameNowStaggered());
     rivalry.setStorylineNotes(storylineNotes);
-    rivalry.setCreationDate(Instant.now(clock));
+    rivalry.setCreationDate(gameClock.gameNow());
 
     return Optional.of(rivalryRepository.saveAndFlush(rivalry));
   }
@@ -550,7 +550,7 @@ public class RivalryService {
    */
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   public HeatEventCleanupResult purgeClosedRivalryHeatEvents(final int retentionDays) {
-    Instant cutoff = Instant.now(clock).minus(retentionDays, ChronoUnit.DAYS);
+    Instant cutoff = gameClock.gameNow().minus(retentionDays, ChronoUnit.DAYS);
     List<Rivalry> stale = rivalryRepository.findByIsActiveFalseAndEndedDateBefore(cutoff);
     if (stale.isEmpty()) {
       return new HeatEventCleanupResult(0, 0);

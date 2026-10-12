@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.news;
 import com.github.javydreamercsw.management.domain.news.NewsCategory;
 import com.github.javydreamercsw.management.domain.news.NewsItem;
 import com.github.javydreamercsw.management.domain.news.NewsRepository;
+import com.github.javydreamercsw.management.service.GameClock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -32,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class NewsService {
   private final NewsRepository newsRepository;
+  private final GameClock gameClock;
 
   @Transactional(readOnly = true)
   public List<NewsItem> getLatestNews() {
@@ -65,7 +67,7 @@ public class NewsService {
             .category(category)
             .isRumor(isRumor)
             .importance(importance)
-            .publishDate(Instant.now())
+            .publishDate(gameClock.gameNowStaggered())
             .build();
     return newsRepository.save(item);
   }

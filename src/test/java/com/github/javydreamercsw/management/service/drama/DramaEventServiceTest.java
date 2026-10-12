@@ -18,9 +18,11 @@ package com.github.javydreamercsw.management.service.drama;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.management.service.GameClock;
 import com.github.javydreamercsw.management.domain.drama.DramaEvent;
 import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
 import com.github.javydreamercsw.management.domain.drama.DramaEventSeverity;
@@ -33,7 +35,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateReposit
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import java.time.Clock;
+import java.time.LocalDate;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Optional;
@@ -61,12 +63,22 @@ class DramaEventServiceTest {
   @Mock private SecurityUtils securityUtils;
   @Mock private ApplicationEventPublisher eventPublisher;
   @Mock private Random random;
+  @Mock private GameClock gameClock;
 
   private DramaEventService dramaEventService;
-  private final Clock clock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
 
   @BeforeEach
   public void setUp() {
+    lenient()
+        .when(gameClock.gameNow())
+        .thenReturn(LocalDate.of(2026, 7, 7).atStartOfDay(ZoneId.systemDefault()).toInstant());
+    lenient()
+        .when(gameClock.gameNowStaggered())
+        .thenReturn(
+            LocalDate.of(2026, 7, 7)
+                .atStartOfDay(ZoneId.systemDefault())
+                .plusSeconds(1)
+                .toInstant());
     dramaEventService =
         new DramaEventService(
             dramaEventRepository,
@@ -74,7 +86,7 @@ class DramaEventServiceTest {
             universeRepository,
             rivalryService,
             injuryService,
-            clock,
+            gameClock,
             random,
             eventPublisher);
   }

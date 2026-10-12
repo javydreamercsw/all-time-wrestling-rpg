@@ -19,8 +19,8 @@ package com.github.javydreamercsw.management.service.rivalry;
 import com.github.javydreamercsw.management.domain.rivalry.HeatEvent;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
+import com.github.javydreamercsw.management.service.GameClock;
 import com.github.javydreamercsw.management.service.GameSettingService;
-import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -40,7 +40,7 @@ public class RivalryDecayService {
 
   private final RivalryRepository rivalryRepository;
   private final GameSettingService gameSettingService;
-  private final Clock clock;
+  private final GameClock gameClock;
 
   /** Runs nightly to apply heat decay and auto-close stale rivalries. */
   @Scheduled(cron = "0 0 3 * * *")
@@ -64,7 +64,7 @@ public class RivalryDecayService {
 
     int decayAmount = gameSettingService.getRivalryHeatDecayPerInterval();
     int intervalDays = gameSettingService.getRivalryHeatDecayIntervalDays();
-    Instant cutoff = Instant.now(clock).minus(intervalDays, ChronoUnit.DAYS);
+    Instant cutoff = gameClock.gameNow().minus(intervalDays, ChronoUnit.DAYS);
 
     List<Rivalry> candidates = rivalryRepository.findByIsActiveTrue();
     int decayed = 0;
@@ -82,7 +82,7 @@ public class RivalryDecayService {
         event.setRivalry(rivalry);
         event.setHeatChange(-decayAmount);
         event.setReason("Automatic heat decay");
-        event.setEventDate(Instant.now(clock));
+        event.setEventDate(gameClock.gameNowStaggered());
         event.setHeatAfterEvent(newHeat);
         rivalry.getHeatEvents().add(event);
 
@@ -113,7 +113,7 @@ public class RivalryDecayService {
       return;
     }
 
-    Instant expiryDate = Instant.now(clock).minus(maxDays, ChronoUnit.DAYS);
+    Instant expiryDate = gameClock.gameNow().minus(maxDays, ChronoUnit.DAYS);
     List<Rivalry> candidates = rivalryRepository.findByIsActiveTrue();
     int closed = 0;
     for (Rivalry rivalry : candidates) {
