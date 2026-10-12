@@ -33,14 +33,19 @@ import com.github.javydreamercsw.management.domain.title.TitleOpportunityStatus;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
+import com.vaadin.flow.component.datepicker.DatePicker;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import java.time.LocalDate;
 import java.util.List;
@@ -48,7 +53,10 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 
 /** ATW-jpki: the briefcase CRUD management view. */
 class BriefcaseListViewTest extends AbstractViewTest {
@@ -58,6 +66,7 @@ class BriefcaseListViewTest extends AbstractViewTest {
 
   @Mock private WrestlerRepository wrestlerRepository;
 
+  @Mock private GameSettingService gameSettingService;
   @Mock private SecurityUtils securityUtils;
   @Mock private ImageStorageService imageStorageService;
 
@@ -97,6 +106,7 @@ class BriefcaseListViewTest extends AbstractViewTest {
             titleOpportunityService,
             opportunityRepository,
             wrestlerRepository,
+            gameSettingService,
             securityUtils,
             imageStorageService);
     UI.getCurrent().add(view);
@@ -194,5 +204,116 @@ class BriefcaseListViewTest extends AbstractViewTest {
 
     BriefcaseFormDialog dialog = _get(UI.getCurrent(), BriefcaseFormDialog.class);
     assertNotNull(dialog);
+  }
+
+  // ── ATW-ucux: create mode anchors to the in-game date, never the wall clock ──
+
+  private static final LocalDate GAME_DATE = LocalDate.of(2026, 9, 15);
+
+  private BriefcaseFormDialog openCreateDialog() {
+    when(gameSettingService.getCurrentGameDate()).thenReturn(GAME_DATE);
+    Mockito.lenient()
+        .when(
+            titleOpportunityService.adminCreate(
+                ArgumentMatchers.anyString(),
+                ArgumentMatchers.any(Wrestler.class),
+                ArgumentMatchers.any(),
+                ArgumentMatchers.any(),
+                ArgumentMatchers.any(LocalDate.class),
+                ArgumentMatchers.any(),
+                ArgumentMatchers.any()))
+        .thenReturn(held);
+    Button newBtn =
+        _find(view, Button.class).stream()
+            .filter(b -> "New Briefcase".equals(b.getText()))
+            .findFirst()
+            .orElseThrow();
+    newBtn.click();
+    return _get(UI.getCurrent(), BriefcaseFormDialog.class);
+  }
+
+  @Test
+  @DisplayName("Create dialog pre-fills the Earned picker with the in-game date")
+  void createDialog_prefillsEarnedWithGameDate() {
+    BriefcaseFormDialog dialog = openCreateDialog();
+
+    DatePicker earned = _get(dialog, DatePicker.class, spec -> spec.withLabel("Earned"));
+    assertEquals(GAME_DATE, earned.getValue());
+  }
+
+  @Test
+  @DisplayName("Saving an untouched Earned picker books the in-game date, not the wall clock")
+  void createDialog_untouchedEarned_savesGameDate() {
+    BriefcaseFormDialog dialog = openCreateDialog();
+
+    _get(dialog, TextField.class, spec -> spec.withLabel("Name")).setValue("New case");
+    _get(dialog, ComboBox.class, spec -> spec.withLabel("Holder")).setValue(holder);
+    _get(dialog, Button.class, spec -> spec.withId("briefcase-save")).click();
+
+    ArgumentCaptor<LocalDate> earnedCaptor = ArgumentCaptor.forClass(LocalDate.class);
+    verify(titleOpportunityService)
+        .adminCreate(
+            ArgumentMatchers.eq("New case"),
+            ArgumentMatchers.eq(holder),
+            ArgumentMatchers.any(),
+            ArgumentMatchers.any(),
+            earnedCaptor.capture(),
+            ArgumentMatchers.any(),
+            ArgumentMatchers.any());
+    assertEquals(GAME_DATE, earnedCaptor.getValue());
+  }
+
+  @Test
+  @DisplayName("Clearing the Earned picker falls back to the in-game date on save")
+  void createDialog_clearedEarned_fallsBackToGameDate() {
+    BriefcaseFormDialog dialog = openCreateDialog();
+
+    DatePicker earned = _get(dialog, DatePicker.class, spec -> spec.withLabel("Earned"));
+    earned.clear();
+    _get(dialog, TextField.class, spec -> spec.withLabel("Name")).setValue("Cleared case");
+    _get(dialog, ComboBox.class, spec -> spec.withLabel("Holder")).setValue(holder);
+    _get(dialog, Button.class, spec -> spec.withId("briefcase-save")).click();
+
+    ArgumentCaptor<LocalDate> earnedCaptor = ArgumentCaptor.forClass(LocalDate.class);
+    verify(titleOpportunityService)
+        .adminCreate(
+            ArgumentMatchers.eq("Cleared case"),
+            ArgumentMatchers.eq(holder),
+            ArgumentMatchers.any(),
+            ArgumentMatchers.any(),
+            earnedCaptor.capture(),
+            ArgumentMatchers.any(),
+            ArgumentMatchers.any());
+    assertEquals(GAME_DATE, earnedCaptor.getValue());
+  }
+
+  @Test
+  @DisplayName("Edit dialog save routes through adminUpdate without re-asserting earned-at")
+  @SuppressWarnings("unchecked")
+  void editDialog_save_usesUpdatePath() {
+    view.refreshGrid();
+    when(titleOpportunityService.findByIdWithDetails(40L)).thenReturn(Optional.of(held));
+
+    ComponentRenderer<Component, TitleOpportunity> renderer =
+        (ComponentRenderer<Component, TitleOpportunity>) actionsColumn().getRenderer();
+    Component cell = renderer.createComponent(held);
+    Button editBtn =
+        cell.getChildren()
+            .filter(Button.class::isInstance)
+            .map(Button.class::cast)
+            .findFirst()
+            .orElseThrow();
+    editBtn.click();
+
+    Dialog dialog = _get(UI.getCurrent(), Dialog.class);
+    _get(dialog, Button.class, spec -> spec.withId("briefcase-save")).click();
+
+    verify(titleOpportunityService)
+        .adminUpdate(
+            ArgumentMatchers.eq(40L),
+            ArgumentMatchers.eq("Time Vault briefcase"),
+            ArgumentMatchers.any(),
+            ArgumentMatchers.any(),
+            ArgumentMatchers.isNull());
   }
 }
