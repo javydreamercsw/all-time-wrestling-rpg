@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.rivalry.RivalryDTO;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -33,6 +34,7 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Main;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -287,7 +289,7 @@ public class RivalryListView extends Main {
   }
 
   /** Test bridge for the private details builder. */
-  com.vaadin.flow.component.Component pairHistoryDetailsForTest(RivalryDTO rivalry) {
+  Component pairHistoryDetailsForTest(RivalryDTO rivalry) {
     return buildPairHistoryDetails(rivalry);
   }
 
@@ -295,7 +297,7 @@ public class RivalryListView extends Main {
    * The pair's full feud-cycle history (active + ended rows, newest first) for the expandable
    * details row (ATW-8nc8).
    */
-  private com.vaadin.flow.component.Component buildPairHistoryDetails(RivalryDTO rivalry) {
+  private Component buildPairHistoryDetails(RivalryDTO rivalry) {
     List<RivalryDTO> history =
         rivalryService
             .getRivalryHistoryBetween(
@@ -307,7 +309,7 @@ public class RivalryListView extends Main {
     details.setPadding(false);
     details.setSpacing(false);
     if (history.size() <= 1) {
-      details.add(new com.vaadin.flow.component.html.Span("First feud cycle for this pair."));
+      details.add(new Span("First feud cycle for this pair."));
       return details;
     }
     Grid<RivalryDTO> historyGrid = new Grid<>();

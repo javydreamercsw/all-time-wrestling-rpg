@@ -37,6 +37,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
@@ -97,7 +98,7 @@ class CanonicalizeRivalryPairsMigrationTest {
     migration.migrate();
 
     ArgumentCaptor<Rivalry> captor = ArgumentCaptor.forClass(Rivalry.class);
-    verify(rivalryRepository, org.mockito.Mockito.times(2)).save(captor.capture());
+    verify(rivalryRepository, Mockito.times(2)).save(captor.capture());
     Rivalry swapped = captor.getAllValues().get(0);
     assertThat(swapped.getWrestler1()).isEqualTo(w2);
     assertThat(swapped.getWrestler2()).isEqualTo(w5);
@@ -115,7 +116,7 @@ class CanonicalizeRivalryPairsMigrationTest {
     migration.migrate();
 
     ArgumentCaptor<Rivalry> captor = ArgumentCaptor.forClass(Rivalry.class);
-    verify(rivalryRepository, org.mockito.Mockito.times(2)).save(captor.capture());
+    verify(rivalryRepository, Mockito.times(2)).save(captor.capture());
     // Active row swapped, still active.
     assertThat(captor.getAllValues().get(0).getIsActive()).isTrue();
     // Ended cycle never ended again (no merge reason).
@@ -135,7 +136,7 @@ class CanonicalizeRivalryPairsMigrationTest {
     migration.migrate();
 
     ArgumentCaptor<Rivalry> captor = ArgumentCaptor.forClass(Rivalry.class);
-    verify(rivalryRepository, org.mockito.Mockito.times(2)).save(captor.capture());
+    verify(rivalryRepository, Mockito.times(2)).save(captor.capture());
     assertThat(hot.getIsActive()).isTrue();
     assertThat(cold.getIsActive()).isFalse();
     assertThat(cold.getEndedDate()).isNotNull();
@@ -164,7 +165,7 @@ class CanonicalizeRivalryPairsMigrationTest {
     assertThat(e2.getIsActive()).isFalse();
     assertThat(e3.getIsActive()).isFalse();
     // Swaps happened for e2 only; no row was ended (all already ended).
-    verify(rivalryRepository, org.mockito.Mockito.times(3)).save(any(Rivalry.class));
+    verify(rivalryRepository, Mockito.times(3)).save(any(Rivalry.class));
   }
 
   @Test

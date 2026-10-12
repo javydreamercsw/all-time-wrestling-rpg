@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.migration;
 import com.github.javydreamercsw.management.config.CacheConfig;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -95,7 +96,7 @@ public class CanonicalizeRivalryPairsMigration implements DataMigration {
                         .thenComparing(
                             r ->
                                 r.getStartedDate() == null
-                                    ? java.time.Instant.EPOCH
+                                    ? Instant.EPOCH
                                     : r.getStartedDate(),
                             Comparator.reverseOrder()))
                 .orElseThrow();
