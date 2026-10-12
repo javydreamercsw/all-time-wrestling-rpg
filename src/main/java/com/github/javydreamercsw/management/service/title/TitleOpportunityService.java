@@ -1074,13 +1074,6 @@ public class TitleOpportunityService {
     return gameSettingService.getCurrentGameDate();
   }
 
-  /** Current in-game (kayfabe) date — exposed for UI dialogs that must not use the wall clock. */
-  @Transactional(readOnly = true)
-  @PreAuthorize("permitAll()")
-  public LocalDate getCurrentGameDate() {
-    return gameDate();
-  }
-
   private String stipulationOf(@Nullable SegmentRule rule) {
     return rule != null ? rule.getName() : "";
   }

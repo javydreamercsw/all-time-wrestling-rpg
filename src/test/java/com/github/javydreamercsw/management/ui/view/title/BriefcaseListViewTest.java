@@ -43,6 +43,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.datepicker.DatePicker;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
@@ -260,5 +261,59 @@ class BriefcaseListViewTest extends AbstractViewTest {
             ArgumentMatchers.any(),
             ArgumentMatchers.any());
     assertEquals(GAME_DATE, earnedCaptor.getValue());
+  }
+
+  @Test
+  @DisplayName("Clearing the Earned picker falls back to the in-game date on save")
+  void createDialog_clearedEarned_fallsBackToGameDate() {
+    BriefcaseFormDialog dialog = openCreateDialog();
+
+    DatePicker earned = _get(dialog, DatePicker.class, spec -> spec.withLabel("Earned"));
+    earned.clear();
+    _get(dialog, TextField.class, spec -> spec.withLabel("Name")).setValue("Cleared case");
+    _get(dialog, ComboBox.class, spec -> spec.withLabel("Holder")).setValue(holder);
+    _get(dialog, Button.class, spec -> spec.withId("briefcase-save")).click();
+
+    ArgumentCaptor<LocalDate> earnedCaptor = ArgumentCaptor.forClass(LocalDate.class);
+    verify(titleOpportunityService)
+        .adminCreate(
+            ArgumentMatchers.eq("Cleared case"),
+            ArgumentMatchers.eq(holder),
+            ArgumentMatchers.any(),
+            ArgumentMatchers.any(),
+            earnedCaptor.capture(),
+            ArgumentMatchers.any(),
+            ArgumentMatchers.any());
+    assertEquals(GAME_DATE, earnedCaptor.getValue());
+  }
+
+  @Test
+  @DisplayName("Edit dialog save routes through adminUpdate without re-asserting earned-at")
+  @SuppressWarnings("unchecked")
+  void editDialog_save_usesUpdatePath() {
+    view.refreshGrid();
+    when(titleOpportunityService.findByIdWithDetails(40L)).thenReturn(Optional.of(held));
+
+    ComponentRenderer<Component, TitleOpportunity> renderer =
+        (ComponentRenderer<Component, TitleOpportunity>) actionsColumn().getRenderer();
+    Component cell = renderer.createComponent(held);
+    Button editBtn =
+        cell.getChildren()
+            .filter(Button.class::isInstance)
+            .map(Button.class::cast)
+            .findFirst()
+            .orElseThrow();
+    editBtn.click();
+
+    Dialog dialog = _get(UI.getCurrent(), Dialog.class);
+    _get(dialog, Button.class, spec -> spec.withId("briefcase-save")).click();
+
+    verify(titleOpportunityService)
+        .adminUpdate(
+            ArgumentMatchers.eq(40L),
+            ArgumentMatchers.eq("Time Vault briefcase"),
+            ArgumentMatchers.any(),
+            ArgumentMatchers.any(),
+            ArgumentMatchers.isNull());
   }
 }
