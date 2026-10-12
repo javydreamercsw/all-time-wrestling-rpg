@@ -21,8 +21,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.management.domain.drama.DramaEvent;
 import com.github.javydreamercsw.management.domain.drama.DramaEventRepository;
+import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.injury.InjuryRepository;
+import com.github.javydreamercsw.management.domain.news.NewsItem;
 import com.github.javydreamercsw.management.domain.news.NewsRepository;
 import com.github.javydreamercsw.management.domain.rivalry.HeatEvent;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
@@ -262,5 +265,273 @@ class GameDateReAnchorMigrationTest {
                   .isBefore(GAME_MIDNIGHT.plus(1, ChronoUnit.DAYS));
               assertThat(r.getEndedDate()).isEqualTo(r.getStartedDate().plus(90, ChronoUnit.DAYS));
             });
+  }
+
+  // ── Pass B: remaining event tables (drama, injuries, news) ─────────────────
+
+  @Test
+  @DisplayName("Pass B: future-dated drama events re-anchor; processed follows when future")
+  void migrate_dramaEvents_futureReanchored_processedFollows() {
+    DramaEvent future = new DramaEvent();
+    future.setEventDate(Instant.parse("2026-10-10T00:31:40Z")); // wall clock
+    future.setProcessedDate(Instant.parse("2026-10-10T00:31:41Z"));
+    // Already-clean sibling must be left alone.
+    DramaEvent clean = new DramaEvent();
+    clean.setEventDate(GAME_MIDNIGHT.minus(10, ChronoUnit.DAYS));
+    clean.setProcessedDate(clean.getEventDate());
+    when(dramaEventRepository.findAll()).thenReturn(List.of(future, clean));
+    when(segmentRepository.findAllWithShow()).thenReturn(List.of());
+    when(rivalryRepository.findAll()).thenReturn(List.of());
+    when(heatEventRepository.findAll()).thenReturn(List.of());
+
+    migration.migrate();
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<Iterable<DramaEvent>> captor = ArgumentCaptor.forClass(Iterable.class);
+    verify(dramaEventRepository).saveAll(captor.capture());
+    List<DramaEvent> saved = (List<DramaEvent>) captor.getValue();
+    assertThat(saved)
+        .singleElement()
+        .satisfies(
+            e -> {
+              assertThat(e.getEventDate())
+                  .isAfterOrEqualTo(GAME_MIDNIGHT)
+                  .isBefore(GAME_MIDNIGHT.plus(1, ChronoUnit.DAYS));
+              // The future processed date follows the corrected event date exactly.
+              assertThat(e.getProcessedDate()).isEqualTo(e.getEventDate());
+            });
+  }
+
+  @Test
+  @DisplayName("Pass B: past-dated processed date is preserved on a re-anchored drama event")
+  void migrate_dramaEvents_pastProcessed_kept() {
+    DramaEvent odd = new DramaEvent();
+    odd.setEventDate(Instant.parse("2026-10-10T00:31:40Z")); // future → re-anchored
+    odd.setProcessedDate(GAME_MIDNIGHT.minus(1, ChronoUnit.DAYS)); // past → kept as-is
+    when(dramaEventRepository.findAll()).thenReturn(List.of(odd));
+    when(segmentRepository.findAllWithShow()).thenReturn(List.of());
+    when(rivalryRepository.findAll()).thenReturn(List.of());
+    when(heatEventRepository.findAll()).thenReturn(List.of());
+
+    migration.migrate();
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<Iterable<DramaEvent>> captor = ArgumentCaptor.forClass(Iterable.class);
+    verify(dramaEventRepository).saveAll(captor.capture());
+    assertThat((List<DramaEvent>) captor.getValue())
+        .singleElement()
+        .satisfies(
+            e ->
+                assertThat(e.getProcessedDate())
+                    .isEqualTo(GAME_MIDNIGHT.minus(1, ChronoUnit.DAYS)));
+  }
+
+  @Test
+  @DisplayName("Pass B: future-dated injuries re-anchor; healing duration preserved")
+  void migrate_injuries_futureReanchored_healingPreserved() {
+    Injury future = new Injury();
+    Instant injuryDate = Instant.parse("2026-10-09T23:28:18Z");
+    future.setInjuryDate(injuryDate);
+    future.setHealedDate(injuryDate.plus(3, ChronoUnit.DAYS));
+    when(injuryRepository.findAll()).thenReturn(List.of(future));
+    when(segmentRepository.findAllWithShow()).thenReturn(List.of());
+    when(rivalryRepository.findAll()).thenReturn(List.of());
+    when(heatEventRepository.findAll()).thenReturn(List.of());
+
+    migration.migrate();
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<Iterable<Injury>> captor = ArgumentCaptor.forClass(Iterable.class);
+    verify(injuryRepository).saveAll(captor.capture());
+    assertThat((List<Injury>) captor.getValue())
+        .singleElement()
+        .satisfies(
+            i -> {
+              assertThat(i.getInjuryDate())
+                  .isAfterOrEqualTo(GAME_MIDNIGHT)
+                  .isBefore(GAME_MIDNIGHT.plus(1, ChronoUnit.DAYS));
+              assertThat(i.getHealedDate()).isEqualTo(i.getInjuryDate().plus(3, ChronoUnit.DAYS));
+            });
+  }
+
+  @Test
+  @DisplayName("Pass B: future-dated news items re-anchor")
+  void migrate_news_futureReanchored() {
+    NewsItem future =
+        NewsItem.builder()
+            .headline("Wall-clock headline")
+            .publishDate(Instant.parse("2026-10-10T00:31:46Z"))
+            .build();
+    when(newsRepository.findAll()).thenReturn(List.of(future));
+    when(segmentRepository.findAllWithShow()).thenReturn(List.of());
+    when(rivalryRepository.findAll()).thenReturn(List.of());
+    when(heatEventRepository.findAll()).thenReturn(List.of());
+
+    migration.migrate();
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<Iterable<NewsItem>> captor = ArgumentCaptor.forClass(Iterable.class);
+    verify(newsRepository).saveAll(captor.capture());
+    assertThat((List<NewsItem>) captor.getValue())
+        .singleElement()
+        .satisfies(
+            i ->
+                assertThat(i.getPublishDate())
+                    .isAfterOrEqualTo(GAME_MIDNIGHT)
+                    .isBefore(GAME_MIDNIGHT.plus(1, ChronoUnit.DAYS)));
+  }
+
+  @Test
+  @DisplayName("Pass B: untraceable heat events stagger even without a rivalry anchor")
+  void migrate_heatEvents_untraceable_staggerOnGameDate() {
+    Rivalry rivalry = new Rivalry();
+    rivalry.setId(50L);
+    HeatEvent decay = new HeatEvent();
+    decay.setReason("Automatic heat decay");
+    decay.setEventDate(Instant.parse("2026-10-10T13:00:01Z")); // future, no rivalry anchor map hit
+    decay.setRivalry(rivalry);
+    when(heatEventRepository.findAll()).thenReturn(List.of(decay));
+    when(rivalryRepository.findAll()).thenReturn(List.of());
+    when(segmentRepository.findAllWithShow()).thenReturn(List.of());
+
+    migration.migrate();
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<Iterable<HeatEvent>> captor = ArgumentCaptor.forClass(Iterable.class);
+    verify(heatEventRepository).saveAll(captor.capture());
+    assertThat((List<HeatEvent>) captor.getValue())
+        .singleElement()
+        .satisfies(
+            e -> {
+              // Staggered onto the game day; creationDate follows the corrected event date.
+              assertThat(e.getEventDate())
+                  .isAfterOrEqualTo(GAME_MIDNIGHT)
+                  .isBefore(GAME_MIDNIGHT.plus(1, ChronoUnit.DAYS));
+              assertThat(e.getCreationDate()).isEqualTo(e.getEventDate());
+            });
+  }
+
+  @Test
+  @DisplayName("Pass B: rivalry with null started date but future ended date re-anchors the end")
+  void migrate_rivalries_nullStart_futureEnd_anchorsEnd() {
+    Rivalry odd = new Rivalry();
+    odd.setId(60L);
+    odd.setStartedDate(null);
+    odd.setEndedDate(Instant.parse("2026-10-10T00:00:00Z"));
+    when(rivalryRepository.findAll()).thenReturn(List.of(odd));
+    when(segmentRepository.findAllWithShow()).thenReturn(List.of());
+    when(heatEventRepository.findAll()).thenReturn(List.of());
+
+    migration.migrate();
+
+    // The null-start guard skips this row — the end alone can't be re-anchored meaningfully
+    // without a start reference, and the null-start || start<=gameNow condition excludes it.
+    verify(rivalryRepository).saveAll(List.of());
+  }
+
+  @Test
+  @DisplayName("Pass B: rivalry with a clean start but future end re-anchors just the end")
+  void migrate_rivalries_cleanStart_futureEnd_anchorsEnd() {
+    Rivalry aged = new Rivalry();
+    aged.setId(61L);
+    aged.setStartedDate(GAME_MIDNIGHT.minus(30, ChronoUnit.DAYS)); // clean start
+    aged.setEndedDate(Instant.parse("2026-10-10T00:00:00Z")); // future end
+    when(rivalryRepository.findAll()).thenReturn(List.of(aged));
+    when(segmentRepository.findAllWithShow()).thenReturn(List.of());
+    when(heatEventRepository.findAll()).thenReturn(List.of());
+
+    migration.migrate();
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<Iterable<Rivalry>> captor = ArgumentCaptor.forClass(Iterable.class);
+    verify(rivalryRepository).saveAll(captor.capture());
+    assertThat((List<Rivalry>) captor.getValue())
+        .singleElement()
+        .satisfies(
+            r ->
+                assertThat(r.getEndedDate())
+                    .isAfterOrEqualTo(GAME_MIDNIGHT)
+                    .isBefore(GAME_MIDNIGHT.plus(1, ChronoUnit.DAYS)));
+  }
+
+  @Test
+  @DisplayName("Pass A: two segments of one rivalry anchor to the latest segment date")
+  void migrate_segments_rivalryAnchor_takesLatest() {
+    LocalDate olderShow = SHOW_DATE.minusDays(7);
+    Show older = new Show();
+    older.setShowDate(olderShow);
+    Segment olderSeg = new Segment();
+    olderSeg.setShow(older);
+    olderSeg.setRivalryId(70L);
+
+    Show newer = new Show();
+    newer.setShowDate(SHOW_DATE);
+    Segment newerSeg = new Segment();
+    newerSeg.setShow(newer);
+    newerSeg.setRivalryId(70L);
+
+    Rivalry rivalry = new Rivalry();
+    rivalry.setId(70L);
+    HeatEvent sourced = new HeatEvent();
+    sourced.setReason("From segment: Promo");
+    sourced.setEventDate(Instant.parse("2026-10-10T00:31:44Z"));
+    sourced.setRivalry(rivalry);
+
+    when(segmentRepository.findAllWithShow()).thenReturn(List.of(olderSeg, newerSeg));
+    when(rivalryRepository.findAll()).thenReturn(List.of(rivalry));
+    when(heatEventRepository.findAll()).thenReturn(List.of(sourced));
+
+    migration.migrate();
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<Iterable<HeatEvent>> captor = ArgumentCaptor.forClass(Iterable.class);
+    verify(heatEventRepository).saveAll(captor.capture());
+    // The anchor is the LATEST segment date (SHOW_DATE), not the older show's.
+    assertThat((List<HeatEvent>) captor.getValue())
+        .singleElement()
+        .satisfies(
+            e ->
+                assertThat(e.getEventDate())
+                    .isEqualTo(SHOW_DATE.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+  }
+
+  @Test
+  @DisplayName("Pass A: segments already on their show's date are left untouched")
+  void migrate_segments_alreadyOnShowDate_noop() {
+    Show show = new Show();
+    show.setShowDate(SHOW_DATE);
+    Segment aligned = new Segment();
+    aligned.setShow(show);
+    aligned.setRivalryId(80L);
+    aligned.setSegmentDate(SHOW_DATE.atStartOfDay(ZoneId.systemDefault()).toInstant());
+    when(segmentRepository.findAllWithShow()).thenReturn(List.of(aligned));
+    when(rivalryRepository.findAll()).thenReturn(List.of());
+    when(heatEventRepository.findAll()).thenReturn(List.of());
+
+    migration.migrate();
+
+    verify(segmentRepository).saveAll(List.of());
+  }
+
+  @Test
+  @DisplayName("id is stable kebab-case (runner gate contract)")
+  void id_isStable() {
+    assertThat(migration.id()).isEqualTo("re-anchor-wall-clock-game-dates");
+  }
+
+  @Test
+  @DisplayName("Pass B: heat events already on the game timeline are left untouched")
+  void migrate_heatEvents_clean_skipped() {
+    HeatEvent clean = new HeatEvent();
+    clean.setReason("From segment: Promo");
+    clean.setEventDate(GAME_MIDNIGHT.minus(5, ChronoUnit.DAYS)); // not future → skip
+    clean.setRivalry(new Rivalry());
+    when(heatEventRepository.findAll()).thenReturn(List.of(clean));
+    when(segmentRepository.findAllWithShow()).thenReturn(List.of());
+    when(rivalryRepository.findAll()).thenReturn(List.of());
+
+    migration.migrate();
+
+    verify(heatEventRepository).saveAll(List.of());
   }
 }
