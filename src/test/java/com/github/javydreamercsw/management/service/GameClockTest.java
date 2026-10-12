@@ -101,6 +101,12 @@ class GameClockTest {
     assertThat(first.toEpochMilli()).isGreaterThanOrEqualTo(dayStart.toEpochMilli());
   }
 
+  @Test
+  void gameNowOn_nullDateFallsBackToGameToday() {
+    Instant expected = LocalDate.of(2026, 7, 7).atStartOfDay(ZoneOffset.UTC).toInstant();
+    assertThat(gameClock.gameNowOn(null)).isEqualTo(expected);
+  }
+
   /** Fixed wall clock (2026-10-11) — everything derived must ignore it. */
   private static final class ClockStub extends Clock {
 

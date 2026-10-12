@@ -54,9 +54,12 @@ public class GameClock {
     return gameNowOn(gameToday());
   }
 
-  /** Game-anchored "now" on an explicit game date (e.g. the owning show's date). */
+  /**
+   * Game-anchored "now" on an explicit game date (e.g. the owning show's date). Falls back to the
+   * in-game "today" when the caller has no date (e.g. an unscheduled show).
+   */
   public Instant gameNowOn(LocalDate gameDate) {
-    return gameDate.atStartOfDay(clock.getZone()).toInstant();
+    return (gameDate != null ? gameDate : gameToday()).atStartOfDay(clock.getZone()).toInstant();
   }
 
   /**
