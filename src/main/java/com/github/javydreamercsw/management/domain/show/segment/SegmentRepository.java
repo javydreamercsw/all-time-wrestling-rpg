@@ -30,6 +30,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -126,6 +127,11 @@ public interface SegmentRepository
       ORDER BY s.segmentDate DESC, s.id DESC
       """)
   List<Segment> findCompletedByRivalryId(@Param("rivalryId") Long rivalryId);
+
+  /** Nulls the rivalry reference on every segment pointing at the given rivalry id. */
+  @Query("UPDATE Segment s SET s.rivalryId = null WHERE s.rivalryId = :rivalryId")
+  @Modifying
+  void clearRivalryReference(@Param("rivalryId") Long rivalryId);
 
   /**
    * Completed segments involving any of the given wrestlers that no story-arc beat is linked to —
