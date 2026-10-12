@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -76,6 +77,5 @@ public class GameClock {
     return Instant.ofEpochMilli(dayStartMillis + slot);
   }
 
-  private final java.util.concurrent.atomic.AtomicLong counter =
-      new java.util.concurrent.atomic.AtomicLong();
+  private final AtomicLong counter = new AtomicLong();
 }

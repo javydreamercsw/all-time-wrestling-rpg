@@ -42,6 +42,7 @@ import com.github.javydreamercsw.management.service.GameClock;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -80,7 +81,7 @@ class SmartPromoServiceTest {
     rivalryService = mock(RivalryService.class);
     feudService = mock(MultiWrestlerFeudService.class);
     gameClock = mock(GameClock.class);
-    when(gameClock.gameNowOn(any())).thenReturn(java.time.Instant.parse("2026-07-07T00:00:00Z"));
+    when(gameClock.gameNowOn(any())).thenReturn(Instant.parse("2026-07-07T00:00:00Z"));
 
     smartPromoService =
         new SmartPromoService(
