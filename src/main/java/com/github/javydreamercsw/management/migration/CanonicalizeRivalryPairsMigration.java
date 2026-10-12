@@ -94,10 +94,7 @@ public class CanonicalizeRivalryPairsMigration implements DataMigration {
                 .max(
                     Comparator.comparingInt(Rivalry::getHeat)
                         .thenComparing(
-                            r ->
-                                r.getStartedDate() == null
-                                    ? Instant.EPOCH
-                                    : r.getStartedDate(),
+                            r -> r.getStartedDate() == null ? Instant.EPOCH : r.getStartedDate(),
                             Comparator.reverseOrder()))
                 .orElseThrow();
         for (Rivalry rivalry : active) {
