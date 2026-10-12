@@ -30,8 +30,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.event.dto.WrestlerInjuryEvent;
 import com.github.javydreamercsw.management.event.dto.WrestlerInjuryHealedEvent;
-import java.time.Clock;
-import java.time.Instant;
+import com.github.javydreamercsw.management.service.GameClock;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -59,7 +58,7 @@ public class InjuryService {
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private UniverseRepository universeRepository;
   @Autowired private WrestlerStateRepository wrestlerStateRepository;
-  @Autowired private Clock clock;
+  @Autowired private GameClock gameClock;
   @Autowired private Random random;
   @Autowired private ApplicationEventPublisher eventPublisher;
 
@@ -92,9 +91,9 @@ public class InjuryService {
               injury.setStaminaPenalty(severity.getRandomStaminaPenalty(random));
               injury.setHandSizePenalty(severity.getRandomHandSizePenalty(random));
               injury.setHealingCost(severity.getBaseHealingCost());
-              injury.setInjuryDate(Instant.now(clock));
+              injury.setInjuryDate(gameClock.gameNowStaggered());
               injury.setInjuryNotes(injuryNotes);
-              injury.setCreationDate(Instant.now(clock));
+              injury.setCreationDate(gameClock.gameNow());
 
               Injury savedInjury = injuryRepository.saveAndFlush(injury);
               eventPublisher.publishEvent(new WrestlerInjuryEvent(this, state, savedInjury));
@@ -134,10 +133,10 @@ public class InjuryService {
     injury.setStaminaPenalty(severity.getRandomStaminaPenalty(random));
     injury.setHandSizePenalty(severity.getRandomHandSizePenalty(random));
     injury.setHealingCost(severity.getBaseHealingCost());
-    injury.setInjuryDate(Instant.now(clock));
+    injury.setInjuryDate(gameClock.gameNowStaggered());
     injury.setInjuryNotes(
         "Generated from bump accumulation (tier: " + state.getTier().name() + ")");
-    injury.setCreationDate(Instant.now(clock));
+    injury.setCreationDate(gameClock.gameNow());
 
     Injury savedInjury = injuryRepository.saveAndFlush(injury);
     eventPublisher.publishEvent(new WrestlerInjuryEvent(this, state, savedInjury));

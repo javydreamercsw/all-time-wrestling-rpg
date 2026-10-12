@@ -26,6 +26,9 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.management.domain.news.NewsCategory;
 import com.github.javydreamercsw.management.domain.news.NewsItem;
 import com.github.javydreamercsw.management.domain.news.NewsRepository;
+import com.github.javydreamercsw.management.service.GameClock;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,12 +36,16 @@ import org.junit.jupiter.api.Test;
 class NewsServiceTest {
 
   private NewsRepository newsRepository;
+  private GameClock gameClock;
   private NewsService newsService;
 
   @BeforeEach
   public void setUp() {
     newsRepository = mock(NewsRepository.class);
-    newsService = new NewsService(newsRepository);
+    gameClock = mock(GameClock.class);
+    when(gameClock.gameNowStaggered())
+        .thenReturn(LocalDate.of(2026, 7, 7).atStartOfDay(ZoneId.systemDefault()).toInstant());
+    newsService = new NewsService(newsRepository, gameClock);
   }
 
   @Test

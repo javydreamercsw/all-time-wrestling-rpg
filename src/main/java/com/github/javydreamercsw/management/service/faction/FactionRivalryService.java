@@ -22,8 +22,8 @@ import com.github.javydreamercsw.management.domain.faction.FactionRivalry;
 import com.github.javydreamercsw.management.domain.faction.FactionRivalryRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.event.FactionHeatChangeEvent;
+import com.github.javydreamercsw.management.service.GameClock;
 import com.github.javydreamercsw.management.service.resolution.ResolutionResult;
-import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -51,7 +51,7 @@ public class FactionRivalryService {
 
   private final FactionRivalryRepository factionRivalryRepository;
   private final FactionRepository factionRepository;
-  private final Clock clock;
+  private final GameClock gameClock;
   private final ApplicationEventPublisher eventPublisher;
   private final Random random = new Random();
 
@@ -137,9 +137,9 @@ public class FactionRivalryService {
     rivalry.setFaction2(faction2);
     rivalry.setHeat(0);
     rivalry.setIsActive(true);
-    rivalry.setStartedDate(clock.instant());
+    rivalry.setStartedDate(gameClock.gameNow());
     rivalry.setStorylineNotes(storylineNotes);
-    rivalry.setCreationDate(clock.instant());
+    rivalry.setCreationDate(gameClock.gameNow());
 
     FactionRivalry savedRivalry = factionRivalryRepository.saveAndFlush(rivalry);
 

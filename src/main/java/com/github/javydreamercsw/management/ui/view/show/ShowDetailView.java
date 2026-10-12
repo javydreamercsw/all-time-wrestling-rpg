@@ -47,6 +47,7 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
+import com.github.javydreamercsw.management.service.GameClock;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
@@ -114,7 +115,6 @@ import com.vaadin.flow.router.*;
 import com.vaadin.flow.shared.Registration;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.PermitAll;
-import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -173,6 +173,7 @@ public class ShowDetailView extends Main
   private final ExpansionService expansionService;
   private final TeamService teamService;
   private final GameSettingService gameSettingService;
+  private final GameClock gameClock;
   private final TournamentService tournamentService;
 
   private Button backButton;
@@ -257,6 +258,7 @@ public class ShowDetailView extends Main
     this.tournamentMatchRepository = tournamentMatchRepository;
     this.expansionService = viewContext.getExpansionService();
     this.gameSettingService = viewContext.getGameSettingService();
+    this.gameClock = viewContext.getGameClock();
     this.tournamentService = showContextFacade.getTournamentService();
     initializeComponents();
   }
@@ -1900,7 +1902,9 @@ public class ShowDetailView extends Main
               newSegment.setNotes(notesArea.getValue());
               newSegment.setSegmentOrder(segmentRepository.findByShow(show).size() + 1);
               newSegment.setShow(show);
-              newSegment.setSegmentDate(Instant.now());
+              // Kayfabe: new segments sit on the show's in-game date, not the wall clock
+              // (ATW-07hw).
+              newSegment.setSegmentDate(gameClock.gameNowOn(show.getShowDate()));
               // Set isTitleSegment based on checkbox
               boolean isTitleSegment = isTitleSegmentCheckbox.getValue();
               boolean isContenderMatch = isContenderMatchCheckbox.getValue();
@@ -2204,7 +2208,7 @@ public class ShowDetailView extends Main
           segment.setShow(show);
         }
         if (segment.getSegmentDate() == null) {
-          segment.setSegmentDate(Instant.now());
+          segment.setSegmentDate(gameClock.gameNowOn(show.getShowDate()));
         }
         if (segment.getIsTitleSegment() == null) {
           segment.setIsTitleSegment(false);

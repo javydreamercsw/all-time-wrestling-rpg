@@ -22,7 +22,7 @@ import com.github.javydreamercsw.management.domain.relationship.WrestlerRelation
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import java.time.Instant;
+import com.github.javydreamercsw.management.service.GameClock;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +39,7 @@ public class WrestlerRelationshipService {
   private final WrestlerRelationshipRepository relationshipRepository;
   private final WrestlerRepository wrestlerRepository;
   private final TeamRepository teamRepository;
+  private final GameClock gameClock;
 
   /** Get all relationships for a wrestler. */
   public List<WrestlerRelationship> getRelationshipsForWrestler(final Long wrestlerId) {
@@ -94,7 +95,7 @@ public class WrestlerRelationshipService {
                   newRel.setWrestler1(w1);
                   newRel.setWrestler2(w2);
                   newRel.setType(type);
-                  newRel.setStartedDate(Instant.now());
+                  newRel.setStartedDate(gameClock.gameNowStaggered());
                   return newRel;
                 });
 

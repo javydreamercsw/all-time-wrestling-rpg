@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.event.dto.WrestlerInjuryEvent;
 import com.github.javydreamercsw.management.event.dto.WrestlerInjuryHealedEvent;
+import com.github.javydreamercsw.management.service.GameClock;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.Instant;
@@ -72,7 +73,7 @@ class InjuryServiceTest {
 
   @Mock private WrestlerService wrestlerService;
 
-  @Mock private Clock clock;
+  @Mock private GameClock gameClock;
   @Mock private Random random;
   @Mock private ApplicationEventPublisher eventPublisher;
 
@@ -83,7 +84,7 @@ class InjuryServiceTest {
   @BeforeEach
   public void setUp() {
     fixedClock = Clock.fixed(Instant.parse("2024-01-01T00:00:00Z"), ZoneOffset.UTC);
-    lenient().when(clock.instant()).thenReturn(fixedClock.instant());
+    lenient().when(gameClock.gameNow()).thenReturn(fixedClock.instant());
     lenient()
         .when(wrestlerService.getOrCreateState(anyLong(), anyLong()))
         .thenReturn(new WrestlerState());

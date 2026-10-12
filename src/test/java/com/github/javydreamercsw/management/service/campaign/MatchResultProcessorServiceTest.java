@@ -56,11 +56,14 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.StaticEncounterDTO.StaticChoiceDTO.BonusVpCondition;
+import com.github.javydreamercsw.management.service.GameClock;
 import com.github.javydreamercsw.management.service.achievement.ScriptedAchievementEvaluator;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.news.NewsGenerationService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -108,6 +111,7 @@ class MatchResultProcessorServiceTest {
   @Mock private FeatureDataService featureDataService;
   @Mock private ScriptedAchievementEvaluator scriptedAchievementEvaluator;
   @Mock private LegacyService legacyService;
+  @Mock private GameClock gameClock;
   @Mock private CampaignService campaignService;
   @Mock private CampaignEncounterService campaignEncounterService;
 
@@ -115,6 +119,13 @@ class MatchResultProcessorServiceTest {
 
   @BeforeEach
   void setUpFeatureDataMock() {
+    // GameClock stub: fixed in-game date so converted write sites have a real anchor
+    Mockito.lenient()
+        .when(gameClock.gameNow())
+        .thenReturn(LocalDate.of(2026, 6, 28).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    Mockito.lenient()
+        .when(gameClock.gameNowOn(ArgumentMatchers.any()))
+        .thenReturn(LocalDate.of(2026, 6, 28).atStartOfDay(ZoneId.of("UTC")).toInstant());
     // @Lazy field-injected beans are not set by @InjectMocks; inject manually
     ReflectionTestUtils.setField(service, "campaignService", campaignService);
     ReflectionTestUtils.setField(service, "campaignEncounterService", campaignEncounterService);

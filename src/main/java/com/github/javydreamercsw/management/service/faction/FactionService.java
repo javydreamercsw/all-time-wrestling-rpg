@@ -27,10 +27,10 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
+import com.github.javydreamercsw.management.service.GameClock;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
-import java.time.Clock;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -63,7 +63,7 @@ public class FactionService {
   private final ExpansionService expansionService;
   private final UniverseContextService universeContextService;
   private final UniverseSettingsService universeSettingsService;
-  private final Clock clock;
+  private final GameClock gameClock;
   private final DefaultImageService imageService;
 
   @Autowired
@@ -75,7 +75,7 @@ public class FactionService {
       final ExpansionService expansionService,
       final UniverseContextService universeContextService,
       final UniverseSettingsService universeSettingsService,
-      final Clock clock,
+      final GameClock gameClock,
       final DefaultImageService imageService) {
     this.factionRepository = factionRepository;
     this.wrestlerRepository = wrestlerRepository;
@@ -84,7 +84,7 @@ public class FactionService {
     this.expansionService = expansionService;
     this.universeContextService = universeContextService;
     this.universeSettingsService = universeSettingsService;
-    this.clock = clock;
+    this.gameClock = gameClock;
     this.imageService = imageService;
   }
 
@@ -248,8 +248,8 @@ public class FactionService {
     faction.setName(name);
     faction.setDescription(description);
     faction.setActive(true);
-    faction.setFormedDate(clock.instant());
-    faction.setCreationDate(clock.instant());
+    faction.setFormedDate(gameClock.gameNow());
+    faction.setCreationDate(gameClock.gameNow());
     faction.setUniverse(universe);
 
     Optional<Wrestler> leaderOpt = wrestlerRepository.findById(leaderId);
@@ -435,9 +435,9 @@ public class FactionService {
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public Faction save(@NonNull final Faction faction) {
     if (faction.getId() == null) {
-      faction.setCreationDate(clock.instant());
+      faction.setCreationDate(gameClock.gameNow());
       if (faction.getFormedDate() == null) {
-        faction.setFormedDate(clock.instant());
+        faction.setFormedDate(gameClock.gameNow());
       }
     }
     return factionRepository.saveAndFlush(faction);

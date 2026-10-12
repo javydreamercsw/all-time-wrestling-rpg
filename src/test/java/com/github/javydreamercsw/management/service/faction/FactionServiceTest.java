@@ -33,12 +33,11 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
+import com.github.javydreamercsw.management.service.GameClock;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.universe.UniverseSettingsService;
-import java.time.Clock;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -67,7 +66,7 @@ class FactionServiceTest {
   @Mock private ExpansionService expansionService;
   @Mock private UniverseContextService universeContextService;
   @Mock private UniverseSettingsService universeSettingsService;
-  @Mock private Clock clock;
+  @Mock private GameClock gameClock;
   @Mock private DefaultImageService imageService;
 
   @InjectMocks private FactionService factionService;
@@ -82,8 +81,7 @@ class FactionServiceTest {
 
   @BeforeEach
   void setUp() {
-    when(clock.instant()).thenReturn(FIXED_INSTANT);
-    when(clock.getZone()).thenReturn(ZoneId.of("UTC"));
+    when(gameClock.gameNow()).thenReturn(FIXED_INSTANT);
     when(expansionService.getEnabledExpansionCodes()).thenReturn(List.of(BASE_EXPANSION));
     when(universeContextService.getCurrentUniverse()).thenReturn(Optional.empty());
     when(universeSettingsService.getEnabledExpansionCodesForUniverse(any()))

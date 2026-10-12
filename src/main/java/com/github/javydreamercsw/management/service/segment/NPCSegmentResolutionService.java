@@ -31,12 +31,12 @@ import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.service.GameClock;
 import com.github.javydreamercsw.management.service.campaign.CampaignEffectContext;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionDataService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import java.time.Clock;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,7 +63,7 @@ public class NPCSegmentResolutionService {
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private SegmentRuleService segmentRuleService;
   @Autowired private SegmentTypeRepository segmentTypeRepository;
-  @Autowired private Clock clock;
+  @Autowired private GameClock gameClock;
   @Autowired protected Random random;
   @Autowired private InjuryService injuryService;
   @Autowired private WrestlerService wrestlerService;
@@ -119,7 +119,7 @@ public class NPCSegmentResolutionService {
     Segment result = new Segment();
     result.setShow(show);
     result.setSegmentType(segmentType);
-    result.setSegmentDate(clock.instant());
+    result.setSegmentDate(gameClock.gameNowOn(show.getShowDate()));
     applySegmentRules(result, finalStipulation);
     result.setIsNpcGenerated(true);
 
@@ -188,7 +188,7 @@ public class NPCSegmentResolutionService {
     Segment result = new Segment();
     result.setShow(show);
     result.setSegmentType(segmentType);
-    result.setSegmentDate(clock.instant());
+    result.setSegmentDate(gameClock.gameNowOn(show.getShowDate()));
     applySegmentRules(result, finalStipulation);
     result.setIsNpcGenerated(true);
 

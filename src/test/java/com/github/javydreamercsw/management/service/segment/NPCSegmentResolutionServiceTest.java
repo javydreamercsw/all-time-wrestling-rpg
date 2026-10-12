@@ -44,6 +44,7 @@ import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -133,6 +134,8 @@ class NPCSegmentResolutionServiceTest extends ManagementIntegrationTest {
     testShow.setDescription("Test show for NPC matches");
     testShow.setType(showType);
     testShow.setUniverse(defaultUniverse);
+    // GameClock anchors segment dates to the show's in-game date (ATW-07hw); give the fixture one.
+    testShow.setShowDate(LocalDate.now().minusDays(1));
     testShow = showRepository.save(testShow);
   }
 
