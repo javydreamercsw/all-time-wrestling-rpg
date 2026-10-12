@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -54,6 +55,7 @@ public class BriefcaseFormDialog extends Dialog {
   private final TitleOpportunityService titleOpportunityService;
   private final WrestlerRepository wrestlerRepository;
   private final ImageStorageService imageStorageService;
+  private final GameSettingService gameSettingService;
   private final boolean createMode;
 
   private final TextField name = new TextField("Name");
@@ -72,11 +74,13 @@ public class BriefcaseFormDialog extends Dialog {
       WrestlerRepository wrestlerRepository,
       UniverseRepository universeRepository,
       ImageStorageService imageStorageService,
+      GameSettingService gameSettingService,
       Runnable onSave) {
     this.opportunity = existing != null ? existing : new TitleOpportunity();
     this.titleOpportunityService = titleOpportunityService;
     this.wrestlerRepository = wrestlerRepository;
     this.imageStorageService = imageStorageService;
+    this.gameSettingService = gameSettingService;
     this.createMode = existing == null;
 
     setHeaderTitle(createMode ? "New Briefcase" : "Edit Briefcase: " + opportunity.getName());
@@ -128,6 +132,10 @@ public class BriefcaseFormDialog extends Dialog {
     }
     if (opportunity.getEarnedAt() != null) {
       earnedAt.setValue(opportunity.getEarnedAt());
+    } else {
+      // Create mode (ATW-ucux): anchor the Earned default to the in-game date — the wall clock
+      // would leak real-world dates into kayfabe history (expiry derives from earned-at).
+      earnedAt.setValue(gameSettingService.getCurrentGameDate());
     }
     if (opportunity.getExpiryDate() != null) {
       expiryDate.setValue(opportunity.getExpiryDate());
@@ -166,7 +174,9 @@ public class BriefcaseFormDialog extends Dialog {
             chosen,
             universe,
             gender.getValue(),
-            earnedAt.getValue() != null ? earnedAt.getValue() : LocalDate.now(),
+            earnedAt.getValue() != null
+                ? earnedAt.getValue()
+                : gameSettingService.getCurrentGameDate(),
             expiryDate.getValue(),
             imageUrl.getValue().isEmpty() ? null : imageUrl.getValue());
       } else {

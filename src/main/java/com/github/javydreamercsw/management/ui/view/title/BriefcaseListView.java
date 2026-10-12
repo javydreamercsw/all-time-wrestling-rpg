@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.domain.title.TitleOpportunity;
 import com.github.javydreamercsw.management.domain.title.TitleOpportunityRepository;
 import com.github.javydreamercsw.management.domain.title.TitleOpportunityStatus;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
@@ -68,6 +69,7 @@ public class BriefcaseListView extends Main {
   private final TitleOpportunityService titleOpportunityService;
   private final TitleOpportunityRepository opportunityRepository;
   private final WrestlerRepository wrestlerRepository;
+  private final GameSettingService gameSettingService;
   private final SecurityUtils securityUtils;
   private final ImageStorageService imageStorageService;
   private final TextField searchField = new TextField();
@@ -79,11 +81,13 @@ public class BriefcaseListView extends Main {
       @NonNull TitleOpportunityService titleOpportunityService,
       @NonNull TitleOpportunityRepository opportunityRepository,
       @NonNull WrestlerRepository wrestlerRepository,
+      @NonNull GameSettingService gameSettingService,
       @NonNull SecurityUtils securityUtils,
       @NonNull ImageStorageService imageStorageService) {
     this.titleOpportunityService = titleOpportunityService;
     this.opportunityRepository = opportunityRepository;
     this.wrestlerRepository = wrestlerRepository;
+    this.gameSettingService = gameSettingService;
     this.securityUtils = securityUtils;
     this.imageStorageService = imageStorageService;
 
@@ -191,6 +195,7 @@ public class BriefcaseListView extends Main {
             wrestlerRepository,
             null,
             imageStorageService,
+            gameSettingService,
             this::refreshGrid)
         .open();
   }
@@ -206,6 +211,7 @@ public class BriefcaseListView extends Main {
                         wrestlerRepository,
                         null,
                         imageStorageService,
+                        gameSettingService,
                         this::refreshGrid)
                     .open());
   }

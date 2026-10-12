@@ -40,6 +40,7 @@ import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
+import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import java.time.LocalDate;
@@ -58,6 +59,7 @@ class BriefcaseListViewTest extends AbstractViewTest {
 
   @Mock private WrestlerRepository wrestlerRepository;
 
+  @Mock private com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
   @Mock private SecurityUtils securityUtils;
   @Mock private ImageStorageService imageStorageService;
 
@@ -97,6 +99,7 @@ class BriefcaseListViewTest extends AbstractViewTest {
             titleOpportunityService,
             opportunityRepository,
             wrestlerRepository,
+            gameSettingService,
             securityUtils,
             imageStorageService);
     UI.getCurrent().add(view);
@@ -194,5 +197,71 @@ class BriefcaseListViewTest extends AbstractViewTest {
 
     BriefcaseFormDialog dialog = _get(UI.getCurrent(), BriefcaseFormDialog.class);
     assertNotNull(dialog);
+  }
+
+  // ── ATW-ucux: create mode anchors to the in-game date, never the wall clock ──
+
+  private static final LocalDate GAME_DATE = LocalDate.of(2026, 9, 15);
+
+  private BriefcaseFormDialog openCreateDialog() {
+    when(gameSettingService.getCurrentGameDate()).thenReturn(GAME_DATE);
+    org.mockito.Mockito.lenient()
+        .when(
+            titleOpportunityService.adminCreate(
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.any(Wrestler.class),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(LocalDate.class),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any()))
+        .thenReturn(held);
+    Button newBtn =
+        _find(view, Button.class).stream()
+            .filter(b -> "New Briefcase".equals(b.getText()))
+            .findFirst()
+            .orElseThrow();
+    newBtn.click();
+    return _get(UI.getCurrent(), BriefcaseFormDialog.class);
+  }
+
+  @Test
+  @DisplayName("Create dialog pre-fills the Earned picker with the in-game date")
+  void createDialog_prefillsEarnedWithGameDate() {
+    BriefcaseFormDialog dialog = openCreateDialog();
+
+    DatePicker earned = _get(dialog, DatePicker.class, spec -> spec.withLabel("Earned"));
+    assertEquals(GAME_DATE, earned.getValue());
+  }
+
+  @Test
+  @DisplayName("Saving an untouched Earned picker books the in-game date, not the wall clock")
+  void createDialog_untouchedEarned_savesGameDate() {
+    BriefcaseFormDialog dialog = openCreateDialog();
+
+    _get(
+            dialog,
+            com.vaadin.flow.component.textfield.TextField.class,
+            spec -> spec.withLabel("Name"))
+        .setValue("New case");
+    _get(
+            dialog,
+            com.vaadin.flow.component.combobox.ComboBox.class,
+            spec -> spec.withLabel("Holder"))
+        .setValue(holder);
+    _get(dialog, Button.class, spec -> spec.withId("briefcase-save")).click();
+
+    org.mockito.ArgumentCaptor<LocalDate> earnedCaptor =
+        org.mockito.ArgumentCaptor.forClass(LocalDate.class);
+    verify(titleOpportunityService)
+        .adminCreate(
+            org.mockito.ArgumentMatchers.eq("New case"),
+            org.mockito.ArgumentMatchers.eq(holder),
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(),
+            earnedCaptor.capture(),
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any());
+    assertEquals(GAME_DATE, earnedCaptor.getValue());
   }
 }
