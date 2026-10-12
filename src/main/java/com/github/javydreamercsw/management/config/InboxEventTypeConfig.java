@@ -90,6 +90,11 @@ public class InboxEventTypeConfig {
   }
 
   @Bean
+  public InboxEventType rivalryPurged() {
+    return new InboxEventType("RIVALRY_PURGED", "Rivalries Purged");
+  }
+
+  @Bean
   public InboxEventType rivalryContinues() {
     return new InboxEventType("RIVALRY_CONTINUES", "Rivalry Continues");
   }

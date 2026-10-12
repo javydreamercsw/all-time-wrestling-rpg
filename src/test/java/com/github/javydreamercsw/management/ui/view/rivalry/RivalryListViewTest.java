@@ -28,6 +28,8 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
+import com.github.javydreamercsw.management.dto.rivalry.RivalryDTO;
 import com.github.javydreamercsw.management.mapper.RivalryMapper;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -35,6 +37,7 @@ import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.data.provider.Query;
 import java.util.Collections;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -56,9 +59,10 @@ class RivalryListViewTest extends AbstractViewTest {
   @BeforeEach
   void setup() {
     doReturn(Collections.emptyList()).when(wrestlerService).getAllWrestlers();
-    when(rivalryService.getAllRivalriesWithWrestlers(any(Pageable.class), any()))
+    // Grouped view (ATW-8nc8): the grid fetches representative-per-pair rows.
+    when(rivalryService.getRepresentativeRivalriesWithWrestlers(any(Pageable.class), any()))
         .thenReturn(Page.empty());
-    when(rivalryService.getAllRivalriesWithWrestlers(any(Pageable.class), isNull()))
+    when(rivalryService.getRepresentativeRivalriesWithWrestlers(any(Pageable.class), isNull()))
         .thenReturn(Page.empty());
     when(rivalryService.getRivalryMapper()).thenReturn(rivalryMapper);
 
@@ -85,12 +89,12 @@ class RivalryListViewTest extends AbstractViewTest {
     // Fetching from the provider exercises the grid's items callback directly —
     // refreshAll() alone does not pull pages without an attached UI render.
     view.rivalryGrid.getDataProvider().fetch(new Query<>());
-    verify(rivalryService).getAllRivalriesWithWrestlers(any(Pageable.class), any());
+    verify(rivalryService).getRepresentativeRivalriesWithWrestlers(any(Pageable.class), any());
 
     // ALL -> null tri-state.
     view.statusFilter.setValue(RivalryListView.RivalryStatusFilter.ALL);
     view.rivalryGrid.getDataProvider().fetch(new Query<>());
-    verify(rivalryService).getAllRivalriesWithWrestlers(any(Pageable.class), isNull());
+    verify(rivalryService).getRepresentativeRivalriesWithWrestlers(any(Pageable.class), isNull());
 
     // ENDED -> isActive=false. Setting the value also fires the value-change
     // listener (codecov gap) and exercises the ENDED label arm.
@@ -101,7 +105,7 @@ class RivalryListViewTest extends AbstractViewTest {
     view.rivalryGrid.getDataProvider().fetch(new Query<>());
     ArgumentCaptor<Boolean> active = ArgumentCaptor.forClass(Boolean.class);
     verify(rivalryService, times(3))
-        .getAllRivalriesWithWrestlers(any(Pageable.class), active.capture());
+        .getRepresentativeRivalriesWithWrestlers(any(Pageable.class), active.capture());
     assertEquals(Boolean.FALSE, active.getValue());
   }
 
@@ -114,5 +118,26 @@ class RivalryListViewTest extends AbstractViewTest {
     view.deleteRivalry(731L);
 
     verify(rivalryService).deleteRivalry(731L);
+  }
+
+  @Test
+  @DisplayName("Pair history details load every cycle for the pair (ATW-8nc8)")
+  void pairHistoryDetails_loadAllCyclesForPair() {
+    WrestlerDTO w1 = new WrestlerDTO();
+    w1.setId(2L);
+    w1.setName("Wrestler A");
+    WrestlerDTO w2 = new WrestlerDTO();
+    w2.setId(5L);
+    w2.setName("Wrestler B");
+    RivalryDTO rep = new RivalryDTO();
+    rep.setId(9L);
+    rep.setWrestler1(w1);
+    rep.setWrestler2(w2);
+
+    when(rivalryService.getRivalryHistoryBetween(2L, 5L)).thenReturn(List.of());
+
+    view.pairHistoryDetailsForTest(rep);
+
+    verify(rivalryService).getRivalryHistoryBetween(2L, 5L);
   }
 }

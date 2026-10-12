@@ -72,6 +72,12 @@ public class GameSettingService {
   /** Days to retain inbox items before automatic purge. -1 disables the purge. */
   public static final String INBOX_RETENTION_DAYS_KEY = "inbox.retention.days";
 
+  /**
+   * Days an ENDED rivalry is kept before the nightly retention purge removes it. 0 (default) = keep
+   * forever — differs from the inbox retention's disable convention (there -1 disables).
+   */
+  public static final String RIVALRY_RETENTION_DAYS_KEY = "rivalry.retention.days";
+
   /** Maximum number of PLEs a feud script can appear at (1–3). */
   public static final String MAX_PLE_FEUD_APPEARANCES_KEY = "feud.script.max_ple_appearances";
 
@@ -519,6 +525,21 @@ public class GameSettingService {
   @Transactional
   public void setInboxRetentionDays(final int days) {
     saveInternal(INBOX_RETENTION_DAYS_KEY, String.valueOf(days));
+  }
+
+  /**
+   * Returns the ended-rivalry retention window in days for the nightly purge. 0 means ended
+   * rivalries are kept forever (purge disabled). Default: 0.
+   */
+  @PreAuthorize("permitAll()")
+  public int getRivalryRetentionDays() {
+    return resolveValue(RIVALRY_RETENTION_DAYS_KEY).map(Integer::parseInt).orElse(0);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public void setRivalryRetentionDays(final int days) {
+    saveInternal(RIVALRY_RETENTION_DAYS_KEY, String.valueOf(days));
   }
 
   // ── Generic access (used by AiSettingsService and other consumers) ────────
