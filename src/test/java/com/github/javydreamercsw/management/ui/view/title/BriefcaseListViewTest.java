@@ -33,15 +33,18 @@ import com.github.javydreamercsw.management.domain.title.TitleOpportunityStatus;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import java.time.LocalDate;
 import java.util.List;
@@ -49,7 +52,10 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 
 /** ATW-jpki: the briefcase CRUD management view. */
 class BriefcaseListViewTest extends AbstractViewTest {
@@ -59,7 +65,7 @@ class BriefcaseListViewTest extends AbstractViewTest {
 
   @Mock private WrestlerRepository wrestlerRepository;
 
-  @Mock private com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
+  @Mock private GameSettingService gameSettingService;
   @Mock private SecurityUtils securityUtils;
   @Mock private ImageStorageService imageStorageService;
 
@@ -205,16 +211,16 @@ class BriefcaseListViewTest extends AbstractViewTest {
 
   private BriefcaseFormDialog openCreateDialog() {
     when(gameSettingService.getCurrentGameDate()).thenReturn(GAME_DATE);
-    org.mockito.Mockito.lenient()
+    Mockito.lenient()
         .when(
             titleOpportunityService.adminCreate(
-                org.mockito.ArgumentMatchers.anyString(),
-                org.mockito.ArgumentMatchers.any(Wrestler.class),
-                org.mockito.ArgumentMatchers.any(),
-                org.mockito.ArgumentMatchers.any(),
-                org.mockito.ArgumentMatchers.any(LocalDate.class),
-                org.mockito.ArgumentMatchers.any(),
-                org.mockito.ArgumentMatchers.any()))
+                ArgumentMatchers.anyString(),
+                ArgumentMatchers.any(Wrestler.class),
+                ArgumentMatchers.any(),
+                ArgumentMatchers.any(),
+                ArgumentMatchers.any(LocalDate.class),
+                ArgumentMatchers.any(),
+                ArgumentMatchers.any()))
         .thenReturn(held);
     Button newBtn =
         _find(view, Button.class).stream()
@@ -239,29 +245,20 @@ class BriefcaseListViewTest extends AbstractViewTest {
   void createDialog_untouchedEarned_savesGameDate() {
     BriefcaseFormDialog dialog = openCreateDialog();
 
-    _get(
-            dialog,
-            com.vaadin.flow.component.textfield.TextField.class,
-            spec -> spec.withLabel("Name"))
-        .setValue("New case");
-    _get(
-            dialog,
-            com.vaadin.flow.component.combobox.ComboBox.class,
-            spec -> spec.withLabel("Holder"))
-        .setValue(holder);
+    _get(dialog, TextField.class, spec -> spec.withLabel("Name")).setValue("New case");
+    _get(dialog, ComboBox.class, spec -> spec.withLabel("Holder")).setValue(holder);
     _get(dialog, Button.class, spec -> spec.withId("briefcase-save")).click();
 
-    org.mockito.ArgumentCaptor<LocalDate> earnedCaptor =
-        org.mockito.ArgumentCaptor.forClass(LocalDate.class);
+    ArgumentCaptor<LocalDate> earnedCaptor = ArgumentCaptor.forClass(LocalDate.class);
     verify(titleOpportunityService)
         .adminCreate(
-            org.mockito.ArgumentMatchers.eq("New case"),
-            org.mockito.ArgumentMatchers.eq(holder),
-            org.mockito.ArgumentMatchers.any(),
-            org.mockito.ArgumentMatchers.any(),
+            ArgumentMatchers.eq("New case"),
+            ArgumentMatchers.eq(holder),
+            ArgumentMatchers.any(),
+            ArgumentMatchers.any(),
             earnedCaptor.capture(),
-            org.mockito.ArgumentMatchers.any(),
-            org.mockito.ArgumentMatchers.any());
+            ArgumentMatchers.any(),
+            ArgumentMatchers.any());
     assertEquals(GAME_DATE, earnedCaptor.getValue());
   }
 }
