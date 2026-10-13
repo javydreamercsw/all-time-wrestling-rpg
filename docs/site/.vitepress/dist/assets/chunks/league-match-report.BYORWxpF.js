@@ -1,1 +1,0 @@
-var e=`/screenshots/league-match-report.png`;export{e as t};

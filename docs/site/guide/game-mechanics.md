@@ -42,6 +42,46 @@ Mark any match as a #1 Contender Match to put the next title shot on the line. T
 
 ---
 
+## Tournament Bracket
+
+The full projected 4-round bracket (Round 1 through Quarter-Final, Semi-Final and Final): connector lines between rounds, decided winners advancing (replacing 'Winner of Match N' placeholders), losers struck through, and Fit/100% zoom controls.
+
+![Tournament Bracket](/screenshots/mechanic-tournament-bracket.png)
+
+---
+
+## Money in the Bank Briefcase
+
+A briefcase-deciding tournament (like the annual Time Vault) pays off with a cashable briefcase instead of a championship: the detail view shows the payoff mode and the winner's briefcase status (held with its cashable-until date, cashed in, or expired).
+
+![Money in the Bank Briefcase](/screenshots/mechanic-briefcase-tournament.png)
+
+---
+
+## Cash In the Briefcase
+
+The holder's career view shows the held briefcase with its expiry and a Cash In action: pick any active championship with a reigning champion and a show, and the title match books on the spot. The briefcase is spent whether the match is won or lost.
+
+![Cash In the Briefcase](/screenshots/mechanic-briefcase-cash-in.png)
+
+---
+
+## Briefcase on the Wrestler Profile
+
+The wrestler profile carries the same Briefcase panel — held case, cashable-until date, and the Cash In action — next to Championships, so the prize is visible without leaving the profile. The Career Dashboard link in the hero section leads to the full career history.
+
+![Briefcase on the Wrestler Profile](/screenshots/mechanic-briefcase-profile.png)
+
+---
+
+## Briefcase Management
+
+Bookers manage the Money in the Bank-style briefcases from the Entities menu: every case with its holder, division, status and cashable-until date. Live (HELD) cases can be edited — rename, override the expiry, upload artwork — or voided (a manual cancel that keeps the row as history). Cashed-in and expired rows are read-only history.
+
+![Briefcase Management](/screenshots/mechanic-briefcase-crud.png)
+
+---
+
 ## Cards
 
 The heart of the ATW RPG battle system. Each card represents a move (Strike, Grapple, Aerial, Throw) with specific health and stamina costs and damage effects.

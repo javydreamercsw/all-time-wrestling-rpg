@@ -1,0 +1,1 @@
+var e=`/all-time-wrestling-rpg/screenshots/league-draft-room.png`;export{e as t};

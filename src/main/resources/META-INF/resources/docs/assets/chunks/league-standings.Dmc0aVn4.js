@@ -1,0 +1,1 @@
+var e=`/atw-rpg/docs/screenshots/league-standings.png`;export{e as t};

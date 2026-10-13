@@ -1,0 +1,1 @@
+var e=`/all-time-wrestling-rpg/screenshots/booker-story-arc-wizard.png`,t=`/all-time-wrestling-rpg/screenshots/booker-story-arc-add-beat.png`,n=`/all-time-wrestling-rpg/screenshots/booker-story-arc-beats.png`,r=`/all-time-wrestling-rpg/screenshots/booker-story-arc-card.png`;export{e as i,n,t as r,r as t};

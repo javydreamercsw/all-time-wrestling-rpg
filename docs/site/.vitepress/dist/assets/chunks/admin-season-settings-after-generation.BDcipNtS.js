@@ -1,1 +1,0 @@
-var e=`/screenshots/admin-season-settings-after-generation.png`;export{e as t};

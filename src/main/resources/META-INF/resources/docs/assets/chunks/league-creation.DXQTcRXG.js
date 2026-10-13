@@ -1,0 +1,1 @@
+var e=`/atw-rpg/docs/screenshots/league-creation.png`;export{e as t};

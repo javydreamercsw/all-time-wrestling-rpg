@@ -1,1 +1,0 @@
-var e=`/screenshots/admin-wrestler-list.png`;export{e as t};

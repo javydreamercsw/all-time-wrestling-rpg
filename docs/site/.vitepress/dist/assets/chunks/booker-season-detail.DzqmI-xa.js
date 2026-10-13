@@ -1,0 +1,1 @@
+var e=`/all-time-wrestling-rpg/screenshots/booker-season-list.png`,t=`/all-time-wrestling-rpg/screenshots/booker-season-detail.png`;export{e as n,t};

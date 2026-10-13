@@ -1,1 +1,0 @@
-var e=`/atw-rpg/docs/screenshots/admin-ai-settings.png`,t=`/atw-rpg/docs/screenshots/admin-expansion-management.png`;export{e as n,t};

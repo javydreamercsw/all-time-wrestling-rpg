@@ -1,0 +1,1 @@
+var e=`/all-time-wrestling-rpg/screenshots/dashboard-rankings.png`;export{e as t};

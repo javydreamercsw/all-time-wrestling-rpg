@@ -1,0 +1,1 @@
+var e=`/atw-rpg/docs/screenshots/admin-gm-dashboard.png`;export{e as t};
