@@ -59,20 +59,22 @@ public class LoginView extends VerticalLayout implements BeforeEnterObserver {
     setAlignItems(Alignment.CENTER);
     setJustifyContentMode(JustifyContentMode.CENTER);
 
-    // Create login form with custom i18n
-    LoginI18n i18n = LoginI18n.createDefault();
+    // Create login form with custom i18n (unset properties fall back to component defaults)
+    LoginI18n i18n = new LoginI18n();
     i18n.setHeader(new LoginI18n.Header());
     i18n.getHeader().setTitle("All Time Wrestling RPG");
     i18n.getHeader().setDescription("Wrestling Promotion Management System");
 
-    LoginI18n.Form i18nForm = i18n.getForm();
+    LoginI18n.Form i18nForm = new LoginI18n.Form();
+    i18n.setForm(i18nForm);
     i18nForm.setTitle("");
     i18nForm.setUsername("Username");
     i18nForm.setPassword("Password");
     i18nForm.setSubmit("Sign In");
     i18nForm.setForgotPassword("Forgot password?");
 
-    LoginI18n.ErrorMessage i18nError = i18n.getErrorMessage();
+    LoginI18n.ErrorMessage i18nError = new LoginI18n.ErrorMessage();
+    i18n.setErrorMessage(i18nError);
     i18nError.setTitle("Login Failed");
     i18nError.setMessage(
         """

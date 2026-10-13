@@ -399,7 +399,7 @@ public class ChallengeListView extends VerticalLayout {
                 Button rulesBtn =
                     new Button(
                         challenge.getMatchType(),
-                        new Icon(VaadinIcon.INFO_CIRCLE_O),
+                        new Icon(VaadinIcon.INFO_CIRCLE),
                         e -> new MatchInfoDialog(null, List.of(rule)).open());
                 rulesBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
                 content.add(rulesBtn);

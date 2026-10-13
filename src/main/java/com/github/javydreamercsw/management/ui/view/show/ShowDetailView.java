@@ -1468,7 +1468,7 @@ public class ShowDetailView extends Main
     qrButton.setVisible(isMatch);
     qrButton.addClickListener(e -> new QrCodeDialog(segment.getId()).open());
 
-    Button infoButton = new Button(new Icon(VaadinIcon.INFO_CIRCLE_O));
+    Button infoButton = new Button(new Icon(VaadinIcon.INFO_CIRCLE));
     infoButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     infoButton.setTooltipText("How to Play");
     infoButton.setId("match-info-button-" + segment.getId());

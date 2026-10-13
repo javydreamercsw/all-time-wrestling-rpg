@@ -354,7 +354,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         segment.getSegmentType() != null && segment.getSegmentType().getGuide() != null;
     boolean hasRuleGuide = segment.getSegmentRules().stream().anyMatch(r -> r.getGuide() != null);
     if (hasTypeGuide || hasRuleGuide) {
-      Button howToPlayButton = new Button("How to Play", new Icon(VaadinIcon.INFO_CIRCLE_O));
+      Button howToPlayButton = new Button("How to Play", new Icon(VaadinIcon.INFO_CIRCLE));
       howToPlayButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
       howToPlayButton.setId("how-to-play-button");
       howToPlayButton.addClickListener(
