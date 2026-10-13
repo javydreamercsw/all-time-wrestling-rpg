@@ -23,6 +23,8 @@ import com.github.javydreamercsw.management.domain.deck.DeckCard;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
+import com.github.javydreamercsw.management.domain.title.TitleOpportunity;
+import com.github.javydreamercsw.management.domain.title.TitleOpportunityRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseMembership;
 import com.github.javydreamercsw.management.domain.universe.UniverseMembershipRepository;
@@ -56,6 +58,7 @@ public class PermissionService {
   private final AccountRepository accountRepository;
   private final DeckRepository deckRepository;
   private final UniverseMembershipRepository universeMembershipRepository;
+  private final TitleOpportunityRepository titleOpportunityRepository;
 
   /**
    * Checks if the currently authenticated user owns the target domain object.
@@ -140,6 +143,17 @@ public class PermissionService {
           .orElse(false);
     }
 
+    // A briefcase belongs to its holder: owning the holder's wrestler owns the case
+    // (player-dashboard cash-in, ATW-3fhh).
+    if (targetDomainObject instanceof TitleOpportunity titleOpportunity) {
+      Wrestler holder = titleOpportunity.getWrestler();
+      if (holder == null) {
+        return false;
+      }
+      Long holderId = holder.getId();
+      return holderId != null && ownedWrestlerIds.contains(holderId);
+    }
+
     if (targetDomainObject instanceof InboxItem inboxItem) {
       Long accountId =
           accountRepository
@@ -194,6 +208,10 @@ public class PermissionService {
 
     if ("Deck".equals(targetType)) {
       return deckRepository.findById(targetId).map(this::isOwner).orElse(false);
+    }
+
+    if ("TitleOpportunity".equals(targetType)) {
+      return titleOpportunityRepository.findById(targetId).map(this::isOwner).orElse(false);
     }
 
     return false;

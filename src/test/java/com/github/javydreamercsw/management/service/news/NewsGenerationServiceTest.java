@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.news;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -43,6 +44,7 @@ import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -65,6 +67,7 @@ class NewsGenerationServiceTest {
   private WrestlerRepository wrestlerRepository;
   private NpcRepository npcRepository;
   private TitleReignRepository titleReignRepository;
+  private TitleOpportunityService titleOpportunityService;
 
   @BeforeEach
   public void setUp() {
@@ -79,6 +82,7 @@ class NewsGenerationServiceTest {
     npcRepository = mock(NpcRepository.class);
     titleReignRepository = mock(TitleReignRepository.class);
     objectMapper = new ObjectMapper();
+    titleOpportunityService = mock(TitleOpportunityService.class);
     newsGenerationService =
         new NewsGenerationService(
             newsService,
@@ -90,7 +94,8 @@ class NewsGenerationServiceTest {
             aggregationService,
             wrestlerRepository,
             npcRepository,
-            titleReignRepository);
+            titleReignRepository,
+            titleOpportunityService);
 
     when(aiFactory.getBestAvailableService()).thenReturn(aiService);
     when(aiService.isAvailable()).thenReturn(true);
@@ -513,5 +518,72 @@ class NewsGenerationServiceTest {
     verify(aiService, times(0)).generateText(anyString());
     verify(newsService, times(0))
         .createNewsItem(anyString(), anyString(), any(), anyBoolean(), anyInt());
+  }
+
+  @Test
+  void testBriefcaseHolder_promptIncludesBriefcaseContext() {
+    // ATW-brrz: a segment participant holding a briefcase gets a Briefcase context line in
+    // the AI news prompt so the narration can acknowledge the win.
+    Wrestler holder = Wrestler.builder().name("Mukundi Shumba").id(8L).build();
+    Wrestler loser = Wrestler.builder().name("Loser").id(9L).build();
+
+    Show show = new Show();
+    show.setName("Test Show");
+    SegmentType type = new SegmentType();
+    type.setName("One on One");
+
+    Segment segment = new Segment();
+    segment.setShow(show);
+    segment.setSegmentType(type);
+    segment.addParticipant(holder);
+    segment.addParticipant(loser);
+    segment.setWinners(List.of(holder));
+    segment.setIsTitleSegment(false);
+
+    when(titleOpportunityService.heldBriefcaseContextOf(8L))
+        .thenReturn(
+            "Time Vault briefcase — cashable against any reigning champion until 2027-10-08");
+    when(titleOpportunityService.heldBriefcaseContextOf(9L)).thenReturn(null);
+
+    StringBuilder prompt = new StringBuilder();
+    when(aiService.generateText(anyString()))
+        .thenAnswer(
+            inv -> {
+              prompt.append((String) inv.getArgument(0));
+              return "{\"headline\": \"H\", \"content\": \"C\", \"category\": \"BREAKING\", "
+                  + "\"isRumor\": false, \"importance\": 3}";
+            });
+
+    newsGenerationService.generateNewsForSegment(segment);
+
+    String sent = prompt.toString();
+    assertThat(sent).contains("Briefcase: Time Vault briefcase");
+  }
+
+  @Test
+  void testBriefcaseServiceThrows_promptStillGenerated() {
+    // Never-fail contract: a context failure must not break news generation.
+    Wrestler holder = Wrestler.builder().name("Holder").id(8L).build();
+    Show show = new Show();
+    SegmentType type = new SegmentType();
+    type.setName("Match");
+
+    Segment segment = new Segment();
+    segment.setShow(show);
+    segment.setSegmentType(type);
+    segment.addParticipant(holder);
+    segment.setWinners(List.of(holder));
+    segment.setIsTitleSegment(false);
+
+    when(titleOpportunityService.heldBriefcaseContextOf(8L))
+        .thenThrow(new IllegalStateException("boom"));
+    when(aiService.generateText(anyString()))
+        .thenReturn(
+            "{\"headline\": \"H\", \"content\": \"C\", \"category\": \"BREAKING\", "
+                + "\"isRumor\": false, \"importance\": 3}");
+
+    newsGenerationService.generateNewsForSegment(segment);
+
+    verify(newsService, times(1)).createNewsItem(eq("H"), eq("C"), any(), eq(false), eq(3));
   }
 }

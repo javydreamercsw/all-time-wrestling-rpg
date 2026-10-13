@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.ui.view.match;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._click;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._find;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -54,6 +55,8 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleOpportunity;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerAbilityRepository;
@@ -72,6 +75,7 @@ import com.github.javydreamercsw.management.service.segment.NarrationParserServi
 import com.github.javydreamercsw.management.service.segment.PromoService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.team.TeamService;
+import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.title.TitleScriptService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.AbilityReminderTextService;
@@ -82,6 +86,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
@@ -1190,5 +1195,201 @@ class MatchViewTest extends AbstractViewTest {
     segmentType.setCode(typeName.toLowerCase().replace(' ', '_').replace('-', '_'));
     segment.setSegmentType(segmentType);
     return segment;
+  }
+
+  // ── Briefcase run-in trigger (ATW-qsm9) ───────────────────────────────────
+
+  @Mock private TitleOpportunityService titleOpportunityService;
+
+  private void injectTitleOpportunityService() {
+    ReflectionTestUtils.setField(matchView, "titleOpportunityService", titleOpportunityService);
+  }
+
+  @Test
+  void runInTrigger_notOffered_whenNoTitleOnTheLine() {
+    injectTitleOpportunityService();
+    Segment segment = buildMinimalMatchSegment(31L, "One on One");
+    // No titles attached: the trigger never offers, even with half-HP reached.
+    Wrestler w = new Wrestler();
+    w.setId(10L);
+    w.setName("Wrestler");
+    w.setStartingHealth(20);
+    SegmentParticipant p = new SegmentParticipant();
+    p.setSegment(segment);
+    p.setWrestler(w);
+    p.setFinalHealth(5); // half HP reached
+    segment.getParticipants().add(p);
+
+    when(securityUtils.isBooker()).thenReturn(true);
+    lenient().when(securityUtils.isAdmin()).thenReturn(false);
+    lenient().when(titleOpportunityService.findHeld()).thenThrow(AssertionError.class);
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "31"));
+    when(segmentService.findByIdWithDetails(31L)).thenReturn(Optional.of(segment));
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    // Invoke the private trigger directly: a non-title segment must bail out before any
+    // HELD-case lookup.
+    boolean booked =
+        ReflectionTestUtils.invokeMethod(matchView, "maybeOfferBriefcaseRunIn", (Object[]) null);
+    assertThat(booked).isFalse();
+    verify(titleOpportunityService, never()).findHeld();
+  }
+
+  @Test
+  void runInTrigger_notOffered_whenHealthAboveHalf() {
+    injectTitleOpportunityService();
+    Segment segment = buildMinimalMatchSegment(32L, "One on One");
+    Title worldTitle = new Title();
+    worldTitle.setId(11L);
+    worldTitle.setName("ATW World");
+    segment.setIsTitleSegment(true);
+    segment.setTitles(new HashSet<>(List.of(worldTitle)));
+
+    Wrestler w = new Wrestler();
+    w.setId(10L);
+    w.setName("Wrestler");
+    w.setStartingHealth(20);
+    SegmentParticipant p = new SegmentParticipant();
+    p.setSegment(segment);
+    p.setWrestler(w);
+    p.setFinalHealth(11); // above half: 11*2 = 22 > 20
+    segment.getParticipants().add(p);
+
+    when(securityUtils.isBooker()).thenReturn(true);
+    lenient().when(securityUtils.isAdmin()).thenReturn(false);
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "32"));
+    when(segmentService.findByIdWithDetails(32L)).thenReturn(Optional.of(segment));
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    boolean booked =
+        ReflectionTestUtils.invokeMethod(matchView, "maybeOfferBriefcaseRunIn", (Object[]) null);
+    assertThat(booked).isFalse();
+    verify(titleOpportunityService, never()).findHeld();
+  }
+
+  @Test
+  void runInTrigger_notOffered_forPlayerWithoutBookerRole() {
+    injectTitleOpportunityService();
+    Segment segment = buildMinimalMatchSegment(33L, "One on One");
+    Title worldTitle = new Title();
+    worldTitle.setId(11L);
+    worldTitle.setName("ATW World");
+    segment.setIsTitleSegment(true);
+    segment.setTitles(new HashSet<>(List.of(worldTitle)));
+
+    Wrestler w = new Wrestler();
+    w.setId(10L);
+    w.setName("Wrestler");
+    w.setStartingHealth(20);
+    SegmentParticipant p = new SegmentParticipant();
+    p.setSegment(segment);
+    p.setWrestler(w);
+    p.setFinalHealth(5); // half HP reached
+    segment.getParticipants().add(p);
+
+    when(securityUtils.isBooker()).thenReturn(false);
+    lenient().when(securityUtils.isAdmin()).thenReturn(false);
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "33"));
+    when(segmentService.findByIdWithDetails(33L)).thenReturn(Optional.of(segment));
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    boolean booked =
+        ReflectionTestUtils.invokeMethod(matchView, "maybeOfferBriefcaseRunIn", (Object[]) null);
+    assertThat(booked).isFalse();
+    verify(titleOpportunityService, never()).findHeld();
+  }
+
+  @Test
+  void runInTrigger_notOffered_withoutHeldBriefcase() {
+    injectTitleOpportunityService();
+    Segment segment = buildMinimalMatchSegment(34L, "One on One");
+    Title worldTitle = new Title();
+    worldTitle.setId(11L);
+    worldTitle.setName("ATW World");
+    segment.setIsTitleSegment(true);
+    segment.setTitles(new HashSet<>(List.of(worldTitle)));
+
+    Wrestler w = new Wrestler();
+    w.setId(10L);
+    w.setName("Wrestler");
+    w.setStartingHealth(20);
+    SegmentParticipant p = new SegmentParticipant();
+    p.setSegment(segment);
+    p.setWrestler(w);
+    p.setFinalHealth(5); // half HP reached
+    segment.getParticipants().add(p);
+
+    when(securityUtils.isBooker()).thenReturn(true);
+    lenient().when(securityUtils.isAdmin()).thenReturn(false);
+    when(titleOpportunityService.findHeld()).thenReturn(List.of());
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "34"));
+    when(segmentService.findByIdWithDetails(34L)).thenReturn(Optional.of(segment));
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    boolean booked =
+        ReflectionTestUtils.invokeMethod(matchView, "maybeOfferBriefcaseRunIn", (Object[]) null);
+    assertThat(booked).isFalse();
+    verify(titleOpportunityService).findHeld();
+  }
+
+  @Test
+  void runInTrigger_offersDialog_whenHalfHpAndHeldCase() {
+    injectTitleOpportunityService();
+    Segment segment = buildMinimalMatchSegment(35L, "One on One");
+    Title worldTitle = new Title();
+    worldTitle.setId(11L);
+    worldTitle.setName("ATW World");
+    segment.setIsTitleSegment(true);
+    segment.setTitles(new HashSet<>(List.of(worldTitle)));
+
+    Wrestler holder = new Wrestler();
+    holder.setId(10L);
+    holder.setName("Case Holder");
+    holder.setActive(true);
+    holder.setStartingHealth(20);
+    SegmentParticipant p = new SegmentParticipant();
+    p.setSegment(segment);
+    p.setWrestler(holder);
+    p.setFinalHealth(5); // half HP reached: 5*2 <= 20
+    segment.getParticipants().add(p);
+
+    TitleOpportunity opportunity = new TitleOpportunity();
+    opportunity.setId(7L);
+    opportunity.setName("Time Vault briefcase");
+    opportunity.setWrestler(holder);
+
+    when(securityUtils.isBooker()).thenReturn(true);
+    lenient().when(securityUtils.isAdmin()).thenReturn(false);
+    when(titleOpportunityService.findHeld()).thenReturn(List.of(opportunity));
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "35"));
+    when(segmentService.findByIdWithDetails(35L)).thenReturn(Optional.of(segment));
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    boolean booked =
+        ReflectionTestUtils.invokeMethod(matchView, "maybeOfferBriefcaseRunIn", (Object[]) null);
+    // The dialog is offered (async) — the interrupted match still adjudicates normally.
+    assertThat(booked).isFalse();
+    verify(titleOpportunityService).findHeld();
+    // The run-in dialog is present on the UI.
+    List<ConfirmDialog> dialogs = _find(ConfirmDialog.class);
+    assertFalse(
+        dialogs.isEmpty(),
+        "The briefcase run-in confirm dialog must be offered when a title-match participant"
+            + " hits half their starting HP and a HELD case exists");
   }
 }

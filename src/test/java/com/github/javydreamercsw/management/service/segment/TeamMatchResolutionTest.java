@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -128,6 +129,8 @@ class TeamMatchResolutionTest extends ManagementIntegrationTest {
     testShow.setDescription("Test show for team matches");
     testShow.setType(showType);
     testShow.setUniverse(defaultUniverse);
+    // GameClock anchors segment dates to the show's in-game date (ATW-07hw); give the fixture one.
+    testShow.setShowDate(LocalDate.now().minusDays(1));
     testShow = showRepository.save(testShow);
   }
 

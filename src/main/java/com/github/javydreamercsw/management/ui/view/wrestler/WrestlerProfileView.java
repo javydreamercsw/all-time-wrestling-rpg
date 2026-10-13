@@ -52,16 +52,13 @@ import com.github.javydreamercsw.management.service.relationship.WrestlerRelatio
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
+import com.github.javydreamercsw.management.service.show.ShowFacade;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
-import com.github.javydreamercsw.management.ui.component.AlignmentTrackComponent;
-import com.github.javydreamercsw.management.ui.component.HistoryTimelineComponent;
-import com.github.javydreamercsw.management.ui.component.ReignCardComponent;
-import com.github.javydreamercsw.management.ui.component.StatusBar;
-import com.github.javydreamercsw.management.ui.component.WrestlerAbilityPanel;
-import com.github.javydreamercsw.management.ui.component.WrestlerActionMenu;
+import com.github.javydreamercsw.management.ui.component.*;
 import com.vaadin.flow.component.accordion.Accordion;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -133,6 +130,8 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private final WrestlerStateRepository wrestlerStateRepository;
   private final WrestlerAbilityRepository wrestlerAbilityRepository;
   private final AlignmentService alignmentService;
+  private final WrestlerFacade wrestlerFacade;
+  private final ShowFacade showFacade;
 
   private Wrestler wrestler;
   private Season selectedSeason; // To store the selected season for filtering
@@ -150,6 +149,7 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
   private final VerticalLayout statsLayout = new VerticalLayout();
   private final VerticalLayout statusesLayout = new VerticalLayout();
   private final VerticalLayout titleHistoryLayout = new VerticalLayout();
+  private final VerticalLayout briefcaseLayout = new VerticalLayout();
   private final VerticalLayout recentMatchesLayout = new VerticalLayout();
   private final VerticalLayout injuriesLayout = new VerticalLayout();
   private final VerticalLayout feudHistoryLayout = new VerticalLayout();
@@ -181,7 +181,9 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       final StatusCardService statusCardService,
       final WrestlerStateRepository wrestlerStateRepository,
       final WrestlerAbilityRepository wrestlerAbilityRepository,
-      final AlignmentService alignmentService) {
+      final AlignmentService alignmentService,
+      final WrestlerFacade wrestlerFacade,
+      final ShowFacade showFacade) {
     this.wrestlerService = wrestlerService;
     this.wrestlerStatsService = wrestlerStatsService;
     this.wrestlerRepository = wrestlerRepository;
@@ -204,6 +206,8 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     this.wrestlerStateRepository = wrestlerStateRepository;
     this.wrestlerAbilityRepository = wrestlerAbilityRepository;
     this.alignmentService = alignmentService;
+    this.wrestlerFacade = wrestlerFacade;
+    this.showFacade = showFacade;
     wrestlerName.setId("wrestler-name");
     wrestlerImage.setAlt("Wrestler Image");
     wrestlerImage.setId("wrestler-image");
@@ -257,6 +261,11 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     secondaryInfoAccordion.add("Stats", statsLayout);
     secondaryInfoAccordion.add("Status Cards", statusesLayout);
     secondaryInfoAccordion.add("Championships", titleHistoryLayout);
+    // ATW-312z: the Money in the Bank-style briefcase surfaces here too — held case with its
+    // Cash In action and the CASHED_IN/EXPIRED history, same shared component as the career view.
+    // Content populates in updateView() where the wrestler is known.
+    briefcaseLayout.setPadding(false);
+    secondaryInfoAccordion.add("Briefcase", briefcaseLayout);
     secondaryInfoAccordion.add("Medical Record", injuriesLayout);
 
     // Match Logs Section
@@ -283,10 +292,10 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
     secondaryInfoAccordion.add("Rivalry History", feudHistoryLayout);
     secondaryInfoAccordion.add("Abilities", abilitiesLayout);
 
-    // Land on the content people visit this page for: Stats (0) and Match Logs (4).
+    // Land on the content people visit this page for: Stats (0) and Match Logs (5).
     // Accordion permits one open panel; Match Logs wins since Stats are also shown
     // in the hero card on desktop.
-    secondaryInfoAccordion.open(4);
+    secondaryInfoAccordion.open(5);
 
     // Configure Grid
     recentMatchesGrid.removeAllColumns();
@@ -344,8 +353,15 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
 
   private void updateView() {
     if (wrestler != null && wrestler.getId() != null) {
+      updateViewForTest(wrestler);
+    }
+  }
+
+  /** Visible-for-testing entry so unit tests drive the same refresh path as beforeEnter. */
+  void updateViewForTest(Wrestler target) {
+    if (target != null && target.getId() != null) {
       // Re-fetch to ensure we have the latest state (e.g., after status changes)
-      wrestlerService.findByIdWithDetails(wrestler.getId()).ifPresent(w -> wrestler = w);
+      wrestler = wrestlerService.findByIdWithDetails(target.getId()).orElse(target);
       Long universeId = universeContextService.getCurrentUniverseId();
       WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), universeId);
 
@@ -402,13 +418,29 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
         statsLayout.add(new Paragraph("Stats not available."));
       }
 
+      // ATW-312z: the career-dashboard link lives in the always-visible hero column — burying it
+      // inside a collapsed accordion panel made the career page undiscoverable.
+      heroDetailsColumn
+          .getChildren()
+          .filter(c -> c instanceof RouterLink)
+          .forEach(heroDetailsColumn::remove);
       RouterLink careerLink =
           new RouterLink(
               "View Career Dashboard →",
               WrestlerCareerView.class,
               new RouteParameters("wrestlerId", wrestler.getId().toString()));
       careerLink.addClassNames(LumoUtility.FontSize.SMALL, LumoUtility.FontWeight.SEMIBOLD);
-      statsLayout.add(careerLink);
+      heroDetailsColumn.add(careerLink);
+
+      // ATW-312z: same shared briefcase section the career view renders.
+      briefcaseLayout.removeAll();
+      briefcaseLayout.add(
+          new BriefcaseSection(
+              wrestler.getId(),
+              wrestlerFacade.getTitleOpportunityService(),
+              wrestlerFacade.getTitleService(),
+              showFacade.getShowService(),
+              () -> updateViewForTest(wrestler)));
 
       universeContextService
           .getCurrentUniverse()

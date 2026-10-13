@@ -35,6 +35,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.tournament.TournamentMatchRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.SegmentDTO;
 import com.github.javydreamercsw.management.service.GameSettingService;
@@ -79,6 +80,7 @@ public class SegmentService {
   private final InboxService inboxService;
   private final NewsGenerationService newsGenerationService;
   private final InboxEventType matchRequestEventType;
+  private final TournamentMatchRepository tournamentMatchRepository;
 
   @PersistenceContext private EntityManager entityManager;
 
@@ -95,7 +97,8 @@ public class SegmentService {
       final MatchFulfillmentRepository matchFulfillmentRepository,
       final InboxService inboxService,
       final NewsGenerationService newsGenerationService,
-      @Qualifier("MATCH_REQUEST") final InboxEventType matchRequestEventType) {
+      @Qualifier("MATCH_REQUEST") final InboxEventType matchRequestEventType,
+      final TournamentMatchRepository tournamentMatchRepository) {
     this.segmentRepository = segmentRepository;
     this.titleRepository = titleRepository;
     this.wrestlerService = wrestlerService;
@@ -108,6 +111,7 @@ public class SegmentService {
     this.inboxService = inboxService;
     this.newsGenerationService = newsGenerationService;
     this.matchRequestEventType = matchRequestEventType;
+    this.tournamentMatchRepository = tournamentMatchRepository;
   }
 
   /**
@@ -538,6 +542,17 @@ public class SegmentService {
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public void deleteSegment(@NonNull final Long id) {
+    // Unlink any tournament bracket match booked onto this segment first: its FK is NO ACTION,
+    // and the deletion is an unbooking — the match returns to the bracket as open and can be
+    // re-booked on a later show.
+    tournamentMatchRepository
+        .findBySegmentId(id)
+        .ifPresent(
+            match -> {
+              match.setSegment(null);
+              tournamentMatchRepository.save(match);
+              log.info("Unbooked tournament match {} from deleted segment {}", match.getId(), id);
+            });
     segmentRepository.deleteById(id);
     log.info("Deleted match with ID: {}", id);
   }
@@ -655,7 +670,16 @@ public class SegmentService {
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public void addParticipant(@NonNull final Segment segment, @NonNull final Wrestler wrestler) {
-    segment.addParticipant(wrestler);
+    addParticipant(segment, wrestler, 1);
+  }
+
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  public void addParticipant(
+      @NonNull final Segment segment,
+      @NonNull final Wrestler wrestler,
+      @NonNull final Integer teamNumber) {
+    segment.addParticipant(wrestler, teamNumber);
     segmentRepository.save(segment);
 
     Show show = segment.getShow();

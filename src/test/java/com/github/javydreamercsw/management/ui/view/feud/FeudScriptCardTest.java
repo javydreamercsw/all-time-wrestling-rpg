@@ -318,6 +318,37 @@ class FeudScriptCardTest extends AbstractViewTest {
   }
 
   @Test
+  @DisplayName("Complete dialog: linkless completion calls markBeatComplete")
+  void completeBeatConfirmation_callsService() {
+    FeudScriptBeat pending = beat(1, "Singles Match");
+    script.getBeats().add(pending);
+
+    FeudScriptCard card = newCard(() -> {});
+
+    Button completeBtn = _get(cellButton(card, 0), Button.class, spec -> spec.withText("✓"));
+    _click(completeBtn);
+    _click(_get(_get(Dialog.class), Button.class, spec -> spec.withText("Complete without link")));
+
+    verify(feudScriptService).markBeatComplete(same(script), same(pending));
+  }
+
+  @Test
+  @DisplayName("BOOKED beats offer Complete but not Edit/Skip/Remove")
+  void bookedBeat_offersCompleteOnly() {
+    FeudScriptBeat booked = beat(1, "Singles Match");
+    booked.setBeatStatus(FeudScriptBeatStatus.BOOKED);
+    script.getBeats().add(booked);
+
+    FeudScriptCard card = newCard(() -> {});
+
+    Component actions = cellButton(card, 0);
+    assertTrue(buttonTexts(actions).contains("✓"));
+    assertFalse(buttonTexts(actions).contains("✎"));
+    assertFalse(buttonTexts(actions).contains("Skip"));
+    assertFalse(buttonTexts(actions).contains("✕"));
+  }
+
+  @Test
   @DisplayName("Beat grid lists beats in order")
   void beatGrid_rendersBeats() {
     script.getBeats().add(beat(1, "Singles Match"));

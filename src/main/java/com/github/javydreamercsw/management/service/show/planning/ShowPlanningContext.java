@@ -21,6 +21,7 @@ import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.Data;
 
@@ -36,4 +37,10 @@ public class ShowPlanningContext {
   private Instant showDate;
   private boolean isPremiumLiveEvent;
   private boolean intergenderAllowed;
+
+  /**
+   * Currently held Money in the Bank-style briefcases (ATW-brrz): "holder — briefcase name" lines.
+   * A cash-in or champion-vs-holder angle is a strong proposal candidate.
+   */
+  private List<String> heldBriefcases = new ArrayList<>();
 }

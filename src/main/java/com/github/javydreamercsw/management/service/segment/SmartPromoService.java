@@ -37,10 +37,10 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.segment.promo.PromoHookDTO;
 import com.github.javydreamercsw.management.dto.segment.promo.PromoOutcomeDTO;
 import com.github.javydreamercsw.management.dto.segment.promo.SmartPromoResponseDTO;
+import com.github.javydreamercsw.management.service.GameClock;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.feud.MultiWrestlerFeudService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.NonNull;
@@ -65,6 +65,7 @@ public class SmartPromoService {
   private final SegmentRuleRepository segmentRuleRepository;
   private final RivalryService rivalryService;
   private final MultiWrestlerFeudService feudService;
+  private final GameClock gameClock;
 
   private static final String PROMO_CONTEXT_SYSTEM_PROMPT =
       """
@@ -242,7 +243,8 @@ public class SmartPromoService {
     Segment segment = new Segment();
     segment.setShow(show);
     segment.setSegmentType(promoType);
-    segment.setSegmentDate(Instant.now());
+    // Kayfabe: the promo sits on the campaign show's in-game date, not the wall clock (ATW-07hw).
+    segment.setSegmentDate(gameClock.gameNowOn(show.getShowDate()));
     segment.setNarration(outcome.getFinalNarration());
     segment.setStatus(SegmentStatus.COMPLETED);
     segment.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);

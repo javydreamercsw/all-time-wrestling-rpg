@@ -20,24 +20,27 @@ import static com.vaadin.flow.spring.data.VaadinSpringDataHelpers.toSpringPageRe
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
-import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.rivalry.RivalryDTO;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Main;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
@@ -53,20 +56,35 @@ import lombok.NonNull;
 @PermitAll
 public class RivalryListView extends Main {
 
+  /** Status filter options for the rivalry grid (ATW-aeib): active feuds first by default. */
+  enum RivalryStatusFilter {
+    ACTIVE(Boolean.TRUE),
+    ALL(null),
+    ENDED(Boolean.FALSE);
+
+    private final Boolean isActive;
+
+    RivalryStatusFilter(final Boolean isActive) {
+      this.isActive = isActive;
+    }
+
+    Boolean toIsActive() {
+      return isActive;
+    }
+  }
+
   private final RivalryService rivalryService;
-  private final RivalryRepository rivalryRepository;
   private final WrestlerService wrestlerService;
   private final SecurityUtils securityUtils;
 
   final Grid<RivalryDTO> rivalryGrid;
+  final ComboBox<RivalryStatusFilter> statusFilter;
 
   public RivalryListView(
       @NonNull final RivalryService rivalryService,
-      @NonNull final RivalryRepository rivalryRepository,
       @NonNull final WrestlerService wrestlerService,
       @NonNull final SecurityUtils securityUtils) {
     this.rivalryService = rivalryService;
-    this.rivalryRepository = rivalryRepository;
     this.wrestlerService = wrestlerService;
     this.securityUtils = securityUtils;
 
@@ -76,6 +94,19 @@ public class RivalryListView extends Main {
             .toList();
 
     rivalryGrid = new Grid<>();
+
+    statusFilter = new ComboBox<>("Status");
+    statusFilter.setItems(RivalryStatusFilter.values());
+    statusFilter.setItemLabelGenerator(
+        filter ->
+            switch (filter) {
+              case ACTIVE -> "Active";
+              case ALL -> "All";
+              case ENDED -> "Ended";
+            });
+    statusFilter.setValue(RivalryStatusFilter.ACTIVE);
+    statusFilter.setWidth("140px");
+    statusFilter.addValueChangeListener(e -> rivalryGrid.getDataProvider().refreshAll());
 
     Button newRivalryButton =
         new Button(
@@ -116,12 +147,18 @@ public class RivalryListView extends Main {
     newRivalryButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     newRivalryButton.setVisible(securityUtils.canCreate());
 
+    // Grouped view (ATW-8nc8): one row per wrestler pair — the active rivalry when the pair
+    // has one, otherwise the latest ended cycle. The expander column (last) reveals the pair's
+    // full feud-cycle history.
     rivalryGrid.setItems(
         query ->
             rivalryService
-                .getAllRivalriesWithWrestlers(toSpringPageRequest(query))
+                .getRepresentativeRivalriesWithWrestlers(
+                    toSpringPageRequest(query), statusFilter.getValue().toIsActive())
                 .map(rivalryService.getRivalryMapper()::toRivalryDTO)
                 .stream());
+    // Expandable feud-cycle history per pair (ATW-8nc8); toggled by the chevron column below.
+    rivalryGrid.setItemDetailsRenderer(new ComponentRenderer<>(this::buildPairHistoryDetails));
     rivalryGrid
         .addColumn(rivalry -> rivalry.getWrestler1().getName())
         .setHeader("Wrestler 1")
@@ -185,15 +222,40 @@ public class RivalryListView extends Main {
               deleteButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
               deleteButton.addClickListener(
                   e -> {
-                    rivalryRepository.deleteById(rivalry.getId());
-                    rivalryGrid.getDataProvider().refreshAll();
-                    Notification.show("Rivalry deleted", 2000, Notification.Position.BOTTOM_END)
-                        .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                    // Deletion is permanent — confirm before calling the service (ATW-gaxw): the
+                    // service clears segment references AND evicts the rivalries cache, which the
+                    // old direct-repository delete skipped (deleted rivalries kept appearing in
+                    // show-planning context for the cache TTL).
+                    ConfirmDialog confirm = new ConfirmDialog();
+                    confirm.setHeader("Delete rivalry?");
+                    confirm.setText(
+                        "Permanently delete the rivalry between "
+                            + rivalry.getWrestler1().getName()
+                            + " and "
+                            + rivalry.getWrestler2().getName()
+                            + "? Its heat history and segment links are removed.");
+                    confirm.setConfirmButton("Delete", ev -> deleteRivalry(rivalry.getId()));
+                    confirm.open();
                   });
               deleteButton.setVisible(securityUtils.canDelete());
               return deleteButton;
             })
         .setHeader("Delete");
+
+    // Expander column LAST (ATW-8nc8) so the E2E tests' fixed column indexes (Heat = index 2)
+    // stay stable.
+    rivalryGrid
+        .addComponentColumn(
+            rivalry -> {
+              Button expander = new Button("History");
+              expander.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+              expander.addClickListener(
+                  e ->
+                      rivalryGrid.setDetailsVisible(
+                          rivalry, !Boolean.TRUE.equals(rivalryGrid.isDetailsVisible(rivalry))));
+              return expander;
+            })
+        .setHeader("");
 
     rivalryGrid.addItemClickListener(
         e -> UI.getCurrent().navigate(RivalryDetailView.class, e.getItem().getId()));
@@ -209,12 +271,54 @@ public class RivalryListView extends Main {
         LumoUtility.Gap.SMALL);
 
     if (securityUtils.canCreate()) {
-      add(new ViewToolbar("Rivalry List", ViewToolbar.group(newRivalryButton)));
+      add(new ViewToolbar("Rivalry List", ViewToolbar.group(statusFilter, newRivalryButton)));
     } else {
-      add(new ViewToolbar("Rivalry List"));
+      add(new ViewToolbar("Rivalry List", ViewToolbar.group(statusFilter)));
     }
     Div gridWrapper = new Div(rivalryGrid);
     gridWrapper.addClassName("grid-scroll-container");
     add(gridWrapper);
+  }
+
+  /** Confirmed delete: goes through the service so the rivalries cache is evicted (ATW-gaxw). */
+  void deleteRivalry(Long rivalryId) {
+    rivalryService.deleteRivalry(rivalryId);
+    rivalryGrid.getDataProvider().refreshAll();
+    Notification.show("Rivalry deleted", 2000, Notification.Position.BOTTOM_END)
+        .addThemeVariants(NotificationVariant.LUMO_ERROR);
+  }
+
+  /** Test bridge for the private details builder. */
+  Component pairHistoryDetailsForTest(RivalryDTO rivalry) {
+    return buildPairHistoryDetails(rivalry);
+  }
+
+  /**
+   * The pair's full feud-cycle history (active + ended rows, newest first) for the expandable
+   * details row (ATW-8nc8).
+   */
+  private Component buildPairHistoryDetails(RivalryDTO rivalry) {
+    List<RivalryDTO> history =
+        rivalryService
+            .getRivalryHistoryBetween(
+                rivalry.getWrestler1().getId(), rivalry.getWrestler2().getId())
+            .stream()
+            .map(rivalryService.getRivalryMapper()::toRivalryDTO)
+            .toList();
+    VerticalLayout details = new VerticalLayout();
+    details.setPadding(false);
+    details.setSpacing(false);
+    if (history.size() <= 1) {
+      details.add(new Span("First feud cycle for this pair."));
+      return details;
+    }
+    Grid<RivalryDTO> historyGrid = new Grid<>();
+    historyGrid.addColumn(RivalryDTO::getHeat).setHeader("Heat").setWidth("80px");
+    historyGrid.addColumn(RivalryDTO::getStartedDate).setHeader("Start").setWidth("170px");
+    historyGrid.addColumn(RivalryDTO::getEndedDate).setHeader("End").setWidth("170px");
+    historyGrid.addColumn(RivalryDTO::getStorylineNotes).setHeader("Notes").setFlexGrow(1);
+    historyGrid.setItems(history);
+    details.add(historyGrid);
+    return details;
   }
 }

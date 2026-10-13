@@ -31,6 +31,7 @@ import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.GameClock;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,6 +47,7 @@ class WrestlerRelationshipServiceTest {
   @Mock private WrestlerRelationshipRepository relationshipRepository;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private TeamRepository teamRepository;
+  @Mock private GameClock gameClock;
 
   @InjectMocks private WrestlerRelationshipService relationshipService;
 

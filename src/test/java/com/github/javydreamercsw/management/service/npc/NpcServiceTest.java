@@ -99,6 +99,48 @@ class NpcServiceTest {
   }
 
   @Test
+  void testSave_newNpc_stampsCustom() {
+    Npc newNpc = Npc.builder().name("New Custom Ref").npcType("Referee").build();
+    when(npcRepository.save(newNpc)).thenReturn(newNpc);
+
+    npcService.save(newNpc);
+
+    assertEquals("CUSTOM", newNpc.getExpansionCode());
+  }
+
+  @Test
+  void testSave_newNpc_stampsCustomRegardlessOfExplicitCode() {
+    // save() is the app-facing creation path; explicit non-CUSTOM codes on new rows are
+    // re-stamped. The seed sync saves via saveAll and is unaffected.
+    Npc newNpc = Npc.builder().name("New Seed Npc").expansionCode("RUMBLE").build();
+    when(npcRepository.save(newNpc)).thenReturn(newNpc);
+
+    npcService.save(newNpc);
+
+    assertEquals("CUSTOM", newNpc.getExpansionCode());
+  }
+
+  @Test
+  void testSave_newNpcAlreadyCustom_staysCustom() {
+    Npc newNpc = Npc.builder().name("Already Custom").expansionCode("CUSTOM").build();
+    when(npcRepository.save(newNpc)).thenReturn(newNpc);
+
+    npcService.save(newNpc);
+
+    assertEquals("CUSTOM", newNpc.getExpansionCode());
+  }
+
+  @Test
+  void testSave_existingNpc_preservesExpansionCode() {
+    npc.setExpansionCode("HURT_BUSINESS");
+    when(npcRepository.save(npc)).thenReturn(npc);
+
+    npcService.save(npc);
+
+    assertEquals("HURT_BUSINESS", npc.getExpansionCode());
+  }
+
+  @Test
   void testDelete() {
     npcService.delete(npc);
     verify(npcRepository, times(1)).delete(npc);

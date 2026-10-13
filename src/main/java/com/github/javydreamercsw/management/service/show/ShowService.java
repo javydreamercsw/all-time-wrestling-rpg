@@ -46,6 +46,7 @@ import com.github.javydreamercsw.management.service.gm.GmModeService;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.news.NewsGenerationService;
+import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -95,6 +96,7 @@ public class ShowService {
   private final ArenaRepository arenaRepository;
   private final GmModeService gmModeService;
   private final ShowQualityService showQualityService;
+  private final TournamentService tournamentService;
 
   ShowService(
       final CampaignRepository campaignRepository,
@@ -117,7 +119,8 @@ public class ShowService {
       final SecurityUtils securityUtils,
       final ArenaRepository arenaRepository,
       final GmModeService gmModeService,
-      final ShowQualityService showQualityService) {
+      final ShowQualityService showQualityService,
+      final TournamentService tournamentService) {
     this.campaignRepository = campaignRepository;
     this.showRepository = showRepository;
     this.showTypeRepository = showTypeRepository;
@@ -139,6 +142,7 @@ public class ShowService {
     this.arenaRepository = arenaRepository;
     this.gmModeService = gmModeService;
     this.showQualityService = showQualityService;
+    this.tournamentService = tournamentService;
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -174,7 +178,16 @@ public class ShowService {
           + " or @universeAuthz.hasRoleInCurrentUniverse('BOOKER')")
   public Show save(@NonNull final Show show) {
     show.setCreationDate(clock.instant());
-    return showRepository.saveAndFlush(show);
+    Show saved = showRepository.saveAndFlush(show);
+    // Covers the edit-dialog path too: scheduling a PLE later (or moving its date forward)
+    // attaches the earliest unattached annual edition (ATW-cpca). Failure-isolated.
+    try {
+      tournamentService.autoAttachPayoffShow(saved);
+    } catch (Exception e) {
+      log.warn(
+          "Payoff-show auto-attach skipped for show '{}': {}", saved.getName(), e.getMessage());
+    }
+    return saved;
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -332,7 +345,15 @@ public class ShowService {
               .orElseThrow(() -> new IllegalArgumentException("Arena not found: " + arenaId)));
     }
 
-    return showRepository.saveAndFlush(show);
+    Show saved = showRepository.saveAndFlush(show);
+    // A newly scheduled PLE hosts the earliest unattached annual tournament edition's payoff
+    // (ATW-cpca) — failure-isolated: scheduling a show never fails over the advisory attach.
+    try {
+      tournamentService.autoAttachPayoffShow(saved);
+    } catch (Exception e) {
+      log.warn("Payoff-show auto-attach skipped for PLE '{}': {}", saved.getName(), e.getMessage());
+    }
+    return saved;
   }
 
   @PreAuthorize(

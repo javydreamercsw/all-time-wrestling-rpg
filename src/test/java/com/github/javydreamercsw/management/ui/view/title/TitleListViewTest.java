@@ -171,6 +171,16 @@ class TitleListViewTest extends AbstractViewTest {
   }
 
   @Test
+  void testGridHasFullHeight() {
+    // ATW-n97c: without an explicit height the Grid collapses to its ~135px default viewport
+    // (~3 rows) and scrolls internally even though the page has space left.
+    assertTrue(
+        titleListView.grid.getHeight() != null && !titleListView.grid.getHeight().isBlank(),
+        "The title grid must carry an explicit height (setSizeFull)");
+    assertEquals("100%", titleListView.grid.getHeight());
+  }
+
+  @Test
   void testCreateTitleWithChampion() {
     TitleFormDialog dialog = titleListView.openCreateDialog();
     dialog.open();

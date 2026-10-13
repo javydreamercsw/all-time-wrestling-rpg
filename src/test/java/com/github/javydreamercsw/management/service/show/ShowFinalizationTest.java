@@ -52,6 +52,7 @@ import com.github.javydreamercsw.management.service.gm.GmModeService;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.news.NewsGenerationService;
+import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -95,6 +96,7 @@ class ShowFinalizationTest {
   @Mock private CommentaryTeamRepository commentaryTeamRepository;
   @Mock private CampaignRepository campaignRepository;
   @Mock private ShowQualityService showQualityService;
+  @Mock private TournamentService tournamentService;
 
   private ShowService showService;
 
@@ -122,7 +124,8 @@ class ShowFinalizationTest {
             securityUtils,
             arenaRepository,
             gmModeService,
-            showQualityService);
+            showQualityService,
+            tournamentService);
 
     when(showRepository.save(any(Show.class))).thenAnswer(inv -> inv.getArgument(0));
   }

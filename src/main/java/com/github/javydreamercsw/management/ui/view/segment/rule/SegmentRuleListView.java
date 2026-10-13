@@ -260,12 +260,15 @@ public class SegmentRuleListView extends Main {
   private void saveSegmentRule() {
     if (binder.writeBeanIfValid(editingSegmentRule)) {
       try {
+        // New rules created through this dialog are custom content; edits preserve the row's
+        // existing expansion code (the service overwrites it unconditionally on update).
         segmentRuleService.createOrUpdateRule(
             editingSegmentRule.getName(),
             editingSegmentRule.getDescription(),
             editingSegmentRule.getRequiresHighHeat(),
             editingSegmentRule.getNoDq(),
-            editingSegmentRule.getBumpAddition());
+            editingSegmentRule.getBumpAddition(),
+            editingSegmentRule.getId() == null ? "CUSTOM" : editingSegmentRule.getExpansionCode());
         Notification.show(
                 "Segment rule saved successfully!", 3000, Notification.Position.BOTTOM_START)
             .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
@@ -313,5 +316,15 @@ public class SegmentRuleListView extends Main {
               "Error deleting segment rule: " + e.getMessage(), 5000, Notification.Position.MIDDLE)
           .addThemeVariants(NotificationVariant.LUMO_ERROR);
     }
+  }
+
+  // --- Test-visible delegates (package-private) for SegmentRuleListViewTest ---
+
+  void updateGridForTest() {
+    refreshGrid();
+  }
+
+  void openEditDialogForTest(final SegmentRule segmentRule) {
+    openEditDialog(segmentRule);
   }
 }

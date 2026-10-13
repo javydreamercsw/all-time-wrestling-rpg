@@ -253,6 +253,16 @@ public class SegmentRuleService {
   }
 
   /**
+   * Returns all segment rules stamped with the given expansion code, including inactive ones.
+   * Unlike {@link #findAll()}, this ignores the expansion toggle — used by the card export view so
+   * the user's custom content prints regardless of the CUSTOM expansion toggle.
+   */
+  @PreAuthorize("isAuthenticated()")
+  public List<SegmentRule> findAllByExpansionCode(@NonNull final String expansionCode) {
+    return segmentRuleRepository.findByExpansionCodeOrderByNameAsc(expansionCode);
+  }
+
+  /**
    * Returns all segment rules including inactive ones, filtered only by enabled expansions. Use
    * this in admin list views where managers need to see and re-enable disabled rules.
    */

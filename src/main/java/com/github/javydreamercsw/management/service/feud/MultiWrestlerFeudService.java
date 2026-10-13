@@ -23,8 +23,8 @@ import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeudReposit
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.FeudHeatChangeEvent;
+import com.github.javydreamercsw.management.service.GameClock;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
-import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,7 +54,7 @@ public class MultiWrestlerFeudService {
   @Autowired private MultiWrestlerFeudRepository multiWrestlerFeudRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private UniverseContextService universeContextService;
-  @Autowired private Clock clock;
+  @Autowired private GameClock gameClock;
   @Autowired private ApplicationEventPublisher eventPublisher;
 
   /** Get all multi-wrestler feuds with pagination. */
@@ -126,8 +126,8 @@ public class MultiWrestlerFeudService {
     feud.setStorylineNotes(storylineNotes);
     feud.setHeat(0);
     feud.setIsActive(true);
-    feud.setStartedDate(clock.instant());
-    feud.setCreationDate(clock.instant());
+    feud.setStartedDate(gameClock.gameNow());
+    feud.setCreationDate(gameClock.gameNow());
     List<FeudParticipant> participants = new ArrayList<>();
     for (Long wrestlerId : wrestlers) {
       Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
@@ -382,7 +382,9 @@ public class MultiWrestlerFeudService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<MultiWrestlerFeud> getRecentFeuds(final int days) {
-    Instant sinceDate = clock.instant().minusSeconds(days * 24L * 3600L);
+    // Game-anchored: feud timestamps are kayfabe, so the "recent" window reads from the in-game
+    // clock too (ATW-07hw).
+    Instant sinceDate = gameClock.gameNow().minusSeconds((long) days * 24L * 3600L);
     return multiWrestlerFeudRepository.findRecentFeuds(sinceDate);
   }
 

@@ -38,6 +38,7 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.tournament.TournamentMatchRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.GameSettingService;
@@ -75,6 +76,7 @@ class SegmentServiceNotifyTest {
   @Mock private InboxService inboxService;
   @Mock private NewsGenerationService newsGenerationService;
   @Mock private EntityManager entityManager;
+  @Mock private TournamentMatchRepository tournamentMatchRepository;
 
   private final InboxEventType matchRequestEventType =
       new InboxEventType("MATCH_REQUEST", "Match Request");
@@ -96,7 +98,8 @@ class SegmentServiceNotifyTest {
             matchFulfillmentRepository,
             inboxService,
             newsGenerationService,
-            matchRequestEventType);
+            matchRequestEventType,
+            tournamentMatchRepository);
     ReflectionTestUtils.setField(service, "entityManager", entityManager);
   }
 

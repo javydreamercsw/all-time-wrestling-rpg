@@ -72,6 +72,13 @@ public class SegmentType extends AbstractEntity<Long> {
   @Column(name = "is_active", nullable = false)
   private boolean isActive = true;
 
+  /**
+   * Marks special event formats (e.g. Abu Dhabi Rumble) that must not appear in AI show-proposal
+   * candidate lists; manual selection by a Booker/Admin remains allowed (ATW-0331).
+   */
+  @Column(name = "event_only", nullable = false)
+  private boolean eventOnly = false;
+
   /** Ensure default values before persisting. */
   @PrePersist
   private void ensureDefaults() {

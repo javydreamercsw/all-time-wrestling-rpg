@@ -30,6 +30,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -126,6 +127,30 @@ public interface SegmentRepository
       ORDER BY s.segmentDate DESC, s.id DESC
       """)
   List<Segment> findCompletedByRivalryId(@Param("rivalryId") Long rivalryId);
+
+  /** Nulls the rivalry reference on every segment pointing at the given rivalry id. */
+  @Query("UPDATE Segment s SET s.rivalryId = null WHERE s.rivalryId = :rivalryId")
+  @Modifying
+  int clearRivalryReference(@Param("rivalryId") Long rivalryId);
+
+  /**
+   * Completed segments involving any of the given wrestlers that no story-arc beat is linked to —
+   * candidates for manually completing a beat whose match already ran but was never credited (the
+   * arc card's Complete dialog). Most recent first. The subquery excludes NULL links explicitly:
+   * {@code NOT IN} over a set containing NULL would filter out every row.
+   */
+  @Query(
+      """
+      SELECT DISTINCT s FROM Segment s
+      JOIN FETCH s.show
+      JOIN s.participants p
+      WHERE s.status = 'COMPLETED'
+      AND s.id NOT IN (
+          SELECT b.actualSegment.id FROM FeudScriptBeat b WHERE b.actualSegment IS NOT NULL)
+      AND p.wrestler.id IN :wrestlerIds
+      ORDER BY s.segmentDate DESC, s.id DESC
+      """)
+  List<Segment> findLinkableForBeat(@Param("wrestlerIds") Collection<Long> wrestlerIds);
 
   /**
    * Completed segments where every given wrestler participates (JOIN semantics: all ids must be

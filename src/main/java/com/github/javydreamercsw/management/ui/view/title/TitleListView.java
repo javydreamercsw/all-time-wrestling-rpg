@@ -128,6 +128,10 @@ public class TitleListView extends Main {
 
   private void setupGrid() {
     grid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES);
+    // Full height: without it the Grid collapses to its ~135px default viewport (~3 rows) and
+    // scrolls internally even though the page has space (ATW-n97c — same call TournamentListView
+    // makes).
+    grid.setSizeFull();
     // 10 columns; below this the grid scrolls horizontally inside .grid-scroll-container
     grid.setMinWidth("1100px");
     grid.addColumn(Title::getName).setHeader("Name").setSortable(true);

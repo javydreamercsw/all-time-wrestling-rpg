@@ -17,7 +17,6 @@
 package com.github.javydreamercsw.management.domain.title;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
@@ -117,10 +116,11 @@ public class Title extends AbstractEntity<Long> {
       cascade = CascadeType.ALL,
       orphanRemoval = true,
       fetch = FetchType.LAZY)
-  @JsonIgnoreProperties({"title"})
+  @JsonIgnore
   private Set<TitleReign> titleReigns = new HashSet<>();
 
   @ManyToMany(mappedBy = "titles", fetch = FetchType.LAZY)
+  @JsonIgnore
   private List<Segment> segments = new ArrayList<>();
 
   public void awardTitleTo(

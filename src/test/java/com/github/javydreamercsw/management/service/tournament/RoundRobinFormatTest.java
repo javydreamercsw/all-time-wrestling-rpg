@@ -116,6 +116,21 @@ class RoundRobinFormatTest {
     assertThat(format.isComplete(t)).isFalse();
   }
 
+  @Test
+  void estimateTotalMatches_isNTimesNMinusOneOverTwo() {
+    // 4 entrants → 4*3/2 = 6 matches.
+    assertThat(format.estimateTotalMatches(tournamentWithEntries(4))).isEqualTo(6);
+    assertThat(format.estimateTotalMatches(tournamentWithEntries(5))).isEqualTo(10);
+  }
+
+  @Test
+  void estimateTotalMatches_zeroWhenTooFewEntrants() {
+    Tournament tooSmall = new Tournament();
+    tooSmall.setFormatId("ROUND_ROBIN");
+    tooSmall.setEntries(new ArrayList<>());
+    assertThat(format.estimateTotalMatches(tooSmall)).isZero();
+  }
+
   // ── helpers ──────────────────────────────────────────────────────────────
 
   private static Tournament tournamentWithEntries(int count) {

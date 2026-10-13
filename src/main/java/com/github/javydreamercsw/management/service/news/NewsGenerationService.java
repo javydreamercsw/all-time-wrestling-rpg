@@ -32,6 +32,7 @@ import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
@@ -42,6 +43,7 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,6 +62,7 @@ public class NewsGenerationService {
   private final WrestlerRepository wrestlerRepository;
   private final NpcRepository npcRepository;
   private final TitleReignRepository titleReignRepository;
+  private final TitleOpportunityService titleOpportunityService;
 
   private static final String SYSTEM_PROMPT =
       """
@@ -72,6 +75,10 @@ public class NewsGenerationService {
       - Title matches include the champion name(s) before the match. Only report a title change when the winner is NOT listed as the pre-match champion. If the winner IS the champion, it is a successful title defense — do NOT report it as a title change.
       - Never invent title changes, title names, or match outcomes that are not in the provided data.
       - Do not fabricate wrestler names or match results not present in the context.
+
+      When a "Briefcase:" line is present, the named wrestler holds a Money in the Bank-style
+      briefcase (a cashable title shot against any reigning champion) — reference them as a
+      briefcase holder with title-follower prestige ("...still clutching the briefcase").
 
       Output MUST be a valid JSON object with the following fields:
       - headline: A catchy, sports-journalism style headline (max 255 chars).
@@ -185,6 +192,10 @@ public class NewsGenerationService {
     } else if (segment.getIsTitleSegment()) {
       prompt.append("This was a TITLE match!\n");
     }
+    String briefcaseContext = briefcaseContextOf(segment);
+    if (briefcaseContext != null) {
+      prompt.append(briefcaseContext).append("\n");
+    }
     if (segment.getNarration() != null && !segment.getNarration().isEmpty()) {
       prompt.append("Match Highlights: ").append(segment.getNarration()).append("\n");
     }
@@ -239,6 +250,10 @@ public class NewsGenerationService {
       } else if (s.getIsTitleSegment()) {
         context.append(" (TITLE MATCH)");
       }
+      String briefcaseContext = briefcaseContextOf(s);
+      if (briefcaseContext != null) {
+        context.append(" ").append(briefcaseContext);
+      }
       context.append("\n");
     }
 
@@ -286,6 +301,25 @@ public class NewsGenerationService {
   }
 
   private record TitleContext(String preMatchChampions, String outcome) {}
+
+  /**
+   * "Briefcase: X still holds the Time Vault briefcase (cashable against any reigning champion)"
+   * when a segment participant holds a case (ATW-brrz) — null otherwise. Never throws: news
+   * generation must not fail over a context enhancement.
+   */
+  private @Nullable String briefcaseContextOf(Segment segment) {
+    try {
+      return segment.getWrestlers().stream()
+          .map(w -> titleOpportunityService.heldBriefcaseContextOf(w.getId()))
+          .filter(Objects::nonNull)
+          .map(line -> "Briefcase: " + line)
+          .collect(Collectors.joining("; "))
+          .transform(s -> s.isEmpty() ? null : s);
+    } catch (Exception e) {
+      log.debug("Briefcase context unavailable for segment {}", segment.getId(), e);
+      return null;
+    }
+  }
 
   /**
    * Determines whether a title changed hands at {@code segment} by checking whether any {@link

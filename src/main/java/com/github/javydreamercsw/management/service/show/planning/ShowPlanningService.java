@@ -27,7 +27,11 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
+import com.github.javydreamercsw.management.domain.title.BriefcaseCashInMode;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleOpportunity;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -45,10 +49,15 @@ import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.segment.SegmentSummaryService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.show.planning.dto.BriefcaseCashInPreviewDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningDtoMapper;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRivalryDTO;
+import com.github.javydreamercsw.management.service.show.planning.dto.TournamentSlotPreviewDTO;
+import com.github.javydreamercsw.management.service.title.BriefcaseCashInAdvisorService;
+import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.tournament.TournamentTemplateBookingService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.Instant;
@@ -58,6 +67,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -94,6 +104,10 @@ public class ShowPlanningService {
   private final GameSettingService gameSettingService;
   private final DramaEventService dramaEventService;
   private final FeudScriptService feudScriptService;
+  private final ShowTemplateRepository showTemplateRepository;
+  private final TournamentTemplateBookingService tournamentTemplateBookingService;
+  private final TitleOpportunityService titleOpportunityService;
+  private final BriefcaseCashInAdvisorService briefcaseCashInAdvisorService;
 
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
@@ -186,6 +200,26 @@ public class ShowPlanningService {
     }
     if (show.getTemplate() != null) {
       template.setGenderConstraint(show.getTemplate().getGenderConstraint());
+      // Template assignments (ATW-0331): event-only types the AI may use plus encouraged and
+      // auto-attach rules. show.getTemplate() may be a detached reference (e.g. loaded by an
+      // earlier request into a combo box) whose segmentAssignments lazy collection is bound to
+      // an already-closed session — re-fetch it fresh, attached to this transaction, instead.
+      com.github.javydreamercsw.management.domain.show.template.ShowTemplate managedTemplate =
+          showTemplateRepository
+              .findByIdWithAssignments(show.getTemplate().getId())
+              .orElse(show.getTemplate());
+      template.setEventSegmentTypes(
+          managedTemplate.getAssignedEventTypes().stream()
+              .map(a -> a.getSegmentType().getName())
+              .toList());
+      template.setEncouragedRules(
+          managedTemplate.getEncouragedRuleAssignments().stream()
+              .map(a -> a.getSegmentRule().getName())
+              .toList());
+      template.setAutoAttachRules(
+          managedTemplate.getRuleAutoAttachAssignments().stream()
+              .map(a -> a.getSegmentRule().getName())
+              .toList());
     }
     context.setShowTemplate(template);
 
@@ -243,6 +277,18 @@ public class ShowPlanningService {
     }
     context.setChampionships(championships);
 
+    // Held briefcases (ATW-brrz): a cash-in or champion-vs-holder angle is a strong proposal
+    // candidate — give the planning AI the same visibility champions get.
+    for (TitleOpportunity opportunity : titleOpportunityService.findHeld()) {
+      Wrestler holder = opportunity.getWrestler();
+      if (holder != null && holder.getId() != null) {
+        wrestlerRepository
+            .findById(holder.getId())
+            .ifPresent(
+                w -> context.getHeldBriefcases().add(w.getName() + " — " + opportunity.getName()));
+      }
+    }
+
     // Get all wrestlers, excluding injured/low-condition (they should rest)
     Long universeId = show.getUniverse().getId();
     int conditionThreshold = gameSettingService.getConditionRestThreshold();
@@ -295,6 +341,8 @@ public class ShowPlanningService {
     // Inject scripted beat slots so the AI honours pre-planned match types and winner intent.
     // Beats without an explicit target show (the common case) fall back to the next pending beat
     // of every active arc — but only when all of the arc's participants are on this roster.
+    // Beats with an explicit target stay on that show, and untargeted Culmination/Blowoff beats
+    // are reserved for PLEs (subject to the arc's PLE appearance cap).
     Set<Long> rosterIds = allWrestlers.stream().map(Wrestler::getId).collect(Collectors.toSet());
     var beatInjection = feudScriptService.getUpcomingBeatDTOsWithExclusionsForShow(show, rosterIds);
     var scriptedBeats = beatInjection.beats();
@@ -306,6 +354,38 @@ public class ShowPlanningService {
         beatInjection.exclusions().size(),
         rosterIds.size());
     dto.setUpcomingScriptedBeats(scriptedBeats);
+    // Show-attached tournament slots due on this card (ATW-xbn4): paced rounds / payoff previews
+    // so the booker sees them at planning time — same treatment as scripted beats.
+    var tournamentSlots =
+        tournamentTemplateBookingService.previewShowAttachedTournamentSlots(show).stream()
+            .map(
+                p -> {
+                  var slotDto = new TournamentSlotPreviewDTO();
+                  slotDto.setTournamentName(p.tournamentName());
+                  slotDto.setTypeName(p.typeName());
+                  slotDto.setRuleName(p.ruleName());
+                  slotDto.setShape(p.shape());
+                  slotDto.setTitleName(
+                      p.expectedTitle() != null ? p.expectedTitle().getName() : null);
+                  // The entity rides along (FeudScriptBeatDTO pattern): the proposal must carry
+                  // it so the Edit dialog's title selector pre-selects the championship.
+                  slotDto.setTitle(p.expectedTitle());
+                  slotDto.setTeams(p.teams());
+                  return slotDto;
+                })
+            .toList();
+    dto.setTournamentSlots(tournamentSlots);
+    if (!tournamentSlots.isEmpty()) {
+      log.info(
+          "Planning context for show '{}': {} show-attached tournament slot(s) previewed",
+          show.getName(),
+          tournamentSlots.size());
+    }
+    // NPC briefcase cash-in proposals (ATW-2b9u): deterministic advisor output, previewed as
+    // consent rows on the card by ShowPlanningAiService.applyBriefcaseProposals.
+    briefcaseCashInAdvisorService
+        .proposalsFor(show)
+        .forEach(proposal -> dto.getBriefcaseProposals().add(briefcasePreviewOf(proposal)));
     // Booker-facing warnings for beats that were withheld — mirrors the MUST_BOOK warning style.
     dto.setExcludedBeatWarnings(
         beatInjection.exclusions().stream()
@@ -492,10 +572,22 @@ public class ShowPlanningService {
               + "because showDate is not set.");
     }
 
-    reconcileTeamsWithIds(proposedSegments);
+    // Tournament marker rows (ATW-xbn4 preview) are consents, not card content — they carry
+    // no participants (or placeholders) and are consumed by the show-attached booking block
+    // below. Strip them before reconciliation/validation so placeholder names cannot trip
+    // duplicate-participant or intergender checks.
+    List<ProposedSegment> cardSegments =
+        proposedSegments.stream()
+            .filter(
+                ps ->
+                    !ProposedSegment.SOURCE_TOURNAMENT.equals(ps.getSource())
+                        && !ProposedSegment.SOURCE_BRIEFCASE.equals(ps.getSource()))
+            .toList();
+
+    reconcileTeamsWithIds(cardSegments);
 
     CardValidationResult validation =
-        validateCard(proposedSegments, rivalryService.getActiveRivalries());
+        validateCard(cardSegments, rivalryService.getActiveRivalries());
     if (!validation.isValid()) {
       throw new IllegalStateException(
           "Show card validation failed for '"
@@ -510,13 +602,22 @@ public class ShowPlanningService {
           validation.getWarnings().size());
     }
 
-    validateNoDuplicateParticipants(proposedSegments);
-    validateTeamLayouts(proposedSegments);
+    validateNoDuplicateParticipants(cardSegments);
+    validateTeamLayouts(cardSegments);
 
     List<Segment> segmentsToSave = new ArrayList<>();
     int currentSegmentCount = segmentRepository.findByShow(show).size();
-    for (int i = 0; i < proposedSegments.size(); i++) {
-      ProposedSegment proposedSegment = proposedSegments.get(i);
+    // Re-fetch the template (if any) attached to this transaction, once, before the loop —
+    // show.getTemplate() may be a detached reference whose segmentAssignments lazy collection
+    // is bound to an already-closed session (ATW-0331).
+    com.github.javydreamercsw.management.domain.show.template.ShowTemplate managedTemplate =
+        show.getTemplate() != null
+            ? showTemplateRepository
+                .findByIdWithAssignments(show.getTemplate().getId())
+                .orElse(show.getTemplate())
+            : null;
+    for (int i = 0; i < cardSegments.size(); i++) {
+      ProposedSegment proposedSegment = cardSegments.get(i);
       log.debug("Processing segment: {}", proposedSegment);
       Segment segment = new Segment();
       segment.setShow(show);
@@ -527,6 +628,63 @@ public class ShowPlanningService {
         continue;
       }
       segment.setSegmentType(segmentTypeOpt.get());
+
+      // Tournament-fed booking (ATW-oahn): when the show's template pairs this segment's type
+      // with a tournament (AUTO_ATTACH), the tournament — not the AI — fills the match's
+      // participants. Empty result (tournament cannot supply participants) falls through to the
+      // AI-proposed path unchanged.
+      Optional<ShowTemplateSegmentAssignment> tournamentAssignment =
+          managedTemplate != null
+              ? managedTemplate.findTournamentForSegmentType(segmentTypeOpt.get())
+              : Optional.empty();
+      if (tournamentAssignment.isPresent()) {
+        Optional<TournamentTemplateBookingService.TournamentBooking> tournamentBooking =
+            tournamentTemplateBookingService.bookTournamentFedSegment(
+                tournamentAssignment.get(), segmentTypeOpt.get(), show);
+        if (tournamentBooking.isPresent()) {
+          Segment booked = tournamentBooking.get().segment();
+          // The match mechanics created the segment (type, participants, winners, paired rule).
+          // Inherit the proposal's placement and content so it slots into the card exactly
+          // where the AI put it.
+          booked.setSegmentOrder(currentSegmentCount + i + 1);
+          booked.setSegmentDate(show.getShowDate().atStartOfDay(clock.getZone()).toInstant());
+          booked.setNarration(proposedSegment.getNarration());
+          booked.setSummary(proposedSegment.getSummary());
+          booked.setNotes(proposedSegment.getNotes());
+          booked.setRivalryId(proposedSegment.getRivalryId());
+          // Title-segment state comes from the tournament payoff, not the AI proposal — the
+          // adjudication path awards or defends the linked championship off these fields
+          // (ATW-z963: final at the PLE / champion showcase). titleMatch=false with a non-null
+          // title means contender designation (ATW-ewrp): the title attaches WITHOUT being on
+          // the line and the segment flags contenderMatch, so adjudication names the winner the
+          // #1 contender.
+          if (tournamentBooking.get().titleMatch()) {
+            booked.setIsTitleSegment(true);
+            if (tournamentBooking.get().title() != null) {
+              booked.getTitles().add(tournamentBooking.get().title());
+            }
+          } else {
+            booked.setIsTitleSegment(false);
+            if (tournamentBooking.get().title() != null) {
+              booked.setContenderMatch(true);
+              booked.getTitles().add(tournamentBooking.get().title());
+            }
+          }
+          segmentsToSave.add(booked);
+          log.info(
+              "Tournament '{}' fed segment ({}) on show '{}': {}",
+              tournamentBooking.get().tournament().getName(),
+              tournamentBooking.get().detail(),
+              show.getName(),
+              segmentTypeOpt.get().getName());
+          continue;
+        }
+        log.warn(
+            "Tournament assignment for segment type '{}' on show '{}' cannot supply participants"
+                + " — falling back to AI-proposed participants",
+            segmentTypeOpt.get().getName());
+      }
+
       segment.setSegmentDate(show.getShowDate().atStartOfDay(clock.getZone()).toInstant());
       segment.setNarration(proposedSegment.getNarration());
       segment.setSummary(proposedSegment.getSummary());
@@ -611,8 +769,128 @@ public class ShowPlanningService {
                 .collect(Collectors.toList());
         segment.syncSegmentRules(newSegmentRules);
       }
+
+      // Template AUTO_ATTACH rules (ATW-0331): deterministically merge rules assigned to the
+      // show's template — type-paired rows when this segment's type matches, rule-only rows on
+      // every match segment. Runs after the AI-proposed rules so it is visible on approval.
+      if (managedTemplate != null
+          && !WellKnownSegmentType.PROMO.matches(segment.getSegmentType())) {
+        List<SegmentRule> merged = new ArrayList<>(segment.getSegmentRules());
+        managedTemplate
+            .getTypePairedAutoAttachAssignments()
+            .forEach(
+                a -> {
+                  if (a.getSegmentType().getId().equals(segment.getSegmentType().getId())
+                      && merged.stream()
+                          .noneMatch(r -> r.getId().equals(a.getSegmentRule().getId()))) {
+                    merged.add(a.getSegmentRule());
+                  }
+                });
+        managedTemplate
+            .getRuleAutoAttachAssignments()
+            .forEach(
+                a -> {
+                  if (merged.stream()
+                      .noneMatch(r -> r.getId().equals(a.getSegmentRule().getId()))) {
+                    merged.add(a.getSegmentRule());
+                  }
+                });
+        if (merged.size() != segment.getSegmentRules().size()) {
+          log.debug(
+              "Auto-attached {} template rule(s) to segment of type {}",
+              merged.size() - segment.getSegmentRules().size(),
+              segment.getSegmentType().getName());
+          segment.syncSegmentRules(merged);
+        }
+      }
       segmentsToSave.add(segment);
     }
+
+    // One-time show-attached tournaments (ATW-xbn4): the payoff books on the host show itself,
+    // paced rounds book on earlier weekly shows — no template row involved. The template path
+    // below stays for recurring tournaments. Never blocks approval: empty results add nothing.
+    // The planning grid previews these slots (source="Tournament"): every preview row that
+    // survived the booker's edits consents to one booking of its type, and deleting rows trims
+    // the bookings accordingly (keep 2 of 3 round rows → 2 book). A card with no preview rows
+    // (hand-built, or previews dropped) falls back to booking everything due — the slots are
+    // required unless the booker visibly trimmed them on the card.
+    List<ProposedSegment> tournamentRows =
+        proposedSegments.stream().filter(ps -> "Tournament".equals(ps.getSource())).toList();
+    List<String> remainingConsents =
+        tournamentRows.stream()
+            .map(ProposedSegment::getType)
+            .collect(Collectors.toCollection(ArrayList::new));
+    List<TournamentTemplateBookingService.TournamentBooking> showAttachedBookings =
+        tournamentTemplateBookingService.bookShowAttachedTournamentSegments(show);
+    for (TournamentTemplateBookingService.TournamentBooking booking : showAttachedBookings) {
+      String type = booking.segment().getSegmentType().getName();
+      if (!remainingConsents.isEmpty()) {
+        int consentIndex = remainingConsents.indexOf(type);
+        if (consentIndex < 0) {
+          log.info(
+              "Show-attached tournament '{}' trimmed on '{}': the booker removed that slot"
+                  + " from the planning card",
+              booking.tournament().getName(),
+              show.getName());
+          continue;
+        }
+        remainingConsents.remove(consentIndex);
+      }
+      Segment booked = booking.segment();
+      booked.setSegmentOrder(segmentRepository.findByShow(show).size() + 1 + segmentsToSave.size());
+      booked.setSegmentDate(show.getShowDate().atStartOfDay(clock.getZone()).toInstant());
+      // Same contract as the template path: titleMatch=true puts the title on the line;
+      // titleMatch=false with a title designates a contender (ATW-ewrp).
+      if (booking.titleMatch()) {
+        booked.setIsTitleSegment(true);
+        if (booking.title() != null) {
+          booked.getTitles().add(booking.title());
+        }
+      } else {
+        booked.setIsTitleSegment(false);
+        if (booking.title() != null) {
+          booked.setContenderMatch(true);
+          booked.getTitles().add(booking.title());
+        }
+      }
+      segmentsToSave.add(booked);
+      log.info(
+          "Show-attached tournament '{}' booked on '{}': {}",
+          booking.tournament().getName(),
+          show.getName(),
+          booking.detail());
+    }
+
+    // Tournament pacing on weekly shows (ATW-z963): a tournament-only AUTO_ATTACH assignment on
+    // this template books the bracket's next paced match(es) as extra card slots — the AI does
+    // not propose them. PLE payoffs are NOT booked here; the PLE path (bookTournamentFedSegment)
+    // owns them. Never blocks approval: empty results simply add nothing.
+    if (managedTemplate != null && !show.isPremiumLiveEvent()) {
+      for (ShowTemplateSegmentAssignment ta : managedTemplate.getTournamentAssignments()) {
+        for (TournamentTemplateBookingService.TournamentBooking booking :
+            tournamentTemplateBookingService.bookWeeklyRounds(ta, show)) {
+          Segment booked = booking.segment();
+          booked.setSegmentOrder(
+              segmentRepository.findByShow(show).size() + 1 + segmentsToSave.size());
+          booked.setSegmentDate(show.getShowDate().atStartOfDay(clock.getZone()).toInstant());
+          segmentsToSave.add(booked);
+          log.info(
+              "Tournament '{}' paced round onto weekly show '{}': {}",
+              booking.tournament().getName(),
+              show.getName(),
+              booking.detail());
+        }
+      }
+    }
+
+    // NPC briefcase cash-in consent rows (ATW-2b9u): every kept row books its cash-in; a
+    // candidate with no row on the card was declined by the booker (cooldown). The setting gate
+    // makes the whole block inert when the feature is off. Never blocks approval: per-row
+    // try/catch — a failed cash-in is logged, not propagated.
+    if (gameSettingService.isNpcBriefcaseCashInEnabled()) {
+      bookBriefcaseConsents(show, proposedSegments, cardSegments, segmentsToSave);
+    }
+
     segmentRepository.saveAll(segmentsToSave);
     log.debug("Approved and saved {} segments for show: {}", segmentsToSave.size(), show.getName());
     // Auto-complete any pending arc beat whose participants match a saved card segment — this is
@@ -628,6 +906,195 @@ public class ShowPlanningService {
     // participant matching.
     feudScriptService.markBeatsBookedForShow(show);
     eventPublisher.publishEvent(new SegmentsApprovedEvent(this, show));
+  }
+
+  /**
+   * Books the briefcase cash-ins consented to on the approved card (ATW-2b9u). A kept row with a
+   * live advisor candidate books per its {@code briefcaseMode}: PLANNED appends a cash-in segment,
+   * AMBUSH inserts one right after the champion's card match (downgrading to PLANNED when the
+   * champion's match was removed), RUN_IN stays inert. A candidate with no row was declined — the
+   * cooldown records it. Identity is {@code briefcaseOpportunityId}: booker edits to a row never
+   * change what books.
+   */
+  private void bookBriefcaseConsents(
+      Show show,
+      List<ProposedSegment> proposedSegments,
+      List<ProposedSegment> cardSegments,
+      List<Segment> segmentsToSave) {
+    List<BriefcaseCashInAdvisorService.BriefcaseProposal> candidates =
+        briefcaseCashInAdvisorService.proposalsFor(show);
+    List<ProposedSegment> briefcaseRows =
+        proposedSegments.stream()
+            .filter(ps -> ProposedSegment.SOURCE_BRIEFCASE.equals(ps.getSource()))
+            .toList();
+    for (BriefcaseCashInAdvisorService.BriefcaseProposal candidate : candidates) {
+      Long opportunityId = candidate.opportunity().getId();
+      ProposedSegment keptRow =
+          briefcaseRows.stream()
+              .filter(ps -> opportunityId.equals(ps.getBriefcaseOpportunityId()))
+              .findFirst()
+              .orElse(null);
+      if (keptRow == null) {
+        try {
+          titleOpportunityService.recordDecline(opportunityId);
+          log.info(
+              "Briefcase proposal for '{}' declined on '{}' (row deleted) — cooldown recorded",
+              candidate.opportunity().getName(),
+              show.getName());
+        } catch (Exception e) {
+          log.warn(
+              "Failed to record briefcase decline for opportunity {}: {}",
+              opportunityId,
+              e.getMessage());
+        }
+        continue;
+      }
+      BriefcaseCashInMode mode =
+          keptRow.getBriefcaseMode() != null
+              ? keptRow.getBriefcaseMode()
+              : BriefcaseCashInMode.PLANNED;
+      switch (mode) {
+        case PLANNED -> bookPlannedCashIn(show, candidate, segmentsToSave);
+        case AMBUSH -> {
+          Segment championSegment =
+              championSegmentOnCard(show, cardSegments, segmentsToSave, candidate);
+          if (championSegment != null) {
+            bookAmbushAfterChampion(show, candidate, championSegment, segmentsToSave);
+          } else {
+            log.info(
+                "Ambush proposal for '{}' downgraded to PLANNED on '{}': the champion's match"
+                    + " is not on the submitted card",
+                candidate.opportunity().getName(),
+                show.getName());
+            bookPlannedCashIn(show, candidate, segmentsToSave);
+          }
+        }
+        case RUN_IN ->
+            log.info(
+                "RUN_IN briefcase proposal for '{}' is inert on '{}' (ATW-qsm9 wires the trigger)",
+                candidate.opportunity().getName(),
+                show.getName());
+      }
+    }
+    // Stale rows (candidate lapsed between card load and approval) are ignored — never booked,
+    // never declined.
+    for (ProposedSegment row : briefcaseRows) {
+      boolean hasCandidate =
+          candidates.stream()
+              .anyMatch(c -> c.opportunity().getId().equals(row.getBriefcaseOpportunityId()));
+      if (!hasCandidate) {
+        log.info(
+            "Ignoring stale briefcase row (opportunity {}) on '{}': no live advisor candidate",
+            row.getBriefcaseOpportunityId(),
+            show.getName());
+      }
+    }
+  }
+
+  /** Books a planned cash-in segment, appending it after the existing card. */
+  private void bookPlannedCashIn(
+      Show show,
+      BriefcaseCashInAdvisorService.BriefcaseProposal candidate,
+      List<Segment> segmentsToSave) {
+    try {
+      Segment segment =
+          titleOpportunityService.cashIn(
+              candidate.opportunity().getId(), candidate.title().getId(), show.getId());
+      segment.setSegmentOrder(
+          segmentRepository.findByShow(show).size() + 1 + segmentsToSave.size());
+      segment.setSegmentDate(show.getShowDate().atStartOfDay(clock.getZone()).toInstant());
+      segmentsToSave.add(segment);
+      log.info(
+          "Briefcase cash-in booked on '{}': {} challenges for {}",
+          show.getName(),
+          candidate.opportunity().getWrestler().getName(),
+          candidate.title().getName());
+    } catch (Exception e) {
+      log.warn(
+          "Briefcase cash-in for opportunity {} failed on '{}': {}",
+          candidate.opportunity().getId(),
+          show.getName(),
+          e.getMessage());
+    }
+  }
+
+  /** Books an ambush segment immediately after the champion's match on the card. */
+  private void bookAmbushAfterChampion(
+      Show show,
+      BriefcaseCashInAdvisorService.BriefcaseProposal candidate,
+      Segment championSegment,
+      List<Segment> segmentsToSave) {
+    try {
+      Segment segment =
+          titleOpportunityService.bookAmbush(
+              candidate.opportunity().getId(),
+              candidate.title().getId(),
+              show.getId(),
+              championSegment);
+      int championOrder = championSegment.getSegmentOrder();
+      // Bump every pending segment below the champion's match down one slot, then insert.
+      for (Segment pending : segmentsToSave) {
+        if (pending.getSegmentOrder() > championOrder) {
+          pending.setSegmentOrder(pending.getSegmentOrder() + 1);
+        }
+      }
+      segment.setSegmentOrder(championOrder + 1);
+      segment.setSegmentDate(show.getShowDate().atStartOfDay(clock.getZone()).toInstant());
+      segmentsToSave.add(segment);
+      log.info(
+          "Briefcase ambush booked on '{}' right after segment {}: {} vs {}",
+          show.getName(),
+          championOrder,
+          candidate.opportunity().getWrestler().getName(),
+          candidate.champions().stream().map(Wrestler::getName).collect(Collectors.joining(" & ")));
+    } catch (Exception e) {
+      log.warn(
+          "Briefcase ambush for opportunity {} failed on '{}': {}",
+          candidate.opportunity().getId(),
+          show.getName(),
+          e.getMessage());
+    }
+  }
+
+  /**
+   * The champion's non-promo match on the submitted card: an in-memory card segment carrying the
+   * champion's name (the card is reconciled but not yet persisted), or a segment already saved to
+   * the show by a previous approval.
+   */
+  private Segment championSegmentOnCard(
+      Show show,
+      List<ProposedSegment> cardSegments,
+      List<Segment> segmentsToSave,
+      BriefcaseCashInAdvisorService.BriefcaseProposal candidate) {
+    List<String> championNames = candidate.champions().stream().map(Wrestler::getName).toList();
+    // In-memory first: the champion's match may be part of this very approval.
+    for (ProposedSegment ps : cardSegments) {
+      if (ps.getTeams() == null
+          || (ps.getType() != null && ps.getType().toLowerCase(Locale.ROOT).contains("promo"))) {
+        continue;
+      }
+      boolean hasChampion =
+          ps.getTeams().stream().flatMap(List::stream).anyMatch(championNames::contains);
+      if (hasChampion) {
+        // Find the corresponding saved/pending segment (same approval saves them together).
+        return segmentsToSave.stream()
+            .filter(
+                s ->
+                    s.getWrestlers() != null
+                        && s.getWrestlers().stream()
+                            .anyMatch(w -> championNames.contains(w.getName())))
+            .findFirst()
+            .orElse(null);
+      }
+    }
+    // Fallback: already-persisted segments on the show (previous approval).
+    return segmentRepository.findByShowOrderBySegmentOrderAsc(show).stream()
+        .filter(
+            s ->
+                s.getWrestlers() != null
+                    && s.getWrestlers().stream().anyMatch(w -> championNames.contains(w.getName())))
+        .reduce((first, second) -> second) // highest order
+        .orElse(null);
   }
 
   /**
@@ -726,6 +1193,26 @@ public class ShowPlanningService {
       names.add(teamNames);
     }
     return names;
+  }
+
+  /** Maps an advisor proposal to the planning-card preview DTO (ATW-2b9u). */
+  private BriefcaseCashInPreviewDTO briefcasePreviewOf(
+      BriefcaseCashInAdvisorService.BriefcaseProposal proposal) {
+    BriefcaseCashInPreviewDTO dto = new BriefcaseCashInPreviewDTO();
+    dto.setOpportunityId(proposal.opportunity().getId());
+    dto.setTitleId(proposal.title().getId());
+    dto.setMode(proposal.mode().name());
+    dto.setHolderName(proposal.opportunity().getWrestler().getName());
+    dto.setTitleName(proposal.title().getName());
+    proposal.champions().forEach(champion -> dto.getChampionNames().add(champion.getName()));
+    proposal.champions().forEach(champion -> dto.getTeams().add(List.of(champion.getName())));
+    dto.getTeams().add(List.of(proposal.opportunity().getWrestler().getName()));
+    dto.setSummary(
+        "NPC briefcase cash-in — "
+            + proposal.opportunity().getWrestler().getName()
+            + " challenges for "
+            + proposal.title().getName());
+    return dto;
   }
 
   private void validateNoDuplicateParticipants(final List<ProposedSegment> proposedSegments) {

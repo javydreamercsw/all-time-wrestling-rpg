@@ -22,11 +22,22 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository;
+import com.github.javydreamercsw.management.domain.npc.Npc;
+import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRulePlayGuide;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleVariantGuide;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.service.campaign.CampaignChapterService;
 import com.github.javydreamercsw.management.service.campaign.FeatureDataService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
+import com.vaadin.flow.component.html.Div;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -72,6 +83,168 @@ class CampaignCardExportViewTest {
   // ---------------------------------------------------------------------------
   // CSS regression guards
   // ---------------------------------------------------------------------------
+
+  @Test
+  @DisplayName("Custom-content header colors are present and distinct, outside @media print")
+  void cardCss_includesCustomHeaderColors() {
+    String css = CampaignCardExportView.cardCss();
+    String beforeMedia = css.substring(0, css.indexOf("@media print"));
+
+    assertThat(beforeMedia)
+        .as("segment type header must be teal #0b4f6c")
+        .contains(".segment-type-header { background: #0b4f6c; }")
+        .as("segment rule header must be maroon #7b241c")
+        .contains(".segment-rule-header { background: #7b241c; }")
+        .as("npc header must be forest green #14532d")
+        .contains(".npc-header { background: #14532d; }")
+        .as("title header must be dark gold #7d6608")
+        .contains(".title-header { background: #7d6608; }");
+  }
+
+  @Test
+  @DisplayName("Custom-content CSS classes exist: rule badges, guide block, script, image, footer")
+  void cardCss_customContentClassesPresent() {
+    String css = CampaignCardExportView.cardCss();
+    String beforeMedia = css.substring(0, css.indexOf("@media print"));
+
+    assertThat(beforeMedia)
+        .contains(".rule-badges")
+        .contains(".rule-badge")
+        .contains(".guide-block")
+        .contains(".guide-label")
+        .contains(".guide-text")
+        .contains(".effect-script")
+        .contains(".npc-image")
+        .contains(".card-footer")
+        .contains(".empty-state");
+    // Badge styling is shared with the existing badge selector rather than duplicated.
+    assertThat(beforeMedia).contains(".difficulty-badge, .wrestler-tag, .rule-badge");
+  }
+
+  @Test
+  @DisplayName("Segment type card renders name, overview and guide footer")
+  void buildSegmentTypeCard_withGuide_rendersOverview() {
+    SegmentType type = new SegmentType();
+    type.setName("Singles Match");
+    type.setDescription("One on one.");
+    type.setExpansionCode("CUSTOM");
+    type.setGuide(
+        new SegmentRulePlayGuide(
+            new SegmentRuleVariantGuide(
+                "Two wrestlers…", null, null, null, null, null, null, null, null, null, null, null),
+            null));
+
+    Div card = CampaignCardExportView.buildSegmentTypeCard(type);
+
+    assertThat(card.getElement().getTextRecursively())
+        .contains("SEGMENT TYPE")
+        .contains("Singles Match")
+        .contains("Two wrestlers…")
+        .contains("SOLO")
+        .contains("CUSTOM");
+  }
+
+  @Test
+  @DisplayName("Segment type card with null guide renders without NPE")
+  void buildSegmentTypeCard_nullGuide_noNpe() {
+    SegmentType type = new SegmentType();
+    type.setName("Singles Match");
+    type.setDescription("One on one.");
+    type.setExpansionCode("CUSTOM");
+
+    Div card = CampaignCardExportView.buildSegmentTypeCard(type);
+
+    assertThat(card.getElement().getTextRecursively())
+        .contains("Singles Match")
+        .doesNotContain("SOLO");
+  }
+
+  @Test
+  @DisplayName("Segment rule card renders all notable badges")
+  void buildSegmentRuleCard_notableBadges_rendersBadgeText() {
+    SegmentRule rule = new SegmentRule();
+    rule.setName("Cage Match");
+    rule.setDescription("No way out.");
+    rule.setExpansionCode("CUSTOM");
+    rule.setNoDq(true);
+    rule.setRequiresHighHeat(true);
+    rule.setAllowsRefereeStopage(false);
+    rule.setBumpAddition(BumpAddition.ALL);
+
+    Div card = CampaignCardExportView.buildSegmentRuleCard(rule);
+
+    assertThat(card.getElement().getTextRecursively())
+        .contains("SEGMENT RULE")
+        .contains("NO DQ")
+        .contains("HIGH HEAT")
+        .contains("NO REF STOPPAGE")
+        .contains("BUMPS: ALL");
+  }
+
+  @Test
+  @DisplayName("Segment rule card with default flags renders no badges; null guide safe")
+  void buildSegmentRuleCard_defaults_noBadges() {
+    SegmentRule rule = new SegmentRule();
+    rule.setName("Standard Match");
+    rule.setDescription("Nothing special.");
+    rule.setExpansionCode("CUSTOM");
+    rule.setNoDq(false);
+    rule.setRequiresHighHeat(false);
+    rule.setBumpAddition(BumpAddition.NONE);
+
+    Div card = CampaignCardExportView.buildSegmentRuleCard(rule);
+
+    assertThat(card.getElement().getTextRecursively())
+        .contains("Standard Match")
+        .doesNotContain("NO DQ")
+        .doesNotContain("HIGH HEAT")
+        .doesNotContain("BUMPS:");
+  }
+
+  @Test
+  @DisplayName("NPC card renders type, biography and image when present")
+  void buildNpcCard_rendersFields() {
+    Npc npc =
+        Npc.builder()
+            .name("Samuel Winters")
+            .npcType("Referee")
+            .gender(Gender.MALE)
+            .alignment(AlignmentType.FACE)
+            .description("Veteran referee.")
+            .imageUrl("/images/npc/samuel.png")
+            .expansionCode("CUSTOM")
+            .build();
+
+    Div card = CampaignCardExportView.buildNpcCard(npc);
+
+    assertThat(card.getElement().getTextRecursively())
+        .contains("Samuel Winters")
+        .contains("Referee")
+        .contains("Veteran referee.")
+        .contains("FACE")
+        .contains("CUSTOM");
+  }
+
+  @Test
+  @DisplayName("Title card renders tier, description and effect script lines")
+  void buildTitleCard_rendersFields() {
+    Title title = new Title();
+    title.setName("World Championship");
+    title.setDescription("The top belt.");
+    title.setTier(WrestlerTier.ICON);
+    title.setEffectScript("gainMomentum(2); modifyRoll(1)");
+    title.setExpansionCode("CUSTOM");
+
+    Div card = CampaignCardExportView.buildTitleCard(title);
+
+    assertThat(card.getElement().getTextRecursively())
+        .contains("CHAMPIONSHIP")
+        .contains("World Championship")
+        .contains("ICON")
+        .contains("The top belt.")
+        .contains("gainMomentum(2)")
+        .contains("modifyRoll(1)");
+  }
 
   @Test
   @DisplayName("Print CSS includes visible #campaign-card-print-title block; screen hides it")

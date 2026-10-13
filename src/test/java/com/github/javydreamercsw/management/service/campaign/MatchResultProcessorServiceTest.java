@@ -18,6 +18,9 @@ package com.github.javydreamercsw.management.service.campaign;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -53,11 +56,14 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.StaticEncounterDTO.StaticChoiceDTO.BonusVpCondition;
+import com.github.javydreamercsw.management.service.GameClock;
 import com.github.javydreamercsw.management.service.achievement.ScriptedAchievementEvaluator;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.news.NewsGenerationService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -105,6 +111,7 @@ class MatchResultProcessorServiceTest {
   @Mock private FeatureDataService featureDataService;
   @Mock private ScriptedAchievementEvaluator scriptedAchievementEvaluator;
   @Mock private LegacyService legacyService;
+  @Mock private GameClock gameClock;
   @Mock private CampaignService campaignService;
   @Mock private CampaignEncounterService campaignEncounterService;
 
@@ -112,6 +119,13 @@ class MatchResultProcessorServiceTest {
 
   @BeforeEach
   void setUpFeatureDataMock() {
+    // GameClock stub: fixed in-game date so converted write sites have a real anchor
+    Mockito.lenient()
+        .when(gameClock.gameNow())
+        .thenReturn(LocalDate.of(2026, 6, 28).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    Mockito.lenient()
+        .when(gameClock.gameNowOn(ArgumentMatchers.any()))
+        .thenReturn(LocalDate.of(2026, 6, 28).atStartOfDay(ZoneId.of("UTC")).toInstant());
     // @Lazy field-injected beans are not set by @InjectMocks; inject manually
     ReflectionTestUtils.setField(service, "campaignService", campaignService);
     ReflectionTestUtils.setField(service, "campaignEncounterService", campaignEncounterService);
@@ -293,6 +307,62 @@ class MatchResultProcessorServiceTest {
     service.processMatchResult(campaign, true);
 
     verify(tournamentService).advanceTournament(any(), any(Boolean.class), any());
+  }
+
+  @Test
+  void testProcessMatchResult_TournamentWin_otherCode_skipsDeadlyCombatWins() {
+    Account account = new Account();
+    Wrestler wrestler = new Wrestler();
+    wrestler.setId(1L);
+    wrestler.setAccount(account);
+    Universe universe = Universe.builder().name("Test Universe").build();
+    Campaign campaign = new Campaign();
+    campaign.setId(1L);
+    campaign.setWrestler(wrestler);
+    campaign.setUniverse(universe);
+    CampaignState state = new CampaignState();
+    state.setWins(0);
+    state.setLosses(0);
+    state.setVictoryPoints(0);
+    state.setMatchesPlayed(0);
+    state.setActiveCards(new ArrayList<>());
+    state.setCurrentChapterId("tournament");
+    Segment currentMatch = new Segment();
+    currentMatch.setShow(new Show());
+    state.setCurrentMatch(currentMatch);
+    campaign.setState(state);
+
+    when(campaignRepository.findById(1L)).thenReturn(Optional.of(campaign));
+    when(campaignService.getCurrentChapter(campaign))
+        .thenReturn(
+            Optional.of(
+                CampaignChapterDTO.builder()
+                    .id("tournament")
+                    .tournament(true)
+                    // Chapter has a different catalog identity (or none) — no Deadly Combat credit.
+                    .tournamentCode("some_other_tournament")
+                    .rules(
+                        CampaignChapterDTO.ChapterRules.builder()
+                            .victoryPointsWin(2)
+                            .victoryPointsLoss(1)
+                            .build())
+                    .build()));
+    WrestlerAlignment alignment = new WrestlerAlignment();
+    alignment.setAlignmentType(AlignmentType.FACE);
+    alignment.setLevel(1);
+    when(wrestlerAlignmentRepository.findByWrestlerAndUniverse(wrestler, universe))
+        .thenReturn(Optional.of(alignment));
+    when(tournamentService.isPlayerChampion(campaign)).thenReturn(true);
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
+    Title title = new Title();
+    title.setName("ATW World");
+    when(titleRepository.findByName("ATW World")).thenReturn(Optional.of(title));
+
+    service.processMatchResult(campaign, true);
+
+    verify(featureDataService, never())
+        .setFeatureValue(eq(state), eq("deadlyCombatWins"), anyInt());
+    verify(legacyService, never()).unlockAchievement(any(), any());
   }
 
   // ── bonus VP tests ──────────────────────────────────────────────────────────
@@ -513,6 +583,7 @@ class MatchResultProcessorServiceTest {
                 CampaignChapterDTO.builder()
                     .id("tournament")
                     .tournament(true)
+                    .tournamentCode("deadly_combat")
                     .rules(
                         CampaignChapterDTO.ChapterRules.builder()
                             .victoryPointsWin(2)

@@ -208,10 +208,9 @@ public class WrestlerSummaryCard extends Composite<VerticalLayout> {
                 hpTooltip.append("\nBump Penalty: -").append(bumpsCount);
               }
 
-              int conditionPenalty = Math.min(5, (100 - physicalCondition) / 5);
-              if (conditionPenalty > 0) {
-                hpTooltip.append("\nWear & Tear Penalty: -").append(conditionPenalty);
-              }
+              // No condition/wear-and-tear HP penalty here by design (ATW-xz4): low condition
+              // manifests as a per-match wear-and-tear bump roll instead (≤75% condition), and
+              // bumps are what reduce HP. Physical condition is displayed next to this tooltip.
 
               if (injuryPenalty > 0) {
                 hpTooltip.append("\nInjury Penalty: -").append(injuryPenalty);
