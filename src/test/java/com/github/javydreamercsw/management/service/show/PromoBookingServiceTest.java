@@ -31,11 +31,10 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.GameClock;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
-import java.time.Clock;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -58,7 +57,7 @@ class PromoBookingServiceTest {
   @Mock private SegmentTypeRepository segmentTypeRepository;
   @Mock private RivalryService rivalryService;
   @Mock private SegmentRuleService segmentRuleService;
-  @Mock private Clock clock;
+  @Mock private GameClock gameClock;
   @Mock private Random random;
 
   @InjectMocks private PromoBookingService promoBookingService;
@@ -89,8 +88,7 @@ class PromoBookingServiceTest {
     savedSegment.setSegmentType(promoSegmentType);
 
     // Default clock setup
-    when(clock.instant()).thenReturn(Instant.parse("2025-01-01T00:00:00Z"));
-    when(clock.getZone()).thenReturn(ZoneId.of("UTC"));
+    when(gameClock.gameNowOn(any())).thenReturn(Instant.parse("2025-01-01T00:00:00Z"));
 
     // Default random returns deterministic values — first call returns 0.8 (group promo threshold),
     // but most tests need solo promo (< 0.7). Use 0.5 for solo by default.

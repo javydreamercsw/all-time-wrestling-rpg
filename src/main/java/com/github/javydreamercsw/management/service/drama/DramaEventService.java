@@ -27,11 +27,11 @@ import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.DramaEventCreatedEvent;
+import com.github.javydreamercsw.management.service.GameClock;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.outcome.OutcomeMatrixService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import jakarta.persistence.EntityNotFoundException;
-import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -89,7 +89,7 @@ public class DramaEventService {
   private final UniverseRepository universeRepository;
   private final RivalryService rivalryService;
   private final InjuryService injuryService;
-  private final Clock clock;
+  private final GameClock gameClock;
   private final Random random;
   private final ApplicationEventPublisher eventPublisher;
 
@@ -103,7 +103,7 @@ public class DramaEventService {
       final UniverseRepository universeRepository,
       final RivalryService rivalryService,
       final InjuryService injuryService,
-      final Clock clock,
+      final GameClock gameClock,
       final Random random,
       final ApplicationEventPublisher eventPublisher) {
     this.dramaEventRepository = dramaEventRepository;
@@ -111,7 +111,7 @@ public class DramaEventService {
     this.universeRepository = universeRepository;
     this.rivalryService = rivalryService;
     this.injuryService = injuryService;
-    this.clock = clock;
+    this.gameClock = gameClock;
     this.random = random;
     this.eventPublisher = eventPublisher;
   }
@@ -146,9 +146,9 @@ public class DramaEventService {
     event.setSeverity(severity);
     event.setTitle(title);
     event.setDescription(description);
-    event.setEventDate(Instant.now(clock));
+    event.setEventDate(gameClock.gameNowStaggered());
     event.setIsProcessed(false);
-    event.setCreationDate(Instant.now(clock));
+    event.setCreationDate(gameClock.gameNow());
 
     DramaEvent saved = dramaEventRepository.save(event);
     eventPublisher.publishEvent(new DramaEventCreatedEvent(this, saved));
@@ -256,7 +256,7 @@ public class DramaEventService {
     }
 
     event.setIsProcessed(true);
-    event.setProcessedDate(Instant.now(clock));
+    event.setProcessedDate(gameClock.gameNow());
     dramaEventRepository.save(event);
     return 1;
   }
@@ -287,7 +287,7 @@ public class DramaEventService {
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<DramaEvent> getRecentEvents() {
-    return dramaEventRepository.findRecentEvents(Instant.now(clock).minus(30, ChronoUnit.DAYS));
+    return dramaEventRepository.findRecentEvents(gameClock.gameNow().minus(30, ChronoUnit.DAYS));
   }
 
   @Transactional(readOnly = true)
@@ -345,10 +345,10 @@ public class DramaEventService {
     event.setHeatImpact(heatImpact);
     event.setInjuryCaused(injuryCaused);
     event.setIsProcessed(true);
-    event.setProcessedDate(Instant.now(clock));
+    event.setProcessedDate(gameClock.gameNow());
     event.setProcessingNotes("Applied via OutcomeMatrixService.applyEffects()");
-    event.setEventDate(Instant.now(clock));
-    event.setCreationDate(Instant.now(clock));
+    event.setEventDate(gameClock.gameNowStaggered());
+    event.setCreationDate(gameClock.gameNow());
 
     DramaEvent saved = dramaEventRepository.save(event);
     eventPublisher.publishEvent(new DramaEventCreatedEvent(this, saved));
@@ -362,8 +362,9 @@ public class DramaEventService {
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   public DramaEventCleanupResult purgeOldEvents(
       final int processedRetentionDays, final int unprocessedRetentionDays) {
-    Instant processedCutoff = Instant.now(clock).minus(processedRetentionDays, ChronoUnit.DAYS);
-    Instant unprocessedCutoff = Instant.now(clock).minus(unprocessedRetentionDays, ChronoUnit.DAYS);
+    Instant processedCutoff = gameClock.gameNow().minus(processedRetentionDays, ChronoUnit.DAYS);
+    Instant unprocessedCutoff =
+        gameClock.gameNow().minus(unprocessedRetentionDays, ChronoUnit.DAYS);
 
     int processed = dramaEventRepository.deleteProcessedOlderThan(processedCutoff);
     int unprocessed = dramaEventRepository.deleteUnprocessedOlderThan(unprocessedCutoff);

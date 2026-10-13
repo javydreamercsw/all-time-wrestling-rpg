@@ -210,3 +210,20 @@ All `Tournament` associations (`entries`, `rounds`, rounds' `matches`, matches' 
 
 **Always use `TournamentService.findByIdWithDetails(id)`** when loading a tournament for display outside a transaction (views, tests). This method initializes the full object graph within a `@Transactional` boundary. Using `findById` for display will throw `LazyInitializationException`.
 
+### Seed Catalogs & Sync Order
+
+Content catalogs are seeded at startup by `DataSyncContributor` beans (`management.sync`), each gated on its table being empty (skip-if-not-empty). The **order matters** because later catalogs resolve references from earlier ones by name/code:
+
+| @Order |    Contributor     |                              Seeds                               |
+|--------|--------------------|------------------------------------------------------------------|
+| 30     | `SegmentRuleSync`  | `segment_rules.json`                                             |
+| 40     | `SegmentTypeSync`  | `segment_types.json`                                             |
+| 55     | `TournamentSync`   | `tournaments.json` (rules pool resolved by name)                 |
+| 60     | `ShowTemplateSync` | `show_templates.json` (assignment targets resolved by name/code) |
+
+When adding a new catalog that references seeded content, give it a higher `@Order` than every catalog it resolves from. Unknown references are skipped with a warning — a missing name must never fail the whole startup sync. See the [Content Management Guide](CONTENT_GUIDE.md#tournaments) for the JSON field reference.
+
+**Upsert safety (`TournamentService.createOrUpdateTournament`):** the update path touches only editable metadata (name, format while no entries exist, entrant hint, rules pool) and **never** lifecycle state — status, entries, rounds, payoff. Re-running the sync cannot resurrect a consumed or completed tournament.
+
+**Expansion gating:** templates may declare `requiredExpansions`; `ShowSchedulerService` skips show generation for a template whose required expansions are not all enabled (checked via `ExpansionService.isExpansionEnabled`). See the [Content Management Guide](CONTENT_GUIDE.md#show-templates).
+

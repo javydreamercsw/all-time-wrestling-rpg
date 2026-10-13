@@ -33,4 +33,8 @@ public class SegmentTypeDTO {
   private String code;
 
   private SegmentRulePlayGuide guide;
+
+  /** Marks the type as a special event format excluded from AI show proposals (ATW-0331). */
+  @JsonProperty("event_only")
+  private Boolean eventOnly;
 }

@@ -17,6 +17,8 @@
 package com.github.javydreamercsw.management.service.show.planning;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Data;
 
 @Data
@@ -26,4 +28,15 @@ public class ShowTemplate {
   private int expectedMatches;
   private int expectedPromos;
   private Gender genderConstraint;
+
+  /**
+   * Event-only segment types assigned to this template; AI may use them on its shows (ATW-0331).
+   */
+  private List<String> eventSegmentTypes = new ArrayList<>();
+
+  /** Assigned rules the AI should prefer when booking this template's shows. */
+  private List<String> encouragedRules = new ArrayList<>();
+
+  /** Assigned rules deterministically attached to every approved match segment. */
+  private List<String> autoAttachRules = new ArrayList<>();
 }

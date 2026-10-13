@@ -46,9 +46,12 @@ import com.github.javydreamercsw.management.service.news.NewsService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.season.SeasonStatsService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
+import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
+import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
+import com.github.javydreamercsw.management.ui.component.BriefcaseCashInDialog;
 import com.github.javydreamercsw.management.ui.component.SeasonSummaryComponent;
 import com.github.javydreamercsw.management.ui.component.news.NewsTickerComponent;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
@@ -112,6 +115,8 @@ public class PlayerDashboardView extends VerticalLayout {
   private final SeasonRepository seasonRepository;
   private final UniverseContextService universeContextService;
   private final CampaignService campaignService;
+  private final TitleOpportunityService titleOpportunityService;
+  private final TitleService titleService;
 
   private Wrestler playerWrestler;
   private WrestlerState playerState;
@@ -132,7 +137,9 @@ public class PlayerDashboardView extends VerticalLayout {
       final SeasonStatsService seasonStatsService,
       final SeasonRepository seasonRepository,
       final UniverseContextService universeContextService,
-      final CampaignService campaignService) {
+      final CampaignService campaignService,
+      final TitleOpportunityService titleOpportunityService,
+      final TitleService titleService) {
     this.wrestlerService = wrestlerService;
     this.wrestlerStatsService = wrestlerStatsService;
     this.rivalryService = rivalryService;
@@ -147,6 +154,8 @@ public class PlayerDashboardView extends VerticalLayout {
     this.seasonRepository = seasonRepository;
     this.universeContextService = universeContextService;
     this.campaignService = campaignService;
+    this.titleOpportunityService = titleOpportunityService;
+    this.titleService = titleService;
 
     setHeightFull();
     setPadding(false);
@@ -313,6 +322,41 @@ public class PlayerDashboardView extends VerticalLayout {
                 toCampaign.setId("continue-campaign-cta");
                 band.add(toCampaign);
               }
+            });
+
+    // Held briefcase: surface the cash-in next to the campaign CTAs (ATW-3fhh). The server
+    // authorizes the holder's player via @permissionService on cashIn.
+    titleOpportunityService
+        .findHeldByWrestler(playerWrestler.getId())
+        .ifPresent(
+            opportunity -> {
+              Span badge = new Span("💼 " + opportunity.getName() + " — HELD");
+              badge
+                  .getElement()
+                  .setAttribute(
+                      "style",
+                      "background:var(--lumo-primary-color-10pct);border-radius:var(--lumo-border-radius-m);padding:4px"
+                          + " 10px;font-weight:600");
+              Button cashIn =
+                  new Button(
+                      "Cash In",
+                      e ->
+                          new BriefcaseCashInDialog(
+                                  opportunity,
+                                  titleOpportunityService,
+                                  titleService,
+                                  null,
+                                  this::init)
+                              .open());
+              cashIn.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
+              cashIn.setId("cash-in-cta");
+              cashIn.setTooltipText(
+                  "Book a title match on the spot against the reigning champion of any active"
+                      + " championship. The briefcase is spent whether the match is won or lost.");
+              HorizontalLayout briefcaseAction = new HorizontalLayout(badge, cashIn);
+              briefcaseAction.setAlignItems(FlexComponent.Alignment.CENTER);
+              briefcaseAction.setSpacing(true);
+              band.add(briefcaseAction);
             });
 
     return band;
@@ -653,18 +697,9 @@ public class PlayerDashboardView extends VerticalLayout {
     if (bumps > 0) {
       hpTooltip.append("\nBump Penalty: -").append(bumps);
     }
-    int conditionPenalty =
-        Math.min(
-            5,
-            (100
-                    - playerWrestler
-                        .getDefaultState()
-                        .map(WrestlerState::getPhysicalCondition)
-                        .orElse(100))
-                / 5);
-    if (conditionPenalty > 0) {
-      hpTooltip.append("\nWear & Tear Penalty: -").append(conditionPenalty);
-    }
+    // No condition/wear-and-tear HP penalty here by design (ATW-xz4): low condition manifests as a
+    // per-match wear-and-tear bump roll instead (≤75% condition), and bumps are what reduce HP.
+
     int injuryPenalty =
         playerWrestler.getDefaultState().map(WrestlerState::getTotalInjuryPenalty).orElse(0);
     if (injuryPenalty > 0) {

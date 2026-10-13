@@ -31,5 +31,7 @@ public interface SegmentRuleRepository extends JpaRepository<SegmentRule, Long> 
   @Query("SELECT r FROM SegmentRule r WHERE r.requiresHighHeat = false")
   List<SegmentRule> findStandardRules();
 
+  List<SegmentRule> findByExpansionCodeOrderByNameAsc(String expansionCode);
+
   boolean existsByName(String name);
 }

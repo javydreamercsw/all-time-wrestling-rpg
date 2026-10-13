@@ -22,13 +22,17 @@ import static com.github.javydreamercsw.base.domain.account.RoleName.BOOKER_ROLE
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.title.TitleOpportunity;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.news.NewsService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
+import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.ui.component.BriefcaseCashInDialog;
 import com.github.javydreamercsw.management.ui.component.news.NewsTickerComponent;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.github.javydreamercsw.management.ui.view.rivalry.RivalryListView;
@@ -40,6 +44,7 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
@@ -48,6 +53,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -63,6 +69,8 @@ public class BookerView extends VerticalLayout {
   private final WrestlerService wrestlerService;
   private final NewsService newsService;
   private final UniverseContextService universeContextService;
+  private final TitleOpportunityService titleOpportunityService;
+  private final TitleService titleService;
 
   @Autowired
   public BookerView(
@@ -70,12 +78,16 @@ public class BookerView extends VerticalLayout {
       final RivalryService rivalryService,
       final WrestlerService wrestlerService,
       final NewsService newsService,
-      final UniverseContextService universeContextService) {
+      final UniverseContextService universeContextService,
+      final TitleOpportunityService titleOpportunityService,
+      final TitleService titleService) {
     this.showService = showService;
     this.rivalryService = rivalryService;
     this.wrestlerService = wrestlerService;
     this.newsService = newsService;
     this.universeContextService = universeContextService;
+    this.titleOpportunityService = titleOpportunityService;
+    this.titleService = titleService;
 
     setHeightFull();
     setPadding(false);
@@ -139,8 +151,9 @@ public class BookerView extends VerticalLayout {
     Tab rosterTab = new Tab("Roster Overview");
     Tab showsTab = new Tab("Upcoming Shows");
     Tab rivalriesTab = new Tab("Active Rivalries");
+    Tab briefcasesTab = new Tab("Held Briefcases");
 
-    Tabs tabs = new Tabs(rosterTab, showsTab, rivalriesTab);
+    Tabs tabs = new Tabs(rosterTab, showsTab, rivalriesTab, briefcasesTab);
     tabs.setWidthFull();
     return tabs;
   }
@@ -149,6 +162,7 @@ public class BookerView extends VerticalLayout {
     Grid<Wrestler> rosterGrid = createRosterOverviewGrid();
     Grid<Show> showsGrid = createUpcomingShowsGrid();
     Grid<Rivalry> rivalriesGrid = createActiveRivalriesGrid();
+    Div briefcasesPanel = createHeldBriefcasesPanel();
 
     // Wrap each tab grid in the touch-scroll container so wide grids scroll on phones
     Div rosterWrapper = new Div(rosterGrid);
@@ -158,19 +172,21 @@ public class BookerView extends VerticalLayout {
     Div rivalriesWrapper = new Div(rivalriesGrid);
     rivalriesWrapper.addClassName("grid-scroll-container");
 
-    Div pages = new Div(rosterWrapper, showsWrapper, rivalriesWrapper);
+    Div pages = new Div(rosterWrapper, showsWrapper, rivalriesWrapper, briefcasesPanel);
     // Flex column so each wrapper's .grid-scroll-container flex-grow:1/min-height:0 governs its
     // height — as a plain block the wrappers collapse and their grids render one row tall.
     pages.addClassNames(LumoUtility.Display.FLEX, LumoUtility.FlexDirection.COLUMN);
     pages.setSizeFull();
     showsWrapper.setVisible(false);
     rivalriesWrapper.setVisible(false);
+    briefcasesPanel.setVisible(false);
 
     Map<Tab, Component> tabsToPages =
         Map.of(
             tabs.getTabAt(0), rosterWrapper,
             tabs.getTabAt(1), showsWrapper,
-            tabs.getTabAt(2), rivalriesWrapper);
+            tabs.getTabAt(2), rivalriesWrapper,
+            tabs.getTabAt(3), briefcasesPanel);
 
     tabs.addSelectedChangeListener(
         event -> {
@@ -258,5 +274,74 @@ public class BookerView extends VerticalLayout {
     grid.setItems(rivalryService.getActiveRivalries());
     grid.setSizeFull();
     return grid;
+  }
+
+  /**
+   * Held briefcases panel (ATW-3fhh): every HELD TitleOpportunity with its holder, expiry and
+   * granting tournament, plus a Cash In action opening the shared dialog (same flow as the career
+   * page).
+   */
+  private Div createHeldBriefcasesPanel() {
+    Div panel = new Div();
+    panel.setId("held-briefcases-panel");
+    panel.addClassNames(LumoUtility.Display.FLEX, LumoUtility.FlexDirection.COLUMN);
+    panel.setSizeFull();
+
+    List<TitleOpportunity> held = titleOpportunityService.findHeld();
+    if (held.isEmpty()) {
+      Span empty = new Span("No briefcases are currently held.");
+      empty.getStyle().set("color", "var(--lumo-secondary-text-color)");
+      panel.add(empty);
+      return panel;
+    }
+
+    Grid<TitleOpportunity> grid = new Grid<>();
+    grid.setId("held-briefcases-grid");
+    // The holder is a lazy proxy — grid value providers run outside a transaction, so resolve
+    // names eagerly into a map (the same discipline as the career view's title grid).
+    Map<Long, String> holderNames = new HashMap<>();
+    held.forEach(
+        o -> {
+          Wrestler holder = o.getWrestler();
+          if (holder != null && holder.getId() != null) {
+            holderNames.put(
+                o.getId(),
+                wrestlerService.findById(holder.getId()).map(Wrestler::getName).orElse("?"));
+          }
+        });
+    grid.addColumn(o -> holderNames.getOrDefault(o.getId(), "—"))
+        .setHeader("Holder")
+        .setAutoWidth(true);
+    grid.addColumn(TitleOpportunity::getName).setHeader("Briefcase").setAutoWidth(true);
+    grid.addColumn(o -> o.getGender() != null ? o.getGender().name() : "—")
+        .setHeader("Division")
+        .setAutoWidth(true);
+    grid.addColumn(TitleOpportunity::getEarnedAt).setHeader("Earned").setAutoWidth(true);
+    grid.addColumn(o -> o.getExpiryDate() != null ? o.getExpiryDate() : "never")
+        .setHeader("Cashable Until")
+        .setAutoWidth(true);
+    grid.addComponentColumn(
+            opportunity -> {
+              Button cashIn = new Button("Cash In");
+              cashIn.addClickListener(
+                  e ->
+                      new BriefcaseCashInDialog(
+                              opportunity,
+                              titleOpportunityService,
+                              titleService,
+                              showService,
+                              this::buildDashboard)
+                          .open());
+              return cashIn;
+            })
+        .setHeader("Actions")
+        .setAutoWidth(true);
+
+    grid.setItems(held);
+    grid.setAllRowsVisible(true);
+    grid.setWidthFull();
+
+    panel.add(grid);
+    return panel;
   }
 }

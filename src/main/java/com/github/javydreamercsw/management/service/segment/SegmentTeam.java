@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 
 /**
  * Represents a team of wrestlers for segment resolution purposes. A team can have one or more
@@ -34,6 +35,15 @@ public class SegmentTeam {
   private int totalWeight;
   private double averageTierBonus;
   private int totalHealthPenalty;
+
+  /**
+   * Extra per-team wear penalty subtracted from the team's weight during resolution (ATW-p8ij): a
+   * post-match ambush sets this on the champion's team so the wear they just accumulated makes them
+   * easier to beat. Static penalties (bumps, injuries) already flow through {@code
+   * totalHealthPenalty}; this is the same-show carry-over on top. Callers pass a non-negative value
+   * (the ambush clamps at the source).
+   */
+  @Setter private int extraWearPenalty;
 
   /** Create a team with a single wrestler (for singles matches). */
   public SegmentTeam(@NonNull final Wrestler wrestler) {
@@ -69,9 +79,10 @@ public class SegmentTeam {
   /** Calculate team statistics for segment resolution. */
   public void calculateTeamStats(
       @NonNull final NPCSegmentResolutionService.TeamStatsCalculator calculator) {
-    this.totalWeight = calculator.calculateTeamWeight(this);
-    this.averageTierBonus = calculator.calculateAverageTierBonus(this);
     this.totalHealthPenalty = calculator.calculateTeamHealthPenalty(this);
+    this.totalWeight =
+        calculator.calculateTeamWeight(this) - extraWearPenalty; // ambush carry-over (ATW-p8ij)
+    this.averageTierBonus = calculator.calculateAverageTierBonus(this);
   }
 
   /** Check if this is a singles team (1 member). */

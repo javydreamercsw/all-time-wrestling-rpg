@@ -71,6 +71,13 @@ public interface ShowRepository extends JpaRepository<Show, Long>, JpaSpecificat
   List<Show> findByShowDateGreaterThanEqualOrderByShowDate(LocalDate date, Pageable pageable);
 
   /**
+   * Future non-adjudicated shells of a template (ATW-ekev): shows generated from it that are still
+   * empty (no segments) and scheduled after {@code date} — the propagation target set when a
+   * template's snapshot fields change.
+   */
+  List<Show> findByTemplateIdAndShowDateAfterAndSegmentsEmpty(Long templateId, LocalDate date);
+
+  /**
    * Find shows on a specific date.
    *
    * @param date The date to search for

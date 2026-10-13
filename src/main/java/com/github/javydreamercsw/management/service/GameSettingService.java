@@ -72,6 +72,12 @@ public class GameSettingService {
   /** Days to retain inbox items before automatic purge. -1 disables the purge. */
   public static final String INBOX_RETENTION_DAYS_KEY = "inbox.retention.days";
 
+  /**
+   * Days an ENDED rivalry is kept before the nightly retention purge removes it. 0 (default) = keep
+   * forever — differs from the inbox retention's disable convention (there -1 disables).
+   */
+  public static final String RIVALRY_RETENTION_DAYS_KEY = "rivalry.retention.days";
+
   /** Maximum number of PLEs a feud script can appear at (1–3). */
   public static final String MAX_PLE_FEUD_APPEARANCES_KEY = "feud.script.max_ple_appearances";
 
@@ -97,6 +103,14 @@ public class GameSettingService {
   /** Days a failed challenger is excluded from #1 contender consideration for the same title. */
   public static final String CONTENDER_FAILED_CHALLENGE_COOLDOWN_DEFENSES_KEY =
       "contender.failed_challenge_cooldown_defenses";
+
+  /**
+   * Days a briefcase (held title opportunity, ATW-8p72) stays cashable after being earned. Default:
+   * 365 (one in-game year).
+   */
+  public static final String BRIEFCASE_EXPIRY_DAYS_KEY = "briefcase.expiry.days";
+
+  public static final String BRIEFCASE_NPC_CASH_IN_ENABLED_KEY = "briefcase.npc_cash_in_enabled";
 
   /**
    * Keys that are strictly per-universe credentials. They are NEVER inherited from the global
@@ -463,6 +477,33 @@ public class GameSettingService {
     saveInternal(INTERGENDER_MATCHES_ENABLED_KEY, String.valueOf(enabled));
   }
 
+  /** Days a briefcase stays cashable after being earned. Default: 365 (one in-game year). */
+  @PreAuthorize("permitAll()")
+  public int getBriefcaseExpiryDays() {
+    return resolveValue(BRIEFCASE_EXPIRY_DAYS_KEY).map(Integer::parseInt).orElse(365);
+  }
+
+  /**
+   * Whether the NPC briefcase cash-in advisor proposes automatic cash-ins on show-planning cards
+   * (ATW-2b9u). Default: true.
+   */
+  @PreAuthorize("permitAll()")
+  public boolean isNpcBriefcaseCashInEnabled() {
+    return resolveValue(BRIEFCASE_NPC_CASH_IN_ENABLED_KEY).map(Boolean::parseBoolean).orElse(true);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public void setNpcBriefcaseCashInEnabled(final boolean enabled) {
+    saveInternal(BRIEFCASE_NPC_CASH_IN_ENABLED_KEY, String.valueOf(enabled));
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public void setBriefcaseExpiryDays(final int days) {
+    saveInternal(BRIEFCASE_EXPIRY_DAYS_KEY, String.valueOf(days));
+  }
+
   @PreAuthorize("permitAll()")
   public int getConditionRestThreshold() {
     return resolveValue(CONDITION_REST_THRESHOLD_KEY).map(Integer::parseInt).orElse(75);
@@ -484,6 +525,21 @@ public class GameSettingService {
   @Transactional
   public void setInboxRetentionDays(final int days) {
     saveInternal(INBOX_RETENTION_DAYS_KEY, String.valueOf(days));
+  }
+
+  /**
+   * Returns the ended-rivalry retention window in days for the nightly purge. 0 means ended
+   * rivalries are kept forever (purge disabled). Default: 0.
+   */
+  @PreAuthorize("permitAll()")
+  public int getRivalryRetentionDays() {
+    return resolveValue(RIVALRY_RETENTION_DAYS_KEY).map(Integer::parseInt).orElse(0);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public void setRivalryRetentionDays(final int days) {
+    saveInternal(RIVALRY_RETENTION_DAYS_KEY, String.valueOf(days));
   }
 
   // ── Generic access (used by AiSettingsService and other consumers) ────────

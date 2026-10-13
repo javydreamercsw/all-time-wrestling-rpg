@@ -36,12 +36,14 @@ import com.github.javydreamercsw.management.event.inbox.InboxUpdateBroadcaster;
 import com.github.javydreamercsw.management.event.inbox.OpenProfileDrawerBroadcaster;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
+import com.github.javydreamercsw.management.service.show.ShowFacade;
 import com.github.javydreamercsw.management.service.tutorial.TutorialDefinition;
 import com.github.javydreamercsw.management.service.tutorial.TutorialService;
 import com.github.javydreamercsw.management.service.tutorial.TutorialStep;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.universe.UniverseMembershipService;
 import com.github.javydreamercsw.management.ui.view.account.ProfileDrawer;
+import com.github.javydreamercsw.management.ui.view.match.SegmentQrPickerDialog;
 import com.github.javydreamercsw.management.ui.view.tutorial.TutorialStepOverlay;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.DetachEvent;
@@ -123,6 +125,7 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
   private Span inboxBadge;
   private TutorialService tutorialService;
   private TutorialStepOverlay tutorialOverlay;
+  private ShowFacade showFacade;
 
   @Autowired
   public MainLayout(
@@ -138,7 +141,8 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
       final UniverseMembershipService universeMembershipService,
       final InboxService inboxService,
       final TutorialService tutorialService,
-      final OpenProfileDrawerBroadcaster openProfileDrawerBroadcaster) {
+      final OpenProfileDrawerBroadcaster openProfileDrawerBroadcaster,
+      final ShowFacade showFacade) {
     this.menuService = menuService;
     this.inboxUpdateBroadcaster = inboxUpdateBroadcaster;
     this.buildProperties = buildProperties.orElse(null);
@@ -152,6 +156,7 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
     this.inboxService = inboxService;
     this.tutorialService = tutorialService;
     this.openProfileDrawerBroadcaster = openProfileDrawerBroadcaster;
+    this.showFacade = showFacade;
     setPrimarySection(Section.DRAWER);
 
     SideNav sideNav = createSideNav();
@@ -271,7 +276,25 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
     SideNav nav = new SideNav();
     nav.addClassNames(Margin.Horizontal.MEDIUM);
     menuService.getMenuItems().forEach(menuItem -> nav.addItem(createSideNavItem(menuItem)));
+    if (securityUtils != null && securityUtils.isAuthenticated()) {
+      nav.addItem(createShareQrNavItem());
+    }
     return nav;
+  }
+
+  /**
+   * Root-level entry point for sharing a match QR code (ATW-pflh). Visible to any authenticated
+   * user — the per-segment share buttons this mirrors live on {@code @PermitAll} views with no
+   * additional role requirement. Clicking it opens the segment picker dialog; QR generation itself
+   * is reused from {@code QrCodeDialog}.
+   */
+  private SideNavItem createShareQrNavItem() {
+    SideNavItem item = new SideNavItem("Share QR Code");
+    item.setId("share-qr-nav-item");
+    item.setPrefixComponent(VaadinIcon.QRCODE.create());
+    item.getElement()
+        .addEventListener("click", event -> new SegmentQrPickerDialog(showFacade).open());
+    return item;
   }
 
   private SideNavItem createSideNavItem(final MenuItem menuItem) {

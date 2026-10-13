@@ -30,6 +30,10 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.BumpSource;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.tournament.TournamentEntryStatus;
+import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
+import com.github.javydreamercsw.management.domain.tournament.TournamentMatchRepository;
+import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -52,6 +56,7 @@ import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.title.ContenderSelectionService;
+import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.RetirementService;
@@ -130,6 +135,17 @@ public class SegmentAdjudicationService {
   // when null (unit tests).
   @Setter(onMethod_ = {@Autowired})
   private ContenderSelectionService contenderSelectionService;
+
+  // Field-injected for the same reason — null-safe, briefcase grants are skipped when null
+  // (unit tests). Lazy because TitleOpportunityService depends on NPCSegmentResolutionService,
+  // which participates in this service's adjudication transactions.
+  @Setter(onMethod_ = {@Autowired, @Lazy})
+  private TitleOpportunityService titleOpportunityService;
+
+  // Field-injected for the same reason — null-safe, briefcase grants are skipped when null
+  // (unit tests).
+  @Setter(onMethod_ = {@Autowired})
+  private TournamentMatchRepository tournamentMatchRepository;
 
   @Autowired
   public SegmentAdjudicationService(
@@ -324,6 +340,16 @@ public class SegmentAdjudicationService {
     applyRingsideActions(segment);
     applyTitleChange(segment, winners, losers);
     applyContenderOutcomes(segment, winners);
+    applyBriefcaseOutcomes(segment, winners);
+    // Advisor-booked ambush (ATW-2b9u): carry the champion's same-show wear into the ambush
+    // resolution. Null-safe and exception-safe — never fails adjudication.
+    if (titleOpportunityService != null) {
+      try {
+        titleOpportunityService.applyAmbushWearIfApplicable(segment);
+      } catch (Exception e) {
+        log.error("Ambush wear carry-over failed for segment {}", segment.getId(), e);
+      }
+    }
 
     Long universeId =
         segment.getShow().getUniverse() != null ? segment.getShow().getUniverse().getId() : 1L;
@@ -523,6 +549,58 @@ public class SegmentAdjudicationService {
     }
   }
 
+  /**
+   * Briefcase grant (ATW-8p72): when a briefcase-deciding tournament's payoff final is adjudicated,
+   * its winner earns the cashable briefcase. The tournament's WINNER entry (stamped at booking) is
+   * authoritative; adjudication is only the trigger. Null-safe (unit tests) and failure-isolated —
+   * a grant problem never fails adjudication (the same contract as the PLE auto-start listener).
+   */
+  private void applyBriefcaseOutcomes(
+      @NonNull final Segment segment, @NonNull final List<Wrestler> winners) {
+    if (titleOpportunityService == null || tournamentMatchRepository == null) {
+      return;
+    }
+    if (WellKnownSegmentType.PROMO.matches(segment.getSegmentType()) || winners.isEmpty()) {
+      return;
+    }
+    try {
+      Optional<TournamentMatch> matchOpt =
+          tournamentMatchRepository.findBySegmentId(segment.getId());
+      if (matchOpt.isEmpty()) {
+        return; // not a tournament segment (includes campaign mode) — nothing to grant
+      }
+      var tournament = matchOpt.get().getRound().getTournament();
+      if (!tournament.isBriefcaseDeciding()
+          || tournament.getStatus() != TournamentStatus.COMPLETE) {
+        return;
+      }
+      // The bracket's WINNER entry is authoritative; warn on a mismatch with the segment result.
+      Wrestler bracketWinner =
+          tournament.getEntries().stream()
+              .filter(e -> e.getStatus() == TournamentEntryStatus.WINNER)
+              .map(e -> e.getWrestler())
+              .findFirst()
+              .orElse(null);
+      if (bracketWinner == null) {
+        log.warn(
+            "Briefcase tournament '{}' is COMPLETE with no winner entry — grant skipped",
+            tournament.getName());
+        return;
+      }
+      if (!winners.contains(bracketWinner)) {
+        log.warn(
+            "Segment winner(s) {} do not include the bracket winner {} of '{}' — the bracket"
+                + " entry stays authoritative for the briefcase grant",
+            winners.stream().map(Wrestler::getName).collect(Collectors.joining(", ")),
+            bracketWinner.getName(),
+            tournament.getName());
+      }
+      titleOpportunityService.grantFromTournament(tournament, bracketWinner);
+    } catch (Exception e) {
+      log.error("Briefcase grant after adjudication failed for segment {}", segment.getId(), e);
+    }
+  }
+
   private void applyFactionAffinity(
       @NonNull final Segment segment,
       @NonNull final List<Wrestler> winners,
@@ -574,22 +652,50 @@ public class SegmentAdjudicationService {
         });
   }
 
+  /**
+   * Whether the two wrestlers are current members of the same faction in the given universe. Shared
+   * by the AI-targeted heat guard and the generic pair-scan: faction-mates don't build rivalry heat
+   * from booked segments.
+   */
+  private boolean areFactionMates(Wrestler a, Wrestler b, @NonNull final Long universeId) {
+    Faction fa = a.getState(universeId).map(WrestlerState::getFaction).orElse(null);
+    Faction fb = b.getState(universeId).map(WrestlerState::getFaction).orElse(null);
+    return fa != null && fa.equals(fb);
+  }
+
   private void applyHeatToRivaltiesAndFeuds(
       @NonNull final Segment segment,
       @NonNull final List<Wrestler> participants,
       @NonNull final Long universeId) {
     // If the AI tagged a specific rivalry, boost its heat directly before the generic pair-scan.
     if (segment.getRivalryId() != null) {
-      int targetedHeat = segment.getShow().isPremiumLiveEvent() ? 3 : 2;
-      rivalryService.addHeat(
-          segment.getRivalryId(),
-          targetedHeat,
-          "AI-booked segment: " + segment.getSegmentType().getName());
-      log.debug(
-          "Added {} heat to rivalry {} from AI-booked segment {}",
-          targetedHeat,
-          segment.getRivalryId(),
-          segment.getId());
+      // Same-faction rivalries are modeling errors (e.g. two stablemates at 117 heat): heating
+      // them keeps the planner proposing stablemate matches forever, and heat decay never fires
+      // because every segment re-heats them. Parity with the generic pair-scan's faction-mate
+      // skip below. An unloadable rivalry (deleted) keeps today's behavior — addHeat no-ops.
+      boolean factionMates =
+          rivalryService
+              .getRivalryByIdWithWrestlers(segment.getRivalryId())
+              .map(
+                  rivalry ->
+                      areFactionMates(rivalry.getWrestler1(), rivalry.getWrestler2(), universeId))
+              .orElse(false);
+      if (factionMates) {
+        log.debug(
+            "Skipping targeted heat for rivalry {} — participants are faction-mates",
+            segment.getRivalryId());
+      } else {
+        int targetedHeat = segment.getShow().isPremiumLiveEvent() ? 3 : 2;
+        rivalryService.addHeat(
+            segment.getRivalryId(),
+            targetedHeat,
+            "AI-booked segment: " + segment.getSegmentType().getName());
+        log.debug(
+            "Added {} heat to rivalry {} from AI-booked segment {}",
+            targetedHeat,
+            segment.getRivalryId(),
+            segment.getId());
+      }
     }
 
     // Add heat to rivalries
@@ -616,6 +722,7 @@ public class SegmentAdjudicationService {
                 fi.getName());
             continue;
           }
+          // (areFactionMates() helper shares this check with the targeted-heat path above.)
           if (isPromo || isAiTargeted) {
             // Promos and AI-targeted segments may create a new rivalry if none exists.
             rivalryService.addHeatBetweenWrestlers(

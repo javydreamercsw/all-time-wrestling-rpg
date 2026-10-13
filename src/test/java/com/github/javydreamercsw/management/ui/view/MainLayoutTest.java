@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.management.ui.view;
 
+import static com.github.mvysny.kaributesting.v10.ElementUtilsKt._fireDomEvent;
+import static com.github.mvysny.kaributesting.v10.LocatorJ._find;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -37,14 +39,20 @@ import com.github.javydreamercsw.management.event.inbox.InboxUpdateEvent;
 import com.github.javydreamercsw.management.event.inbox.OpenProfileDrawerBroadcaster;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
+import com.github.javydreamercsw.management.service.show.ShowFacade;
+import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.tutorial.TutorialService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.universe.UniverseMembershipService;
+import com.github.javydreamercsw.management.ui.view.match.SegmentQrPickerDialog;
 import com.github.mvysny.kaributesting.v10.MockVaadin;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.sidenav.SideNavItem;
+import com.vaadin.flow.dom.DomEvent;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -56,7 +64,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
+import org.springframework.data.domain.Page;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import tools.jackson.databind.node.JsonNodeFactory;
 
 class MainLayoutTest extends AbstractViewTest {
 
@@ -72,6 +82,7 @@ class MainLayoutTest extends AbstractViewTest {
   @Mock private InboxService inboxService;
   @Mock private TutorialService tutorialService;
   @Mock private OpenProfileDrawerBroadcaster openProfileDrawerBroadcaster;
+  @Mock private ShowFacade showFacade;
 
   @BeforeEach
   void setup() {
@@ -100,7 +111,8 @@ class MainLayoutTest extends AbstractViewTest {
             universeMembershipService,
             inboxService,
             tutorialService,
-            openProfileDrawerBroadcaster);
+            openProfileDrawerBroadcaster,
+            showFacade);
     UI.getCurrent().add(layout);
     return layout;
   }
@@ -249,5 +261,47 @@ class MainLayoutTest extends AbstractViewTest {
           () -> Notification.show(anyString(), anyInt(), any(Notification.Position.class)),
           Mockito.never());
     }
+  }
+
+  @Test
+  @DisplayName("Share QR Code nav item is visible to authenticated users")
+  void shareQrNavItem_authenticatedUser_present() {
+    when(securityUtils.isAuthenticated()).thenReturn(true);
+
+    MainLayout layout = createLayout();
+
+    SideNavItem qrItem = _get(layout, SideNavItem.class, spec -> spec.withId("share-qr-nav-item"));
+    assertThat(qrItem.getLabel()).isEqualTo("Share QR Code");
+  }
+
+  @Test
+  @DisplayName("Share QR Code nav item is hidden from unauthenticated users")
+  void shareQrNavItem_unauthenticatedUser_absent() {
+    when(securityUtils.isAuthenticated()).thenReturn(false);
+
+    MainLayout layout = createLayout();
+
+    List<SideNavItem> qrItems =
+        _find(layout, SideNavItem.class, spec -> spec.withId("share-qr-nav-item"));
+    assertThat(qrItems).isEmpty();
+  }
+
+  @Test
+  @DisplayName("Clicking Share QR Code opens the segment picker dialog")
+  void shareQrNavItem_click_opensPickerDialog() {
+    when(securityUtils.isAuthenticated()).thenReturn(true);
+    ShowService showService = mock(ShowService.class);
+    when(showFacade.getShowService()).thenReturn(showService);
+    when(showService.getAllShows(any())).thenReturn(Page.empty());
+
+    MainLayout layout = createLayout();
+
+    SideNavItem qrItem = _get(layout, SideNavItem.class, spec -> spec.withId("share-qr-nav-item"));
+    _fireDomEvent(
+        qrItem.getElement(),
+        new DomEvent(qrItem.getElement(), "click", JsonNodeFactory.instance.objectNode()));
+
+    Dialog dialog = _get(Dialog.class);
+    assertThat(dialog).isInstanceOf(SegmentQrPickerDialog.class);
   }
 }

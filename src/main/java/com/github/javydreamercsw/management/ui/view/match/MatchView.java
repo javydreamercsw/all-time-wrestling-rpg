@@ -43,6 +43,7 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipa
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleOpportunity;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.world.Location;
@@ -63,6 +64,7 @@ import com.github.javydreamercsw.management.service.ringside.RingsideAiService;
 import com.github.javydreamercsw.management.service.segment.NarrationParserService;
 import com.github.javydreamercsw.management.service.segment.PromoService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
+import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.title.TitleScriptService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
@@ -82,6 +84,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
@@ -150,6 +153,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   @Autowired private DeckService deckService;
   @Autowired private WrestlerAbilityRepository wrestlerAbilityRepository;
   @Autowired private AbilityReminderTextService abilityReminderTextService;
+  @Autowired private TitleOpportunityService titleOpportunityService;
 
   private Segment segment;
   private TextArea narrationArea;
@@ -1202,6 +1206,10 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                       wc.setAlignment(w.getAlignment().getAlignmentType().name());
                     }
 
+                    // Briefcase holder context (ATW-brrz): narration introduces a holder like a
+                    // champion.
+                    wc.setHeldBriefcase(titleOpportunityService.heldBriefcaseContextOf(w.getId()));
+
                     // Set manager/supporter context
                     Object supporter = ringsideActionService.getBestSupporter(segment, w);
                     if (supporter != null) {
@@ -1219,21 +1227,34 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       context.setDeterminedOutcome(
           segment.getWinners().stream().map(Wrestler::getName).collect(Collectors.joining(", ")));
 
-      // Add all available NPCs to the context to help AI stay within roster
-
-      context.setNpcs(
-          npcService.findAll().stream()
-              .map(
-                  npc -> {
-                    NPCContext nc = new NPCContext();
-                    nc.setName(npc.getName());
-                    nc.setDescription(npc.getDescription());
-                    if (npc.getNpcType() != null) {
-                      nc.setRole(npc.getNpcType());
-                    }
-                    return nc;
-                  })
-              .toList());
+      // Only narratively relevant NPCs: the assigned referee and any NPC supporters
+      // (managers) resolved for the participants. Commentators ride in the dedicated
+      // 'commentators' field and everyone else is roster noise (ATW-2ax7).
+      LinkedHashMap<String, NPCContext> relevantNpcs = new LinkedHashMap<>();
+      if (segment.getReferee() != null) {
+        NPCContext nc = new NPCContext();
+        nc.setName(segment.getReferee().getName());
+        nc.setDescription(segment.getReferee().getDescription());
+        nc.setRole(segment.getReferee().getNpcType());
+        relevantNpcs.put(segment.getReferee().getName(), nc);
+      }
+      for (WrestlerContext wc : context.getWrestlers()) {
+        if (wc.getManagerName() == null) {
+          continue;
+        }
+        npcService
+            .getByName(wc.getManagerName())
+            .filter(n -> !relevantNpcs.containsKey(n.getName()))
+            .ifPresent(
+                npc -> {
+                  NPCContext nc = new NPCContext();
+                  nc.setName(npc.getName());
+                  nc.setDescription(npc.getDescription());
+                  nc.setRole(npc.getNpcType());
+                  relevantNpcs.put(npc.getName(), nc);
+                });
+      }
+      context.setNpcs(List.copyOf(relevantNpcs.values()));
 
       // Commentary Team Context
       CommentaryTeam team = segment.getShow().getCommentaryTeam();
@@ -1309,12 +1330,17 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                       + " members provided in the context. ")
               + "Each commentator has a distinct persona (Alignment, Style, Catchphrase) that MUST"
               + " be respected. Ensure the narration flows as dynamic dialogue, capturing their"
-              + " different perspectives. IMPORTANT: You MUST ONLY use the wrestlers, commentators"
-              + " and NPCs provided in the context. Do NOT invent new characters, announcers, or"
-              + " managers. Stick strictly to the All Time Wrestling roster provided.";
+              + " different perspectives. IMPORTANT: The characters physically acting in this match"
+              + " are exclusively the wrestlers, commentators and NPCs provided in the context. Do"
+              + " NOT invent new characters, announcers, or managers. If user feedback names other"
+              + " wrestlers from the All Time Wrestling roster (e.g. a run-in or a rescue), they"
+              + " may be mentioned and perform those described actions, but no one else may act"
+              + " or speak.";
 
       if (feedback != null && !feedback.isBlank()) {
-        instructions += "\n\nPlease also incorporate this specific feedback: " + feedback;
+        // "User Feedback: " is the marker the narration prompt builder elevates as mandatory
+        // story requirements (see AbstractSegmentNarrationService.buildSegmentNarrationPrompt).
+        instructions += "\n\nUser Feedback: " + feedback;
       }
 
       if (segment.getNarration() != null && !segment.getNarration().isBlank()) {
@@ -1387,6 +1413,9 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                       () -> {
                         narrationArea.setValue(generated);
                         segment.setNarration(generated);
+                        // Persist the feedback that drove this generation (ATW-mkvj) so it
+                        // survives regeneration and shows in segment notes.
+                        segment.setNotes(feedback);
                         segmentService.updateSegment(segment);
                         updateCommentaryDisplay();
                         notificationService.showSuccess("Narration generated!");
@@ -1478,6 +1507,14 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
           p.setFinalHealth(field.getValue());
         }
       }
+    }
+
+    // Briefcase run-in trigger (ATW-qsm9): a participant reaching HALF their starting HP in a
+    // title match offers the cash-in — the tabletop moment, mirrored in the app. Runs after the
+    // health capture so bookRunIn sees it; returns early (the run-in replaces adjudication of
+    // this match — the FFA cash-in segment books and adjudicates on its own).
+    if (maybeOfferBriefcaseRunIn()) {
+      return;
     }
 
     // Persist bonus match data (finish type, winning card) for bonus VP evaluation
@@ -1594,6 +1631,92 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       Notification.show("Failed to adjudicate match: " + e.getMessage())
           .addThemeVariants(NotificationVariant.LUMO_ERROR);
     }
+  }
+
+  /**
+   * The half-HP run-in trigger (ATW-qsm9): when a participant in a title match was recorded at or
+   * below half their starting HP and an eligible HELD briefcase exists for the title on the line,
+   * offer the mid-match cash-in. Accepting books the 3-team free-for-all via {@code
+   * TitleOpportunityService.bookRunIn} — the interrupted match stays as recorded (its winner stands
+   * for rivalry/league purposes) and the cash-in FFA adjudicates as its own segment.
+   *
+   * @return true when a run-in was booked (the caller must skip normal adjudication)
+   */
+  private boolean maybeOfferBriefcaseRunIn() {
+    if (!securityUtils.isBooker() && !securityUtils.isAdmin()) {
+      return false;
+    }
+    if (!Boolean.TRUE.equals(segment.getIsTitleSegment())
+        || segment.getTitles() == null
+        || segment.getTitles().isEmpty()
+        || segment.getShow() == null) {
+      return false;
+    }
+    // Trigger: a wrestler at/below half their starting health in this encounter.
+    boolean halfHpReached =
+        segment.getParticipants().stream()
+            .anyMatch(
+                p ->
+                    p.getWrestler() != null
+                        && p.getFinalHealth() != null
+                        && p.getWrestler().getStartingHealth() > 0
+                        && p.getFinalHealth() * 2 <= p.getWrestler().getStartingHealth());
+    if (!halfHpReached) {
+      return false;
+    }
+    Title title = segment.getTitles().iterator().next();
+    // An eligible HELD case for an offer: active holder. Full validation (expiry, gender,
+    // division, reigning champion in the match) runs inside bookRunIn — this gate is just for
+    // showing the prompt.
+    Optional<TitleOpportunity> candidate =
+        titleOpportunityService.findHeld().stream()
+            .filter(
+                opp ->
+                    opp.getWrestler() != null && Boolean.TRUE.equals(opp.getWrestler().getActive()))
+            .findFirst();
+    if (candidate.isEmpty()) {
+      return false;
+    }
+    TitleOpportunity opportunity = candidate.get();
+    Wrestler holder = opportunity.getWrestler();
+    ConfirmDialog dialog = new ConfirmDialog();
+    dialog.setHeader("Briefcase run-in?");
+    dialog.setText(
+        holder.getName()
+            + " holds "
+            + opportunity.getName()
+            + ". A wrestler in this match just hit half their starting HP — did "
+            + holder.getName()
+            + " storm the ring and cash in mid-match?");
+    dialog.setConfirmText("Cash in mid-match");
+    dialog.setCancelText("No run-in");
+    // The dialog is async; resolve the choice via the confirm listener: on confirm, book the
+    // run-in segment. The interrupted match itself still adjudicates normally — additive.
+    dialog.addConfirmListener(
+        event -> {
+          try {
+            Segment runIn =
+                GeneralSecurityUtils.runAsAdmin(
+                    () ->
+                        titleOpportunityService.bookRunIn(
+                            opportunity.getId(),
+                            title.getId(),
+                            segment.getShow().getId(),
+                            segment));
+            Notification.show(
+                    "Run-in cash-in booked: "
+                        + runIn.getSegmentType().getName()
+                        + " — adjudicate it after this match.")
+                .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+          } catch (Exception e) {
+            log.error("Run-in cash-in booking failed for segment {}", segment.getId(), e);
+            Notification.show("Run-in failed: " + e.getMessage())
+                .addThemeVariants(NotificationVariant.LUMO_ERROR);
+          }
+        });
+    dialog.open();
+    // The interrupted match adjudicates normally — the run-in is additive.
+    return false;
   }
 
   private void saveNarration() {

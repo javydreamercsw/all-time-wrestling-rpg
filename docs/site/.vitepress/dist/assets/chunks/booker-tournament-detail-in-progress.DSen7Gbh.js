@@ -1,0 +1,1 @@
+var e=`/screenshots/booker-tournament-list.png`,t=`/screenshots/booker-tournament-detail-scheduled.png`,n=`/screenshots/booker-tournament-detail-in-progress.png`;export{t as n,e as r,n as t};

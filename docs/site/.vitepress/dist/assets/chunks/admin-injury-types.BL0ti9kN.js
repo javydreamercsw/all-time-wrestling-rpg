@@ -1,0 +1,1 @@
+var e=`/screenshots/admin-injury-types.png`;export{e as t};

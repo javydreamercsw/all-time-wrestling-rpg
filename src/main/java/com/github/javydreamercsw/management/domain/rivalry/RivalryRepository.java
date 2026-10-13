@@ -48,6 +48,18 @@ public interface RivalryRepository
   @Query("SELECT r FROM Rivalry r JOIN FETCH r.wrestler1 JOIN FETCH r.wrestler2")
   Page<Rivalry> findAllWithWrestlers(Pageable pageable);
 
+  /**
+   * Paged rivalries with wrestlers, optionally filtered by status (ATW-aeib). {@code active} is a
+   * tri-state: {@code null} = all rivalries, {@code true} = active only, {@code false} = ended
+   * only.
+   */
+  @Query(
+      """
+      SELECT r FROM Rivalry r JOIN FETCH r.wrestler1 JOIN FETCH r.wrestler2
+      WHERE (:active IS NULL OR r.isActive = :active)
+      """)
+  Page<Rivalry> findAllWithWrestlers(Pageable pageable, @Param("active") Boolean active);
+
   @Query("SELECT r FROM Rivalry r JOIN FETCH r.wrestler1 JOIN FETCH r.wrestler2 WHERE r.id = :id")
   Optional<Rivalry> findByIdWithWrestlers(@Param("id") Long id);
 
@@ -119,6 +131,49 @@ public interface RivalryRepository
       """)
   boolean hasRivalryHistory(
       @Param("wrestler1") Wrestler wrestler1, @Param("wrestler2") Wrestler wrestler2);
+
+  /**
+   * All rivalry cycles between two wrestlers regardless of stored order, newest first — the
+   * pair-wide history behind the grouped grid (ATW-8nc8).
+   */
+  @Query(
+      """
+      SELECT r FROM Rivalry r
+      JOIN FETCH r.wrestler1
+      JOIN FETCH r.wrestler2
+      WHERE (r.wrestler1 = :wrestler1 AND r.wrestler2 = :wrestler2)
+         OR (r.wrestler1 = :wrestler2 AND r.wrestler2 = :wrestler1)
+      ORDER BY r.startedDate DESC, r.id DESC
+      """)
+  List<Rivalry> findAllBetweenWrestlers(
+      @Param("wrestler1") Wrestler wrestler1, @Param("wrestler2") Wrestler wrestler2);
+
+  /**
+   * One row per canonical wrestler pair: the active rivalry when the pair has one, otherwise the
+   * ended cycle with the latest (endedDate, id). Relies on the canonical-order invariant
+   * (wrestler1_id &lt; wrestler2_id) established at insert and by the 'canonicalize-rivalry-pairs'
+   * data migration, so the pair key is simply (wrestler1, wrestler2). Tri-state {@code active}:
+   * null = every pair, true = pairs with an active rivalry, false = pairs whose current cycle is
+   * ended.
+   */
+  @Query(
+      """
+      SELECT r FROM Rivalry r
+      JOIN FETCH r.wrestler1
+      JOIN FETCH r.wrestler2
+      WHERE (r.isActive = true
+             OR (
+                 NOT EXISTS (SELECT a.id FROM Rivalry a
+                     WHERE a.wrestler1 = r.wrestler1 AND a.wrestler2 = r.wrestler2
+                     AND a.isActive = true)
+                 AND NOT EXISTS (SELECT e.id FROM Rivalry e
+                     WHERE e.wrestler1 = r.wrestler1 AND e.wrestler2 = r.wrestler2
+                     AND e.isActive = false
+                     AND (e.endedDate > r.endedDate
+                          OR (e.endedDate = r.endedDate AND e.id > r.id)))))
+        AND (:active IS NULL OR r.isActive = :active)
+      """)
+  Page<Rivalry> findRepresentativePerPair(Pageable pageable, @Param("active") Boolean active);
 
   /** Get rivalry count for a wrestler. */
   @Query(

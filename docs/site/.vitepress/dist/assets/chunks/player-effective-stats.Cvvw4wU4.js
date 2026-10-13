@@ -1,0 +1,1 @@
+var e=`/screenshots/player-effective-stats.png`;export{e as t};

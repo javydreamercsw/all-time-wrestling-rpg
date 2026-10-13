@@ -173,6 +173,10 @@ Spring Boot 4 monolith with a Vaadin 25 frontend, persisted to H2 (dev/test) or 
 - **Generating checksums:** after bumping `.released` at release time, run `bash scripts/generate-migration-checksums.sh` to regenerate the `.checksums` manifests and commit them. The release workflow does this automatically.
 - **H2 is production for installer users.** Most customers use a file-based H2 database (configured by the portable/desktop installers), not MySQL. H2 migrations are therefore production migrations — treat them with the same care as MySQL.
 - **Migration tests:** `FlywayMigrationIT` (MySQL, Testcontainers) validates fresh-schema and prod-dump upgrade paths. A planned `H2MigrationIT` will do the same for H2 file databases using a committed reference snapshot at the `.released` state — this will run under `-Pintegration-test` when any `db/migration/h2/` file changes.
+- **Three tiers of startup changes** (pick one, don't mix):
+- Tier 1 — **Flyway** (`db/migration/V*.sql`): schema changes (DDL), always.
+- Tier 2 — **`DataMigration`** (`management/migration/`): one-time Java data repair that SQL can't express. Implement the interface with a stable kebab-case `id()`; the runner (`DataMigrationRunner`, invoked from `DataInitializer` after all syncs) gates by `data_migration_history` rows — exactly-once per install, per-migration failure isolation, app-version audit. Declare `legacyGameSettingKey()` when an earlier release applied the same repair ad-hoc (e.g. a `game_setting` flag) so pre-existing installs get `LEGACY_SEEDED` instead of re-running.
+- Tier 3 — **`DataSyncContributor`** (`management/sync/`): idempotent seed/sync that runs on *every* startup, not a one-time migration.
 
 ## Knowledge Graph
 

@@ -178,6 +178,13 @@ public interface SegmentNarrationService {
 
     /** "Name (trigger): description" reminder strings for the wrestler's abilities. */
     private List<String> abilities;
+
+    /**
+     * Held Money in the Bank-style briefcase (ATW-brrz): "Name — cashable against any reigning
+     * champion until DATE" when the wrestler holds one, so narration treats a briefcase holder like
+     * a champion.
+     */
+    private String heldBriefcase;
   }
 
   /** Wrestler's move set including finishers and trademarks. */

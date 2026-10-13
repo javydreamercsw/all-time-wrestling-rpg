@@ -1,0 +1,1 @@
+var e=`/screenshots/league-standings.png`;export{e as t};

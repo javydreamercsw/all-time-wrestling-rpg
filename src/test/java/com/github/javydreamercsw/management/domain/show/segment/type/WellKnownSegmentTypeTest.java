@@ -61,4 +61,25 @@ class WellKnownSegmentTypeTest {
                 + "add the missing constant(s) to WellKnownSegmentType")
         .isSubsetOf(enumCodes);
   }
+
+  @Test
+  void enumDisplayNamesMatchJsonNames() throws Exception {
+    ObjectMapper mapper = new ObjectMapper();
+    List<Map<String, Object>> dtos =
+        mapper.readValue(
+            new ClassPathResource("segment_types.json").getInputStream(), new TypeReference<>() {});
+
+    Map<String, String> jsonNamesByCode =
+        dtos.stream()
+            .filter(d -> d.get("code") != null && d.get("name") != null)
+            .collect(Collectors.toMap(d -> (String) d.get("code"), d -> (String) d.get("name")));
+
+    for (WellKnownSegmentType type : WellKnownSegmentType.values()) {
+      assertThat(type.getDisplayName())
+          .as(
+              "Display name drift for %s — segment_types.json says '%s'",
+              type, jsonNamesByCode.get(type.getCode()))
+          .isEqualTo(jsonNamesByCode.get(type.getCode()));
+    }
+  }
 }

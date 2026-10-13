@@ -1,0 +1,1 @@
+var e=`/screenshots/admin-ai-settings.png`;export{e as t};

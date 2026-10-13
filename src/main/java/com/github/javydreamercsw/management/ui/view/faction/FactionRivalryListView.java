@@ -56,10 +56,28 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class FactionRivalryListView extends Main {
 
+  /** Status filter options for the faction rivalry grid (ATW-aeib): active first by default. */
+  enum FactionRivalryStatusFilter {
+    ACTIVE(Boolean.TRUE),
+    ALL(null),
+    ENDED(Boolean.FALSE);
+
+    private final Boolean isActive;
+
+    FactionRivalryStatusFilter(final Boolean isActive) {
+      this.isActive = isActive;
+    }
+
+    Boolean toIsActive() {
+      return isActive;
+    }
+  }
+
   private final FactionRivalryService factionRivalryService;
   private final FactionRivalryRepository factionRivalryRepository;
 
   final Grid<FactionRivalry> factionRivalryGrid;
+  final ComboBox<FactionRivalryStatusFilter> statusFilter;
 
   public FactionRivalryListView(
       @NonNull final FactionRivalryService factionRivalryService,
@@ -85,6 +103,19 @@ public class FactionRivalryListView extends Main {
     TextField storylineNotes = new TextField("Storyline Notes");
     factionRivalryGrid = new Grid<>();
 
+    statusFilter = new ComboBox<>("Status");
+    statusFilter.setItems(FactionRivalryStatusFilter.values());
+    statusFilter.setItemLabelGenerator(
+        filter ->
+            switch (filter) {
+              case ACTIVE -> "Active";
+              case ALL -> "All";
+              case ENDED -> "Ended";
+            });
+    statusFilter.setValue(FactionRivalryStatusFilter.ACTIVE);
+    statusFilter.setWidth("140px");
+    statusFilter.addValueChangeListener(e -> factionRivalryGrid.getDataProvider().refreshAll());
+
     Button createButton =
         new Button(
             "Create",
@@ -106,7 +137,8 @@ public class FactionRivalryListView extends Main {
     factionRivalryGrid.setItems(
         query ->
             factionRivalryService
-                .getAllFactionRivalriesWithFactions(toSpringPageRequest(query))
+                .getAllFactionRivalriesWithFactions(
+                    toSpringPageRequest(query), statusFilter.getValue().toIsActive())
                 .stream());
     factionRivalryGrid
         .addColumn(rivalry -> rivalry.getFaction1().getName())
@@ -175,9 +207,10 @@ public class FactionRivalryListView extends Main {
       add(
           new ViewToolbar(
               "Faction Rivalry List",
-              ViewToolbar.group(faction1ComboBox, faction2ComboBox, storylineNotes, createButton)));
+              ViewToolbar.group(
+                  statusFilter, faction1ComboBox, faction2ComboBox, storylineNotes, createButton)));
     } else {
-      add(new ViewToolbar("Faction Rivalry List"));
+      add(new ViewToolbar("Faction Rivalry List", ViewToolbar.group(statusFilter)));
     }
     Div gridWrapper = new Div(factionRivalryGrid);
     gridWrapper.addClassName("grid-scroll-container");

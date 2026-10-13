@@ -25,3 +25,11 @@ The Abilities panel groups each wrestler's moves into Core Abilities (shared by 
 ![Wrestler Abilities Panel](/screenshots/wrestler-profile-abilities.png)
 
 ---
+
+## Briefcase Panel
+
+A wrestler holding a Money in the Bank-style briefcase shows it in the profile accordion, right after Championships: the held case with its cashable-until date and a Cash In action that books a title match against any active championship's reigning champion on a show of your choosing. The case is spent when the match is booked — win or lose. The Career Dashboard link in the hero section leads to the full career history, including the briefcase's past cases.
+
+![Briefcase on the Wrestler Profile](/screenshots/mechanic-briefcase-profile.png)
+
+---

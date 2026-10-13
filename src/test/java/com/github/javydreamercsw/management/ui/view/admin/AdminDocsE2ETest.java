@@ -26,6 +26,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 class AdminDocsE2ETest extends AbstractDocsE2ETest {
 
+  /**
+   * Stable IDs of the collapsible sections on the AI Settings tab that render collapsed by default.
+   * "settings-section-common" is opened by default and must not be toggled.
+   */
+  private static final String[] AI_SETTINGS_SECTION_IDS = {
+    "settings-section-pollinations",
+    "settings-section-ollama",
+    "settings-section-openai",
+    "settings-section-claude",
+    "settings-section-gemini"
+  };
+
   @Autowired private InjuryTypeRepository injuryTypeRepository;
 
   @Test
@@ -60,6 +72,14 @@ class AdminDocsE2ETest extends AbstractDocsE2ETest {
     }
     takeSequencedScreenshot("after-ai-tab-click");
     waitForText("Common AI Settings");
+    // Settings are grouped into collapsible sections; expand them all for the screenshot
+    for (String sectionId : AI_SETTINGS_SECTION_IDS) {
+      WebElement summary =
+          waitForVaadinElement(
+              driver,
+              By.xpath("//vaadin-details[@id='" + sectionId + "']//vaadin-details-summary"));
+      clickElement(summary);
+    }
 
     documentFeature(
         "Admin",

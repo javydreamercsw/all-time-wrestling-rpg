@@ -29,6 +29,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
@@ -40,6 +41,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.GameSettingService;
@@ -352,5 +354,70 @@ class SegmentAdjudicationServiceUnitTest {
 
     verify(rivalryService, times(1)).attemptResolution(eq(50L), anyInt(), anyInt(), eq(25));
     verify(rivalryService, times(1)).attemptResolution(eq(42L), anyInt(), anyInt(), eq(25));
+  }
+
+  // ── Faction-mate guard on the AI-targeted heat path (ATW-gaxw) ──────────────
+
+  @Test
+  void testTargetedHeat_SameFactionParticipants_SkipsTargetedHeat() {
+    // Two stablemates booked against each other on an AI-tagged segment must not accrue
+    // targeted heat — intra-faction rivalries are modeling errors, and re-heating them keeps
+    // show planning proposing stablemate matches forever (the Shelton/Lashley 117-heat case).
+    Faction faction = new Faction();
+    faction.setId(7L);
+    faction.setName("The Hurt Business");
+
+    WrestlerState state1 = WrestlerState.builder().physicalCondition(100).build();
+    state1.setFaction(faction);
+    WrestlerState state2 = WrestlerState.builder().physicalCondition(100).build();
+    state2.setFaction(faction);
+    Universe universe = new Universe();
+    universe.setId(1L);
+    state1.setUniverse(universe);
+    state2.setUniverse(universe);
+    wrestler1.getWrestlerStates().add(state1);
+    wrestler2.getWrestlerStates().add(state2);
+
+    Rivalry targeted = new Rivalry();
+    targeted.setId(731L);
+    targeted.setWrestler1(wrestler1);
+    targeted.setWrestler2(wrestler2);
+    when(rivalryService.getRivalryByIdWithWrestlers(731L)).thenReturn(Optional.of(targeted));
+    matchSegment.setRivalryId(731L);
+
+    adjudicationService.adjudicateMatch(matchSegment);
+
+    verify(rivalryService, never()).addHeat(eq(731L), anyInt(), anyString());
+    // Faction-mates also skip the generic pair-scan heat (both branches).
+    verify(rivalryService, never())
+        .addHeatBetweenWrestlers(anyLong(), anyLong(), anyInt(), anyString(), anyLong());
+  }
+
+  @Test
+  void testTargetedHeat_DifferentFactions_StillAddsTargetedHeat() {
+    // The guard must only suppress heat for same-faction pairs; rivalries across factions
+    // (or with unaligned wrestlers) keep the +2 weekly targeted boost.
+    Faction factionA = new Faction();
+    factionA.setId(7L);
+    factionA.setName("Team A");
+
+    WrestlerState state1 = WrestlerState.builder().physicalCondition(100).build();
+    state1.setFaction(factionA);
+    Universe universe = new Universe();
+    universe.setId(1L);
+    state1.setUniverse(universe);
+    wrestler1.getWrestlerStates().add(state1);
+    // wrestler2 has no faction — not faction-mates.
+
+    Rivalry targeted = new Rivalry();
+    targeted.setId(731L);
+    targeted.setWrestler1(wrestler1);
+    targeted.setWrestler2(wrestler2);
+    when(rivalryService.getRivalryByIdWithWrestlers(731L)).thenReturn(Optional.of(targeted));
+    matchSegment.setRivalryId(731L);
+
+    adjudicationService.adjudicateMatch(matchSegment);
+
+    verify(rivalryService, times(1)).addHeat(eq(731L), eq(2), eq("AI-booked segment: Match"));
   }
 }

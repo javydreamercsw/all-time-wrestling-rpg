@@ -36,7 +36,24 @@ public class ShowPlanningContextDTO {
   private boolean isPremiumLiveEvent;
   private boolean intergenderAllowed;
   private List<String> recentDramaEvents = new ArrayList<>();
+
+  /** Currently held Money in the Bank-style briefcases ("holder — name" lines, ATW-brrz). */
+  private List<String> heldBriefcases = new ArrayList<>();
+
   private List<FeudScriptBeatDTO> upcomingScriptedBeats;
+
+  /**
+   * Show-attached tournament slots due on this show (ATW-xbn4): paced rounds on a weekly show
+   * before the host show, or the payoff on the host show itself. Planning-card previews only —
+   * approval re-derives the real bookings transactionally.
+   */
+  private List<TournamentSlotPreviewDTO> tournamentSlots = new ArrayList<>();
+
+  /**
+   * Proposed NPC briefcase cash-ins for this show (ATW-2b9u): planning-card previews only —
+   * approval re-derives the bookings transactionally. Keep row = approve, delete = decline.
+   */
+  private List<BriefcaseCashInPreviewDTO> briefcaseProposals = new ArrayList<>();
 
   /**
    * Booker-facing warnings for pending arc beats that were withheld from the planning context

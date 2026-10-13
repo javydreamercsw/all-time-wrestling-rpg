@@ -1,5 +1,7 @@
 # Admin Getting Started
 
+> **Who this is for:** ADMIN — AI keys, game settings, and expansion management are all admin-gated.
+
 A step-by-step setup guide for admins: enable AI narration with an API key, and choose which content sets (expansions) your promotion uses. Ten minutes from first login to a working promotion.
 
 **You need:** the ADMIN role (the initial install ships an `admin` account — change its password first under your user menu) and a web browser.
@@ -63,4 +65,6 @@ Expansions are the game's content packs: each one bundles wrestler tiers, match 
 ## What's next
 
 - Hand the booker role to your first booker and walk them through [Book Your First Show](./book-your-first-show).
+- [Configure AI Providers](./configure-ai-providers) — a deeper dive on provider setup.
+- [Manage Universes](./manage-universes) — splitting your world into multiple continuities.
 - The auto-generated [Admin Overview](./admin) documents every admin screen in depth.

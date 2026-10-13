@@ -108,6 +108,13 @@ public class RoundRobinFormat implements TournamentFormat {
   }
 
   @Override
+  public int estimateTotalMatches(Tournament tournament) {
+    int entrants = tournament.getEntries().size();
+    // Each round-robin round pairs N/2 entrants across N-1 rounds → N*(N-1)/2 matches.
+    return entrants < 2 ? 0 : entrants * (entrants - 1) / 2;
+  }
+
+  @Override
   public RenderMode renderMode() {
     return RenderMode.ROUND_ROBIN_GRID;
   }

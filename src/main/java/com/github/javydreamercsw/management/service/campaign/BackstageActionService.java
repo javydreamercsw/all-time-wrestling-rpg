@@ -30,10 +30,10 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentStatus;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.service.GameClock;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.utils.DiceBag;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -58,6 +58,7 @@ public class BackstageActionService {
   private final WrestlerService wrestlerService;
   @Getter private final BackstageEncounterService backstageEncounterService;
   private final FeatureDataService featureDataService;
+  private final GameClock gameClock;
 
   public BackstageActionService(
       final CampaignStateRepository campaignStateRepository,
@@ -67,7 +68,8 @@ public class BackstageActionService {
       final SegmentRuleRepository segmentRuleRepository,
       final WrestlerService wrestlerService,
       final BackstageEncounterService backstageEncounterService,
-      final FeatureDataService featureDataService) {
+      final FeatureDataService featureDataService,
+      final GameClock gameClock) {
     this.campaignStateRepository = campaignStateRepository;
     this.actionHistoryRepository = actionHistoryRepository;
     this.injuryService = injuryService;
@@ -76,6 +78,7 @@ public class BackstageActionService {
     this.wrestlerService = wrestlerService;
     this.backstageEncounterService = backstageEncounterService;
     this.featureDataService = featureDataService;
+    this.gameClock = gameClock;
   }
 
   /**
@@ -298,7 +301,8 @@ public class BackstageActionService {
       var segment = new Segment();
       segment.setShow(show);
       segment.setSegmentType(promoType);
-      segment.setSegmentDate(Instant.now());
+      // Kayfabe: the promo segment sits on the show's in-game date, not the wall clock (ATW-07hw).
+      segment.setSegmentDate(gameClock.gameNowOn(show.getShowDate()));
       segment.setNarration("Backstage Promo: " + description);
       segment.setStatus(SegmentStatus.COMPLETED);
       segment.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);

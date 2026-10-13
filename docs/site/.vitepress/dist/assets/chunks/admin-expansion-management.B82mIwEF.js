@@ -1,0 +1,1 @@
+var e=`/screenshots/admin-expansion-management.png`;export{e as t};

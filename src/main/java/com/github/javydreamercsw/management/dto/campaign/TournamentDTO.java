@@ -26,6 +26,12 @@ public class TournamentDTO {
   private int currentRound = 1;
   private int totalRounds;
 
+  /**
+   * Catalog tournament code ({@code Tournament.code}, e.g. {@code deadly_combat}) stamped at
+   * initialization from the chapter's {@code tournamentCode}. Null for legacy in-flight states.
+   */
+  private String code;
+
   @Data
   public static class TournamentMatch {
     private String id; // e.g. "R1-M1"

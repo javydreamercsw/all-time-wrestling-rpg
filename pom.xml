@@ -11,7 +11,7 @@
 
   <groupId>com.github.javydreamercsw</groupId>
   <artifactId>all-time-wrestling-rpg</artifactId>
-  <version>2.10.2</version>
+  <version>2.11.0</version>
 
   <packaging>jar</packaging>
   <name>All Time Wrestling RPG</name>
@@ -674,6 +674,34 @@
 
   <build>
     <defaultGoal>spring-boot:run</defaultGoal>
+    <!--
+      Replicates the spring-boot-starter-parent resource config and adds banner.txt
+      to the filtered set: @project.version@ is substituted at build time so the
+      startup banner shows the version even when running exploded classes
+      (./mvnw, IDE) where the JAR manifest Implementation-Version doesn't exist.
+    -->
+    <resources>
+      <resource>
+        <filtering>true</filtering>
+        <directory>src/main/resources</directory>
+        <includes>
+          <include>**/application*.yml</include>
+          <include>**/application*.yaml</include>
+          <include>**/application*.properties</include>
+          <include>banner.txt</include>
+        </includes>
+      </resource>
+      <resource>
+        <filtering>false</filtering>
+        <directory>src/main/resources</directory>
+        <excludes>
+          <exclude>**/application*.yml</exclude>
+          <exclude>**/application*.yaml</exclude>
+          <exclude>**/application*.properties</exclude>
+          <exclude>banner.txt</exclude>
+        </excludes>
+      </resource>
+    </resources>
     <pluginManagement>
       <plugins>
         <plugin>
@@ -1170,7 +1198,7 @@
           <dependency>
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
-            <version>9.6.0</version>
+            <version>9.7.0</version>
           </dependency>
         </dependencies>
       </plugin>
@@ -1224,6 +1252,29 @@
       </properties>
       <build>
         <plugins>
+          <!-- Invalidate a stale src/main/bundles/prod.bundle before Vaadin's
+               build-frontend runs: a bundle older than any hand-written source makes
+               Vaadin silently skip the frontend build and ship chunks missing newer
+               views (ATW-sjhq). -->
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>invalidate-stale-frontend-bundle</id>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <phase>initialize</phase>
+                <configuration>
+                  <executable>bash</executable>
+                  <arguments>
+                    <argument>${project.basedir}/scripts/check-frontend-bundle-freshness.sh</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
           <plugin>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-maven-plugin</artifactId>

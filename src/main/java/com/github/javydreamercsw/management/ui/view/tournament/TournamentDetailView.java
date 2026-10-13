@@ -20,18 +20,20 @@ import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
-import com.github.javydreamercsw.management.domain.tournament.Tournament;
-import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
-import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
-import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
-import com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus;
-import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
+import com.github.javydreamercsw.management.domain.title.TitleOpportunity;
+import com.github.javydreamercsw.management.domain.tournament.*;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.show.ShowFacade;
+import com.github.javydreamercsw.management.service.tournament.QualifierGroupsFormat;
+import com.github.javydreamercsw.management.service.tournament.SingleEliminationFormat;
+import com.github.javydreamercsw.management.service.tournament.TournamentFormat;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
 import com.github.javydreamercsw.management.ui.ViewContext;
 import com.github.javydreamercsw.management.ui.component.TournamentBracketComponent;
+import com.github.javydreamercsw.management.ui.component.TournamentBracketPreviewModel;
 import com.github.javydreamercsw.management.ui.component.TournamentEntityAdapter;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.button.Button;
@@ -39,8 +41,10 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.dnd.GridDropMode;
 import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexLayout;
@@ -52,8 +56,12 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -68,8 +76,12 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
   private final SegmentRuleService segmentRuleService;
   private final UniverseContextService universeContextService;
   private final ShowRepository showRepository;
+  private final WrestlerFacade wrestlerFacade;
 
   private Tournament tournament;
+
+  /** Row currently being dragged on the entrants grid (cleared on drop and drag end). */
+  private TournamentEntry draggedEntry;
 
   private final VerticalLayout content = new VerticalLayout();
 
@@ -78,16 +90,36 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
       TournamentService tournamentService,
       ShowRepository showRepository,
       ShowFacade showFacade,
+      WrestlerFacade wrestlerFacade,
       ViewContext viewContext) {
     this.tournamentService = tournamentService;
     this.segmentRuleService = showFacade.getSegmentRuleService();
     this.showRepository = showRepository;
+    this.wrestlerFacade = wrestlerFacade;
     this.universeContextService = viewContext.getUniverseContextService();
 
     setSizeFull();
     setPadding(false);
     content.setSizeFull();
     add(content);
+  }
+
+  /** Test hooks: bypass route-parameter resolution and render directly (Karibu tests). */
+  void setTournamentForTest(Tournament tournament) {
+    this.tournament = tournament;
+  }
+
+  void buildContentForTest() {
+    buildContent();
+  }
+
+  void openReplaceDialogForTest(TournamentEntry entry) {
+    openReplaceDialog(entry);
+  }
+
+  /** Test hooks: open the Arrange Match-ups dialog directly (Karibu tests). */
+  void openArrangeMatchupsDialogForTest() {
+    openArrangeMatchupsDialog();
   }
 
   @Override
@@ -133,8 +165,30 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
 
     if (tournament.getStatus() == TournamentStatus.SCHEDULED
         && !tournament.getEntries().isEmpty()) {
+      // Per-match opponent selection (ATW-hw6m): hand-picking round-1 pairings only makes sense
+      // for single elimination — round robin faces everyone anyway; ≥2 entrants or there are no
+      // matches to arrange.
+      if (SingleEliminationFormat.FORMAT_ID.equals(tournament.getFormatId())
+          && tournament.getEntries().size() >= 2) {
+        Button arrangeBtn = new Button("Arrange Match-ups", e -> openArrangeMatchupsDialog());
+        arrangeBtn.setTooltipText(
+            "Hand-pick the round-1 opponents, or drag rows on the entrants grid to reorder"
+                + " seeds");
+        actions.add(arrangeBtn);
+      }
+
+      Button previewBtn = new Button("Preview Bracket", e -> showBracketPreview());
+      previewBtn.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
+      previewBtn.setTooltipText("Show the match-ups 'Start Tournament' will generate");
+      actions.add(previewBtn);
+
       Button startBtn = new Button("Start Tournament", e -> startTournament());
       startBtn.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+      startBtn.setTooltipText(
+          "Generate the first-round bracket from the seeded entrants (1 vs last, 2 vs"
+              + " second-to-last, ...). The tournament switches to IN_PROGRESS and its rounds"
+              + " can then be booked onto shows — or fed into a paired PLE template"
+              + " automatically.");
       actions.add(startBtn);
     }
 
@@ -175,16 +229,49 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
     Span status = new Span("Status: " + tournament.getStatus().name());
     Span format = new Span("Format: " + tournament.getFormatId().replace('_', ' '));
     Span entrants = new Span("Entrants: " + tournament.getEntries().size());
-    Span startDate =
-        new Span(
-            "Start: "
-                + (tournament.getStartDate() != null
-                    ? tournament.getStartDate().toString()
-                    : "TBD"));
 
-    info.add(status, format, entrants, startDate);
+    info.add(status, format, entrants);
+    if (QualifierGroupsFormat.FORMAT_ID.equals(tournament.getFormatId())) {
+      info.add(
+          new Span(
+              "Qualifier group size: "
+                  + (tournament.getQualifierGroupSize() != null
+                      ? tournament.getQualifierGroupSize()
+                      : "auto (≈3 per group)")));
+    }
+    if (tournament.getEditionOrdinal() != null) {
+      // Recurring edition (ATW-o4ad): chain name/ordinal plus the cadence.
+      info.add(
+          new Span(
+              "Edition: "
+                  + (tournament.getEditionOrdinal() > 1
+                      ? TournamentService.editionName("", tournament.getEditionOrdinal()).trim()
+                      : "I (first)")
+                  + " — "
+                  + tournament.getRecurrence().name().toLowerCase()
+                  + " recurring"));
+      if (tournament.getParent() != null) {
+        info.add(new Span("Previous edition: " + tournament.getParent().getName()));
+      }
+    }
+    if (tournament.isBriefcaseDeciding()) {
+      info.add(
+          new Span(
+              "Payoff: briefcase — the winner earns a cashable title shot against any"
+                  + " reigning champion"));
+      buildBriefcaseStatus(info);
+    }
     if (tournament.getLinkedTitle() != null) {
       info.add(new Span("Championship: " + tournament.getLinkedTitle().getName()));
+    }
+    if (tournament.getPayoffShow() != null) {
+      // One-time tournament (ATW-xbn4): the payoff books on this show.
+      Show host = tournament.getPayoffShow();
+      info.add(
+          new Span(
+              "Host Show: "
+                  + host.getName()
+                  + (host.getShowDate() != null ? " (" + host.getShowDate() + ")" : "")));
     }
 
     List<SegmentRule> rules = tournament.getAllowedRules();
@@ -207,6 +294,51 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
     return info;
   }
 
+  /**
+   * Briefcase status line for a briefcase-deciding tournament: which wrestler holds the case and
+   * what became of it (HELD with expiry / CASHED_IN / EXPIRED). Only shown once a winner exists.
+   */
+  private void buildBriefcaseStatus(VerticalLayout info) {
+    if (tournament.getStatus() != TournamentStatus.COMPLETE) {
+      return;
+    }
+    Wrestler winner =
+        tournament.getEntries().stream()
+            .filter(e -> e.getStatus() == TournamentEntryStatus.WINNER)
+            .map(e -> e.getWrestler())
+            .findFirst()
+            .orElse(null);
+    if (winner == null) {
+      return;
+    }
+    TitleOpportunity opportunity =
+        wrestlerFacade.getTitleOpportunityService().findByWrestler(winner.getId()).stream()
+            .filter(
+                o ->
+                    o.getEarnedFromTournamentId() != null
+                        && o.getEarnedFromTournamentId().equals(tournament.getId()))
+            .findFirst()
+            .orElse(null);
+    if (opportunity == null) {
+      info.add(
+          new Span("Briefcase: not yet granted (grants when the payoff final is adjudicated)"));
+      return;
+    }
+    String statusText =
+        switch (opportunity.getStatus()) {
+          case HELD ->
+              "HELD — cashable until "
+                  + (opportunity.getExpiryDate() != null ? opportunity.getExpiryDate() : "never");
+          case CASHED_IN ->
+              "CASHED IN"
+                  + (opportunity.getCashedAt() != null ? " on " + opportunity.getCashedAt() : "");
+          case EXPIRED -> "EXPIRED unspent";
+          case VOIDED -> "VOIDED";
+        };
+    String division = opportunity.getGender() != null ? " — " + opportunity.getGender() : "";
+    info.add(new Span("Briefcase: " + winner.getName() + division + " — " + statusText));
+  }
+
   private VerticalLayout buildEntrantsGrid() {
     VerticalLayout section = new VerticalLayout();
     section.setPadding(false);
@@ -219,8 +351,165 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
     grid.addColumn(e -> e.getStatus().name()).setHeader("Status");
     grid.setItems(tournament.getEntries());
 
+    // Seeds are editable until the bracket is generated (ATW-hw6m): move an entrant up/down to
+    // change its seed, drag rows onto each other to reorder, or swap in a different wrestler.
+    // The round-1 pairing is 1 vs last, 2 vs second-to-last, ... so reordering changes the
+    // match-ups Start will generate.
+    if (tournament.getStatus() == TournamentStatus.SCHEDULED
+        && !tournament.getEntries().isEmpty()) {
+      grid.setRowsDraggable(true);
+      grid.setDropMode(GridDropMode.BETWEEN);
+      grid.addDragStartListener(
+          e -> e.getDraggedItems().stream().findFirst().ifPresent(item -> draggedEntry = item));
+      grid.addDragEndListener(e -> draggedEntry = null);
+      grid.addDropListener(
+          e ->
+              e.getDropTargetItem()
+                  .ifPresent(
+                      target -> {
+                        if (draggedEntry != null && !draggedEntry.getId().equals(target.getId())) {
+                          reorderTo(draggedEntry, target);
+                        }
+                        // The grid re-renders after a persisted reorder, which detaches it
+                        // mid-drag — dragEnd may never fire, so clear the state here too.
+                        draggedEntry = null;
+                      }));
+      grid.addComponentColumn(this::buildSeedControls)
+          .setHeader("Reorder")
+          .setWidth("140px")
+          .setKey("reorder");
+      grid.addComponentColumn(
+              entry -> {
+                Button replaceBtn = new Button("Replace");
+                replaceBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+                replaceBtn.addClickListener(e -> openReplaceDialog(entry));
+                return replaceBtn;
+              })
+          .setHeader("Swap")
+          .setWidth("100px")
+          .setKey("swap");
+    }
+
     section.add(grid);
     return section;
+  }
+
+  /** Up/down buttons moving one entry a seed at a time; writes the new order to the service. */
+  private HorizontalLayout buildSeedControls(TournamentEntry entry) {
+    HorizontalLayout controls = new HorizontalLayout();
+    controls.setSpacing(false);
+    controls.setPadding(false);
+
+    Button up = new Button(VaadinIcon.ARROW_UP.create());
+    up.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    up.setTooltipText("Move up one seed");
+    up.setEnabled(entry.getSeed() > 1);
+    up.addClickListener(e -> moveSeed(entry, entry.getSeed() - 1));
+
+    Button down = new Button(VaadinIcon.ARROW_DOWN.create());
+    down.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    down.setTooltipText("Move down one seed");
+    down.setEnabled(entry.getSeed() < tournament.getEntries().size());
+    down.addClickListener(e -> moveSeed(entry, entry.getSeed() + 1));
+
+    controls.add(up, down);
+    return controls;
+  }
+
+  /** Swap the entry with whichever entry currently holds {@code targetSeed} and persist. */
+  private void moveSeed(TournamentEntry entry, int targetSeed) {
+    List<TournamentEntry> entries = tournament.getEntries();
+    List<TournamentEntry> reordered = new ArrayList<>(entries);
+    reordered.remove(entry);
+    reordered.add(targetSeed - 1, entry);
+    applySeedOrder(reordered);
+  }
+
+  /**
+   * Drag-and-drop reorder (ATW-hw6m): move {@code dragged} to sit immediately before {@code target}
+   * (GridDropMode.BETWEEN semantics) and persist the resulting seed order.
+   */
+  void reorderTo(TournamentEntry dragged, TournamentEntry target) {
+    List<TournamentEntry> reordered = new ArrayList<>(tournament.getEntries());
+    reordered.remove(dragged);
+    reordered.add(reordered.indexOf(target), dragged);
+    applySeedOrder(reordered);
+  }
+
+  /** Persist a full seed order through the service and refresh the view. */
+  private void applySeedOrder(List<TournamentEntry> ordered) {
+    try {
+      List<Long> ids = new ArrayList<>();
+      for (TournamentEntry entry : ordered) {
+        ids.add(entry.getId());
+      }
+      tournamentService.reorderSeeds(tournament.getId(), ids);
+      refreshAfterSeedingEdit();
+      Notification.show("Seed order updated", 2000, Notification.Position.BOTTOM_CENTER)
+          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+    } catch (Exception ex) {
+      log.error("Error reordering seeds", ex);
+      Notification.show("Error: " + ex.getMessage(), 5000, Notification.Position.MIDDLE)
+          .addThemeVariants(NotificationVariant.LUMO_ERROR);
+    }
+  }
+
+  /** Dialog replacing one entrant with another wrestler (same seed). */
+  private void openReplaceDialog(TournamentEntry entry) {
+    Dialog dialog = new Dialog();
+    dialog.setHeaderTitle("Replace seed " + entry.getSeed() + ": " + entry.getWrestler().getName());
+
+    ComboBox<Wrestler> picker = new ComboBox<>("New wrestler");
+    // Offer the eligible pool minus anyone already entered — the service rejects duplicates,
+    // but showing them as choices would guarantee an error after selection.
+    Set<Long> enteredIds = new HashSet<>();
+    tournament.getEntries().forEach(e -> enteredIds.add(e.getWrestler().getId()));
+    picker.setItems(
+        tournamentService
+            .findEligibleWrestlersSortedByFans(
+                tournament.getLinkedTitle(),
+                tournament.getGender(),
+                universeContextService.getCurrentUniverseId())
+            .stream()
+            .filter(w -> !enteredIds.contains(w.getId()))
+            .toList());
+    picker.setItemLabelGenerator(Wrestler::getName);
+    picker.setWidth("320px");
+    picker.setPlaceholder("Pick a replacement");
+    if (picker.getListDataView().getItemCount() == 0) {
+      picker.setHelperText("No eligible wrestlers available outside the current entrants.");
+    }
+    Button replaceBtn = new Button("Replace", e -> {});
+    replaceBtn.setEnabled(false);
+    picker.addValueChangeListener(
+        e -> replaceBtn.setEnabled(e.getValue() != null && e.getValue() != entry.getWrestler()));
+
+    replaceBtn.addClickListener(
+        e -> {
+          try {
+            tournamentService.replaceEntrant(
+                tournament.getId(), entry.getId(), picker.getValue().getId());
+            dialog.close();
+            refreshAfterSeedingEdit();
+            Notification.show("Entrant replaced", 2000, Notification.Position.BOTTOM_CENTER)
+                .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+          } catch (Exception ex) {
+            Notification.show("Error: " + ex.getMessage(), 5000, Notification.Position.MIDDLE)
+                .addThemeVariants(NotificationVariant.LUMO_ERROR);
+          }
+        });
+
+    HorizontalLayout footer = new HorizontalLayout(replaceBtn);
+    dialog.add(picker);
+    dialog.getFooter().add(footer);
+    dialog.getFooter().add(new Button("Cancel", ev -> dialog.close()));
+    dialog.open();
+  }
+
+  /** Re-read the tournament graph and rebuild the view after a seeding edit. */
+  private void refreshAfterSeedingEdit() {
+    tournament = tournamentService.findByIdWithDetails(tournament.getId()).orElse(tournament);
+    buildContent();
   }
 
   private VerticalLayout buildBracketSection() {
@@ -317,12 +606,13 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
     HorizontalLayout row = new HorizontalLayout();
     row.setAlignItems(Alignment.CENTER);
 
-    String e1 = match.getEntrant1().getWrestler().getName();
-    String e2 = match.getEntrant2().getWrestler().getName();
-    row.add(new Span(e1 + " vs " + e2));
+    List<TournamentEntry> entrants = match.entrants();
+    String label =
+        entrants.stream().map(e -> e.getWrestler().getName()).collect(Collectors.joining(" vs "));
+    row.add(new Span(label));
 
     ComboBox<TournamentEntry> winnerPicker = new ComboBox<>("Pick winner");
-    winnerPicker.setItems(match.getEntrant1(), match.getEntrant2());
+    winnerPicker.setItems(entrants);
     winnerPicker.setItemLabelGenerator(e -> e.getWrestler().getName());
 
     Button recordBtn =
@@ -362,6 +652,64 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
       Notification.show("Error: " + e.getMessage(), 5000, Notification.Position.MIDDLE)
           .addThemeVariants(NotificationVariant.LUMO_ERROR);
     }
+  }
+
+  /**
+   * Show the match-ups Start Tournament would generate, without committing — rendered with the same
+   * bracket viewer the in-progress tournament uses, fed an in-memory preview model.
+   */
+  private void showBracketPreview() {
+    Dialog preview = new Dialog();
+    preview.setHeaderTitle("Bracket Preview (not started yet)");
+    preview.setWidth("min(900px, 95vw)");
+
+    VerticalLayout content = new VerticalLayout();
+    content.setPadding(false);
+    if (tournament.getEntries().size() < 2) {
+      content.add(new Span("Not enough entrants for a bracket."));
+    } else {
+      content.add(
+          new TournamentBracketComponent(
+              new TournamentBracketPreviewModel(tournament, resolveRenderMode())));
+      content.add(
+          new Span("Starting commits this bracket and switches the tournament to IN_PROGRESS."));
+    }
+    preview.add(content);
+    preview.getFooter().add(new Button("Close", e -> preview.close()));
+    preview.open();
+  }
+
+  private TournamentFormat.RenderMode resolveRenderMode() {
+    return tournamentService
+        .findFormat(tournament.getFormatId())
+        .map(TournamentFormat::renderMode)
+        .orElse(TournamentFormat.RenderMode.TREE);
+  }
+
+  /**
+   * Per-match opponent selection (ATW-hw6m): pick the round-1 opponents, persisting them as a seed
+   * order so the seed list remains the single source of truth for bracket generation.
+   */
+  private void openArrangeMatchupsDialog() {
+    ArrangeMatchupsDialog dialog =
+        new ArrangeMatchupsDialog(
+            tournament,
+            ordered -> {
+              try {
+                tournamentService.reorderSeeds(
+                    tournament.getId(),
+                    ordered.stream().map(Long::longValue).collect(Collectors.toList()));
+                refreshAfterSeedingEdit();
+                Notification.show(
+                        "Round-1 match-ups arranged", 2000, Notification.Position.BOTTOM_CENTER)
+                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+              } catch (Exception ex) {
+                log.error("Error arranging match-ups", ex);
+                Notification.show("Error: " + ex.getMessage(), 5000, Notification.Position.MIDDLE)
+                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
+              }
+            });
+    dialog.open();
   }
 
   private void advanceRound() {
