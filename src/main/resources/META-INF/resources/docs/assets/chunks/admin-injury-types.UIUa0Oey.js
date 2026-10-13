@@ -1,0 +1,1 @@
+var e=`/atw-rpg/docs/screenshots/admin-injury-types.png`;export{e as t};

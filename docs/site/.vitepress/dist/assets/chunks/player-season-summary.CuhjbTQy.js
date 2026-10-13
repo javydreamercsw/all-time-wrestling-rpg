@@ -1,1 +1,0 @@
-var e=`/screenshots/player-season-summary.png`;export{e as t};

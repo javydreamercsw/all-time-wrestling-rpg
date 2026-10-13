@@ -1,0 +1,1 @@
+var e=`/atw-rpg/docs/screenshots/player-effective-stats.png`;export{e as t};

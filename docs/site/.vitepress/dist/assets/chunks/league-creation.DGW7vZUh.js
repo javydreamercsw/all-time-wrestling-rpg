@@ -1,1 +1,0 @@
-var e=`/screenshots/league-creation.png`;export{e as t};

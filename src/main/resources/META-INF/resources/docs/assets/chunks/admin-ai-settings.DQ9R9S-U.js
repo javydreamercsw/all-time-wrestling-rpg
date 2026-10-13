@@ -1,0 +1,1 @@
+var e=`/atw-rpg/docs/screenshots/admin-ai-settings.png`;export{e as t};

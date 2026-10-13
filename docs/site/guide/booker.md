@@ -100,7 +100,7 @@ View rivalry details including heat, storyline notes, and dates. Use the Story A
 
 ## Rivalry List
 
-Browse all active rivalries between wrestlers. Click any row to open the rivalry detail view where you can manage story arc scripts.
+Browse active rivalries between wrestlers — ended feuds are filtered out by default; switch the Status filter to All or Ended to see them. Click any row to open the rivalry detail view where you can manage story arc scripts.
 
 ![Rivalry List](/screenshots/booker-rivalry-list.png)
 
@@ -143,6 +143,54 @@ Pending beats can be retooled at any time before they play out. The edit dialog 
 Every saved arc lives on the rivalry detail as a card with a status badge (Active, Completed, Cancelled). The beat grid lists each beat in order — match type, stipulation, external participants, winner control, blowoff marker and status. Pending beats can be edited or removed and renumber automatically; the arc itself can be renamed, extended with more beats, or cancelled before its culmination.
 
 ![Story Arc Management](/screenshots/booker-story-arc-card.png)
+
+---
+
+## Show Planning — Tournament Slots on the Card
+
+A one-time tournament attached to this show previews its slots on the proposed card: the payoff (and paced round matches on weekly shows) each appear as a grid row with a Tournament source badge. Seeded brackets preview the real match-ups; unknowable ones show placeholder teams. Delete a row to skip that slot on this show — approving books the slots that remain, exactly once.
+
+![Show Planning — Tournament Slots on the Card](/screenshots/booker-show-planning-tournament-slots.png)
+
+---
+
+## Faction Rivalry List
+
+Track active feuds between factions — the Status filter defaults to Active and can show All or Ended faction rivalries. Add heat to escalate a faction feud toward a war match.
+
+![Faction Rivalry List](/screenshots/booker-faction-rivalry-list.png)
+
+---
+
+## Tournament Creation Wizard
+
+Create a tournament in two steps. Step 1 names the tournament and picks the format (Single Elimination or Round Robin), an optional linked championship, start date, and allowed rules — the seeding step stays locked until these are set. Linking a championship also unlocks the contender-deciding option: the tournament winner becomes the title's #1 contender instead of challenging. Step 2 chooses how entrants are seeded: automatically by fan count (with a live match-up preview of what Create will build), manual wrestler picking, or deferred so a paired show can seed it on approval.
+
+![Tournament Creation Wizard](/screenshots/booker-tournament-creation-wizard.png)
+
+---
+
+## Editing Tournament Seeds
+
+Before the bracket is generated, seeds stay editable. Move an entrant up or down to change its seed — the round-1 pairing is 1 vs last, 2 vs second-to-last, so reordering directly reshapes the match-ups — or swap in a different wrestler while keeping the seed. When the tournament is linked to a championship, the current titleholder is excluded from seeding and from the swap picker: the champion cannot win the belt from themselves. Seeds lock once the tournament starts.
+
+![Editing Tournament Seeds](/screenshots/booker-tournament-seed-editing.png)
+
+---
+
+## Tournament Bracket Generator — Arrange Match-ups
+
+Beyond dragging rows to reorder seeds, the round-1 opponents can be hand-picked: each match pairs its wrestlers at the outer seed positions (1 vs last, 2 vs second-to-last), so Start Tournament generates exactly the arranged match-ups. Odd-sized brackets keep a bye at the middle seed.
+
+![Tournament Bracket Generator — Arrange Match-ups](/screenshots/booker-tournament-arrange-matchups.png)
+
+---
+
+## One-Time Tournament on a Host Show
+
+For a one-off tournament, attach it directly to a show instead of pairing it with a PLE template (that stays reserved for recurring tournaments). Pick a host show and the payoff books there exactly once — rounds pace automatically onto the weekly shows before it. The payoff match type and rule default to One-on-One but can be anything, e.g. a Free-for-All TLC match for a title.
+
+![One-Time Tournament on a Host Show](/screenshots/booker-tournament-host-show.png)
 
 ---
 

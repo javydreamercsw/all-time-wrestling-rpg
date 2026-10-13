@@ -880,7 +880,7 @@
     "id": "booker-booker-rivalry-list",
     "category": "Booker",
     "title": "Rivalry List",
-    "description": "Browse all active rivalries between wrestlers. Click any row to open the rivalry detail view where you can manage story arc scripts.",
+    "description": "Browse active rivalries between wrestlers — ended feuds are filtered out by default; switch the Status filter to All or Ended to see them. Click any row to open the rivalry detail view where you can manage story arc scripts.",
     "imagePath": "screenshots/booker-rivalry-list.png",
     "order": 0
   }, {
@@ -945,6 +945,90 @@
     "title": "Tournament Bracket",
     "description": "The full projected 4-round bracket (Round 1 through Quarter-Final, Semi-Final and Final): connector lines between rounds, decided winners advancing (replacing 'Winner of Match N' placeholders), losers struck through, and Fit/100% zoom controls.",
     "imagePath": "screenshots/mechanic-tournament-bracket.png",
+    "order": 0
+  }, {
+    "id": "game-mechanics-mechanic-briefcase-tournament",
+    "category": "Game Mechanics",
+    "title": "Money in the Bank Briefcase",
+    "description": "A briefcase-deciding tournament (like the annual Time Vault) pays off with a cashable briefcase instead of a championship: the detail view shows the payoff mode and the winner's briefcase status (held with its cashable-until date, cashed in, or expired).",
+    "imagePath": "screenshots/mechanic-briefcase-tournament.png",
+    "order": 0
+  }, {
+    "id": "game-mechanics-mechanic-briefcase-cash-in",
+    "category": "Game Mechanics",
+    "title": "Cash In the Briefcase",
+    "description": "The holder's career view shows the held briefcase with its expiry and a Cash In action: pick any active championship with a reigning champion and a show, and the title match books on the spot. The briefcase is spent whether the match is won or lost.",
+    "imagePath": "screenshots/mechanic-briefcase-cash-in.png",
+    "order": 0
+  }, {
+    "id": "game-mechanics-mechanic-briefcase-profile",
+    "category": "Game Mechanics",
+    "title": "Briefcase on the Wrestler Profile",
+    "description": "The wrestler profile carries the same Briefcase panel — held case, cashable-until date, and the Cash In action — next to Championships, so the prize is visible without leaving the profile. The Career Dashboard link in the hero section leads to the full career history.",
+    "imagePath": "screenshots/mechanic-briefcase-profile.png",
+    "order": 0
+  }, {
+    "id": "admin-admin-show-template-tournament-assignment",
+    "category": "Admin",
+    "title": "Tournament-Fed Template Assignments",
+    "description": "Pair a tournament with a show template so its bracket feeds the participants of the auto-attached segment. When a show of this template is approved, the tournament resolves that match's entrants instead of the AI — an in-progress tournament fills the next open bracket match, and a completed one books a winner showcase.",
+    "imagePath": "screenshots/admin-show-template-tournament-assignment.png",
+    "order": 0
+  }, {
+    "id": "booker-booker-show-planning-tournament-slots",
+    "category": "Booker",
+    "title": "Show Planning — Tournament Slots on the Card",
+    "description": "A one-time tournament attached to this show previews its slots on the proposed card: the payoff (and paced round matches on weekly shows) each appear as a grid row with a Tournament source badge. Seeded brackets preview the real match-ups; unknowable ones show placeholder teams. Delete a row to skip that slot on this show — approving books the slots that remain, exactly once.",
+    "imagePath": "screenshots/booker-show-planning-tournament-slots.png",
+    "order": 0
+  }, {
+    "id": "game-mechanics-mechanic-briefcase-crud",
+    "category": "Game Mechanics",
+    "title": "Briefcase Management",
+    "description": "Bookers manage the Money in the Bank-style briefcases from the Entities menu: every case with its holder, division, status and cashable-until date. Live (HELD) cases can be edited — rename, override the expiry, upload artwork — or voided (a manual cancel that keeps the row as history). Cashed-in and expired rows are read-only history.",
+    "imagePath": "screenshots/mechanic-briefcase-crud.png",
+    "order": 0
+  }, {
+    "id": "booker-booker-faction-rivalry-list",
+    "category": "Booker",
+    "title": "Faction Rivalry List",
+    "description": "Track active feuds between factions — the Status filter defaults to Active and can show All or Ended faction rivalries. Add heat to escalate a faction feud toward a war match.",
+    "imagePath": "screenshots/booker-faction-rivalry-list.png",
+    "order": 0
+  }, {
+    "id": "booker-booker-tournament-creation-wizard",
+    "category": "Booker",
+    "title": "Tournament Creation Wizard",
+    "description": "Create a tournament in two steps. Step 1 names the tournament and picks the format (Single Elimination or Round Robin), an optional linked championship, start date, and allowed rules — the seeding step stays locked until these are set. Linking a championship also unlocks the contender-deciding option: the tournament winner becomes the title's #1 contender instead of challenging. Step 2 chooses how entrants are seeded: automatically by fan count (with a live match-up preview of what Create will build), manual wrestler picking, or deferred so a paired show can seed it on approval.",
+    "imagePath": "screenshots/booker-tournament-creation-wizard.png",
+    "order": 0
+  }, {
+    "id": "booker-booker-tournament-seed-editing",
+    "category": "Booker",
+    "title": "Editing Tournament Seeds",
+    "description": "Before the bracket is generated, seeds stay editable. Move an entrant up or down to change its seed — the round-1 pairing is 1 vs last, 2 vs second-to-last, so reordering directly reshapes the match-ups — or swap in a different wrestler while keeping the seed. When the tournament is linked to a championship, the current titleholder is excluded from seeding and from the swap picker: the champion cannot win the belt from themselves. Seeds lock once the tournament starts.",
+    "imagePath": "screenshots/booker-tournament-seed-editing.png",
+    "order": 0
+  }, {
+    "id": "booker-booker-tournament-arrange-matchups",
+    "category": "Booker",
+    "title": "Tournament Bracket Generator — Arrange Match-ups",
+    "description": "Beyond dragging rows to reorder seeds, the round-1 opponents can be hand-picked: each match pairs its wrestlers at the outer seed positions (1 vs last, 2 vs second-to-last), so Start Tournament generates exactly the arranged match-ups. Odd-sized brackets keep a bye at the middle seed.",
+    "imagePath": "screenshots/booker-tournament-arrange-matchups.png",
+    "order": 0
+  }, {
+    "id": "booker-booker-tournament-host-show",
+    "category": "Booker",
+    "title": "One-Time Tournament on a Host Show",
+    "description": "For a one-off tournament, attach it directly to a show instead of pairing it with a PLE template (that stays reserved for recurring tournaments). Pick a host show and the payoff books there exactly once — rounds pace automatically onto the weekly shows before it. The payoff match type and rule default to One-on-One but can be anything, e.g. a Free-for-All TLC match for a title.",
+    "imagePath": "screenshots/booker-tournament-host-show.png",
+    "order": 0
+  }, {
+    "id": "campaign-campaign-card-export-custom-content",
+    "category": "Campaign",
+    "title": "Custom Content Card Export",
+    "description": "Everything the user creates is tagged with the CUSTOM expansion and can be printed as poker-size cards: segment types, segment rules, NPCs, and championships. Custom content prints regardless of whether the CUSTOM expansion is toggled on in game settings.",
+    "imagePath": "screenshots/campaign-card-export-custom-content.png",
     "order": 0
   } ]
 }

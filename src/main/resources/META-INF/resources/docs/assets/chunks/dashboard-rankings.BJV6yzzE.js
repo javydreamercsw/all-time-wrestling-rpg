@@ -1,0 +1,1 @@
+var e=`/atw-rpg/docs/screenshots/dashboard-rankings.png`;export{e as t};

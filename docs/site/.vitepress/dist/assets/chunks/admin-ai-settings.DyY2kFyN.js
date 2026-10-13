@@ -1,0 +1,1 @@
+var e=`/all-time-wrestling-rpg/screenshots/admin-ai-settings.png`;export{e as t};

@@ -1,0 +1,1 @@
+var e=`/atw-rpg/docs/screenshots/booker-season-list.png`,t=`/atw-rpg/docs/screenshots/booker-season-detail.png`;export{e as n,t};

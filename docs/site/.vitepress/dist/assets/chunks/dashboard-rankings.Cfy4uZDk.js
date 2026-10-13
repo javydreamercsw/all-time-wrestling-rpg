@@ -1,1 +1,0 @@
-var e=`/screenshots/dashboard-rankings.png`;export{e as t};
