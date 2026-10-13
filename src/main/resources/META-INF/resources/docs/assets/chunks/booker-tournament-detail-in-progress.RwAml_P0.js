@@ -1,0 +1,1 @@
+var e=`/atw-rpg/docs/screenshots/booker-tournament-list.png`,t=`/atw-rpg/docs/screenshots/booker-tournament-detail-scheduled.png`,n=`/atw-rpg/docs/screenshots/booker-tournament-detail-in-progress.png`;export{t as n,e as r,n as t};

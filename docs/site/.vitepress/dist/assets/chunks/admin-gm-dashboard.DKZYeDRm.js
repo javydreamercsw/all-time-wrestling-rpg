@@ -1,0 +1,1 @@
+var e=`/all-time-wrestling-rpg/screenshots/admin-gm-dashboard.png`;export{e as t};

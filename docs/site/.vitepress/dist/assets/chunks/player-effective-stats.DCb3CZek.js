@@ -1,0 +1,1 @@
+var e=`/all-time-wrestling-rpg/screenshots/player-effective-stats.png`;export{e as t};

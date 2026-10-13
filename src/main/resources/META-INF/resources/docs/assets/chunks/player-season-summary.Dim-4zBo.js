@@ -1,0 +1,1 @@
+var e=`/atw-rpg/docs/screenshots/player-season-summary.png`;export{e as t};

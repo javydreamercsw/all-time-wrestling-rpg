@@ -1,0 +1,1 @@
+var e=`/atw-rpg/docs/screenshots/admin-expansion-management.png`;export{e as t};

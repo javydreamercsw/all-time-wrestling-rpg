@@ -1,1 +1,0 @@
-var e=`/screenshots/admin-gm-dashboard.png`;export{e as t};

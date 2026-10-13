@@ -66,6 +66,14 @@ Tune gameplay from grouped, collapsible sections: system defaults, general gamep
 
 ---
 
+## Tournament-Fed Template Assignments
+
+Pair a tournament with a show template so its bracket feeds the participants of the auto-attached segment. When a show of this template is approved, the tournament resolves that match's entrants instead of the AI — an in-progress tournament fills the next open bracket match, and a completed one books a winner showcase.
+
+![Tournament-Fed Template Assignments](/screenshots/admin-show-template-tournament-assignment.png)
+
+---
+
 ## Wrestler Relationships Management
 
 Manage the social fabric of your promotion. Define marriages, family ties, and deep friendships that influence chemistry, AI narration, and random backstage events.

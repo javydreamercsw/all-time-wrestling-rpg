@@ -1,0 +1,1 @@
+var e=`/atw-rpg/docs/screenshots/booker-story-arc-wizard.png`,t=`/atw-rpg/docs/screenshots/booker-story-arc-add-beat.png`,n=`/atw-rpg/docs/screenshots/booker-story-arc-beats.png`,r=`/atw-rpg/docs/screenshots/booker-story-arc-card.png`;export{e as i,n,t as r,r as t};

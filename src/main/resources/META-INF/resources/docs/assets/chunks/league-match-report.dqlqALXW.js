@@ -1,0 +1,1 @@
+var e=`/atw-rpg/docs/screenshots/league-match-report.png`;export{e as t};

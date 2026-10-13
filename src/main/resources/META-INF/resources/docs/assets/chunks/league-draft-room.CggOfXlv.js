@@ -1,0 +1,1 @@
+var e=`/atw-rpg/docs/screenshots/league-draft-room.png`;export{e as t};

@@ -1,0 +1,1 @@
+var e=`/all-time-wrestling-rpg/screenshots/booker-tournament-list.png`,t=`/all-time-wrestling-rpg/screenshots/booker-tournament-detail-scheduled.png`,n=`/all-time-wrestling-rpg/screenshots/booker-tournament-detail-in-progress.png`;export{t as n,e as r,n as t};

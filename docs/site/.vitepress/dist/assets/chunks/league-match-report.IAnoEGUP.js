@@ -1,0 +1,1 @@
+var e=`/all-time-wrestling-rpg/screenshots/league-match-report.png`;export{e as t};
