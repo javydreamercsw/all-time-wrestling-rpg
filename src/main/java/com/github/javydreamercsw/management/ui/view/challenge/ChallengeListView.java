@@ -233,30 +233,40 @@ public class ChallengeListView extends VerticalLayout {
 
     if (isLocked) {
       Span lock = new Span("🔒 Locked");
-      lock.getElement().getThemeList().add("badge contrast");
+      lock.getElement().getThemeList().add("badge");
+      lock.getElement().getThemeList().add("contrast");
       badges.add(lock);
     }
 
     if (challenge.getWeekNumber() != null) {
       Span week = new Span("Week " + challenge.getWeekNumber());
-      week.getElement().getThemeList().add("badge contrast");
+      week.getElement().getThemeList().add("badge");
+      week.getElement().getThemeList().add("contrast");
       badges.add(week);
     }
 
     if (challenge.getDifficulty() != null) {
       Span diff = new Span(challenge.getDifficulty().name());
-      diff.getElement().getThemeList().add(difficultyTheme(challenge));
+      diff.getElement().getThemeList().add("badge");
+      String variant = difficultyTheme(challenge);
+      if (variant != null) {
+        diff.getElement().getThemeList().add(variant);
+      }
       badges.add(diff);
     }
 
     boolean isCustom = "CUSTOM".equals(challenge.getExpansionCode());
     Span sourceBadge = new Span(isCustom ? "Custom" : "Official");
-    sourceBadge.getElement().getThemeList().add(isCustom ? "badge" : "badge success");
+    sourceBadge.getElement().getThemeList().add("badge");
+    if (!isCustom) {
+      sourceBadge.getElement().getThemeList().add("success");
+    }
     badges.add(sourceBadge);
 
     if (!isLocked && !challenge.getRequiredExpansions().isEmpty()) {
       Span expBadge = new Span("Requires: " + String.join(", ", challenge.getRequiredExpansions()));
-      expBadge.getElement().getThemeList().add("badge success");
+      expBadge.getElement().getThemeList().add("badge");
+      expBadge.getElement().getThemeList().add("success");
       badges.add(expBadge);
     }
 
@@ -266,7 +276,8 @@ public class ChallengeListView extends VerticalLayout {
           .ifPresent(
               account -> {
                 Span done = new Span("Completed ✓");
-                done.getElement().getThemeList().add("badge success");
+                done.getElement().getThemeList().add("badge");
+                done.getElement().getThemeList().add("success");
                 badges.add(done);
               });
     }
@@ -562,12 +573,12 @@ public class ChallengeListView extends VerticalLayout {
 
   private String difficultyTheme(final ChallengeDTO challenge) {
     if (challenge.getDifficulty() == null) {
-      return "badge contrast";
+      return "contrast";
     }
     return switch (challenge.getDifficulty()) {
-      case ENTRY, EASY -> "badge success";
-      case MEDIUM -> "badge";
-      case HARD, LEGENDARY -> "badge error";
+      case ENTRY, EASY -> "success";
+      case MEDIUM -> null;
+      case HARD, LEGENDARY -> "error";
     };
   }
 }

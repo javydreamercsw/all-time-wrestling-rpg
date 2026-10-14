@@ -245,7 +245,8 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
                 return new Span(String.join(", ", s.getRules()));
               }
               Span badge = new Span("⚠ No rules");
-              badge.getElement().getThemeList().add("badge warning");
+              badge.getElement().getThemeList().add("badge");
+              badge.getElement().getThemeList().add("warning");
               return badge;
             })
         .setHeader("Rules")
@@ -267,7 +268,8 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
                     .setAttribute("title", "Scripted arc beat — booked as scripted when approved");
               } else if ("Tournament".equals(s.getSource())) {
                 badge.setText("Tournament");
-                badge.getElement().getThemeList().add("badge success");
+                badge.getElement().getThemeList().add("badge");
+                badge.getElement().getThemeList().add("success");
                 badge
                     .getElement()
                     .setAttribute(
@@ -276,7 +278,8 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
                             + " Delete this row to skip this slot on this show.");
               } else if (ProposedSegment.SOURCE_BRIEFCASE.equals(s.getSource())) {
                 badge.setText("Briefcase");
-                badge.getElement().getThemeList().add("badge success");
+                badge.getElement().getThemeList().add("badge");
+                badge.getElement().getThemeList().add("success");
                 badge
                     .getElement()
                     .setAttribute(

@@ -428,7 +428,8 @@ public class PlayerDashboardView extends VerticalLayout {
     Account account = playerWrestler.getAccount();
 
     Span legacyScoreLabel = new Span("Legacy: " + (account != null ? account.getLegacyScore() : 0));
-    legacyScoreLabel.getElement().getThemeList().add("badge contrast");
+    legacyScoreLabel.getElement().getThemeList().add("badge");
+    legacyScoreLabel.getElement().getThemeList().add("contrast");
     Tooltip.forComponent(legacyScoreLabel)
         .setText("Total points earned through fans and achievements");
 
