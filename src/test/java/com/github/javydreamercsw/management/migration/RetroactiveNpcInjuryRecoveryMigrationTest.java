@@ -38,12 +38,14 @@ import com.github.javydreamercsw.utils.DiceBag;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -247,12 +249,12 @@ class RetroactiveNpcInjuryRecoveryMigrationTest {
   /** Rigs every future recovery roll to show the given face on all dice. */
   private void allDiceShow(int face) {
     lenient()
-        .when(migration.recoveryDiceBag(org.mockito.ArgumentMatchers.anyInt()))
+        .when(migration.recoveryDiceBag(ArgumentMatchers.anyInt()))
         .thenAnswer(
             invocation -> {
               int diceCount = invocation.getArgument(0);
               int[] dice = new int[Math.max(1, diceCount)];
-              java.util.Arrays.fill(dice, face);
+              Arrays.fill(dice, face);
               // DiceBag uses random.nextInt(6)+1; a stub Random always yielding face-1
               // produces exactly that face on every die.
               return new DiceBag(
