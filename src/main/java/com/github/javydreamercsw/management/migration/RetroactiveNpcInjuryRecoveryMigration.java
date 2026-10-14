@@ -117,6 +117,10 @@ public class RetroactiveNpcInjuryRecoveryMigration implements DataMigration {
           allShows.stream()
               .filter(show -> show.getShowDate() != null)
               .filter(show -> !show.getShowDate().isBefore(injuryDate))
+              // Future scheduled shows have not run — no recovery roll is owed yet. Without
+              // this bound the first sandbox run stamped heal dates months into kayfabe's
+              // future (52 scheduled shows existed ahead of the game date, ATW-3qug).
+              .filter(show -> !show.getShowDate().isAfter(gameClock.gameToday()))
               .filter(show -> workedShowIds.stream().noneMatch(id -> id.equals(show.getId())))
               .filter(
                   show ->

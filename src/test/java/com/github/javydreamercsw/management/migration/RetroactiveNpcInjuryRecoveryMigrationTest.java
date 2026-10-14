@@ -92,6 +92,7 @@ class RetroactiveNpcInjuryRecoveryMigrationTest {
     lenient().when(showRepository.findAll()).thenReturn(List.of());
     lenient().when(injuryRepository.findHealableInjuries()).thenReturn(List.of(injury));
     lenient().when(gameClock.gameNowStaggeredOn(any())).thenReturn(Instant.now());
+    lenient().when(gameClock.gameToday()).thenReturn(LocalDate.of(2026, 7, 21));
   }
 
   @Test
@@ -243,6 +244,61 @@ class RetroactiveNpcInjuryRecoveryMigrationTest {
 
     // The heal date must be the FIRST missed show's date, not the second's
     assertThat(injury.getHealedDate()).isEqualTo(firstShowHeal);
+    verify(injuryRepository, times(1)).save(injury);
+  }
+
+  @Test
+  void migrate_futureScheduledShows_areNotReplayed() {
+    // Given — ONLY a future scheduled show (after the current game date): it has not run, so no
+    // recovery roll is owed yet (production had 52 such shows; replaying them stamped heal dates
+    // months into kayfabe's future)
+    Show futureShow = show(327L, LocalDate.of(2026, 7, 24));
+    when(showRepository.findAll()).thenReturn(List.of(futureShow));
+    when(segmentRepository.findNonPromoParticipationAfter(wrestler, LocalDate.of(2026, 6, 1)))
+        .thenReturn(List.of());
+    when(gameClock.gameToday()).thenReturn(LocalDate.of(2026, 7, 21));
+    allDiceShow(6);
+
+    migration.migrate();
+
+    verify(injuryRepository, never()).save(any());
+    assertThat(injury.getHealedDate()).isNull();
+  }
+
+  @Test
+  void migrate_pastShowsReplayed_futureShowsExcluded_mixed() {
+    // Given — one past and one future show: heal comes from the past show, never the future one
+    Show pastShow = show(383L, LocalDate.of(2026, 7, 13));
+    Show futureShow = show(327L, LocalDate.of(2026, 7, 24));
+    when(showRepository.findAll()).thenReturn(List.of(futureShow, pastShow));
+    when(segmentRepository.findNonPromoParticipationAfter(wrestler, LocalDate.of(2026, 6, 1)))
+        .thenReturn(List.of());
+    when(gameClock.gameToday()).thenReturn(LocalDate.of(2026, 7, 21));
+    Instant pastHeal = pastShow.getShowDate().atStartOfDay(ZoneOffset.UTC).toInstant();
+    when(gameClock.gameNowStaggeredOn(pastShow.getShowDate())).thenReturn(pastHeal);
+    allDiceShow(6);
+
+    migration.migrate();
+
+    assertThat(injury.getHealedDate()).isEqualTo(pastHeal);
+    verify(injuryRepository, times(1)).save(injury);
+  }
+
+  @Test
+  void migrate_gameDateTodayShow_includedInReplay() {
+    // Given — a show on the current game date itself counts as an opportunity
+    Show todayShow = show(383L, LocalDate.of(2026, 7, 21));
+    when(showRepository.findAll()).thenReturn(List.of(todayShow));
+    when(segmentRepository.findNonPromoParticipationAfter(wrestler, LocalDate.of(2026, 6, 1)))
+        .thenReturn(List.of());
+    when(gameClock.gameToday()).thenReturn(LocalDate.of(2026, 7, 21));
+    Instant todayHeal = todayShow.getShowDate().atStartOfDay(ZoneOffset.UTC).toInstant();
+    when(gameClock.gameNowStaggeredOn(todayShow.getShowDate())).thenReturn(todayHeal);
+    allDiceShow(6);
+
+    migration.migrate();
+
+    assertThat(injury.getHealedDate()).isEqualTo(todayHeal);
     verify(injuryRepository, times(1)).save(injury);
   }
 
