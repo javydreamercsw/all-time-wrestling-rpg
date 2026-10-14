@@ -264,6 +264,142 @@ class ShowPlanningAiServiceTest {
   }
 
   @Test
+  void planShow_aiProposesPromoForCooldownRivalry_isDropped() {
+    // Given — rivalry 42's last completed segment was a Promo (the stamp ShowPlanningService adds)
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(1);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+
+    ShowPlanningRivalryDTO cooldown = new ShowPlanningRivalryDTO();
+    cooldown.setId(42L);
+    cooldown.setName("Blood Feud");
+    cooldown.setHeat(25);
+    cooldown.setParticipants(List.of("Wrestler A", "Wrestler B"));
+    cooldown.setLastSegmentType("Promo");
+    context.setCurrentRivalries(List.of(cooldown));
+
+    // The AI ignores the PROMO_COOLDOWN instruction and proposes another Promo for the feud
+    String aiResponseJson =
+        """
+        [
+          {
+            "segmentId": "seg1",
+            "type": "Promo",
+            "description": "Wrestler A cuts a scathing promo on Wrestler B",
+            "outcome": "Crowd erupts",
+            "participants": ["Wrestler A", "Wrestler B"],
+            "rivalryId": 42
+          },
+          {
+            "segmentId": "seg2",
+            "type": "One on One",
+            "description": "Wrestler A vs Wrestler B grudge match",
+            "outcome": "Wrestler A wins",
+            "participants": ["Wrestler A", "Wrestler B"]
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    // When
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    // Then — the Promo row is gone; the match row survives
+    assertEquals(
+        1,
+        proposedShow.getSegments().size(),
+        "The cooldown Promo proposal must be dropped deterministically (ATW-ayu5)");
+    assertEquals(
+        "One on One", proposedShow.getSegments().get(0).getType(), "The match row must survive");
+  }
+
+  @Test
+  void planShow_promoForNonCooldownRivalry_isKept() {
+    // Given — same shape but the rivalry's last segment was a match: the AI's Promo stands
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(1);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+
+    ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
+    rivalry.setId(42L);
+    rivalry.setName("Blood Feud");
+    rivalry.setHeat(25);
+    rivalry.setParticipants(List.of("Wrestler A", "Wrestler B"));
+    rivalry.setLastSegmentType("One on One");
+    context.setCurrentRivalries(List.of(rivalry));
+
+    String aiResponseJson =
+        """
+        [
+          {
+            "segmentId": "seg1",
+            "type": "Promo",
+            "description": "Wrestler A cuts a scathing promo on Wrestler B",
+            "outcome": "Crowd erupts",
+            "participants": ["Wrestler A", "Wrestler B"],
+            "rivalryId": 42
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    // When
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    // Then
+    assertEquals(1, proposedShow.getSegments().size(), "A Promo for a non-cooldown rivalry stays");
+    assertEquals("Promo", proposedShow.getSegments().get(0).getType());
+  }
+
+  @Test
+  void planShow_cooldownRivalry_matchedByParticipantNamesWithoutRivalryId() {
+    // Given — the AI omits rivalryId; the participants alone identify the cooldown feud
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(0);
+    showTemplate.setExpectedPromos(1);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+
+    ShowPlanningRivalryDTO cooldown = new ShowPlanningRivalryDTO();
+    cooldown.setId(42L);
+    cooldown.setName("Blood Feud");
+    cooldown.setHeat(25);
+    cooldown.setParticipants(List.of("Gail Kim", "Abilene Maverick"));
+    cooldown.setLastSegmentType("Promo");
+    context.setCurrentRivalries(List.of(cooldown));
+
+    String aiResponseJson =
+        """
+        [
+          {
+            "segmentId": "seg1",
+            "type": "Promo",
+            "description": "Face-off confrontation",
+            "outcome": "Tension rises",
+            "participants": ["Gail Kim", "Abilene Maverick"]
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    // When
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    // Then
+    assertEquals(
+        0,
+        proposedShow.getSegments().size(),
+        "Participant-name coverage must catch rows without rivalryId");
+  }
+
+  @Test
   void planShow_rivalryIdMappedFromAiResponse() {
     // Given
     ShowPlanningContextDTO context = new ShowPlanningContextDTO();
