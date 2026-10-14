@@ -26,4 +26,10 @@ public class ShowPlanningRivalryDTO {
   private List<String> participants;
   private int heat;
   private Integer priority;
+
+  /**
+   * Segment type of this rivalry's most recent completed segment (ATW-l15c); null when the rivalry
+   * has never been booked. Drives the PROMO_COOLDOWN classification.
+   */
+  private String lastSegmentType;
 }

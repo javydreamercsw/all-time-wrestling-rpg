@@ -388,6 +388,50 @@ class ShowPlanningPromptBuilderTest {
   }
 
   @Test
+  void build_lastSegmentWasPromo_classifiedAsPromoCooldown() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ctx.setPremiumLiveEvent(false);
+    ShowPlanningRivalryDTO rivalry = rivalryWithHeat(42);
+    rivalry.setLastSegmentType("Promo");
+    ctx.setCurrentRivalries(List.of(rivalry));
+    String prompt = builder.build(ctx);
+    assertTrue(
+        prompt.contains("Classification: PROMO_COOLDOWN"),
+        "A rivalry whose last completed segment was a Promo must get PROMO_COOLDOWN (ATW-l15c)");
+    assertTrue(
+        prompt.contains("PROMO_COOLDOWN:"),
+        "The PROMO_COOLDOWN legend must explain the requirement to vary format");
+  }
+
+  @Test
+  void build_lastSegmentWasMatch_noPromoCooldown() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ctx.setPremiumLiveEvent(false);
+    ShowPlanningRivalryDTO rivalry = rivalryWithHeat(42);
+    rivalry.setLastSegmentType("One on One");
+    ctx.setCurrentRivalries(List.of(rivalry));
+    String prompt = builder.build(ctx);
+    assertTrue(
+        prompt.contains("Classification: PLE_RESOLUTION_REQUIRED"),
+        "A match last time must not trigger the promo cooldown");
+    assertFalse(prompt.contains("Classification: PROMO_COOLDOWN"));
+  }
+
+  @Test
+  void build_lastSegmentWasPromo_onPle_stillRequiresStipulation() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ctx.setPremiumLiveEvent(true);
+    ShowPlanningRivalryDTO rivalry = rivalryWithHeat(42);
+    rivalry.setLastSegmentType("Promo");
+    ctx.setCurrentRivalries(List.of(rivalry));
+    String prompt = builder.build(ctx);
+    assertTrue(
+        prompt.contains("Classification: STIPULATION_REQUIRED"),
+        "On a PLE the stipulation requirement outranks the promo cooldown (ATW-l15c)");
+    assertFalse(prompt.contains("Classification: PROMO_COOLDOWN"));
+  }
+
+  @Test
   void build_highHeatRivalry_ple_classifiedAsStipulationRequired() {
     ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
     ctx.setPremiumLiveEvent(true);

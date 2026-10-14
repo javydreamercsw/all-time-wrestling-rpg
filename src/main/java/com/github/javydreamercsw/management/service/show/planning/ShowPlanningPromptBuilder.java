@@ -209,6 +209,12 @@ public class ShowPlanningPromptBuilder {
                   // A match would violate the intergender restriction — advance the feud with
                   // a non-match segment instead of leaving the model with contradictory rules.
                   classification = "CONFRONTATION_ONLY";
+                } else if ("Promo".equals(rivalry.getLastSegmentType())
+                    && !context.isPremiumLiveEvent()) {
+                  // ATW-l15c: the feud's last completed segment was already a Promo. Booking
+                  // another one (e.g. via PLE_RESOLUTION_REQUIRED's confrontation guidance)
+                  // produced the six-show promo loop in production. Vary the format instead.
+                  classification = "PROMO_COOLDOWN";
                 } else if (rivalry.getHeat() >= 30) {
                   // On a regular show, max-heat feuds are saved for the PLE — no stipulation
                   // matches on weeklies. On a PLE they escalate to STIPULATION_REQUIRED.
@@ -244,6 +250,10 @@ public class ShowPlanningPromptBuilder {
           """
           - MUST_BOOK (Heat 10-19): This rivalry MUST have a segment on this show. Book a match \
           or a promo confrontation — do not skip it.
+          - PROMO_COOLDOWN: This rivalry's most recent segment was already a Promo — do NOT book \
+          another Promo for it this show (ATW-l15c). Vary the format: book a match (any finish \
+          or non-finish type) or a backstage segment. Escalate or shift momentum instead of \
+          repeating the talking segment.
           - PLE_RESOLUTION_ELIGIBLE (Heat 20-29): This rivalry is hot enough to headline a PLE. \
           On a regular show, build tension with a confrontation, brawl, or non-finish match. \
           On a PLE, give it a decisive match.
