@@ -325,6 +325,24 @@ public interface SegmentRepository
   @Query("SELECT s FROM Segment s JOIN FETCH s.show WHERE s.id = :id")
   Optional<Segment> findByIdWithShow(@Param("id") Long id);
 
+  /**
+   * Distinct non-promo segments a wrestler participated in on shows dated after the given date,
+   * show eagerly fetched — the retroactive injury-recovery migration's resting-set scan (ATW-3qug).
+   * Promo segments never mark participation (ShowService treats promo participants as resting).
+   */
+  @Query(
+      """
+      SELECT DISTINCT s FROM Segment s
+      JOIN FETCH s.show sh
+      JOIN s.participants p
+      WHERE p.wrestler = :wrestler
+      AND sh.showDate > :referenceDate
+      AND UPPER(s.segmentType.name) NOT LIKE 'PROMO%'
+      ORDER BY sh.showDate ASC
+      """)
+  List<Segment> findNonPromoParticipationAfter(
+      @Param("wrestler") Wrestler wrestler, @Param("referenceDate") LocalDate referenceDate);
+
   @Query(
       """
       SELECT s FROM Segment s
