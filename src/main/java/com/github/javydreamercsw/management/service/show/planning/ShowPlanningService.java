@@ -323,6 +323,18 @@ public class ShowPlanningService {
 
     ShowPlanningContextDTO dto = mapper.toDto(context);
 
+    // Stamp each rivalry with its most recent completed segment type (ATW-l15c): the prompt
+    // builder uses it to classify PROMO_COOLDOWN feuds whose last appearance was a Promo.
+    if (dto.getCurrentRivalries() != null) {
+      dto.getCurrentRivalries()
+          .forEach(
+              rivalryDto ->
+                  segmentRepository.findCompletedByRivalryId(rivalryDto.getId()).stream()
+                      .findFirst()
+                      .map(seg -> seg.getSegmentType().getName())
+                      .ifPresent(rivalryDto::setLastSegmentType));
+    }
+
     List<String> dramaLines =
         dramaEventService.getRecentEvents().stream()
             .filter(de -> de.getEventType() != DramaEventType.OUTCOME_MATRIX_RESULT)
@@ -494,6 +506,30 @@ public class ShowPlanningService {
                         + ")");
               }
             });
+      }
+
+      // PROMO_COOLDOWN guard (ATW-l15c): prompts are advisory; a Promo covering a rivalry whose
+      // most recent completed segment was also a Promo is the exact loop seen in production
+      // (rivalry 748 booked as six consecutive promos). Block it at approval time.
+      Optional<ProposedSegment> covering = findCoveringSegment(rivalry, proposedSegments);
+      if (covering.isPresent() && isPromoSegment(covering.get())) {
+        boolean lastWasPromo =
+            segmentRepository.findCompletedByRivalryId(rivalry.getId()).stream()
+                .findFirst()
+                .map(
+                    last ->
+                        last.getSegmentType() != null
+                            && WellKnownSegmentType.PROMO.matches(last.getSegmentType()))
+                .orElse(false);
+        if (lastWasPromo) {
+          errors.add(
+              "PROMO_COOLDOWN: "
+                  + w1
+                  + " vs "
+                  + w2
+                  + " was booked as a Promo on its most recent show — book a match or a"
+                  + " different segment format instead of another Promo (ATW-l15c)");
+        }
       }
     }
 
