@@ -43,6 +43,7 @@ import com.github.javydreamercsw.management.service.league.MatchFulfillmentServi
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.github.mvysny.kaributesting.v10.GridKt;
 import com.github.mvysny.kaributesting.v10.LocatorJ;
+import com.vaadin.flow.component.AbstractField;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.UI;
@@ -592,7 +593,7 @@ class InboxViewTest extends AbstractViewTest {
     when(securityUtils.canDelete()).thenReturn(true);
     when(securityUtils.canEdit()).thenReturn(true);
     List<InboxItem> items = new ArrayList<>();
-    for (long id = 1; id <= 3; id++) {
+    for (long id = 1; id < 3 + 1; id++) {
       InboxItem item = new InboxItem();
       item.setId(id);
       item.setDescription("Item " + id);
@@ -651,8 +652,7 @@ class InboxViewTest extends AbstractViewTest {
     checkbox.setValue(newValue); // state first, so listeners observe the new value
     try {
       var event =
-          new com.vaadin.flow.component.AbstractField.ComponentValueChangeEvent<>(
-              checkbox, checkbox, !newValue, true);
+          new AbstractField.ComponentValueChangeEvent<>(checkbox, checkbox, !newValue, true);
       var fireEvent = Component.class.getDeclaredMethod("fireEvent", ComponentEvent.class);
       fireEvent.setAccessible(true);
       fireEvent.invoke(checkbox, event);
