@@ -48,10 +48,14 @@ import com.github.javydreamercsw.management.service.match.SegmentAdjudicationSer
 import com.github.javydreamercsw.management.service.news.NewsGenerationService;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService.NpcRecoveryResult;
+import com.github.javydreamercsw.utils.DiceBag;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -560,14 +564,30 @@ public class ShowService {
     boolean isCampaignUniverse =
         show.getUniverse() != null && campaignRepository.existsByUniverse(show.getUniverse());
     if (!isCampaignUniverse) {
+      List<NpcRecoveryResult> recoveries = new ArrayList<>();
       wrestlerRepository.findAll().stream()
           .filter(w -> !participatingWrestlerIds.contains(w.getId()))
           .forEach(
               resting -> {
                 Long universeId = show.getUniverse() != null ? show.getUniverse().getId() : 1L;
-                wrestlerService.healChance(resting.getId(), universeId);
+                // ATW recovery: one die per Resilience point, 4+ per die is a success (ATW-7w9l).
+                int resilience = resting.getResilience() != null ? resting.getResilience() : 1;
+                int[] dice = new int[Math.max(1, resilience)];
+                Arrays.fill(dice, 6);
+                recoveries.add(
+                    wrestlerService.performNpcRecovery(
+                        resting.getId(), universeId, new DiceBag(dice)));
                 wrestlerService.recoverCondition(resting.getId(), universeId, 5);
               });
+      long injuryHeals = recoveries.stream().filter(NpcRecoveryResult::injuryHealed).count();
+      long bumpsHealed = recoveries.stream().mapToLong(NpcRecoveryResult::bumpsHealed).sum();
+      log.info(
+          "Post-show recovery for {} resting wrestler(s) in '{}': {} injury heal(s), {} bump(s)"
+              + " healed",
+          recoveries.size(),
+          show.getName(),
+          injuryHeals,
+          bumpsHealed);
     }
 
     if (show.getShowDate() != null) {

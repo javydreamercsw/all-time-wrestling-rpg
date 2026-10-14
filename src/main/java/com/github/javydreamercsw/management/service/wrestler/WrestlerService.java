@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.config.CacheConfig;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
+import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpSource;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
@@ -48,6 +49,7 @@ import com.github.javydreamercsw.management.service.universe.UniverseSettingsSer
 import com.github.javydreamercsw.utils.DiceBag;
 import jakarta.persistence.criteria.Predicate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -644,18 +646,23 @@ public class WrestlerService {
       eventPublisher.publishEvent(new WrestlerBumpHealedEvent(this, savedState));
       return Optional.of(savedState);
     }
-    log.warn(
+    // Debug, not warn: callers probe for available bumps before healing; 0 bumps is a
+    // normal outcome of the recovery roll, not an error condition (ATW-7w9l).
+    log.debug(
         "Wrestler {} has 0 bumps in universe {}, cannot heal further.", wrestlerId, universeId);
     return Optional.of(state);
   }
 
   /**
-   * Chance to heal a bump for a wrestler based on a dice roll.
+   * ATW recovery roll for NPC wrestlers after a show (ATW-7w9l). Rolls one die per point of the
+   * wrestler's Resilience attribute; each die showing 4+ counts as 1 success (Focus Tokens are not
+   * implemented). Per the ATW rules: 2+ successes heal 1 active Injury (prioritized over bumps);
+   * otherwise each success removes 1 Bump Token (max 2).
    *
    * @param wrestlerId The wrestler's ID
    * @param universeId The universe's ID
-   * @param diceBag The dice bag to use
-   * @return The updated state, or empty if not found
+   * @param diceBag The dice bag to use (must hold one die per Resilience point)
+   * @return What the recovery roll healed
    */
   @Transactional
   @Caching(
@@ -665,42 +672,66 @@ public class WrestlerService {
             value = CacheConfig.WRESTLER_STATS_CACHE,
             key = "#wrestlerId + ':' + #universeId")
       })
-  public Optional<WrestlerState> healChance(
+  public NpcRecoveryResult performNpcRecovery(
       @NonNull final Long wrestlerId,
       @NonNull final Long universeId,
       @NonNull final DiceBag diceBag) {
-    WrestlerState state = getOrCreateState(wrestlerId, universeId);
+    diceBag.roll();
+    int[] rolls = diceBag.getLastRoll() != null ? diceBag.getLastRoll() : new int[0];
+    int successes = 0;
+    for (int roll : rolls) {
+      if (roll >= 4) {
+        successes++;
+      }
+    }
+    log.debug(
+        "NPC recovery for wrestler {} in universe {}: rolls={}, successes={}",
+        wrestlerId,
+        universeId,
+        Arrays.toString(rolls),
+        successes);
 
-    boolean hasInjury =
-        !injuryService.getActiveInjuriesForWrestler(wrestlerId, universeId).isEmpty();
-    int roll = diceBag.roll();
+    NpcRecoveryResult result = new NpcRecoveryResult(successes, false, 0);
 
-    // Standard recovery roll: 4+ heals a bump. If injured, 5+ required.
-    int target = hasInjury ? 5 : 4;
-
-    if (roll >= target) {
-      log.debug(
-          "Wrestler {} rolled {} (target {}) and healed a bump in universe {}.",
-          wrestlerId,
-          roll,
-          target,
-          universeId);
-      return healBump(wrestlerId, universeId);
+    if (successes >= 2) {
+      // 2 successes: 1 Injury OR 2 bumps (injury is more severe — heal it first, per ATW rules)
+      List<Injury> activeInjuries =
+          injuryService.getActiveInjuriesForWrestler(wrestlerId, universeId);
+      if (!activeInjuries.isEmpty()) {
+        Injury injury = activeInjuries.getFirst();
+        injuryService.healInjuryFree(injury.getId());
+        result = new NpcRecoveryResult(successes, true, 0);
+        log.info(
+            "NPC recovery healed injury {} (id {}) for wrestler {} in universe {} ({} successes)",
+            injury.getName(),
+            injury.getId(),
+            wrestlerId,
+            universeId,
+            successes);
+        return result;
+      }
     }
 
-    log.debug(
-        "Wrestler {} rolled {} (target {}) and failed to heal a bump in universe {}.",
-        wrestlerId,
-        roll,
-        target,
-        universeId);
-    return Optional.of(state);
+    // 1 success: 1 bump. 2 successes (no injuries): 2 bumps.
+    if (successes >= 1) {
+      int bumpsToHeal = Math.min(successes, 2);
+      int bumpsHealed = 0;
+      for (int i = 0; i < bumpsToHeal; i++) {
+        WrestlerState state = getOrCreateState(wrestlerId, universeId);
+        if (state.getBumps() > 0) {
+          healBump(wrestlerId, universeId);
+          bumpsHealed++;
+        } else {
+          break;
+        }
+      }
+      result = new NpcRecoveryResult(successes, false, bumpsHealed);
+    }
+    return result;
   }
 
-  public Optional<WrestlerState> healChance(
-      @NonNull final Long wrestlerId, @NonNull final Long universeId) {
-    return healChance(wrestlerId, universeId, new DiceBag(6));
-  }
+  /** Outcome of an NPC post-show recovery roll (ATW-7w9l). */
+  public record NpcRecoveryResult(int successes, boolean injuryHealed, int bumpsHealed) {}
 
   @Caching(
       evict = {
