@@ -527,11 +527,11 @@ class InboxViewTest extends AbstractViewTest {
     // Force the grid to render the item and select it through the selection model.
     Grid<InboxItem> grid = (Grid<InboxItem>) _get(adminView, Grid.class);
     grid.getDataProvider().fetch(new Query<>());
-    // Select through the UI's own select-all control (grid.select's listener
-    // interacts with the select-all checkbox in ways that clear selectedItems).
+    // Select through the UI's own select-all control, simulating a browser click:
+    // the view ignores programmatic value changes to avoid deselect cascades.
     Checkbox selectAll =
         _get(adminView, Checkbox.class, spec -> spec.withId("select-all-checkbox"));
-    selectAll.setValue(true);
+    clickCheckbox(selectAll, true);
     Assertions.assertTrue(
         _get(adminView, Button.class, spec -> spec.withText("Delete Selected")).isEnabled(),
         "Selection must enable Delete Selected");
@@ -585,6 +585,52 @@ class InboxViewTest extends AbstractViewTest {
     assertFalse(deleteButton.isVisible(), "Delete Selected must hide without canDelete");
   }
 
+  @Test
+  @DisplayName("Unchecking one row after select-all keeps the remaining rows selected")
+  @SuppressWarnings("unchecked")
+  void selectAll_uncheckSingleRow_keepsRemainingSelection() {
+    when(securityUtils.canDelete()).thenReturn(true);
+    when(securityUtils.canEdit()).thenReturn(true);
+    List<InboxItem> items = new ArrayList<>();
+    for (long id = 1; id <= 3; id++) {
+      InboxItem item = new InboxItem();
+      item.setId(id);
+      item.setDescription("Item " + id);
+      items.add(item);
+    }
+    when(inboxService.search(any(), any(), any(), any(), any())).thenReturn(items);
+
+    InboxView adminView =
+        new InboxView(
+            inboxService,
+            eventTypeRegistry,
+            wrestlerRepository,
+            matchFulfillmentService,
+            securityUtils,
+            objectMapper,
+            openProfileDrawerBroadcaster,
+            directMessageService);
+    UI.getCurrent().add(adminView);
+
+    Grid<InboxItem> grid = (Grid<InboxItem>) _get(adminView, Grid.class);
+    grid.getDataProvider().fetch(new Query<>());
+    Checkbox selectAll =
+        _get(adminView, Checkbox.class, spec -> spec.withId("select-all-checkbox"));
+
+    // Select all via a client-side click.
+    clickCheckbox(selectAll, true);
+    Assertions.assertEquals(3, grid.getSelectedItems().size(), "All rows must be selected");
+
+    // Uncheck one row like a browser click on its row checkbox would.
+    grid.deselect(items.get(0));
+
+    // The bug: the programmatic checkbox sync cascaded into a full deselect.
+    Assertions.assertEquals(2, grid.getSelectedItems().size(), "Remaining rows must stay selected");
+
+    // And the toolbar select-all checkbox must reflect the partial selection.
+    assertFalse(selectAll.getValue(), "Select-all checkbox must uncheck on partial selection");
+  }
+
   /** Walks all descendants regardless of visibility (karibu's locator hides INVIS ones). */
   private static List<Button> findAllButtons(Component root) {
     List<Button> found = new ArrayList<>();
@@ -593,5 +639,25 @@ class InboxViewTest extends AbstractViewTest {
     }
     root.getChildren().forEach(child -> found.addAll(findAllButtons(child)));
     return found;
+  }
+
+  /**
+   * Fires a checkbox value change as the browser would (fromClient=true). Karibu's {@code setValue}
+   * is indistinguishable from a programmatic sync, which the view ignores to avoid deselect
+   * cascades.
+   */
+  @SuppressWarnings("unchecked")
+  private static void clickCheckbox(Checkbox checkbox, boolean newValue) {
+    checkbox.setValue(newValue); // state first, so listeners observe the new value
+    try {
+      var event =
+          new com.vaadin.flow.component.AbstractField.ComponentValueChangeEvent<>(
+              checkbox, checkbox, !newValue, true);
+      var fireEvent = Component.class.getDeclaredMethod("fireEvent", ComponentEvent.class);
+      fireEvent.setAccessible(true);
+      fireEvent.invoke(checkbox, event);
+    } catch (ReflectiveOperationException e) {
+      throw new IllegalStateException("Failed to fire checkbox click", e);
+    }
   }
 }

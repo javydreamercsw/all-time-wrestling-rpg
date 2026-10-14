@@ -173,6 +173,12 @@ public class InboxView extends VerticalLayout {
     selectAllCheckbox.setId("select-all-checkbox");
     selectAllCheckbox.addValueChangeListener(
         event -> {
+          // Only react to browser clicks: updateSelectedButtonsState() syncs this checkbox
+          // programmatically as rows are individually (de)selected, and reacting to that
+          // would deselect everything when the user unchecks a single row.
+          if (!event.isFromClient()) {
+            return;
+          }
           if (event.getValue()) {
             ((GridMultiSelectionModel<InboxItem>) grid.getSelectionModel()).selectAll();
             selectedItems.addAll(grid.getDataProvider().fetch(new Query<>()).toList());
