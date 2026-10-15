@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.Data;
+import lombok.Setter;
 
 @Data
 public class ProposedSegment {
@@ -39,7 +40,7 @@ public class ProposedSegment {
   /** Title id whose #1 contender is decided by this segment (resolved at approval time). */
   private Long contenderTitleId;
 
-  private Set<Title> titles = new HashSet<>();
+  @Setter private Set<Title> titles = new HashSet<>();
   private List<String> rules;
   private String refereeName;
 
@@ -61,14 +62,4 @@ public class ProposedSegment {
 
   /** Proposed cash-in mode (ATW-2b9u): PLANNED / AMBUSH / RUN_IN. */
   private BriefcaseCashInMode briefcaseMode;
-
-  /**
-   * Attaches titles without touching {@code isTitleSegment} (ATW-cosc): contender matches also
-   * carry titles (the title the winner becomes #1 contender for), so deriving the flag here
-   * silently turned contender matches into title matches. Callers that want the old behavior (title
-   * attached ⇒ on the line) set {@code isTitleSegment} explicitly.
-   */
-  public void setTitles(final Set<Title> titles) {
-    this.titles = titles != null ? titles : new HashSet<>();
-  }
 }
