@@ -332,7 +332,8 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
       // Inbox badge (pill showing unread count)
       inboxBadge = new Span();
       inboxBadge.setId("inbox-unread-badge");
-      inboxBadge.getElement().getThemeList().add("badge pill");
+      inboxBadge.getElement().getThemeList().add("badge");
+      inboxBadge.getElement().getThemeList().add("pill");
       inboxBadge.setVisible(false);
 
       // Inbox button with badge — label hidden below medium, envelope icon + badge remain

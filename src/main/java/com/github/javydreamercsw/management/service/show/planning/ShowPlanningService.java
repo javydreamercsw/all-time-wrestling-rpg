@@ -477,6 +477,22 @@ public class ShowPlanningService {
     List<Rivalry> requiredRivalries =
         activeRivalries.stream().filter(r -> r.getHeat() >= 10).toList();
 
+    // Title-on-the-line and #1-contender designation are mutually exclusive segment states
+    // (ATW-cosc): a segment with both flags would adjudicate as a title change AND rotate the
+    // contender — the champion/contender swap seen in production. Contender matches carry a
+    // title (the one the winner becomes #1 contender for) but isTitleSegment must be false.
+    for (ProposedSegment segment : proposedSegments) {
+      if (Boolean.TRUE.equals(segment.getIsTitleSegment())
+          && Boolean.TRUE.equals(segment.getIsContenderMatch())) {
+        errors.add(
+            "Invalid segment flags: '"
+                + segment.getType()
+                + "' is marked as both a title match and a #1 contender match — pick one"
+                + " (title on the line, or title not on the line with the winner becoming the"
+                + " #1 contender)");
+      }
+    }
+
     for (Rivalry rivalry : requiredRivalries) {
       String w1 = rivalry.getWrestler1().getName();
       String w2 = rivalry.getWrestler2().getName();

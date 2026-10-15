@@ -602,7 +602,8 @@ public class InboxView extends VerticalLayout {
       for (var target : item.getTargets()) {
         String targetName = resolveTargetName(target);
         Span chip = new Span(targetName);
-        chip.getElement().getThemeList().add("badge contrast");
+        chip.getElement().getThemeList().add("badge");
+        chip.getElement().getThemeList().add("contrast");
         targetsRow.add(chip);
       }
       detailsView.add(targetsRow);
@@ -617,7 +618,8 @@ public class InboxView extends VerticalLayout {
         targetsLabel.getStyle().set("font-weight", "bold");
         targetsRow.add(targetsLabel);
         Span chip = new Span(legacyName);
-        chip.getElement().getThemeList().add("badge contrast");
+        chip.getElement().getThemeList().add("badge");
+        chip.getElement().getThemeList().add("contrast");
         targetsRow.add(chip);
         detailsView.add(targetsRow);
       }

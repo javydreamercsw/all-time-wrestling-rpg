@@ -1015,7 +1015,8 @@ public class ShowDetailView extends Main
               if (beat.isPresent()) {
                 String arcName = beat.get().getScript().getName();
                 badge.setText("🎭 " + arcName);
-                badge.getElement().getThemeList().add("badge contrast");
+                badge.getElement().getThemeList().add("badge");
+                badge.getElement().getThemeList().add("contrast");
                 badge.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.FontWeight.SEMIBOLD);
                 badge
                     .getElement()
@@ -1031,7 +1032,8 @@ public class ShowDetailView extends Main
               var tournamentMatch = tournamentMatchRepository.findBySegmentId(segment.getId());
               if (tournamentMatch.isPresent()) {
                 badge.setText("🏆 " + tournamentMatch.get().getRound().getTournament().getName());
-                badge.getElement().getThemeList().add("badge success");
+                badge.getElement().getThemeList().add("badge");
+                badge.getElement().getThemeList().add("success");
                 badge.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.FontWeight.SEMIBOLD);
                 badge
                     .getElement()

@@ -887,23 +887,26 @@ public class CampaignDashboardView extends VerticalLayout {
 
       if (option.getDifficulty() != null) {
         Span diff = new Span(option.getDifficulty().name());
-        diff.getElement().getThemeList().add("badge contrast");
+        diff.getElement().getThemeList().add("badge");
+        diff.getElement().getThemeList().add("contrast");
         badges.add(diff);
       }
 
       Span modeBadge = new Span(option.getMode().name().replace("_", " "));
-      String modeTheme =
-          switch (option.getMode()) {
-            case STATIC_ONLY -> "badge success";
-            case AI_WITH_FALLBACK -> "badge";
-            default -> "badge contrast";
-          };
-      modeBadge.getElement().getThemeList().add(modeTheme);
+      modeBadge.getElement().getThemeList().add("badge");
+      switch (option.getMode()) {
+        case STATIC_ONLY -> modeBadge.getElement().getThemeList().add("success");
+        case AI_WITH_FALLBACK -> {
+          // "badge" only — no variant
+        }
+        default -> modeBadge.getElement().getThemeList().add("contrast");
+      }
       badges.add(modeBadge);
 
       if (option.getRequiredExpansions() != null && !option.getRequiredExpansions().isEmpty()) {
         Span expBadge = new Span("Requires: " + String.join(", ", option.getRequiredExpansions()));
-        expBadge.getElement().getThemeList().add("badge error");
+        expBadge.getElement().getThemeList().add("badge");
+        expBadge.getElement().getThemeList().add("error");
         badges.add(expBadge);
       }
 

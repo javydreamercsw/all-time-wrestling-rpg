@@ -235,7 +235,8 @@ public class SocialMediaView extends VerticalLayout {
 
     Span categoryBadge =
         new Span(item.getCategory().getEmoji() + " " + item.getCategory().getDisplayName());
-    categoryBadge.getElement().getThemeList().add("badge small");
+    categoryBadge.getElement().getThemeList().add("badge");
+    categoryBadge.getElement().getThemeList().add("small");
     if (item.getIsRumor()) {
       categoryBadge.getElement().getThemeList().add("contrast");
     }

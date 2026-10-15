@@ -1418,6 +1418,36 @@ class ShowPlanningServiceTest {
   }
 
   @Test
+  void validateCard_bothTitleAndContenderFlags_isError() {
+    // Given — a segment marked both as a title match and a #1 contender match (ATW-cosc: this
+    // dual state adjudicated as a title change AND a contender rotation, swapping champion and
+    // contender in production).
+    ProposedSegment bad = new ProposedSegment();
+    bad.setType("One on One");
+    bad.setIsTitleSegment(true);
+    bad.setIsContenderMatch(true);
+
+    CardValidationResult result = showPlanningService.validateCard(List.of(bad), List.of());
+
+    assertFalse(result.isValid(), "Both flags set must be a hard error (ATW-cosc)");
+    assertTrue(result.getErrors().getFirst().contains("both a title match and a #1 contender"));
+  }
+
+  @Test
+  void validateCard_contenderMatchWithTitleOnly_noError() {
+    // Given — the legitimate contender-match shape: title attached (which title the winner
+    // becomes #1 contender for), title NOT on the line, contender flag on.
+    ProposedSegment good = new ProposedSegment();
+    good.setType("One on One");
+    good.setIsTitleSegment(false);
+    good.setIsContenderMatch(true);
+
+    CardValidationResult result = showPlanningService.validateCard(List.of(good), List.of());
+
+    assertTrue(result.isValid(), "Contender flag alone is the desired state");
+  }
+
+  @Test
   void validateCard_promoOnPromoCooldown_rivalryTagged_isError() {
     // Given — rivalry 748's last completed segment was a Promo (ATW-l15c); the AI proposes
     // another Promo covering it.

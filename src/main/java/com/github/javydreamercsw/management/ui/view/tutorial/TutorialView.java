@@ -234,7 +234,8 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
 
     if (def.isAdvanced()) {
       Span badge = new Span("Advanced");
-      badge.getElement().getThemeList().add("badge error");
+      badge.getElement().getThemeList().add("badge");
+      badge.getElement().getThemeList().add("error");
       badge.getStyle().set("font-size", "var(--lumo-font-size-xs)");
       titleRow.add(badge);
     }

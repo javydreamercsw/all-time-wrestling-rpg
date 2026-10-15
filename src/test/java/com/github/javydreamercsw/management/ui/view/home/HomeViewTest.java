@@ -220,6 +220,41 @@ class HomeViewTest extends AbstractViewTest {
     assertEquals(5, newsCards.size(), "Should show at most 5 news items");
   }
 
+  @Test
+  @DisplayName("Rumor news gets the contrast badge; non-rumor does not (and never crashes)")
+  void newsCategoryBadgeThemes() {
+    NewsItem rumor =
+        NewsItem.builder()
+            .headline("Rumor headline")
+            .category(NewsCategory.RUMOR)
+            .isRumor(true)
+            .publishDate(Instant.now())
+            .build();
+    NewsItem confirmed =
+        NewsItem.builder()
+            .headline("Confirmed headline")
+            .category(NewsCategory.BREAKING)
+            .isRumor(false)
+            .publishDate(Instant.now())
+            .build();
+    when(newsService.getLatestNews()).thenReturn(List.of(rumor, confirmed));
+    HomeView view = buildView(Collections.emptyList());
+
+    List<Span> spans = _find(view, Span.class);
+    Span rumorBadge =
+        spans.stream().filter(s -> s.getText().equals("RUMOR")).findFirst().orElseThrow();
+    Span confirmedBadge =
+        spans.stream().filter(s -> s.getText().equals("BREAKING")).findFirst().orElseThrow();
+    assertTrue(
+        rumorBadge.getElement().getThemeList().contains("contrast"),
+        "Rumor badge should carry the contrast theme");
+    assertFalse(
+        confirmedBadge.getElement().getThemeList().contains("contrast"),
+        "Confirmed-news badge must not carry the contrast theme");
+    // Non-empty theme names only: an empty name throws in Flow 25.3 (ATW-umx8)
+    confirmedBadge.getElement().getThemeList().forEach(name -> assertFalse(name.isBlank()));
+  }
+
   private List<NewsItem> buildNewsItems(final int count) {
     return IntStream.range(0, count)
         .mapToObj(

@@ -157,6 +157,81 @@ class EditSegmentDialogTest {
   }
 
   @Test
+  void testSave_contenderMatchKeepsFlags() {
+    // Regression (ATW-cosc): a planning row edited as a #1 contender match must round-trip as
+    // one. Before the fix the dialog dropped isContenderMatch on save and setTitles() flipped
+    // isTitleSegment back on — the row was approved as a TITLE match, swapping champion and
+    // contender at adjudication.
+    UI.setCurrent(ui);
+    Title contenderTitle = new Title();
+    contenderTitle.setId(1L);
+    contenderTitle.setName("Test Title 1");
+
+    EditSegmentDialog dialog =
+        new EditSegmentDialog(
+            segment,
+            wrestlerService,
+            titleService,
+            segmentTypeService,
+            segmentRuleService,
+            npcService,
+            expansionService,
+            null,
+            1L,
+            onSave);
+    dialog.open();
+
+    // Simulate the booker checking "This is a #1 Contender Match" and picking the title
+    dialog.getSegmentTypeCombo().setValue(matchType);
+    dialog.getIsContenderMatchCheckbox().setValue(true);
+    dialog.getTitleMultiSelectComboBox().setValue(Set.of(contenderTitle));
+
+    // Act
+    dialog.save();
+
+    // Assert — contender flag survives, title-segment flag stays false despite titles attached
+    assertTrue(
+        segment.getIsContenderMatch(), "isContenderMatch must round-trip through the dialog");
+    assertFalse(
+        segment.getIsTitleSegment(),
+        "A contender match must not be flagged as a title match even with a title attached");
+    assertTrue(segment.getTitles().contains(contenderTitle), "The title must stay attached");
+    verify(onSave).run();
+  }
+
+  @Test
+  void testLoad_contenderFlagPreselectsCheckbox() {
+    // Regression (ATW-cosc): opening the dialog on an existing contender row must pre-check the
+    // contender box — before the fix the loader hardcoded isContenderMatch=false, so any edit
+    // silently cleared the flag on save.
+    UI.setCurrent(ui);
+    segment.setIsContenderMatch(true);
+    Title contenderTitle = new Title();
+    contenderTitle.setId(1L);
+    contenderTitle.setName("Test Title 1");
+    segment.setTitles(Set.of(contenderTitle));
+
+    EditSegmentDialog dialog =
+        new EditSegmentDialog(
+            segment,
+            wrestlerService,
+            titleService,
+            segmentTypeService,
+            segmentRuleService,
+            npcService,
+            expansionService,
+            null,
+            1L,
+            onSave);
+    dialog.open();
+
+    assertTrue(
+        dialog.getIsContenderMatchCheckbox().getValue(),
+        "Existing contender row must load with the contender checkbox checked");
+    assertTrue(dialog.getTitleMultiSelectComboBox().isVisible());
+  }
+
+  @Test
   void testAddTeamButtonPopulatesDropdown() {
     UI.setCurrent(ui);
     EditSegmentDialog dialog =
