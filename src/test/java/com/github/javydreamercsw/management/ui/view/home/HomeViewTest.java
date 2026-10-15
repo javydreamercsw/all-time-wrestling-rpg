@@ -251,7 +251,7 @@ class HomeViewTest extends AbstractViewTest {
     assertFalse(
         confirmedBadge.getElement().getThemeList().contains("contrast"),
         "Confirmed-news badge must not carry the contrast theme");
-    // Non-empty theme names only: an empty name throws in Flow 25.3 (ATW-umx8)
+    // Non-empty theme names only: an empty name throws in Flow 25.3
     confirmedBadge.getElement().getThemeList().forEach(name -> assertFalse(name.isBlank()));
   }
 

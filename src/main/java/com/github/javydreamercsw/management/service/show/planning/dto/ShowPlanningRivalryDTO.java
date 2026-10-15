@@ -28,8 +28,8 @@ public class ShowPlanningRivalryDTO {
   private Integer priority;
 
   /**
-   * Segment type of this rivalry's most recent completed segment (ATW-l15c); null when the rivalry
-   * has never been booked. Drives the PROMO_COOLDOWN classification.
+   * Segment type of this rivalry's most recent completed segment; null when the rivalry has never
+   * been booked. Drives the PROMO_COOLDOWN classification.
    */
   private String lastSegmentType;
 }

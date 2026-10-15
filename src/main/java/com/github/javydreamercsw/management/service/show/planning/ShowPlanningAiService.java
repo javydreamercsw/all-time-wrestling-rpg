@@ -108,12 +108,11 @@ public class ShowPlanningAiService {
   }
 
   /**
-   * Deterministic PROMO_COOLDOWN enforcement (ATW-ayu5, follow-up to ATW-l15c): prompts are
-   * advisory — production showed the AI still proposing Promos for feuds whose most recent
-   * completed segment was a Promo (rivalry 748's six-promo loop). Drop AI-proposed Promo rows
-   * covering such rivalries, mirroring the approval-time guard in ShowPlanningService.validateCard.
-   * Runs on the raw AI output BEFORE the scripted-beat pass, so booker-mandated, tournament, and
-   * briefcase rows are never touched.
+   * Deterministic PROMO_COOLDOWN enforcement: prompts are advisory — the AI may still propose
+   * Promos for feuds whose most recent completed segment was a Promo, booking the same talking
+   * segment show after show. Drop AI-proposed Promo rows covering such rivalries, mirroring the
+   * approval-time guard in ShowPlanningService.validateCard. Runs on the raw AI output BEFORE the
+   * scripted-beat pass, so booker-mandated, tournament, and briefcase rows are never touched.
    */
   private void dropPromoCooldownProposals(
       @NonNull final ProposedShow proposedShow, @NonNull final ShowPlanningContextDTO context) {
@@ -143,7 +142,7 @@ public class ShowPlanningAiService {
         dropped++;
         log.warn(
             "Dropped AI-proposed Promo for '{}' — the rivalry's most recent segment was already a"
-                + " Promo (PROMO_COOLDOWN, ATW-l15c)",
+                + " Promo (PROMO_COOLDOWN)",
             String.join(" vs ", hit.getParticipants()));
       } else {
         kept.add(segment);
@@ -401,8 +400,8 @@ public class ShowPlanningAiService {
       segment.setNotes(beat.getNotes());
     }
     if (beat.isTitleSegment() && beat.getTitles() != null && !beat.getTitles().isEmpty()) {
-      // ATW-cosc: setTitles no longer derives isTitleSegment (contender matches carry titles
-      // too) — a title-carrying beat is on the line, so set the flag explicitly.
+      // setTitles only attaches titles (a contender match carries titles too) — a
+      // title-carrying beat is on the line, so set the flag explicitly.
       segment.setIsTitleSegment(true);
       segment.setTitles(new HashSet<>(beat.getTitles()));
     }
@@ -465,9 +464,9 @@ public class ShowPlanningAiService {
           // semantics); the bracket result mirrors the booked segment's actual winners.
         }
         // The Title entity wins (selector pre-selection); titleName stays the fallback for
-        // hand-built contexts. ATW-cosc: setTitles no longer derives isTitleSegment — a
-        // tournament slot's title is on the line, so the flag is set explicitly (the same
-        // contract the scripted-beat path relies on).
+        // hand-built contexts. setTitles only attaches titles (a contender match carries titles
+        // too) — a tournament slot's title is on the line, so the flag is set explicitly (the
+        // same contract the scripted-beat path relies on).
         if (slot.getTitle() != null) {
           segment.setIsTitleSegment(true);
           segment.setTitles(Set.of(slot.getTitle()));

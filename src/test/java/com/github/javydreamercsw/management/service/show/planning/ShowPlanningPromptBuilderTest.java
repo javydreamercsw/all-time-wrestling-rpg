@@ -397,7 +397,7 @@ class ShowPlanningPromptBuilderTest {
     String prompt = builder.build(ctx);
     assertTrue(
         prompt.contains("Classification: PROMO_COOLDOWN"),
-        "A rivalry whose last completed segment was a Promo must get PROMO_COOLDOWN (ATW-l15c)");
+        "A rivalry whose last completed segment was a Promo must get PROMO_COOLDOWN");
     assertTrue(
         prompt.contains("PROMO_COOLDOWN:"),
         "The PROMO_COOLDOWN legend must explain the requirement to vary format");
@@ -427,7 +427,7 @@ class ShowPlanningPromptBuilderTest {
     String prompt = builder.build(ctx);
     assertTrue(
         prompt.contains("Classification: STIPULATION_REQUIRED"),
-        "On a PLE the stipulation requirement outranks the promo cooldown (ATW-l15c)");
+        "On a PLE the stipulation requirement outranks the promo cooldown");
     assertFalse(prompt.contains("Classification: PROMO_COOLDOWN"));
   }
 

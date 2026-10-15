@@ -246,7 +246,7 @@ public class HomeView extends VerticalLayout {
     if (item.getCategory() != null) {
       Span category = new Span(item.getCategory().name());
       // Empty theme names are rejected by Flow (IllegalArgumentException), so add the
-      // contrast variant only for rumors (ATW-umx8).
+      // contrast variant only for rumors.
       category.getElement().getThemeList().add("badge");
       if (item.getIsRumor() != null && item.getIsRumor()) {
         category.getElement().getThemeList().add("contrast");

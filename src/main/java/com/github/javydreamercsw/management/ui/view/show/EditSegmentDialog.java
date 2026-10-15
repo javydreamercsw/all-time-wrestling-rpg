@@ -785,8 +785,9 @@ public class EditSegmentDialog extends Dialog {
           segment.setRules(
               saveData.rules().stream().map(SegmentRule::getName).collect(Collectors.toList()));
           segment.setRefereeName(saveData.referee() != null ? saveData.referee().getName() : null);
-          // Write both flags explicitly (ATW-cosc): setTitles must not derive isTitleSegment —
-          // contender matches carry titles too (the title the winner becomes #1 contender for).
+          // Write both flags explicitly: a title-carrying contender match must NOT derive
+          // isTitleSegment — contender matches carry titles too (the one the winner becomes
+          // #1 contender for), which silently turned them into title matches.
           segment.setIsTitleSegment(saveData.isTitleSegment());
           segment.setIsContenderMatch(saveData.isContenderMatch());
           segment.setTitles(saveData.titles());
