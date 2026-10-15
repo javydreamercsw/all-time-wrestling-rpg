@@ -1,0 +1,101 @@
+- generic [ref=f1e1]:
+  - generic [ref=f1e4]:
+    - button "Toggle navigation panel" [expanded] [ref=f1e6]:
+      - generic [ref=f1e7]: 
+      - text: 
+    - generic [ref=f1e10]:
+      - generic [ref=f1e11]:
+        - img "ATW Logo" [ref=f1e12]
+        - generic [ref=f1e13]: All Time Wrestling RPG
+      - generic [ref=f1e14]:
+        - generic:
+          - generic:
+            - generic: Active Universe
+            - generic:
+              - generic:
+                - generic:
+                  - combobox "Active Universe" [disabled]
+              - generic:
+                - text: 
+                - generic [aria-hidden]: 
+      - navigation [ref=f1e16]:
+        - list [ref=f1e17]:
+          - generic:
+            - listitem [ref=f1e18]:
+              - generic [ref=f1e19]:
+                - generic [ref=f1e20]: Card Game
+                - button "Card Game Toggle child items" [ref=f1e29]: 
+              - generic: Cards
+              - text: 
+            - listitem [ref=f1e30]:
+              - generic [ref=f1e31]:
+                - generic [ref=f1e32]: Dashboards
+                - button "Dashboards Toggle child items" [ref=f1e41]: 
+              - generic: Championship Rankings
+              - text: 
+              - generic: Hall of Fame
+              - text: 
+              - generic: Home
+              - text: 
+              - generic: Inbox
+              - text: 
+              - generic: News & Rumors
+              - text: 
+              - generic: Show Calendar
+              - text: 
+              - generic: Weekly Challenges
+              - text: 
+              - generic: Wrestler Rankings
+              - text: 
+              - generic: Wrestling World Feed
+              - text: 
+            - listitem [ref=f1e42]:
+              - generic [ref=f1e43]:
+                - generic [ref=f1e44]: Help
+                - button "Help Toggle child items" [ref=f1e52]: 
+              - generic: Game Guide
+              - text: 
+      - generic [ref=f1e53]:
+        - generic [ref=f1e54]: "Version: 2.11.0-SNAPSHOT"
+        - link "Source Code" [ref=f1e55] [cursor=pointer]:
+          - /url: https://github.com/javydreamercsw/all-time-wrestling-rpg
+    - generic [ref=f1e57]:
+      - generic:
+        - generic [ref=f1e58]:
+          - img "All Time Wrestling RPG Logo" [ref=f1e59]
+          - heading "All Time Wrestling RPG" [level=1] [ref=f1e60]
+          - paragraph [ref=f1e61]: Manage your wrestling promotion
+        - region [ref=f1e63]:
+          - generic:
+            - heading [level=1]
+          - generic [ref=f1e64]:
+            - text: 
+            - strong [ref=f1e65]: Login Failed
+            - generic [ref=f1e66]: Invalid username or password. After 5 failed attempts, your account will be locked for 15 minutes.
+          - generic [ref=f1e67]:
+            - generic [ref=f1e69]:
+              - generic [ref=f1e70]:
+                - generic: Username
+                - text: •
+              - generic [ref=f1e71]:
+                - textbox "Username" [active] [ref=f1e72]
+                - generic: 
+            - generic [ref=f1e74]:
+              - generic [ref=f1e75]:
+                - generic: Password
+                - text: •
+              - generic [ref=f1e76]:
+                - textbox "Password" [ref=f1e77]
+                - generic:
+                  - text: 
+                  - generic [ref=f1e78]:
+                    - text: 
+                    - button "Show password" [ref=f1e79]
+          - button "Sign In" [ref=f1e80]
+          - button "Forgot password?" [ref=f1e83]
+          - generic [ref=f1e86]: "Default accounts: viewer/viewer123"
+        - generic [ref=f1e89]:
+          - generic [aria-hidden] [ref=f1e90]: 
+          - checkbox "Remember me for 7 days" [ref=f1e91]
+          - generic [ref=f1e92]: Remember me for 7 days
+  - generic [ref=f1e94]: Online

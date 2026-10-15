@@ -83,7 +83,7 @@ import org.springframework.data.domain.Pageable;
 
 @Route(value = "show-list", layout = MainLayout.class)
 @PageTitle("Show List")
-@Menu(order = 3, icon = "vaadin:calendar-o", title = "Show List")
+@Menu(order = 3, icon = "vaadin:calendar", title = "Show List")
 @PermitAll
 public class ShowListView extends Main {
 

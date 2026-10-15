@@ -1,0 +1,454 @@
+- generic [active] [ref=f3e1]:
+  - generic [ref=f3e97]:
+    - generic [ref=f3e98]:
+      - generic:
+        - button "Toggle navigation panel" [expanded] [ref=f3e99]:
+          - generic [ref=f3e100]: 
+          - text: 
+        - generic [ref=f3e102]:
+          - img "a" [ref=f3e103]:
+            - text: 
+            - img [aria-hidden] [ref=f3e104]:
+              - generic [ref=f3e105]: a
+          - generic [ref=f3e106]: admin
+          - button "Open inbox" [ref=f3e107]:
+            - generic [ref=f3e108]: Inbox
+          - button "Open profile" [ref=f3e120]:
+            - generic [ref=f3e121]: Profile
+          - button "Logout" [ref=f3e129]
+    - generic [ref=f3e140]:
+      - generic [ref=f3e141]:
+        - img "ATW Logo" [ref=f3e142]
+        - generic [ref=f3e143]: All Time Wrestling RPG
+      - generic [ref=f3e146]:
+        - generic [ref=f3e147]: Active Universe
+        - generic [ref=f3e148]:
+          - combobox "Active Universe" [ref=f3e149]: Default Universe
+          - generic:
+            - text: 
+            - generic [aria-hidden] [ref=f3e150]: 
+      - navigation [ref=f3e152]:
+        - list [ref=f3e153]:
+          - generic:
+            - listitem [ref=f3e154]:
+              - generic [ref=f3e155]:
+                - link "Booker Dashboard" [ref=f3e156] [cursor=pointer]:
+                  - /url: booker
+                - text: 
+            - listitem [ref=f3e164]:
+              - generic [ref=f3e165]:
+                - generic [ref=f3e166]: Campaign
+                - button "Campaign Toggle child items" [ref=f3e174]: 
+              - generic: Campaigns
+              - text: 
+              - generic: Card Export
+              - text: 
+              - generic: Dashboard
+              - text: 
+            - listitem [ref=f3e175]:
+              - generic [ref=f3e176]:
+                - generic [ref=f3e177]: Card Game
+                - button "Card Game Toggle child items" [ref=f3e186]: 
+              - generic: Cards
+              - text: 
+              - generic: Decks
+              - text: 
+            - listitem [ref=f3e187]:
+              - generic [ref=f3e188]:
+                - generic [ref=f3e189]: Configuration
+                - button "Configuration Toggle child items" [ref=f3e198]: 
+              - generic: Admin
+              - text: 
+              - generic: Data Transfer
+              - text: 
+            - listitem [ref=f3e199]:
+              - generic [ref=f3e200]:
+                - generic [ref=f3e201]: Dashboards
+                - button "Dashboards Toggle child items" [ref=f3e210]: 
+              - generic: Championship Rankings
+              - text: 
+              - generic: Hall of Fame
+              - text: 
+              - generic: Home
+              - text: 
+              - generic: Inbox
+              - text: 
+              - generic: News & Rumors
+              - text: 
+              - generic: Show Calendar
+              - text: 
+              - generic: Weekly Challenges
+              - text: 
+              - generic: Wrestler Rankings
+              - text: 
+              - generic: Wrestling World Feed
+              - text: 
+            - listitem [ref=f3e211]:
+              - generic [ref=f3e212]:
+                - generic [ref=f3e213]: Entities
+                - button "Entities Toggle child items" [expanded] [ref=f3e224]: 
+              - list [ref=f3e225]:
+                - generic:
+                  - listitem [ref=f3e226]:
+                    - generic [ref=f3e227]:
+                      - link "Accounts" [ref=f3e228] [cursor=pointer]:
+                        - /url: account-list
+                      - text: 
+                  - listitem [ref=f3e237]:
+                    - generic [ref=f3e238]:
+                      - link "Arenas" [ref=f3e239] [cursor=pointer]:
+                        - /url: arena-list
+                      - text: 
+                  - listitem [ref=f3e247]:
+                    - generic [ref=f3e248]:
+                      - link "Faction Rivalries" [ref=f3e249] [cursor=pointer]:
+                        - /url: faction-rivalry-list
+                      - text: 
+                  - listitem [ref=f3e260]:
+                    - generic [ref=f3e261]:
+                      - link "Factions" [ref=f3e262] [cursor=pointer]:
+                        - /url: faction-list
+                      - text: 
+                  - listitem [ref=f3e273]:
+                    - generic [ref=f3e274]:
+                      - link "Injury Types" [ref=f3e275] [cursor=pointer]:
+                        - /url: injury-types
+                      - text: 
+                  - listitem [ref=f3e283]:
+                    - generic [ref=f3e284]:
+                      - link "Locations" [ref=f3e285] [cursor=pointer]:
+                        - /url: location-list
+                      - text: 
+                  - listitem [ref=f3e293]:
+                    - generic [ref=f3e294]:
+                      - link "NPCs" [ref=f3e295] [cursor=pointer]:
+                        - /url: npc-list
+                      - text: 
+                  - listitem [ref=f3e304]:
+                    - generic [ref=f3e305]:
+                      - link "Rivalries" [ref=f3e306] [cursor=pointer]:
+                        - /url: rivalry-list
+                      - text: 
+                  - listitem [ref=f3e315]:
+                    - generic [ref=f3e316]:
+                      - link "Seasons" [ref=f3e317] [cursor=pointer]:
+                        - /url: season-list
+                      - text: 
+                  - listitem [ref=f3e329]:
+                    - generic [ref=f3e330]:
+                      - link "Segment Rules" [ref=f3e331] [cursor=pointer]:
+                        - /url: segment-rule-list
+                      - text: 
+                  - listitem [ref=f3e344]:
+                    - generic [ref=f3e345]:
+                      - link "Segment Types" [ref=f3e346] [cursor=pointer]:
+                        - /url: segment-type-list
+                      - text: 
+                  - listitem [ref=f3e354]:
+                    - generic [ref=f3e355]:
+                      - link "Show Templates" [ref=f3e356] [cursor=pointer]:
+                        - /url: show-template-list
+                      - text: 
+                  - listitem [ref=f3e367]:
+                    - generic [ref=f3e368]:
+                      - link "Shows" [ref=f3e369] [cursor=pointer]:
+                        - /url: show-list
+                      - text: 
+                  - listitem [ref=f3e379]:
+                    - generic [ref=f3e380]:
+                      - link "Teams" [ref=f3e381] [cursor=pointer]:
+                        - /url: teams
+                      - text: 
+                  - listitem [ref=f3e390]:
+                    - generic [ref=f3e391]:
+                      - link "Title Reigns" [ref=f3e392] [cursor=pointer]:
+                        - /url: title-reign-list
+                      - text: 
+                  - listitem [ref=f3e402]:
+                    - generic [ref=f3e403]:
+                      - link "Titles" [ref=f3e404] [cursor=pointer]:
+                        - /url: title-list
+                      - text: 
+                  - listitem [ref=f3e412]:
+                    - generic [ref=f3e413]:
+                      - link "Tournaments" [ref=f3e414] [cursor=pointer]:
+                        - /url: tournament-list
+                      - text: 
+                  - listitem [ref=f3e422]:
+                    - generic [ref=f3e423]:
+                      - link "Universes" [ref=f3e424] [cursor=pointer]:
+                        - /url: universe-list
+                      - text: 
+                  - listitem [ref=f3e432]:
+                    - generic [ref=f3e433]:
+                      - link "Wrestlers" [ref=f3e434] [cursor=pointer]:
+                        - /url: wrestler-list
+                      - text: 
+            - listitem [ref=f3e442]:
+              - generic [ref=f3e443]:
+                - generic [ref=f3e444]: General Manager
+                - button "General Manager Toggle child items" [ref=f3e452]: 
+              - generic: Contract Management
+              - text: 
+              - generic: GM Dashboard
+              - text: 
+            - listitem [ref=f3e453]:
+              - generic [ref=f3e454]:
+                - generic [ref=f3e455]: Help
+                - button "Help Toggle child items" [ref=f3e463]: 
+              - generic: Game Guide
+              - text: 
+              - generic: Tutorial
+              - text: 
+            - listitem [ref=f3e464]:
+              - generic [ref=f3e465]:
+                - generic [ref=f3e466]: Multiplayer
+                - button "Multiplayer Toggle child items" [ref=f3e475]: 
+              - generic: My Leagues
+              - text: 
+            - listitem [ref=f3e476]:
+              - generic [ref=f3e477]:
+                - link "Player Dashboard" [ref=f3e478] [cursor=pointer]:
+                  - /url: player
+                - text: 
+            - listitem [ref=f3e490]:
+              - generic [ref=f3e491]:
+                - generic [ref=f3e492]: Share QR Code
+                - text: 
+      - generic [ref=f3e525]:
+        - generic [ref=f3e526]: "Version: 2.11.0-SNAPSHOT"
+        - link "Source Code" [ref=f3e527] [cursor=pointer]:
+          - /url: https://github.com/javydreamercsw/all-time-wrestling-rpg
+    - generic [ref=f3e541]:
+      - generic:
+        - banner [ref=f3e542]:
+          - heading "Time Vault" [level=1] [ref=f3e544]
+          - generic [ref=f3e545]:
+            - button "← Back" [ref=f3e547]
+            - generic [ref=f3e551]:
+              - generic:
+                - button "Preview Bracket" [ref=f3e552]
+                - button "Start Tournament" [ref=f3e555]
+        - generic [ref=f3e558]:
+          - generic:
+            - generic [ref=f3e559]: "Status: SCHEDULED"
+            - generic [ref=f3e560]: "Format: QUALIFIER GROUPS"
+            - generic [ref=f3e561]: "Entrants: 18"
+            - generic [ref=f3e562]: "Championship: Time Vault"
+            - generic [ref=f3e563]: "Host Show: Clash of Eternities (2026-07-26)"
+            - generic [ref=f3e564]: "Allowed Rules:"
+            - generic [ref=f3e565]:
+              - generic [ref=f3e566]: No DQ
+              - generic [ref=f3e567]: Free-For-All
+        - generic [ref=f3e568]:
+          - generic:
+            - heading "Entrants" [level=4] [ref=f3e569]
+            - treegrid [ref=f3e572]:
+              - rowgroup [ref=f3e573]:
+                - row [ref=f3e574]:
+                  - columnheader "Seed" [ref=f3e575]
+                  - columnheader "Wrestler" [ref=f3e577]
+                  - columnheader "Status" [ref=f3e579]
+                  - columnheader "Reorder" [ref=f3e581]
+                  - columnheader "Swap" [ref=f3e583]
+              - rowgroup [ref=f3e585]:
+                - row [ref=f3e586]:
+                  - gridcell "1" [ref=f3e587]
+                  - gridcell "Rob Van Dam" [ref=f3e589]
+                  - gridcell "ACTIVE" [ref=f3e591]
+                  - gridcell [ref=f3e593]:
+                    - generic [ref=f3e595]:
+                      - generic:
+                        - button [disabled]
+                        - button [ref=f3e596]
+                  - gridcell [ref=f3e604]:
+                    - button "Replace" [ref=f3e606]
+                - row [ref=f3e609]:
+                  - gridcell "2" [ref=f3e610]
+                  - gridcell "Kurt Angle" [ref=f3e612]
+                  - gridcell "ACTIVE" [ref=f3e614]
+                  - gridcell [ref=f3e616]:
+                    - generic [ref=f3e618]:
+                      - generic:
+                        - button [ref=f3e619]
+                        - button [ref=f3e627]
+                  - gridcell [ref=f3e635]:
+                    - button "Replace" [ref=f3e637]
+                - row [ref=f3e640]:
+                  - gridcell "3" [ref=f3e641]
+                  - gridcell "Rey Jaguar" [ref=f3e643]
+                  - gridcell "ACTIVE" [ref=f3e645]
+                  - gridcell [ref=f3e647]:
+                    - generic [ref=f3e649]:
+                      - generic:
+                        - button [ref=f3e650]
+                        - button [ref=f3e658]
+                  - gridcell [ref=f3e666]:
+                    - button "Replace" [ref=f3e668]
+                - row [ref=f3e671]:
+                  - gridcell "4" [ref=f3e672]
+                  - gridcell "Oda Tsurugi" [ref=f3e674]
+                  - gridcell "ACTIVE" [ref=f3e676]
+                  - gridcell [ref=f3e678]:
+                    - generic [ref=f3e680]:
+                      - generic:
+                        - button [ref=f3e681]
+                        - button [ref=f3e689]
+                  - gridcell [ref=f3e697]:
+                    - button "Replace" [ref=f3e699]
+                - row [ref=f3e702]:
+                  - gridcell "5" [ref=f3e703]
+                  - gridcell "Bobby Lashley" [ref=f3e705]
+                  - gridcell "ACTIVE" [ref=f3e707]
+                  - gridcell [ref=f3e709]:
+                    - generic [ref=f3e711]:
+                      - generic:
+                        - button [ref=f3e712]
+                        - button [ref=f3e720]
+                  - gridcell [ref=f3e728]:
+                    - button "Replace" [ref=f3e730]
+                - row [ref=f3e733]:
+                  - gridcell "6" [ref=f3e734]
+                  - gridcell "Sgt. Slaughter" [ref=f3e736]
+                  - gridcell "ACTIVE" [ref=f3e738]
+                  - gridcell [ref=f3e740]:
+                    - generic [ref=f3e742]:
+                      - generic:
+                        - button [ref=f3e743]
+                        - button [ref=f3e751]
+                  - gridcell [ref=f3e759]:
+                    - button "Replace" [ref=f3e761]
+                - row [ref=f3e764]:
+                  - gridcell "7" [ref=f3e765]
+                  - gridcell "Kamala" [ref=f3e767]
+                  - gridcell "ACTIVE" [ref=f3e769]
+                  - gridcell [ref=f3e771]:
+                    - generic [ref=f3e773]:
+                      - generic:
+                        - button [ref=f3e774]
+                        - button [ref=f3e782]
+                  - gridcell [ref=f3e790]:
+                    - button "Replace" [ref=f3e792]
+                - row [ref=f3e795]:
+                  - gridcell "8" [ref=f3e796]
+                  - gridcell "Sabu" [ref=f3e798]
+                  - gridcell "ACTIVE" [ref=f3e800]
+                  - gridcell [ref=f3e802]:
+                    - generic [ref=f3e804]:
+                      - generic:
+                        - button [ref=f3e805]
+                        - button [ref=f3e813]
+                  - gridcell [ref=f3e821]:
+                    - button "Replace" [ref=f3e823]
+                - row [ref=f3e826]:
+                  - gridcell "9" [ref=f3e827]
+                  - gridcell "Raven" [ref=f3e829]
+                  - gridcell "ACTIVE" [ref=f3e831]
+                  - gridcell [ref=f3e833]:
+                    - generic [ref=f3e835]:
+                      - generic:
+                        - button [ref=f3e836]
+                        - button [ref=f3e844]
+                  - gridcell [ref=f3e852]:
+                    - button "Replace" [ref=f3e854]
+                - row [ref=f3e857]:
+                  - gridcell "10" [ref=f3e858]
+                  - gridcell "Eddie Guerrero" [ref=f3e860]
+                  - gridcell "ACTIVE" [ref=f3e862]
+                  - gridcell [ref=f3e864]:
+                    - generic [ref=f3e866]:
+                      - generic:
+                        - button [ref=f3e867]
+                        - button [ref=f3e875]
+                  - gridcell [ref=f3e883]:
+                    - button "Replace" [ref=f3e885]
+                - row [ref=f3e888]:
+                  - gridcell "11" [ref=f3e889]
+                  - gridcell "Daemon" [ref=f3e891]
+                  - gridcell "ACTIVE" [ref=f3e893]
+                  - gridcell [ref=f3e895]:
+                    - generic [ref=f3e897]:
+                      - generic:
+                        - button [ref=f3e898]
+                        - button [ref=f3e906]
+                  - gridcell [ref=f3e914]:
+                    - button "Replace" [ref=f3e916]
+                - row [ref=f3e919]:
+                  - gridcell "12" [ref=f3e920]
+                  - gridcell "Junkyard Dog" [ref=f3e922]
+                  - gridcell "ACTIVE" [ref=f3e924]
+                  - gridcell [ref=f3e926]:
+                    - generic [ref=f3e928]:
+                      - generic:
+                        - button [ref=f3e929]
+                        - button [ref=f3e937]
+                  - gridcell [ref=f3e945]:
+                    - button "Replace" [ref=f3e947]
+                - row [ref=f3e950]:
+                  - gridcell "13" [ref=f3e951]
+                  - gridcell "Nick Aldis" [ref=f3e953]
+                  - gridcell "ACTIVE" [ref=f3e955]
+                  - gridcell [ref=f3e957]:
+                    - generic [ref=f3e959]:
+                      - generic:
+                        - button [ref=f3e960]
+                        - button [ref=f3e968]
+                  - gridcell [ref=f3e976]:
+                    - button "Replace" [ref=f3e978]
+                - row [ref=f3e981]:
+                  - gridcell "14" [ref=f3e982]
+                  - gridcell "Gilgamesh" [ref=f3e984]
+                  - gridcell "ACTIVE" [ref=f3e986]
+                  - gridcell [ref=f3e988]:
+                    - generic [ref=f3e990]:
+                      - generic:
+                        - button [ref=f3e991]
+                        - button [ref=f3e999]
+                  - gridcell [ref=f3e1007]:
+                    - button "Replace" [ref=f3e1009]
+                - row [ref=f3e1012]:
+                  - gridcell "15" [ref=f3e1013]
+                  - gridcell "OMZ" [ref=f3e1015]
+                  - gridcell "ACTIVE" [ref=f3e1017]
+                  - gridcell [ref=f3e1019]:
+                    - generic [ref=f3e1021]:
+                      - generic:
+                        - button [ref=f3e1022]
+                        - button [ref=f3e1030]
+                  - gridcell [ref=f3e1038]:
+                    - button "Replace" [ref=f3e1040]
+                - row [ref=f3e1043]:
+                  - gridcell "16" [ref=f3e1044]
+                  - gridcell "Matt Cardona" [ref=f3e1046]
+                  - gridcell "ACTIVE" [ref=f3e1048]
+                  - gridcell [ref=f3e1050]:
+                    - generic [ref=f3e1052]:
+                      - generic:
+                        - button [ref=f3e1053]
+                        - button [ref=f3e1061]
+                  - gridcell [ref=f3e1069]:
+                    - button "Replace" [ref=f3e1071]
+                - row [ref=f3e1074]:
+                  - gridcell "17" [ref=f3e1075]
+                  - gridcell "Jax Felix" [ref=f3e1077]
+                  - gridcell "ACTIVE" [ref=f3e1079]
+                  - gridcell [ref=f3e1081]:
+                    - generic [ref=f3e1083]:
+                      - generic:
+                        - button [ref=f3e1084]
+                        - button [ref=f3e1092]
+                  - gridcell [ref=f3e1100]:
+                    - button "Replace" [ref=f3e1102]
+                - row [ref=f3e1105]:
+                  - gridcell "18" [ref=f3e1106]
+                  - gridcell "Randy Savage" [ref=f3e1108]
+                  - gridcell "ACTIVE" [ref=f3e1110]
+                  - gridcell [ref=f3e1112]:
+                    - generic [ref=f3e1114]:
+                      - generic:
+                        - button [ref=f3e1115]
+                        - button [disabled]
+                  - gridcell [ref=f3e1123]:
+                    - button "Replace" [ref=f3e1125]
+              - rowgroup
+  - generic [ref=f3e539]: Online

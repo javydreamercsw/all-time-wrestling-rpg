@@ -173,6 +173,12 @@ public class InboxView extends VerticalLayout {
     selectAllCheckbox.setId("select-all-checkbox");
     selectAllCheckbox.addValueChangeListener(
         event -> {
+          // Only react to browser clicks: updateSelectedButtonsState() syncs this checkbox
+          // programmatically as rows are individually (de)selected, and reacting to that
+          // would deselect everything when the user unchecks a single row.
+          if (!event.isFromClient()) {
+            return;
+          }
           if (event.getValue()) {
             ((GridMultiSelectionModel<InboxItem>) grid.getSelectionModel()).selectAll();
             selectedItems.addAll(grid.getDataProvider().fetch(new Query<>()).toList());
@@ -596,7 +602,8 @@ public class InboxView extends VerticalLayout {
       for (var target : item.getTargets()) {
         String targetName = resolveTargetName(target);
         Span chip = new Span(targetName);
-        chip.getElement().getThemeList().add("badge contrast");
+        chip.getElement().getThemeList().add("badge");
+        chip.getElement().getThemeList().add("contrast");
         targetsRow.add(chip);
       }
       detailsView.add(targetsRow);
@@ -611,7 +618,8 @@ public class InboxView extends VerticalLayout {
         targetsLabel.getStyle().set("font-weight", "bold");
         targetsRow.add(targetsLabel);
         Span chip = new Span(legacyName);
-        chip.getElement().getThemeList().add("badge contrast");
+        chip.getElement().getThemeList().add("badge");
+        chip.getElement().getThemeList().add("contrast");
         targetsRow.add(chip);
         detailsView.add(targetsRow);
       }

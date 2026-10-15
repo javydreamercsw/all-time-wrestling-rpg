@@ -113,7 +113,7 @@ public class MenuService {
     entities.addChild(new MenuItem("Segment Types", VaadinIcon.PUZZLE_PIECE, "segment-type-list"));
     entities.addChild(
         new MenuItem("Show Templates", VaadinIcon.CLIPBOARD_TEXT, "show-template-list"));
-    entities.addChild(new MenuItem("Shows", VaadinIcon.CALENDAR_O, "show-list"));
+    entities.addChild(new MenuItem("Shows", VaadinIcon.CALENDAR, "show-list"));
     entities.addChild(new MenuItem("Teams", VaadinIcon.USERS, "teams"));
     entities.addChild(new MenuItem("Titles", VaadinIcon.TROPHY, "title-list"));
     entities.addChild(new MenuItem("Title Reigns", VaadinIcon.MEDAL, "title-reign-list"));

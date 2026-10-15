@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.Data;
+import lombok.Setter;
 
 @Data
 public class ProposedSegment {
@@ -39,7 +40,7 @@ public class ProposedSegment {
   /** Title id whose #1 contender is decided by this segment (resolved at approval time). */
   private Long contenderTitleId;
 
-  private Set<Title> titles = new HashSet<>();
+  @Setter private Set<Title> titles = new HashSet<>();
   private List<String> rules;
   private String refereeName;
 
@@ -61,9 +62,4 @@ public class ProposedSegment {
 
   /** Proposed cash-in mode (ATW-2b9u): PLANNED / AMBUSH / RUN_IN. */
   private BriefcaseCashInMode briefcaseMode;
-
-  public void setTitles(final Set<Title> titles) {
-    this.titles = titles;
-    this.isTitleSegment = !titles.isEmpty();
-  }
 }

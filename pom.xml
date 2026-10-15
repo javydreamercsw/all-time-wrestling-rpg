@@ -11,7 +11,7 @@
 
   <groupId>com.github.javydreamercsw</groupId>
   <artifactId>all-time-wrestling-rpg</artifactId>
-  <version>2.11.1</version>
+  <version>2.11.2</version>
 
   <packaging>jar</packaging>
   <name>All Time Wrestling RPG</name>
@@ -50,8 +50,8 @@
     <testcontainers.version>2.0.5</testcontainers.version>
     <!-- npm packages for @vaadin/* components lag behind Maven releases. Set this to the latest
          version actually published to npm. Update when npm catches up to vaadin.version. -->
-    <vaadin.npm.version>25.2.6</vaadin.npm.version>
-    <vaadin.version>25.2.6</vaadin.version>
+    <vaadin.npm.version>25.3.2</vaadin.npm.version>
+    <vaadin.version>25.3.1</vaadin.version>
     <webdriver.chrome.driver/>
     <webdriver.chrome.whitelistedIps/>
   </properties>

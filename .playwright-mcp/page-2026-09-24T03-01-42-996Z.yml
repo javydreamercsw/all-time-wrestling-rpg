@@ -1,0 +1,321 @@
+- generic:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - button "Toggle navigation panel" [expanded]:
+              - generic: 
+              - text: 
+            - generic:
+              - img "a":
+                - text: 
+                - img [aria-hidden]:
+                  - generic: a
+              - generic: admin
+              - button "Open inbox":
+                - generic: Inbox
+              - button "Open profile":
+                - generic: Profile
+              - button "Logout"
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - img "ATW Logo"
+                - generic: All Time Wrestling RPG
+              - generic:
+                - generic:
+                  - generic:
+                    - generic: Active Universe
+                    - generic:
+                      - generic:
+                        - generic:
+                          - combobox "Active Universe": Default Universe
+                      - generic:
+                        - text: 
+                        - generic [aria-hidden]: 
+              - generic:
+                - generic:
+                  - navigation:
+                    - list:
+                      - generic:
+                        - listitem:
+                          - generic:
+                            - link "Booker Dashboard":
+                              - /url: booker
+                            - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Campaign
+                            - button "Campaign Toggle child items": 
+                          - generic: Campaigns
+                          - text: 
+                          - generic: Card Export
+                          - text: 
+                          - generic: Dashboard
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Card Game
+                            - button "Card Game Toggle child items": 
+                          - generic: Cards
+                          - text: 
+                          - generic: Decks
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Configuration
+                            - button "Configuration Toggle child items": 
+                          - generic: Admin
+                          - text: 
+                          - generic: Data Transfer
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Dashboards
+                            - button "Dashboards Toggle child items": 
+                          - generic: Championship Rankings
+                          - text: 
+                          - generic: Hall of Fame
+                          - text: 
+                          - generic: Home
+                          - text: 
+                          - generic: Inbox
+                          - text: 
+                          - generic: News & Rumors
+                          - text: 
+                          - generic: Show Calendar
+                          - text: 
+                          - generic: Weekly Challenges
+                          - text: 
+                          - generic: Wrestler Rankings
+                          - text: 
+                          - generic: Wrestling World Feed
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Entities
+                            - button "Entities Toggle child items" [expanded]: 
+                          - list:
+                            - generic:
+                              - listitem:
+                                - generic:
+                                  - link "Accounts":
+                                    - /url: account-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Arenas":
+                                    - /url: arena-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Faction Rivalries":
+                                    - /url: faction-rivalry-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Factions":
+                                    - /url: faction-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Injury Types":
+                                    - /url: injury-types
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Locations":
+                                    - /url: location-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "NPCs":
+                                    - /url: npc-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Rivalries":
+                                    - /url: rivalry-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Seasons":
+                                    - /url: season-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Segment Rules":
+                                    - /url: segment-rule-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Segment Types":
+                                    - /url: segment-type-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Show Templates":
+                                    - /url: show-template-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Shows":
+                                    - /url: show-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Teams":
+                                    - /url: teams
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Title Reigns":
+                                    - /url: title-reign-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Titles":
+                                    - /url: title-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Tournaments":
+                                    - /url: tournament-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Universes":
+                                    - /url: universe-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Wrestlers":
+                                    - /url: wrestler-list
+                                  - text: 
+                        - listitem:
+                          - generic:
+                            - generic: General Manager
+                            - button "General Manager Toggle child items": 
+                          - generic: Contract Management
+                          - text: 
+                          - generic: GM Dashboard
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Help
+                            - button "Help Toggle child items": 
+                          - generic: Game Guide
+                          - text: 
+                          - generic: Tutorial
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Multiplayer
+                            - button "Multiplayer Toggle child items": 
+                          - generic: My Leagues
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - link "Player Dashboard":
+                              - /url: player
+                            - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Share QR Code
+                            - text: 
+              - generic:
+                - generic: "Version: 2.11.0-SNAPSHOT"
+                - link "Source Code":
+                  - /url: https://github.com/javydreamercsw/all-time-wrestling-rpg
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - banner:
+                  - generic:
+                    - heading "Tournaments" [level=1]
+                  - generic:
+                    - generic:
+                      - button "New Tournament"
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic [aria-hidden]: 
+                          - generic:
+                            - checkbox "Show past editions"
+                          - generic: Show past editions
+                - generic:
+                  - generic:
+                    - generic:
+                      - treegrid:
+                        - rowgroup:
+                          - row "Sort by Name Sort by Format Sort by Edition Entrants Sort by Status Host Show Actions":
+                            - columnheader "Sort by Name":
+                              - generic:
+                                - generic:
+                                  - generic "Sort by Name":
+                                    - generic: Name
+                                    - generic: 
+                            - columnheader "Sort by Format":
+                              - generic:
+                                - generic:
+                                  - generic "Sort by Format":
+                                    - generic: Format
+                                    - generic: 
+                            - columnheader "Sort by Edition":
+                              - generic:
+                                - generic:
+                                  - generic "Sort by Edition":
+                                    - generic: Edition
+                                    - generic: 
+                            - columnheader "Entrants"
+                            - columnheader "Sort by Status":
+                              - generic:
+                                - generic:
+                                  - generic "Sort by Status":
+                                    - generic: Status
+                                    - generic: 
+                            - columnheader "Host Show"
+                            - columnheader "Actions"
+                        - rowgroup:
+                          - row "Time Vault QUALIFIER GROUPS 18 IN_PROGRESS Quantum Quarrel — 2026-06-28 Edit Delete":
+                            - gridcell "Time Vault"
+                            - gridcell "QUALIFIER GROUPS"
+                            - gridcell
+                            - gridcell "18"
+                            - gridcell "IN_PROGRESS"
+                            - gridcell "Quantum Quarrel — 2026-06-28"
+                            - gridcell "Edit Delete":
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - generic:
+                                      - button "Edit"
+                                      - button "Delete"
+                        - rowgroup
+  - generic: Online
+  - dialog "Share Match QR Code" [active]:
+    - generic [ref=f1e523]:
+      - heading "Share Match QR Code" [level=2] [ref=f1e524]
+      - generic [ref=f1e527]:
+        - generic:
+          - generic [ref=f1e529]:
+            - generic [ref=f1e530]: Show
+            - generic [ref=f1e531]:
+              - combobox "Show" [ref=f1e532]
+              - generic:
+                - text: 
+                - generic [aria-hidden] [ref=f1e533]: 
+          - generic:
+            - generic:
+              - generic: Match
+              - generic:
+                - generic:
+                  - generic:
+                    - combobox "Match" [disabled]
+                - generic:
+                  - text: 
+                  - generic [aria-hidden]: 
+      - button "Cancel" [ref=f1e536]

@@ -218,7 +218,7 @@ class TutorialStepOverlayTest extends AbstractViewTest {
     openAtStep(0, s1, s2);
 
     // The skip button has an empty text label — find it among empty-label buttons and click the
-    // one that triggers markSkipped (it's the close-small icon button added second in buildHeader)
+    // one that triggers markSkipped (it's the close icon button added second in buildHeader)
     List<Button> emptyBtns = _find(overlay, Button.class, spec -> spec.withText(""));
     // Two icon-only buttons: minimize (index 0) and skip (index 1)
     assertThat(emptyBtns).hasSizeGreaterThanOrEqualTo(2);

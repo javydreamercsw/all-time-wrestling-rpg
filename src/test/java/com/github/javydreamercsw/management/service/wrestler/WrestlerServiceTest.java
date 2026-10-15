@@ -17,6 +17,8 @@
 package com.github.javydreamercsw.management.service.wrestler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
@@ -28,6 +30,7 @@ import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
+import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.universe.UniverseWrestlerExclusionRepository;
@@ -331,20 +334,110 @@ class WrestlerServiceTest {
   }
 
   @Test
-  void testHealChance_PublishesEvent() {
-    // Given
-    wrestlerState.setBumps(1);
-    when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(1L, 1L))
-        .thenReturn(Optional.of(wrestlerState));
-    when(wrestlerStateRepository.saveAndFlush(any(WrestlerState.class)))
-        .thenAnswer(invocation -> invocation.getArgument(0));
-    when(diceBag.roll()).thenReturn(4); // Ensure bump is healed
+  void performNpcRecovery_twoSuccessesWithInjury_healsInjuryNotBumps() {
+    // Given — resilience dice {4,5,2} → 2 successes; active injury takes priority over bumps
+    Injury injury = new Injury();
+    injury.setId(77L);
+    when(injuryService.getActiveInjuriesForWrestler(1L, 1L))
+        .thenReturn(new ArrayList<>(List.of(injury)));
+    when(diceBag.getLastRoll()).thenReturn(new int[] {4, 5, 2});
 
     // When
-    wrestlerService.healChance(1L, 1L, diceBag);
+    WrestlerService.NpcRecoveryResult result = wrestlerService.performNpcRecovery(1L, 1L, diceBag);
 
     // Then
+    verify(injuryService).healInjuryFree(77L);
+    assertEquals(2, result.successes());
+    assertTrue(result.injuryHealed());
+    assertEquals(0, result.bumpsHealed());
+  }
+
+  @Test
+  void performNpcRecovery_oneSuccess_removesOneBump() {
+    // Given — single die rolls 6 → 1 success; no injuries → 1 bump removed
+    when(injuryService.getActiveInjuriesForWrestler(1L, 1L)).thenReturn(new ArrayList<>());
+    when(diceBag.getLastRoll()).thenReturn(new int[] {6});
+    wrestlerState.setBumps(2);
+    when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(1L, 1L))
+        .thenReturn(Optional.of(wrestlerState));
+    when(wrestlerStateRepository.save(any(WrestlerState.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    // When
+    WrestlerService.NpcRecoveryResult result = wrestlerService.performNpcRecovery(1L, 1L, diceBag);
+
+    // Then
+    assertEquals(1, result.successes());
+    assertFalse(result.injuryHealed());
+    assertEquals(1, result.bumpsHealed());
+    assertEquals(1, wrestlerState.getBumps());
     verify(eventPublisher, atLeastOnce()).publishEvent(any(WrestlerBumpHealedEvent.class));
+  }
+
+  @Test
+  void performNpcRecovery_twoSuccessesNoInjuries_removesTwoBumps() {
+    // Given — dice {4,4,1} → 2 successes; no injuries → up to 2 bumps removed
+    when(injuryService.getActiveInjuriesForWrestler(1L, 1L)).thenReturn(new ArrayList<>());
+    when(diceBag.getLastRoll()).thenReturn(new int[] {4, 4, 1});
+    wrestlerState.setBumps(3);
+    when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(1L, 1L))
+        .thenReturn(Optional.of(wrestlerState));
+    when(wrestlerStateRepository.save(any(WrestlerState.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    // When
+    WrestlerService.NpcRecoveryResult result = wrestlerService.performNpcRecovery(1L, 1L, diceBag);
+
+    // Then
+    assertEquals(2, result.successes());
+    assertEquals(2, result.bumpsHealed());
+    assertEquals(1, wrestlerState.getBumps());
+  }
+
+  @Test
+  void performNpcRecovery_zeroSuccesses_nothingHealed() {
+    // Given — dice {1,2} → 0 successes; injury and bumps untouched
+    Injury injury = new Injury();
+    injury.setId(78L);
+    when(injuryService.getActiveInjuriesForWrestler(1L, 1L))
+        .thenReturn(new ArrayList<>(List.of(injury)));
+    when(diceBag.getLastRoll()).thenReturn(new int[] {1, 2});
+    wrestlerState.setBumps(2);
+    when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(1L, 1L))
+        .thenReturn(Optional.of(wrestlerState));
+
+    // When
+    WrestlerService.NpcRecoveryResult result = wrestlerService.performNpcRecovery(1L, 1L, diceBag);
+
+    // Then
+    assertEquals(0, result.successes());
+    assertFalse(result.injuryHealed());
+    assertEquals(0, result.bumpsHealed());
+    assertEquals(2, wrestlerState.getBumps());
+    verify(injuryService, never()).healInjuryFree(anyLong());
+    verify(eventPublisher, never()).publishEvent(any(WrestlerBumpHealedEvent.class));
+  }
+
+  @Test
+  void performNpcRecovery_oneSuccessNoBumpsButInjury_healsNothing() {
+    // Given — 1 success; bumps 0; injury needs 2+ successes → nothing heals
+    Injury injury = new Injury();
+    injury.setId(79L);
+    when(injuryService.getActiveInjuriesForWrestler(1L, 1L))
+        .thenReturn(new ArrayList<>(List.of(injury)));
+    when(diceBag.getLastRoll()).thenReturn(new int[] {5});
+    wrestlerState.setBumps(0);
+    when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(1L, 1L))
+        .thenReturn(Optional.of(wrestlerState));
+
+    // When
+    WrestlerService.NpcRecoveryResult result = wrestlerService.performNpcRecovery(1L, 1L, diceBag);
+
+    // Then
+    assertEquals(1, result.successes());
+    assertFalse(result.injuryHealed());
+    assertEquals(0, result.bumpsHealed());
+    verify(injuryService, never()).healInjuryFree(anyLong());
   }
 
   @Test

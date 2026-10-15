@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Template Tournament Spec — UI Mock</title>
+<style>
+  :root {
+    --bg: #0f1420;
+    --panel: #171d2b;
+    --panel-2: #1e2637;
+    --line: #2b3550;
+    --text: #e8ecf5;
+    --muted: #97a3bd;
+    --accent: #4d8ef7;
+    --accent-soft: #2b4a7a;
+    --good: #37a169;
+    --warn: #d69e2e;
+    --danger: #e53e3e;
+    --chip: #242e45;
+    --new: #ffe9a8;
+    --new-line: #d69e2e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif;
+    padding: 24px 16px 64px;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); margin: 0 0 28px; max-width: 70ch; }
+  h2 { font-size: 16px; margin: 40px 0 10px; color: #fff; }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px;
+  }
+  .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--panel-2); color: var(--text);
+    border: 1px solid var(--line); border-radius: 6px;
+    padding: 7px 14px; font-size: 13px; cursor: default;
+  }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.ghost { background: transparent; }
+  .btn.danger { color: #ff9b9b; border-color: #5c3a3a; }
+  .btn.contrast { color: #cfd8ea; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    text-align: left; color: var(--muted); font-weight: 500;
+    padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap;
+  }
+  td { padding: 9px 10px; border-bottom: 1px solid #202941; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  .chip {
+    display: inline-block; background: var(--chip); border-radius: 999px;
+    padding: 2px 10px; font-size: 12px; color: #cdd7ec; white-space: nowrap;
+  }
+  .chip.auto { color: #9ae6b4; border: 1px solid #2f5e46; }
+  .chip.enc { color: #f6d876; border: 1px solid #6a5a2a; }
+  .spec-badge {
+    display: inline-block; background: #3d2f14; color: var(--new);
+    border: 1px dashed var(--new-line); border-radius: 4px;
+    padding: 3px 8px; font-size: 12px;
+  }
+  .del { color: #ff8080; font-size: 15px; }
+  .field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .field label { font-size: 12px; color: var(--muted); }
+  .control {
+    background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px;
+    color: var(--text); padding: 8px 10px; font-size: 13px;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .control .caret { color: var(--muted); font-size: 11px; }
+  .grid2 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 12px; }
+  .spec-area {
+    margin-top: 16px; border: 1px dashed var(--new-line); border-radius: 8px;
+    background: rgba(214, 158, 46, 0.06); padding: 14px;
+  }
+  .spec-area .tag {
+    color: var(--new); font-size: 12px; font-weight: 600; letter-spacing: 0.06em;
+    text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+  }
+  .spec-area .tag::after { content: ""; flex: 1; border-top: 1px dashed var(--new-line); opacity: .4; }
+  .note { color: var(--muted); font-size: 12.5px; margin-top: 10px; }
+  .dialog-header {
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid var(--line); padding-bottom: 12px; margin-bottom: 16px;
+  }
+  .dialog-header h3 { margin: 0; font-size: 15px; }
+  .row { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .row .field { flex: 1 1 180px; }
+  .flow { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+  .legend { display: flex; gap: 14px; margin-top: 10px; flex-wrap: wrap; }
+  .legend span { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+  .dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .sep { border: none; border-top: 1px solid var(--line); margin: 16px 0; }
+  kbd {
+    background: var(--panel-2); border: 1px solid var(--line); border-bottom-width: 2px;
+    border-radius: 4px; padding: 1px 6px; font-size: 11.5px; font-family: ui-monospace, Menlo, monospace;
+  }
+  @media (max-width: 760px) {
+    .grid2, .grid3 { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 480px) {
+    .grid2, .grid3 { grid-template-columns: 1fr; }
+    .panel { padding: 12px; }
+    .scroll-x { overflow-x: auto; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Show Template — Tournament Spec UI mock</h1>
+  <p class="sub">Three surfaces change: the assignment editor inside the Show Template dialog
+  (spec fields appear when <b>Tournament</b> is left empty), the assignments grid (a "Spec"
+  badge), and how the row reads after the payoff is consumed. Dashed amber = NEW in this
+  feature; everything else is today's UI.</p>
+
+  <!-- ============ SURFACE 1: assignment editor, spec mode ============ -->
+  <h2>1 · Template editor — assignment rows, "build a new tournament" mode</h2>
+  <div class="panel">
+    <div class="dialog-header">
+      <h3>Edit Show Template: Quantum Quarrel</h3>
+      <span class="chip">Premium Live Event (PLE)</span>
+    </div>
+
+    <div class="row" style="margin-bottom:6px">
+      <div class="field" style="flex:1 1 160px">
+        <label>Segment Type (event-only)</label>
+        <div class="control"><span>Free-for-All</span><span class="caret">▼</span></div>
+      </div>
+      <div class="field" style="flex:1 1 160px">
+        <label>Segment Rule</label>
+        <div class="control"><span>Optional</span><span class="caret">▼</span></div>
+      </div>
+      <div class="field" style="flex:1 1 160px">
+        <label>Mode</label>
+        <div class="control"><span>AUTO_ATTACH</span><span class="caret">▼</span></div>
+      </div>
+      <div class="field" style="flex:1 1 200px">
+        <label>Tournament</label>
+        <div class="control"><span style="color:var(--muted)">Optional — empty = spec below</span><span class="caret">▼</span></div>
+      </div>
+    </div>
+
+    <!-- THE NEW SPEC BLOCK: visible only when Tournament is empty -->
+    <div class="spec-area">
+      <div class="tag">Tournament spec — creates one tournament on first use</div>
+      <div class="grid2">
+        <div class="field">
+          <label>Spec Name</label>
+          <div class="control">Crown's Cup</div>
+        </div>
+        <div class="field">
+          <label>Format</label>
+          <div class="control"><span>Qualifier Groups</span><span class="caret">▼</span></div>
+        </div>
+        <div class="field">
+          <label>Entrants</label>
+          <div class="control">12 <span style="color:var(--muted);font-size:11px">(4–25 for this format)</span></div>
+        </div>
+        <div class="field">
+          <label>Linked Championship (optional)</label>
+          <div class="control"><span>ATW World</span><span class="caret">▼</span></div>
+        </div>
+      </div>
+      <div class="grid3">
+        <div class="field">
+          <label>Final Rule (optional)</label>
+          <div class="control"><span>Tables, Ladders and Chairs (TLC)</span><span class="caret">▼</span></div>
+        </div>
+        <div class="field" style="grid-column: span 2">
+          <label>Allowed Rules Pool (optional — random per round)</label>
+          <div class="control"><span>Submission · Last Man Standing · No DQ</span><span class="caret">▼</span></div>
+        </div>
+      </div>
+      <div class="flow">
+        <div class="field" style="flex:1 1 240px">
+          <label>Preset (optional)</label>
+          <div class="control"><span>Deadly Combat — from tournaments.json</span><span class="caret">▼</span></div>
+        </div>
+        <div style="align-self:flex-end">
+          <span class="btn ghost">+ Add Assignment</span>
+        </div>
+      </div>
+      <p class="note">Preset pre-fills name, format, entrant count and the rules pool from the
+      seeded catalog (deadly_combat → Single Elimination, 8 entrants, high-intensity pool).
+      Anything you overwrite wins.</p>
+    </div>
+
+    <hr class="sep">
+
+    <div class="scroll-x">
+    <table>
+      <tr><th>Segment Type (event-only)</th><th>Segment Rule</th><th>Tournament</th><th>Spec</th><th>Mode</th><th></th></tr>
+      <tr>
+        <td>Free-for-All</td><td>—</td><td><span class="spec-badge">Crown's Cup · spec</span></td>
+        <td><span class="chip auto">AUTO_ATTACH</span></td><td class="del">🗑</td>
+      </tr>
+      <tr>
+        <td>Abu Dhabi Rumble</td><td>—</td><td>All Time Rumble</td>
+        <td><span class="chip auto">AUTO_ATTACH</span></td><td class="del">🗑</td>
+      </tr>
+      <tr>
+        <td>—</td><td>Promo</td><td>—</td>
+        <td><span class="chip enc">ENCOURAGED</span></td><td class="del">🗑</td>
+      </tr>
+    </table>
+    </div>
+    <div class="legend">
+      <span><span class="dot" style="background:#ffe9a8"></span> new spec row (dashed badge)</span>
+      <span><span class="dot" style="background:#4d8ef7"></span> existing tournament pairing</span>
+      <span><span class="dot" style="background:#97a3bd"></span> unchanged rows</span>
+    </div>
+  </div>
+
+  <!-- ============ SURFACE 2: paired mode + consumed state ============ -->
+  <h2>2 · Row lifecycle — what the editor shows over time</h2>
+  <div class="panel">
+    <div class="scroll-x">
+    <table>
+      <tr><th>State</th><th>Tournament cell</th><th>Behavior on PLE approval</th></tr>
+      <tr>
+        <td><b>Paired</b> (today's model)</td>
+        <td>All Time Rumble</td>
+        <td>Books that existing tournament's bracket exactly as today — unchanged.</td>
+      </tr>
+      <tr>
+        <td><b>Spec</b> (new)</td>
+        <td><span class="spec-badge">Crown's Cup · spec</span></td>
+        <td>First approval creates one SCHEDULED tournament from the spec and stores it back on
+        the row (the Tournament cell switches from the spec badge to the tournament name).
+        Entrant count, final rule and rules pool come from the spec.</td>
+      </tr>
+      <tr>
+        <td><b>Consumed</b></td>
+        <td>— (cleared)</td>
+        <td>After the payoff the row degrades to a plain type/rule row: tournament <b>and</b> all
+        spec fields cleared, so it can never mint a second instance. Spec-only rows are removed
+        entirely.</td>
+      </tr>
+    </table>
+    </div>
+    <p class="note">Editing the spec is only possible while the instance is SCHEDULED (the
+    instance follows the standard tournament edit rules). Once IN_PROGRESS or COMPLETE the spec
+    fields display read-only.</p>
+  </div>
+
+  <!-- ============ SURFACE 3: preset picker ============ -->
+  <h2>3 · Preset picker detail</h2>
+  <div class="panel">
+    <div class="row">
+      <div class="field" style="flex:2 1 260px">
+        <label>Preset (optional)</label>
+        <div class="control" style="flex-direction:column;align-items:stretch;gap:6px">
+          <div class="control" style="border-color:var(--accent-soft)"><span>Deadly Combat</span><span class="caret">✓</span></div>
+          <div class="control" style="color:var(--muted)"><span>More presets appear as tournaments.json grows</span></div>
+        </div>
+      </div>
+      <div class="field" style="flex:1 1 220px;align-self:flex-end">
+        <label>&nbsp;</label>
+        <span class="btn ghost">Fill spec from preset</span>
+      </div>
+    </div>
+    <p class="note">Preset = the <code>deadly_combat</code> row of
+    <code>tournaments.json</code>: Single Elimination, 8 entrants, pool of Submission ·
+    Last Man Standing · Barbwire Exploding Deathmatch · No DQ. Picking a preset fills the spec
+    fields; you can still override any of them before adding the row.</p>
+  </div>
+
+  <!-- ============ SURFACE 4: catalog seeds elsewhere ============ -->
+  <h2>4 · Where seeded tournaments appear</h2>
+  <div class="panel">
+    <p style="margin-top:0">The catalog also seeds real <code>Tournament</code> rows at startup
+    (universe-less, SCHEDULED, no entries — like segment type seeds), so the two places that
+    list tournaments see them without any template involvement:</p>
+    <div class="grid2">
+      <div class="field">
+        <label>Template editor — Tournament combo</label>
+        <div class="control" style="flex-direction:column;align-items:stretch;gap:6px">
+          <div class="control"><span>All Time Rumble</span></div>
+          <div class="control" style="border-color:var(--new-line)"><span>Deadly Combat&nbsp;· seeded</span></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Tournament list view</label>
+        <div class="control" style="flex-direction:column;align-items:stretch;gap:6px">
+          <div class="control"><span>Crown's Cup — SCHEDULED</span></div>
+          <div class="control" style="border-color:var(--new-line)"><span>Deadly Combat — SCHEDULED (seeded)</span></div>
+        </div>
+      </div>
+    </div>
+    <p class="note">Pairing the seeded <b>Deadly Combat</b> row with a weekly template is the
+    zero-config route: no spec needed, the campaign's <code>deadlyCombatWins</code> counter only
+    advances for tournaments carrying the <code>deadly_combat</code> code.</p>
+  </div>
+</div>
+</body>
+</html>

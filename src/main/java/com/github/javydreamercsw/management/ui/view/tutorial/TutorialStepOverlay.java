@@ -102,7 +102,7 @@ public class TutorialStepOverlay extends Dialog {
     minimizeBtn.setAriaLabel("Minimize tutorial");
     minimizeBtn.addClickListener(e -> toggleMinimize());
 
-    Button skipBtn = new Button(VaadinIcon.CLOSE_SMALL.create());
+    Button skipBtn = new Button(VaadinIcon.CLOSE.create());
     skipBtn.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
     skipBtn.setTooltipText("Skip tutorial");
     skipBtn.setAriaLabel("Skip tutorial");

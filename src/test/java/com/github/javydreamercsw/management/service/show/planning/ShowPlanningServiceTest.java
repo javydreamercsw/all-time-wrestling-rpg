@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -1307,6 +1308,91 @@ class ShowPlanningServiceTest {
     assertFalse(contextCaptor.getValue().isPremiumLiveEvent());
   }
 
+  @Test
+  void getShowPlanningContext_populatesLastSegmentTypeOnRivalries() {
+    // Given — rivalry 748's most recent completed segment was a Promo (ATW-l15c production bug)
+    when(segmentRepository.findBySegmentDateBetween(any(), any())).thenReturn(new ArrayList<>());
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
+        .thenReturn(List.of(activeWrestler));
+    when(titleService.getActiveTitles()).thenReturn(new ArrayList<>());
+    when(factionService.findAll()).thenReturn(new ArrayList<>());
+    when(showService.getUpcomingShows(10)).thenReturn(new ArrayList<>());
+
+    Rivalry promoFeud = rivalryWithHeat(748L, "Gail Kim", "Abilene Maverick", 60);
+    Rivalry matchFeud = rivalryWithHeat(704L, "Johnny All Time", "Shelton Benjamin", 30);
+    when(rivalryService.getActiveRivalries()).thenReturn(List.of(promoFeud, matchFeud));
+
+    // Mock the mapper like the real one: rivalry DTOs present, lastSegmentType unset
+    ShowPlanningRivalryDTO promoDtoIn = new ShowPlanningRivalryDTO();
+    promoDtoIn.setId(748L);
+    ShowPlanningRivalryDTO matchDtoIn = new ShowPlanningRivalryDTO();
+    matchDtoIn.setId(704L);
+    ShowPlanningContextDTO dtoOut = new ShowPlanningContextDTO();
+    dtoOut.setCurrentRivalries(new ArrayList<>(List.of(promoDtoIn, matchDtoIn)));
+    when(mapper.toDto(any(ShowPlanningContext.class))).thenReturn(dtoOut);
+
+    SegmentType promoType = new SegmentType();
+    promoType.setName("Promo");
+    SegmentType matchType = new SegmentType();
+    matchType.setName("One on One");
+
+    Segment promoSegment = new Segment();
+    promoSegment.setSegmentType(promoType);
+    Segment matchSegment = new Segment();
+    matchSegment.setSegmentType(matchType);
+    when(segmentRepository.findCompletedByRivalryId(748L)).thenReturn(List.of(promoSegment));
+    when(segmentRepository.findCompletedByRivalryId(704L)).thenReturn(List.of(matchSegment));
+
+    // When
+    ShowPlanningContextDTO dto = showPlanningService.getShowPlanningContext(show);
+
+    // Then
+    assertEquals(
+        "Promo",
+        dto.getCurrentRivalries().stream()
+            .filter(r -> r.getId().equals(748L))
+            .findFirst()
+            .orElseThrow()
+            .getLastSegmentType(),
+        "Last promo feud must carry Promo");
+    assertEquals(
+        "One on One",
+        dto.getCurrentRivalries().stream()
+            .filter(r -> r.getId().equals(704L))
+            .findFirst()
+            .orElseThrow()
+            .getLastSegmentType(),
+        "Last match feud must carry One on One");
+  }
+
+  @Test
+  void getShowPlanningContext_rivalryNeverBooked_lastSegmentTypeNull() {
+    when(segmentRepository.findBySegmentDateBetween(any(), any())).thenReturn(new ArrayList<>());
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
+        .thenReturn(List.of(activeWrestler));
+    when(titleService.getActiveTitles()).thenReturn(new ArrayList<>());
+    when(factionService.findAll()).thenReturn(new ArrayList<>());
+    when(showService.getUpcomingShows(10)).thenReturn(new ArrayList<>());
+
+    when(rivalryService.getActiveRivalries())
+        .thenReturn(List.of(rivalryWithHeat(999L, "New Face", "New Heel", 15)));
+    when(segmentRepository.findCompletedByRivalryId(anyLong())).thenReturn(List.of());
+
+    ShowPlanningRivalryDTO neverBookedIn = new ShowPlanningRivalryDTO();
+    neverBookedIn.setId(999L);
+    ShowPlanningContextDTO dtoOut = new ShowPlanningContextDTO();
+    dtoOut.setCurrentRivalries(new ArrayList<>(List.of(neverBookedIn)));
+    when(mapper.toDto(any(ShowPlanningContext.class))).thenReturn(dtoOut);
+
+    // When
+    ShowPlanningContextDTO dto = showPlanningService.getShowPlanningContext(show);
+
+    // Then
+    assertNull(
+        dto.getCurrentRivalries().getFirst().getLastSegmentType(),
+        "Unbooked rivalry must have null lastSegmentType");
+  }
+
   // --- validateCard tests ---
 
   private Rivalry rivalryWithHeat(long id, String w1Name, String w2Name, int heat) {
@@ -1322,6 +1408,113 @@ class ShowPlanningServiceTest {
     rivalry.setWrestler2(w2);
     rivalry.setHeat(heat);
     return rivalry;
+  }
+
+  private void stubSegmentType(String name, String code) {
+    SegmentType type = new SegmentType();
+    type.setName(name);
+    type.setCode(code);
+    lenient().when(segmentTypeService.findByName(name)).thenReturn(Optional.of(type));
+  }
+
+  @Test
+  void validateCard_bothTitleAndContenderFlags_isError() {
+    // Given — a segment marked both as a title match and a #1 contender match (ATW-cosc: this
+    // dual state adjudicated as a title change AND a contender rotation, swapping champion and
+    // contender in production).
+    ProposedSegment bad = new ProposedSegment();
+    bad.setType("One on One");
+    bad.setIsTitleSegment(true);
+    bad.setIsContenderMatch(true);
+
+    CardValidationResult result = showPlanningService.validateCard(List.of(bad), List.of());
+
+    assertFalse(result.isValid(), "Both flags set must be a hard error (ATW-cosc)");
+    assertTrue(result.getErrors().getFirst().contains("both a title match and a #1 contender"));
+  }
+
+  @Test
+  void validateCard_contenderMatchWithTitleOnly_noError() {
+    // Given — the legitimate contender-match shape: title attached (which title the winner
+    // becomes #1 contender for), title NOT on the line, contender flag on.
+    ProposedSegment good = new ProposedSegment();
+    good.setType("One on One");
+    good.setIsTitleSegment(false);
+    good.setIsContenderMatch(true);
+
+    CardValidationResult result = showPlanningService.validateCard(List.of(good), List.of());
+
+    assertTrue(result.isValid(), "Contender flag alone is the desired state");
+  }
+
+  @Test
+  void validateCard_promoOnPromoCooldown_rivalryTagged_isError() {
+    // Given — rivalry 748's last completed segment was a Promo (ATW-l15c); the AI proposes
+    // another Promo covering it.
+    stubSegmentType("Promo", "promo");
+    when(segmentRepository.findCompletedByRivalryId(748L)).thenReturn(List.of(promoSegment()));
+
+    ProposedSegment promo = new ProposedSegment();
+    promo.setType("Promo");
+    promo.setRivalryId(748L);
+    promo.setTeams(List.of(List.of("Gail Kim", "Abilene Maverick")));
+
+    CardValidationResult result =
+        showPlanningService.validateCard(
+            List.of(promo), List.of(rivalryWithHeat(748L, "Gail Kim", "Abilene Maverick", 15)));
+
+    assertFalse(result.isValid(), "A consecutive promo must be a hard error (ATW-l15c)");
+    assertTrue(result.getErrors().getFirst().contains("PROMO_COOLDOWN"));
+  }
+
+  @Test
+  void validateCard_matchAfterPromo_noError() {
+    // Given — last segment was a Promo, but this card books a match instead.
+    stubSegmentType("Promo", "promo");
+    stubSegmentType("One on One", "one_on_one");
+    when(segmentRepository.findCompletedByRivalryId(748L)).thenReturn(List.of(promoSegment()));
+
+    ProposedSegment match = new ProposedSegment();
+    match.setType("One on One");
+    match.setRivalryId(748L);
+    match.setTeams(List.of(List.of("Gail Kim"), List.of("Abilene Maverick")));
+
+    CardValidationResult result =
+        showPlanningService.validateCard(
+            List.of(match), List.of(rivalryWithHeat(748L, "Gail Kim", "Abilene Maverick", 15)));
+
+    assertTrue(result.isValid(), "A match after a promo cooldown is the desired variety");
+  }
+
+  @Test
+  void validateCard_promoButLastSegmentWasMatch_noError() {
+    // Given — last segment was a match; a promo now is fine (that's the rotation).
+    stubSegmentType("Promo", "promo");
+    SegmentType matchType = new SegmentType();
+    matchType.setName("One on One");
+    Segment lastMatch = new Segment();
+    lastMatch.setSegmentType(matchType);
+    when(segmentRepository.findCompletedByRivalryId(748L)).thenReturn(List.of(lastMatch));
+
+    ProposedSegment promo = new ProposedSegment();
+    promo.setType("Promo");
+    promo.setRivalryId(748L);
+    promo.setTeams(List.of(List.of("Gail Kim", "Abilene Maverick")));
+
+    CardValidationResult result =
+        showPlanningService.validateCard(
+            List.of(promo), List.of(rivalryWithHeat(748L, "Gail Kim", "Abilene Maverick", 15)));
+
+    assertTrue(result.isValid());
+  }
+
+  private Segment promoSegment() {
+    SegmentType promoType = new SegmentType();
+    promoType.setName("Promo");
+    promoType.setCode("promo");
+    Segment segment = new Segment();
+    segment.setSegmentType(promoType);
+    return segment;
   }
 
   private void stubWrestler(String name, Gender gender) {

@@ -1,0 +1,753 @@
+- generic:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - button "Toggle navigation panel" [expanded]:
+              - generic: 
+              - text: 
+            - generic:
+              - img "a":
+                - text: 
+                - img [aria-hidden]:
+                  - generic: a
+              - generic: admin
+              - button "Open inbox":
+                - generic: Inbox
+              - button "Open profile":
+                - generic: Profile
+              - button "Logout"
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - img "ATW Logo"
+                - generic: All Time Wrestling RPG
+              - generic:
+                - generic:
+                  - generic:
+                    - generic: Active Universe
+                    - generic:
+                      - generic:
+                        - generic:
+                          - combobox "Active Universe": Default Universe
+                      - generic:
+                        - text: 
+                        - generic [aria-hidden]: 
+              - generic:
+                - generic:
+                  - navigation:
+                    - list:
+                      - generic:
+                        - listitem:
+                          - generic:
+                            - link "Booker Dashboard":
+                              - /url: booker
+                            - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Campaign
+                            - button "Campaign Toggle child items": 
+                          - generic: Campaigns
+                          - text: 
+                          - generic: Card Export
+                          - text: 
+                          - generic: Dashboard
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Card Game
+                            - button "Card Game Toggle child items": 
+                          - generic: Cards
+                          - text: 
+                          - generic: Decks
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Configuration
+                            - button "Configuration Toggle child items": 
+                          - generic: Admin
+                          - text: 
+                          - generic: Data Transfer
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Dashboards
+                            - button "Dashboards Toggle child items": 
+                          - generic: Championship Rankings
+                          - text: 
+                          - generic: Hall of Fame
+                          - text: 
+                          - generic: Home
+                          - text: 
+                          - generic: Inbox
+                          - text: 
+                          - generic: News & Rumors
+                          - text: 
+                          - generic: Show Calendar
+                          - text: 
+                          - generic: Weekly Challenges
+                          - text: 
+                          - generic: Wrestler Rankings
+                          - text: 
+                          - generic: Wrestling World Feed
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Entities
+                            - button "Entities Toggle child items" [expanded]: 
+                          - list:
+                            - generic:
+                              - listitem:
+                                - generic:
+                                  - link "Accounts":
+                                    - /url: account-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Arenas":
+                                    - /url: arena-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Faction Rivalries":
+                                    - /url: faction-rivalry-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Factions":
+                                    - /url: faction-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Injury Types":
+                                    - /url: injury-types
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Locations":
+                                    - /url: location-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "NPCs":
+                                    - /url: npc-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Rivalries":
+                                    - /url: rivalry-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Seasons":
+                                    - /url: season-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Segment Rules":
+                                    - /url: segment-rule-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Segment Types":
+                                    - /url: segment-type-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Show Templates":
+                                    - /url: show-template-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Shows":
+                                    - /url: show-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Teams":
+                                    - /url: teams
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Title Reigns":
+                                    - /url: title-reign-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Titles":
+                                    - /url: title-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Tournaments":
+                                    - /url: tournament-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Universes":
+                                    - /url: universe-list
+                                  - text: 
+                              - listitem:
+                                - generic:
+                                  - link "Wrestlers":
+                                    - /url: wrestler-list
+                                  - text: 
+                        - listitem:
+                          - generic:
+                            - generic: General Manager
+                            - button "General Manager Toggle child items": 
+                          - generic: Contract Management
+                          - text: 
+                          - generic: GM Dashboard
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Help
+                            - button "Help Toggle child items": 
+                          - generic: Game Guide
+                          - text: 
+                          - generic: Tutorial
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Multiplayer
+                            - button "Multiplayer Toggle child items": 
+                          - generic: My Leagues
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - link "Player Dashboard":
+                              - /url: player
+                            - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Share QR Code
+                            - text: 
+              - generic:
+                - generic: "Version: 2.11.0-SNAPSHOT"
+                - link "Source Code":
+                  - /url: https://github.com/javydreamercsw/all-time-wrestling-rpg
+        - generic:
+          - generic:
+            - main:
+              - generic:
+                - generic:
+                  - heading "Show Templates" [level=1]
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - textbox "Name Filter":
+                                    - /placeholder: Filter by name...
+                              - generic: 
+                        - generic:
+                          - generic:
+                            - generic: Show Type
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - combobox "Show Type"
+                              - generic:
+                                - text: 
+                                - generic [aria-hidden]: 
+                    - button "Create Template"
+              - generic:
+                - generic:
+                  - generic:
+                    - treegrid:
+                      - rowgroup:
+                        - row "Art Sort by Name Description Sort by Show Type Sort by Gender Constraint Sort by Commentary Team Sort by Recurrence Sort by Duration Sort by Matches Sort by Promos Sort by Created Actions":
+                          - columnheader "Art"
+                          - columnheader "Sort by Name":
+                            - generic:
+                              - generic:
+                                - generic "Sort by Name":
+                                  - generic: Name
+                                  - generic: 
+                          - columnheader "Description"
+                          - columnheader "Sort by Show Type":
+                            - generic:
+                              - generic:
+                                - generic "Sort by Show Type":
+                                  - generic: Show Type
+                                  - generic: 
+                          - columnheader "Sort by Gender Constraint":
+                            - generic:
+                              - generic:
+                                - generic "Sort by Gender Constraint":
+                                  - generic: Gender Constraint
+                                  - generic: 
+                          - columnheader "Sort by Commentary Team":
+                            - generic:
+                              - generic:
+                                - generic "Sort by Commentary Team":
+                                  - generic: Commentary Team
+                                  - generic: 
+                          - columnheader "Sort by Recurrence":
+                            - generic:
+                              - generic:
+                                - generic "Sort by Recurrence":
+                                  - generic: Recurrence
+                                  - generic: 
+                          - columnheader "Sort by Duration":
+                            - generic:
+                              - generic:
+                                - generic "Sort by Duration":
+                                  - generic: Duration
+                                  - generic: 
+                          - columnheader "Sort by Matches":
+                            - generic:
+                              - generic:
+                                - generic "Sort by Matches":
+                                  - generic: Matches
+                                  - generic: 
+                          - columnheader "Sort by Promos":
+                            - generic:
+                              - generic:
+                                - generic "Sort by Promos":
+                                  - generic: Promos
+                                  - generic: 
+                          - columnheader "Sort by Created":
+                            - generic:
+                              - generic:
+                                - generic "Sort by Created":
+                                  - generic: Created
+                                  - generic: 
+                          - columnheader "Actions"
+                      - rowgroup:
+                        - 'row "Show Template Image All Time Rumble 🗓 Ideal for: Annual Rumble-style event (think Roy... Premium Live Event (PLE) Both All-Time Broadcast Team ANNUAL 1d — — 2026-05-18 Edit Deactivate Generate Art Delete"':
+                          - gridcell "Show Template Image":
+                            - generic:
+                              - generic:
+                                - img "Show Template Image"
+                          - gridcell "All Time Rumble"
+                          - 'gridcell "🗓 Ideal for: Annual Rumble-style event (think Roy..."'
+                          - gridcell "Premium Live Event (PLE)"
+                          - gridcell "Both"
+                          - gridcell "All-Time Broadcast Team"
+                          - gridcell "ANNUAL"
+                          - gridcell "1d"
+                          - gridcell "—"
+                          - gridcell "—"
+                          - gridcell "2026-05-18"
+                          - gridcell "Edit Deactivate Generate Art Delete":
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - button "Edit"
+                                    - button "Deactivate"
+                                    - button "Generate Art"
+                                    - button "Delete"
+                        - row "Show Template Image Time Warp Takedown *\"One wrong step, and you're fighting your past.\"*... Premium Live Event (PLE) Both All-Time Broadcast Team ANNUAL 1d — — 2026-05-18 Edit Deactivate Generate Art Delete":
+                          - gridcell "Show Template Image":
+                            - generic:
+                              - generic:
+                                - img "Show Template Image"
+                          - gridcell "Time Warp Takedown"
+                          - gridcell "*\"One wrong step, and you're fighting your past.\"*..."
+                          - gridcell "Premium Live Event (PLE)"
+                          - gridcell "Both"
+                          - gridcell "All-Time Broadcast Team"
+                          - gridcell "ANNUAL"
+                          - gridcell "1d"
+                          - gridcell "—"
+                          - gridcell "—"
+                          - gridcell "2026-05-18"
+                          - gridcell "Edit Deactivate Generate Art Delete":
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - button "Edit"
+                                    - button "Deactivate"
+                                    - button "Generate Art"
+                                    - button "Delete"
+                        - row "Show Template Image Infinity Burn *\"There's no going back — only glory or ash.\"* 🗓... Premium Live Event (PLE) Both All-Time Broadcast Team ANNUAL 1d — — 2026-05-18 Edit Deactivate Generate Art Delete":
+                          - gridcell "Show Template Image":
+                            - generic:
+                              - generic:
+                                - img "Show Template Image"
+                          - gridcell "Infinity Burn"
+                          - gridcell "*\"There's no going back — only glory or ash.\"* 🗓..."
+                          - gridcell "Premium Live Event (PLE)"
+                          - gridcell "Both"
+                          - gridcell "All-Time Broadcast Team"
+                          - gridcell "ANNUAL"
+                          - gridcell "1d"
+                          - gridcell "—"
+                          - gridcell "—"
+                          - gridcell "2026-05-18"
+                          - gridcell "Edit Deactivate Generate Art Delete":
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - button "Edit"
+                                    - button "Deactivate"
+                                    - button "Generate Art"
+                                    - button "Delete"
+                        - row "Show Template Image Era of Champions *\"Only legends survive to define their age.\"* 🗓 ... Premium Live Event (PLE) Both All-Time Broadcast Team ANNUAL 1d — — 2026-02-19 Edit Deactivate Generate Art Delete":
+                          - gridcell "Show Template Image":
+                            - generic:
+                              - generic:
+                                - img "Show Template Image"
+                          - gridcell "Era of Champions"
+                          - gridcell "*\"Only legends survive to define their age.\"* 🗓 ..."
+                          - gridcell "Premium Live Event (PLE)"
+                          - gridcell "Both"
+                          - gridcell "All-Time Broadcast Team"
+                          - gridcell "ANNUAL"
+                          - gridcell "1d"
+                          - gridcell "—"
+                          - gridcell "—"
+                          - gridcell "2026-02-19"
+                          - gridcell "Edit Deactivate Generate Art Delete":
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - button "Edit"
+                                    - button "Deactivate"
+                                    - button "Generate Art"
+                                    - button "Delete"
+                        - row "Show Template Image Temporal Fallout *\"The future cracked. Now it fights back.\"* 🗓 Id... Premium Live Event (PLE) Both All-Time Broadcast Team ANNUAL 1d — — 2026-05-18 Edit Deactivate Generate Art Delete":
+                          - gridcell "Show Template Image":
+                            - generic:
+                              - generic:
+                                - img "Show Template Image"
+                          - gridcell "Temporal Fallout"
+                          - gridcell "*\"The future cracked. Now it fights back.\"* 🗓 Id..."
+                          - gridcell "Premium Live Event (PLE)"
+                          - gridcell "Both"
+                          - gridcell "All-Time Broadcast Team"
+                          - gridcell "ANNUAL"
+                          - gridcell "1d"
+                          - gridcell "—"
+                          - gridcell "—"
+                          - gridcell "2026-05-18"
+                          - gridcell "Edit Deactivate Generate Art Delete":
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - button "Edit"
+                                    - button "Deactivate"
+                                    - button "Generate Art"
+                                    - button "Delete"
+                        - 'row "Show Template Image Quantum Quarrel *\"Physics break. So do bones.\"* 🗓 Ideal for: Mid... Premium Live Event (PLE) Both All-Time Broadcast Team ANNUAL 1d — — 2026-02-19 Edit Deactivate Generate Art Delete"':
+                          - gridcell "Show Template Image":
+                            - generic:
+                              - generic:
+                                - img "Show Template Image"
+                          - gridcell "Quantum Quarrel"
+                          - 'gridcell "*\"Physics break. So do bones.\"* 🗓 Ideal for: Mid..."'
+                          - gridcell "Premium Live Event (PLE)"
+                          - gridcell "Both"
+                          - gridcell "All-Time Broadcast Team"
+                          - gridcell "ANNUAL"
+                          - gridcell "1d"
+                          - gridcell "—"
+                          - gridcell "—"
+                          - gridcell "2026-02-19"
+                          - gridcell "Edit Deactivate Generate Art Delete":
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - button "Edit" [active]
+                                    - button "Deactivate"
+                                    - button "Generate Art"
+                                    - button "Delete"
+                        - row "Show Template Image Legends Converge *\"Greatness isn't born — it's brought back.\"* 🗓 ... Premium Live Event (PLE) Both All-Time Broadcast Team ANNUAL 1d — — 2025-11-05 Edit Deactivate Generate Art Delete":
+                          - gridcell "Show Template Image":
+                            - generic:
+                              - generic:
+                                - img "Show Template Image"
+                          - gridcell "Legends Converge"
+                          - gridcell "*\"Greatness isn't born — it's brought back.\"* 🗓 ..."
+                          - gridcell "Premium Live Event (PLE)"
+                          - gridcell "Both"
+                          - gridcell "All-Time Broadcast Team"
+                          - gridcell "ANNUAL"
+                          - gridcell "1d"
+                          - gridcell "—"
+                          - gridcell "—"
+                          - gridcell "2025-11-05"
+                          - gridcell "Edit Deactivate Generate Art Delete":
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - button "Edit"
+                                    - button "Deactivate"
+                                    - button "Generate Art"
+                                    - button "Delete"
+                        - row "Show Template Image Timeline Turmoil *\"The multiverse is unstable... and only one timel... Premium Live Event (PLE) Both All-Time Broadcast Team ANNUAL 1d — — 2026-02-19 Edit Deactivate Generate Art Delete":
+                          - gridcell "Show Template Image":
+                            - generic:
+                              - generic:
+                                - img "Show Template Image"
+                          - gridcell "Timeline Turmoil"
+                          - gridcell "*\"The multiverse is unstable... and only one timel..."
+                          - gridcell "Premium Live Event (PLE)"
+                          - gridcell "Both"
+                          - gridcell "All-Time Broadcast Team"
+                          - gridcell "ANNUAL"
+                          - gridcell "1d"
+                          - gridcell "—"
+                          - gridcell "—"
+                          - gridcell "2026-02-19"
+                          - gridcell "Edit Deactivate Generate Art Delete":
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - button "Edit"
+                                    - button "Deactivate"
+                                    - button "Generate Art"
+                                    - button "Delete"
+                        - row "Show Template Image Paradox Slam *\"When the impossible steps into the ring.\"* 🗓 I... Premium Live Event (PLE) Both All-Time Broadcast Team ANNUAL 1d — — 2025-11-05 Edit Deactivate Generate Art Delete":
+                          - gridcell "Show Template Image":
+                            - generic:
+                              - generic:
+                                - img "Show Template Image"
+                          - gridcell "Paradox Slam"
+                          - gridcell "*\"When the impossible steps into the ring.\"* 🗓 I..."
+                          - gridcell "Premium Live Event (PLE)"
+                          - gridcell "Both"
+                          - gridcell "All-Time Broadcast Team"
+                          - gridcell "ANNUAL"
+                          - gridcell "1d"
+                          - gridcell "—"
+                          - gridcell "—"
+                          - gridcell "2025-11-05"
+                          - gridcell "Edit Deactivate Generate Art Delete":
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - button "Edit"
+                                    - button "Deactivate"
+                                    - button "Generate Art"
+                                    - button "Delete"
+                        - row "Show Template Image Chrono Clash *\"Past and future collide in battles that shape th... Premium Live Event (PLE) Both All-Time Broadcast Team ANNUAL 1d — — 2025-11-05 Edit Deactivate Generate Art Delete":
+                          - gridcell "Show Template Image":
+                            - generic:
+                              - generic:
+                                - img "Show Template Image"
+                          - gridcell "Chrono Clash"
+                          - gridcell "*\"Past and future collide in battles that shape th..."
+                          - gridcell "Premium Live Event (PLE)"
+                          - gridcell "Both"
+                          - gridcell "All-Time Broadcast Team"
+                          - gridcell "ANNUAL"
+                          - gridcell "1d"
+                          - gridcell "—"
+                          - gridcell "—"
+                          - gridcell "2025-11-05"
+                          - gridcell "Edit Deactivate Generate Art Delete":
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - button "Edit"
+                                    - button "Deactivate"
+                                    - button "Generate Art"
+                                    - button "Delete"
+                        - row "Show Template Image Temporal Diversion *\"When history is rewritten mid-match.\"* 🗓 Ideal... Premium Live Event (PLE) Both All-Time Broadcast Team ANNUAL 1d — — 2025-11-05 Edit Deactivate Generate Art Delete":
+                          - gridcell "Show Template Image":
+                            - generic:
+                              - generic:
+                                - img "Show Template Image"
+                          - gridcell "Temporal Diversion"
+                          - gridcell "*\"When history is rewritten mid-match.\"* 🗓 Ideal..."
+                          - gridcell "Premium Live Event (PLE)"
+                          - gridcell "Both"
+                          - gridcell "All-Time Broadcast Team"
+                          - gridcell "ANNUAL"
+                          - gridcell "1d"
+                          - gridcell "—"
+                          - gridcell "—"
+                          - gridcell "2025-11-05"
+                          - gridcell "Edit Deactivate Generate Art Delete":
+                            - generic:
+                              - generic:
+                                - generic:
+                                  - generic:
+                                    - button "Edit"
+                                    - button "Deactivate"
+                                    - button "Generate Art"
+                                    - button "Delete"
+                      - rowgroup
+  - generic: Online
+  - dialog "Edit Show Template":
+    - generic [ref=f4e826]:
+      - heading "Edit Show Template" [level=2] [ref=f4e827]
+      - generic [ref=f4e830]:
+        - generic:
+          - generic [ref=f4e832]:
+            - generic:
+              - generic [ref=f4e834]:
+                - generic [ref=f4e835]:
+                  - generic: Name
+                  - text: •
+                - generic [ref=f4e836]:
+                  - textbox "Name" [ref=f4e837]: Quantum Quarrel
+                  - generic: 
+              - generic [ref=f4e839]:
+                - generic [ref=f4e840]: Description
+                - generic [ref=f4e841]:
+                  - textbox "Description" [ref=f4e842]: "*\"Physics break. So do bones.\"* 🗓 Ideal for: Midcard elevation, tech/mech-style themed wrestlers, strange stipulations 💥 Feature Matches: Weapon-based matches, Clockwork Cage, “Phase-In” Match (invisible until hit)"
+                  - generic: 
+              - generic [ref=f4e844]:
+                - generic [ref=f4e845]:
+                  - generic: Show Type
+                  - text: •
+                - generic [ref=f4e846]:
+                  - combobox "Show Type" [ref=f4e847]: Premium Live Event (PLE)
+                  - generic:
+                    - text: 
+                    - generic [aria-hidden] [ref=f4e848]: 
+              - generic [ref=f4e850]:
+                - generic [ref=f4e851]: Commentary Team
+                - generic [ref=f4e852]:
+                  - combobox "Commentary Team" [ref=f4e853]: All-Time Broadcast Team
+                  - generic:
+                    - generic [aria-hidden] [ref=f4e854]: 
+                    - generic [aria-hidden] [ref=f4e855]: 
+              - generic [ref=f4e856]:
+                - generic:
+                  - generic [ref=f4e858]:
+                    - generic [ref=f4e859]: Image URL
+                    - generic [ref=f4e860]:
+                      - textbox "Image URL" [ref=f4e861]: images/generated/682c6c09-2ef5-4c00-95c7-76529dec50b7.png
+                      - generic: 
+                  - generic [ref=f4e863]:
+                    - generic [ref=f4e864]:
+                      - button "Upload Art" [ref=f4e865]
+                      - generic [aria-hidden] [ref=f4e868]:
+                        - generic [ref=f4e869]: 
+                        - generic [ref=f4e870]: Drop file here
+                    - generic:
+                      - generic:
+                        - list
+              - generic [ref=f4e872]:
+                - generic [ref=f4e873]: Expected Matches
+                - generic [ref=f4e874]:
+                  - generic [aria-hidden] [ref=f4e875] [cursor=pointer]: 
+                  - spinbutton "Expected Matches" [ref=f4e876]
+                  - generic:
+                    - text: 
+                    - generic [aria-hidden] [ref=f4e877] [cursor=pointer]: 
+              - generic [ref=f4e879]:
+                - generic [ref=f4e880]: Expected Promos
+                - generic [ref=f4e881]:
+                  - generic [aria-hidden] [ref=f4e882] [cursor=pointer]: 
+                  - spinbutton "Expected Promos" [ref=f4e883]
+                  - generic:
+                    - text: 
+                    - generic [aria-hidden] [ref=f4e884] [cursor=pointer]: 
+              - generic [ref=f4e886]:
+                - generic [ref=f4e887]: Duration (Days)
+                - generic [ref=f4e888]:
+                  - generic: 
+                  - spinbutton "Duration (Days)" [ref=f4e889]: "1"
+                  - generic:  
+              - generic [ref=f4e891]:
+                - generic [ref=f4e892]: Recurrence Type
+                - generic [ref=f4e893]:
+                  - combobox "Recurrence Type" [ref=f4e894]: ANNUAL
+                  - generic:
+                    - text: 
+                    - generic [aria-hidden] [ref=f4e895]: 
+              - generic [ref=f4e897]:
+                - generic [ref=f4e898]: Day of Week
+                - generic [ref=f4e899]:
+                  - combobox "Day of Week" [ref=f4e900]: SUNDAY
+                  - generic:
+                    - text: 
+                    - generic [aria-hidden] [ref=f4e901]: 
+              - generic [ref=f4e903]:
+                - generic [ref=f4e904]: Day of Month
+                - generic [ref=f4e905]:
+                  - generic: 
+                  - spinbutton "Day of Month" [ref=f4e906]
+                  - generic:  
+              - generic [ref=f4e908]:
+                - generic [ref=f4e909]: Week of Month
+                - generic [ref=f4e910]:
+                  - combobox "Week of Month" [ref=f4e911]: Last
+                  - generic:
+                    - text: 
+                    - generic [aria-hidden] [ref=f4e912]: 
+              - generic [ref=f4e914]:
+                - generic [ref=f4e915]: Month
+                - generic [ref=f4e916]:
+                  - combobox "Month" [ref=f4e917]: JUNE
+                  - generic:
+                    - text: 
+                    - generic [aria-hidden] [ref=f4e918]: 
+              - generic [ref=f4e920]:
+                - generic [ref=f4e921]: Gender Constraint
+                - generic [ref=f4e922]:
+                  - combobox "Gender Constraint" [ref=f4e923]
+                  - generic:
+                    - text: 
+                    - generic [aria-hidden] [ref=f4e924]: 
+          - generic [ref=f4e925]:
+            - generic:
+              - generic [ref=f4e926]: Template Assignments (event types, rules, tournament-fed segments)
+              - generic [ref=f4e927]:
+                - generic:
+                  - generic [ref=f4e929]:
+                    - generic [ref=f4e930]: Segment Type
+                    - generic [ref=f4e931]:
+                      - combobox "Segment Type" [ref=f4e932]
+                      - generic:
+                        - text: 
+                        - generic [aria-hidden] [ref=f4e933]: 
+                  - generic [ref=f4e935]:
+                    - generic [ref=f4e936]: Segment Rule
+                    - generic [ref=f4e937]:
+                      - combobox "Segment Rule" [ref=f4e938]
+                      - generic:
+                        - text: 
+                        - generic [aria-hidden] [ref=f4e939]: 
+                  - generic [ref=f4e941]:
+                    - generic [ref=f4e942]: Tournament
+                    - generic [ref=f4e943]:
+                      - combobox "Tournament" [ref=f4e944]
+                      - generic:
+                        - text: 
+                        - generic [aria-hidden] [ref=f4e945]: 
+                  - generic [ref=f4e947]:
+                    - generic [ref=f4e948]: Mode
+                    - generic [ref=f4e949]:
+                      - combobox "Mode" [ref=f4e950]: ENCOURAGED
+                      - generic:
+                        - text: 
+                        - generic [aria-hidden] [ref=f4e951]: 
+              - button "Add Assignment" [ref=f4e952]
+              - treegrid [ref=f4e963]:
+                - rowgroup [ref=f4e964]:
+                  - row [ref=f4e965]:
+                    - columnheader "Segment Type (event-only)" [ref=f4e966]
+                    - columnheader "Segment Rule" [ref=f4e968]
+                    - columnheader "Tournament" [ref=f4e970]
+                    - columnheader "Mode" [ref=f4e972]
+                    - columnheader [ref=f4e974]
+                - rowgroup [ref=f4e976]
+                - rowgroup
+          - generic [ref=f4e977]:
+            - generic:
+              - button "Generate Art" [ref=f4e978]
+              - button "Save" [ref=f4e989]
+              - button "Cancel" [ref=f4e992]

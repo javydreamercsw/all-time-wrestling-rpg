@@ -143,6 +143,10 @@ class ShowServiceTest {
             showQualityService,
             tournamentService);
 
+    // Default recovery outcome for the post-show healing loop (ATW-7w9l)
+    when(wrestlerService.performNpcRecovery(anyLong(), anyLong(), any()))
+        .thenReturn(new WrestlerService.NpcRecoveryResult(0, false, 0));
+
     show = new Show();
     show.setId(1L);
     show.setName("Monday Night Raw");
@@ -748,10 +752,10 @@ class ShowServiceTest {
 
     showService.adjudicateShow(1L);
 
-    // wrestler2 did not participate → should get a heal chance
-    verify(wrestlerService, times(1)).healChance(eq(wrestler2.getId()), anyLong());
-    // wrestler1 participated → should NOT get a heal chance
-    verify(wrestlerService, never()).healChance(eq(wrestler1.getId()), anyLong());
+    // wrestler2 did not participate → should get an ATW recovery roll
+    verify(wrestlerService, times(1)).performNpcRecovery(eq(wrestler2.getId()), anyLong(), any());
+    // wrestler1 participated → should NOT get a recovery roll
+    verify(wrestlerService, never()).performNpcRecovery(eq(wrestler1.getId()), anyLong(), any());
     // show has no date set — game date should not be updated
     verify(gameSettingService, never()).saveCurrentGameDate(any());
   }
@@ -772,7 +776,7 @@ class ShowServiceTest {
 
     showService.adjudicateShow(1L);
 
-    verify(wrestlerService, never()).healChance(anyLong(), anyLong());
+    verify(wrestlerService, never()).performNpcRecovery(anyLong(), anyLong(), any());
   }
 
   @Test
@@ -791,7 +795,7 @@ class ShowServiceTest {
 
     showService.adjudicateShow(1L);
 
-    verify(wrestlerService, times(1)).healChance(eq(wrestler2.getId()), anyLong());
-    verify(wrestlerService, never()).healChance(eq(wrestler1.getId()), anyLong());
+    verify(wrestlerService, times(1)).performNpcRecovery(eq(wrestler2.getId()), anyLong(), any());
+    verify(wrestlerService, never()).performNpcRecovery(eq(wrestler1.getId()), anyLong(), any());
   }
 }

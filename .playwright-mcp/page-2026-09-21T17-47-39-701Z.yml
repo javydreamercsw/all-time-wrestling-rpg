@@ -1,0 +1,246 @@
+- generic:
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - button "Toggle navigation panel" [expanded]:
+              - generic: 
+              - text: 
+            - generic:
+              - img "a":
+                - text: 
+                - img [aria-hidden]:
+                  - generic: a
+              - generic: admin
+              - button "Open inbox":
+                - generic: Inbox
+              - button "Open profile":
+                - generic: Profile
+              - button "Logout"
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - img "ATW Logo"
+                - generic: All Time Wrestling RPG
+              - generic:
+                - generic:
+                  - generic:
+                    - generic: Active Universe
+                    - generic:
+                      - generic:
+                        - generic:
+                          - combobox "Active Universe": Default Universe
+                      - generic:
+                        - text: 
+                        - generic [aria-hidden]: 
+              - generic:
+                - generic:
+                  - navigation:
+                    - list:
+                      - generic:
+                        - listitem:
+                          - generic:
+                            - link "Booker Dashboard":
+                              - /url: booker
+                            - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Campaign
+                            - button "Campaign Toggle child items": 
+                          - generic: Campaigns
+                          - text: 
+                          - generic: Card Export
+                          - text: 
+                          - generic: Dashboard
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Card Game
+                            - button "Card Game Toggle child items": 
+                          - generic: Cards
+                          - text: 
+                          - generic: Decks
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Configuration
+                            - button "Configuration Toggle child items": 
+                          - generic: Admin
+                          - text: 
+                          - generic: Data Transfer
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Dashboards
+                            - button "Dashboards Toggle child items": 
+                          - generic: Championship Rankings
+                          - text: 
+                          - generic: Hall of Fame
+                          - text: 
+                          - generic: Home
+                          - text: 
+                          - generic: Inbox
+                          - text: 
+                          - generic: News & Rumors
+                          - text: 
+                          - generic: Show Calendar
+                          - text: 
+                          - generic: Weekly Challenges
+                          - text: 
+                          - generic: Wrestler Rankings
+                          - text: 
+                          - generic: Wrestling World Feed
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Entities
+                            - button "Entities Toggle child items": 
+                          - generic: Accounts
+                          - text: 
+                          - generic: Arenas
+                          - text: 
+                          - generic: Faction Rivalries
+                          - text: 
+                          - generic: Factions
+                          - text: 
+                          - generic: Injury Types
+                          - text: 
+                          - generic: Locations
+                          - text: 
+                          - generic: NPCs
+                          - text: 
+                          - generic: Rivalries
+                          - text: 
+                          - generic: Seasons
+                          - text: 
+                          - generic: Segment Rules
+                          - text: 
+                          - generic: Segment Types
+                          - text: 
+                          - generic: Show Templates
+                          - text: 
+                          - generic: Shows
+                          - text: 
+                          - generic: Teams
+                          - text: 
+                          - generic: Title Reigns
+                          - text: 
+                          - generic: Titles
+                          - text: 
+                          - generic: Tournaments
+                          - text: 
+                          - generic: Universes
+                          - text: 
+                          - generic: Wrestlers
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - generic: General Manager
+                            - button "General Manager Toggle child items": 
+                          - generic: Contract Management
+                          - text: 
+                          - generic: GM Dashboard
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Help
+                            - button "Help Toggle child items": 
+                          - generic: Game Guide
+                          - text: 
+                          - generic: Tutorial
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Multiplayer
+                            - button "Multiplayer Toggle child items": 
+                          - generic: My Leagues
+                          - text: 
+                        - listitem:
+                          - generic:
+                            - link "Player Dashboard":
+                              - /url: player
+                            - text: 
+                        - listitem:
+                          - generic:
+                            - generic: Share QR Code
+                            - text: 
+              - generic:
+                - generic: "Version: 2.11.0-SNAPSHOT"
+                - link "Source Code":
+                  - /url: https://github.com/javydreamercsw/all-time-wrestling-rpg
+        - generic:
+          - generic:
+            - main:
+              - generic:
+                - generic:
+                  - heading "Show Planning" [level=1]
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - heading "Show Planning" [level=2]
+                      - generic:
+                        - generic:
+                          - generic [ref=f1e227]:
+                            - generic [ref=f1e228]:
+                              - generic [ref=f1e229]: Select Show
+                              - generic [ref=f1e230]:
+                                - combobox "Select Show" [expanded] [active] [ref=f1e231]
+                                - generic:
+                                  - text: 
+                                  - generic [aria-hidden] [ref=f1e232]: 
+                            - listbox [ref=f1e270]:
+                              - generic [ref=f1e271]:
+                                - generic:
+                                  - option "Continuum (2026-06-12)" [ref=f1e272]:
+                                    - generic [aria-hidden] [ref=f1e273]: 
+                                  - option "Timeless (2026-06-15)" [ref=f1e275]:
+                                    - generic [aria-hidden] [ref=f1e276]: 
+                                  - option "Continuum (2026-06-19)" [ref=f1e278]:
+                                    - generic [aria-hidden] [ref=f1e279]: 
+                                  - option "Timeless (2026-06-22)" [ref=f1e281]:
+                                    - generic [aria-hidden] [ref=f1e282]: 
+                                  - option "Continuum (2026-06-26)" [ref=f1e284]:
+                                    - generic [aria-hidden] [ref=f1e285]: 
+                                  - option "Quantum Quarrel (2026-06-28)" [ref=f1e287]:
+                                    - generic [aria-hidden] [ref=f1e288]: 
+                                  - option "Timeless (2026-06-29)" [ref=f1e290]:
+                                    - generic [aria-hidden] [ref=f1e291]: 
+                                  - option "Continuum (2026-07-03)" [ref=f1e293]:
+                                    - generic [aria-hidden] [ref=f1e294]: 
+                                  - option "Timeless (2026-07-06)" [ref=f1e296]:
+                                    - generic [aria-hidden] [ref=f1e297]: 
+                                  - option "Continuum (2026-07-10)" [ref=f1e299]:
+                                    - generic [aria-hidden] [ref=f1e300]: 
+                          - button "Load Context" [disabled]
+                          - button "View Show Details" [disabled]
+                      - paragraph: 1. Pick a show, then let the AI draft a card you can edit.
+                      - button "AI Propose Segments" [disabled]
+                      - generic:
+                        - generic:
+                          - button "Planning Context (technical)":
+                            - generic [aria-hidden]: 
+                        - text: 
+                  - generic:
+                    - generic:
+                      - heading "Proposed Segments" [level=2]
+                      - generic:
+                        - generic:
+                          - treegrid:
+                            - rowgroup:
+                              - row "# Type Summary Description Participants Rules Source":
+                                - columnheader "#"
+                                - columnheader "Type"
+                                - columnheader "Summary"
+                                - columnheader "Description"
+                                - columnheader "Participants"
+                                - columnheader "Rules"
+                                - columnheader "Source"
+                                - columnheader
+                                - columnheader
+                            - rowgroup
+                            - rowgroup
+                      - button "Approve & Create Segments" [disabled]
+  - generic: Online

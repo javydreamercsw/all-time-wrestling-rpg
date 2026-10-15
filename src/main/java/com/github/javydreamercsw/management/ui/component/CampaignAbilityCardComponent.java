@@ -54,7 +54,9 @@ public class CampaignAbilityCardComponent extends Div {
     title.addClassNames(LumoUtility.Margin.NONE, LumoUtility.FontSize.MEDIUM);
 
     Span levelBadge = new Span("LVL " + card.getLevel());
-    levelBadge.getElement().getThemeList().add("badge pill small");
+    levelBadge.getElement().getThemeList().add("badge");
+    levelBadge.getElement().getThemeList().add("pill");
+    levelBadge.getElement().getThemeList().add("small");
     if (card.getAlignmentType() == AlignmentType.HEEL) {
       levelBadge.getStyle().set("background-color", "var(--lumo-error-color)");
       levelBadge.getStyle().set("color", "var(--lumo-error-contrast-color)");
@@ -104,19 +106,25 @@ public class CampaignAbilityCardComponent extends Div {
     badges.addClassNames(LumoUtility.Gap.XSMALL, LumoUtility.AlignItems.CENTER);
 
     Span timingBadge = new Span(timing != null ? timing.name() : "ANY");
-    timingBadge.getElement().getThemeList().add("badge small contrast");
+    timingBadge.getElement().getThemeList().add("badge");
+    timingBadge.getElement().getThemeList().add("small");
+    timingBadge.getElement().getThemeList().add("contrast");
 
     effectDiv.add(timingBadge);
 
     if (oneTime) {
       Span oneTimeBadge = new Span("Single Use");
       oneTimeBadge.getElement().setAttribute("title", "Discarded from inventory after one use.");
-      oneTimeBadge.getElement().getThemeList().add("badge small error");
+      oneTimeBadge.getElement().getThemeList().add("badge");
+      oneTimeBadge.getElement().getThemeList().add("small");
+      oneTimeBadge.getElement().getThemeList().add("error");
       effectDiv.add(oneTimeBadge);
     } else {
       Span activeBadge = new Span("Once per Match");
       activeBadge.getElement().setAttribute("title", "Can be activated once in every match.");
-      activeBadge.getElement().getThemeList().add("badge small success");
+      activeBadge.getElement().getThemeList().add("badge");
+      activeBadge.getElement().getThemeList().add("small");
+      activeBadge.getElement().getThemeList().add("success");
       effectDiv.add(activeBadge);
     }
 

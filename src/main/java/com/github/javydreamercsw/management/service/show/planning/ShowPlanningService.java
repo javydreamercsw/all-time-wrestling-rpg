@@ -323,6 +323,18 @@ public class ShowPlanningService {
 
     ShowPlanningContextDTO dto = mapper.toDto(context);
 
+    // Stamp each rivalry with its most recent completed segment type (ATW-l15c): the prompt
+    // builder uses it to classify PROMO_COOLDOWN feuds whose last appearance was a Promo.
+    if (dto.getCurrentRivalries() != null) {
+      dto.getCurrentRivalries()
+          .forEach(
+              rivalryDto ->
+                  segmentRepository.findCompletedByRivalryId(rivalryDto.getId()).stream()
+                      .findFirst()
+                      .map(seg -> seg.getSegmentType().getName())
+                      .ifPresent(rivalryDto::setLastSegmentType));
+    }
+
     List<String> dramaLines =
         dramaEventService.getRecentEvents().stream()
             .filter(de -> de.getEventType() != DramaEventType.OUTCOME_MATRIX_RESULT)
@@ -465,6 +477,22 @@ public class ShowPlanningService {
     List<Rivalry> requiredRivalries =
         activeRivalries.stream().filter(r -> r.getHeat() >= 10).toList();
 
+    // Title-on-the-line and #1-contender designation are mutually exclusive segment states
+    // (ATW-cosc): a segment with both flags would adjudicate as a title change AND rotate the
+    // contender — the champion/contender swap seen in production. Contender matches carry a
+    // title (the one the winner becomes #1 contender for) but isTitleSegment must be false.
+    for (ProposedSegment segment : proposedSegments) {
+      if (Boolean.TRUE.equals(segment.getIsTitleSegment())
+          && Boolean.TRUE.equals(segment.getIsContenderMatch())) {
+        errors.add(
+            "Invalid segment flags: '"
+                + segment.getType()
+                + "' is marked as both a title match and a #1 contender match — pick one"
+                + " (title on the line, or title not on the line with the winner becoming the"
+                + " #1 contender)");
+      }
+    }
+
     for (Rivalry rivalry : requiredRivalries) {
       String w1 = rivalry.getWrestler1().getName();
       String w2 = rivalry.getWrestler2().getName();
@@ -494,6 +522,30 @@ public class ShowPlanningService {
                         + ")");
               }
             });
+      }
+
+      // PROMO_COOLDOWN guard (ATW-l15c): prompts are advisory; a Promo covering a rivalry whose
+      // most recent completed segment was also a Promo is the exact loop seen in production
+      // (rivalry 748 booked as six consecutive promos). Block it at approval time.
+      Optional<ProposedSegment> covering = findCoveringSegment(rivalry, proposedSegments);
+      if (covering.isPresent() && isPromoSegment(covering.get())) {
+        boolean lastWasPromo =
+            segmentRepository.findCompletedByRivalryId(rivalry.getId()).stream()
+                .findFirst()
+                .map(
+                    last ->
+                        last.getSegmentType() != null
+                            && WellKnownSegmentType.PROMO.matches(last.getSegmentType()))
+                .orElse(false);
+        if (lastWasPromo) {
+          errors.add(
+              "PROMO_COOLDOWN: "
+                  + w1
+                  + " vs "
+                  + w2
+                  + " was booked as a Promo on its most recent show — book a match or a"
+                  + " different segment format instead of another Promo (ATW-l15c)");
+        }
       }
     }
 
