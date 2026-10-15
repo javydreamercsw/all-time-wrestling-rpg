@@ -62,8 +62,13 @@ public class ProposedSegment {
   /** Proposed cash-in mode (ATW-2b9u): PLANNED / AMBUSH / RUN_IN. */
   private BriefcaseCashInMode briefcaseMode;
 
+  /**
+   * Attaches titles without touching {@code isTitleSegment} (ATW-cosc): contender matches also
+   * carry titles (the title the winner becomes #1 contender for), so deriving the flag here
+   * silently turned contender matches into title matches. Callers that want the old behavior (title
+   * attached ⇒ on the line) set {@code isTitleSegment} explicitly.
+   */
   public void setTitles(final Set<Title> titles) {
-    this.titles = titles;
-    this.isTitleSegment = !titles.isEmpty();
+    this.titles = titles != null ? titles : new HashSet<>();
   }
 }

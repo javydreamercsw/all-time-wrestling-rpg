@@ -401,7 +401,9 @@ public class ShowPlanningAiService {
       segment.setNotes(beat.getNotes());
     }
     if (beat.isTitleSegment() && beat.getTitles() != null && !beat.getTitles().isEmpty()) {
-      // setTitles flips isTitleSegment on the proposal.
+      // ATW-cosc: setTitles no longer derives isTitleSegment (contender matches carry titles
+      // too) — a title-carrying beat is on the line, so set the flag explicitly.
+      segment.setIsTitleSegment(true);
       segment.setTitles(new HashSet<>(beat.getTitles()));
     }
     if (beat.getContenderTitleId() != null && !beat.isTitleSegment()) {
@@ -463,9 +465,11 @@ public class ShowPlanningAiService {
           // semantics); the bracket result mirrors the booked segment's actual winners.
         }
         // The Title entity wins (selector pre-selection); titleName stays the fallback for
-        // hand-built contexts. setTitles flips isTitleSegment in sync — the same contract the
-        // scripted-beat path relies on.
+        // hand-built contexts. ATW-cosc: setTitles no longer derives isTitleSegment — a
+        // tournament slot's title is on the line, so the flag is set explicitly (the same
+        // contract the scripted-beat path relies on).
         if (slot.getTitle() != null) {
+          segment.setIsTitleSegment(true);
           segment.setTitles(Set.of(slot.getTitle()));
         } else if (slot.getTitleName() != null && !slot.getTitleName().isBlank()) {
           segment.setIsTitleSegment(true);

@@ -230,7 +230,7 @@ public class EditSegmentDialog extends Dialog {
           proposed.getSummary() != null ? proposed.getSummary() : "",
           proposed.getNotes() != null ? proposed.getNotes() : "",
           Boolean.TRUE.equals(proposed.getIsTitleSegment()),
-          false,
+          Boolean.TRUE.equals(proposed.getIsContenderMatch()),
           proposed.getTitles() != null ? proposed.getTitles() : new HashSet<>());
     }
 
@@ -320,7 +320,7 @@ public class EditSegmentDialog extends Dialog {
   private final HorizontalLayout winnerTeamButtonsLayout = new HorizontalLayout();
   private final TextArea summaryArea;
   private final Checkbox isTitleSegmentCheckbox;
-  private final Checkbox isContenderMatchCheckbox;
+  @Getter private final Checkbox isContenderMatchCheckbox;
   private final Span synergyBonusLabel;
   private final VerticalLayout teamsLayout = new VerticalLayout();
   @Getter private final Map<Long, IntegerField> healthFields = new HashMap<>();
@@ -785,7 +785,10 @@ public class EditSegmentDialog extends Dialog {
           segment.setRules(
               saveData.rules().stream().map(SegmentRule::getName).collect(Collectors.toList()));
           segment.setRefereeName(saveData.referee() != null ? saveData.referee().getName() : null);
+          // Write both flags explicitly (ATW-cosc): setTitles must not derive isTitleSegment —
+          // contender matches carry titles too (the title the winner becomes #1 contender for).
           segment.setIsTitleSegment(saveData.isTitleSegment());
+          segment.setIsContenderMatch(saveData.isContenderMatch());
           segment.setTitles(saveData.titles());
           onSave.run();
         });
