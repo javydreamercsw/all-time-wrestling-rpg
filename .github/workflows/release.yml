@@ -194,17 +194,23 @@ jobs:
           cd docs/site && npm install
 
       - name: Install changelog generator
-        run: gem install github_changelog_generator
+        uses: taiki-e/install-action@v2
+        with:
+          tool: git-cliff
 
       - name: Generate Changelog
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          github_changelog_generator \
-            --user javydreamercsw \
-            --project all-time-wrestling-rpg \
-            --token ${{ secrets.GITHUB_TOKEN }} \
-            --output CHANGELOG.md \
-            --release-branch release/${{ github.event.inputs.version }} \
-            --future-release v${{ github.event.inputs.version }}
+          # Commit-driven changelog (cliff.toml): conventional-commit parsers map
+          # to the classic sections; release-metadata chores render only when
+          # they are the release's sole content; PR links come from the GitHub
+          # remote (GITHUB_TOKEN is picked up automatically).
+          git-cliff \
+            --config cliff.toml \
+            --tag v${{ github.event.inputs.version }} \
+            --unreleased \
+            --prepend CHANGELOG.md
 
           # Extract only the current release section for the GitHub release body.
           awk '/^## \[/{count++; if(count==2) exit} count==1{print}' CHANGELOG.md \
