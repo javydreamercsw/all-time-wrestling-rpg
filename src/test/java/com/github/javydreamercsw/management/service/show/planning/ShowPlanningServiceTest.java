@@ -1310,7 +1310,7 @@ class ShowPlanningServiceTest {
 
   @Test
   void getShowPlanningContext_populatesLastSegmentTypeOnRivalries() {
-    // Given — rivalry 748's most recent completed segment was a Promo (ATW-l15c production bug)
+    // Given — a rivalry whose most recent completed segment was a Promo
     when(segmentRepository.findBySegmentDateBetween(any(), any())).thenReturn(new ArrayList<>());
     when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
         .thenReturn(List.of(activeWrestler));
@@ -1419,9 +1419,9 @@ class ShowPlanningServiceTest {
 
   @Test
   void validateCard_bothTitleAndContenderFlags_isError() {
-    // Given — a segment marked both as a title match and a #1 contender match (ATW-cosc: this
-    // dual state adjudicated as a title change AND a contender rotation, swapping champion and
-    // contender in production).
+    // Given — a segment marked both as a title match and a #1 contender match: this dual
+    // state adjudicates as a title change AND a contender rotation, swapping the champion
+    // and the #1 contender.
     ProposedSegment bad = new ProposedSegment();
     bad.setType("One on One");
     bad.setIsTitleSegment(true);
@@ -1429,7 +1429,7 @@ class ShowPlanningServiceTest {
 
     CardValidationResult result = showPlanningService.validateCard(List.of(bad), List.of());
 
-    assertFalse(result.isValid(), "Both flags set must be a hard error (ATW-cosc)");
+    assertFalse(result.isValid(), "Both flags set must be a hard error");
     assertTrue(result.getErrors().getFirst().contains("both a title match and a #1 contender"));
   }
 
@@ -1449,8 +1449,8 @@ class ShowPlanningServiceTest {
 
   @Test
   void validateCard_promoOnPromoCooldown_rivalryTagged_isError() {
-    // Given — rivalry 748's last completed segment was a Promo (ATW-l15c); the AI proposes
-    // another Promo covering it.
+    // Given — the rivalry's last completed segment was a Promo; the AI proposes another Promo
+    // covering it.
     stubSegmentType("Promo", "promo");
     when(segmentRepository.findCompletedByRivalryId(748L)).thenReturn(List.of(promoSegment()));
 
@@ -1463,7 +1463,7 @@ class ShowPlanningServiceTest {
         showPlanningService.validateCard(
             List.of(promo), List.of(rivalryWithHeat(748L, "Gail Kim", "Abilene Maverick", 15)));
 
-    assertFalse(result.isValid(), "A consecutive promo must be a hard error (ATW-l15c)");
+    assertFalse(result.isValid(), "A consecutive promo must be a hard error");
     assertTrue(result.getErrors().getFirst().contains("PROMO_COOLDOWN"));
   }
 

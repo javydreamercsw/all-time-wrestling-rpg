@@ -39,9 +39,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * One-time repair (ATW-3qug) for injuries that piled up while the post-show resting loop used the
- * non-rules bump-only {@code healChance} — NPCs never healed injuries at all, and production
- * accumulated 19 active injuries (the oldest 47+ game days old).
+ * One-time repair for injuries that piled up while the post-show resting loop used the non-rules
+ * bump-only {@code healChance} — NPCs never healed injuries at all.
  *
  * <p>For each still-active injury this replays the missed recovery opportunities: every show dated
  * after the injury where the wrestler RESTED (no non-promo segment participation — promos never
@@ -118,8 +117,8 @@ public class RetroactiveNpcInjuryRecoveryMigration implements DataMigration {
               .filter(show -> show.getShowDate() != null)
               .filter(show -> !show.getShowDate().isBefore(injuryDate))
               // Future scheduled shows have not run — no recovery roll is owed yet. Without
-              // this bound the first sandbox run stamped heal dates months into kayfabe's
-              // future (52 scheduled shows existed ahead of the game date, ATW-3qug).
+              // this bound the replay would stamp heal dates months into kayfabe's future
+              // whenever scheduled shows sit ahead of the game date.
               .filter(show -> !show.getShowDate().isAfter(gameClock.gameToday()))
               .filter(show -> workedShowIds.stream().noneMatch(id -> id.equals(show.getId())))
               .filter(
@@ -145,7 +144,7 @@ public class RetroactiveNpcInjuryRecoveryMigration implements DataMigration {
               wrestler.getName(),
               missed.getName(),
               successes);
-          break; // ATW-3qug: the injury no longer exists — stop replaying shows for it
+          break; // the injury no longer exists — stop replaying shows for it
         }
       }
     }

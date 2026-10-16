@@ -647,15 +647,15 @@ public class WrestlerService {
       return Optional.of(savedState);
     }
     // Debug, not warn: callers probe for available bumps before healing; 0 bumps is a
-    // normal outcome of the recovery roll, not an error condition (ATW-7w9l).
+    // normal outcome of the recovery roll, not an error condition.
     log.debug(
         "Wrestler {} has 0 bumps in universe {}, cannot heal further.", wrestlerId, universeId);
     return Optional.of(state);
   }
 
   /**
-   * ATW recovery roll for NPC wrestlers after a show (ATW-7w9l). Rolls one die per point of the
-   * wrestler's Resilience attribute; each die showing 4+ counts as 1 success (Focus Tokens are not
+   * ATW recovery roll for NPC wrestlers after a show. Rolls one die per point of the wrestler's
+   * Resilience attribute; each die showing 4+ counts as 1 success (Focus Tokens are not
    * implemented). Per the ATW rules: 2+ successes heal 1 active Injury (prioritized over bumps);
    * otherwise each success removes 1 Bump Token (max 2).
    *
@@ -730,7 +730,7 @@ public class WrestlerService {
     return result;
   }
 
-  /** Outcome of an NPC post-show recovery roll (ATW-7w9l). */
+  /** Outcome of an NPC post-show recovery roll. */
   public record NpcRecoveryResult(int successes, boolean injuryHealed, int bumpsHealed) {}
 
   @Caching(

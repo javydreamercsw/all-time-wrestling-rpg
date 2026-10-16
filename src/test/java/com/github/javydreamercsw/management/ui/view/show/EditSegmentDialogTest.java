@@ -158,7 +158,7 @@ class EditSegmentDialogTest {
 
   @Test
   void testSave_contenderMatchKeepsFlags() {
-    // Regression (ATW-cosc): a planning row edited as a #1 contender match must round-trip as
+    // Regression: a planning row edited as a #1 contender match must round-trip as
     // one. Before the fix the dialog dropped isContenderMatch on save and setTitles() flipped
     // isTitleSegment back on — the row was approved as a TITLE match, swapping champion and
     // contender at adjudication.
@@ -201,7 +201,7 @@ class EditSegmentDialogTest {
 
   @Test
   void testLoad_contenderFlagPreselectsCheckbox() {
-    // Regression (ATW-cosc): opening the dialog on an existing contender row must pre-check the
+    // Regression: opening the dialog on an existing contender row must pre-check the
     // contender box — before the fix the loader hardcoded isContenderMatch=false, so any edit
     // silently cleared the flag on save.
     UI.setCurrent(ui);

@@ -311,7 +311,7 @@ class ShowPlanningAiServiceTest {
     assertEquals(
         1,
         proposedShow.getSegments().size(),
-        "The cooldown Promo proposal must be dropped deterministically (ATW-ayu5)");
+        "The cooldown Promo proposal must be dropped deterministically");
     assertEquals(
         "One on One", proposedShow.getSegments().get(0).getType(), "The match row must survive");
   }

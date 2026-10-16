@@ -1185,6 +1185,35 @@ class TitleServiceTest {
   }
 
   // =====================================================================
+  // removeChallengers
+  // =====================================================================
+
+  @Test
+  void removeChallengers_defeatedChallengerRemovedAndSaved() {
+    // After a successful defense the challenger no longer holds #1 contender status.
+    Wrestler challenger = new Wrestler();
+    challenger.setId(2L);
+    challenger.setName("Challenger");
+    title.addChallenger(challenger);
+
+    titleService.removeChallengers(title, List.of(challenger));
+
+    assertThat(title.getChallengers()).isEmpty();
+    verify(titleRepository).save(title);
+  }
+
+  @Test
+  void removeChallengers_wrestlerNotOnList_doesNotSave() {
+    Wrestler notAChallenger = new Wrestler();
+    notAChallenger.setId(3L);
+    notAChallenger.setName("Not A Challenger");
+
+    titleService.removeChallengers(title, List.of(notAChallenger));
+
+    verify(titleRepository, never()).save(any());
+  }
+
+  // =====================================================================
   // helpers
   // =====================================================================
 

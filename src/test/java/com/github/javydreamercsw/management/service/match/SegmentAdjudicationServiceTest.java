@@ -864,6 +864,46 @@ class SegmentAdjudicationServiceTest {
     verify(titleService, never()).recordSuccessfulDefense(any());
   }
 
+  @Test
+  void applyTitleChange_onSuccessfulDefense_defeatedChallengersRemoved() {
+    // The challenger who lost the title match no longer holds #1 contender status.
+    Title title = mock(Title.class);
+    Wrestler champion = mock(Wrestler.class);
+    when(champion.getId()).thenReturn(5L);
+    when(title.getCurrentChampions()).thenReturn(List.of(champion));
+    when(wrestlerService.getOrCreateState(eq(5L), anyLong())).thenReturn(mock(WrestlerState.class));
+    when(champion.getState(anyLong())).thenReturn(Optional.empty());
+
+    when(segment.getIsTitleSegment()).thenReturn(true);
+    when(segment.getTitles()).thenReturn(Set.of(title));
+    when(segment.getWinners()).thenReturn(List.of(champion));
+    when(segment.getWrestlers()).thenReturn(List.of(champion, loser));
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    verify(titleService).removeChallengers(title, List.of(loser));
+  }
+
+  @Test
+  void applyTitleChange_onDraw_challengersNotRemoved() {
+    // A draw leaves the match undecided: the challenger keeps #1 contender status.
+    Title title = mock(Title.class);
+    Wrestler champion = mock(Wrestler.class);
+    when(champion.getId()).thenReturn(5L);
+    when(title.getCurrentChampions()).thenReturn(List.of(champion));
+    when(wrestlerService.getOrCreateState(eq(5L), anyLong())).thenReturn(mock(WrestlerState.class));
+    when(champion.getState(anyLong())).thenReturn(Optional.empty());
+
+    when(segment.getIsTitleSegment()).thenReturn(true);
+    when(segment.getTitles()).thenReturn(Set.of(title));
+    when(segment.getWinners()).thenReturn(List.of());
+    when(segment.getWrestlers()).thenReturn(List.of(champion, loser));
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    verify(titleService, never()).removeChallengers(any(), any());
+  }
+
   // --- Ambush wear at adjudication (ATW-2b9u) ---
 
   @Test

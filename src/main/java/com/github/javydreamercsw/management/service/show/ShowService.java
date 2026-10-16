@@ -570,7 +570,7 @@ public class ShowService {
           .forEach(
               resting -> {
                 Long universeId = show.getUniverse() != null ? show.getUniverse().getId() : 1L;
-                // ATW recovery: one die per Resilience point, 4+ per die is a success (ATW-7w9l).
+                // ATW recovery: one die per Resilience point, 4+ per die is a success.
                 int resilience = resting.getResilience() != null ? resting.getResilience() : 1;
                 int[] dice = new int[Math.max(1, resilience)];
                 Arrays.fill(dice, 6);
