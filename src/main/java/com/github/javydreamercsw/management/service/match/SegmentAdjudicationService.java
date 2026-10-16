@@ -512,6 +512,9 @@ public class SegmentAdjudicationService {
           if (championsDefended || winnerSet.isEmpty()) {
             if (championsDefended) {
               titleService.recordSuccessfulDefense(title);
+              // A challenger who lost the title match no longer holds #1 contender status.
+              // A draw keeps the challenger in place — the match is undecided.
+              titleService.removeChallengers(title, losers);
             }
             eventPublisher.publishEvent(
                 new ChampionshipDefendedEvent(this, title, currentChampions, losers));

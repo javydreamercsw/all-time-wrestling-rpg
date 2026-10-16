@@ -628,6 +628,25 @@ public class TitleService {
         true, wrestler.getName() + " is now the #1 contender for " + title.getName());
   }
 
+  /**
+   * Removes the given wrestlers from the title's challenger list. Used after a successful defense:
+   * a challenger who lost no longer holds #1 contender status.
+   *
+   * @param title the title whose challenger list is adjusted
+   * @param wrestlers wrestlers to remove (no-op entries are ignored)
+   */
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  @CacheEvict(value = CacheConfig.TITLES_CACHE, allEntries = true)
+  @Transactional
+  public void removeChallengers(
+      @NonNull final Title title, @NonNull final List<Wrestler> wrestlers) {
+    boolean removed = title.getChallengers().removeIf(wrestlers::contains);
+    if (removed) {
+      titleRepository.save(title);
+    }
+  }
+
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @CacheEvict(value = CacheConfig.TITLES_CACHE, allEntries = true)
