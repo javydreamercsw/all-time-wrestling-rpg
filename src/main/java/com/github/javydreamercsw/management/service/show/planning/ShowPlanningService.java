@@ -323,8 +323,8 @@ public class ShowPlanningService {
 
     ShowPlanningContextDTO dto = mapper.toDto(context);
 
-    // Stamp each rivalry with its most recent completed segment type (ATW-l15c): the prompt
-    // builder uses it to classify PROMO_COOLDOWN feuds whose last appearance was a Promo.
+    // Stamp each rivalry with its most recent completed segment type: the prompt builder uses
+    // it to classify PROMO_COOLDOWN feuds whose last appearance was a Promo.
     if (dto.getCurrentRivalries() != null) {
       dto.getCurrentRivalries()
           .forEach(
@@ -477,10 +477,10 @@ public class ShowPlanningService {
     List<Rivalry> requiredRivalries =
         activeRivalries.stream().filter(r -> r.getHeat() >= 10).toList();
 
-    // Title-on-the-line and #1-contender designation are mutually exclusive segment states
-    // (ATW-cosc): a segment with both flags would adjudicate as a title change AND rotate the
-    // contender — the champion/contender swap seen in production. Contender matches carry a
-    // title (the one the winner becomes #1 contender for) but isTitleSegment must be false.
+    // Title-on-the-line and #1-contender designation are mutually exclusive segment states:
+    // a segment with both flags would adjudicate as a title change AND rotate the contender —
+    // swapping the champion and the #1 contender. Contender matches carry a title (the one the
+    // winner becomes #1 contender for) but isTitleSegment must be false.
     for (ProposedSegment segment : proposedSegments) {
       if (Boolean.TRUE.equals(segment.getIsTitleSegment())
           && Boolean.TRUE.equals(segment.getIsContenderMatch())) {
@@ -524,9 +524,9 @@ public class ShowPlanningService {
             });
       }
 
-      // PROMO_COOLDOWN guard (ATW-l15c): prompts are advisory; a Promo covering a rivalry whose
-      // most recent completed segment was also a Promo is the exact loop seen in production
-      // (rivalry 748 booked as six consecutive promos). Block it at approval time.
+      // PROMO_COOLDOWN guard: prompts are advisory; a Promo covering a rivalry whose most recent
+      // completed segment was also a Promo books the same talking segment show after show (the
+      // six-promo loop this guard was written for). Block it at approval time.
       Optional<ProposedSegment> covering = findCoveringSegment(rivalry, proposedSegments);
       if (covering.isPresent() && isPromoSegment(covering.get())) {
         boolean lastWasPromo =
@@ -544,7 +544,7 @@ public class ShowPlanningService {
                   + " vs "
                   + w2
                   + " was booked as a Promo on its most recent show — book a match or a"
-                  + " different segment format instead of another Promo (ATW-l15c)");
+                  + " different segment format instead of another Promo");
         }
       }
     }

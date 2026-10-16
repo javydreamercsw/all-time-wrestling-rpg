@@ -54,9 +54,9 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
 /**
- * Unit tests for the ATW-3qug one-time repair: retroactive NPC injury recovery. Dice outcomes are
- * driven by a deterministic DiceBag injected through the package-private {@code recoveryDiceBag}
- * hook — real dice logic, controlled faces.
+ * Unit tests for the retroactive NPC injury recovery one-time repair. Dice outcomes are driven by a
+ * deterministic DiceBag injected through the package-private {@code recoveryDiceBag} hook — real
+ * dice logic, controlled faces.
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -250,8 +250,8 @@ class RetroactiveNpcInjuryRecoveryMigrationTest {
   @Test
   void migrate_futureScheduledShows_areNotReplayed() {
     // Given — ONLY a future scheduled show (after the current game date): it has not run, so no
-    // recovery roll is owed yet (production had 52 such shows; replaying them stamped heal dates
-    // months into kayfabe's future)
+    // recovery roll is owed yet (replaying scheduled shows would stamp heal dates months into
+    // kayfabe's future)
     Show futureShow = show(327L, LocalDate.of(2026, 7, 24));
     when(showRepository.findAll()).thenReturn(List.of(futureShow));
     when(segmentRepository.findNonPromoParticipationAfter(wrestler, LocalDate.of(2026, 6, 1)))

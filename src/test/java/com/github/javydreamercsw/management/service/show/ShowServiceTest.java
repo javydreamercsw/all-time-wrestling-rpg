@@ -143,7 +143,7 @@ class ShowServiceTest {
             showQualityService,
             tournamentService);
 
-    // Default recovery outcome for the post-show healing loop (ATW-7w9l)
+    // Default recovery outcome for the post-show healing loop
     when(wrestlerService.performNpcRecovery(anyLong(), anyLong(), any()))
         .thenReturn(new WrestlerService.NpcRecoveryResult(0, false, 0));
 

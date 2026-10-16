@@ -327,7 +327,7 @@ public interface SegmentRepository
 
   /**
    * Distinct non-promo segments a wrestler participated in on shows dated after the given date,
-   * show eagerly fetched — the retroactive injury-recovery migration's resting-set scan (ATW-3qug).
+   * show eagerly fetched — used by the retroactive injury-recovery migration's resting-set scan.
    * Promo segments never mark participation (ShowService treats promo participants as resting).
    */
   @Query(
