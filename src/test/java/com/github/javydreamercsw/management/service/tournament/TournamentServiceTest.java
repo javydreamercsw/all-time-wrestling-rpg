@@ -41,6 +41,8 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentEntryRep
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatchRepository;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRepository;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundRepository;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.show.ShowBookingService;
@@ -48,6 +50,7 @@ import com.github.javydreamercsw.management.service.show.ShowSegmentReservationS
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -70,6 +73,7 @@ class TournamentServiceTest {
   @Mock private TournamentMatchRepository matchRepository;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private TeamRepository teamRepository;
+  @Mock private UniverseRepository universeRepository;
   @Mock private ShowRepository showRepository;
   @Mock private ShowBookingService showBookingService;
   @Mock private ShowSegmentReservationService reservationService;
@@ -94,6 +98,7 @@ class TournamentServiceTest {
             matchRepository,
             wrestlerRepository,
             teamRepository,
+            universeRepository,
             showRepository,
             showBookingService,
             reservationService,
@@ -215,6 +220,51 @@ class TournamentServiceTest {
 
     assertThat(entries).extracting(TournamentEntry::getTeam).containsExactly(high, low);
     assertThat(entries).extracting(TournamentEntry::getSeed).containsExactly(1, 2);
+  }
+
+  @Test
+  @DisplayName(
+      "Team seeding is scoped to the tournament's universe — other-universe teams never seed")
+  void teamSeedingExcludesOtherUniverseTeams() {
+    Tournament tournament = tournament(TeamSize.DUO);
+    Universe universe = new Universe();
+    universe.setId(7L);
+    tournament.setUniverse(universe);
+
+    Team local = duoTeam("Local Duo", 10L, 300L, wrestler("Ace", 1L), wrestler("Bea", 2L));
+    local.setUniverse(universe);
+    Team localLow = duoTeam("Local Low", 12L, 100L, wrestler("Gil", 7L), wrestler("Hal", 8L));
+    localLow.setUniverse(universe);
+    Team foreign = duoTeam("Foreign Duo", 11L, 9000L, wrestler("Cy", 3L), wrestler("Di", 4L));
+    foreign.setUniverse(otherUniverse(9L));
+    // A team with no universe counts as unassigned — it never matches a scoped tournament.
+    Team unassigned =
+        duoTeam("Unassigned Duo", 13L, 5000L, wrestler("Ed", 5L), wrestler("Fay", 6L));
+    when(teamRepository.findAll()).thenReturn(List.of(local, localLow, foreign, unassigned));
+    when(entryRepository.findByTournamentIdOrderBySeedAsc(1L)).thenReturn(List.of());
+    when(entryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    List<TournamentEntry> entries = service.seedAuto(tournament, 3, 7L);
+
+    // Only the tournament-universe teams seed — the higher-fans foreign team is invisible.
+    assertThat(entries).extracting(TournamentEntry::getTeam).containsExactly(local, localLow);
+  }
+
+  @Test
+  @DisplayName("Team eligibility count is scoped to the given universe")
+  void teamEligibilityCountExcludesOtherUniverseTeams() {
+    Universe universe = new Universe();
+    universe.setId(7L);
+    Team local = duoTeam("Local Duo", 10L, 300L, wrestler("Ace", 1L), wrestler("Bea", 2L));
+    local.setUniverse(universe);
+    Team foreign = duoTeam("Foreign Duo", 11L, 9000L, wrestler("Cy", 3L), wrestler("Di", 4L));
+    foreign.setUniverse(otherUniverse(9L));
+    when(teamRepository.findAll()).thenReturn(List.of(local, foreign));
+    when(universeRepository.findById(7L)).thenReturn(Optional.of(universe));
+
+    assertThat(service.countEligibleTeamEntrants(TeamSize.DUO, null, 7L)).isEqualTo(1);
+    // No universe filter (null) counts every eligible team regardless of universe.
+    assertThat(service.countEligibleTeamEntrants(TeamSize.DUO, null, null)).isEqualTo(2);
   }
 
   @Test
@@ -445,6 +495,12 @@ class TournamentServiceTest {
 
   private Team duoTeam(String name, long id, long fans, Wrestler... members) {
     return team(name, id, TeamSize.DUO, TeamOrigin.REGISTRY, TeamStatus.ACTIVE, fans, members);
+  }
+
+  private Universe otherUniverse(long id) {
+    Universe universe = new Universe();
+    universe.setId(id);
+    return universe;
   }
 
   private Team trioTeam(String name, long id, long fans, Wrestler... members) {

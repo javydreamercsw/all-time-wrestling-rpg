@@ -51,6 +51,7 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentRoundRep
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus;
 import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
@@ -78,6 +79,7 @@ class BracketTournamentServiceTest {
   @Mock private TournamentMatchRepository matchRepository;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private TeamRepository teamRepository;
+  @Mock private UniverseRepository universeRepository;
   @Mock private ShowRepository showRepository;
   @Mock private ShowBookingService showBookingService;
   @Mock private ShowSegmentReservationService reservationService;
@@ -107,6 +109,7 @@ class BracketTournamentServiceTest {
             matchRepository,
             wrestlerRepository,
             teamRepository,
+            universeRepository,
             showRepository,
             showBookingService,
             reservationService,

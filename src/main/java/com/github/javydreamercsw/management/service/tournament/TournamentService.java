@@ -44,6 +44,7 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentRoundRep
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus;
 import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.show.ShowBookingService;
@@ -79,6 +80,7 @@ public class TournamentService {
   private final TournamentMatchRepository matchRepository;
   private final WrestlerRepository wrestlerRepository;
   private final TeamRepository teamRepository;
+  private final UniverseRepository universeRepository;
   private final ShowRepository showRepository;
   private final ShowBookingService showBookingService;
   private final ShowSegmentReservationService reservationService;
@@ -1042,18 +1044,22 @@ public class TournamentService {
    * mirror of {@link #findEligibleWrestlersSortedByFans}. The tournament gender restriction applies
    * per member: every member must be active with that gender (the same shape the TEAM ranking
    * filter uses). Champion exclusion does not apply — an inaugural-champion tournament links a
-   * vacant (or not-yet-created) title, so there is no champion to exclude.
+   * vacant (or not-yet-created) title, so there is no champion to exclude. Scoped to the
+   * tournament's universe when one is set (teams are universe-scoped; the same scoping the singles
+   * path gets from the universe-bound fan states).
    */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<Team> findEligibleTeamsSortedByFans(Tournament tournament) {
     Gender gender = tournament.getGender();
+    Long universeId = tournament.getUniverse() != null ? tournament.getUniverse().getId() : null;
     return teamRepository.findAll().stream()
         .filter(
             team ->
                 team.getTeamSize() == tournament.getTeamSize()
                     && team.getOrigin() == TeamOrigin.REGISTRY
                     && team.isActive()
+                    && sameUniverse(team, universeId)
                     && team.getMembers().stream()
                         .map(TeamMember::getWrestler)
                         .allMatch(
@@ -1062,6 +1068,18 @@ public class TournamentService {
                                     && (gender == null || w.getGender() == gender)))
         .sorted(Comparator.comparingLong(Team::getFans).reversed())
         .toList();
+  }
+
+  /**
+   * Universe scoping for the eligibility pool: when the tournament has a universe, only teams of
+   * that universe are eligible; when it does not (no universe selected), teams from any universe
+   * pass — matching the singles path, whose fan-state lookup also widens when no universe is given.
+   */
+  private static boolean sameUniverse(@NonNull Team team, Long universeId) {
+    if (universeId == null) {
+      return true;
+    }
+    return team.getUniverse() != null && universeId.equals(team.getUniverse().getId());
   }
 
   /** Human-readable note appended to eligibility errors when a constraint narrowed the pool. */
@@ -1085,8 +1103,8 @@ public class TournamentService {
    * champion(s) (see {@link #findEligibleWrestlersSortedByFans}). For a TEAM title the count is
    * team-based instead: the active REGISTRY teams of the title's declared size whose every member
    * satisfies the gender (see {@link #findEligibleTeamsSortedByFans}; a TEAM title with no declared
-   * size counts its backfilled DUO default). The creation wizard caps its entrant-count field at
-   * this value.
+   * size counts its backfilled DUO default). Scoped to the title's universe when it has one. The
+   * creation wizard caps its entrant-count field at this value.
    */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
@@ -1096,6 +1114,7 @@ public class TournamentService {
       probe.setTeamSize(
           linkedTitle.getTeamSize() != null ? linkedTitle.getTeamSize() : TeamSize.DUO);
       probe.setGender(gender);
+      probe.setUniverse(linkedTitle.getUniverse());
       return findEligibleTeamsSortedByFans(probe).size();
     }
     return findEligibleWrestlersSortedByFans(linkedTitle, gender, null).size();
@@ -1104,15 +1123,19 @@ public class TournamentService {
   /**
    * How many teams are eligible to seed a team tournament of the given size with the given gender
    * filter — the team mirror of {@link #countEligibleEntrants} (active REGISTRY teams whose every
-   * member is active with the gender; see {@link #findEligibleTeamsSortedByFans}). The creation
-   * wizard caps its team-entrant-count field at this value.
+   * member is active with the gender; see {@link #findEligibleTeamsSortedByFans}). Scoped to the
+   * given universe when non-null. The creation wizard caps its team-entrant-count field at this
+   * value.
    */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public int countEligibleTeamEntrants(TeamSize teamSize, Gender gender) {
+  public int countEligibleTeamEntrants(TeamSize teamSize, Gender gender, Long universeId) {
     Tournament probe = new Tournament();
     probe.setTeamSize(teamSize);
     probe.setGender(gender);
+    if (universeId != null) {
+      probe.setUniverse(universeRepository.findById(universeId).orElse(null));
+    }
     return findEligibleTeamsSortedByFans(probe).size();
   }
 

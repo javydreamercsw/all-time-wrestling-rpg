@@ -648,9 +648,14 @@ public class TournamentListView extends VerticalLayout {
           oneOffNamePreview.setVisible(!members.isEmpty());
           if (!members.isEmpty()) {
             // Preview only — the persisted name is uniquified via generateUniqueName at create.
+            // Same alphabetical order the create handler uses, so the preview always matches
+            // the stored member order.
             oneOffNamePreview.setText(
                 "Team name: "
-                    + members.stream().map(Wrestler::getName).collect(Collectors.joining(" & "))
+                    + members.stream()
+                        .map(Wrestler::getName)
+                        .sorted()
+                        .collect(Collectors.joining(" & "))
                     + " (uniquified on create)");
           }
         });
@@ -751,9 +756,12 @@ public class TournamentListView extends VerticalLayout {
     Runnable refreshEntrantCap =
         () -> {
           TeamSize size = teamSizeOf(entrantType.getValue());
+          Long universeId =
+              universeContextService.getCurrentUniverse().map(Universe::getId).orElse(null);
           int eligible =
               size != null
-                  ? tournamentService.countEligibleTeamEntrants(size, genderCombo.getValue())
+                  ? tournamentService.countEligibleTeamEntrants(
+                      size, genderCombo.getValue(), universeId)
                   : tournamentService.countEligibleEntrants(
                       titleCombo.getValue(), genderCombo.getValue());
           int cap = Math.clamp(eligible, 3, 64);
@@ -769,9 +777,11 @@ public class TournamentListView extends VerticalLayout {
 
     // Registry grid + member picker follow the entrant type and gender filter: the grid
     // re-queries the eligible REGISTRY teams, the picker re-filters to wrestlers not already
-    // committed to a picked registry team (a wrestler may appear in only one entry).
-    // Picking a registry team excludes its members from the one-off picker — without
-    // re-querying the grid (setItems clears selection).
+    // committed to a picked registry team (a wrestler may appear in only one entry) and to
+    // the tournament's eligibility rules (active, gender-matching — the same predicate the
+    // registry grid applies through the service). Picking a registry team excludes its
+    // members from the one-off picker — without re-querying the grid (setItems clears
+    // selection).
     Runnable refreshMemberPickerExclusions =
         () -> {
           Set<Long> committedMemberIds = new HashSet<>();
@@ -781,9 +791,14 @@ public class TournamentListView extends VerticalLayout {
                 .map(Wrestler::getId)
                 .forEach(committedMemberIds::add);
           }
+          Gender gender = genderCombo.getValue();
           teamMemberPicker.setItems(
               wrestlerFacade.getWrestlerService().getAllWrestlers().stream()
-                  .filter(w -> !committedMemberIds.contains(w.getId()))
+                  .filter(
+                      w ->
+                          Boolean.TRUE.equals(w.getActive())
+                              && (gender == null || w.getGender() == gender)
+                              && !committedMemberIds.contains(w.getId()))
                   .toList());
         };
     Runnable refreshTeamPickers =
@@ -792,10 +807,22 @@ public class TournamentListView extends VerticalLayout {
           teamEntrantsPanel.setVisible(teamMode);
           teamRegistryGrid.setVisible(teamMode);
           teamMemberPicker.setVisible(teamMode);
+          // Payoff normalization across the switch: team mode forces Title-on-the-line
+          // (contender/briefcase are grayed out there); leaving team mode re-arms them and
+          // clears a stale briefcase selection, which the briefcase listener would otherwise
+          // apply silently against a linked TEAM title.
           if (teamMode) {
-            teamRegistryGrid.setItems(
-                tournamentService.findEligibleTeamsSortedByFans(
-                    teamProbe(teamSizeOf(entrantType.getValue()), genderCombo.getValue())));
+            if (!"Title on the line".equals(payoffMode.getValue())) {
+              payoffMode.setValue("Title on the line");
+            }
+          } else if ("Winner earns the briefcase".equals(payoffMode.getValue())) {
+            payoffMode.setValue("Title on the line");
+          }
+          if (teamMode) {
+            Tournament probe =
+                teamProbe(teamSizeOf(entrantType.getValue()), genderCombo.getValue());
+            universeContextService.getCurrentUniverse().ifPresent(probe::setUniverse);
+            teamRegistryGrid.setItems(tournamentService.findEligibleTeamsSortedByFans(probe));
             refreshMemberPickerExclusions.run();
           } else {
             // Leaving team mode clears any half-assembled one-off team.
@@ -938,38 +965,63 @@ public class TournamentListView extends VerticalLayout {
                 boolean auto = "Auto (by fan count)".equals(seedingMode.getValue());
                 boolean manual = "Manual (pick wrestlers)".equals(seedingMode.getValue());
                 if (teamSize != null) {
-                  // Team entrants: the picked registry team(s) first, then a one-off assembled
-                  // team when one was put together (an entry can come from either source).
-                  List<Team> picked = new ArrayList<>(teamRegistryGrid.getSelectedItems());
-                  int seed = 1;
-                  for (Team team : picked) {
-                    tournamentService.addEntry(t, team, seed++);
-                  }
-                  if (!teamMemberPicker.isEmpty()) {
-                    List<Wrestler> members =
-                        teamMemberPicker.getSelectedItems().stream()
-                            .sorted(Comparator.comparing(Wrestler::getName))
-                            .toList();
-                    Team oneOff =
-                        teamService
-                            .createTeam(
-                                teamService.generateUniqueName(members),
-                                null,
-                                members.stream().map(Wrestler::getId).toList(),
-                                teamSize,
-                                null,
-                                null,
-                                TeamOrigin.AD_HOC)
-                            .orElseThrow(
-                                () ->
-                                    new IllegalStateException(
-                                        "Could not create the one-off team — check that the"
-                                            + " members are still eligible"));
-                    if (saveToRegistryCheckbox.getValue()) {
-                      oneOff = teamService.saveToRegistry(oneOff);
+                  // Team tournaments follow the same seeding tab: Auto seeds eligible REGISTRY
+                  // teams by fans (the service validates the format range); Manual seeds the
+                  // wizard's explicit picks — the picked registry team(s) first, then a one-off
+                  // assembled team when one was put together.
+                  if (auto) {
+                    tournamentService.seedAuto(
+                        t, countField.getValue(), universe.map(Universe::getId).orElse(1L));
+                  } else if (manual) {
+                    List<Team> picked = new ArrayList<>(teamRegistryGrid.getSelectedItems());
+                    int seed = 1;
+                    for (Team team : picked) {
+                      tournamentService.addEntry(t, team, seed++);
                     }
-                    tournamentService.addEntry(t, oneOff, seed++);
-                  }
+                    if (!teamMemberPicker.isEmpty()) {
+                      // Deterministic order: same sort the name preview uses, so the stored
+                      // member order always matches what the booker saw.
+                      List<Wrestler> members =
+                          teamMemberPicker.getSelectedItems().stream()
+                              .sorted(Comparator.comparing(Wrestler::getName))
+                              .toList();
+                      // Re-check at create time: a registry team picked after assembly may have
+                      // claimed one of these members (a wrestler appears in one entry only).
+                      for (Team team : picked) {
+                        if (members.stream().anyMatch(team::hasMember)) {
+                          throw new IllegalStateException(
+                              "Wrestler '"
+                                  + members.stream()
+                                      .filter(team::hasMember)
+                                      .map(Wrestler::getName)
+                                      .findFirst()
+                                      .orElse("")
+                                  + "' is already in the picked registry team '"
+                                  + team.getName()
+                                  + "' — clear the one-off team or the registry pick.");
+                        }
+                      }
+                      Team oneOff =
+                          teamService
+                              .createTeam(
+                                  teamService.generateUniqueName(members),
+                                  null,
+                                  members.stream().map(Wrestler::getId).toList(),
+                                  teamSize,
+                                  null,
+                                  null,
+                                  TeamOrigin.AD_HOC)
+                              .orElseThrow(
+                                  () ->
+                                      new IllegalStateException(
+                                          "Could not create the one-off team — check that the"
+                                              + " members are still eligible"));
+                      if (saveToRegistryCheckbox.getValue()) {
+                        oneOff = teamService.saveToRegistry(oneOff);
+                      }
+                      tournamentService.addEntry(t, oneOff, seed++);
+                    }
+                  } // "Don't seed now": seed later from the detail view or via a paired show.
                 } else if (auto) {
                   tournamentService.seedAuto(
                       t, countField.getValue(), universe.map(Universe::getId).orElse(1L));

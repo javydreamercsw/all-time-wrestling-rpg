@@ -32,6 +32,7 @@ import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntryRepository;
+import com.github.javydreamercsw.management.domain.tournament.TournamentRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -57,6 +58,7 @@ class TournamentServiceIT extends ManagementIntegrationTest {
   @Autowired private UniverseRepository universeRepository;
   @Autowired private SegmentRuleRepository segmentRuleRepository;
   @Autowired private TournamentEntryRepository entryRepository;
+  @Autowired private TournamentRepository tournamentRepository;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private TeamRepository teamRepository;
 
@@ -167,5 +169,125 @@ class TournamentServiceIT extends ManagementIntegrationTest {
     assertThat(reloaded.getTeam().getId()).isEqualTo(duo.getId());
     assertThat(reloaded.getWrestler()).isNull();
     assertThat(reloaded.entrantName()).isEqualTo(duo.getName());
+  }
+
+  @Test
+  @DisplayName("Team eligibility is universe-scoped — other-universe teams never seed or count")
+  void teamEligibility_isUniverseScoped() {
+    Universe home = anyUniverse();
+    Universe away =
+        universeRepository.findAll().stream()
+            .filter(u -> !u.getId().equals(home.getId()))
+            .findFirst()
+            .orElseGet(
+                () -> {
+                  Universe spare = new Universe();
+                  spare.setName("IT Away Universe " + System.nanoTime());
+                  return universeRepository.save(spare);
+                });
+    assertThat(away.getId()).isNotEqualTo(home.getId());
+
+    Wrestler ace =
+        wrestlerRepository.save(TestUtils.createWrestler("IT UAce " + System.nanoTime(), 0L, home));
+    Wrestler bea =
+        wrestlerRepository.save(TestUtils.createWrestler("IT UBea " + System.nanoTime(), 0L, home));
+    Wrestler ed =
+        wrestlerRepository.save(TestUtils.createWrestler("IT UEd " + System.nanoTime(), 0L, home));
+    Wrestler fay =
+        wrestlerRepository.save(TestUtils.createWrestler("IT UFay " + System.nanoTime(), 0L, home));
+    Wrestler gil =
+        wrestlerRepository.save(TestUtils.createWrestler("IT UGil " + System.nanoTime(), 0L, home));
+    Wrestler hal =
+        wrestlerRepository.save(TestUtils.createWrestler("IT UHal " + System.nanoTime(), 0L, home));
+    Wrestler ivy =
+        wrestlerRepository.save(TestUtils.createWrestler("IT UIvy " + System.nanoTime(), 0L, home));
+    Wrestler jon =
+        wrestlerRepository.save(TestUtils.createWrestler("IT UJon " + System.nanoTime(), 0L, home));
+    Wrestler cy =
+        wrestlerRepository.save(TestUtils.createWrestler("IT UCy " + System.nanoTime(), 0L, away));
+    Wrestler di =
+        wrestlerRepository.save(TestUtils.createWrestler("IT UDi " + System.nanoTime(), 0L, away));
+    Wrestler kim =
+        wrestlerRepository.save(TestUtils.createWrestler("IT UKim " + System.nanoTime(), 0L, away));
+    Wrestler lou =
+        wrestlerRepository.save(TestUtils.createWrestler("IT ULou " + System.nanoTime(), 0L, away));
+
+    // Four home duos (satisfies the single-elimination format's 4-team minimum) and two away
+    // duos with higher fans — scoping must keep the away teams out of both count and seed.
+    Team homeDuoA = new Team();
+    homeDuoA.setName("IT Home Duo A " + System.nanoTime());
+    homeDuoA.setMembers(new ArrayList<>(List.of(ace, bea)));
+    homeDuoA.setTeamSize(TeamSize.DUO);
+    homeDuoA.setUniverse(home);
+    homeDuoA.setFans(400L);
+    homeDuoA = teamRepository.save(homeDuoA);
+    Team homeDuoB = new Team();
+    homeDuoB.setName("IT Home Duo B " + System.nanoTime());
+    homeDuoB.setMembers(new ArrayList<>(List.of(ed, fay)));
+    homeDuoB.setTeamSize(TeamSize.DUO);
+    homeDuoB.setUniverse(home);
+    homeDuoB.setFans(300L);
+    homeDuoB = teamRepository.save(homeDuoB);
+    Team homeDuoC = new Team();
+    homeDuoC.setName("IT Home Duo C " + System.nanoTime());
+    homeDuoC.setMembers(new ArrayList<>(List.of(gil, hal)));
+    homeDuoC.setTeamSize(TeamSize.DUO);
+    homeDuoC.setUniverse(home);
+    homeDuoC.setFans(200L);
+    homeDuoC = teamRepository.save(homeDuoC);
+    Team homeDuoD = new Team();
+    homeDuoD.setName("IT Home Duo D " + System.nanoTime());
+    homeDuoD.setMembers(new ArrayList<>(List.of(ivy, jon)));
+    homeDuoD.setTeamSize(TeamSize.DUO);
+    homeDuoD.setUniverse(home);
+    homeDuoD.setFans(100L);
+    homeDuoD = teamRepository.save(homeDuoD);
+
+    Team awayDuoA = new Team();
+    awayDuoA.setName("IT Away Duo A " + System.nanoTime());
+    awayDuoA.setMembers(new ArrayList<>(List.of(cy, di)));
+    awayDuoA.setTeamSize(TeamSize.DUO);
+    awayDuoA.setUniverse(away);
+    awayDuoA.setFans(9000L);
+    teamRepository.save(awayDuoA);
+    Team awayDuoB = new Team();
+    awayDuoB.setName("IT Away Duo B " + System.nanoTime());
+    awayDuoB.setMembers(new ArrayList<>(List.of(kim, lou)));
+    awayDuoB.setTeamSize(TeamSize.DUO);
+    awayDuoB.setUniverse(away);
+    awayDuoB.setFans(8000L);
+    teamRepository.save(awayDuoB);
+
+    // Count: only the home-universe teams count for a home-scoped probe.
+    Tournament countProbe = new Tournament();
+    countProbe.setTeamSize(TeamSize.DUO);
+    countProbe.setUniverse(home);
+    assertThat(tournamentService.findEligibleTeamsSortedByFans(countProbe))
+        .extracting(Team::getName)
+        .containsExactly(
+            homeDuoA.getName(), homeDuoB.getName(), homeDuoC.getName(), homeDuoD.getName());
+
+    // Seed: a home-universe tournament seeds the home team, never the away team.
+    Tournament tournament =
+        tournamentService.createTournament(
+            "IT Universe Cup " + System.nanoTime(),
+            "SINGLE_ELIMINATION",
+            home,
+            null,
+            LocalDate.now(),
+            List.of(),
+            null,
+            null,
+            null,
+            null,
+            false,
+            false,
+            TeamSize.DUO);
+
+    List<TournamentEntry> entries = tournamentService.seedAuto(tournament, 4, home.getId());
+    // Seeded by team fans within the universe — the higher-fans away teams never appear.
+    assertThat(entries)
+        .extracting(TournamentEntry::getTeam)
+        .containsExactly(homeDuoA, homeDuoB, homeDuoC, homeDuoD);
   }
 }

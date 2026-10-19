@@ -34,6 +34,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
@@ -181,7 +182,7 @@ class TournamentListViewTest extends AbstractViewTest {
               return t;
             });
     lenient()
-        .when(tournamentService.countEligibleTeamEntrants(any(TeamSize.class), any()))
+        .when(tournamentService.countEligibleTeamEntrants(any(TeamSize.class), any(), any()))
         .thenReturn(6);
     lenient()
         .when(tournamentService.findEligibleTeamsSortedByFans(any(Tournament.class)))
@@ -821,8 +822,10 @@ class TournamentListViewTest extends AbstractViewTest {
             eq(false),
             eq(false),
             eq(TeamSize.DUO));
-    verify(tournamentService, org.mockito.Mockito.never())
-        .seedAuto(any(Tournament.class), anyInt(), anyLong());
+    // The seeding tab defaults to Auto — team mode delegates to the team seedAuto path.
+    verify(tournamentService).seedAuto(any(Tournament.class), anyInt(), anyLong());
+    verify(teamService, org.mockito.Mockito.never())
+        .createTeam(any(), any(), any(), any(), any(), any(), any());
   }
 
   @Test
@@ -879,6 +882,12 @@ class TournamentListViewTest extends AbstractViewTest {
     memberPicker.setValue(new java.util.LinkedHashSet<>(List.of(c, d)));
 
     _get(UI.getCurrent(), Button.class, spec -> spec.withText("Next")).click();
+    // Manual seeding (the tab renders lazily) — Auto is covered by
+    // wizardCreate_teamAutoSeed_callsSeedAuto.
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    ComboBox<String> seedingMode =
+        _get(UI.getCurrent(), ComboBox.class, spec -> spec.withLabel("Seeding Method"));
+    seedingMode.setValue("Manual (pick wrestlers)");
     _get(UI.getCurrent(), Button.class, spec -> spec.withText("Create Tournament")).click();
 
     verify(tournamentService).addEntry(any(Tournament.class), eq(duo), eq(1));
@@ -895,5 +904,72 @@ class TournamentListViewTest extends AbstractViewTest {
     // Default-off checkbox: no registry save.
     verify(teamService, org.mockito.Mockito.never())
         .saveToRegistry(any(com.github.javydreamercsw.management.domain.team.Team.class));
+  }
+
+  @Test
+  @DisplayName("One-off picker excludes inactive and wrong-gender wrestlers")
+  void wizardOneOffPicker_filtersByActiveAndGender() {
+    Wrestler male = new Wrestler();
+    male.setId(101L);
+    male.setName("Alpha");
+    Wrestler female = new Wrestler();
+    female.setId(102L);
+    female.setName("Bravo");
+    female.setGender(Gender.FEMALE);
+    Wrestler inactive = new Wrestler();
+    inactive.setId(103L);
+    inactive.setName("Charlie");
+    inactive.setActive(false);
+    lenient().when(wrestlerService.getAllWrestlers()).thenReturn(List.of(male, female, inactive));
+
+    view.openCreationWizardForTest();
+    fillDetailsStep();
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    RadioButtonGroup<String> entrantType =
+        _get(UI.getCurrent(), RadioButtonGroup.class, spec -> spec.withLabel("Entrants"));
+    entrantType.setValue(TournamentListView.TAG_TEAM_LABEL);
+    // Women's-division gender filter on the tournament.
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    ComboBox<Gender> genderCombo =
+        _get(UI.getCurrent(), ComboBox.class, spec -> spec.withLabel("Gender Filter (optional)"));
+    genderCombo.setValue(Gender.FEMALE);
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    com.vaadin.flow.component.combobox.MultiSelectComboBox<Wrestler> memberPicker =
+        _get(
+            UI.getCurrent(),
+            com.vaadin.flow.component.combobox.MultiSelectComboBox.class,
+            spec -> spec.withLabel("Assemble a One-Off Team (optional)"));
+
+    List<Wrestler> offered = memberPicker.getListDataView().getItems().toList();
+    // Women's-division filter: only gender-matching, active wrestlers are offered.
+    assertTrue(offered.contains(female), "A matching-gender active wrestler must be offered");
+    assertFalse(offered.contains(male), "A wrong-gender wrestler must not be offered");
+    assertFalse(offered.contains(inactive), "An inactive wrestler must not be offered");
+  }
+
+  @Test
+  @DisplayName(
+      "Team create with Auto seeding delegates to seedAuto (seeding tab works in team mode)")
+  void wizardCreate_teamAutoSeed_callsSeedAuto() {
+    view.openCreationWizardForTest();
+    fillDetailsStep();
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    RadioButtonGroup<String> entrantType =
+        _get(UI.getCurrent(), RadioButtonGroup.class, spec -> spec.withLabel("Entrants"));
+    entrantType.setValue(TournamentListView.TAG_TEAM_LABEL);
+    // Seeding tab defaults to Auto.
+
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Next")).click();
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Create Tournament")).click();
+
+    verify(tournamentService).seedAuto(any(Tournament.class), anyInt(), anyLong());
+    verify(tournamentService, org.mockito.Mockito.never())
+        .addEntry(
+            any(Tournament.class),
+            any(com.github.javydreamercsw.management.domain.team.Team.class),
+            anyInt());
+    verify(teamService, org.mockito.Mockito.never())
+        .createTeam(any(), any(), any(), any(), any(), any(), any());
   }
 }
