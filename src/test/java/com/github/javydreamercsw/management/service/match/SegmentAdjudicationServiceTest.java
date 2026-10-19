@@ -46,6 +46,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.BumpSource;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntryStatus;
@@ -78,6 +79,7 @@ import com.github.javydreamercsw.management.service.world.LocationService;
 import com.github.javydreamercsw.management.service.wrestler.RetirementService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -167,6 +169,7 @@ class SegmentAdjudicationServiceTest {
         segmentAdjudicationService, "titleOpportunityService", titleOpportunityService);
     ReflectionTestUtils.setField(
         segmentAdjudicationService, "tournamentMatchRepository", tournamentMatchRepository);
+    ReflectionTestUtils.setField(segmentAdjudicationService, "teamRepository", teamRepository);
 
     when(universe.getId()).thenReturn(1L);
     when(show.getUniverse()).thenReturn(universe);
@@ -413,6 +416,193 @@ class SegmentAdjudicationServiceTest {
     // Should call awardFans for participants
     verify(wrestlerService).awardFans(eq(1L), anyLong(), anyLong());
     verify(wrestlerService).awardFans(eq(2L), anyLong(), anyLong());
+  }
+
+  // --- Team fans (ATW-01g2) ---
+
+  @Mock private com.github.javydreamercsw.management.domain.team.TeamRepository teamRepository;
+
+  /** A real team with the given members (slot order) and fan count. */
+  private com.github.javydreamercsw.management.domain.team.Team teamWithFans(
+      Long id, String name, long fans, List<Wrestler> members) {
+    com.github.javydreamercsw.management.domain.team.Team team =
+        new com.github.javydreamercsw.management.domain.team.Team();
+    team.setId(id);
+    team.setName(name);
+    team.setMembers(new ArrayList<>(members));
+    team.setFans(fans);
+    return team;
+  }
+
+  /**
+   * A 2-vs-2 segment with the four given wrestlers: side 1 (winners) vs side 2 (losers). Segment
+   * type is a real {@code tag_team} row so the PROMO checks and match-quality paths behave like
+   * production. Both teams resolve through {@code teamRepository} member-set matching.
+   */
+  private Segment teamSegmentFixture(
+      com.github.javydreamercsw.management.domain.team.Team winnersTeam,
+      com.github.javydreamercsw.management.domain.team.Team losersTeam,
+      Wrestler a,
+      Wrestler b,
+      Wrestler c,
+      Wrestler d) {
+    SegmentType tagTeamType = new SegmentType();
+    tagTeamType.setName("Tag Team");
+    tagTeamType.setCode("tag_team");
+    Segment real = new Segment();
+    real.setShow(show);
+    real.setSegmentType(tagTeamType);
+    real.addParticipant(a, 1);
+    real.addParticipant(b, 1);
+    real.addParticipant(c, 2);
+    real.addParticipant(d, 2);
+    real.setWinners(List.of(a, b));
+    return real;
+  }
+
+  @Test
+  void teamSegmentAwardsFansToBothTeamsOnAppearance() {
+    // A 2-vs-2 team segment: BOTH teams gain fans (appearance-based, win or lose) and the
+    // winners' team gains strictly more than the losers' team. Dice are seeded so the winners'
+    // base (2d6+3) always beats the losers' (1d6-4) — the assertion checks the rates, not luck.
+    Wrestler a = mock(Wrestler.class);
+    Wrestler b = mock(Wrestler.class);
+    Wrestler c = mock(Wrestler.class);
+    Wrestler d = mock(Wrestler.class);
+    when(a.getId()).thenReturn(10L);
+    when(b.getId()).thenReturn(11L);
+    when(c.getId()).thenReturn(12L);
+    when(d.getId()).thenReturn(13L);
+    when(a.getName()).thenReturn("Ace");
+    when(b.getName()).thenReturn("Bea");
+    when(c.getName()).thenReturn("Cy");
+    when(d.getName()).thenReturn("Di");
+    when(a.getState(anyLong())).thenReturn(Optional.empty());
+    when(b.getState(anyLong())).thenReturn(Optional.empty());
+    when(c.getState(anyLong())).thenReturn(Optional.empty());
+    when(d.getState(anyLong())).thenReturn(Optional.empty());
+    when(wrestlerService.getOrCreateState(anyLong(), anyLong()))
+        .thenAnswer(inv -> mock(WrestlerState.class));
+    when(wrestlerService.awardFans(anyLong(), anyLong(), anyLong()))
+        .thenReturn(Optional.of(mock(WrestlerState.class)));
+
+    var winnersTeam = teamWithFans(100L, "High Flyers", 5_000L, List.of(a, b));
+    var losersTeam = teamWithFans(200L, "Face Team", 5_000L, List.of(c, d));
+    when(teamRepository.findByWrestler(a)).thenReturn(List.of(winnersTeam));
+    when(teamRepository.findByWrestler(b)).thenReturn(List.of(winnersTeam));
+    when(teamRepository.findByWrestler(c)).thenReturn(List.of(losersTeam));
+    when(teamRepository.findByWrestler(d)).thenReturn(List.of(losersTeam));
+
+    Segment real = teamSegmentFixture(winnersTeam, losersTeam, a, b, c, d);
+    when(random.nextInt(any(Integer.class))).thenReturn(3); // low but positive dice everywhere
+
+    segmentAdjudicationService.adjudicateMatch(real);
+
+    // Both teams were persisted exactly once (one adjustment per appearance).
+    ArgumentCaptor<com.github.javydreamercsw.management.domain.team.Team> teamCaptor =
+        ArgumentCaptor.forClass(com.github.javydreamercsw.management.domain.team.Team.class);
+    verify(teamRepository, times(2)).save(teamCaptor.capture());
+    var savedTeams = teamCaptor.getAllValues();
+    var winnersSaved =
+        savedTeams.stream()
+            .filter(t -> t.getId().equals(100L))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Winners' team must be saved"));
+    var losersSaved =
+        savedTeams.stream()
+            .filter(t -> t.getId().equals(200L))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Losers' team must be saved"));
+    // Both teams gained (the flat appearance grant keeps every appearance positive — spec: teams
+    // accrue fans from every team segment appearance), winners strictly more than losers.
+    assertThat(winnersSaved.getFans()).isGreaterThan(5_000L);
+    assertThat(losersSaved.getFans()).isGreaterThan(5_000L);
+    assertThat(winnersSaved.getFans()).isGreaterThan(losersSaved.getFans());
+    // Individuals still earn their own fans through the unchanged wrestler path.
+    verify(wrestlerService, atLeastOnce()).awardFans(anyLong(), anyLong(), anyLong());
+  }
+
+  @Test
+  void singlesSegmentDoesNotAwardTeamFans() {
+    // A plain 1-vs-1 segment (no ≥2-participant side) never touches the team fan counter.
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    verify(teamRepository, never()).save(any());
+  }
+
+  @Test
+  void teamPayoffTitleChange_setsReignTeamReference() {
+    // Payoff of a team tournament linked to a TEAM title: adjudication's title-change grants the
+    // belt to the winning side, then the winning entry's team is set on the reign just created.
+    when(segment.getId()).thenReturn(900L);
+    when(segment.getIsTitleSegment()).thenReturn(true);
+    Title title = mock(Title.class);
+    when(title.getCurrentChampions()).thenReturn(List.of()); // vacant — no defense branch
+    when(segment.getTitles()).thenReturn(Set.of(title));
+    TitleReign reign = mock(TitleReign.class);
+    when(title.getCurrentReign()).thenReturn(Optional.of(reign));
+    var winningTeam = teamWithFans(100L, "High Flyers", 0L, List.of(winner));
+    var losingTeam = teamWithFans(200L, "Face Team", 0L, List.of(loser));
+    TournamentEntry winnerEntry = TournamentEntry.builder().team(winningTeam).seed(1).build();
+    TournamentEntry loserEntry = TournamentEntry.builder().team(losingTeam).seed(2).build();
+    TournamentMatch match =
+        TournamentMatch.builder().entrant1(winnerEntry).entrant2(loserEntry).build();
+    TournamentRound round = new TournamentRound();
+    round.setTournament(teamTournament(title));
+    match.setRound(round);
+    when(tournamentMatchRepository.findBySegmentId(900L)).thenReturn(Optional.of(match));
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    verify(titleService).awardTitleTo(eq(title), eq(List.of(winner)), eq(segment));
+    verify(reign).setTeam(winningTeam);
+  }
+
+  @Test
+  void teamPayoffTitleChange_noReign_fallsBackToTeamAward() {
+    // Edge fallback: when no current reign exists after the grant, the team award path creates
+    // one carrying the team reference and the full member set as champions.
+    when(segment.getId()).thenReturn(901L);
+    when(segment.getIsTitleSegment()).thenReturn(true);
+    Title realTitle = new Title();
+    realTitle.setId(7L);
+    realTitle.setName("Tag Titles");
+    when(segment.getTitles()).thenReturn(Set.of(realTitle));
+
+    // Segment winners are [winner] (setUp); the winning entry's team matches exactly that set.
+    var winningTeam = teamWithFans(100L, "High Flyers", 0L, List.of(winner));
+    TournamentEntry winnerEntry = TournamentEntry.builder().team(winningTeam).seed(1).build();
+    TournamentEntry loserEntry =
+        TournamentEntry.builder()
+            .team(teamWithFans(200L, "Face Team", 0L, List.of(loser)))
+            .seed(2)
+            .build();
+    TournamentMatch match =
+        TournamentMatch.builder().entrant1(winnerEntry).entrant2(loserEntry).build();
+    TournamentRound round = new TournamentRound();
+    round.setTournament(teamTournament(realTitle));
+    match.setRound(round);
+    when(tournamentMatchRepository.findBySegmentId(901L)).thenReturn(Optional.of(match));
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    // Fallback awarded the title to the whole team with the team reference on the new reign.
+    assertThat(realTitle.getCurrentReign()).isPresent();
+    assertThat(realTitle.getCurrentReign().get().getTeam()).isEqualTo(winningTeam);
+    assertThat(realTitle.getCurrentReign().get().getChampions())
+        .containsExactlyInAnyOrderElementsOf(
+            winningTeam.getMembers().stream()
+                .map(com.github.javydreamercsw.management.domain.team.TeamMember::getWrestler)
+                .toList());
+  }
+
+  /** A DUO team tournament linked to the given title. */
+  private Tournament teamTournament(Title linkedTitle) {
+    Tournament tournament = mock(Tournament.class);
+    when(tournament.getTeamSize())
+        .thenReturn(com.github.javydreamercsw.management.domain.team.TeamSize.DUO);
+    when(tournament.getLinkedTitle()).thenReturn(linkedTitle);
+    return tournament;
   }
 
   @Test

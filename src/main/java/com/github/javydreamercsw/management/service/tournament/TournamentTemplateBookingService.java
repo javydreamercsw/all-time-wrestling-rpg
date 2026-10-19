@@ -22,6 +22,9 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
+import com.github.javydreamercsw.management.domain.team.Team;
+import com.github.javydreamercsw.management.domain.team.TeamMember;
+import com.github.javydreamercsw.management.domain.team.TeamSize;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
@@ -1415,6 +1418,11 @@ public class TournamentTemplateBookingService {
    *
    * <p>Narration carries the tournament context (tournament, round, stakes) so AI narration knows
    * what this match is and why it matters — the Narrate dialog generates from the narration field.
+   *
+   * <p>Team tournaments (ATW-01g2): sides are the entry teams' members in slot order for team
+   * entries (the solo wrestler otherwise), and the segment type resolves from {@link
+   * Tournament#getTeamSize()} through {@link #teamSegmentTypeOf(Tournament)} rather than the
+   * format's round type.
    */
   private Segment resolveSegment(
       final TournamentMatch match,
@@ -1424,19 +1432,23 @@ public class TournamentTemplateBookingService {
       final String stipulation,
       final boolean titleOnTheLine) {
     Segment segment;
+    // Team tournaments (ATW-01g2): the teamSize-resolved type (tag_team / trios) overrides the
+    // format's round type whenever the tournament declares a team size — for multi-entrant team
+    // fields and team-vs-team matches alike. Singles behavior is untouched.
+    SegmentType teamType = teamSegmentTypeOf(tournament);
+    SegmentType effectiveType = teamType != null ? teamType : segmentType;
     if (match.isMultiEntrant()) {
       // Multi-entrant match (Free-for-All qualifier, multi-man final): one team per entrant,
       // resolved by the multi-team path so every participant lands in their own slot.
-      List<SegmentTeam> teams =
-          match.entrants().stream().map(entry -> new SegmentTeam(entry.getWrestler())).toList();
+      List<SegmentTeam> teams = match.entrants().stream().map(this::segmentTeamOf).toList();
       segment =
-          segmentResolutionService.resolveMultiTeamSegment(teams, segmentType, show, stipulation);
+          segmentResolutionService.resolveMultiTeamSegment(teams, effectiveType, show, stipulation);
     } else {
       segment =
           segmentResolutionService.resolveTeamSegment(
-              new SegmentTeam(match.getEntrant1().getWrestler()),
-              new SegmentTeam(match.getEntrant2().getWrestler()),
-              segmentType,
+              segmentTeamOf(match.getEntrant1()),
+              segmentTeamOf(match.getEntrant2()),
+              effectiveType,
               show,
               stipulation);
     }
@@ -1446,6 +1458,57 @@ public class TournamentTemplateBookingService {
       segment.getTitles().add(tournament.getLinkedTitle());
     }
     return segment;
+  }
+
+  /**
+   * The segment team for a bracket entry: the entry's team members in slot order for a team entry,
+   * the solo wrestler for a singles entry. Team names label the side for resolution logging and
+   * narration.
+   */
+  private SegmentTeam segmentTeamOf(TournamentEntry entry) {
+    if (entry.getTeam() != null) {
+      Team team = entry.getTeam();
+      List<Wrestler> members =
+          team.getMembers().stream().map(TeamMember::getWrestler).collect(Collectors.toList());
+      return new SegmentTeam(members, team.getName());
+    }
+    return new SegmentTeam(entry.getWrestler());
+  }
+
+  /**
+   * Resolve a team tournament's match segment type from the declared team size (ATW-01g2) — the
+   * single place the teamSize → segment-type mapping lives. {@code DUO} books as the tag-team type
+   * and {@code TRIO} as the trios type, both resolved against the seeded catalog through {@link
+   * SegmentTypeService}; every booking path (weekly rounds, PLE payoff, host-show payoff) funnels
+   * through {@link #resolveSegment}, so no per-format override is needed.
+   *
+   * <p>Returns empty-mapped {@code null} (with a warning) when the tournament is not a team
+   * tournament or the catalog lacks the type — the caller then falls back to the type the booking
+   * path already carries, never failing the booking because of a missing catalog row.
+   *
+   * @return the resolved team segment type, or {@code null} to fall back to the caller's type
+   */
+  @Nullable private SegmentType teamSegmentTypeOf(Tournament tournament) {
+    TeamSize teamSize = tournament.getTeamSize();
+    if (teamSize == null) {
+      return null;
+    }
+    String code =
+        switch (teamSize) {
+          case DUO -> WellKnownSegmentType.TAG_TEAM.getCode();
+          case TRIO -> WellKnownSegmentType.TRIOS.getCode();
+        };
+    Optional<SegmentType> resolved = segmentTypeService.findByCode(code);
+    if (resolved.isEmpty()) {
+      log.warn(
+          "Team tournament '{}' books as '{}' — the '{}' segment type is missing from the catalog;"
+              + " falling back to the assigned type",
+          tournament.getName(),
+          teamSize,
+          code);
+      return null;
+    }
+    return resolved.get();
   }
 
   /** Booking narration describing the tournament stakes for AI narration. */

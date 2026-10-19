@@ -42,6 +42,7 @@ import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSeg
 import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.team.Team;
+import com.github.javydreamercsw.management.domain.team.TeamMember;
 import com.github.javydreamercsw.management.domain.team.TeamSize;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
@@ -63,6 +64,7 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -689,6 +691,246 @@ class TournamentTemplateBookingServiceTest {
 
     assertEquals(aliceEntry, service.pickBracketWinner(match, singles(alice, bob, alice)));
     assertEquals(bobEntry, service.pickBracketWinner(match, singles(alice, bob, bob)));
+  }
+
+  // ── Team tournament booking (ATW-01g2) ─────────────────────────────────────
+
+  /** A DUO team with two members in slot order. */
+  private static Team duoTeam(Long id, String name, Wrestler first, Wrestler second) {
+    Team team = new Team();
+    team.setId(id);
+    team.setName(name);
+    team.setMembers(new ArrayList<>(List.of(first, second)));
+    team.setTeamSize(TeamSize.DUO);
+    return team;
+  }
+
+  /** A TRIO team with three members in slot order. */
+  private static Team trioTeam(Long id, String name, Wrestler a, Wrestler b, Wrestler c) {
+    Team team = new Team();
+    team.setId(id);
+    team.setName(name);
+    team.setMembers(new ArrayList<>(List.of(a, b, c)));
+    team.setTeamSize(TeamSize.TRIO);
+    return team;
+  }
+
+  private static Segment teamSegment(
+      Team winner, Team loser, List<Wrestler> winners, SegmentType type) {
+    Segment segment = new Segment();
+    segment.setSegmentType(type);
+    Map<Integer, List<Wrestler>> sides = new java.util.HashMap<>();
+    sides.put(1, winner.getMembers().stream().map(TeamMember::getWrestler).toList());
+    sides.put(2, loser.getMembers().stream().map(TeamMember::getWrestler).toList());
+    segment.syncParticipants(sides);
+    segment.setWinners(winners);
+    return segment;
+  }
+
+  @Test
+  void teamTournamentBooksSegmentWithTeamSides() {
+    // A DUO-team tournament match materializes a segment whose sides carry both members under
+    // teamNumber 1/2 (slot order) and whose type resolves from the tournament's teamSize
+    // (DUO -> tag_team), not the format's round type.
+    tournament.setTeamSize(TeamSize.DUO);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    Wrestler ace = wrestler(30L, "Ace");
+    Wrestler bea = wrestler(31L, "Bea");
+    Wrestler cy = wrestler(32L, "Cy");
+    Wrestler di = wrestler(33L, "Di");
+    Team highFlyers = duoTeam(10L, "High Flyers", ace, bea);
+    Team faceTeam = duoTeam(20L, "Face Team", cy, di);
+    TournamentEntry duoEntry =
+        TournamentEntry.builder().tournament(tournament).team(highFlyers).seed(1).build();
+    TournamentEntry faceEntry =
+        TournamentEntry.builder().tournament(tournament).team(faceTeam).seed(2).build();
+    tournament.setEntries(new ArrayList<>(List.of(duoEntry, faceEntry)));
+    TournamentMatch match = match(1, duoEntry, faceEntry);
+    tournament.setRounds(new ArrayList<>(List.of(round(1, match))));
+    lenient()
+        .when(tournamentService.findFormat("SINGLE_ELIMINATION"))
+        .thenReturn(Optional.of(format));
+    lenient().when(format.estimateTotalMatches(tournament)).thenReturn(3);
+    // Weekly rounds resolve the format's round type first (one_on_one); the team path then
+    // overrides it with the teamSize-resolved type.
+    lenient()
+        .when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(rumbleType));
+
+    SegmentType tagTeamType = new SegmentType();
+    tagTeamType.setId(11L);
+    tagTeamType.setName("Tag Team");
+    tagTeamType.setCode(WellKnownSegmentType.TAG_TEAM.getCode());
+    lenient()
+        .when(segmentTypeService.findByCode(WellKnownSegmentType.TAG_TEAM.getCode()))
+        .thenReturn(Optional.of(tagTeamType));
+    // The booked segment mirrors the sides the booking path must build: both duo members per
+    // side under teamNumber 1/2, winners from side 1.
+    Segment booked = teamSegment(highFlyers, faceTeam, List.of(ace, bea), tagTeamType);
+    stubResolve(booked);
+
+    List<TournamentTemplateBookingService.TournamentBooking> bookings =
+        service.bookWeeklyRounds(assignment, show);
+
+    assertEquals(1, bookings.size(), "Team tournament match must book");
+    ArgumentCaptor<SegmentTeam> side1 = ArgumentCaptor.forClass(SegmentTeam.class);
+    ArgumentCaptor<SegmentTeam> side2 = ArgumentCaptor.forClass(SegmentTeam.class);
+    verify(segmentResolutionService)
+        .resolveTeamSegment(side1.capture(), side2.capture(), eq(tagTeamType), eq(show), any());
+    // Side 1 = the first entry's team members in slot order; side 2 = the second's.
+    assertEquals(
+        List.of(ace, bea), side1.getValue().getMembers(), "Side 1 carries the duo's both members");
+    assertEquals(List.of(cy, di), side2.getValue().getMembers(), "Side 2 carries both members");
+    // The materialized segment's participants carry teamNumber 1/2 with both members per side.
+    Map<Integer, List<Long>> teamNumbers = new java.util.HashMap<>();
+    booked
+        .getParticipants()
+        .forEach(
+            p ->
+                teamNumbers
+                    .computeIfAbsent(p.getTeamNumber(), k -> new ArrayList<>())
+                    .add(p.getWrestler().getId()));
+    assertEquals(
+        List.of(ace.getId(), bea.getId()),
+        teamNumbers.get(1),
+        "Side 1 participants carry teamNumber 1");
+    assertEquals(
+        List.of(cy.getId(), di.getId()),
+        teamNumbers.get(2),
+        "Side 2 participants carry teamNumber 2");
+    verify(tournamentService).recordMatchResult(eq(match), eq(duoEntry));
+  }
+
+  @Test
+  void trioTournamentBooksTriosSegmentType() {
+    // A TRIO-team tournament resolves its segment type to trios through SegmentTypeService.
+    tournament.setTeamSize(TeamSize.TRIO);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    Wrestler w1 = wrestler(40L, "One");
+    Wrestler w2 = wrestler(41L, "Two");
+    Wrestler w3 = wrestler(42L, "Three");
+    Wrestler w4 = wrestler(43L, "Four");
+    Wrestler w5 = wrestler(44L, "Five");
+    Wrestler w6 = wrestler(45L, "Six");
+    Team trioA = trioTeam(30L, "Trio A", w1, w2, w3);
+    Team trioB = trioTeam(31L, "Trio B", w4, w5, w6);
+    TournamentEntry entryA =
+        TournamentEntry.builder().tournament(tournament).team(trioA).seed(1).build();
+    TournamentEntry entryB =
+        TournamentEntry.builder().tournament(tournament).team(trioB).seed(2).build();
+    tournament.setEntries(new ArrayList<>(List.of(entryA, entryB)));
+    TournamentMatch match = match(1, entryA, entryB);
+    tournament.setRounds(new ArrayList<>(List.of(round(1, match))));
+    lenient()
+        .when(tournamentService.findFormat("SINGLE_ELIMINATION"))
+        .thenReturn(Optional.of(format));
+    lenient().when(format.estimateTotalMatches(tournament)).thenReturn(3);
+    lenient()
+        .when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(rumbleType));
+
+    SegmentType triosType = new SegmentType();
+    triosType.setId(12L);
+    triosType.setName("Trios");
+    triosType.setCode(WellKnownSegmentType.TRIOS.getCode());
+    lenient()
+        .when(segmentTypeService.findByCode(WellKnownSegmentType.TRIOS.getCode()))
+        .thenReturn(Optional.of(triosType));
+    Segment booked = teamSegment(trioA, trioB, List.of(w1, w2, w3), triosType);
+    stubResolve(booked);
+
+    List<TournamentTemplateBookingService.TournamentBooking> bookings =
+        service.bookWeeklyRounds(assignment, show);
+
+    assertEquals(1, bookings.size(), "Trio tournament match must book");
+    // Two trios book as two 3-member sides through the two-team path (the multi-team path is
+    // for 3+ ENTRANTS, not 3-member teams).
+    ArgumentCaptor<SegmentTeam> side1 = ArgumentCaptor.forClass(SegmentTeam.class);
+    ArgumentCaptor<SegmentTeam> side2 = ArgumentCaptor.forClass(SegmentTeam.class);
+    verify(segmentResolutionService)
+        .resolveTeamSegment(side1.capture(), side2.capture(), eq(triosType), eq(show), any());
+    assertEquals(
+        List.of(w1, w2, w3), side1.getValue().getMembers(), "Trio A's members in slot order");
+    assertEquals(
+        List.of(w4, w5, w6), side2.getValue().getMembers(), "Trio B's members in slot order");
+    // All six participants carry side teamNumbers 1/2.
+    Map<Integer, List<Long>> teamNumbers = new java.util.HashMap<>();
+    booked
+        .getParticipants()
+        .forEach(
+            p ->
+                teamNumbers
+                    .computeIfAbsent(p.getTeamNumber(), k -> new ArrayList<>())
+                    .add(p.getWrestler().getId()));
+    assertEquals(List.of(w1.getId(), w2.getId(), w3.getId()), teamNumbers.get(1));
+    assertEquals(List.of(w4.getId(), w5.getId(), w6.getId()), teamNumbers.get(2));
+    verify(tournamentService).recordMatchResult(eq(match), eq(entryA));
+  }
+
+  @Test
+  void teamTournamentPayoffBooksTitleMatchWithTeamSides() {
+    // A team tournament's bracket final at the PLE with a vacant TEAM title linked is the
+    // payoff: it books with the entrant teams as sides, the teamSize-resolved type, and the
+    // championship attached for adjudication to grant.
+    tournament.setTeamSize(TeamSize.DUO);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    Wrestler ace = wrestler(30L, "Ace");
+    Wrestler bea = wrestler(31L, "Bea");
+    Wrestler cy = wrestler(32L, "Cy");
+    Wrestler di = wrestler(33L, "Di");
+    Team highFlyers = duoTeam(10L, "High Flyers", ace, bea);
+    Team faceTeam = duoTeam(20L, "Face Team", cy, di);
+    TournamentEntry duoEntry =
+        TournamentEntry.builder().tournament(tournament).team(highFlyers).seed(1).build();
+    TournamentEntry faceEntry =
+        TournamentEntry.builder().tournament(tournament).team(faceTeam).seed(2).build();
+    tournament.setEntries(new ArrayList<>(List.of(duoEntry, faceEntry)));
+    // 2-entrant bracket: the single open match IS the final.
+    TournamentMatch finalMatch = match(1, duoEntry, faceEntry);
+    TournamentRound finalRound =
+        TournamentRound.builder()
+            .roundNumber(1)
+            .roundName("Final")
+            .status(TournamentRoundStatus.IN_PROGRESS)
+            .build();
+    finalRound.getMatches().add(finalMatch);
+    finalMatch.setRound(finalRound);
+    tournament.setRounds(new ArrayList<>(List.of(finalRound)));
+
+    Title teamTitle = new Title();
+    teamTitle.setId(7L);
+    teamTitle.setName("Tag Titles");
+    tournament.setLinkedTitle(teamTitle);
+    lenient().when(tournamentService.isTitleVacant(teamTitle)).thenReturn(true);
+    lenient()
+        .when(tournamentService.findFormat("SINGLE_ELIMINATION"))
+        .thenReturn(Optional.of(format));
+    lenient().when(format.estimateTotalMatches(tournament)).thenReturn(1);
+
+    SegmentType tagTeamType = new SegmentType();
+    tagTeamType.setId(11L);
+    tagTeamType.setName("Tag Team");
+    tagTeamType.setCode(WellKnownSegmentType.TAG_TEAM.getCode());
+    lenient()
+        .when(segmentTypeService.findByCode(WellKnownSegmentType.TAG_TEAM.getCode()))
+        .thenReturn(Optional.of(tagTeamType));
+    Segment booked = teamSegment(highFlyers, faceTeam, List.of(ace, bea), tagTeamType);
+    stubResolve(booked);
+
+    Optional<TournamentTemplateBookingService.TournamentBooking> booking =
+        service.bookTournamentFedSegment(assignment, rumbleType, show);
+
+    assertTrue(booking.isPresent(), "Team payoff final must book");
+    assertTrue(booking.get().titleMatch(), "Vacant TEAM title final is the title match");
+    assertEquals(teamTitle, booking.get().title());
+    ArgumentCaptor<SegmentTeam> side1 = ArgumentCaptor.forClass(SegmentTeam.class);
+    ArgumentCaptor<SegmentTeam> side2 = ArgumentCaptor.forClass(SegmentTeam.class);
+    verify(segmentResolutionService)
+        .resolveTeamSegment(side1.capture(), side2.capture(), eq(tagTeamType), eq(show), any());
+    assertEquals(List.of(ace, bea), side1.getValue().getMembers());
+    assertEquals(List.of(cy, di), side2.getValue().getMembers());
+    assertTrue(booked.getIsTitleSegment());
+    assertTrue(booked.getTitles().contains(teamTitle));
   }
 
   @Test

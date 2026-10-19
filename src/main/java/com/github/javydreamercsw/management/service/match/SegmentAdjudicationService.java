@@ -29,7 +29,12 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentRepositor
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpSource;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
+import com.github.javydreamercsw.management.domain.team.Team;
+import com.github.javydreamercsw.management.domain.team.TeamMember;
+import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleReign;
+import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntryStatus;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatchRepository;
@@ -62,12 +67,15 @@ import com.github.javydreamercsw.management.service.universe.UniverseContextServ
 import com.github.javydreamercsw.management.service.wrestler.RetirementService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.utils.DiceBag;
+import jakarta.annotation.Nullable;
+import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
@@ -146,6 +154,11 @@ public class SegmentAdjudicationService {
   // (unit tests).
   @Setter(onMethod_ = {@Autowired})
   private TournamentMatchRepository tournamentMatchRepository;
+
+  // Field-injected for the same reason — null-safe, team fans accrual is skipped when null
+  // (unit tests).
+  @Setter(onMethod_ = {@Autowired})
+  private TeamRepository teamRepository;
 
   @Autowired
   public SegmentAdjudicationService(
@@ -341,6 +354,7 @@ public class SegmentAdjudicationService {
     applyTitleChange(segment, winners, losers);
     applyContenderOutcomes(segment, winners);
     applyBriefcaseOutcomes(segment, winners);
+    applyTeamPayoffOutcomes(segment, winners);
     // Advisor-booked ambush (ATW-2b9u): carry the champion's same-show wear into the ambush
     // resolution. Null-safe and exception-safe — never fails adjudication.
     if (titleOpportunityService != null) {
@@ -602,6 +616,107 @@ public class SegmentAdjudicationService {
     } catch (Exception e) {
       log.error("Briefcase grant after adjudication failed for segment {}", segment.getId(), e);
     }
+  }
+
+  /**
+   * Team tournament payoff (ATW-01g2): when the adjudicated segment is a team tournament match
+   * linked to a title and the winning side belongs to the bracket's WINNER entry, the title reign
+   * adjudication just created (or defended) carries the winning team's reference — exact
+   * champion-team matching for contender filtering and rankings. Adjudication's title-change path
+   * already granted the belt to every winning participant; this only stamps the team.
+   *
+   * <p>Edge fallback: when no current reign exists after the grant (a title-change race or a
+   * direct-award shape), the winning team is awarded the title outright via {@code
+   * Title.awardTitleTo(Team, members, now, segment)}, which creates the reign with the team set and
+   * the members as champions. Null-safe (unit tests) and failure-isolated — a payoff stamp problem
+   * never fails adjudication.
+   */
+  private void applyTeamPayoffOutcomes(
+      @NonNull final Segment segment, @NonNull final List<Wrestler> winners) {
+    if (tournamentMatchRepository == null || winners.isEmpty()) {
+      return;
+    }
+    if (WellKnownSegmentType.PROMO.matches(segment.getSegmentType())) {
+      return;
+    }
+    try {
+      Optional<TournamentMatch> matchOpt =
+          tournamentMatchRepository.findBySegmentId(segment.getId());
+      if (matchOpt.isEmpty()) {
+        return; // not a tournament segment (includes campaign mode) — nothing to stamp
+      }
+      var tournament = matchOpt.get().getRound().getTournament();
+      if (tournament.getTeamSize() == null || tournament.getLinkedTitle() == null) {
+        return; // singles tournament or no linked championship — legacy behavior is correct
+      }
+      // The winning entry's team is authoritative: the bracket's WINNER entry when the payoff
+      // already completed it, else the entry matching the segment winners (final books before
+      // adjudication records the bracket result on some paths).
+      Team winningTeam =
+          tournament.getEntries().stream()
+              .filter(e -> e.getStatus() == TournamentEntryStatus.WINNER)
+              .map(TournamentEntry::getTeam)
+              .filter(Objects::nonNull)
+              .findFirst()
+              .orElseGet(() -> winningEntryTeamOf(matchOpt.get(), winners));
+      if (winningTeam == null) {
+        return; // singles entries — not a team payoff
+      }
+      Title title = tournament.getLinkedTitle();
+      Optional<TitleReign> reign = title.getCurrentReign();
+      // A reigning champion who defended keeps their reign — never re-stamp it with the
+      // challenger's team. Only a title CHANGE (or a vacant-title award) carries the winner.
+      boolean championsDefended =
+          reign.isPresent()
+              && !title.getCurrentChampions().isEmpty()
+              && title.getCurrentChampions().stream().anyMatch(winners::contains);
+      if (championsDefended) {
+        log.debug(
+            "Team tournament '{}' — champions defended '{}'; reign team reference stays",
+            tournament.getName(),
+            title.getName());
+        return;
+      }
+      if (reign.isPresent()) {
+        reign.get().setTeam(winningTeam);
+        log.info(
+            "Team tournament '{}' payoff — reign for '{}' now references team '{}'",
+            tournament.getName(),
+            title.getName(),
+            winningTeam.getName());
+      } else {
+        List<Wrestler> members =
+            winningTeam.getMembers().stream().map(TeamMember::getWrestler).toList();
+        title.awardTitleTo(winningTeam, members, Instant.now(), segment);
+        log.info(
+            "Team tournament '{}' payoff — '{}' awarded to team '{}' (fallback team award)",
+            tournament.getName(),
+            title.getName(),
+            winningTeam.getName());
+      }
+    } catch (Exception e) {
+      log.error("Team payoff reign stamp failed for segment {}", segment.getId(), e);
+    }
+  }
+
+  /**
+   * The team of the match entry whose members all won the segment — used when the bracket's WINNER
+   * entry is not yet stamped. Null when no entry matches (the segment result disagrees with the
+   * bracket; the stamp is skipped rather than guessed).
+   */
+  @Nullable private Team winningEntryTeamOf(TournamentMatch match, List<Wrestler> winners) {
+    Set<Long> winnerIds = winners.stream().map(Wrestler::getId).collect(Collectors.toSet());
+    return match.entrants().stream()
+        .filter(e -> e.getTeam() != null && !e.getTeam().getMembers().isEmpty())
+        .filter(
+            e ->
+                e.getTeam().getMembers().stream()
+                    .map(TeamMember::getWrestler)
+                    .map(Wrestler::getId)
+                    .allMatch(winnerIds::contains))
+        .map(TournamentEntry::getTeam)
+        .findFirst()
+        .orElse(null);
   }
 
   private void applyFactionAffinity(
@@ -1078,6 +1193,92 @@ public class SegmentAdjudicationService {
     if (roll >= 15) {
       relationshipService.improveGameplayRelationships(segment.getWrestlers(), roll >= 18 ? 2 : 1);
     }
+
+    awardTeamFans(segment, winners, roll, difficultyMultiplier);
+  }
+
+  /**
+   * Team fans accrual (ATW-01g2): every side of ≥2 participants carrying the same {@code
+   * teamNumber} is a team; each team it resolves to gains fans from EVERY team segment appearance
+   * (win or lose). Rate (documented per spec — builders aligned it under the individual curve):
+   * winners earn 2d6×250 (mean 1_750), losers 1d6×250 (mean 875), both plus the same {@code
+   * matchQualityBonus} the wrestlers earned — roughly a quarter of the individual win curve (2d6+3
+   * ×1_000), so a team never out-earns its own members from one appearance. Dice and quality are
+   * reused from the caller's scope; venue bonuses do not apply (no single alignment represents a
+   * whole team). Persisted straight through {@link TeamRepository} — no {@code PreAuthorize} gate
+   * on team saves, and adjudication already runs as ADMIN/BOOKER.
+   *
+   * <p>Null-safe ({@code teamRepository} absent in unit tests) and failure-isolated: a team-fans
+   * problem never fails adjudication.
+   */
+  private void awardTeamFans(
+      @NonNull final Segment segment,
+      @NonNull final List<Wrestler> winners,
+      final int roll,
+      final double difficultyMultiplier) {
+    if (teamRepository == null) {
+      return;
+    }
+    try {
+      // Group participants by side; a side of ≥2 same-teamNumber participants is a team.
+      Map<Integer, List<SegmentParticipant>> sides =
+          segment.getParticipants().stream()
+              .collect(
+                  Collectors.groupingBy(
+                      SegmentParticipant::getTeamNumber,
+                      Collectors.mapping(p -> p, Collectors.toList())));
+      List<List<Wrestler>> teamSides =
+          sides.values().stream()
+              .filter(side -> side.size() >= 2)
+              .map(side -> side.stream().map(SegmentParticipant::getWrestler).toList())
+              .toList();
+      if (teamSides.isEmpty()) {
+        return; // singles (or odd shapes) — team fans are a team-segment mechanic only
+      }
+      int qualityBonus = calculateMatchQualityBonus(segment, roll);
+      for (List<Wrestler> side : teamSides) {
+        boolean winningSide = !winners.isEmpty() && winners.containsAll(side);
+        DiceBag dice = new DiceBag(random, winningSide ? new int[] {6, 6} : new int[] {6});
+        long base = dice.roll() * 250L + qualityBonus;
+        long amount = (long) (base * difficultyMultiplier);
+        resolveTeam(side)
+            .ifPresentOrElse(
+                team -> {
+                  team.setFans(Math.max(0L, team.getFans() + amount));
+                  teamRepository.save(team);
+                  log.debug(
+                      "Awarded {} appearance fans to team {} ({})",
+                      amount,
+                      team.getName(),
+                      winningSide ? "win" : "loss");
+                },
+                () ->
+                    log.debug(
+                        "Team segment side without a resolvable team — no team fans accrued"));
+      }
+    } catch (Exception e) {
+      log.error("Team fans accrual failed for segment {}", segment.getId(), e);
+    }
+  }
+
+  /**
+   * Resolve the team behind a segment side: a team whose member set equals the side's wrestler set
+   * (either wrestler of the side finds it; first match wins). Empty when no persisted team matches
+   * — ad-hoc groups and malformed sides simply don't accrue.
+   */
+  private Optional<Team> resolveTeam(List<Wrestler> side) {
+    if (side.isEmpty()) {
+      return Optional.empty();
+    }
+    Set<Long> sideIds = side.stream().map(Wrestler::getId).collect(Collectors.toSet());
+    return teamRepository.findByWrestler(side.get(0)).stream()
+        .filter(
+            team ->
+                team.getMembers().stream()
+                    .map(m -> m.getWrestler().getId())
+                    .collect(Collectors.toSet())
+                    .equals(sideIds))
+        .findFirst();
   }
 
   private WrestlerAlignment resolveAlignment(final Wrestler wrestler, final Segment segment) {
