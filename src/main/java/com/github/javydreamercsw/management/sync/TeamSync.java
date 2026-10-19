@@ -151,9 +151,13 @@ public class TeamSync implements DataSyncContributor {
         .collect(Collectors.toList());
   }
 
-  /** Declared team size for the entry ({@link TeamSize#DUO} default for back-compat). */
+  /**
+   * Parses the entry's declared team size ({@link TeamSize#DUO} default for back-compat).
+   *
+   * @throws IllegalArgumentException when the code is not a {@link TeamSize} name
+   */
   private TeamSize teamSizeOf(final TeamImportDTO dto) {
-    return dto.getTeamSize() != null ? dto.getTeamSize() : TeamSize.DUO;
+    return TeamSize.valueOf(dto.getTeamSize());
   }
 
   /** How many members the entry must resolve for the sync to create it. */

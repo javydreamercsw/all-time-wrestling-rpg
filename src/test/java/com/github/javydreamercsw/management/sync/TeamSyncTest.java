@@ -51,7 +51,7 @@ class TeamSyncTest {
     // Then
     assertThat(dtos).hasSize(1);
     TeamImportDTO dto = dtos.getFirst();
-    assertThat(dto.getTeamSize()).isEqualTo(TeamSize.DUO);
+    assertThat(dto.getTeamSize()).isEqualTo(TeamSize.DUO.name());
     assertThat(dto.getMembers()).containsExactly("Wrestler A", "Wrestler B");
   }
 }

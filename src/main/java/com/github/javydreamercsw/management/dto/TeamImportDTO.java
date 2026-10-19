@@ -34,8 +34,8 @@ public class TeamImportDTO {
   /** Ordered member names (slot 0..n-1); preferred over the deprecated duo fields. */
   private List<String> members;
 
-  /** Declared size; defaults to {@link TeamSize#DUO} when the catalog omits it. */
-  private TeamSize teamSize = TeamSize.DUO;
+  /** Declared size code ({@link TeamSize} name); defaults to DUO when the catalog omits it. */
+  private String teamSize = TeamSize.DUO.name();
 
   /**
    * @deprecated legacy duo shape; kept so old catalogs still seed.
