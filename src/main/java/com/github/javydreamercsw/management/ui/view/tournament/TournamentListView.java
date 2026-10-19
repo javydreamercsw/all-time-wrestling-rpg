@@ -22,6 +22,10 @@ import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.team.Team;
+import com.github.javydreamercsw.management.domain.team.TeamMember;
+import com.github.javydreamercsw.management.domain.team.TeamOrigin;
+import com.github.javydreamercsw.management.domain.team.TeamSize;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRecurrence;
@@ -30,6 +34,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowFacade;
+import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.tournament.QualifierGroupsFormat;
 import com.github.javydreamercsw.management.service.tournament.TournamentFormat;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
@@ -65,12 +70,15 @@ import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -90,6 +98,9 @@ public class TournamentListView extends VerticalLayout {
   private final SecurityUtils securityUtils;
   private final ShowFacade showFacade;
 
+  /** Unpacked from {@link WrestlerFacade} — the wizard's team-entrant sources. */
+  private final TeamService teamService;
+
   private final Grid<Tournament> grid;
   private Checkbox showPastEditionsCheckbox;
 
@@ -102,6 +113,7 @@ public class TournamentListView extends VerticalLayout {
     this.tournamentService = tournamentService;
     this.wrestlerFacade = wrestlerFacade;
     this.showFacade = showFacade;
+    this.teamService = wrestlerFacade.getTeamService();
     this.segmentRuleService = showFacade.getSegmentRuleService();
     this.segmentTypeService = showFacade.getSegmentTypeService();
     this.universeContextService = viewContext.getUniverseContextService();
@@ -449,16 +461,19 @@ public class TournamentListView extends VerticalLayout {
 
     // Tab 1: Name, format, title link, start date
     TextField nameField = new TextField("Tournament Name");
+    nameField.setId("wizard-tournament-name");
     nameField.setRequired(true);
     nameField.setWidthFull();
 
     ComboBox<TournamentFormat> formatCombo = new ComboBox<>("Format");
+    formatCombo.setId("wizard-format");
     formatCombo.setItems(tournamentService.getAvailableFormats());
     formatCombo.setItemLabelGenerator(TournamentFormat::getDisplayName);
     formatCombo.setRequired(true);
     formatCombo.setWidthFull();
 
     ComboBox<Title> titleCombo = new ComboBox<>("Linked Championship (optional)");
+    titleCombo.setId("wizard-linked-title");
     titleCombo.setItems(wrestlerFacade.getTitleService().findAll());
     titleCombo.setItemLabelGenerator(Title::getName);
     titleCombo.setWidthFull();
@@ -552,8 +567,17 @@ public class TournamentListView extends VerticalLayout {
     genderCombo.setHelperText(
         "Restricts entrants to one gender. The linked championship's own constraint also applies.");
 
+    // Entrant type (ATW-01g2): singles (default) or team tournaments (Tag Team / Trios). Team
+    // tournaments are inaugural-champion only — the payoff-mode radio is disabled for them.
+    RadioButtonGroup<String> entrantType = new RadioButtonGroup<>("Entrants");
+    entrantType.setId("wizard-entrant-type");
+    entrantType.setItems(SINGLES_LABEL, TAG_TEAM_LABEL, TRIOS_LABEL);
+    entrantType.setValue(SINGLES_LABEL);
+    entrantType.setWidthFull();
+
     // Payoff mode (ATW-ewrp / ATW-8p72): classic title-on-the-line, contender-deciding, or
-    // briefcase-deciding. Briefcase clears and disables the title combo (no linked title).
+    // briefcase-deciding. Briefcase clears and disables the title combo (no linked title). Team
+    // tournaments are inaugural-champion only, so contender/briefcase are disabled there.
     RadioButtonGroup<String> payoffMode = new RadioButtonGroup<>("Payoff");
     payoffMode.setItems(
         "Title on the line", "Winner becomes #1 contender", "Winner earns the briefcase");
@@ -561,7 +585,11 @@ public class TournamentListView extends VerticalLayout {
     payoffMode.setHelperText(
         "Contender: needs a linked championship with a reigning champion — the winner becomes its"
             + " #1 contender. Briefcase: no linked championship — the winner earns a cashable"
-            + " title shot against ANY reigning champion.");
+            + " title shot against ANY reigning champion."
+            + " Team tournaments always put the title on the line (the winner becomes the"
+            + " inaugural team champions).");
+    payoffMode.setItemEnabledProvider(
+        item -> teamModeOf(entrantType.getValue()) ? "Title on the line".equals(item) : true);
     titleCombo.addValueChangeListener(
         e -> {
           if (e.getValue() != null && "Winner earns the briefcase".equals(payoffMode.getValue())) {
@@ -570,12 +598,72 @@ public class TournamentListView extends VerticalLayout {
         });
     payoffMode.addValueChangeListener(
         e -> {
+          boolean teamMode = teamModeOf(entrantType.getValue());
           boolean briefcase = "Winner earns the briefcase".equals(e.getValue());
-          if (briefcase) {
+          if (briefcase && !teamMode) {
             titleCombo.clear();
           }
           titleCombo.setEnabled(!briefcase);
         });
+
+    // ── Team entrants (ATW-01g2): registry picker + one-off assembly ──────────
+    Span teamEntrantsHeader = new Span("Team Entrants");
+    teamEntrantsHeader.getStyle().set("font-weight", "bold");
+    teamEntrantsHeader.setVisible(false);
+
+    // Registry picker: active REGISTRY teams of the declared size whose every member satisfies
+    // the gender filter, sorted by team fans — the same pool seedAuto draws from.
+    Grid<Team> teamRegistryGrid = new Grid<>(Team.class, false);
+    teamRegistryGrid.setId("team-registry-grid");
+    teamRegistryGrid.setWidthFull();
+    teamRegistryGrid.setHeight("220px");
+    teamRegistryGrid.setSelectionMode(Grid.SelectionMode.SINGLE);
+    teamRegistryGrid.addColumn(Team::getName).setHeader("Team").setFlexGrow(2);
+    teamRegistryGrid.addColumn(team -> memberNamesOf(team)).setHeader("Members").setFlexGrow(3);
+    teamRegistryGrid.addColumn(Team::getFans).setHeader("Fans").setFlexGrow(1);
+    teamRegistryGrid.setVisible(false);
+
+    // One-off assembly: members not already entered; the assembled team persists as AD_HOC
+    // unless "save to registry" (default off) flips it to REGISTRY after the tournament takes it.
+    MultiSelectComboBox<Wrestler> teamMemberPicker =
+        new MultiSelectComboBox<>("Assemble a One-Off Team (optional)");
+    teamMemberPicker.setId("wizard-one-off-members");
+    teamMemberPicker.setItemLabelGenerator(Wrestler::getName);
+    teamMemberPicker.setWidthFull();
+    teamMemberPicker.setVisible(false);
+    teamMemberPicker.setHelperText("Pick exactly the number of wrestlers the format requires.");
+
+    Checkbox saveToRegistryCheckbox = new Checkbox("Save this team to the team registry");
+    saveToRegistryCheckbox.setId("wizard-save-to-registry");
+    saveToRegistryCheckbox.setValue(false);
+    saveToRegistryCheckbox.setVisible(false);
+
+    Span oneOffNamePreview = new Span();
+    oneOffNamePreview.getStyle().set("color", "var(--lumo-secondary-text-color)");
+    oneOffNamePreview.setVisible(false);
+    teamMemberPicker.addValueChangeListener(
+        e -> {
+          Set<Wrestler> members = e.getValue();
+          saveToRegistryCheckbox.setVisible(!members.isEmpty());
+          oneOffNamePreview.setVisible(!members.isEmpty());
+          if (!members.isEmpty()) {
+            // Preview only — the persisted name is uniquified via generateUniqueName at create.
+            oneOffNamePreview.setText(
+                "Team name: "
+                    + members.stream().map(Wrestler::getName).collect(Collectors.joining(" & "))
+                    + " (uniquified on create)");
+          }
+        });
+
+    VerticalLayout teamEntrantsPanel =
+        new VerticalLayout(
+            teamEntrantsHeader,
+            teamRegistryGrid,
+            teamMemberPicker,
+            saveToRegistryCheckbox,
+            oneOffNamePreview);
+    teamEntrantsPanel.setPadding(false);
+    teamEntrantsPanel.setVisible(false);
 
     VerticalLayout tab1Content =
         new VerticalLayout(
@@ -584,6 +672,8 @@ public class TournamentListView extends VerticalLayout {
             payoffMode,
             titleCombo,
             genderCombo,
+            entrantType,
+            teamEntrantsPanel,
             hostShowCombo,
             payoffTypeCombo,
             payoffRuleCombo,
@@ -598,15 +688,18 @@ public class TournamentListView extends VerticalLayout {
     seedingMode.setValue("Auto (by fan count)");
     seedingMode.setWidthFull();
     seedingMode.setHelperText(
-        "Auto seeds the top wrestlers by fan count. A tournament paired with a show template"
-            + " can also be seeded automatically when the paired show is approved.");
+        "Auto seeds the top entrants by fan count (teams for team tournaments). A tournament"
+            + " paired with a show template can also be seeded automatically when the paired"
+            + " show is approved.");
 
     IntegerField countField = new IntegerField("Number of Entrants");
     countField.setValue(8);
     countField.setMin(3);
     countField.setMax(64);
     countField.setWidthFull();
-    countField.setHelperText("Capped at the number of eligible active wrestlers.");
+    countField.setHelperText(
+        "Capped at the number of eligible entrants (active wrestlers, or registry teams for"
+            + " team tournaments).");
 
     // QUALIFIER_GROUPS group size: wrestlers per qualifier Free-for-All. Part of the entrant
     // validation — the bracket needs at least two groups, so entrants must cover 2 × group size.
@@ -653,12 +746,16 @@ public class TournamentListView extends VerticalLayout {
     formatCombo.addValueChangeListener(e -> validateGroupSplit.run());
 
     // Cap the entrant count at the eligible roster (narrowed by the linked championship's
-    // gender constraint) — the format's 64 max means nothing to a 12-wrestler universe.
+    // gender constraint; team tournaments count eligible REGISTRY teams) — the format's 64
+    // max means nothing to a 12-wrestler universe.
     Runnable refreshEntrantCap =
         () -> {
+          TeamSize size = teamSizeOf(entrantType.getValue());
           int eligible =
-              tournamentService.countEligibleEntrants(
-                  titleCombo.getValue(), genderCombo.getValue());
+              size != null
+                  ? tournamentService.countEligibleTeamEntrants(size, genderCombo.getValue())
+                  : tournamentService.countEligibleEntrants(
+                      titleCombo.getValue(), genderCombo.getValue());
           int cap = Math.clamp(eligible, 3, 64);
           countField.setMax(cap);
           if (countField.getValue() == null || countField.getValue() > cap) {
@@ -667,7 +764,51 @@ public class TournamentListView extends VerticalLayout {
         };
     titleCombo.addValueChangeListener(e -> refreshEntrantCap.run());
     genderCombo.addValueChangeListener(e -> refreshEntrantCap.run());
+    entrantType.addValueChangeListener(e -> refreshEntrantCap.run());
     refreshEntrantCap.run();
+
+    // Registry grid + member picker follow the entrant type and gender filter: the grid
+    // re-queries the eligible REGISTRY teams, the picker re-filters to wrestlers not already
+    // committed to a picked registry team (a wrestler may appear in only one entry).
+    // Picking a registry team excludes its members from the one-off picker — without
+    // re-querying the grid (setItems clears selection).
+    Runnable refreshMemberPickerExclusions =
+        () -> {
+          Set<Long> committedMemberIds = new HashSet<>();
+          for (Team picked : teamRegistryGrid.getSelectedItems()) {
+            picked.getMembers().stream()
+                .map(TeamMember::getWrestler)
+                .map(Wrestler::getId)
+                .forEach(committedMemberIds::add);
+          }
+          teamMemberPicker.setItems(
+              wrestlerFacade.getWrestlerService().getAllWrestlers().stream()
+                  .filter(w -> !committedMemberIds.contains(w.getId()))
+                  .toList());
+        };
+    Runnable refreshTeamPickers =
+        () -> {
+          boolean teamMode = teamModeOf(entrantType.getValue());
+          teamEntrantsPanel.setVisible(teamMode);
+          teamRegistryGrid.setVisible(teamMode);
+          teamMemberPicker.setVisible(teamMode);
+          if (teamMode) {
+            teamRegistryGrid.setItems(
+                tournamentService.findEligibleTeamsSortedByFans(
+                    teamProbe(teamSizeOf(entrantType.getValue()), genderCombo.getValue())));
+            refreshMemberPickerExclusions.run();
+          } else {
+            // Leaving team mode clears any half-assembled one-off team.
+            teamMemberPicker.clear();
+            teamRegistryGrid.deselectAll();
+            saveToRegistryCheckbox.setVisible(false);
+            oneOffNamePreview.setVisible(false);
+          }
+        };
+    entrantType.addValueChangeListener(e -> refreshTeamPickers.run());
+    genderCombo.addValueChangeListener(e -> refreshTeamPickers.run());
+    teamRegistryGrid.addSelectionListener(e -> refreshMemberPickerExclusions.run());
+    refreshTeamPickers.run();
 
     MultiSelectComboBox<Wrestler> wrestlerPicker = new MultiSelectComboBox<>("Select Wrestlers");
     wrestlerPicker.setItems(wrestlerFacade.getWrestlerService().getAllWrestlers());
@@ -774,6 +915,7 @@ public class TournamentListView extends VerticalLayout {
                     "Winner earns the briefcase".equals(payoffMode.getValue());
                 boolean contenderSelected =
                     "Winner becomes #1 contender".equals(payoffMode.getValue());
+                TeamSize teamSize = teamSizeOf(entrantType.getValue());
                 Tournament t =
                     tournamentService.createTournament(
                         nameField.getValue(),
@@ -787,14 +929,48 @@ public class TournamentListView extends VerticalLayout {
                         payoffRuleCombo.getValue(),
                         genderCombo.getValue(),
                         contenderSelected,
-                        briefcaseSelected);
+                        briefcaseSelected,
+                        teamSize);
                 t.setRecurrence(recurrenceCombo.getValue());
                 t.setQualifierGroupSize(groupSizeField.getValue());
                 tournamentService.save(t);
 
                 boolean auto = "Auto (by fan count)".equals(seedingMode.getValue());
                 boolean manual = "Manual (pick wrestlers)".equals(seedingMode.getValue());
-                if (auto) {
+                if (teamSize != null) {
+                  // Team entrants: the picked registry team(s) first, then a one-off assembled
+                  // team when one was put together (an entry can come from either source).
+                  List<Team> picked = new ArrayList<>(teamRegistryGrid.getSelectedItems());
+                  int seed = 1;
+                  for (Team team : picked) {
+                    tournamentService.addEntry(t, team, seed++);
+                  }
+                  if (!teamMemberPicker.isEmpty()) {
+                    List<Wrestler> members =
+                        teamMemberPicker.getSelectedItems().stream()
+                            .sorted(Comparator.comparing(Wrestler::getName))
+                            .toList();
+                    Team oneOff =
+                        teamService
+                            .createTeam(
+                                teamService.generateUniqueName(members),
+                                null,
+                                members.stream().map(Wrestler::getId).toList(),
+                                teamSize,
+                                null,
+                                null,
+                                TeamOrigin.AD_HOC)
+                            .orElseThrow(
+                                () ->
+                                    new IllegalStateException(
+                                        "Could not create the one-off team — check that the"
+                                            + " members are still eligible"));
+                    if (saveToRegistryCheckbox.getValue()) {
+                      oneOff = teamService.saveToRegistry(oneOff);
+                    }
+                    tournamentService.addEntry(t, oneOff, seed++);
+                  }
+                } else if (auto) {
                   tournamentService.seedAuto(
                       t, countField.getValue(), universe.map(Universe::getId).orElse(1L));
                 } else if (manual) {
@@ -843,6 +1019,55 @@ public class TournamentListView extends VerticalLayout {
   private static boolean qualifierGroupsSelected(ComboBox<TournamentFormat> formatCombo) {
     return formatCombo.getValue() != null
         && QualifierGroupsFormat.FORMAT_ID.equals(formatCombo.getValue().getFormatId());
+  }
+
+  // ── Team entrant helpers (ATW-01g2) ───────────────────────────────────────
+
+  /** Wizard label for the singles entrant mode (individual wrestlers). */
+  static final String SINGLES_LABEL = "Singles";
+
+  /** Wizard label for the DUO team entrant mode (classic tag team tournaments). */
+  static final String TAG_TEAM_LABEL = "Tag Team";
+
+  /** Wizard label for the TRIO team entrant mode (trios tournaments). */
+  static final String TRIOS_LABEL = "Trios";
+
+  /**
+   * Maps the wizard's entrant-type radio to the tournament's declared {@link TeamSize} — null on
+   * the singles mode (the tournament stays individual-wrestler only).
+   */
+  static TeamSize teamSizeOf(String entrantTypeValue) {
+    if (TAG_TEAM_LABEL.equals(entrantTypeValue)) {
+      return TeamSize.DUO;
+    }
+    if (TRIOS_LABEL.equals(entrantTypeValue)) {
+      return TeamSize.TRIO;
+    }
+    return null;
+  }
+
+  /** Whether the entrant-type radio selects a team mode (Tag Team or Trios). */
+  static boolean teamModeOf(String entrantTypeValue) {
+    return teamSizeOf(entrantTypeValue) != null;
+  }
+
+  /**
+   * An eligibility probe carrying just the wizard's declared size + gender — the shape {@code
+   * findEligibleTeamsSortedByFans} reads.
+   */
+  private static Tournament teamProbe(TeamSize size, Gender gender) {
+    Tournament probe = new Tournament();
+    probe.setTeamSize(size);
+    probe.setGender(gender);
+    return probe;
+  }
+
+  /** Ordered member display names joined with " & " — the team's lineup as a single string. */
+  private static String memberNamesOf(@NonNull Team team) {
+    return team.getMembers().stream()
+        .map(TeamMember::getWrestler)
+        .map(Wrestler::getName)
+        .collect(Collectors.joining(" & "));
   }
 
   void refreshGridForTest() {

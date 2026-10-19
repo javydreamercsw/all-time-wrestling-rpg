@@ -29,6 +29,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -37,12 +38,16 @@ import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.team.Team;
+import com.github.javydreamercsw.management.domain.team.TeamSize;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowFacade;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.tournament.QualifierGroupsFormat;
 import com.github.javydreamercsw.management.service.tournament.TournamentFormat;
@@ -100,6 +105,7 @@ class TournamentListViewTest extends AbstractViewTest {
   @Mock private SecurityUtils securityUtils;
   @Mock private TitleService titleService;
   @Mock private WrestlerService wrestlerService;
+  @Mock private TeamService teamService;
   @Mock private TournamentFormat format;
   @Mock private TournamentFormat qualifierFormat;
 
@@ -121,6 +127,7 @@ class TournamentListViewTest extends AbstractViewTest {
     lenient().when(wrestlerService.getAllWrestlers()).thenReturn(List.of());
     lenient().when(wrestlerFacade.getTitleService()).thenReturn(titleService);
     lenient().when(wrestlerFacade.getWrestlerService()).thenReturn(wrestlerService);
+    lenient().when(wrestlerFacade.getTeamService()).thenReturn(teamService);
     lenient().when(showFacade.getSegmentRuleService()).thenReturn(segmentRuleService);
     lenient().when(showFacade.getSegmentTypeService()).thenReturn(segmentTypeService);
     lenient().when(showFacade.getShowService()).thenReturn(showService);
@@ -166,12 +173,19 @@ class TournamentListViewTest extends AbstractViewTest {
                 any(),
                 any(),
                 anyBoolean(),
-                anyBoolean()))
+                anyBoolean(),
+                any()))
         .thenAnswer(
             inv -> {
               Tournament t = tournament();
               return t;
             });
+    lenient()
+        .when(tournamentService.countEligibleTeamEntrants(any(TeamSize.class), any()))
+        .thenReturn(6);
+    lenient()
+        .when(tournamentService.findEligibleTeamsSortedByFans(any(Tournament.class)))
+        .thenReturn(List.of());
     lenient().when(tournamentService.deleteTournament(anyLong())).thenReturn(true);
 
     view = new TournamentListView(tournamentService, wrestlerFacade, showFacade, viewContext);
@@ -265,7 +279,8 @@ class TournamentListViewTest extends AbstractViewTest {
             any(),
             any(),
             eq(false),
-            eq(false));
+            eq(false),
+            isNull());
     verify(tournamentService).seedAuto(any(Tournament.class), anyInt(), anyLong());
   }
 
@@ -335,7 +350,8 @@ class TournamentListViewTest extends AbstractViewTest {
             any(),
             any(),
             eq(false),
-            eq(true));
+            eq(true),
+            isNull());
   }
 
   @Test
@@ -364,7 +380,8 @@ class TournamentListViewTest extends AbstractViewTest {
             any(),
             any(),
             eq(true),
-            eq(false));
+            eq(false),
+            isNull());
   }
 
   @Test
@@ -581,7 +598,8 @@ class TournamentListViewTest extends AbstractViewTest {
             any(),
             any(),
             eq(false),
-            eq(false));
+            eq(false),
+            isNull());
   }
 
   @Test
@@ -742,5 +760,140 @@ class TournamentListViewTest extends AbstractViewTest {
     } catch (ReflectiveOperationException e) {
       throw new IllegalStateException("Failed to fire confirm event", e);
     }
+  }
+
+  // ── Team entrant wizard (ATW-01g2) ───────────────────────────────────────
+
+  @Test
+  @DisplayName("Wizard defaults to Singles and hides the team panel")
+  void wizardEntrantType_defaultsToSingles() {
+    view.openCreationWizardForTest();
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    RadioButtonGroup<String> entrantType =
+        _get(UI.getCurrent(), RadioButtonGroup.class, spec -> spec.withLabel("Entrants"));
+    assertEquals(TournamentListView.SINGLES_LABEL, entrantType.getValue());
+    // The registry grid exists but is hidden until a team mode is chosen (it is not visible,
+    // so it is located via _find, which does not apply the visibility filter _get does).
+    assertTrue(
+        _find(UI.getCurrent(), Grid.class, spec -> spec.withId("team-registry-grid")).stream()
+            .noneMatch(Component::isVisible),
+        "Registry grid must be hidden in singles mode");
+  }
+
+  @Test
+  @DisplayName("Tag Team mode passes teamSize=DUO and null payoff modes to createTournament")
+  void wizardCreate_tagTeamMode_passesTeamSize() {
+    view.openCreationWizardForTest();
+    fillDetailsStep();
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    RadioButtonGroup<String> entrantType =
+        _get(UI.getCurrent(), RadioButtonGroup.class, spec -> spec.withLabel("Entrants"));
+    entrantType.setValue(TournamentListView.TAG_TEAM_LABEL);
+
+    // Team tournaments are inaugural-champion only: contender/briefcase are disabled (the
+    // itemEnabledProvider grays them out; the disabled items still enumerate in the view).
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    RadioButtonGroup<String> payoffMode =
+        _get(UI.getCurrent(), RadioButtonGroup.class, spec -> spec.withLabel("Payoff"));
+    assertFalse(
+        payoffMode.getItemEnabledProvider().test("Winner earns the briefcase"),
+        "Briefcase must be disabled in team mode");
+    assertTrue(
+        payoffMode.getItemEnabledProvider().test("Title on the line"),
+        "Title-on-the-line must stay enabled in team mode");
+
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Next")).click();
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Create Tournament")).click();
+
+    verify(tournamentService)
+        .createTournament(
+            eq("Fed Cup"),
+            eq("SINGLE_ELIMINATION"),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            eq(false),
+            eq(false),
+            eq(TeamSize.DUO));
+    verify(tournamentService, org.mockito.Mockito.never())
+        .seedAuto(any(Tournament.class), anyInt(), anyLong());
+  }
+
+  @Test
+  @DisplayName("Team create seeds the picked registry team and a one-off assembled team")
+  void wizardCreate_teamEntrants_registryAndOneOff() {
+    Wrestler a = new Wrestler();
+    a.setId(101L);
+    a.setName("Alpha");
+    Wrestler b = new Wrestler();
+    b.setId(102L);
+    b.setName("Beta");
+    Wrestler c = new Wrestler();
+    c.setId(103L);
+    c.setName("Gamma");
+    Wrestler d = new Wrestler();
+    d.setId(104L);
+    d.setName("Delta");
+    Team duo = new Team();
+    duo.setId(900L);
+    duo.setName("Picked Duo");
+    duo.setTeamSize(TeamSize.DUO);
+    duo.setMembers(List.of(a, b));
+    lenient()
+        .when(tournamentService.findEligibleTeamsSortedByFans(any(Tournament.class)))
+        .thenReturn(List.of(duo));
+    lenient().when(wrestlerService.getAllWrestlers()).thenReturn(List.of(a, b, c, d));
+    Team oneOff = new Team();
+    oneOff.setId(901L);
+    oneOff.setName("Gamma & Delta");
+    oneOff.setTeamSize(TeamSize.DUO);
+    oneOff.setMembers(List.of(c, d));
+    lenient()
+        .when(teamService.createTeam(any(), any(), any(), eq(TeamSize.DUO), any(), any(), any()))
+        .thenReturn(Optional.of(oneOff));
+    lenient().when(teamService.generateUniqueName(any())).thenReturn("Gamma & Delta");
+
+    view.openCreationWizardForTest();
+    fillDetailsStep();
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    RadioButtonGroup<String> entrantType =
+        _get(UI.getCurrent(), RadioButtonGroup.class, spec -> spec.withLabel("Entrants"));
+    entrantType.setValue(TournamentListView.TAG_TEAM_LABEL);
+    Grid<Team> registryGrid =
+        _get(UI.getCurrent(), Grid.class, spec -> spec.withId("team-registry-grid"));
+    registryGrid.getListDataView().addItem(duo);
+    registryGrid.select(duo);
+    // Assemble a one-off team from the remaining wrestlers.
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    com.vaadin.flow.component.combobox.MultiSelectComboBox<Wrestler> memberPicker =
+        _get(
+            UI.getCurrent(),
+            com.vaadin.flow.component.combobox.MultiSelectComboBox.class,
+            spec -> spec.withLabel("Assemble a One-Off Team (optional)"));
+    memberPicker.setValue(new java.util.LinkedHashSet<>(List.of(c, d)));
+
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Next")).click();
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Create Tournament")).click();
+
+    verify(tournamentService).addEntry(any(Tournament.class), eq(duo), eq(1));
+    verify(teamService)
+        .createTeam(
+            eq("Gamma & Delta"),
+            isNull(),
+            any(),
+            eq(TeamSize.DUO),
+            isNull(),
+            isNull(),
+            eq(com.github.javydreamercsw.management.domain.team.TeamOrigin.AD_HOC));
+    verify(tournamentService).addEntry(any(Tournament.class), eq(oneOff), eq(2));
+    // Default-off checkbox: no registry save.
+    verify(teamService, org.mockito.Mockito.never())
+        .saveToRegistry(any(com.github.javydreamercsw.management.domain.team.Team.class));
   }
 }
