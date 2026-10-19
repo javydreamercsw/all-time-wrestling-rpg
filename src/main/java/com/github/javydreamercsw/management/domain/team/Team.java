@@ -22,6 +22,7 @@ import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -33,11 +34,16 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -45,8 +51,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * Represents a tag team (2 wrestlers) in the ATW RPG system. Teams are specifically for tag team
- * matches and can be linked to a faction.
+ * A team in the ATW RPG system — an ordered list of wrestlers (DUO or TRIO) that can be linked to a
+ * faction. Teams are specifically for tag team / trios matches and can be linked to a faction.
  */
 @Entity
 @Table(name = "team", uniqueConstraints = @UniqueConstraint(columnNames = {"name"}))
@@ -72,15 +78,15 @@ public class Team extends AbstractEntity<Long> {
   @JoinColumn(name = "universe_id")
   private Universe universe;
 
-  // First wrestler (required)
-  @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "wrestler1_id", nullable = false)
-  private Wrestler wrestler1;
-
-  // Second wrestler (required)
-  @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "wrestler2_id", nullable = false)
-  private Wrestler wrestler2;
+  /** The ordered member list; slot 0 is the legacy "wrestler1", slot 1 the legacy "wrestler2". */
+  @OneToMany(
+      mappedBy = "team",
+      cascade = CascadeType.ALL,
+      orphanRemoval = true,
+      fetch = FetchType.LAZY)
+  @OrderBy("slot ASC")
+  @Builder.Default
+  private List<TeamMember> members = new ArrayList<>();
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "manager_id")
@@ -108,6 +114,25 @@ public class Team extends AbstractEntity<Long> {
   @Builder.Default
   private TeamStatus status = TeamStatus.ACTIVE;
 
+  /**
+   * Declared team size; inferred from the member list when not set explicitly (null in memory until
+   * inference or persist).
+   */
+  @Column(name = "team_size", nullable = false, length = 16)
+  @Enumerated(EnumType.STRING)
+  private TeamSize teamSize;
+
+  /** Where this team came from (registry seed vs one-off assembly). */
+  @Column(name = "origin", nullable = false, length = 16)
+  @Enumerated(EnumType.STRING)
+  @Builder.Default
+  private TeamOrigin origin = TeamOrigin.REGISTRY;
+
+  /** The team's own fan counter; backfilled from member fans once, then accrues at team level. */
+  @Column(name = "fans", nullable = false)
+  @Builder.Default
+  private long fans = 0L;
+
   @Column(name = "formed_date", nullable = false)
   private Instant formedDate;
 
@@ -116,12 +141,19 @@ public class Team extends AbstractEntity<Long> {
 
   /** Ensure default values before persisting. */
   @PrePersist
+  @PreUpdate
   private void ensureDefaults() {
     if (formedDate == null) {
       formedDate = Instant.now();
     }
     if (status == null) {
       status = TeamStatus.ACTIVE;
+    }
+    if (origin == null) {
+      origin = TeamOrigin.REGISTRY;
+    }
+    if (teamSize == null) {
+      inferTeamSizeFromMembers();
     }
   }
 
@@ -149,25 +181,95 @@ public class Team extends AbstractEntity<Long> {
     this.disbandedDate = null;
   }
 
-  /** Check if a wrestler is a member of this team. */
-  public boolean hasMember(final Wrestler wrestler) {
-    return wrestler.equals(wrestler1) || wrestler.equals(wrestler2);
+  /**
+   * Replaces the member list with the given wrestlers in order (slot 0..n-1), rebuilding the member
+   * rows. The member list is the source of truth for size, so {@link TeamSize} is re-inferred from
+   * the list length on every call; a caller wanting a different declared size sets it afterwards
+   * via {@code setTeamSize}.
+   *
+   * @param wrestlers the ordered team members
+   */
+  public void setMembers(final List<Wrestler> wrestlers) {
+    this.members.clear();
+    if (wrestlers != null) {
+      for (int slot = 0; slot < wrestlers.size(); slot++) {
+        Wrestler wrestler = wrestlers.get(slot);
+        TeamMember member = TeamMember.builder().team(this).wrestler(wrestler).slot(slot).build();
+        this.members.add(member);
+      }
+      inferTeamSizeFromMembers();
+    }
   }
 
-  /** Get the team partner of a given wrestler. */
+  private void inferTeamSizeFromMembers() {
+    if (members != null && !members.isEmpty()) {
+      for (TeamSize size : TeamSize.values()) {
+        if (size.getMemberCount() == members.size()) {
+          teamSize = size;
+          return;
+        }
+      }
+      // No declared size for this count — leave teamSize unchanged (defaults at persist).
+    }
+  }
+
+  /** Check if a wrestler is a member of this team. */
+  public boolean hasMember(final Wrestler wrestler) {
+    return getOrderedMembers().stream().anyMatch(m -> m.getWrestler().equals(wrestler));
+  }
+
+  /**
+   * Get the team partner of a given wrestler (duo semantics).
+   *
+   * @throws IllegalArgumentException when the wrestler is not a member
+   */
   public Wrestler getPartner(final Wrestler wrestler) {
-    if (wrestler.equals(wrestler1)) {
-      return wrestler2;
-    } else if (wrestler.equals(wrestler2)) {
-      return wrestler1;
+    if (wrestler.equals(getWrestler1())) {
+      return getWrestler2();
+    } else if (wrestler.equals(getWrestler2())) {
+      return getWrestler1();
     }
     throw new IllegalArgumentException("Wrestler is not a member of this team");
   }
 
+  /**
+   * Legacy derived accessors — the wrestler at slot 0. Kept for the many duo call sites; new code
+   * should read the member list.
+   *
+   * @return the member at slot 0, or null when the team has no members
+   */
+  @Deprecated
+  public Wrestler getWrestler1() {
+    return memberAt(0);
+  }
+
+  /**
+   * Legacy derived accessors — the wrestler at slot 1. Kept for the many duo call sites; new code
+   * should read the member list.
+   *
+   * @return the member at slot 1, or null when the team has fewer than two members
+   */
+  @Deprecated
+  public Wrestler getWrestler2() {
+    return memberAt(1);
+  }
+
+  private Wrestler memberAt(final int slot) {
+    List<TeamMember> ordered = getOrderedMembers();
+    return slot < ordered.size() ? ordered.get(slot).getWrestler() : null;
+  }
+
+  private List<TeamMember> getOrderedMembers() {
+    if (members == null) {
+      return List.of();
+    }
+    return members.stream().sorted(java.util.Comparator.comparingInt(TeamMember::getSlot)).toList();
+  }
+
   /** Get both wrestlers as a formatted string. */
   public String getMemberNames() {
-    String name1 = wrestler1 != null ? wrestler1.getName() : "null";
-    String name2 = wrestler2 != null ? wrestler2.getName() : "null";
+    String name1 = getWrestler1() != null ? getWrestler1().getName() : "null";
+    String name2 = getWrestler2() != null ? getWrestler2().getName() : "null";
     return name1 + " & " + name2;
   }
 
@@ -187,8 +289,8 @@ public class Team extends AbstractEntity<Long> {
     }
     Long universeId = universe.getId();
 
-    Faction f1 = wrestler1.getState(universeId).map(WrestlerState::getFaction).orElse(null);
-    Faction f2 = wrestler2.getState(universeId).map(WrestlerState::getFaction).orElse(null);
+    Faction f1 = getWrestler1().getState(universeId).map(WrestlerState::getFaction).orElse(null);
+    Faction f2 = getWrestler2().getState(universeId).map(WrestlerState::getFaction).orElse(null);
 
     return f1 != null && f2 != null && f1.equals(f2);
   }
@@ -200,8 +302,8 @@ public class Team extends AbstractEntity<Long> {
     }
     Long universeId = universe.getId();
 
-    Faction f1 = wrestler1.getState(universeId).map(WrestlerState::getFaction).orElse(null);
-    Faction f2 = wrestler2.getState(universeId).map(WrestlerState::getFaction).orElse(null);
+    Faction f1 = getWrestler1().getState(universeId).map(WrestlerState::getFaction).orElse(null);
+    Faction f2 = getWrestler2().getState(universeId).map(WrestlerState::getFaction).orElse(null);
 
     if (f1 != null && f1.equals(f2)) {
       return f1;

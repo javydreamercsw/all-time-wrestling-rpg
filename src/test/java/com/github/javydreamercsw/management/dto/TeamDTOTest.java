@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.Instant;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -58,8 +59,7 @@ class TeamDTOTest {
     team.setId(1L);
     team.setName("The Cenation");
     team.setDescription("Test team description");
-    team.setWrestler1(wrestler1);
-    team.setWrestler2(wrestler2);
+    team.setMembers(List.of(wrestler1, wrestler2));
     team.setFaction(faction);
     team.setStatus(TeamStatus.ACTIVE);
     team.setFormedDate(formedDate);
@@ -181,9 +181,8 @@ class TeamDTOTest {
   @Test
   @DisplayName("Should handle team with null wrestlers gracefully")
   void shouldHandleTeamWithNullWrestlersGracefully() {
-    // Given
-    team.setWrestler1(null);
-    team.setWrestler2(null);
+    // Given - an empty member list (no members set)
+    team.getMembers().clear();
 
     // When
     TeamDTO dto = TeamDTO.fromEntity(team);

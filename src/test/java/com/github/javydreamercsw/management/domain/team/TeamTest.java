@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import java.time.Instant;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -89,8 +90,7 @@ class TeamTest {
     team.setId(1L);
     team.setName("The Cenation");
     team.setDescription("Test team description");
-    team.setWrestler1(wrestler1);
-    team.setWrestler2(wrestler2);
+    team.setMembers(List.of(wrestler1, wrestler2));
     team.setFaction(faction);
     team.setUniverse(universe); // Set universe for team
     team.setStatus(TeamStatus.ACTIVE);
@@ -103,8 +103,7 @@ class TeamTest {
     // Given
     Team newTeam = new Team();
     newTeam.setName("New Team");
-    newTeam.setWrestler1(wrestler1);
-    newTeam.setWrestler2(wrestler2);
+    newTeam.setMembers(List.of(wrestler1, wrestler2));
     newTeam.setStatus(TeamStatus.ACTIVE); // Simulate default behavior
     newTeam.setFormedDate(Instant.now()); // Simulate default behavior
 
@@ -324,5 +323,44 @@ class TeamTest {
 
     // Then
     assertThat(team.getFormedDate()).isEqualTo(originalFormedDate);
+  }
+
+  @Test
+  @DisplayName("Should keep duo behavior after the member list migration")
+  void teamKeepsDuoBehaviorAfterMemberListMigration() {
+    // Given - a duo built from an ordered member list
+    assertThat(team.getMembers()).hasSize(2);
+
+    // Then - legacy derived accessors resolve from slots 0/1
+    assertThat(team.getWrestler1()).isEqualTo(wrestler1);
+    assertThat(team.getWrestler2()).isEqualTo(wrestler2);
+    assertThat(team.getPartner(wrestler1)).isEqualTo(wrestler2);
+    assertThat(team.getPartner(wrestler2)).isEqualTo(wrestler1);
+    assertThat(team.hasMember(wrestler2)).isTrue();
+    assertThat(team.getMemberNames()).isEqualTo("John Cena & The Rock");
+    assertThat(team.getTeamSize()).isEqualTo(TeamSize.DUO);
+    assertThat(team.getOrigin()).isEqualTo(TeamOrigin.REGISTRY);
+    assertThat(team.getFans()).isZero();
+  }
+
+  @Test
+  @DisplayName("Should expose ordered members for a trio team")
+  void trioTeamExposesOrderedMembers() {
+    // Given - a third wrestler
+    Wrestler wrestler3 = Wrestler.builder().build();
+    wrestler3.setId(3L);
+    wrestler3.setName("Big E");
+
+    // When
+    team.setMembers(List.of(wrestler1, wrestler2, wrestler3));
+
+    // Then - slot order is preserved and size is inferred as TRIO
+    assertThat(team.getMembers())
+        .extracting(TeamMember::getWrestler)
+        .containsExactly(wrestler1, wrestler2, wrestler3);
+    assertThat(team.getMembers()).extracting(TeamMember::getSlot).containsExactly(0, 1, 2);
+    assertThat(team.getTeamSize()).isEqualTo(TeamSize.TRIO);
+    assertThat(team.getWrestler1()).isEqualTo(wrestler1);
+    assertThat(team.getWrestler2()).isEqualTo(wrestler2);
   }
 }

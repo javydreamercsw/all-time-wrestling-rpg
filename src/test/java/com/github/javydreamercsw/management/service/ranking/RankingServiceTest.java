@@ -237,8 +237,7 @@ class RankingServiceTest {
     Team contenderTeam = new Team();
     contenderTeam.setId(2L);
     contenderTeam.setName("The Contenders");
-    contenderTeam.setWrestler1(team2member1);
-    contenderTeam.setWrestler2(team2member2);
+    contenderTeam.setMembers(List.of(team2member1, team2member2));
 
     when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
     when(teamRepository.findAll()).thenReturn(List.of(contenderTeam));

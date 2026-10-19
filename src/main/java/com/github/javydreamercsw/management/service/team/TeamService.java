@@ -201,8 +201,7 @@ public class TeamService {
     Team team = new Team();
     team.setName(name);
     team.setDescription(description);
-    team.setWrestler1(wrestler1);
-    team.setWrestler2(wrestler2);
+    team.setMembers(List.of(wrestler1, wrestler2));
     team.setStatus(TeamStatus.ACTIVE);
 
     // Set faction if provided
