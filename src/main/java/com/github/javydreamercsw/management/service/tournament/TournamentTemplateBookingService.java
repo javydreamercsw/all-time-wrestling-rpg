@@ -32,6 +32,7 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentEntrySta
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRecurrence;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRepository;
+import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus;
 import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -1145,15 +1146,19 @@ public class TournamentTemplateBookingService {
       return Optional.empty();
     }
 
+    // Team tournaments (ATW-01g2): the challenger side is the winner entry's team members and
+    // the showcase books with the teamSize-resolved type (tag_team/trios) — funneled through
+    // segmentTeamOf/resolveSegment so team entries never hit the solo-wrestler @NonNull path.
+    SegmentType showcaseType = teamSegmentTypeOf(tournament);
+    // titleOnTheLine=true inside the funnel flags the segment and attaches the linked title.
     Segment segment =
-        segmentResolutionService.resolveTeamSegment(
-            new SegmentTeam(champions),
-            new SegmentTeam(winner.getWrestler()),
-            segmentType,
+        resolveSegment(
+            showcaseMatchOf(tournament, winner, champions),
+            tournament,
+            showcaseType != null ? showcaseType : segmentType,
             show,
-            stipulationOf(payoffRule));
-    segment.setIsTitleSegment(true);
-    segment.getTitles().add(linkedTitle);
+            stipulationOf(payoffRule),
+            true);
     segment.setNarration(
         "Tournament payoff: "
             + tournament.getName()
@@ -1458,6 +1463,41 @@ public class TournamentTemplateBookingService {
       segment.getTitles().add(tournament.getLinkedTitle());
     }
     return segment;
+  }
+
+  /**
+   * A synthetic bracket match for the champion showcase: champion(s) (side 1) vs the tournament
+   * winner entry (side 2). Reuses the standard {@link #resolveSegment} funnel so the sides and the
+   * segment type follow the same team-tournament rules as every other match. Not persisted — the
+   * showcase is not part of the bracket.
+   */
+  private TournamentMatch showcaseMatchOf(
+      Tournament tournament, TournamentEntry winner, List<Wrestler> champions) {
+    TournamentEntry championEntry =
+        TournamentEntry.builder().tournament(tournament).seed(0).build();
+    if (tournament.getTeamSize() != null) {
+      // The champions defend as a team — a synthetic team entry keeps the sides team-shaped
+      // (members in slot order) without touching a persisted team row.
+      Team championTeam = new Team();
+      championTeam.setName("Reigning champions");
+      championTeam.setTeamSize(tournament.getTeamSize());
+      List<Wrestler> championMembers =
+          champions.size() > tournament.getTeamSize().getMemberCount()
+              ? champions.subList(0, tournament.getTeamSize().getMemberCount())
+              : champions;
+      championTeam.setMembers(new ArrayList<>(championMembers));
+      championEntry.setTeam(championTeam);
+    } else {
+      // Singles showcase: the primary champion defends.
+      championEntry.setWrestler(champions.get(0));
+    }
+    TournamentMatch match =
+        TournamentMatch.builder().entrant1(championEntry).entrant2(winner).build();
+    // Narration resolves the round name — the showcase is not a bracket round, name it as one.
+    TournamentRound showcaseRound =
+        TournamentRound.builder().roundNumber(0).roundName("Champion Showcase").build();
+    match.setRound(showcaseRound);
+    return match;
   }
 
   /**

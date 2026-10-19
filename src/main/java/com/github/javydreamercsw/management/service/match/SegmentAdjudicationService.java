@@ -351,10 +351,14 @@ public class SegmentAdjudicationService {
     applyRatingAndNoise(segment);
     Set<Long> wearAndTearBumpedIds = applyWearAndTear(segment);
     applyRingsideActions(segment);
+    // Snapshot the pre-adjudication reign state before applyTitleChange can mutate it — the
+    // team payoff stamp (below) must decide defense-vs-change from the state BEFORE the grant
+    // (after it, champions == winners on every change and the defense guard would misfire).
+    Map<Title, Optional<TitleReign>> reignsBefore = snapshotCurrentReigns(segment);
     applyTitleChange(segment, winners, losers);
     applyContenderOutcomes(segment, winners);
     applyBriefcaseOutcomes(segment, winners);
-    applyTeamPayoffOutcomes(segment, winners);
+    applyTeamPayoffOutcomes(segment, winners, reignsBefore);
     // Advisor-booked ambush (ATW-2b9u): carry the champion's same-show wear into the ambush
     // resolution. Null-safe and exception-safe — never fails adjudication.
     if (titleOpportunityService != null) {
@@ -619,24 +623,55 @@ public class SegmentAdjudicationService {
   }
 
   /**
-   * Team tournament payoff (ATW-01g2): when the adjudicated segment is a team tournament match
-   * linked to a title and the winning side belongs to the bracket's WINNER entry, the title reign
-   * adjudication just created (or defended) carries the winning team's reference — exact
-   * champion-team matching for contender filtering and rankings. Adjudication's title-change path
-   * already granted the belt to every winning participant; this only stamps the team.
+   * Pre-adjudication reign snapshots for every title attached to {@code segment} — the
+   * defense-vs-change baseline for the team payoff stamp (which runs after applyTitleChange has
+   * mutated the persistence-context instances, making post-hoc champion reads meaningless).
+   */
+  private Map<Title, Optional<TitleReign>> snapshotCurrentReigns(@NonNull final Segment segment) {
+    Map<Title, Optional<TitleReign>> snapshots = new HashMap<>();
+    if (segment.getIsTitleSegment() == null || !segment.getIsTitleSegment()) {
+      return snapshots;
+    }
+    for (Title title : segment.getTitles()) {
+      try {
+        snapshots.put(title, title.getCurrentReign());
+      } catch (Exception e) {
+        log.warn("Could not snapshot current reign for title {} — payoff stamp may skip", title, e);
+      }
+    }
+    return snapshots;
+  }
+
+  /**
+   * Team tournament payoff (ATW-01g2): when the adjudicated segment is a TEAM tournament match that
+   * carries the championship on the line (a title segment — the booking path attaches the title
+   * only to the payoff final and the champion showcase), the reign adjudication just created
+   * carries the winning team's reference — exact champion-team matching for contender filtering and
+   * rankings. Adjudication's title-change path already granted the belt to every winning
+   * participant; this only stamps the team.
    *
-   * <p>Edge fallback: when no current reign exists after the grant (a title-change race or a
-   * direct-award shape), the winning team is awarded the title outright via {@code
-   * Title.awardTitleTo(Team, members, now, segment)}, which creates the reign with the team set and
-   * the members as champions. Null-safe (unit tests) and failure-isolated — a payoff stamp problem
-   * never fails adjudication.
+   * <p>Defense-vs-change is decided from the PRE-adjudication reign snapshot ({@code
+   * reignsBefore}): a title CHANGE (pre-change reign present and none of its champions won) or a
+   * vacant-title award carries the winner's team; a successful defense keeps the reigning team
+   * reference untouched. When no reign exists even after the grant (a direct-award shape), the
+   * fallback awards the title to the team outright via {@code Title.awardTitleTo(Team, members,
+   * now, segment)}, which creates the reign with the team set and the members as champions.
+   * Null-safe (unit tests) and failure-isolated — a payoff stamp problem never fails adjudication.
    */
   private void applyTeamPayoffOutcomes(
-      @NonNull final Segment segment, @NonNull final List<Wrestler> winners) {
+      @NonNull final Segment segment,
+      @NonNull final List<Wrestler> winners,
+      @NonNull final Map<Title, Optional<TitleReign>> reignsBefore) {
     if (tournamentMatchRepository == null || winners.isEmpty()) {
       return;
     }
     if (WellKnownSegmentType.PROMO.matches(segment.getSegmentType())) {
+      return;
+    }
+    // Gate on the title segment flag: only the payoff final (vacant title) and the champion
+    // showcase attach the championship in booking — mid-bracket team rounds must never award
+    // or re-stamp anything championship-related, no matter which entry the bracket says won.
+    if (segment.getIsTitleSegment() == null || !segment.getIsTitleSegment()) {
       return;
     }
     try {
@@ -663,13 +698,16 @@ public class SegmentAdjudicationService {
         return; // singles entries — not a team payoff
       }
       Title title = tournament.getLinkedTitle();
-      Optional<TitleReign> reign = title.getCurrentReign();
-      // A reigning champion who defended keeps their reign — never re-stamp it with the
-      // challenger's team. Only a title CHANGE (or a vacant-title award) carries the winner.
+      if (!title.equals(
+          segment.getTitles().stream().filter(t -> t.equals(title)).findFirst().orElse(null))) {
+        return; // the adjudicated segment does not carry the tournament's championship
+      }
+      Optional<TitleReign> reignBefore = reignsBefore.getOrDefault(title, Optional.empty());
+      // Defense decided from the PRE-change snapshot: any pre-change champion on the winning
+      // side means the champions defended — the reign keeps its (unchanged) team reference.
       boolean championsDefended =
-          reign.isPresent()
-              && !title.getCurrentChampions().isEmpty()
-              && title.getCurrentChampions().stream().anyMatch(winners::contains);
+          reignBefore.isPresent()
+              && reignBefore.get().getChampions().stream().anyMatch(winners::contains);
       if (championsDefended) {
         log.debug(
             "Team tournament '{}' — champions defended '{}'; reign team reference stays",
@@ -677,6 +715,7 @@ public class SegmentAdjudicationService {
             title.getName());
         return;
       }
+      Optional<TitleReign> reign = title.getCurrentReign();
       if (reign.isPresent()) {
         reign.get().setTeam(winningTeam);
         log.info(

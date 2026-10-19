@@ -19,10 +19,12 @@ package com.github.javydreamercsw.management.service.match;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -46,7 +48,6 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.BumpSource;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
-import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntryStatus;
@@ -78,6 +79,7 @@ import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.world.LocationService;
 import com.github.javydreamercsw.management.service.wrestler.RetirementService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -532,15 +534,28 @@ class SegmentAdjudicationServiceTest {
 
   @Test
   void teamPayoffTitleChange_setsReignTeamReference() {
-    // Payoff of a team tournament linked to a TEAM title: adjudication's title-change grants the
-    // belt to the winning side, then the winning entry's team is set on the reign just created.
+    // Payoff of a team tournament linked to a TEAM title: adjudication's title change grants the
+    // belt through the real Title.awardTitleTo (a NEW reign is created), then the winning
+    // entry's team is stamped on that new reign. The champions snapshot is taken BEFORE the
+    // grant, so a real change (no pre-change reign) carries the winner's team.
     when(segment.getId()).thenReturn(900L);
     when(segment.getIsTitleSegment()).thenReturn(true);
-    Title title = mock(Title.class);
-    when(title.getCurrentChampions()).thenReturn(List.of()); // vacant — no defense branch
-    when(segment.getTitles()).thenReturn(Set.of(title));
-    TitleReign reign = mock(TitleReign.class);
-    when(title.getCurrentReign()).thenReturn(Optional.of(reign));
+    Title realTitle = new Title();
+    realTitle.setId(7L);
+    realTitle.setName("Tag Titles"); // vacant — no pre-change reign
+    when(segment.getTitles()).thenReturn(Set.of(realTitle));
+    // The grant flows through the real domain method: titleService.awardTitleTo delegates to
+    // Title.awardTitleTo, creating the reign adjudication is about to stamp.
+    doAnswer(
+            inv -> {
+              Title t = inv.getArgument(0);
+              List<Wrestler> champs = inv.getArgument(1);
+              t.awardTitleTo(champs, Instant.now(), inv.getArgument(2));
+              return null;
+            })
+        .when(titleService)
+        .awardTitleTo(any(Title.class), anyList(), any(Segment.class));
+
     var winningTeam = teamWithFans(100L, "High Flyers", 0L, List.of(winner));
     var losingTeam = teamWithFans(200L, "Face Team", 0L, List.of(loser));
     TournamentEntry winnerEntry = TournamentEntry.builder().team(winningTeam).seed(1).build();
@@ -548,14 +563,68 @@ class SegmentAdjudicationServiceTest {
     TournamentMatch match =
         TournamentMatch.builder().entrant1(winnerEntry).entrant2(loserEntry).build();
     TournamentRound round = new TournamentRound();
-    round.setTournament(teamTournament(title));
+    round.setTournament(teamTournament(realTitle));
     match.setRound(round);
     when(tournamentMatchRepository.findBySegmentId(900L)).thenReturn(Optional.of(match));
 
     segmentAdjudicationService.adjudicateMatch(segment);
 
-    verify(titleService).awardTitleTo(eq(title), eq(List.of(winner)), eq(segment));
-    verify(reign).setTeam(winningTeam);
+    verify(titleService).awardTitleTo(eq(realTitle), eq(List.of(winner)), eq(segment));
+    // The reign the grant just created carries the winning team reference.
+    assertThat(realTitle.getCurrentReign()).isPresent();
+    assertThat(realTitle.getCurrentReign().get().getTeam()).isEqualTo(winningTeam);
+    assertThat(realTitle.getCurrentReign().get().getChampions()).containsExactly(winner);
+  }
+
+  @Test
+  void teamPayoffChampionsDefend_reignTeamReferenceStays() {
+    // Champion showcase defense with the REAL sequence: a pre-change reign exists and one of
+    // its champions is among the winners — the snapshot (taken before the grant) marks a
+    // defense and the reigning team reference is never re-stamped with the challenger's team.
+    when(segment.getId()).thenReturn(902L);
+    when(segment.getIsTitleSegment()).thenReturn(true);
+    Title realTitle = new Title();
+    realTitle.setId(7L);
+    realTitle.setName("Tag Titles");
+    var reigningTeam = teamWithFans(300L, "Reigning Team", 0L, List.of(loser));
+    realTitle.awardTitleTo(List.of(loser), Instant.now(), null);
+    realTitle.getCurrentReign().get().setTeam(reigningTeam);
+    when(segment.getTitles()).thenReturn(Set.of(realTitle));
+    doAnswer(
+            inv -> {
+              Title t = inv.getArgument(0);
+              List<Wrestler> champs = inv.getArgument(1);
+              t.awardTitleTo(champs, Instant.now(), inv.getArgument(2));
+              return null;
+            })
+        .when(titleService)
+        .awardTitleTo(any(Title.class), anyList(), any(Segment.class));
+
+    // Champions (loser) defended against the tournament winner (winner) — note the segment
+    // winners list still reads [winner] from setUp, so flip it: the champion won here.
+    when(segment.getWinners()).thenReturn(List.of(loser));
+    when(segment.getIsTitleSegment()).thenReturn(true);
+
+    var winningTeam = teamWithFans(100L, "High Flyers", 0L, List.of(winner));
+    TournamentEntry winnerEntry = TournamentEntry.builder().team(winningTeam).seed(1).build();
+    TournamentEntry loserEntry =
+        TournamentEntry.builder()
+            .team(teamWithFans(200L, "Face Team", 0L, List.of(loser)))
+            .seed(2)
+            .build();
+    TournamentMatch match =
+        TournamentMatch.builder().entrant1(winnerEntry).entrant2(loserEntry).build();
+    TournamentRound round = new TournamentRound();
+    round.setTournament(teamTournament(realTitle));
+    match.setRound(round);
+    when(tournamentMatchRepository.findBySegmentId(902L)).thenReturn(Optional.of(match));
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    // Defense: the reign still belongs to the reigning team — no team change, no re-stamp.
+    assertThat(realTitle.getCurrentReign()).isPresent();
+    assertThat(realTitle.getCurrentReign().get().getTeam()).isEqualTo(reigningTeam);
+    assertThat(realTitle.getCurrentReign().get().getChampions()).containsExactly(loser);
   }
 
   @Test
@@ -568,6 +637,8 @@ class SegmentAdjudicationServiceTest {
     realTitle.setId(7L);
     realTitle.setName("Tag Titles");
     when(segment.getTitles()).thenReturn(Set.of(realTitle));
+    // The titleService grant does NOTHING here (simulating a path that never created a reign),
+    // exercising the service's own fallback award.
 
     // Segment winners are [winner] (setUp); the winning entry's team matches exactly that set.
     var winningTeam = teamWithFans(100L, "High Flyers", 0L, List.of(winner));
@@ -594,6 +665,48 @@ class SegmentAdjudicationServiceTest {
             winningTeam.getMembers().stream()
                 .map(com.github.javydreamercsw.management.domain.team.TeamMember::getWrestler)
                 .toList());
+  }
+
+  @Test
+  void midBracketTeamMatch_doesNotStampOrAwardTitle() {
+    // A mid-bracket team match on a tournament with a linked title is NOT a title segment —
+    // the booking path only attaches the championship to the payoff final/showcase — so no
+    // reign is stamped, no fallback award fires, even though the bracket already has a WINNER
+    // entry (booking records bracket results before any show airs).
+    when(segment.getId()).thenReturn(903L);
+    when(segment.getIsTitleSegment()).thenReturn(false);
+    Title realTitle = new Title();
+    realTitle.setId(7L);
+    realTitle.setName("Tag Titles");
+    realTitle.awardTitleTo(List.of(loser), Instant.now(), null);
+    when(segment.getTitles()).thenReturn(Set.of()); // nothing attached — the mid-bracket shape
+
+    var tournamentWinnerTeam = teamWithFans(400L, "Bracket Winners", 0L, List.of(winner));
+    TournamentEntry winnerEntry =
+        TournamentEntry.builder()
+            .team(tournamentWinnerTeam)
+            .seed(1)
+            .status(TournamentEntryStatus.WINNER) // stamped by markWinner at booking time
+            .build();
+    TournamentEntry loserEntry =
+        TournamentEntry.builder()
+            .team(teamWithFans(200L, "Face Team", 0L, List.of(loser)))
+            .seed(2)
+            .status(TournamentEntryStatus.ELIMINATED)
+            .build();
+    TournamentMatch match =
+        TournamentMatch.builder().entrant1(winnerEntry).entrant2(loserEntry).build();
+    TournamentRound round = new TournamentRound();
+    round.setTournament(teamTournament(realTitle));
+    match.setRound(round);
+    when(tournamentMatchRepository.findBySegmentId(903L)).thenReturn(Optional.of(match));
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    // Nothing championship-related happened: the reigning reign is untouched, no award fired.
+    assertThat(realTitle.getCurrentReign()).isPresent();
+    assertThat(realTitle.getCurrentReign().get().getChampions()).containsExactly(loser);
+    assertThat(realTitle.getCurrentReign().get().getTeam()).isNull();
   }
 
   /** A DUO team tournament linked to the given title. */
