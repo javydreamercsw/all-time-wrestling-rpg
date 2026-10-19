@@ -95,7 +95,7 @@ public class CampaignTagTeamChapterTest extends AbstractMockUserIntegrationTest 
 
       Team team = new Team();
       team.setName("Test Team");
-      team.setMembers(java.util.List.of(w2, w3));
+      team.setMembers(List.of(w2, w3));
       team.setStatus(TeamStatus.ACTIVE);
       teamRepository.save(team);
     } else // If wrestlers exist, ensure at least one team exists that doesn't have the player
@@ -105,7 +105,7 @@ public class CampaignTagTeamChapterTest extends AbstractMockUserIntegrationTest 
       if (others.size() >= 2) {
         Team team = new Team();
         team.setName("Test Team");
-        team.setMembers(java.util.List.of(others.get(0), others.get(1)));
+        team.setMembers(List.of(others.get(0), others.get(1)));
         team.setStatus(TeamStatus.ACTIVE);
         teamRepository.save(team);
       }

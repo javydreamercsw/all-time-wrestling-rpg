@@ -63,6 +63,7 @@ import com.github.javydreamercsw.management.service.segment.type.SegmentTypeServ
 import com.github.javydreamercsw.management.service.show.ShowService;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -719,7 +720,7 @@ class TournamentTemplateBookingServiceTest {
       Team winner, Team loser, List<Wrestler> winners, SegmentType type) {
     Segment segment = new Segment();
     segment.setSegmentType(type);
-    Map<Integer, List<Wrestler>> sides = new java.util.HashMap<>();
+    Map<Integer, List<Wrestler>> sides = new HashMap<>();
     sides.put(1, winner.getMembers().stream().map(TeamMember::getWrestler).toList());
     sides.put(2, loser.getMembers().stream().map(TeamMember::getWrestler).toList());
     segment.syncParticipants(sides);
@@ -782,7 +783,7 @@ class TournamentTemplateBookingServiceTest {
         List.of(ace, bea), side1.getValue().getMembers(), "Side 1 carries the duo's both members");
     assertEquals(List.of(cy, di), side2.getValue().getMembers(), "Side 2 carries both members");
     // The materialized segment's participants carry teamNumber 1/2 with both members per side.
-    Map<Integer, List<Long>> teamNumbers = new java.util.HashMap<>();
+    Map<Integer, List<Long>> teamNumbers = new HashMap<>();
     booked
         .getParticipants()
         .forEach(
@@ -854,7 +855,7 @@ class TournamentTemplateBookingServiceTest {
     assertEquals(
         List.of(w4, w5, w6), side2.getValue().getMembers(), "Trio B's members in slot order");
     // All six participants carry side teamNumbers 1/2.
-    Map<Integer, List<Long>> teamNumbers = new java.util.HashMap<>();
+    Map<Integer, List<Long>> teamNumbers = new HashMap<>();
     booked
         .getParticipants()
         .forEach(

@@ -40,6 +40,7 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.team.Team;
+import com.github.javydreamercsw.management.domain.team.TeamOrigin;
 import com.github.javydreamercsw.management.domain.team.TeamSize;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
@@ -63,6 +64,7 @@ import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
@@ -71,6 +73,7 @@ import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import java.time.LocalDate;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -79,6 +82,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -848,7 +852,7 @@ class TournamentListViewTest extends AbstractViewTest {
             eq(TeamSize.DUO));
     // The seeding tab defaults to Auto — team mode delegates to the team seedAuto path.
     verify(tournamentService).seedAuto(any(Tournament.class), anyInt(), anyLong());
-    verify(teamService, org.mockito.Mockito.never())
+    verify(teamService, Mockito.never())
         .createTeam(any(), any(), any(), any(), any(), any(), any());
   }
 
@@ -898,12 +902,12 @@ class TournamentListViewTest extends AbstractViewTest {
     registryGrid.select(duo);
     // Assemble a one-off team from the remaining wrestlers.
     @SuppressWarnings({"rawtypes", "unchecked"})
-    com.vaadin.flow.component.combobox.MultiSelectComboBox<Wrestler> memberPicker =
+    MultiSelectComboBox<Wrestler> memberPicker =
         _get(
             UI.getCurrent(),
-            com.vaadin.flow.component.combobox.MultiSelectComboBox.class,
+            MultiSelectComboBox.class,
             spec -> spec.withLabel("Assemble a One-Off Team (optional)"));
-    memberPicker.setValue(new java.util.LinkedHashSet<>(List.of(c, d)));
+    memberPicker.setValue(new LinkedHashSet<>(List.of(c, d)));
 
     _get(UI.getCurrent(), Button.class, spec -> spec.withText("Next")).click();
     // Manual seeding (the tab renders lazily) — Auto is covered by
@@ -923,11 +927,10 @@ class TournamentListViewTest extends AbstractViewTest {
             eq(TeamSize.DUO),
             isNull(),
             isNull(),
-            eq(com.github.javydreamercsw.management.domain.team.TeamOrigin.AD_HOC));
+            eq(TeamOrigin.AD_HOC));
     verify(tournamentService).addEntry(any(Tournament.class), eq(oneOff), eq(2));
     // Default-off checkbox: no registry save.
-    verify(teamService, org.mockito.Mockito.never())
-        .saveToRegistry(any(com.github.javydreamercsw.management.domain.team.Team.class));
+    verify(teamService, Mockito.never()).saveToRegistry(any(Team.class));
   }
 
   @Test
@@ -959,10 +962,10 @@ class TournamentListViewTest extends AbstractViewTest {
     genderCombo.setValue(Gender.FEMALE);
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    com.vaadin.flow.component.combobox.MultiSelectComboBox<Wrestler> memberPicker =
+    MultiSelectComboBox<Wrestler> memberPicker =
         _get(
             UI.getCurrent(),
-            com.vaadin.flow.component.combobox.MultiSelectComboBox.class,
+            MultiSelectComboBox.class,
             spec -> spec.withLabel("Assemble a One-Off Team (optional)"));
 
     List<Wrestler> offered = memberPicker.getListDataView().getItems().toList();
@@ -988,12 +991,9 @@ class TournamentListViewTest extends AbstractViewTest {
     _get(UI.getCurrent(), Button.class, spec -> spec.withText("Create Tournament")).click();
 
     verify(tournamentService).seedAuto(any(Tournament.class), anyInt(), anyLong());
-    verify(tournamentService, org.mockito.Mockito.never())
-        .addEntry(
-            any(Tournament.class),
-            any(com.github.javydreamercsw.management.domain.team.Team.class),
-            anyInt());
-    verify(teamService, org.mockito.Mockito.never())
+    verify(tournamentService, Mockito.never())
+        .addEntry(any(Tournament.class), any(Team.class), anyInt());
+    verify(teamService, Mockito.never())
         .createTeam(any(), any(), any(), any(), any(), any(), any());
   }
 }

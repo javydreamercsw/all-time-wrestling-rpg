@@ -43,6 +43,7 @@ import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -263,7 +264,7 @@ public class Team extends AbstractEntity<Long> {
     if (members == null) {
       return List.of();
     }
-    return members.stream().sorted(java.util.Comparator.comparingInt(TeamMember::getSlot)).toList();
+    return members.stream().sorted(Comparator.comparingInt(TeamMember::getSlot)).toList();
   }
 
   /** Get both wrestlers as a formatted string. */

@@ -47,6 +47,10 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAdditio
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpSource;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.team.Team;
+import com.github.javydreamercsw.management.domain.team.TeamMember;
+import com.github.javydreamercsw.management.domain.team.TeamRepository;
+import com.github.javydreamercsw.management.domain.team.TeamSize;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
@@ -423,13 +427,11 @@ class SegmentAdjudicationServiceTest {
 
   // --- Team fans (ATW-01g2) ---
 
-  @Mock private com.github.javydreamercsw.management.domain.team.TeamRepository teamRepository;
+  @Mock private TeamRepository teamRepository;
 
   /** A real team with the given members (slot order) and fan count. */
-  private com.github.javydreamercsw.management.domain.team.Team teamWithFans(
-      Long id, String name, long fans, List<Wrestler> members) {
-    com.github.javydreamercsw.management.domain.team.Team team =
-        new com.github.javydreamercsw.management.domain.team.Team();
+  private Team teamWithFans(Long id, String name, long fans, List<Wrestler> members) {
+    Team team = new Team();
     team.setId(id);
     team.setName(name);
     team.setMembers(new ArrayList<>(members));
@@ -443,12 +445,7 @@ class SegmentAdjudicationServiceTest {
    * production. Both teams resolve through {@code teamRepository} member-set matching.
    */
   private Segment teamSegmentFixture(
-      com.github.javydreamercsw.management.domain.team.Team winnersTeam,
-      com.github.javydreamercsw.management.domain.team.Team losersTeam,
-      Wrestler a,
-      Wrestler b,
-      Wrestler c,
-      Wrestler d) {
+      Team winnersTeam, Team losersTeam, Wrestler a, Wrestler b, Wrestler c, Wrestler d) {
     SegmentType tagTeamType = new SegmentType();
     tagTeamType.setName("Tag Team");
     tagTeamType.setCode("tag_team");
@@ -502,8 +499,7 @@ class SegmentAdjudicationServiceTest {
     segmentAdjudicationService.adjudicateMatch(real);
 
     // Both teams were persisted exactly once (one adjustment per appearance).
-    ArgumentCaptor<com.github.javydreamercsw.management.domain.team.Team> teamCaptor =
-        ArgumentCaptor.forClass(com.github.javydreamercsw.management.domain.team.Team.class);
+    ArgumentCaptor<Team> teamCaptor = ArgumentCaptor.forClass(Team.class);
     verify(teamRepository, times(2)).save(teamCaptor.capture());
     var savedTeams = teamCaptor.getAllValues();
     var winnersSaved =
@@ -663,9 +659,7 @@ class SegmentAdjudicationServiceTest {
     assertThat(realTitle.getCurrentReign().get().getTeam()).isEqualTo(winningTeam);
     assertThat(realTitle.getCurrentReign().get().getChampions())
         .containsExactlyInAnyOrderElementsOf(
-            winningTeam.getMembers().stream()
-                .map(com.github.javydreamercsw.management.domain.team.TeamMember::getWrestler)
-                .toList());
+            winningTeam.getMembers().stream().map(TeamMember::getWrestler).toList());
   }
 
   @Test
@@ -828,8 +822,7 @@ class SegmentAdjudicationServiceTest {
   /** A DUO team tournament linked to the given title. */
   private Tournament teamTournament(Title linkedTitle) {
     Tournament tournament = mock(Tournament.class);
-    when(tournament.getTeamSize())
-        .thenReturn(com.github.javydreamercsw.management.domain.team.TeamSize.DUO);
+    when(tournament.getTeamSize()).thenReturn(TeamSize.DUO);
     when(tournament.getLinkedTitle()).thenReturn(linkedTitle);
     return tournament;
   }

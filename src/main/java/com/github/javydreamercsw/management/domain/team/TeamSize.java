@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.management.domain.team;
 
+import lombok.Getter;
+
 /**
  * The declared size of a team. Drives which match types a team can enter (a DUO teams up for tag
  * matches, a TRIO for trios matches) and pairs with {@code Tournament.teamSize} / {@code
@@ -27,14 +29,9 @@ public enum TeamSize {
   /** Three-wrestler team. */
   TRIO(3);
 
-  private final int memberCount;
+  @Getter private final int memberCount;
 
   TeamSize(final int memberCount) {
     this.memberCount = memberCount;
-  }
-
-  /** How many wrestlers belong to a team of this size. */
-  public int getMemberCount() {
-    return memberCount;
   }
 }

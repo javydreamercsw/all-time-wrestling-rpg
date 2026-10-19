@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.team.Team;
+import com.github.javydreamercsw.management.domain.team.TeamOrigin;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.team.TeamSize;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
@@ -324,7 +325,7 @@ class TournamentServiceIT extends ManagementIntegrationTest {
                 TeamSize.DUO,
                 null,
                 null,
-                com.github.javydreamercsw.management.domain.team.TeamOrigin.REGISTRY)
+                TeamOrigin.REGISTRY)
             .orElseThrow();
     assertThat(created.getUniverse()).as("createTeam must stamp the current universe").isNotNull();
     assertThat(created.getUniverse().getId()).isEqualTo(home.getId());
