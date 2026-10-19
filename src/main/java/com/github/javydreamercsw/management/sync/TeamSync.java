@@ -20,7 +20,9 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.team.Team;
+import com.github.javydreamercsw.management.domain.team.TeamOrigin;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
+import com.github.javydreamercsw.management.domain.team.TeamSize;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.TeamImportDTO;
@@ -29,6 +31,7 @@ import com.github.javydreamercsw.management.service.team.TeamService;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -83,19 +86,19 @@ public class TeamSync implements DataSyncContributor {
             npcService.findAllUnfiltered().stream()
                 .collect(Collectors.toMap(Npc::getName, n -> n, (a, b) -> a));
         for (TeamImportDTO dto : dtos) {
-          Optional<Wrestler> w1Opt = Optional.ofNullable(wrestlersByName.get(dto.getWrestler1()));
-          Optional<Wrestler> w2Opt = Optional.ofNullable(wrestlersByName.get(dto.getWrestler2()));
-          if (w1Opt.isPresent() && w2Opt.isPresent()) {
+          List<Wrestler> members = resolveMembers(dto, wrestlersByName);
+          if (members.size() == expectedMemberCount(dto)) {
             Optional<Team> teamOpt = teamService.getTeamByName(dto.getName());
             if (teamOpt.isEmpty()) {
               teamOpt =
                   teamService.createTeam(
                       dto.getName(),
                       dto.getDescription(),
-                      w1Opt.get().getId(),
-                      w2Opt.get().getId(),
+                      members.stream().map(Wrestler::getId).toList(),
+                      teamSizeOf(dto),
                       null,
-                      null);
+                      null,
+                      TeamOrigin.REGISTRY);
             }
             if (teamOpt.isPresent()) {
               Team team = teamOpt.get();
@@ -107,6 +110,12 @@ public class TeamSync implements DataSyncContributor {
                 }
               }
             }
+          } else {
+            log.warn(
+                "Skipping team '{}': expected {} member(s) resolvable by name, found {}",
+                dto.getName(),
+                expectedMemberCount(dto),
+                members.size());
           }
           log.debug("Loaded team: {}", dto.getName());
         }
@@ -117,5 +126,38 @@ public class TeamSync implements DataSyncContributor {
     } else {
       log.warn("Teams file not found: {}", resource.getPath());
     }
+  }
+
+  /**
+   * Resolves the entry's member list: the ordered {@code members} array when present, otherwise the
+   * legacy {@code wrestler1}/{@code wrestler2} pair.
+   *
+   * @param dto the catalog entry
+   * @param wrestlersByName wrestlers indexed by name
+   * @return the resolved members, in slot order (missing names are skipped)
+   */
+  private List<Wrestler> resolveMembers(
+      final TeamImportDTO dto, final Map<String, Wrestler> wrestlersByName) {
+    List<String> names =
+        dto.hasLegacyWrestlerFields()
+            ? List.of(dto.getWrestler1(), dto.getWrestler2())
+            : dto.getMembers();
+    if (names == null) {
+      return List.of();
+    }
+    return names.stream()
+        .map(wrestlersByName::get)
+        .filter(Objects::nonNull)
+        .collect(Collectors.toList());
+  }
+
+  /** Declared team size for the entry ({@link TeamSize#DUO} default for back-compat). */
+  private TeamSize teamSizeOf(final TeamImportDTO dto) {
+    return dto.getTeamSize() != null ? dto.getTeamSize() : TeamSize.DUO;
+  }
+
+  /** How many members the entry must resolve for the sync to create it. */
+  private int expectedMemberCount(final TeamImportDTO dto) {
+    return teamSizeOf(dto).getMemberCount();
   }
 }

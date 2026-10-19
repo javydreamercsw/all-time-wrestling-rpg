@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.team.Team;
+import com.github.javydreamercsw.management.domain.team.TeamSize;
 import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.Instant;
@@ -85,6 +86,7 @@ class TeamDTOTest {
     assertThat(dto.getFormedDate()).isEqualTo(formedDate.toString());
     assertThat(dto.getDisbandedDate()).isNull();
     assertThat(dto.getMemberNames()).containsExactly("John Cena", "The Rock");
+    assertThat(dto.getTeamSize()).isEqualTo(TeamSize.DUO);
     assertThat(dto.getDisplayName()).isEqualTo("The Cenation");
     assertThat(dto.isActive()).isTrue();
   }

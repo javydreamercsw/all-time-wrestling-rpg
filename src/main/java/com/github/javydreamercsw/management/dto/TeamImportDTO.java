@@ -16,13 +16,43 @@
 */
 package com.github.javydreamercsw.management.dto;
 
+import com.github.javydreamercsw.management.domain.team.TeamSize;
+import java.util.List;
 import lombok.Data;
 
+/**
+ * Catalog entry for seeding predefined teams ({@code teams.json}).
+ *
+ * <p>Back-compat: legacy entries name two wrestlers via {@code wrestler1}/{@code wrestler2}; the
+ * ordered {@code members} array is preferred and supports any {@link TeamSize}.
+ */
 @Data
 public class TeamImportDTO {
   private String name;
   private String description;
-  private String wrestler1;
-  private String wrestler2;
+
+  /** Ordered member names (slot 0..n-1); preferred over the deprecated duo fields. */
+  private List<String> members;
+
+  /** Declared size; defaults to {@link TeamSize#DUO} when the catalog omits it. */
+  private TeamSize teamSize = TeamSize.DUO;
+
+  /**
+   * @deprecated legacy duo shape; kept so old catalogs still seed.
+   */
+  @Deprecated private String wrestler1;
+
+  /**
+   * @deprecated legacy duo shape; kept so old catalogs still seed.
+   */
+  @Deprecated private String wrestler2;
+
   private String manager;
+
+  /**
+   * @return true when the entry uses the legacy {@code wrestler1}/{@code wrestler2} shape.
+   */
+  public boolean hasLegacyWrestlerFields() {
+    return (members == null || members.isEmpty()) && wrestler1 != null && wrestler2 != null;
+  }
 }
