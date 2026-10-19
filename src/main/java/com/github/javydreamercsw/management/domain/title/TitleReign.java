@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.domain.title;
 
 import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.*;
 import java.time.Duration;
@@ -51,6 +52,15 @@ public class TitleReign extends AbstractEntity<Long> {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "won_at_segment_id")
   private Segment wonAtSegment;
+
+  /**
+   * The team holding this championship, for TEAM-title reigns. Null for singles reigns and for
+   * legacy team reigns created before the team reference existed — those are matched by champion
+   * set as a fallback. The champions are still the display source of truth.
+   */
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "team_id")
+  @Nullable private Team team;
 
   @ManyToMany(fetch = FetchType.EAGER)
   @JoinTable(

@@ -22,6 +22,7 @@ import com.github.javydreamercsw.base.domain.AbstractEntity;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import jakarta.persistence.*;
@@ -126,6 +127,25 @@ public class Title extends AbstractEntity<Long> {
   public void awardTitleTo(
       @NonNull final List<Wrestler> newChampions, @NonNull final Instant awardDate) {
     awardTitleTo(newChampions, awardDate, null);
+  }
+
+  /**
+   * Awards this title to a team, recording the team reference on the new reign so champion-team
+   * matching is exact (contender filtering, tournament payoff). The members flow into the reign's
+   * champion set, which stays the display source of truth.
+   *
+   * @param team the winning team; may be null for legacy/individual awards
+   * @param newChampions the team members winning the title
+   * @param awardDate when the title was awarded
+   * @param wonAtSegment the segment the title was won in, if any
+   */
+  public void awardTitleTo(
+      @Nullable final Team team,
+      @NonNull final List<Wrestler> newChampions,
+      @NonNull final Instant awardDate,
+      @Nullable final Segment wonAtSegment) {
+    awardTitleTo(newChampions, awardDate, wonAtSegment);
+    getCurrentReign().ifPresent(reign -> reign.setTeam(team));
   }
 
   public void awardTitleTo(
