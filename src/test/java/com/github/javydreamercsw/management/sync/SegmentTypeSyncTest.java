@@ -89,7 +89,7 @@ class SegmentTypeSyncTest {
           mapper.readValue(
               is,
               mapper.getTypeFactory().constructCollectionType(List.class, SegmentTypeDTO.class));
-      assertEquals(6, dtos.size(), "Seed JSON must contain 6 segment types");
+      assertEquals(7, dtos.size(), "Seed JSON must contain 7 segment types");
       assertTrue(
           dtos.stream().filter(d -> Boolean.TRUE.equals(d.getEventOnly())).count() == 1,
           "Exactly one seeded segment type must be event_only (Abu Dhabi Rumble)");

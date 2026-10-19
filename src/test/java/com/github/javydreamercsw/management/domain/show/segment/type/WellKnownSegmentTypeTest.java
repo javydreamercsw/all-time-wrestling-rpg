@@ -63,6 +63,28 @@ class WellKnownSegmentTypeTest {
   }
 
   @Test
+  void triosIsAWellKnownSeededSegmentType() throws Exception {
+    // ATW-01g2 Task 4: the trios team-tournament format resolves its payoff
+    // segment type from the catalog like every other well-known type.
+    assertThat(WellKnownSegmentType.TRIOS.getCode()).isEqualTo("trios");
+    assertThat(WellKnownSegmentType.TRIOS.getDisplayName()).isEqualTo("Trios");
+    assertThat(WellKnownSegmentType.fromCode("trios")).contains(WellKnownSegmentType.TRIOS);
+
+    // The segment_types.json catalog parse covers trios, so SegmentTypeSync
+    // seeds a SegmentType row with code "trios" on startup.
+    ObjectMapper mapper = new ObjectMapper();
+    List<Map<String, Object>> dtos =
+        mapper.readValue(
+            new ClassPathResource("segment_types.json").getInputStream(), new TypeReference<>() {});
+    assertThat(dtos)
+        .anySatisfy(
+            dto -> {
+              assertThat(dto.get("code")).isEqualTo("trios");
+              assertThat(dto.get("name")).isEqualTo("Trios");
+            });
+  }
+
+  @Test
   void enumDisplayNamesMatchJsonNames() throws Exception {
     ObjectMapper mapper = new ObjectMapper();
     List<Map<String, Object>> dtos =
