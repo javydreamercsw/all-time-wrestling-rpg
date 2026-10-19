@@ -447,6 +447,59 @@ public class ShowBookingService {
     return bookSinglesSegment(show, wrestler1, wrestler2, stipulation, oneOnOneType.get());
   }
 
+  /**
+   * Book a specific team match onto an existing show (ATW-01g2 review): the sides are full teams
+   * (tag 2v2, trios 3v3), resolved through the same team-segment mechanics the template-fed
+   * tournament path uses. The segment type resolves from the side sizes — a 1v1 side pair falls
+   * back to One on One so singles callers share the funnel.
+   */
+  @Transactional
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')"
+          + " or @universeAuthz.hasRoleInCurrentUniverse('BOOKER')")
+  public Optional<Segment> bookSpecificTeamMatch(
+      @NonNull final Show show,
+      @NonNull final List<Wrestler> side1,
+      @NonNull final List<Wrestler> side2,
+      @NonNull final String label,
+      @NonNull final String stipulation) {
+    if (side1.isEmpty() || side2.isEmpty()) {
+      log.warn("Cannot book team match '{}': both sides need at least one wrestler", label);
+      return Optional.empty();
+    }
+    SegmentTeam team1 =
+        side1.size() == 1 ? new SegmentTeam(side1.get(0)) : new SegmentTeam(side1, null);
+    SegmentTeam team2 =
+        side2.size() == 1 ? new SegmentTeam(side2.get(0)) : new SegmentTeam(side2, null);
+    Optional<SegmentType> type = segmentTypeFor(side1.size(), side2.size());
+    if (type.isEmpty()) {
+      return Optional.empty();
+    }
+    try {
+      return Optional.of(
+          npcSegmentResolutionService.resolveTeamSegment(
+              team1, team2, type.get(), show, stipulation));
+    } catch (Exception e) {
+      log.error("Error booking team match '{}': {}", label, e.getMessage(), e);
+      return Optional.empty();
+    }
+  }
+
+  /** The segment type for the given side sizes (the tagTeamOf shape, sides equal by contract). */
+  private Optional<SegmentType> segmentTypeFor(int size1, int size2) {
+    String code =
+        size1 == 1 && size2 == 1
+            ? WellKnownSegmentType.ONE_ON_ONE.getCode()
+            : size1 == 3 || size2 == 3
+                ? WellKnownSegmentType.TRIOS.getCode()
+                : WellKnownSegmentType.TAG_TEAM.getCode();
+    Optional<SegmentType> resolved = segmentTypeRepository.findByCode(code);
+    if (resolved.isEmpty()) {
+      log.warn("'{}' segment type not found — cannot book team match", code);
+    }
+    return resolved;
+  }
+
   /** Generate enhanced segments for PPV shows with focus on major storylines. */
   private List<Segment> generatePPVSegments(final Show show, final int segmentCount) {
     List<Segment> segments = new ArrayList<>();

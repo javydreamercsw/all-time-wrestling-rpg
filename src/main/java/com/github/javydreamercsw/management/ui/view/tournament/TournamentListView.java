@@ -761,7 +761,7 @@ public class TournamentListView extends VerticalLayout {
           int eligible =
               size != null
                   ? tournamentService.countEligibleTeamEntrants(
-                      size, genderCombo.getValue(), universeId)
+                      size, genderCombo.getValue(), titleCombo.getValue(), universeId)
                   : tournamentService.countEligibleEntrants(
                       titleCombo.getValue(), genderCombo.getValue());
           int cap = Math.clamp(eligible, 3, 64);
@@ -801,21 +801,28 @@ public class TournamentListView extends VerticalLayout {
                               && !committedMemberIds.contains(w.getId()))
                   .toList());
         };
+    // Payoff normalization across the entrant-type switch (ATW-01g2 review): team mode forces
+    // Title-on-the-line (contender/briefcase are grayed out there); leaving team mode re-arms
+    // them and clears a stale briefcase selection, which the briefcase listener would otherwise
+    // apply silently against a linked TEAM title. Runs ONLY on an actual team→singles
+    // transition — the gender filter also re-runs refreshTeamPickers and must not clobber a
+    // briefcase the booker picked in singles mode.
+    Runnable resetPayoffOnLeavingTeamMode =
+        () -> {
+          if (!teamModeOf(entrantType.getValue())
+              && "Winner earns the briefcase".equals(payoffMode.getValue())) {
+            payoffMode.setValue("Title on the line");
+          }
+        };
     Runnable refreshTeamPickers =
         () -> {
           boolean teamMode = teamModeOf(entrantType.getValue());
           teamEntrantsPanel.setVisible(teamMode);
           teamRegistryGrid.setVisible(teamMode);
           teamMemberPicker.setVisible(teamMode);
-          // Payoff normalization across the switch: team mode forces Title-on-the-line
-          // (contender/briefcase are grayed out there); leaving team mode re-arms them and
-          // clears a stale briefcase selection, which the briefcase listener would otherwise
-          // apply silently against a linked TEAM title.
-          if (teamMode) {
-            if (!"Title on the line".equals(payoffMode.getValue())) {
-              payoffMode.setValue("Title on the line");
-            }
-          } else if ("Winner earns the briefcase".equals(payoffMode.getValue())) {
+          // Entering team mode forces Title-on-the-line (the payoff normalization above only
+          // touches the radio when LEAVING team mode).
+          if (teamMode && !"Title on the line".equals(payoffMode.getValue())) {
             payoffMode.setValue("Title on the line");
           }
           if (teamMode) {
@@ -832,7 +839,13 @@ public class TournamentListView extends VerticalLayout {
             oneOffNamePreview.setVisible(false);
           }
         };
-    entrantType.addValueChangeListener(e -> refreshTeamPickers.run());
+    entrantType.addValueChangeListener(
+        e -> {
+          // Leaving team mode normalizes the payoff BEFORE the pickers refresh (a briefcase
+          // selected in team mode is stale there — contender/briefcase are team-mode-disabled).
+          resetPayoffOnLeavingTeamMode.run();
+          refreshTeamPickers.run();
+        });
     genderCombo.addValueChangeListener(e -> refreshTeamPickers.run());
     teamRegistryGrid.addSelectionListener(e -> refreshMemberPickerExclusions.run());
     refreshTeamPickers.run();

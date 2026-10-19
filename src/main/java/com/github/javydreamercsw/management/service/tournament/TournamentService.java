@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.reservation.ShowSegmentReservationPurpose;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
@@ -476,6 +477,9 @@ public class TournamentService {
     next.setUniverse(completed.getUniverse());
     next.setLinkedTitle(completed.getLinkedTitle());
     next.setGender(completed.getGender());
+    // The declared team size is format identity too — a recurring team tournament's successor
+    // stays a team tournament of the same size (ATW-01g2 review).
+    next.setTeamSize(completed.getTeamSize());
     next.setDefaultEntrantCount(completed.getDefaultEntrantCount());
     next.setQualifierGroupSize(completed.getQualifierGroupSize());
     next.setContenderDeciding(completed.isContenderDeciding());
@@ -894,8 +898,10 @@ public class TournamentService {
   /**
    * Enter a {@link Team} into a team tournament ({@code Tournament.getTeamSize() != null}).
    * Validates the tournament takes teams, the declared size matches, every member satisfies the
-   * tournament's gender restriction, and no member is already entered in the tournament through any
-   * other entry (team or individual) — a wrestler may appear in only one entry per tournament.
+   * effective gender restriction (the tournament's filter, else the linked TEAM championship's own
+   * constraint — the same fallback the eligibility pool applies), and no member is already entered
+   * in the tournament through any other entry (team or individual) — a wrestler may appear in only
+   * one entry per tournament.
    */
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
@@ -918,7 +924,7 @@ public class TournamentService {
               + tournament.getTeamSize()
               + " teams");
     }
-    Gender gender = tournament.getGender();
+    Gender gender = effectiveTeamGenderOf(tournament.getGender(), tournament.getLinkedTitle());
     if (gender != null) {
       for (TeamMember member : team.getMembers()) {
         if (member.getWrestler().getGender() != gender) {
@@ -982,7 +988,9 @@ public class TournamentService {
                 + teamPool.size()
                 + " available, the format needs at least "
                 + fmt.getMinEntrants()
-                + eligibilityNote(tournament.getLinkedTitle(), tournament.getGender()));
+                + eligibilityNote(
+                    tournament.getLinkedTitle(),
+                    effectiveTeamGenderOf(tournament.getGender(), tournament.getLinkedTitle())));
       }
       int effectiveTeams = Math.min(count, teamPool.size());
       if (effectiveTeams < count) {
@@ -1041,17 +1049,18 @@ public class TournamentService {
   /**
    * The active REGISTRY teams of the declared size eligible to seed a team tournament with the
    * given gender filter, sorted by the team's own fan counter (most fans first) — the team-level
-   * mirror of {@link #findEligibleWrestlersSortedByFans}. The tournament gender restriction applies
-   * per member: every member must be active with that gender (the same shape the TEAM ranking
-   * filter uses). Champion exclusion does not apply — an inaugural-champion tournament links a
-   * vacant (or not-yet-created) title, so there is no champion to exclude. Scoped to the
-   * tournament's universe when one is set (teams are universe-scoped; the same scoping the singles
-   * path gets from the universe-bound fan states).
+   * mirror of {@link #findEligibleWrestlersSortedByFans}. The gender restriction applies per
+   * member: every member must be active with that gender (the same shape the TEAM ranking filter
+   * uses). When the tournament sets no gender, the linked TEAM championship's own constraint
+   * applies instead (the same effective-gender rule the singles path uses). Champion exclusion does
+   * not apply — an inaugural-champion tournament links a vacant (or not-yet-created) title, so
+   * there is no champion to exclude. Scoped to the tournament's universe when one is set (teams are
+   * universe-scoped; the same scoping the singles path gets from the universe-bound fan states).
    */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public List<Team> findEligibleTeamsSortedByFans(Tournament tournament) {
-    Gender gender = tournament.getGender();
+    Gender gender = effectiveTeamGenderOf(tournament.getGender(), tournament.getLinkedTitle());
     Long universeId = tournament.getUniverse() != null ? tournament.getUniverse().getId() : null;
     return teamRepository.findAll().stream()
         .filter(
@@ -1068,6 +1077,16 @@ public class TournamentService {
                                     && (gender == null || w.getGender() == gender)))
         .sorted(Comparator.comparingLong(Team::getFans).reversed())
         .toList();
+  }
+
+  /**
+   * The gender a team tournament's pool is narrowed by: the tournament's own filter when set, else
+   * the linked championship's constraint (ATW-01g2 review) — the same fallback the singles path's
+   * {@link #findEligibleWrestlersSortedByFans} applies, so a linked women's tag-title tournament
+   * takes women's teams even with no explicit division filter.
+   */
+  private static Gender effectiveTeamGenderOf(Gender gender, Title linkedTitle) {
+    return gender != null ? gender : linkedTitle != null ? linkedTitle.getGender() : null;
   }
 
   /**
@@ -1123,16 +1142,20 @@ public class TournamentService {
   /**
    * How many teams are eligible to seed a team tournament of the given size with the given gender
    * filter — the team mirror of {@link #countEligibleEntrants} (active REGISTRY teams whose every
-   * member is active with the gender; see {@link #findEligibleTeamsSortedByFans}). Scoped to the
-   * given universe when non-null. The creation wizard caps its team-entrant-count field at this
-   * value.
+   * member is active with the gender; see {@link #findEligibleTeamsSortedByFans}). The linked
+   * championship's own gender constraint applies when the tournament sets no filter (ATW-01g2
+   * review) — the same effective-gender rule the eligibility pool and the singles count apply.
+   * Scoped to the given universe when non-null. The creation wizard caps its team-entrant-count
+   * field at this value.
    */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
-  public int countEligibleTeamEntrants(TeamSize teamSize, Gender gender, Long universeId) {
+  public int countEligibleTeamEntrants(
+      TeamSize teamSize, Gender gender, Title linkedTitle, Long universeId) {
     Tournament probe = new Tournament();
     probe.setTeamSize(teamSize);
     probe.setGender(gender);
+    probe.setLinkedTitle(linkedTitle);
     if (universeId != null) {
       probe.setUniverse(universeRepository.findById(universeId).orElse(null));
     }
@@ -1311,7 +1334,12 @@ public class TournamentService {
     }
   }
 
-  /** Book all pending matches in the current round onto a show, creating segment reservations. */
+  /**
+   * Book all pending matches in the current round onto a show, creating segment reservations.
+   * Team-aware (ATW-01g2 review): team entries book through the same team-segment construction the
+   * template-fed path uses (sides = the entry team's members in slot order), never through the
+   * solo-wrestler path whose @NonNull params an entrant with no wrestler would trip.
+   */
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public void bookRoundOnShow(Tournament tournament, TournamentRound round, Show show) {
@@ -1336,24 +1364,54 @@ public class TournamentService {
       reservationService.reserveSlot(
           show, ShowSegmentReservationPurpose.TOURNAMENT_ROUND, match.getId(), label);
 
-      // Book the actual segment with the resolved stipulation
-      showBookingService
-          .bookSpecificMatch(
-              show,
-              match.getEntrant1().getWrestler(),
-              match.getEntrant2().getWrestler(),
-              label,
-              stipulation)
-          .ifPresent(
-              segment -> {
-                match.setSegment(segment);
-                matchRepository.save(match);
-              });
+      // Book the actual segment with the resolved stipulation — team sides when either entrant
+      // is a team, solo wrestlers otherwise.
+      Optional<Segment> booked =
+          teamSidesOf(match)
+              .map(
+                  sides ->
+                      showBookingService.bookSpecificTeamMatch(
+                          show, sides.get(0), sides.get(1), label, stipulation))
+              .orElseGet(
+                  () ->
+                      showBookingService.bookSpecificMatch(
+                          show,
+                          match.getEntrant1().getWrestler(),
+                          match.getEntrant2().getWrestler(),
+                          label,
+                          stipulation));
+      booked.ifPresent(
+          segment -> {
+            match.setSegment(segment);
+            matchRepository.save(match);
+          });
     }
 
     round.setShow(show);
     round.setStatus(TournamentRoundStatus.IN_PROGRESS);
     roundRepository.save(round);
+  }
+
+  /**
+   * The match's two sides as member lists when EITHER entrant is a team (slot-ordered members),
+   * empty when both are solo wrestlers (the classic path books those). Sized sides keep mixed
+   * team/solo pairings bookable — the resolution treats a 1-wrestler side as its own team.
+   */
+  private Optional<List<List<Wrestler>>> teamSidesOf(TournamentMatch match) {
+    if (match.getEntrant1().getTeam() == null && match.getEntrant2().getTeam() == null) {
+      return Optional.empty();
+    }
+    return Optional.of(List.of(membersOf(match.getEntrant1()), membersOf(match.getEntrant2())));
+  }
+
+  /** The entry's side: the team's members in slot order, or the solo wrestler alone. */
+  private static List<Wrestler> membersOf(TournamentEntry entry) {
+    if (entry.getTeam() != null) {
+      return entry.getTeam().getMembers().stream()
+          .map(TeamMember::getWrestler)
+          .collect(Collectors.toList());
+    }
+    return List.of(entry.getWrestler());
   }
 
   /**

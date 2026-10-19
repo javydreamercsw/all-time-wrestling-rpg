@@ -251,6 +251,13 @@ public class TeamService {
     team.setOrigin(origin != null ? origin : TeamOrigin.REGISTRY);
     team.setStatus(TeamStatus.ACTIVE);
 
+    // Scope the team to the session's current universe (ATW-01g2 review): tournament
+    // eligibility pools the registry through team.universe, so a team created without one
+    // never appears in the wizard's registry grid. No current universe — leave null
+    // (unassigned teams are simply never scoped), the same behavior tournament creation
+    // shows when the session carries no universe.
+    team.setUniverse(universeContextService.getCurrentUniverse().orElse(null));
+
     // Set faction if provided
     if (factionId != null) {
       team.setFaction(factionRepository.findById(factionId).orElse(null));

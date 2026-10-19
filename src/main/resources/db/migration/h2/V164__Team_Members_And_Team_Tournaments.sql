@@ -2,9 +2,11 @@
 --
 -- 1. team_member: the ordered membership child table (slot 0..n-1). Slots replace the
 --    wrestler1_id/wrestler2_id columns on team; slots 0/1 mirror the legacy pair.
--- 2. team gains team_size / origin / fans. fans is backfilled as the sum of member
---    fans in the team's universe at migration time (preserves ranking order on upgrade);
---    from then on it accrues at team level only.
+-- 2. team gains team_size / origin / fans. universe_id is backfilled from member
+--    agreement (every member's wrestler_state agrees on one universe; ambiguous teams
+--    stay NULL), and fans is backfilled as the sum of member fans in that universe at
+--    migration time (preserves ranking order on upgrade); from then on fans accrues at
+--    team level only.
 -- 3. tournament_entry gains a nullable team_id (exactly one of wrestler_id / team_id set);
 --    wrestler_id's NOT NULL (V127) is relaxed — the check below needs wrestler_id NULL for
 --    team-only entries.
@@ -39,14 +41,55 @@ ALTER TABLE team ADD COLUMN team_size VARCHAR(16) NOT NULL DEFAULT 'DUO';
 ALTER TABLE team ADD COLUMN origin VARCHAR(16) NOT NULL DEFAULT 'REGISTRY';
 ALTER TABLE team ADD COLUMN fans BIGINT NOT NULL DEFAULT 0;
 
--- Seed team fans as the member-fan sum in the team's universe (one-time migration input;
--- the live ordering metric is team.fans from here on).
+-- Backfill team.universe_id from member agreement. V83 blanket-assigned universe 1 to
+-- every team, but that assignment predates member-level state: a team's real universe is
+-- the one its members actually live in. A universe "fully agrees" with a team when every
+-- member has a wrestler_state in it; the team takes the agreeing universe when EXACTLY
+-- ONE exists (two fully-covering universes is ambiguous — the team stays NULL and the
+-- eligibility pool treats it as unassigned, never scoped). Members with no states
+-- anywhere leave nothing to agree on — the team stays NULL too. The work table keeps
+-- this portable (MySQL restricts LIMIT/correlated-derived-table subqueries in UPDATE).
+DROP TABLE IF EXISTS team_universe_backfill;
+CREATE TABLE team_universe_backfill (
+    team_id BIGINT PRIMARY KEY,
+    universe_id BIGINT NOT NULL
+);
+
+INSERT INTO team_universe_backfill (team_id, universe_id)
+SELECT tm.team_id, ws.universe_id
+FROM team_member tm
+JOIN wrestler_state ws ON ws.wrestler_id = tm.wrestler_id
+JOIN (
+    SELECT team_id, COUNT(*) AS member_count FROM team_member GROUP BY team_id
+) sizes ON sizes.team_id = tm.team_id
+GROUP BY tm.team_id, ws.universe_id, sizes.member_count
+HAVING COUNT(DISTINCT tm.wrestler_id) = sizes.member_count;
+
+UPDATE team t
+SET t.universe_id = (
+    SELECT b.universe_id FROM team_universe_backfill b WHERE b.team_id = t.team_id
+)
+WHERE (
+    SELECT COUNT(*) FROM team_universe_backfill b2 WHERE b2.team_id = t.team_id
+) = 1;
+
+DROP TABLE team_universe_backfill;
+
+-- Seed team fans as the member-fan sum in the team's resolved universe (one-time
+-- migration input; the live ordering metric is team.fans from here on). Teams left
+-- WITHOUT a universe by the agreement backfill above fall back to the sum across ALL
+-- the members' states — the universe predicate would match nothing for them, and no
+-- team may silently land at 0 fans on upgrade (its ranking position must survive).
 UPDATE team t
 SET fans = COALESCE((
     SELECT SUM(ws.fans)
     FROM wrestler_state ws
     JOIN team_member tm ON tm.team_id = t.team_id AND tm.wrestler_id = ws.wrestler_id
     WHERE ws.universe_id = t.universe_id
+), (
+    SELECT SUM(ws.fans)
+    FROM wrestler_state ws
+    JOIN team_member tm ON tm.team_id = t.team_id AND tm.wrestler_id = ws.wrestler_id
 ), 0);
 
 -- 4) Tournament team entrants --------------------------------------------------------

@@ -258,14 +258,16 @@ class TournamentServiceIT extends ManagementIntegrationTest {
     awayDuoB.setFans(8000L);
     teamRepository.save(awayDuoB);
 
-    // Count: only the home-universe teams count for a home-scoped probe.
+    // Count: only the home-universe teams count for a home-scoped probe. The teams.json seed
+    // catalog now legitimately lands in the home universe too (member-agreement scoping, C1
+    // fix) — the scoping contract under test is that the AWAY duos never appear.
     Tournament countProbe = new Tournament();
     countProbe.setTeamSize(TeamSize.DUO);
     countProbe.setUniverse(home);
     assertThat(tournamentService.findEligibleTeamsSortedByFans(countProbe))
         .extracting(Team::getName)
-        .containsExactly(
-            homeDuoA.getName(), homeDuoB.getName(), homeDuoC.getName(), homeDuoD.getName());
+        .contains(homeDuoA.getName(), homeDuoB.getName(), homeDuoC.getName(), homeDuoD.getName())
+        .doesNotContain(awayDuoA.getName(), awayDuoB.getName());
 
     // Seed: a home-universe tournament seeds the home team, never the away team.
     Tournament tournament =
@@ -286,8 +288,66 @@ class TournamentServiceIT extends ManagementIntegrationTest {
 
     List<TournamentEntry> entries = tournamentService.seedAuto(tournament, 4, home.getId());
     // Seeded by team fans within the universe — the higher-fans away teams never appear.
-    assertThat(entries)
-        .extracting(TournamentEntry::getTeam)
-        .containsExactly(homeDuoA, homeDuoB, homeDuoC, homeDuoD);
+    // (The seeded-catalog teams are also home-scoped since the C1 fix, so the bracket fills
+    // with whichever 4 home teams hold the most fans — the contract under test is the away
+    // exclusion, not the exact roster.)
+    assertThat(entries).extracting(TournamentEntry::getTeam).doesNotContain(awayDuoA, awayDuoB);
+  }
+
+  @Test
+  @DisplayName(
+      "Teams created WITHOUT an explicit universe land in the current universe and become"
+          + " eligible (C1 fix)")
+  void teamsCreatedWithoutExplicitUniverse_areScopedAndEligible() {
+    Universe home = anyUniverse();
+
+    Wrestler ace =
+        wrestlerRepository.save(
+            TestUtils.createWrestler("IT C1Ace " + System.nanoTime(), 0L, home));
+    Wrestler bea =
+        wrestlerRepository.save(
+            TestUtils.createWrestler("IT C1Bea " + System.nanoTime(), 0L, home));
+    Wrestler ed =
+        wrestlerRepository.save(TestUtils.createWrestler("IT C1Ed " + System.nanoTime(), 0L, home));
+    Wrestler fay =
+        wrestlerRepository.save(
+            TestUtils.createWrestler("IT C1Fay " + System.nanoTime(), 0L, home));
+
+    // The production shape (registry dialog / wizard one-off): create through the service
+    // without ever touching setUniverse — the blind spot that hid C1.
+    Team created =
+        teamService
+            .createTeam(
+                "IT C1 Duo " + System.nanoTime(),
+                "service-created",
+                List.of(ace.getId(), bea.getId()),
+                TeamSize.DUO,
+                null,
+                null,
+                com.github.javydreamercsw.management.domain.team.TeamOrigin.REGISTRY)
+            .orElseThrow();
+    assertThat(created.getUniverse()).as("createTeam must stamp the current universe").isNotNull();
+    assertThat(created.getUniverse().getId()).isEqualTo(home.getId());
+
+    // The wizard's eligibility pool finds the freshly created team.
+    assertThat(tournamentService.countEligibleTeamEntrants(TeamSize.DUO, null, null, home.getId()))
+        .isGreaterThanOrEqualTo(1);
+    Tournament probe =
+        tournamentService.createTournament(
+            "IT C1 Probe " + System.nanoTime(),
+            "SINGLE_ELIMINATION",
+            home,
+            null,
+            LocalDate.now(),
+            List.of(),
+            null,
+            null,
+            null,
+            null,
+            false,
+            false,
+            TeamSize.DUO);
+    assertThat(tournamentService.findEligibleTeamsSortedByFans(probe).stream().map(Team::getId))
+        .contains(created.getId());
   }
 }

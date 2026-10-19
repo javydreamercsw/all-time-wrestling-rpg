@@ -19,14 +19,18 @@ package com.github.javydreamercsw.management.service.tournament;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamOrigin;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
@@ -38,9 +42,13 @@ import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntryRepository;
+import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatchRepository;
+import com.github.javydreamercsw.management.domain.tournament.TournamentRecurrence;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRepository;
+import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundRepository;
+import com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -57,6 +65,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 /**
  * Unit tests for team entrants in tournaments (ATW-01g2): the {@code addEntry(Tournament, Team,
@@ -65,6 +75,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
  * stay singles-only; tournament team size must match the linked TEAM title).
  */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class TournamentServiceTest {
 
   @Mock private TournamentRepository tournamentRepository;
@@ -262,9 +273,9 @@ class TournamentServiceTest {
     when(teamRepository.findAll()).thenReturn(List.of(local, foreign));
     when(universeRepository.findById(7L)).thenReturn(Optional.of(universe));
 
-    assertThat(service.countEligibleTeamEntrants(TeamSize.DUO, null, 7L)).isEqualTo(1);
+    assertThat(service.countEligibleTeamEntrants(TeamSize.DUO, null, null, 7L)).isEqualTo(1);
     // No universe filter (null) counts every eligible team regardless of universe.
-    assertThat(service.countEligibleTeamEntrants(TeamSize.DUO, null, null)).isEqualTo(2);
+    assertThat(service.countEligibleTeamEntrants(TeamSize.DUO, null, null, null)).isEqualTo(2);
   }
 
   @Test
@@ -467,6 +478,184 @@ class TournamentServiceTest {
     assertThat(shapeless.entrantId()).isNull();
   }
 
+  // ── Fix-wave regressions (final whole-branch review, ATW-01g2) ────────────
+
+  @Test
+  @DisplayName("bookRoundOnShow books a team-tournament round through team sides, not solo paths")
+  void bookRoundOnShow_teamTournament_booksTeamMatch() {
+    Tournament tournament = tournament(TeamSize.DUO);
+    Show show = new Show();
+    show.setId(50L);
+    show.setName("Monday Night");
+
+    // Registry team members in slot order — entrant.getWrestler() is NULL on both sides.
+    Wrestler ace = wrestler("Ace", 1L);
+    Wrestler bea = wrestler("Bea", 2L);
+    Wrestler cy = wrestler("Cy", 3L);
+    Wrestler di = wrestler("Di", 4L);
+    Team side1 = duoTeam("High Flyers", 10L, 500L, ace, bea);
+    Team side2 = duoTeam("Grounders", 11L, 400L, cy, di);
+
+    TournamentEntry entry1 =
+        TournamentEntry.builder().tournament(tournament).team(side1).seed(1).build();
+    TournamentEntry entry2 =
+        TournamentEntry.builder().tournament(tournament).team(side2).seed(2).build();
+    TournamentRound round =
+        TournamentRound.builder()
+            .roundNumber(1)
+            .roundName("Round 1")
+            .status(TournamentRoundStatus.PENDING)
+            .build();
+    TournamentMatch match =
+        TournamentMatch.builder().entrant1(entry1).entrant2(entry2).round(round).build();
+    when(matchRepository.findByRoundIdAndWinnerIsNull(round.getId())).thenReturn(List.of(match));
+
+    Segment booked = new Segment();
+    booked.setSegmentType(new SegmentType());
+    when(showBookingService.bookSpecificTeamMatch(
+            eq(show), eq(List.of(ace, bea)), eq(List.of(cy, di)), any(), any()))
+        .thenReturn(Optional.of(booked));
+
+    service.bookRoundOnShow(tournament, round, show);
+
+    // The team-aware path ran with full member sides — never the solo-wrestler overload
+    // whose @NonNull params the null entrant wrestlers would trip.
+    verify(showBookingService)
+        .bookSpecificTeamMatch(eq(show), eq(List.of(ace, bea)), eq(List.of(cy, di)), any(), any());
+    verify(showBookingService, never())
+        .bookSpecificMatch(any(Show.class), any(Wrestler.class), any(Wrestler.class), any(), any());
+    assertThat(match.getSegment()).isSameAs(booked);
+    assertThat(round.getStatus()).isEqualTo(TournamentRoundStatus.IN_PROGRESS);
+  }
+
+  @Test
+  @DisplayName("bookRoundOnShow keeps the solo path for a singles-tournament round")
+  void bookRoundOnShow_singlesTournament_booksSoloMatch() {
+    Tournament tournament = tournament(null);
+    tournament.setEntries(new ArrayList<>());
+    tournament.setRounds(new ArrayList<>());
+    Show show = new Show();
+    show.setId(50L);
+
+    Wrestler ace = wrestler("Ace", 1L);
+    Wrestler bea = wrestler("Bea", 2L);
+    TournamentEntry entry1 =
+        TournamentEntry.builder().tournament(tournament).wrestler(ace).seed(1).build();
+    TournamentEntry entry2 =
+        TournamentEntry.builder().tournament(tournament).wrestler(bea).seed(2).build();
+    TournamentRound round =
+        TournamentRound.builder()
+            .roundNumber(1)
+            .roundName("Round 1")
+            .status(TournamentRoundStatus.PENDING)
+            .build();
+    TournamentMatch match =
+        TournamentMatch.builder().entrant1(entry1).entrant2(entry2).round(round).build();
+    when(matchRepository.findByRoundIdAndWinnerIsNull(round.getId())).thenReturn(List.of(match));
+    when(showBookingService.bookSpecificMatch(eq(show), eq(ace), eq(bea), any(), any()))
+        .thenReturn(Optional.of(new Segment()));
+
+    service.bookRoundOnShow(tournament, round, show);
+
+    verify(showBookingService).bookSpecificMatch(eq(show), eq(ace), eq(bea), any(), any());
+    verify(showBookingService, never()).bookSpecificTeamMatch(any(), any(), any(), any(), any());
+  }
+
+  @Test
+  @DisplayName(
+      "createNextEdition of a recurring TEAM tournament carries the same teamSize (fix-wave C4)")
+  void createNextEdition_copiesTeamSize() {
+    Tournament completed = tournament(TeamSize.DUO);
+    completed.setRecurrence(TournamentRecurrence.ANNUAL);
+    when(tournamentRepository.findByParentId(1L)).thenReturn(Optional.empty());
+    when(tournamentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    Optional<Tournament> next = service.createNextEdition(completed);
+
+    assertThat(next).isPresent();
+    assertThat(next.get().getTeamSize()).isEqualTo(TeamSize.DUO);
+  }
+
+  @Test
+  @DisplayName(
+      "A linked TEAM title's gender constraint applies with the tournament gender unset (C5)")
+  void teamEntry_rejectsMemberNotMatchingLinkedTitleGender() {
+    Tournament tournament = tournament(TeamSize.DUO);
+    Title womensTagTitles = new Title();
+    womensTagTitles.setId(7L);
+    womensTagTitles.setName("Women's Tag Championship");
+    womensTagTitles.setChampionshipType(ChampionshipType.TEAM);
+    womensTagTitles.setGender(Gender.FEMALE);
+    tournament.setLinkedTitle(womensTagTitles);
+    // Tournament gender unset — the linked title's constraint is the only one.
+
+    Team mixed =
+        duoTeam("Mixed Pair", 12L, 500L, wrestler("Bea", 2L, Gender.FEMALE), wrestler("Ace", 1L));
+
+    assertThatThrownBy(() -> service.addEntry(tournament, mixed, 1))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("gender");
+  }
+
+  @Test
+  @DisplayName("Linked-title gender narrows the team eligibility pool and its count (C5)")
+  void linkedTitleGender_narrowsTeamEligibilityPoolAndCount() {
+    Title womensTagTitles = new Title();
+    womensTagTitles.setId(7L);
+    womensTagTitles.setName("Women's Tag Championship");
+    womensTagTitles.setChampionshipType(ChampionshipType.TEAM);
+    womensTagTitles.setGender(Gender.FEMALE);
+    Tournament probe = new Tournament();
+    probe.setTeamSize(TeamSize.DUO);
+    probe.setLinkedTitle(womensTagTitles);
+
+    Team womens =
+        duoTeam(
+            "Belles",
+            10L,
+            500L,
+            wrestler("Bea", 2L, Gender.FEMALE),
+            wrestler("Cara", 3L, Gender.FEMALE));
+    Team mixed =
+        duoTeam("Mixed Pair", 12L, 9000L, wrestler("Bea", 2L, Gender.FEMALE), wrestler("Ace", 1L));
+    when(teamRepository.findAll()).thenReturn(List.of(womens, mixed));
+
+    // The higher-fans mixed team is excluded through the linked title's constraint.
+    assertThat(service.findEligibleTeamsSortedByFans(probe)).containsExactly(womens);
+    assertThat(service.countEligibleTeamEntrants(TeamSize.DUO, null, womensTagTitles, null))
+        .isEqualTo(1);
+  }
+
+  @Test
+  @DisplayName(
+      "Teams created WITHOUT an explicit universe resolve through the session's current universe")
+  void teamEligibilityFindsTeamsCreatedWithoutExplicitUniverse() {
+    // The fixture blind spot that hid C1: teams built without touching setUniverse — the
+    // shape every production creation path (registry dialog, wizard one-off) produces.
+    Universe universe = new Universe();
+    universe.setId(7L);
+    Team local = duoTeam("Local Duo", 10L, 300L, wrestler("Ace", 1L), wrestler("Bea", 2L));
+    local.setUniverse(universe);
+    Team localLow = duoTeam("Local Low", 12L, 100L, wrestler("Gil", 7L), wrestler("Hal", 8L));
+    localLow.setUniverse(universe);
+    Team foreign = duoTeam("Foreign Duo", 11L, 9000L, wrestler("Cy", 3L), wrestler("Di", 4L));
+    foreign.setUniverse(otherUniverse(9L));
+    when(teamRepository.findAll()).thenReturn(List.of(local, localLow, foreign));
+
+    Tournament tournament = tournament(TeamSize.DUO);
+    tournament.setUniverse(universe);
+    when(entryRepository.findByTournamentIdOrderBySeedAsc(1L)).thenReturn(List.of());
+    when(entryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    when(universeRepository.findById(7L)).thenReturn(Optional.of(universe));
+
+    // Seeding from the universe-scoped tournament finds the (universe-stamped) registry teams.
+    List<TournamentEntry> entries = service.seedAuto(tournament, 2, 7L);
+    assertThat(entries).extracting(TournamentEntry::getTeam).containsExactly(local, localLow);
+
+    // And the wizard's eligibility count sees them through the same predicate.
+    assertThat(service.countEligibleTeamEntrants(TeamSize.DUO, null, null, 7L)).isEqualTo(2);
+  }
+
   // ── Fixtures ─────────────────────────────────────────────────────────────
 
   private Tournament tournament(TeamSize teamSize) {
@@ -494,6 +683,8 @@ class TournamentServiceTest {
   }
 
   private Team duoTeam(String name, long id, long fans, Wrestler... members) {
+    // C1 regression shape: a fixture-built team carries no universe unless a test stamps one —
+    // production stamps it at create (TeamService.createTeam scopes to the current universe).
     return team(name, id, TeamSize.DUO, TeamOrigin.REGISTRY, TeamStatus.ACTIVE, fans, members);
   }
 

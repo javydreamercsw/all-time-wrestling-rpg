@@ -182,7 +182,7 @@ class TournamentListViewTest extends AbstractViewTest {
               return t;
             });
     lenient()
-        .when(tournamentService.countEligibleTeamEntrants(any(TeamSize.class), any(), any()))
+        .when(tournamentService.countEligibleTeamEntrants(any(TeamSize.class), any(), any(), any()))
         .thenReturn(6);
     lenient()
         .when(tournamentService.findEligibleTeamsSortedByFans(any(Tournament.class)))
@@ -405,6 +405,30 @@ class TournamentListViewTest extends AbstractViewTest {
 
     payoffMode.setValue("Title on the line");
     assertTrue(titleCombo.isEnabled(), "Title mode must re-enable the title combo");
+  }
+
+  @Test
+  @DisplayName(
+      "Changing the gender filter in singles mode keeps a briefcase selection (fix-wave T7)")
+  void wizardGenderChange_singlesMode_keepsBriefcaseSelected() {
+    view.openCreationWizardForTest();
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    RadioButtonGroup<String> payoffMode =
+        _get(UI.getCurrent(), RadioButtonGroup.class, spec -> spec.withLabel("Payoff"));
+    payoffMode.setValue("Winner earns the briefcase");
+
+    // The gender filter also re-runs refreshTeamPickers — it must not clobber the briefcase
+    // the booker just picked in singles mode (the payoff reset runs only on a team→singles
+    // entrant-type transition).
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    ComboBox<Gender> genderCombo =
+        _get(UI.getCurrent(), ComboBox.class, spec -> spec.withLabel("Gender Filter (optional)"));
+    genderCombo.setValue(Gender.FEMALE);
+
+    assertEquals(
+        "Winner earns the briefcase",
+        payoffMode.getValue(),
+        "A gender-filter change in singles mode must leave the briefcase selection intact");
   }
 
   @Test
