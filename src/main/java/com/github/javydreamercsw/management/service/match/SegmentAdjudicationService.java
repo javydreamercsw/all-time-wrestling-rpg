@@ -32,6 +32,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSe
 import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.team.TeamMember;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
+import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
@@ -636,7 +637,11 @@ public class SegmentAdjudicationService {
       try {
         snapshots.put(title, title.getCurrentReign());
       } catch (Exception e) {
-        log.warn("Could not snapshot current reign for title {} — payoff stamp may skip", title, e);
+        log.warn(
+            "Could not snapshot current reign for title {} — the payoff defense guard degrades"
+                + " to false",
+            title,
+            e);
       }
     }
     return snapshots;
@@ -649,6 +654,12 @@ public class SegmentAdjudicationService {
    * carries the winning team's reference — exact champion-team matching for contender filtering and
    * rankings. Adjudication's title-change path already granted the belt to every winning
    * participant; this only stamps the team.
+   *
+   * <p>Two resolution paths for the winning team: the bracket's WINNER entry when a TournamentMatch
+   * row points at the segment (the payoff final), else — the champion showcase, whose synthetic
+   * match is deliberately not persisted — the segment side (teamNumber group of ≥2 participants)
+   * whose member set matches a persisted team, for a {@code ChampionshipType.TEAM} title. A singles
+   * tournament with no match row is untouched.
    *
    * <p>Defense-vs-change is decided from the PRE-adjudication reign snapshot ({@code
    * reignsBefore}): a title CHANGE (pre-change reign present and none of its champions won) or a
@@ -675,66 +686,127 @@ public class SegmentAdjudicationService {
       return;
     }
     try {
+      // Resolve (title, winningTeam) for the payoff stamp. Every gated branch below returns
+      // silently when its shape does not hold — only a team payoff proceeds to stamping.
+      Title title;
+      Team winningTeam;
       Optional<TournamentMatch> matchOpt =
           tournamentMatchRepository.findBySegmentId(segment.getId());
       if (matchOpt.isEmpty()) {
-        return; // not a tournament segment (includes campaign mode) — nothing to stamp
+        // Champion showcase: the synthetic match is deliberately not persisted. Resolve the
+        // winning side from the segment's teamNumber sides against persisted teams — the
+        // attached TEAM title (the showcase always carries one) carries the team shape.
+        title = attachedTeamTitleOf(segment);
+        if (title == null) {
+          return; // no TEAM championship attached — nothing team-shaped to stamp
+        }
+        winningTeam = winningSideTeamOf(segment, winners);
+        if (winningTeam == null) {
+          return; // no resolvable team on the winning side (singles showcase, ad-hoc side)
+        }
+      } else {
+        var tournament = matchOpt.get().getRound().getTournament();
+        if (tournament.getTeamSize() == null || tournament.getLinkedTitle() == null) {
+          return; // singles tournament or no linked championship — legacy behavior is correct
+        }
+        // The winning entry's team is authoritative: the bracket's WINNER entry when the payoff
+        // already completed it, else the entry matching the segment winners (final books before
+        // adjudication records the bracket result on some paths).
+        winningTeam =
+            tournament.getEntries().stream()
+                .filter(e -> e.getStatus() == TournamentEntryStatus.WINNER)
+                .map(TournamentEntry::getTeam)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElseGet(() -> winningEntryTeamOf(matchOpt.get(), winners));
+        if (winningTeam == null) {
+          return; // singles entries — not a team payoff
+        }
+        title = tournament.getLinkedTitle();
       }
-      var tournament = matchOpt.get().getRound().getTournament();
-      if (tournament.getTeamSize() == null || tournament.getLinkedTitle() == null) {
-        return; // singles tournament or no linked championship — legacy behavior is correct
-      }
-      // The winning entry's team is authoritative: the bracket's WINNER entry when the payoff
-      // already completed it, else the entry matching the segment winners (final books before
-      // adjudication records the bracket result on some paths).
-      Team winningTeam =
-          tournament.getEntries().stream()
-              .filter(e -> e.getStatus() == TournamentEntryStatus.WINNER)
-              .map(TournamentEntry::getTeam)
-              .filter(Objects::nonNull)
-              .findFirst()
-              .orElseGet(() -> winningEntryTeamOf(matchOpt.get(), winners));
-      if (winningTeam == null) {
-        return; // singles entries — not a team payoff
-      }
-      Title title = tournament.getLinkedTitle();
       if (!title.equals(
           segment.getTitles().stream().filter(t -> t.equals(title)).findFirst().orElse(null))) {
-        return; // the adjudicated segment does not carry the tournament's championship
+        return; // the adjudicated segment does not carry the resolved championship
       }
-      Optional<TitleReign> reignBefore = reignsBefore.getOrDefault(title, Optional.empty());
-      // Defense decided from the PRE-change snapshot: any pre-change champion on the winning
-      // side means the champions defended — the reign keeps its (unchanged) team reference.
-      boolean championsDefended =
-          reignBefore.isPresent()
-              && reignBefore.get().getChampions().stream().anyMatch(winners::contains);
-      if (championsDefended) {
-        log.debug(
-            "Team tournament '{}' — champions defended '{}'; reign team reference stays",
-            tournament.getName(),
-            title.getName());
-        return;
-      }
-      Optional<TitleReign> reign = title.getCurrentReign();
-      if (reign.isPresent()) {
-        reign.get().setTeam(winningTeam);
-        log.info(
-            "Team tournament '{}' payoff — reign for '{}' now references team '{}'",
-            tournament.getName(),
-            title.getName(),
-            winningTeam.getName());
-      } else {
-        List<Wrestler> members =
-            winningTeam.getMembers().stream().map(TeamMember::getWrestler).toList();
-        title.awardTitleTo(winningTeam, members, Instant.now(), segment);
-        log.info(
-            "Team tournament '{}' payoff — '{}' awarded to team '{}' (fallback team award)",
-            tournament.getName(),
-            title.getName(),
-            winningTeam.getName());
-      }
+      stampReignTeam(title, winningTeam, winners, reignsBefore, segment);
     } catch (Exception e) {
       log.error("Team payoff reign stamp failed for segment {}", segment.getId(), e);
+    }
+  }
+
+  /**
+   * The TEAM championship attached to {@code segment} — the champion showcase always carries
+   * exactly one title (the linked one), and only a TEAM championship makes the segment's sides
+   * team-shaped. Null when none is attached (singles showcase, contender rows).
+   */
+  @Nullable private Title attachedTeamTitleOf(@NonNull final Segment segment) {
+    return segment.getTitles().stream()
+        .filter(t -> t.getChampionshipType() == ChampionshipType.TEAM)
+        .findFirst()
+        .orElse(null);
+  }
+
+  /**
+   * The team behind the winning side of {@code segment}: a side (teamNumber group of ≥2
+   * participants) whose member set matches a persisted team. Null when the winning side does not
+   * resolve to a persisted team — the stamp is skipped rather than guessed.
+   */
+  @Nullable private Team winningSideTeamOf(@NonNull final Segment segment, List<Wrestler> winners) {
+    Map<Integer, List<SegmentParticipant>> sides =
+        segment.getParticipants().stream()
+            .collect(
+                Collectors.groupingBy(
+                    SegmentParticipant::getTeamNumber,
+                    Collectors.mapping(p -> p, Collectors.toList())));
+    return sides.values().stream()
+        .filter(side -> side.size() >= 2)
+        .map(side -> side.stream().map(SegmentParticipant::getWrestler).toList())
+        .filter(side -> !winners.isEmpty() && winners.containsAll(side))
+        .map(this::resolveTeam)
+        .flatMap(Optional::stream)
+        .findFirst()
+        .orElse(null);
+  }
+
+  /**
+   * Stamp the winning team onto the reign just created (or keep it on a successful defense).
+   * Defense decided from the PRE-change snapshot: any pre-change champion on the winning side means
+   * the champions defended — the reign keeps its (unchanged) team reference. No current reign after
+   * the grant (direct-award shape) falls back to awarding the title to the team outright, creating
+   * the reign with the team set and the members as champions.
+   */
+  private void stampReignTeam(
+      @NonNull final Title title,
+      @NonNull final Team winningTeam,
+      @NonNull final List<Wrestler> winners,
+      @NonNull final Map<Title, Optional<TitleReign>> reignsBefore,
+      @NonNull final Segment segment) {
+    Optional<TitleReign> reignBefore = reignsBefore.getOrDefault(title, Optional.empty());
+    // Defense decided from the PRE-change snapshot: any pre-change champion on the winning
+    // side means the champions defended — the reign keeps its (unchanged) team reference.
+    boolean championsDefended =
+        reignBefore.isPresent()
+            && reignBefore.get().getChampions().stream().anyMatch(winners::contains);
+    if (championsDefended) {
+      log.debug(
+          "Team payoff — champions defended '{}'; reign team reference stays", title.getName());
+      return;
+    }
+    Optional<TitleReign> reign = title.getCurrentReign();
+    if (reign.isPresent()) {
+      reign.get().setTeam(winningTeam);
+      log.info(
+          "Team payoff — reign for '{}' now references team '{}'",
+          title.getName(),
+          winningTeam.getName());
+    } else {
+      List<Wrestler> members =
+          winningTeam.getMembers().stream().map(TeamMember::getWrestler).toList();
+      title.awardTitleTo(winningTeam, members, Instant.now(), segment);
+      log.info(
+          "Team payoff — '{}' awarded to team '{}' (fallback team award)",
+          title.getName(),
+          winningTeam.getName());
     }
   }
 

@@ -47,6 +47,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAdditio
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpSource;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
@@ -707,6 +708,121 @@ class SegmentAdjudicationServiceTest {
     assertThat(realTitle.getCurrentReign()).isPresent();
     assertThat(realTitle.getCurrentReign().get().getChampions()).containsExactly(loser);
     assertThat(realTitle.getCurrentReign().get().getTeam()).isNull();
+  }
+
+  @Test
+  void midBracketGate_isTitleSegmentButTitleNotAttached_noStamp() {
+    // The segment is flagged as a title segment and a match row resolves, but the tournament's
+    // linked championship is NOT among the attached titles — the stamp must not fire (defense
+    // in depth against a detached title wiring).
+    when(segment.getId()).thenReturn(904L);
+    when(segment.getIsTitleSegment()).thenReturn(true);
+    Title linkedTitle = new Title();
+    linkedTitle.setId(7L);
+    linkedTitle.setName("Tag Titles");
+    linkedTitle.awardTitleTo(List.of(loser), Instant.now(), null);
+    when(segment.getTitles()).thenReturn(Set.of()); // linked title NOT attached
+
+    var winnerTeam = teamWithFans(100L, "High Flyers", 0L, List.of(winner));
+    TournamentEntry winnerEntry =
+        TournamentEntry.builder()
+            .team(winnerTeam)
+            .seed(1)
+            .status(TournamentEntryStatus.WINNER)
+            .build();
+    TournamentEntry loserEntry =
+        TournamentEntry.builder()
+            .team(teamWithFans(200L, "Face Team", 0L, List.of(loser)))
+            .seed(2)
+            .build();
+    TournamentMatch match =
+        TournamentMatch.builder().entrant1(winnerEntry).entrant2(loserEntry).build();
+    TournamentRound round = new TournamentRound();
+    round.setTournament(teamTournament(linkedTitle));
+    match.setRound(round);
+    when(tournamentMatchRepository.findBySegmentId(904L)).thenReturn(Optional.of(match));
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    // The linked title's reign is untouched — no team stamped, champions unchanged.
+    assertThat(linkedTitle.getCurrentReign()).isPresent();
+    assertThat(linkedTitle.getCurrentReign().get().getTeam()).isNull();
+    assertThat(linkedTitle.getCurrentReign().get().getChampions()).containsExactly(loser);
+  }
+
+  @Test
+  void teamShowcaseChallengerWins_newReignCarriesChallengerTeam() {
+    // Champion showcase title CHANGE (ATW-01g2): the showcase's synthetic match is NOT
+    // persisted, so no TournamentMatch row points at the segment. The winning side resolves
+    // from the segment's teamNumber sides (>=2 participants) against persisted teams, for the
+    // attached TEAM championship — the new reign the grant created carries the challenger's
+    // team. Real 2-vs-2 showcase shape: reigning champions (side 1) vs challengers (side 2).
+    Wrestler champPartner = mock(Wrestler.class);
+    Wrestler challengerPartner = mock(Wrestler.class);
+    when(champPartner.getId()).thenReturn(14L);
+    when(challengerPartner.getId()).thenReturn(15L);
+    when(champPartner.getName()).thenReturn("Champ Partner");
+    when(challengerPartner.getName()).thenReturn("Challenger Partner");
+    when(champPartner.getState(anyLong())).thenReturn(Optional.empty());
+    when(challengerPartner.getState(anyLong())).thenReturn(Optional.empty());
+    when(wrestlerService.getOrCreateState(eq(14L), anyLong()))
+        .thenReturn(mock(WrestlerState.class));
+    when(wrestlerService.getOrCreateState(eq(15L), anyLong()))
+        .thenReturn(mock(WrestlerState.class));
+
+    when(segment.getId()).thenReturn(905L);
+    when(segment.getIsTitleSegment()).thenReturn(true);
+    Title realTitle = new Title();
+    realTitle.setId(7L);
+    realTitle.setName("Tag Titles");
+    realTitle.setChampionshipType(ChampionshipType.TEAM);
+    var reigningTeam = teamWithFans(300L, "Reigning Team", 0L, List.of(loser, champPartner));
+    realTitle.awardTitleTo(List.of(loser, champPartner), Instant.now(), null);
+    realTitle.getCurrentReign().get().setTeam(reigningTeam);
+    when(segment.getTitles()).thenReturn(Set.of(realTitle));
+    doAnswer(
+            inv -> {
+              Title t = inv.getArgument(0);
+              List<Wrestler> champs = inv.getArgument(1);
+              t.awardTitleTo(champs, Instant.now(), inv.getArgument(2));
+              return null;
+            })
+        .when(titleService)
+        .awardTitleTo(any(Title.class), anyList(), any(Segment.class));
+
+    // No match row — the showcase shape. The CHALLENGER side won the belt.
+    when(tournamentMatchRepository.findBySegmentId(905L)).thenReturn(Optional.empty());
+    when(segment.getWinners()).thenReturn(List.of(winner, challengerPartner));
+    when(segment.getWrestlers())
+        .thenReturn(List.of(loser, champPartner, winner, challengerPartner));
+    Segment real = new Segment();
+    real.setShow(show);
+    SegmentType showcaseType = new SegmentType();
+    showcaseType.setName("Tag Team");
+    showcaseType.setCode("tag_team");
+    real.setSegmentType(showcaseType);
+    real.setId(905L);
+    real.setIsTitleSegment(true);
+    real.getTitles().add(realTitle);
+    real.addParticipant(loser, 1);
+    real.addParticipant(champPartner, 1);
+    real.addParticipant(winner, 2);
+    real.addParticipant(challengerPartner, 2);
+    real.setWinners(List.of(winner, challengerPartner));
+
+    var challengerTeam = teamWithFans(100L, "High Flyers", 0L, List.of(winner, challengerPartner));
+    when(teamRepository.findByWrestler(winner)).thenReturn(List.of(challengerTeam));
+    when(teamRepository.findByWrestler(challengerPartner)).thenReturn(List.of(challengerTeam));
+    when(teamRepository.findByWrestler(loser)).thenReturn(List.of(reigningTeam));
+    when(teamRepository.findByWrestler(champPartner)).thenReturn(List.of(reigningTeam));
+
+    segmentAdjudicationService.adjudicateMatch(real);
+
+    // The new reign (granted to the challengers) carries the challenger's team.
+    assertThat(realTitle.getCurrentReign()).isPresent();
+    assertThat(realTitle.getCurrentReign().get().getTeam()).isEqualTo(challengerTeam);
+    assertThat(realTitle.getCurrentReign().get().getChampions())
+        .containsExactlyInAnyOrder(winner, challengerPartner);
   }
 
   /** A DUO team tournament linked to the given title. */
