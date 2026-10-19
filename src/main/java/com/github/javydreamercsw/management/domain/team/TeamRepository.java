@@ -88,13 +88,13 @@ public interface TeamRepository extends JpaRepository<Team, Long>, JpaSpecificat
   /** Find teams by faction and status. */
   List<Team> findByFactionAndStatus(Faction faction, TeamStatus status);
 
+  /**
+   * Paged variant deliberately avoids the {@code t.members} collection fetch: a collection {@code
+   * JOIN FETCH} with {@code Pageable} forces Hibernate to load the whole result set and paginate in
+   * memory (HHH000104). Members load lazily per team instead, so SQL-side pagination is preserved.
+   */
   @Query(
-      value =
-          """
-          SELECT DISTINCT t FROM Team t\
-           LEFT JOIN FETCH t.members\
-           LEFT JOIN FETCH t.faction\
-          """,
+      value = "SELECT t FROM Team t LEFT JOIN FETCH t.faction",
       countQuery = "SELECT count(t) FROM Team t")
   @Override
   Page<Team> findAll(Pageable pageable);
