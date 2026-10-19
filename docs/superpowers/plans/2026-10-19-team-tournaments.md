@@ -34,26 +34,26 @@
 
 ## File Structure
 
-| File | Responsibility |
-|---|---|
-| `db/migration/h2/V164__Team_Members_And_Team_Tournaments.sql` (+ mysql V133) | Schema: `team_member`, team columns, entry `team_id`, tournament/title `team_size`, reign `team_id`, backfills |
-| `management/domain/team/TeamMember.java` (new) | Ordered member slot entity |
-| `management/domain/team/TeamMemberRepository.java` (new) | Repo for member slots |
-| `management/domain/team/TeamSize.java` (new) | `DUO(2)`, `TRIO(3)` |
-| `management/domain/team/TeamOrigin.java` (new) | `REGISTRY`, `AD_HOC` |
-| `management/domain/team/Team.java` | Members list + new fields + derived duo accessors |
-| `management/domain/team/TeamRepository.java` | Queries move from columns to member join |
-| `management/service/team/TeamService.java` | List-based create, uniquify, save-to-registry |
-| `management/sync/TeamSync.java` + `management/dto/TeamImportDTO.java` + `resources/teams.json` | Catalog: members array + teamSize, back-compat |
-| `management/service/ranking/RankingService.java` | TEAM branch: fans sort, member predicates, reign-team champion removal |
-| `management/domain/title/TitleReign.java`, `Title.java` | `team` reference; team-aware award overload |
-| `management/domain/show/segment/type/WellKnownSegmentType.java` | `TRIOS` |
-| `management/domain/tournament/Tournament.java`, `TournamentEntry.java` | `teamSize` on tournament; `team_id` on entry |
-| `management/service/tournament/TournamentService.java` | Team entry add/seed/eligibility/validation |
-| `management/service/tournament/TournamentTemplateBookingService.java` | Team-vs-team segment sides; payoff reign team |
-| `management/service/match/SegmentAdjudicationService.java` | Team fans accrual |
-| `management/ui/view/tournament/TournamentListView.java` (+ facade) | Wizard entrant-type, registry picker, one-off assembly |
-| `src/test/java/...` matching test classes | Per-task tests listed in each task |
+|                                              File                                              |                                                 Responsibility                                                 |
+|------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
+| `db/migration/h2/V164__Team_Members_And_Team_Tournaments.sql` (+ mysql V133)                   | Schema: `team_member`, team columns, entry `team_id`, tournament/title `team_size`, reign `team_id`, backfills |
+| `management/domain/team/TeamMember.java` (new)                                                 | Ordered member slot entity                                                                                     |
+| `management/domain/team/TeamMemberRepository.java` (new)                                       | Repo for member slots                                                                                          |
+| `management/domain/team/TeamSize.java` (new)                                                   | `DUO(2)`, `TRIO(3)`                                                                                            |
+| `management/domain/team/TeamOrigin.java` (new)                                                 | `REGISTRY`, `AD_HOC`                                                                                           |
+| `management/domain/team/Team.java`                                                             | Members list + new fields + derived duo accessors                                                              |
+| `management/domain/team/TeamRepository.java`                                                   | Queries move from columns to member join                                                                       |
+| `management/service/team/TeamService.java`                                                     | List-based create, uniquify, save-to-registry                                                                  |
+| `management/sync/TeamSync.java` + `management/dto/TeamImportDTO.java` + `resources/teams.json` | Catalog: members array + teamSize, back-compat                                                                 |
+| `management/service/ranking/RankingService.java`                                               | TEAM branch: fans sort, member predicates, reign-team champion removal                                         |
+| `management/domain/title/TitleReign.java`, `Title.java`                                        | `team` reference; team-aware award overload                                                                    |
+| `management/domain/show/segment/type/WellKnownSegmentType.java`                                | `TRIOS`                                                                                                        |
+| `management/domain/tournament/Tournament.java`, `TournamentEntry.java`                         | `teamSize` on tournament; `team_id` on entry                                                                   |
+| `management/service/tournament/TournamentService.java`                                         | Team entry add/seed/eligibility/validation                                                                     |
+| `management/service/tournament/TournamentTemplateBookingService.java`                          | Team-vs-team segment sides; payoff reign team                                                                  |
+| `management/service/match/SegmentAdjudicationService.java`                                     | Team fans accrual                                                                                              |
+| `management/ui/view/tournament/TournamentListView.java` (+ facade)                             | Wizard entrant-type, registry picker, one-off assembly                                                         |
+| `src/test/java/...` matching test classes                                                      | Per-task tests listed in each task                                                                             |
 
 ### Task 1: Schema migration + Team member restructure
 
@@ -187,3 +187,4 @@
 - [ ] **Step 3:** `graphify update .` (keep the knowledge graph current).
 - [ ] **Step 4:** `git pull --rebase; git push` — verify `git status` shows "up to date with origin".
 - [ ] **Step 5:** Close ATW-01g2 (`bd close ATW-01g2`) and note any follow-ups (contender-deciding team tournaments, official tag title catalog swap ~April 2027) as new beads issues.
+
