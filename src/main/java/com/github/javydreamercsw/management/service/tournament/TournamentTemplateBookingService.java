@@ -662,10 +662,10 @@ public class TournamentTemplateBookingService {
     }
     List<List<String>> names = new ArrayList<>();
     for (TournamentEntry entry : match.entrants()) {
-      if (entry == null || entry.getWrestler() == null || entry.getWrestler().getName() == null) {
+      if (entry == null || entry.entrantName() == null) {
         return List.of(List.of("Tournament bracket"), List.of("Tournament bracket"));
       }
-      names.add(List.of(entry.getWrestler().getName()));
+      names.add(List.of(entry.entrantName()));
     }
     if (names.size() < 2) {
       return List.of(List.of("Tournament bracket"), List.of("Tournament bracket"));
@@ -1101,8 +1101,8 @@ public class TournamentTemplateBookingService {
         tournament.getName(),
         roundNameOf(match),
         show.getName(),
-        match.getEntrant1().getWrestler().getName(),
-        match.getEntrant2().getWrestler().getName(),
+        match.getEntrant1().entrantName(),
+        match.getEntrant2().entrantName(),
         payoff ? (contenderPayoff ? " — CONTENDER PAYOFF" : " — PAYOFF") : "");
     return Optional.of(
         new TournamentBooking(
@@ -1155,7 +1155,7 @@ public class TournamentTemplateBookingService {
         "Tournament payoff: "
             + tournament.getName()
             + " champion showcase. The tournament winner ("
-            + winner.getWrestler().getName()
+            + winner.entrantName()
             + ") challenges the reigning "
             + linkedTitle.getName()
             + " champion"
@@ -1168,12 +1168,12 @@ public class TournamentTemplateBookingService {
         tournament.getName(),
         show.getName(),
         champions.stream().map(Wrestler::getName).collect(Collectors.joining(" & ")),
-        winner.getWrestler().getName());
+        winner.entrantName());
     return Optional.of(
         new TournamentBooking(
             segment,
             tournament,
-            "Champion showcase — champion vs " + winner.getWrestler().getName(),
+            "Champion showcase — champion vs " + winner.entrantName(),
             true,
             linkedTitle));
   }
@@ -1344,8 +1344,8 @@ public class TournamentTemplateBookingService {
         tournament.getName(),
         roundNameOf(match),
         show.getName(),
-        match.getEntrant1().getWrestler().getName(),
-        match.getEntrant2().getWrestler().getName());
+        match.getEntrant1().entrantName(),
+        match.getEntrant2().entrantName());
     return Optional.of(
         new TournamentBooking(
             segment, tournament, roundNameOf(match) + " — tournament-fed", false, null));
@@ -1485,16 +1485,34 @@ public class TournamentTemplateBookingService {
   /**
    * Derive the bracket winner from the booked segment's actual winners so the tournament state
    * matches the match result shown on the card.
+   *
+   * <p>Segment winners are wrestlers; {@code entrantId()} is a team id on a team entry — those live
+   * in disjoint id spaces (and a wrestler/team id collision would misattribute the win). Team
+   * entries therefore match by MEMBER wrestler ids: any segment winner being one of the entry
+   * team's members makes that entry the winner. Package-private for direct testing — the full
+   * booking path cannot materialize team segments until Task 6 builds sides from the entry team's
+   * members (until then booking a team tournament fails earlier, in segment resolution).
    */
-  private TournamentEntry pickBracketWinner(final TournamentMatch match, final Segment segment) {
+  TournamentEntry pickBracketWinner(final TournamentMatch match, final Segment segment) {
     // First segment winner that is one of the match's entrants — works for both the classic
     // two-entrant shape and multi-entrant matches (any entrant can win a Free-for-All).
     List<TournamentEntry> entrants = match.entrants();
     return segment.getWinners().stream()
-        .flatMap(
-            winner -> entrants.stream().filter(e -> e.getWrestler().getId().equals(winner.getId())))
+        .flatMap(winner -> entrants.stream().filter(entry -> isEntryWinner(entry, winner)))
         .findFirst()
         .orElse(entrants.get(0));
+  }
+
+  /**
+   * Whether {@code segmentWinner} wins {@code entry}: the wrestler himself for a singles entry, any
+   * member of the entry's team for a team entry.
+   */
+  private boolean isEntryWinner(TournamentEntry entry, Wrestler segmentWinner) {
+    if (entry.getTeam() != null) {
+      return entry.getTeam().getMembers().stream()
+          .anyMatch(member -> member.getWrestler().getId().equals(segmentWinner.getId()));
+    }
+    return entry.getWrestler() != null && entry.getWrestler().getId().equals(segmentWinner.getId());
   }
 
   private String roundNameOf(final TournamentMatch match) {

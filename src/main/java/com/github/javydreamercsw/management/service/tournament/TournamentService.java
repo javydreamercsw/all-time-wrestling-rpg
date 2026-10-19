@@ -23,6 +23,12 @@ import com.github.javydreamercsw.management.domain.show.reservation.ShowSegmentR
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.team.Team;
+import com.github.javydreamercsw.management.domain.team.TeamMember;
+import com.github.javydreamercsw.management.domain.team.TeamOrigin;
+import com.github.javydreamercsw.management.domain.team.TeamRepository;
+import com.github.javydreamercsw.management.domain.team.TeamSize;
+import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
@@ -47,6 +53,7 @@ import jakarta.annotation.Nullable;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -71,6 +78,7 @@ public class TournamentService {
   private final TournamentRoundRepository roundRepository;
   private final TournamentMatchRepository matchRepository;
   private final WrestlerRepository wrestlerRepository;
+  private final TeamRepository teamRepository;
   private final ShowRepository showRepository;
   private final ShowBookingService showBookingService;
   private final ShowSegmentReservationService reservationService;
@@ -170,7 +178,9 @@ public class TournamentService {
   }
 
   private Tournament initializeGraph(@NonNull Tournament t) {
-    t.getEntries().forEach(e -> e.getWrestler().getName());
+    // entrantName() touches whichever side the entry carries (team name or wrestler name) so the
+    // detached detail view reads it without a lazy-initialization exception.
+    t.getEntries().forEach(e -> e.entrantName());
     t.getAllowedRules().forEach(SegmentRule::getName);
     // The detail view reads the linked championship's name outside the session.
     if (t.getLinkedTitle() != null) {
@@ -189,10 +199,10 @@ public class TournamentService {
               r.getMatches()
                   .forEach(
                       m -> {
-                        m.getEntrant1().getWrestler().getName();
-                        m.getEntrant2().getWrestler().getName();
+                        m.getEntrant1().entrantName();
+                        m.getEntrant2().entrantName();
                         if (m.getWinner() != null) {
-                          m.getWinner().getWrestler().getName();
+                          m.getWinner().entrantName();
                         }
                         // The bracket label reads the booked segment's applied rule (and the
                         // segment link itself) outside the session — touch both eagerly.
@@ -334,6 +344,67 @@ public class TournamentService {
       Gender gender,
       boolean contenderDeciding,
       boolean briefcaseDeciding) {
+    return createTournament(
+        name,
+        formatId,
+        universe,
+        linkedTitle,
+        startDate,
+        allowedRules,
+        payoffShow,
+        payoffSegmentType,
+        payoffSegmentRule,
+        gender,
+        contenderDeciding,
+        briefcaseDeciding,
+        null);
+  }
+
+  /**
+   * Full overload including the entrant type: {@code teamSize} null keeps the singles semantics; a
+   * non-null value creates a team tournament taking team entrants of exactly that declared size.
+   * Team tournaments cannot decide contenders or briefcases (both stay singles-only — the winner is
+   * a team, and a team neither challenges as an individual nor holds a cashable briefcase), and
+   * when a TEAM title is linked its {@code Title.getTeamSize()} must match.
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public Tournament createTournament(
+      String name,
+      String formatId,
+      Universe universe,
+      Title linkedTitle,
+      LocalDate startDate,
+      List<SegmentRule> allowedRules,
+      Show payoffShow,
+      SegmentType payoffSegmentType,
+      SegmentRule payoffSegmentRule,
+      Gender gender,
+      boolean contenderDeciding,
+      boolean briefcaseDeciding,
+      TeamSize teamSize) {
+    if (teamSize != null) {
+      if (contenderDeciding || briefcaseDeciding) {
+        throw new IllegalArgumentException(
+            "Team tournaments are inaugural-champion tournaments only — contender- and"
+                + " briefcase-deciding payoffs stay singles");
+      }
+      if (linkedTitle != null) {
+        if (linkedTitle.getChampionshipType() != ChampionshipType.TEAM) {
+          throw new IllegalArgumentException(
+              "A team tournament must link a TEAM championship — '"
+                  + linkedTitle.getName()
+                  + "' is a singles title");
+        }
+        if (linkedTitle.getTeamSize() != null && linkedTitle.getTeamSize() != teamSize) {
+          throw new IllegalArgumentException(
+              "Tournament team size "
+                  + teamSize
+                  + " does not match the linked championship's team size "
+                  + linkedTitle.getTeamSize());
+        }
+      }
+    }
     if (contenderDeciding && briefcaseDeciding) {
       throw new IllegalArgumentException(
           "Choose one payoff mode — a tournament cannot be both contender-deciding and"
@@ -363,6 +434,7 @@ public class TournamentService {
     t.setGender(gender);
     t.setContenderDeciding(contenderDeciding);
     t.setBriefcaseDeciding(briefcaseDeciding);
+    t.setTeamSize(teamSize);
     t.setStartDate(startDate);
     t.setStatus(TournamentStatus.SCHEDULED);
     t.setEntries(new ArrayList<>());
@@ -780,15 +852,115 @@ public class TournamentService {
 
   // ── Entry management ──────────────────────────────────────────────────────
 
+  /**
+   * Guard for the exactly-one-entrant-shape invariant the DB check constraint {@code
+   * chk_entry_entrant_type} backstops: an entry holds either a wrestler or a team, never both,
+   * never neither. Called on every entry this service builds.
+   */
+  static void validateEntrantShape(TournamentEntry entry) {
+    if ((entry.getWrestler() == null) == (entry.getTeam() == null)) {
+      throw new IllegalArgumentException(
+          "A tournament entry holds exactly one entrant — either a wrestler or a team, got"
+              + " wrestler="
+              + (entry.getWrestler() != null)
+              + ", team="
+              + (entry.getTeam() != null));
+    }
+  }
+
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public TournamentEntry addEntry(Tournament tournament, Wrestler wrestler, int seed) {
+    if (tournament.getTeamSize() != null) {
+      throw new IllegalArgumentException(
+          "'"
+              + tournament.getName()
+              + "' is a team tournament — entrants are teams of "
+              + tournament.getTeamSize()
+              + ", not individual wrestlers");
+    }
     if (entryRepository.existsByTournamentIdAndWrestlerId(tournament.getId(), wrestler.getId())) {
       throw new IllegalStateException(
           wrestler.getName() + " is already entered in this tournament");
     }
     TournamentEntry entry =
         TournamentEntry.builder().tournament(tournament).wrestler(wrestler).seed(seed).build();
+    validateEntrantShape(entry);
+    return entryRepository.save(entry);
+  }
+
+  /**
+   * Enter a {@link Team} into a team tournament ({@code Tournament.getTeamSize() != null}).
+   * Validates the tournament takes teams, the declared size matches, every member satisfies the
+   * tournament's gender restriction, and no member is already entered in the tournament through any
+   * other entry (team or individual) — a wrestler may appear in only one entry per tournament.
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public TournamentEntry addEntry(Tournament tournament, Team team, int seed) {
+    if (tournament.getTeamSize() == null) {
+      throw new IllegalArgumentException(
+          "'"
+              + tournament.getName()
+              + "' is a singles tournament — entrants are individual wrestlers, not teams");
+    }
+    if (team.getTeamSize() != tournament.getTeamSize()) {
+      throw new IllegalArgumentException(
+          "Team '"
+              + team.getName()
+              + "' is a "
+              + team.getTeamSize()
+              + " team — '"
+              + tournament.getName()
+              + "' takes "
+              + tournament.getTeamSize()
+              + " teams");
+    }
+    Gender gender = tournament.getGender();
+    if (gender != null) {
+      for (TeamMember member : team.getMembers()) {
+        if (member.getWrestler().getGender() != gender) {
+          throw new IllegalArgumentException(
+              "Team '"
+                  + team.getName()
+                  + "' cannot enter: member "
+                  + member.getWrestler().getName()
+                  + " does not satisfy the tournament's "
+                  + gender
+                  + " gender restriction");
+        }
+      }
+    }
+    Set<Long> memberIds =
+        team.getMembers().stream()
+            .map(TeamMember::getWrestler)
+            .map(Wrestler::getId)
+            .collect(Collectors.toSet());
+    for (TournamentEntry existing :
+        entryRepository.findByTournamentIdOrderBySeedAsc(tournament.getId())) {
+      validateEntrantShape(existing);
+      if (existing.getTeam() != null) {
+        Set<Long> existingIds =
+            existing.getTeam().getMembers().stream()
+                .map(TeamMember::getWrestler)
+                .map(Wrestler::getId)
+                .collect(Collectors.toSet());
+        Set<Long> overlap = new HashSet<>(memberIds);
+        overlap.retainAll(existingIds);
+        if (!overlap.isEmpty()) {
+          throw new IllegalStateException(
+              "Wrestler is already entered in this tournament (via team '"
+                  + existing.getTeam().getName()
+                  + "')");
+        }
+      } else if (memberIds.contains(existing.getWrestler().getId())) {
+        throw new IllegalStateException(
+            existing.getWrestler().getName() + " is already entered in this tournament");
+      }
+    }
+    TournamentEntry entry =
+        TournamentEntry.builder().tournament(tournament).team(team).seed(seed).build();
+    validateEntrantShape(entry);
     return entryRepository.save(entry);
   }
 
@@ -798,6 +970,45 @@ public class TournamentService {
     TournamentFormat fmt =
         findFormat(tournament.getFormatId())
             .orElseThrow(() -> new IllegalStateException("Format not found"));
+    if (tournament.getTeamSize() != null) {
+      List<Team> teamPool = findEligibleTeamsSortedByFans(tournament);
+      if (teamPool.size() < fmt.getMinEntrants()) {
+        throw new IllegalStateException(
+            "Not enough eligible teams to seed '"
+                + tournament.getName()
+                + "': "
+                + teamPool.size()
+                + " available, the format needs at least "
+                + fmt.getMinEntrants()
+                + eligibilityNote(tournament.getLinkedTitle(), tournament.getGender()));
+      }
+      int effectiveTeams = Math.min(count, teamPool.size());
+      if (effectiveTeams < count) {
+        log.info(
+            "Seeding '{}' with {} teams ({} requested, the eligible registry holds only that"
+                + " many)",
+            tournament.getName(),
+            effectiveTeams,
+            count);
+      }
+      // The format's bracket cannot generate beyond its maximum — the same range check the
+      // wrestler path enforces through seedWith, applied to the team count (ATW-01g2 review).
+      if (effectiveTeams > fmt.getMaxEntrants()) {
+        throw new IllegalArgumentException(
+            "Team entrant count "
+                + effectiveTeams
+                + " out of range ["
+                + fmt.getMinEntrants()
+                + ", "
+                + fmt.getMaxEntrants()
+                + "]");
+      }
+      List<TournamentEntry> teamEntries = new ArrayList<>();
+      for (int i = 0; i < effectiveTeams; i++) {
+        teamEntries.add(addEntry(tournament, teamPool.get(i), i + 1));
+      }
+      return teamEntries;
+    }
     List<Wrestler> pool =
         findEligibleWrestlersSortedByFans(
             tournament.getLinkedTitle(), tournament.getGender(), universeId);
@@ -825,6 +1036,34 @@ public class TournamentService {
     return seedWith(tournament, active);
   }
 
+  /**
+   * The active REGISTRY teams of the declared size eligible to seed a team tournament with the
+   * given gender filter, sorted by the team's own fan counter (most fans first) — the team-level
+   * mirror of {@link #findEligibleWrestlersSortedByFans}. The tournament gender restriction applies
+   * per member: every member must be active with that gender (the same shape the TEAM ranking
+   * filter uses). Champion exclusion does not apply — an inaugural-champion tournament links a
+   * vacant (or not-yet-created) title, so there is no champion to exclude.
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public List<Team> findEligibleTeamsSortedByFans(Tournament tournament) {
+    Gender gender = tournament.getGender();
+    return teamRepository.findAll().stream()
+        .filter(
+            team ->
+                team.getTeamSize() == tournament.getTeamSize()
+                    && team.getOrigin() == TeamOrigin.REGISTRY
+                    && team.isActive()
+                    && team.getMembers().stream()
+                        .map(TeamMember::getWrestler)
+                        .allMatch(
+                            w ->
+                                Boolean.TRUE.equals(w.getActive())
+                                    && (gender == null || w.getGender() == gender)))
+        .sorted(Comparator.comparingLong(Team::getFans).reversed())
+        .toList();
+  }
+
   /** Human-readable note appended to eligibility errors when a constraint narrowed the pool. */
   private String eligibilityNote(Title linkedTitle, Gender gender) {
     if (linkedTitle == null && gender == null) {
@@ -841,15 +1080,40 @@ public class TournamentService {
   }
 
   /**
-   * How many active wrestlers are eligible to seed a tournament with the given linked title and
-   * gender filter — the active roster, narrowed by both gender constraints and minus the current
-   * champion(s) (see {@link #findEligibleWrestlersSortedByFans}). The creation wizard caps its
-   * entrant-count field at this value.
+   * How many entrants are eligible to seed a tournament with the given linked title and gender
+   * filter — the active roster, narrowed by both gender constraints and minus the current
+   * champion(s) (see {@link #findEligibleWrestlersSortedByFans}). For a TEAM title the count is
+   * team-based instead: the active REGISTRY teams of the title's declared size whose every member
+   * satisfies the gender (see {@link #findEligibleTeamsSortedByFans}; a TEAM title with no declared
+   * size counts its backfilled DUO default). The creation wizard caps its entrant-count field at
+   * this value.
    */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public int countEligibleEntrants(Title linkedTitle, Gender gender) {
+    if (linkedTitle != null && linkedTitle.getChampionshipType() == ChampionshipType.TEAM) {
+      Tournament probe = new Tournament();
+      probe.setTeamSize(
+          linkedTitle.getTeamSize() != null ? linkedTitle.getTeamSize() : TeamSize.DUO);
+      probe.setGender(gender);
+      return findEligibleTeamsSortedByFans(probe).size();
+    }
     return findEligibleWrestlersSortedByFans(linkedTitle, gender, null).size();
+  }
+
+  /**
+   * How many teams are eligible to seed a team tournament of the given size with the given gender
+   * filter — the team mirror of {@link #countEligibleEntrants} (active REGISTRY teams whose every
+   * member is active with the gender; see {@link #findEligibleTeamsSortedByFans}). The creation
+   * wizard caps its team-entrant-count field at this value.
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public int countEligibleTeamEntrants(TeamSize teamSize, Gender gender) {
+    Tournament probe = new Tournament();
+    probe.setTeamSize(teamSize);
+    probe.setGender(gender);
+    return findEligibleTeamsSortedByFans(probe).size();
   }
 
   /**
@@ -1039,9 +1303,9 @@ public class TournamentService {
               + " — "
               + round.getRoundName()
               + ": "
-              + match.getEntrant1().getWrestler().getName()
+              + match.getEntrant1().entrantName()
               + " vs "
-              + match.getEntrant2().getWrestler().getName();
+              + match.getEntrant2().entrantName();
 
       String stipulation = resolveStipulation(tournament, round, label);
 
@@ -1119,7 +1383,9 @@ public class TournamentService {
 
   /**
    * Replace one entrant with a different wrestler, keeping the vacated seed. Only allowed while
-   * SCHEDULED with no generated bracket.
+   * SCHEDULED with no generated bracket. Team entries are not replaceable this way — swapping one
+   * member of a team entry would corrupt the entrant shape (wrestler + team on one entry); team
+   * rosters are managed on the team itself.
    */
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
@@ -1133,6 +1399,12 @@ public class TournamentService {
             .findById(entryId)
             .filter(e -> e.getTournament().getId().equals(tournamentId))
             .orElseThrow(() -> new IllegalArgumentException("Entry not found: " + entryId));
+    if (entry.getTeam() != null) {
+      throw new IllegalStateException(
+          "Team entrant '"
+              + entry.entrantName()
+              + "' cannot be replaced with an individual wrestler — edit the team roster instead");
+    }
     Wrestler replacement = wrestlerRepository.findById(newWrestlerId).orElse(null);
     if (replacement == null) {
       throw new IllegalArgumentException("Wrestler not found: " + newWrestlerId);
@@ -1280,7 +1552,12 @@ public class TournamentService {
             entry -> {
               entry.setStatus(TournamentEntryStatus.WINNER);
               entryRepository.save(entry);
-              grantBriefcaseOnManualCompletion(tournament, entry.getWrestler());
+              // Briefcase-deciding tournaments are singles-only (creation validation rejects
+              // teamSize), so this entry always carries a wrestler — the guard keeps a
+              // shapeless/legacy row from NPEing rather than changing the semantics.
+              if (entry.getWrestler() != null) {
+                grantBriefcaseOnManualCompletion(tournament, entry.getWrestler());
+              }
             });
   }
 

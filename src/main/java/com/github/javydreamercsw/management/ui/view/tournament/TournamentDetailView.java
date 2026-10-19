@@ -347,7 +347,7 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
     Grid<TournamentEntry> grid = new Grid<>(TournamentEntry.class, false);
     grid.setAllRowsVisible(true);
     grid.addColumn(TournamentEntry::getSeed).setHeader("Seed").setWidth("80px").setFlexGrow(0);
-    grid.addColumn(e -> e.getWrestler().getName()).setHeader("Wrestler").setFlexGrow(1);
+    grid.addColumn(TournamentEntry::entrantName).setHeader("Entrant").setFlexGrow(1);
     grid.addColumn(e -> e.getStatus().name()).setHeader("Status");
     grid.setItems(tournament.getEntries());
 
@@ -457,13 +457,13 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
   /** Dialog replacing one entrant with another wrestler (same seed). */
   private void openReplaceDialog(TournamentEntry entry) {
     Dialog dialog = new Dialog();
-    dialog.setHeaderTitle("Replace seed " + entry.getSeed() + ": " + entry.getWrestler().getName());
+    dialog.setHeaderTitle("Replace seed " + entry.getSeed() + ": " + entry.entrantName());
 
     ComboBox<Wrestler> picker = new ComboBox<>("New wrestler");
     // Offer the eligible pool minus anyone already entered — the service rejects duplicates,
     // but showing them as choices would guarantee an error after selection.
     Set<Long> enteredIds = new HashSet<>();
-    tournament.getEntries().forEach(e -> enteredIds.add(e.getWrestler().getId()));
+    tournament.getEntries().forEach(e -> enteredIds.add(e.entrantId()));
     picker.setItems(
         tournamentService
             .findEligibleWrestlersSortedByFans(
@@ -608,12 +608,12 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
 
     List<TournamentEntry> entrants = match.entrants();
     String label =
-        entrants.stream().map(e -> e.getWrestler().getName()).collect(Collectors.joining(" vs "));
+        entrants.stream().map(TournamentEntry::entrantName).collect(Collectors.joining(" vs "));
     row.add(new Span(label));
 
     ComboBox<TournamentEntry> winnerPicker = new ComboBox<>("Pick winner");
     winnerPicker.setItems(entrants);
-    winnerPicker.setItemLabelGenerator(e -> e.getWrestler().getName());
+    winnerPicker.setItemLabelGenerator(TournamentEntry::entrantName);
 
     Button recordBtn =
         new Button(

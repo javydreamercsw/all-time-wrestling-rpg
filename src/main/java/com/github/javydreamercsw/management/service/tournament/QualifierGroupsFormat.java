@@ -188,8 +188,8 @@ public class QualifierGroupsFormat implements TournamentFormat {
               matchNumber,
               1,
               List.copyOf(slots),
-              realWinner != null ? realWinner.getWrestler().getId() : null,
-              realWinner != null ? realWinner.getWrestler().getName() : null));
+              realWinner != null ? realWinner.entrantId() : null,
+              realWinner != null ? realWinner.entrantName() : null));
       matchNumber++;
     }
 
@@ -205,10 +205,7 @@ public class QualifierGroupsFormat implements TournamentFormat {
       if (qualifierWinner != null) {
         finalSlots.add(
             new ProjectedSlot(
-                qualifierWinner.getWrestler().getName(),
-                qualifierWinner.getWrestler().getId(),
-                g + 1,
-                true));
+                qualifierWinner.entrantName(), qualifierWinner.entrantId(), g + 1, true));
       } else {
         finalSlots.add(new ProjectedSlot(null, null, g + 1, false));
       }
@@ -220,8 +217,8 @@ public class QualifierGroupsFormat implements TournamentFormat {
             matchNumber,
             2,
             List.copyOf(finalSlots),
-            finalWinner != null ? finalWinner.getWrestler().getId() : null,
-            finalWinner != null ? finalWinner.getWrestler().getName() : null));
+            finalWinner != null ? finalWinner.entrantId() : null,
+            finalWinner != null ? finalWinner.entrantName() : null));
 
     return Optional.of(new BracketProjection(List.of("Qualifiers", "Final"), matches));
   }
@@ -236,12 +233,12 @@ public class QualifierGroupsFormat implements TournamentFormat {
   }
 
   private String nameOf(TournamentEntry entry) {
-    return entry != null && entry.getWrestler() != null ? entry.getWrestler().getName() : null;
+    return entry != null ? entry.entrantName() : null;
   }
 
-  /** Wrestler id for winner/loser styling — the same id space as {@code decidedWinnerId}. */
+  /** Entrant id for winner/loser styling — the same id space as {@code decidedWinnerId}. */
   private Long wrestlerIdOf(TournamentEntry entry) {
-    return entry != null && entry.getWrestler() != null ? entry.getWrestler().getId() : null;
+    return entry != null ? entry.entrantId() : null;
   }
 
   @Override

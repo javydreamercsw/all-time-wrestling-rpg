@@ -5,7 +5,9 @@
 -- 2. team gains team_size / origin / fans. fans is backfilled as the sum of member
 --    fans in the team's universe at migration time (preserves ranking order on upgrade);
 --    from then on it accrues at team level only.
--- 3. tournament_entry gains a nullable team_id (exactly one of wrestler_id / team_id set).
+-- 3. tournament_entry gains a nullable team_id (exactly one of wrestler_id / team_id set);
+--    wrestler_id's NOT NULL (V127) is relaxed — the check below needs wrestler_id NULL for
+--    team-only entries.
 -- 4. tournament gains a nullable team_size (NULL = singles tournament).
 -- 5. title gains a nullable team_size (NULL = singles title); TEAM titles backfill to DUO.
 -- 6. title_reign gains a nullable team_id so champion-team matching is exact.
@@ -51,6 +53,9 @@ SET fans = COALESCE((
 ALTER TABLE tournament_entry ADD COLUMN team_id BIGINT;
 ALTER TABLE tournament_entry
     ADD CONSTRAINT fk_entry_team FOREIGN KEY (team_id) REFERENCES team(team_id);
+-- Relax wrestler_id's NOT NULL (V127) so a team-only entry can exist — the exactly-one
+-- CHECK below needs wrestler_id NULL when team_id is set.
+ALTER TABLE tournament_entry ALTER COLUMN wrestler_id SET NULL;
 ALTER TABLE tournament_entry ADD CONSTRAINT chk_entry_entrant_type
     CHECK ((wrestler_id IS NOT NULL AND team_id IS NULL) OR (wrestler_id IS NULL AND team_id IS NOT NULL));
 

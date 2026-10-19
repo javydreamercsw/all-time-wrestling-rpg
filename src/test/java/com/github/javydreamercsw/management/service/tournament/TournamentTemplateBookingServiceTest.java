@@ -41,6 +41,8 @@ import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
 import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.team.Team;
+import com.github.javydreamercsw.management.domain.team.TeamSize;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
@@ -599,6 +601,94 @@ class TournamentTemplateBookingServiceTest {
     verify(tournamentService).markRoundInProgress(match.getRound());
     verify(tournamentService).recordMatchResult(eq(match), eq(aliceEntry));
     assertEquals(booked, match.getSegment());
+  }
+
+  @Test
+  void teamMatch_winnerAttributedByTeamMember() {
+    // Segment winners are wrestlers; a team entry's entrantId() is a team id — disjoint id
+    // spaces (a wrestler id 10 vs team id 10 collision would misattribute). The winner is
+    // attributed by matching against the entry team's MEMBERS instead (ATW-01g2 review).
+    // Direct call: the full booking path cannot materialize team segments until Task 6 builds
+    // sides from the entry team's members — booking a team tournament fails earlier today.
+    Wrestler ace = wrestler(30L, "Ace");
+    Wrestler bea = wrestler(31L, "Bea");
+    Wrestler cy = wrestler(32L, "Cy");
+    Wrestler di = wrestler(33L, "Di");
+    Team duo = new Team();
+    duo.setId(10L);
+    duo.setName("High Flyers");
+    duo.setMembers(new ArrayList<>(List.of(ace, bea)));
+    duo.setTeamSize(TeamSize.DUO);
+    Team faceTeam = new Team();
+    faceTeam.setId(20L);
+    faceTeam.setName("Face Team");
+    faceTeam.setMembers(new ArrayList<>(List.of(cy, di)));
+    faceTeam.setTeamSize(TeamSize.DUO);
+    TournamentEntry duoEntry =
+        TournamentEntry.builder().tournament(tournament).team(duo).seed(1).build();
+    TournamentEntry faceEntry =
+        TournamentEntry.builder().tournament(tournament).team(faceTeam).seed(2).build();
+    TournamentMatch match = match(1, duoEntry, faceEntry);
+
+    // The booked segment's winner is Bea — a MEMBER of the duo entry, not the team itself.
+    Segment booked = new Segment();
+    booked.setSegmentType(new SegmentType());
+    booked.addParticipant(ace, 1);
+    booked.addParticipant(bea, 1);
+    booked.addParticipant(cy, 1);
+    booked.addParticipant(di, 1);
+    booked.setWinners(List.of(bea));
+
+    assertEquals(duoEntry, service.pickBracketWinner(match, booked));
+  }
+
+  @Test
+  void teamMatch_wrestlerTeamIdCollision_doesNotMisattribute() {
+    // A wrestler whose id equals the opposing TEAM's id must not win the team's bracket slot —
+    // the pre-fix code compared segment winners against entrantId() (team id) directly.
+    Wrestler ace = wrestler(20L, "Ace"); // same id as faceTeam below
+    Wrestler bea = wrestler(31L, "Bea");
+    Wrestler cy = wrestler(32L, "Cy");
+    Wrestler di = wrestler(33L, "Di");
+    Team duo = new Team();
+    duo.setId(10L);
+    duo.setName("High Flyers");
+    duo.setMembers(new ArrayList<>(List.of(ace, bea)));
+    duo.setTeamSize(TeamSize.DUO);
+    Team faceTeam = new Team();
+    faceTeam.setId(20L); // collides with wrestler ace's id
+    faceTeam.setName("Face Team");
+    faceTeam.setMembers(new ArrayList<>(List.of(cy, di)));
+    faceTeam.setTeamSize(TeamSize.DUO);
+    TournamentEntry duoEntry =
+        TournamentEntry.builder().tournament(tournament).team(duo).seed(1).build();
+    TournamentEntry faceEntry =
+        TournamentEntry.builder().tournament(tournament).team(faceTeam).seed(2).build();
+    TournamentMatch match = match(1, duoEntry, faceEntry);
+
+    // Ace (wrestler id 20 = faceTeam id 20) wins the segment — the win belongs to the DUO
+    // entry (his team), never to the face entry whose team id merely collides.
+    Segment booked = new Segment();
+    booked.setSegmentType(new SegmentType());
+    booked.addParticipant(ace, 1);
+    booked.addParticipant(bea, 1);
+    booked.addParticipant(cy, 1);
+    booked.addParticipant(di, 1);
+    booked.setWinners(List.of(ace));
+
+    assertEquals(duoEntry, service.pickBracketWinner(match, booked));
+  }
+
+  @Test
+  void singlesMatch_winnerAttributionUnchanged() {
+    // Guard the pre-existing singles behavior while changing the matching internals: the
+    // segment winner's wrestler id still attributes to the matching singles entry.
+    TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.ACTIVE);
+    TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ACTIVE);
+    TournamentMatch match = match(1, aliceEntry, bobEntry);
+
+    assertEquals(aliceEntry, service.pickBracketWinner(match, singles(alice, bob, alice)));
+    assertEquals(bobEntry, service.pickBracketWinner(match, singles(alice, bob, bob)));
   }
 
   @Test

@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
@@ -76,6 +77,7 @@ class BracketTournamentServiceTest {
   @Mock private TournamentRoundRepository roundRepository;
   @Mock private TournamentMatchRepository matchRepository;
   @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private TeamRepository teamRepository;
   @Mock private ShowRepository showRepository;
   @Mock private ShowBookingService showBookingService;
   @Mock private ShowSegmentReservationService reservationService;
@@ -104,6 +106,7 @@ class BracketTournamentServiceTest {
             roundRepository,
             matchRepository,
             wrestlerRepository,
+            teamRepository,
             showRepository,
             showBookingService,
             reservationService,
