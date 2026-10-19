@@ -58,9 +58,9 @@ wizard/booking path.
    fans from **every** team segment appearance (win or lose); `TitleReign` gains a
    nullable team reference so champion-team matching is exact.
 10. **One-off vs registry teams** — every team is a persisted `Team` row with a
-   `TeamOrigin` flag (`REGISTRY | AD_HOC`). Wizard-assembled one-offs persist as AD_HOC;
-   "save to registry" flips them to REGISTRY; the tournament registry picker offers only
-   REGISTRY teams. Auto-named one-offs get uniquified names (unique `team.name` holds).
+    `TeamOrigin` flag (`REGISTRY | AD_HOC`). Wizard-assembled one-offs persist as AD_HOC;
+    "save to registry" flips them to REGISTRY; the tournament registry picker offers only
+    REGISTRY teams. Auto-named one-offs get uniquified names (unique `team.name` holds).
 
 ## Non-goals (v1)
 
@@ -177,3 +177,4 @@ These were settled with the product owner in conversation:
   team-resolution path already marks every winning team member as a winner — verified by
   the builder check. Wiring the tournament payoff through the team entry (members as the
   winning side with `teamNumber`s, reign team reference set) is the remaining work.
+
