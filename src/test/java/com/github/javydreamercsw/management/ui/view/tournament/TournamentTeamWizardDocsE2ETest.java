@@ -77,16 +77,19 @@ class TournamentTeamWizardDocsE2ETest extends AbstractDocsE2ETest {
     selectFromVaadinComboBox(driver.findElement(By.id("wizard-format")), "Single Elimination");
     selectFromVaadinComboBox(driver.findElement(By.id("wizard-linked-title")), "Docs World Tag");
 
-    // Switch to Tag Team entrants — the registry grid + one-off panel appear.
+    // Switch to Tag Team entrants, advance to the seeding step, and switch to Manual —
+    // the "Select Teams" registry picker + one-off panel appear there (mirroring the
+    // singles wrestler picker's placement and visibility).
     selectRadio("wizard-entrant-type", "Tag Team");
-    waitForVaadinElement(driver, By.id("team-registry-grid"));
-    selectFirstRegistryTeam();
+    waitForVaadinElement(driver, By.id("wizard-next")).click();
+    waitForVaadinElement(driver, By.id("team-registry-picker"));
+    selectVaadinMultiSelect(driver.findElement(By.id("team-registry-picker")), 1);
 
     documentFeature(
         "Game Mechanics",
         "Team Tournaments",
         "Tournaments can be crowned with team champions: pick Tag Team or Trios entrants and"
-            + " the wizard swaps the wrestler picker for a team registry — active, seeded"
+            + " the seeding step swaps the wrestler picker for a team registry — active, seeded"
             + " teams of the declared size (DUO/TRIO) filtered by the gender restriction,"
             + " sorted by team fans. The linked championship must be a TEAM title, and the"
             + " payoff always puts it on the line: the winning team becomes the inaugural"
@@ -140,26 +143,34 @@ class TournamentTeamWizardDocsE2ETest extends AbstractDocsE2ETest {
   }
 
   /**
-   * Clicks the first visible row of the team registry grid (single selection mode), so the
-   * screenshot shows an entrant actually picked. Grid rows render as slotted cells; the click goes
-   * to the first body row element.
+   * Selects the first N options of a vaadin-multi-select-combo-box via its rendered overlay (the
+   * picker's rendered items live in the document-level overlay, slotted into the combo's internal
+   * list), so the screenshot shows entrants actually picked.
    */
-  private void selectFirstRegistryTeam() {
+  private void selectVaadinMultiSelect(WebElement combo, int count) {
     waitForVaadinClientToLoad();
     String script =
         """
-        const grid = document.getElementById('team-registry-grid');
-        if (!grid) throw new Error('Registry grid not found');
-        const cells = Array.from(grid.querySelectorAll('vaadin-grid-cell-content'))
-          .filter(c => c.getBoundingClientRect().height > 0);
-        if (cells.length === 0) {
-          throw new Error('Registry grid has no visible rows — no eligible teams seeded?');
-        }
-        const row = cells[0].assignedSlot && cells[0].assignedSlot.parentElement;
-        if (row) { row.dispatchEvent(new MouseEvent('click', {bubbles: true})); }
-        else { cells[0].click(); }
+        const combo = arguments[0];
+        combo.focus();
+        combo.dispatchEvent(new KeyboardEvent('keydown', {key: 'ArrowDown', bubbles: true}));
         """;
-    ((JavascriptExecutor) driver).executeScript(script);
+    ((JavascriptExecutor) driver).executeScript(script, combo);
+    waitForVaadinClientToLoad();
+    String pickScript =
+        """
+        const combo = arguments[0], count = arguments[1];
+        const overlay = document.querySelector('vaadin-multi-select-combo-box-overlay');
+        if (!overlay) throw new Error('Multi-select overlay not open');
+        const options = Array.from(
+          overlay.querySelectorAll('vaadin-multi-select-combo-box-item'))
+          .filter(o => o.getBoundingClientRect().height > 0);
+        if (options.length === 0) {
+          throw new Error('No eligible teams in the registry picker — none seeded?');
+        }
+        for (let i = 0; i < Math.min(count, options.length); i++) { options[i].click(); }
+        """;
+    ((JavascriptExecutor) driver).executeScript(pickScript, combo, count);
     waitForVaadinClientToLoad();
   }
 }

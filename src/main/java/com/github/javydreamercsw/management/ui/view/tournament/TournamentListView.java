@@ -948,6 +948,7 @@ public class TournamentListView extends VerticalLayout {
               }
               tabs.setSelectedIndex(1);
             });
+    next.setId("wizard-next");
 
     Button cancel = new Button("Cancel", e -> dialog.close());
     Button create =
