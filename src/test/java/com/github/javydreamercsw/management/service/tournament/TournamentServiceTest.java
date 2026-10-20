@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.tournament;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
@@ -42,6 +43,7 @@ import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntryRepository;
+import com.github.javydreamercsw.management.domain.tournament.TournamentEntryStatus;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatchRepository;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRecurrence;
@@ -49,6 +51,9 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentReposito
 import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundRepository;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus;
+import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
+import com.github.javydreamercsw.management.domain.tournament.TrophyReign;
+import com.github.javydreamercsw.management.domain.tournament.TrophyReignRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -56,6 +61,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.show.ShowBookingService;
 import com.github.javydreamercsw.management.service.show.ShowSegmentReservationService;
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -91,6 +97,8 @@ class TournamentServiceTest {
   @Mock private TitleReignRepository titleReignRepository;
   @Mock private SegmentRuleRepository segmentRuleRepository;
   @Mock private TitleOpportunityService titleOpportunityService;
+  @Mock private TrophyReignRepository trophyReignRepository;
+  @Mock private TrophyReignService trophyReignService;
   @Mock private TournamentFormat format;
 
   private TournamentService service;
@@ -116,6 +124,8 @@ class TournamentServiceTest {
             titleReignRepository,
             segmentRuleRepository,
             titleOpportunityService,
+            trophyReignRepository,
+            trophyReignService,
             List.of(format));
   }
 
@@ -331,7 +341,8 @@ class TournamentServiceTest {
                     null,
                     true,
                     false,
-                    TeamSize.DUO))
+                    TeamSize.DUO,
+                    null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("singles");
     assertThatThrownBy(
@@ -349,7 +360,8 @@ class TournamentServiceTest {
                     null,
                     false,
                     true,
-                    TeamSize.DUO))
+                    TeamSize.DUO,
+                    null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("singles");
     verify(tournamentRepository, never()).save(any(Tournament.class));
@@ -380,7 +392,8 @@ class TournamentServiceTest {
                     null,
                     false,
                     false,
-                    TeamSize.TRIO))
+                    TeamSize.TRIO,
+                    null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("team size");
 
@@ -403,7 +416,8 @@ class TournamentServiceTest {
                     null,
                     false,
                     false,
-                    TeamSize.DUO))
+                    TeamSize.DUO,
+                    null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("TEAM");
 
@@ -422,7 +436,8 @@ class TournamentServiceTest {
             null,
             false,
             false,
-            TeamSize.DUO);
+            TeamSize.DUO,
+            null);
     assertThat(created.getTeamSize()).isEqualTo(TeamSize.DUO);
     assertThat(created.getLinkedTitle()).isSameAs(tagTitles);
   }
@@ -654,6 +669,329 @@ class TournamentServiceTest {
 
     // And the wizard's eligibility count sees them through the same predicate.
     assertThat(service.countEligibleTeamEntrants(TeamSize.DUO, null, null, 7L)).isEqualTo(2);
+  }
+
+  // ── Trophy payoff (named trophy / bragging-rights tournaments) ─────────────
+
+  @Test
+  @DisplayName("A named trophy tournament persists the trimmed trophy name")
+  void createTournament_trophy_persistsTrimmedName() {
+    when(tournamentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    Tournament created =
+        service.createTournament(
+            "Dusty Cup",
+            "SINGLE_ELIMINATION",
+            null,
+            null,
+            null,
+            List.of(),
+            null,
+            null,
+            null,
+            null,
+            false,
+            false,
+            null,
+            "  Dusty Cup  ");
+
+    assertThat(created.getTrophyName()).isEqualTo("Dusty Cup");
+    assertThat(created.getLinkedTitle()).isNull();
+  }
+
+  @Test
+  @DisplayName("Trophy tournaments are legal for teams — team + trophy creates")
+  void createTournament_teamWithTrophy_allowed() {
+    when(tournamentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    Tournament created =
+        service.createTournament(
+            "Team Trophy Cup",
+            "SINGLE_ELIMINATION",
+            null,
+            null,
+            null,
+            List.of(),
+            null,
+            null,
+            null,
+            null,
+            false,
+            false,
+            TeamSize.DUO,
+            "Dusty Cup");
+
+    assertThat(created.getTeamSize()).isEqualTo(TeamSize.DUO);
+    assertThat(created.getTrophyName()).isEqualTo("Dusty Cup");
+  }
+
+  @Test
+  @DisplayName("A blank trophy name is rejected — a UI slip is not a trophy tournament")
+  void createTournament_blankTrophyName_rejected() {
+    assertThatThrownBy(
+            () ->
+                service.createTournament(
+                    "Blank Trophy Cup",
+                    "SINGLE_ELIMINATION",
+                    null,
+                    null,
+                    null,
+                    List.of(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    false,
+                    false,
+                    null,
+                    "   "))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Trophy name is required");
+    verify(tournamentRepository, never()).save(any(Tournament.class));
+  }
+
+  @Test
+  @DisplayName("The trophy cannot share a tournament with a title, contender, or briefcase payoff")
+  void createTournament_trophyConflicts_rejected() {
+    Title title = new Title();
+    title.setName("World Championship");
+    title.setChampionshipType(ChampionshipType.SINGLE);
+
+    // Trophy + linked title.
+    assertThatThrownBy(
+            () ->
+                service.createTournament(
+                    "Both Cup",
+                    "SINGLE_ELIMINATION",
+                    null,
+                    title,
+                    null,
+                    List.of(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    false,
+                    false,
+                    null,
+                    "Dusty Cup"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Choose one payoff mode");
+
+    // Trophy + contender-deciding (with the title a contender tournament needs — the trophy
+    // check fires after the contender preconditions are satisfied).
+    assertThatThrownBy(
+            () ->
+                service.createTournament(
+                    "Both Cup",
+                    "SINGLE_ELIMINATION",
+                    null,
+                    title,
+                    null,
+                    List.of(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    true,
+                    false,
+                    null,
+                    "Dusty Cup"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Choose one payoff mode");
+
+    // Trophy + briefcase-deciding.
+    assertThatThrownBy(
+            () ->
+                service.createTournament(
+                    "Both Cup",
+                    "SINGLE_ELIMINATION",
+                    null,
+                    null,
+                    null,
+                    List.of(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    false,
+                    true,
+                    null,
+                    "Dusty Cup"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Choose one payoff mode");
+    verify(tournamentRepository, never()).save(any(Tournament.class));
+  }
+
+  @Test
+  @DisplayName("updateTournament: a name arms the trophy, \"\" clears it, null leaves it untouched")
+  void updateTournament_trophyNameFlagSemantics() {
+    Tournament existing = tournament(null);
+    existing.setTrophyName("Dusty Cup");
+    when(tournamentRepository.findById(1L)).thenReturn(Optional.of(existing));
+    when(tournamentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    // null → untouched.
+    service.updateTournament(
+        1L, "Cup", null, null, null, List.of(), null, null, null, false, null, null, null);
+    assertThat(existing.getTrophyName()).isEqualTo("Dusty Cup");
+
+    // "" → cleared (no-payoff bragging-rights edition).
+    service.updateTournament(
+        1L, "Cup", null, null, null, List.of(), null, null, null, false, null, null, "");
+    assertThat(existing.getTrophyName()).isNull();
+
+    // A new name arms it again (trimmed).
+    service.updateTournament(
+        1L, "Cup", null, null, null, List.of(), null, null, null, false, null, null, " Iron Cup ");
+    assertThat(existing.getTrophyName()).isEqualTo("Iron Cup");
+  }
+
+  @Test
+  @DisplayName(
+      "updateTournament rejects a trophy payoff on a tournament that keeps a title linkage")
+  void updateTournament_trophyWithTitle_rejected() {
+    Title tagTitles = new Title();
+    tagTitles.setName("World Tag Championship");
+    tagTitles.setChampionshipType(ChampionshipType.TEAM);
+    tagTitles.setTeamSize(TeamSize.DUO);
+    Tournament existing = tournament(TeamSize.DUO);
+    existing.setLinkedTitle(tagTitles);
+    when(tournamentRepository.findById(1L)).thenReturn(Optional.of(existing));
+
+    assertThatThrownBy(
+            () ->
+                service.updateTournament(
+                    1L,
+                    "Cup",
+                    null,
+                    tagTitles,
+                    null,
+                    List.of(),
+                    null,
+                    null,
+                    null,
+                    false,
+                    null,
+                    null,
+                    "Dusty Cup"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Choose one payoff mode");
+  }
+
+  @Test
+  @DisplayName("markWinner on a trophy tournament stamps a singles reign (idempotent)")
+  void markWinner_trophyTournament_recordsSinglesReign() {
+    Tournament trophyCup = tournament(null);
+    trophyCup.setTrophyName("Dusty Cup");
+    Wrestler ace = wrestler("Ace", 1L);
+    TournamentEntry winner =
+        TournamentEntry.builder().tournament(trophyCup).wrestler(ace).seed(1).build();
+    when(entryRepository.findByTournamentIdAndStatus(1L, TournamentEntryStatus.ACTIVE))
+        .thenReturn(List.of(winner));
+    when(format.isComplete(trophyCup)).thenReturn(true); // final done → markWinner
+    when(trophyReignRepository.existsByTournamentId(1L)).thenReturn(false);
+    when(tournamentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    when(entryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    service.advanceToNextRound(trophyCup); // format.isComplete → markWinner
+
+    assertThat(trophyCup.getStatus()).isEqualTo(TournamentStatus.COMPLETE);
+    verify(trophyReignRepository)
+        .save(
+            argThat(
+                reign ->
+                    "Dusty Cup".equals(reign.getTrophyName())
+                        && reign.getYearWon() == LocalDate.now().getYear()
+                        && reign.getWinnerWrestler() == ace
+                        && reign.getWinnerTeam() == null));
+  }
+
+  @Test
+  @DisplayName("markWinner on a team trophy tournament stamps the team as the reign winner")
+  void markWinner_trophyTournament_recordsTeamReign() {
+    Tournament trophyCup = tournament(TeamSize.DUO);
+    trophyCup.setTrophyName("Dusty Cup");
+    Team duo = duoTeam("High Flyers", 10L, 500L, wrestler("Ace", 1L), wrestler("Bea", 2L));
+    TournamentEntry winner =
+        TournamentEntry.builder().tournament(trophyCup).team(duo).seed(1).build();
+    when(entryRepository.findByTournamentIdAndStatus(1L, TournamentEntryStatus.ACTIVE))
+        .thenReturn(List.of(winner));
+    when(format.isComplete(trophyCup)).thenReturn(true); // final done → markWinner
+    when(trophyReignRepository.existsByTournamentId(1L)).thenReturn(false);
+    when(tournamentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    when(entryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    service.advanceToNextRound(trophyCup);
+
+    verify(trophyReignRepository)
+        .save(
+            argThat(
+                reign ->
+                    "Dusty Cup".equals(reign.getTrophyName())
+                        && reign.getWinnerTeam() == duo
+                        && reign.getWinnerWrestler() == null));
+  }
+
+  @Test
+  @DisplayName("A second markWinner run cannot duplicate the reign (unique tournament FK)")
+  void markWinner_trophyTournament_idempotent() {
+    Tournament trophyCup = tournament(null);
+    trophyCup.setTrophyName("Dusty Cup");
+    TournamentEntry winner =
+        TournamentEntry.builder()
+            .tournament(trophyCup)
+            .wrestler(wrestler("Ace", 1L))
+            .seed(1)
+            .build();
+    when(entryRepository.findByTournamentIdAndStatus(1L, TournamentEntryStatus.ACTIVE))
+        .thenReturn(List.of(winner));
+    when(format.isComplete(trophyCup)).thenReturn(true); // final done → markWinner
+    when(trophyReignRepository.existsByTournamentId(1L)).thenReturn(true);
+    when(tournamentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    when(entryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    service.advanceToNextRound(trophyCup);
+
+    verify(trophyReignRepository, never()).save(any(TrophyReign.class));
+  }
+
+  @Test
+  @DisplayName("A trophy-reign save failure is swallowed — the tournament still completes")
+  void markWinner_trophySaveFailure_completionUnaffected() {
+    Tournament trophyCup = tournament(null);
+    trophyCup.setTrophyName("Dusty Cup");
+    TournamentEntry winner =
+        TournamentEntry.builder()
+            .tournament(trophyCup)
+            .wrestler(wrestler("Ace", 1L))
+            .seed(1)
+            .build();
+    when(entryRepository.findByTournamentIdAndStatus(1L, TournamentEntryStatus.ACTIVE))
+        .thenReturn(List.of(winner));
+    when(format.isComplete(trophyCup)).thenReturn(true); // final done → markWinner
+    when(format.isComplete(trophyCup)).thenReturn(true); // final done → markWinner
+    when(trophyReignRepository.existsByTournamentId(1L)).thenReturn(false);
+    when(trophyReignRepository.save(any(TrophyReign.class)))
+        .thenThrow(new RuntimeException("db down"));
+    when(tournamentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    when(entryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    service.advanceToNextRound(trophyCup);
+
+    assertThat(trophyCup.getStatus()).isEqualTo(TournamentStatus.COMPLETE);
+    assertThat(trophyCup.getEndDate()).isNotNull();
+  }
+
+  @Test
+  @DisplayName("trophyLineage and trophyReignOf delegate to the read-side service")
+  void trophyLineage_delegatesToTrophyReignService() {
+    TrophyReign reign = new TrophyReign();
+    when(trophyReignService.lineageOf("Dusty Cup")).thenReturn(List.of(reign));
+    when(trophyReignService.reignOfTournament(1L)).thenReturn(reign);
+
+    assertThat(service.trophyLineage("Dusty Cup")).containsExactly(reign);
+    assertThat(service.trophyReignOf(1L)).contains(reign);
   }
 
   // ── Fixtures ─────────────────────────────────────────────────────────────

@@ -261,6 +261,10 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
                   + " reigning champion"));
       buildBriefcaseStatus(info);
     }
+    if (tournament.getTrophyName() != null) {
+      info.add(new Span("Payoff: the " + tournament.getTrophyName() + " trophy — bragging rights"));
+      buildTrophyStatus(info);
+    }
     if (tournament.getLinkedTitle() != null) {
       info.add(new Span("Championship: " + tournament.getLinkedTitle().getName()));
     }
@@ -337,6 +341,48 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
         };
     String division = opportunity.getGender() != null ? " — " + opportunity.getGender() : "";
     info.add(new Span("Briefcase: " + winner.getName() + division + " — " + statusText));
+  }
+
+  /**
+   * Trophy status for a trophy tournament: who lifted the trophy this edition (once complete) and
+   * the trophy's lineage across editions — "2026 — X", "2025 — Team Y", newest first.
+   */
+  private void buildTrophyStatus(VerticalLayout info) {
+    if (tournament.getStatus() == TournamentStatus.COMPLETE) {
+      tournamentService
+          .trophyReignOf(tournament.getId())
+          .ifPresent(
+              reign -> {
+                String winnerName =
+                    reign.getWinnerWrestler() != null
+                        ? reign.getWinnerWrestler().getName()
+                        : reign.getWinnerTeam() != null ? reign.getWinnerTeam().getName() : "?";
+                info.add(
+                    new Span(
+                        reign.getTrophyName()
+                            + ": won by "
+                            + winnerName
+                            + " ("
+                            + reign.getYearWon()
+                            + ")"));
+              });
+    }
+    List<TrophyReign> lineage = tournamentService.trophyLineage(tournament.getTrophyName());
+    if (lineage.size() > 1) {
+      StringBuilder line = new StringBuilder("Past winners: ");
+      for (int i = 0; i < lineage.size(); i++) {
+        TrophyReign reign = lineage.get(i);
+        if (i > 0) {
+          line.append(", ");
+        }
+        String winnerName =
+            reign.getWinnerWrestler() != null
+                ? reign.getWinnerWrestler().getName()
+                : reign.getWinnerTeam() != null ? reign.getWinnerTeam().getName() : "?";
+        line.append(reign.getYearWon()).append(" — ").append(winnerName);
+      }
+      info.add(new Span(line.toString()));
+    }
   }
 
   private VerticalLayout buildEntrantsGrid() {

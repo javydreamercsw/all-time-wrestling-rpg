@@ -41,6 +41,7 @@ import com.github.javydreamercsw.management.service.tournament.TournamentService
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
 import com.github.javydreamercsw.management.ui.ViewContext;
+import com.github.javydreamercsw.management.ui.component.TeamRowsEditor;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -70,7 +71,6 @@ import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -78,9 +78,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @Route(value = "tournament-list", layout = MainLayout.class)
@@ -232,32 +232,54 @@ public class TournamentListView extends VerticalLayout {
     titleCombo.setWidthFull();
     titleCombo.setClearButtonVisible(true);
 
-    // Payoff mode (ATW-ewrp / ATW-8p72): classic title-on-the-line, contender-deciding, or
-    // briefcase-deciding. Briefcase clears and disables the title combo (no linked title).
+    // Payoff mode (ATW-ewrp / ATW-8p72): classic title-on-the-line, contender-deciding,
+    // briefcase-deciding, named trophy, or bragging rights. Briefcase/trophy/no-payoff all clear
+    // and disable the title combo (no linked title).
     RadioButtonGroup<String> payoffMode = new RadioButtonGroup<>("Payoff");
     payoffMode.setItems(
-        "Title on the line", "Winner becomes #1 contender", "Winner earns the briefcase");
+        "Title on the line",
+        "Winner becomes #1 contender",
+        "Winner earns the briefcase",
+        "Winner earns a trophy",
+        "No payoff — bragging rights");
     payoffMode.setValue(
         managed.isBriefcaseDeciding()
             ? "Winner earns the briefcase"
-            : managed.isContenderDeciding() ? "Winner becomes #1 contender" : "Title on the line");
+            : managed.isContenderDeciding()
+                ? "Winner becomes #1 contender"
+                : managed.getTrophyName() != null ? "Winner earns a trophy" : "Title on the line");
     payoffMode.setHelperText(
         "Contender: needs a linked championship with a reigning champion — the winner becomes its"
             + " #1 contender. Briefcase: no linked championship — the winner earns a cashable"
-            + " title shot against ANY reigning champion.");
+            + " title shot against ANY reigning champion. Trophy: the winner lifts the named"
+            + " trophy (e.g. the 2026 Dusty Cup) — recorded for the AI's past-glory references."
+            + " Bragging rights: the win is all the prize.");
+    TextField trophyNameField = new TextField("Trophy Name");
+    trophyNameField.setId("trophy-name-field");
+    trophyNameField.setPlaceholder("Dusty Cup");
+    trophyNameField.setWidthFull();
+    trophyNameField.setValue(managed.getTrophyName() != null ? managed.getTrophyName() : "");
+    trophyNameField.setVisible("Winner earns a trophy".equals(payoffMode.getValue()));
     titleCombo.addValueChangeListener(
         e -> {
-          if (e.getValue() != null && "Winner earns the briefcase".equals(payoffMode.getValue())) {
+          if (e.getValue() != null
+              && ("Winner earns the briefcase".equals(payoffMode.getValue())
+                  || "Winner earns a trophy".equals(payoffMode.getValue())
+                  || "No payoff — bragging rights".equals(payoffMode.getValue()))) {
             payoffMode.setValue("Title on the line");
           }
         });
     payoffMode.addValueChangeListener(
         e -> {
-          boolean briefcase = "Winner earns the briefcase".equals(e.getValue());
-          if (briefcase) {
+          boolean noTitle =
+              "Winner earns the briefcase".equals(e.getValue())
+                  || "Winner earns a trophy".equals(e.getValue())
+                  || "No payoff — bragging rights".equals(e.getValue());
+          if (noTitle) {
             titleCombo.clear();
           }
-          titleCombo.setEnabled(!briefcase);
+          titleCombo.setEnabled(!noTitle);
+          trophyNameField.setVisible("Winner earns a trophy".equals(e.getValue()));
         });
 
     // One-time host-show binding (ATW-xbn4).
@@ -319,11 +341,31 @@ public class TournamentListView extends VerticalLayout {
                     "Winner earns the briefcase".equals(payoffMode.getValue());
                 boolean contenderSelected =
                     "Winner becomes #1 contender".equals(payoffMode.getValue());
+                boolean trophySelected = "Winner earns a trophy".equals(payoffMode.getValue());
+                if (trophySelected && trophyNameField.isEmpty()) {
+                  Notification.show("Trophy name is required.", 3000, Notification.Position.MIDDLE)
+                      .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                  return;
+                }
+                // The Boolean-flag pattern: a value arms/clears ("" clears), null leaves the
+                // existing name untouched. Switching away from trophy mode clears it.
+                String trophyName;
+                if (trophySelected) {
+                  trophyName = trophyNameField.getValue();
+                } else if (managed.getTrophyName() != null) {
+                  trophyName = "";
+                } else {
+                  trophyName = null;
+                }
                 tournamentService.updateTournament(
                     tournament.getId(),
                     nameField.getValue(),
                     formatCombo.getValue() != null ? formatCombo.getValue().getFormatId() : null,
-                    briefcaseSelected ? null : titleCombo.getValue(),
+                    briefcaseSelected
+                            || trophySelected
+                            || "No payoff — bragging rights".equals(payoffMode.getValue())
+                        ? null
+                        : titleCombo.getValue(),
                     managed.getStartDate(),
                     new ArrayList<>(rulesPicker.getSelectedItems()),
                     hostShowCombo.getValue(),
@@ -331,7 +373,8 @@ public class TournamentListView extends VerticalLayout {
                     payoffRuleCombo.getValue(),
                     true,
                     contenderSelected,
-                    briefcaseSelected);
+                    briefcaseSelected,
+                    trophyName);
                 dialog.close();
                 refresh();
                 Notification.show("Tournament updated!", 3000, Notification.Position.BOTTOM_CENTER)
@@ -350,6 +393,7 @@ public class TournamentListView extends VerticalLayout {
             nameField,
             formatCombo,
             payoffMode,
+            trophyNameField,
             titleCombo,
             hostShowCombo,
             payoffTypeCombo,
@@ -575,35 +619,59 @@ public class TournamentListView extends VerticalLayout {
     entrantType.setValue(SINGLES_LABEL);
     entrantType.setWidthFull();
 
-    // Payoff mode (ATW-ewrp / ATW-8p72): classic title-on-the-line, contender-deciding, or
-    // briefcase-deciding. Briefcase clears and disables the title combo (no linked title). Team
-    // tournaments are inaugural-champion only, so contender/briefcase are disabled there.
+    // Payoff mode (ATW-ewrp / ATW-8p72): classic title-on-the-line, contender-deciding,
+    // briefcase-deciding, named trophy, or bragging rights. Briefcase/trophy/no-payoff all clear
+    // and disable the title combo (no linked title). Team tournaments keep contender/briefcase
+    // disabled (the winner is a team) — trophy and bragging rights are legal for teams.
     RadioButtonGroup<String> payoffMode = new RadioButtonGroup<>("Payoff");
     payoffMode.setItems(
-        "Title on the line", "Winner becomes #1 contender", "Winner earns the briefcase");
+        "Title on the line",
+        "Winner becomes #1 contender",
+        "Winner earns the briefcase",
+        "Winner earns a trophy",
+        "No payoff — bragging rights");
     payoffMode.setValue("Title on the line");
     payoffMode.setHelperText(
         "Contender: needs a linked championship with a reigning champion — the winner becomes its"
             + " #1 contender. Briefcase: no linked championship — the winner earns a cashable"
-            + " title shot against ANY reigning champion."
-            + " Team tournaments always put the title on the line (the winner becomes the"
-            + " inaugural team champions).");
+            + " title shot against ANY reigning champion. Trophy: the winner lifts the named"
+            + " trophy (e.g. the Dusty Cup) — the win is recorded for the AI's past-glory"
+            + " references. Bragging rights: the win is all the prize."
+            + " Team tournaments put a TEAM title on the line, take a trophy, or settle for"
+            + " bragging rights.");
     payoffMode.setItemEnabledProvider(
-        item -> teamModeOf(entrantType.getValue()) ? "Title on the line".equals(item) : true);
+        item ->
+            teamModeOf(entrantType.getValue())
+                ? "Winner becomes #1 contender".equals(item)
+                        || "Winner earns the briefcase".equals(item)
+                    ? false
+                    : true
+                : true);
+    TextField wizardTrophyNameField = new TextField("Trophy Name");
+    wizardTrophyNameField.setId("wizard-trophy-name");
+    wizardTrophyNameField.setPlaceholder("Dusty Cup");
+    wizardTrophyNameField.setWidthFull();
+    wizardTrophyNameField.setVisible(false);
     titleCombo.addValueChangeListener(
         e -> {
-          if (e.getValue() != null && "Winner earns the briefcase".equals(payoffMode.getValue())) {
+          if (e.getValue() != null
+              && ("Winner earns the briefcase".equals(payoffMode.getValue())
+                  || "Winner earns a trophy".equals(payoffMode.getValue())
+                  || "No payoff — bragging rights".equals(payoffMode.getValue()))) {
             payoffMode.setValue("Title on the line");
           }
         });
     payoffMode.addValueChangeListener(
         e -> {
-          boolean teamMode = teamModeOf(entrantType.getValue());
-          boolean briefcase = "Winner earns the briefcase".equals(e.getValue());
-          if (briefcase && !teamMode) {
+          boolean noTitle =
+              "Winner earns the briefcase".equals(e.getValue())
+                  || "Winner earns a trophy".equals(e.getValue())
+                  || "No payoff — bragging rights".equals(e.getValue());
+          if (noTitle) {
             titleCombo.clear();
           }
-          titleCombo.setEnabled(!briefcase);
+          titleCombo.setEnabled(!noTitle);
+          wizardTrophyNameField.setVisible("Winner earns a trophy".equals(e.getValue()));
         });
 
     // ── Team entrants (ATW-01g2): registry picker + one-off assembly ──────────
@@ -619,47 +687,73 @@ public class TournamentListView extends VerticalLayout {
     teamRegistryPicker.setVisible(false);
     teamRegistryPicker.setHelperText("Only teams eligible for this tournament are listed.");
 
-    // One-off assembly: members not already entered; the picks are chunked by the declared
-    // team size into several teams (4 picks in a duo tournament → two duos). Each assembled
-    // team persists as AD_HOC unless "save to registry" (default off) flips them to REGISTRY
-    // after the tournament takes them.
-    MultiSelectComboBox<Wrestler> teamMemberPicker =
-        new MultiSelectComboBox<>("Assemble One-Off Teams (optional)");
-    teamMemberPicker.setId("wizard-one-off-members");
-    teamMemberPicker.setItemLabelGenerator(Wrestler::getName);
-    teamMemberPicker.setWidthFull();
-    teamMemberPicker.setVisible(false);
-    teamMemberPicker.setHelperText("Every team-size group of wrestlers forms one team.");
-
+    // One-off assembly: add-team rows like the segment editor — one picker per team,
+    // each row accepting exactly the declared member count, excluding wrestlers committed to
+    // picked registry teams or other rows (the editor handles cross-row exclusion; the filter
+    // closure handles registry picks, gender, and activity). Each assembled team persists as
+    // AD_HOC unless "save to registry" (default off) flips them all to REGISTRY.
+    // The editor is rebuilt whenever the declared size changes (entrant-type switch).
+    Runnable[] rebuildOneOffEditorHolder = new Runnable[1];
+    TeamRowsEditor[] oneOffEditorHolder = new TeamRowsEditor[1];
+    Integer[] oneOffEditorSizeHolder = new Integer[1];
+    Supplier<TeamSize> oneOffSizeSupplier = () -> teamSizeOf(entrantType.getValue());
     Checkbox saveToRegistryCheckbox = new Checkbox("Save these teams to the team registry");
     saveToRegistryCheckbox.setId("wizard-save-to-registry");
     saveToRegistryCheckbox.setValue(false);
     saveToRegistryCheckbox.setVisible(false);
-
-    Span oneOffNamePreview = new Span();
-    oneOffNamePreview.getStyle().set("color", "var(--lumo-secondary-text-color)");
-    oneOffNamePreview.setVisible(false);
-    teamMemberPicker.addValueChangeListener(
-        e -> {
-          Set<Wrestler> members = e.getValue();
-          saveToRegistryCheckbox.setVisible(!members.isEmpty());
-          oneOffNamePreview.setVisible(!members.isEmpty());
-          if (!members.isEmpty()) {
-            TeamSize size = teamSizeOf(entrantType.getValue());
-            oneOffNamePreview.setText(oneOffPreviewText(members, size));
-          }
-        });
+    // Row edits only refresh the save-to-registry checkbox — the editor itself is rebuilt
+    // exclusively by refreshTeamPickers when the DECLARED size changes (entrant-type switch);
+    // wiring the rebuild here would wipe the rows on every member pick.
+    Runnable oneOffChanged =
+        () -> saveToRegistryCheckbox.setVisible(oneOffEditorHolder[0].hasAnySelection());
+    TeamRowsEditor oneOffTeamsEditor =
+        new TeamRowsEditor(
+            wrestlerFacade.getWrestlerService().getAllWrestlers().stream()
+                .filter(w -> Boolean.TRUE.equals(w.getActive()))
+                .toList(),
+            oneOffChanged,
+            null,
+            oneOffSizeSupplier.get() != null ? oneOffSizeSupplier.get().getMemberCount() : null,
+            1,
+            16);
+    oneOffEditorHolder[0] = oneOffTeamsEditor;
+    oneOffTeamsEditor.setId("wizard-one-off-teams");
+    oneOffTeamsEditor.setVisible(false);
 
     VerticalLayout teamEntrantsPanel =
-        new VerticalLayout(teamMemberPicker, saveToRegistryCheckbox, oneOffNamePreview);
+        new VerticalLayout(oneOffTeamsEditor, saveToRegistryCheckbox);
     teamEntrantsPanel.setPadding(false);
     teamEntrantsPanel.setVisible(false);
+
+    rebuildOneOffEditorHolder[0] =
+        () -> {
+          TeamSize size = oneOffSizeSupplier.get();
+          TeamRowsEditor editor =
+              new TeamRowsEditor(
+                  wrestlerFacade.getWrestlerService().getAllWrestlers().stream()
+                      .filter(w -> Boolean.TRUE.equals(w.getActive()))
+                      .toList(),
+                  oneOffChanged,
+                  null,
+                  size != null ? size.getMemberCount() : null,
+                  1,
+                  16);
+          editor.setId("wizard-one-off-teams");
+          // Visibility follows the panel (Manual + team mode), NOT the outgoing editor — a
+          // rebuild while hidden would leave the new editor explicitly invisible even after
+          // the panel itself becomes visible.
+          editor.setVisible(teamEntrantsPanel.isVisible());
+          teamEntrantsPanel.replace(oneOffEditorHolder[0], editor);
+          oneOffEditorHolder[0] = editor;
+          saveToRegistryCheckbox.setVisible(editor.hasAnySelection());
+        };
 
     VerticalLayout tab1Content =
         new VerticalLayout(
             nameField,
             formatCombo,
             payoffMode,
+            wizardTrophyNameField,
             titleCombo,
             genderCombo,
             entrantType,
@@ -761,11 +855,10 @@ public class TournamentListView extends VerticalLayout {
     entrantType.addValueChangeListener(e -> refreshEntrantCap.run());
     refreshEntrantCap.run();
 
-    // Registry picker + member picker follow the entrant type and gender filter: the picker
-    // re-queries the eligible REGISTRY teams, the one-off picker re-filters to wrestlers not
-    // already committed to a picked registry team (a wrestler may appear in only one entry) and
-    // to the tournament's eligibility rules (active, gender-matching — the same predicate the
-    // picker's items apply through the service).
+    // Registry picker + one-off rows follow the entrant type and gender filter: the picker
+    // re-queries the eligible REGISTRY teams, the one-off rows' candidate filter excludes
+    // wrestlers already committed to a picked registry team (a wrestler may appear in only one
+    // entry) and anyone failing the tournament's eligibility rules (active, gender-matching).
     Runnable refreshMemberPickerExclusions =
         () -> {
           Set<Long> committedMemberIds = new HashSet<>();
@@ -776,48 +869,51 @@ public class TournamentListView extends VerticalLayout {
                 .forEach(committedMemberIds::add);
           }
           Gender gender = genderCombo.getValue();
-          teamMemberPicker.setItems(
-              wrestlerFacade.getWrestlerService().getAllWrestlers().stream()
-                  .filter(
-                      w ->
-                          Boolean.TRUE.equals(w.getActive())
-                              && (gender == null || w.getGender() == gender)
-                              && !committedMemberIds.contains(w.getId()))
-                  .toList());
+          oneOffEditorHolder[0].refreshRowItemsWithFilter(
+              w ->
+                  Boolean.TRUE.equals(w.getActive())
+                      && (gender == null || w.getGender() == gender)
+                      && !committedMemberIds.contains(w.getId()));
         };
     // Payoff normalization across the entrant-type switch (ATW-01g2 review): team mode forces
-    // Title-on-the-line (contender/briefcase are grayed out there); leaving team mode re-arms
-    // them and clears a stale briefcase selection, which the briefcase listener would otherwise
-    // apply silently against a linked TEAM title. Runs ONLY on an actual team→singles
-    // transition — the gender filter also re-runs refreshTeamPickers and must not clobber a
-    // briefcase the booker picked in singles mode.
+    // Title-on-the-line only from the contender/briefcase modes that are illegal there — a
+    // trophy or bragging-rights pick is legal in team mode and must survive the switch
+    // Leaving team mode re-arms contender/briefcase and clears a stale briefcase
+    // selection, which the briefcase listener would otherwise apply silently against a linked
+    // TEAM title.
     Runnable resetPayoffOnLeavingTeamMode =
         () -> {
           if (!teamModeOf(entrantType.getValue())
-              && "Winner earns the briefcase".equals(payoffMode.getValue())) {
+              && ("Winner earns the briefcase".equals(payoffMode.getValue()))) {
             payoffMode.setValue("Title on the line");
           }
         };
     Runnable refreshTeamPickers =
         () -> {
           boolean teamMode = teamModeOf(entrantType.getValue());
-          teamEntrantsPanel.setVisible(teamMode);
-          teamMemberPicker.setVisible(teamMode);
           // Seeding-tab visibility mirrors the singles wrestler picker: only Manual mode shows
           // the pickers. Initial wizard state is Auto, so everything starts hidden either way.
           boolean manualSeeding = "Manual (pick wrestlers)".equals(seedingMode.getValue());
           teamRegistryPicker.setVisible(teamMode && manualSeeding);
-          teamMemberPicker.setVisible(teamMode);
           teamEntrantsPanel.setVisible(teamMode && manualSeeding);
+          // The editor's own visibility must be pinned too — an explicitly-invisible child is
+          // not shown even when its parent panel becomes visible.
+          oneOffEditorHolder[0].setVisible(teamMode && manualSeeding);
           TeamSize pickerSize = teamSizeOf(entrantType.getValue());
-          if (pickerSize != null) {
-            teamMemberPicker.setHelperText(
-                "Every %d wrestlers form one team; pick in groups of %d."
-                    .formatted(pickerSize.getMemberCount(), pickerSize.getMemberCount()));
+          int pickerMemberCount = pickerSize != null ? pickerSize.getMemberCount() : 2;
+          // Rebuild the editor only when the declared size actually changed (entrant-type
+          // switch); gender/registry exclusions refresh through the row filter instead.
+          Integer editorSize = oneOffEditorSizeHolder[0];
+          if (editorSize == null || editorSize.intValue() != pickerMemberCount) {
+            rebuildOneOffEditorHolder[0].run();
+            oneOffEditorSizeHolder[0] = pickerMemberCount;
+            oneOffEditorHolder[0].setVisible(teamMode && manualSeeding);
           }
-          // Entering team mode forces Title-on-the-line (the payoff normalization above only
-          // touches the radio when LEAVING team mode).
-          if (teamMode && !"Title on the line".equals(payoffMode.getValue())) {
+          // Entering team mode normalizes an illegal contender/briefcase pick to the default —
+          // trophy/no-payoff picks carry over (legal in team mode now).
+          if (teamMode
+              && ("Winner becomes #1 contender".equals(payoffMode.getValue())
+                  || "Winner earns the briefcase".equals(payoffMode.getValue()))) {
             payoffMode.setValue("Title on the line");
           }
           if (teamMode) {
@@ -828,11 +924,11 @@ public class TournamentListView extends VerticalLayout {
             teamRegistryPicker.setItems(tournamentService.findEligibleTeamsSortedByFans(probe));
             refreshMemberPickerExclusions.run();
           } else {
-            // Leaving team mode clears any half-assembled one-off team.
-            teamMemberPicker.clear();
+            // Leaving team mode clears any half-assembled one-off teams.
+            oneOffEditorHolder[0].clear();
+            oneOffEditorHolder[0].addTeamRow();
             teamRegistryPicker.clear();
             saveToRegistryCheckbox.setVisible(false);
-            oneOffNamePreview.setVisible(false);
           }
         };
     entrantType.addValueChangeListener(
@@ -864,9 +960,12 @@ public class TournamentListView extends VerticalLayout {
           // picker on the seeding tab; the one-off assembly panel rides along with it.
           teamRegistryPicker.setVisible(manual && teamMode);
           teamEntrantsPanel.setVisible(manual && teamMode);
+          // Pin the editor's own visibility — an explicitly-invisible child is not shown even
+          // when its parent panel becomes visible.
+          oneOffEditorHolder[0].setVisible(manual && teamMode);
           boolean panelVisible = manual && teamMode;
-          saveToRegistryCheckbox.setVisible(panelVisible && !teamMemberPicker.isEmpty());
-          oneOffNamePreview.setVisible(panelVisible && !teamMemberPicker.isEmpty());
+          saveToRegistryCheckbox.setVisible(
+              panelVisible && oneOffEditorHolder[0].hasAnySelection());
         });
 
     // Match-up preview for Auto seeding: what Create will build, before it commits.
@@ -968,13 +1067,22 @@ public class TournamentListView extends VerticalLayout {
                     "Winner earns the briefcase".equals(payoffMode.getValue());
                 boolean contenderSelected =
                     "Winner becomes #1 contender".equals(payoffMode.getValue());
+                boolean trophySelected = "Winner earns a trophy".equals(payoffMode.getValue());
+                if (trophySelected && wizardTrophyNameField.isEmpty()) {
+                  Notification.show("Trophy name is required.", 3000, Notification.Position.MIDDLE)
+                      .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                  return;
+                }
+                boolean noPayoff = "No payoff — bragging rights".equals(payoffMode.getValue());
                 TeamSize teamSize = teamSizeOf(entrantType.getValue());
                 Tournament t =
                     tournamentService.createTournament(
                         nameField.getValue(),
                         formatCombo.getValue().getFormatId(),
                         universe.orElse(null),
-                        briefcaseSelected ? null : titleCombo.getValue(),
+                        briefcaseSelected || trophySelected || noPayoff
+                            ? null
+                            : titleCombo.getValue(),
                         LocalDate.now(),
                         new ArrayList<>(rulesPicker.getSelectedItems()),
                         hostShowCombo.getValue(),
@@ -983,7 +1091,8 @@ public class TournamentListView extends VerticalLayout {
                         genderCombo.getValue(),
                         contenderSelected,
                         briefcaseSelected,
-                        teamSize);
+                        teamSize,
+                        trophySelected ? wizardTrophyNameField.getValue() : null);
                 t.setRecurrence(recurrenceCombo.getValue());
                 t.setQualifierGroupSize(groupSizeField.getValue());
                 tournamentService.save(t);
@@ -1004,42 +1113,36 @@ public class TournamentListView extends VerticalLayout {
                     for (Team team : picked) {
                       tournamentService.addEntry(t, team, seed++);
                     }
-                    if (!teamMemberPicker.isEmpty()) {
-                      // Deterministic order: same sort the name preview uses, so the stored
-                      // member order always matches what the booker saw.
-                      List<Wrestler> members =
-                          teamMemberPicker.getSelectedItems().stream()
-                              .sorted(Comparator.comparing(Wrestler::getName))
-                              .toList();
-                      // Re-check at create time: a registry team picked after assembly may have
-                      // claimed one of these members (a wrestler appears in one entry only).
-                      for (Team team : picked) {
-                        if (members.stream().anyMatch(team::hasMember)) {
+                    if (oneOffEditorHolder[0].hasAnySelection()) {
+                      Map<Integer, List<Wrestler>> rowTeams = oneOffEditorHolder[0].getTeams();
+                      // Rows hold exactly the declared size by construction; the re-check keeps
+                      // a stale UI state (rows edited between validation and create) honest.
+                      int memberCount = teamSize.getMemberCount();
+                      for (List<Wrestler> members : rowTeams.values()) {
+                        if (members.size() != memberCount) {
                           throw new IllegalStateException(
-                              "Wrestler '"
-                                  + members.stream()
-                                      .filter(team::hasMember)
-                                      .map(Wrestler::getName)
-                                      .findFirst()
-                                      .orElse("")
-                                  + "' is already in the picked registry team '"
-                                  + team.getName()
-                                  + "' — clear the one-off team or the registry pick.");
+                              "Every one-off team needs exactly %d wrestlers — one row holds %d."
+                                  .formatted(memberCount, members.size()));
+                        }
+                        // Re-check at create time: a registry team picked after assembly may
+                        // have claimed one of these members (a wrestler appears in one entry
+                        // only).
+                        for (Team team : picked) {
+                          if (members.stream().anyMatch(team::hasMember)) {
+                            throw new IllegalStateException(
+                                "Wrestler '"
+                                    + members.stream()
+                                        .filter(team::hasMember)
+                                        .map(Wrestler::getName)
+                                        .findFirst()
+                                        .orElse("")
+                                    + "' is already in the picked registry team '"
+                                    + team.getName()
+                                    + "' — clear the one-off team or the registry pick.");
+                          }
                         }
                       }
-                      // Chunk the picks by declared size: every full group of N (2 duo / 3 trios)
-                      // becomes one one-off team; a trailing partial group is a mistake, not a
-                      // smaller team (teams have a fixed size — the declared one).
-                      int memberCount = teamSize.getMemberCount();
-                      if (members.size() % memberCount != 0) {
-                        throw new IllegalStateException(
-                            "One-off picks must fill whole teams of %d — %d wrestlers leave a"
-                                + " partial team. Add or remove wrestlers to fix the groups."
-                                    .formatted(memberCount, members.size()));
-                      }
-                      for (int i = 0; i < members.size(); i += memberCount) {
-                        List<Wrestler> group =
-                            members.subList(i, Math.min(i + memberCount, members.size()));
+                      for (List<Wrestler> group : rowTeams.values()) {
                         Team oneOff =
                             teamService
                                 .createTeam(
@@ -1141,31 +1244,6 @@ public class TournamentListView extends VerticalLayout {
   /** Whether the entrant-type radio selects a team mode (Tag Team or Trios). */
   static boolean teamModeOf(String entrantTypeValue) {
     return teamSizeOf(entrantTypeValue) != null;
-  }
-
-  /**
-   * The one-off preview text: the picked wrestlers chunked by the declared size into teams, joined
-   * with "&". A trailing partial group is called out — create rejects it. With no size (singles or
-   * the value not yet applied) the plain alphabetical list stands in.
-   */
-  static String oneOffPreviewText(Set<Wrestler> members, @Nullable TeamSize size) {
-    List<String> names = members.stream().map(Wrestler::getName).sorted().toList();
-    String joined = String.join(" & ", names);
-    if (size == null) {
-      return "Team name: " + joined + " (uniquified on create)";
-    }
-    int memberCount = size.getMemberCount();
-    StringBuilder text = new StringBuilder();
-    for (int i = 0; i < names.size(); i += memberCount) {
-      if (!text.isEmpty()) {
-        text.append(" | ");
-      }
-      text.append(String.join(" & ", names.subList(i, Math.min(i + memberCount, names.size()))));
-    }
-    if (names.size() % memberCount != 0) {
-      text.append(" — incomplete team: pick in groups of ").append(memberCount);
-    }
-    return "Teams: " + text + " (names uniquified on create)";
   }
 
   /**

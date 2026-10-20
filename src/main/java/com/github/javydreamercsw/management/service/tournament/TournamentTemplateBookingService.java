@@ -1575,6 +1575,18 @@ public class TournamentTemplateBookingService {
           .append(tournament.getName())
           .append(" briefcase: a cashable opportunity for a title match against any reigning")
           .append(" champion. ");
+    } else if (tournament.getTrophyName() != null) {
+      notes
+          .append("The winner lifts the ")
+          .append(tournament.getTrophyName())
+          .append(" — the tournament's named trophy. No championship changes hands; the trophy")
+          .append(" and the legacy of its past winners are what the bracket is fought for. ");
+    } else if (tournament.getLinkedTitle() == null
+        && !tournament.isContenderDeciding()
+        && !titleOnTheLine) {
+      notes
+          .append("There is no championship at stake — the win itself, and the bragging rights")
+          .append(" that come with outlasting the field, are the prize. ");
     } else if (tournament.getLinkedTitle() != null && !titleOnTheLine) {
       notes
           .append("The tournament winner earns a ")

@@ -126,6 +126,16 @@ public class Tournament extends AbstractEntity<Long> {
   @Column(name = "briefcase_deciding", nullable = false)
   private boolean briefcaseDeciding = false;
 
+  /**
+   * Named trophy payoff: the winner lifts this trophy — "2026 Dusty Cup" — and the win is recorded
+   * into {@code trophy_reign} at completion for lineage and AI narration ("2026 Dusty Cup
+   * winners"). No championship changes hands. Mutually exclusive with a linked title and with the
+   * contender/briefcase payoffs; legal for team tournaments. A {@code null} trophy name with no
+   * flags and no title is the bragging-rights-only tournament.
+   */
+  @Column(name = "trophy_name")
+  @Nullable private String trophyName;
+
   /** Format identifier matching {@code TournamentFormat#getFormatId()}. */
   @Column(name = "format_id", nullable = false, length = 64)
   private String formatId;

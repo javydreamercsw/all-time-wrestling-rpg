@@ -100,22 +100,23 @@ class TournamentTeamWizardDocsE2ETest extends AbstractDocsE2ETest {
             + " champions.",
         "team-tournament-wizard");
 
-    // The one-off assembly panel: member multi-select + save-to-registry checkbox.
-    WebElement memberPicker = driver.findElement(By.id("wizard-one-off-members"));
+    // The one-off assembly panel: one "add team" row per team (each row takes exactly the
+    // declared member count) + save-to-registry checkbox.
+    WebElement oneOffEditor = waitForVaadinElement(driver, By.id("wizard-one-off-teams"));
     ((JavascriptExecutor) driver)
-        .executeScript("arguments[0].scrollIntoView({block:'center'});", memberPicker);
+        .executeScript("arguments[0].scrollIntoView({block:'center'});", oneOffEditor);
 
     documentFeature(
         "Game Mechanics",
         "Team Tournaments — One-Off Assembly",
-        "Prefer a team that is not in the registry? Assemble one right in the wizard: pick its"
-            + " members (wrestlers already committed to a picked registry team are excluded),"
-            + " and the team names are generated from the lineups and uniquified on create."
-            + " Every team-size group of picks forms one team — four picks in a duo tournament"
-            + " become two duos — and a partial group is rejected. The assembled teams persist"
-            + " as one-off (AD_HOC) teams unless 'Save these teams to the team registry' is"
-            + " checked (default off), which flips them into the registry for future"
-            + " tournaments.",
+        "Prefer a team that is not in the registry? Assemble one right in the wizard with the"
+            + " add-team rows: each row is one team accepting exactly the declared member count"
+            + " (a duo row takes two picks), \"+ Add Team\" adds another, and every picker"
+            + " excludes wrestlers already committed to a picked registry team or another row."
+            + " Team names are generated from the lineups and uniquified on create. The"
+            + " assembled teams persist as one-off (AD_HOC) teams unless 'Save these teams to"
+            + " the team registry' is checked (default off), which flips them into the registry"
+            + " for future tournaments.",
         "team-tournament-one-off-assembly");
   }
 

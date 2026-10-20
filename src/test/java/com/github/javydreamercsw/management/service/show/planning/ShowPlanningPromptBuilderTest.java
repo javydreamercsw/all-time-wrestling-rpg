@@ -785,4 +785,25 @@ class ShowPlanningPromptBuilderTest {
 
     assertFalse(prompt.contains("Held Briefcases"));
   }
+
+  @Test
+  void build_trophyHonors_listsHonorsWithBackstoryHint() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ctx.setTrophyHonors(List.of("Mukundi Shumba — 2026 Dusty Cup winner"));
+
+    String prompt = builder.build(ctx);
+
+    assertTrue(prompt.contains("Trophy Honors"), "The trophy-honors section must render");
+    assertTrue(prompt.contains("Mukundi Shumba — 2026 Dusty Cup winner"));
+    assertTrue(prompt.contains("returning-trophy edition"), "The proposal hint must be present");
+  }
+
+  @Test
+  void build_noTrophyHonors_noSection() {
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+
+    String prompt = builder.build(ctx);
+
+    assertFalse(prompt.contains("Trophy Honors"));
+  }
 }

@@ -44,6 +44,8 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundRepository;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus;
 import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
+import com.github.javydreamercsw.management.domain.tournament.TrophyReign;
+import com.github.javydreamercsw.management.domain.tournament.TrophyReignRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -88,6 +90,8 @@ public class TournamentService {
   private final TitleReignRepository titleReignRepository;
   private final SegmentRuleRepository segmentRuleRepository;
   private final TitleOpportunityService titleOpportunityService;
+  private final TrophyReignRepository trophyReignRepository;
+  private final TrophyReignService trophyReignService;
   private final List<TournamentFormat> formats;
 
   private TournamentFormatContext formatContext() {
@@ -360,6 +364,7 @@ public class TournamentService {
         gender,
         contenderDeciding,
         briefcaseDeciding,
+        null,
         null);
   }
 
@@ -385,7 +390,8 @@ public class TournamentService {
       Gender gender,
       boolean contenderDeciding,
       boolean briefcaseDeciding,
-      TeamSize teamSize) {
+      TeamSize teamSize,
+      @Nullable String trophyName) {
     if (teamSize != null) {
       if (contenderDeciding || briefcaseDeciding) {
         throw new IllegalArgumentException(
@@ -423,6 +429,7 @@ public class TournamentService {
           "A briefcase-deciding tournament must not link a title — the winner can cash in against"
               + " any champion");
     }
+    validateTrophyName(trophyName, linkedTitle, contenderDeciding, briefcaseDeciding);
     validatePayoffShow(universe, payoffShow);
     findFormat(formatId)
         .orElseThrow(() -> new IllegalArgumentException("Unknown format: " + formatId));
@@ -438,12 +445,37 @@ public class TournamentService {
     t.setContenderDeciding(contenderDeciding);
     t.setBriefcaseDeciding(briefcaseDeciding);
     t.setTeamSize(teamSize);
+    t.setTrophyName(trophyName != null ? trophyName.trim() : null);
     t.setStartDate(startDate);
     t.setStatus(TournamentStatus.SCHEDULED);
     t.setEntries(new ArrayList<>());
     t.setRounds(new ArrayList<>());
     t.setAllowedRules(allowedRules != null ? new ArrayList<>(allowedRules) : new ArrayList<>());
     return tournamentRepository.save(t);
+  }
+
+  /**
+   * Trophy payoff validation: a named trophy is its own payoff kind — it can never share a
+   * tournament with a linked title or the contender/briefcase payoffs (the winner lifts the trophy;
+   * nothing else changes hands). Legal for team tournaments. A blank name is a UI slip, not a
+   * trophy tournament.
+   */
+  private void validateTrophyName(
+      @Nullable String trophyName,
+      @Nullable Title linkedTitle,
+      boolean contenderDeciding,
+      boolean briefcaseDeciding) {
+    if (trophyName == null) {
+      return;
+    }
+    if (trophyName.isBlank()) {
+      throw new IllegalArgumentException("Trophy name is required when the winner earns a trophy");
+    }
+    if (linkedTitle != null || contenderDeciding || briefcaseDeciding) {
+      throw new IllegalArgumentException(
+          "Choose one payoff mode — the trophy goes to the winner alone, with no title, contender"
+              + " slot, or briefcase attached");
+    }
   }
 
   /**
@@ -700,6 +732,8 @@ public class TournamentService {
         payoffSegmentType,
         payoffSegmentRule,
         setPayoffFields,
+        null,
+        null,
         null);
   }
 
@@ -735,12 +769,16 @@ public class TournamentService {
         payoffSegmentRule,
         setPayoffFields,
         contenderDeciding,
+        null,
         null);
   }
 
   /**
-   * Full update including both payoff-mode flags. {@code briefcaseDeciding} null leaves the
-   * existing flag untouched (compat); a non-null value overwrites it.
+   * Full update including both payoff-mode flags and the trophy payoff. {@code
+   * briefcaseDeciding}/{@code trophyName} null leaves the existing value untouched (compat); a
+   * non-null value overwrites it. The trophy name follows the Boolean-flag pattern: passing a name
+   * arms the trophy payoff, passing {@code ""} clears it, passing {@code null} keeps whatever the
+   * tournament already carries.
    */
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
@@ -756,7 +794,8 @@ public class TournamentService {
       final SegmentRule payoffSegmentRule,
       final boolean setPayoffFields,
       final Boolean contenderDeciding,
-      final Boolean briefcaseDeciding) {
+      final Boolean briefcaseDeciding,
+      final String trophyName) {
     Tournament t =
         tournamentRepository
             .findById(id)
@@ -773,6 +812,8 @@ public class TournamentService {
     boolean effectiveBriefcaseDeciding =
         briefcaseDeciding != null ? briefcaseDeciding : t.isBriefcaseDeciding();
     Title effectiveTitle = linkedTitle != null ? linkedTitle : t.getLinkedTitle();
+    String effectiveTrophyName =
+        trophyName != null ? (trophyName.isBlank() ? null : trophyName.trim()) : t.getTrophyName();
     if (effectiveContenderDeciding && effectiveBriefcaseDeciding) {
       throw new IllegalArgumentException(
           "Choose one payoff mode — a tournament cannot be both contender-deciding and"
@@ -787,6 +828,12 @@ public class TournamentService {
       throw new IllegalArgumentException(
           "A briefcase-deciding tournament must not link a title — the winner can cash in against"
               + " any champion");
+    }
+    if (effectiveTrophyName != null
+        && (effectiveTitle != null || effectiveContenderDeciding || effectiveBriefcaseDeciding)) {
+      throw new IllegalArgumentException(
+          "Choose one payoff mode — the trophy goes to the winner alone, with no title, contender"
+              + " slot, or briefcase attached");
     }
     t.setName(name);
     if (formatId != null && !formatId.equals(t.getFormatId())) {
@@ -806,6 +853,9 @@ public class TournamentService {
     }
     if (briefcaseDeciding != null) {
       t.setBriefcaseDeciding(briefcaseDeciding);
+    }
+    if (trophyName != null) {
+      t.setTrophyName(trophyName.isBlank() ? null : trophyName.trim());
     }
     if (setPayoffFields) {
       t.setPayoffShow(payoffShow);
@@ -1642,7 +1692,53 @@ public class TournamentService {
               if (entry.getWrestler() != null) {
                 grantBriefcaseOnManualCompletion(tournament, entry.getWrestler());
               }
+              recordTrophyWin(tournament, entry);
             });
+  }
+
+  /**
+   * Records the trophy lineage row for a completed trophy tournament. Runs on every completion path
+   * — markWinner is the single choke point (manual results in the detail view and bracket-played
+   * ones both funnel through advanceToNextRound). Best-effort and idempotent: a failed stamp is
+   * logged, never thrown (the tournament completion itself must not break), and a re-run cannot
+   * duplicate the reign (unique tournament FK). The winner comes off the WINNER entry — a team
+   * tournament stores the team FK and expands members at read time.
+   */
+  private void recordTrophyWin(Tournament tournament, TournamentEntry winnerEntry) {
+    if (tournament.getTrophyName() == null) {
+      return;
+    }
+    try {
+      if (trophyReignRepository.existsByTournamentId(tournament.getId())) {
+        log.debug(
+            "Trophy '{}' already recorded for tournament {} — skipping (idempotent)",
+            tournament.getTrophyName(),
+            tournament.getId());
+        return;
+      }
+      TrophyReign reign = new TrophyReign();
+      reign.setTournament(tournament);
+      reign.setTrophyName(tournament.getTrophyName());
+      LocalDate wonOn = tournament.getEndDate() != null ? tournament.getEndDate() : LocalDate.now();
+      reign.setWonOn(wonOn);
+      reign.setYearWon(wonOn.getYear());
+      reign.setWinnerWrestler(winnerEntry.getWrestler());
+      reign.setWinnerTeam(winnerEntry.getTeam());
+      reign.setUniverse(tournament.getUniverse());
+      trophyReignRepository.save(reign);
+      log.info(
+          "Recorded trophy win: '{}' ({}), winner: {}",
+          tournament.getTrophyName(),
+          reign.getYearWon(),
+          reign.getWinnerWrestler() != null
+              ? reign.getWinnerWrestler().getName()
+              : reign.getWinnerTeam().getName());
+    } catch (Exception ex) {
+      log.error(
+          "Failed to record trophy win for tournament {} — the completion is unaffected",
+          tournament.getId(),
+          ex);
+    }
   }
 
   /**
@@ -1700,5 +1796,22 @@ public class TournamentService {
   public Optional<TournamentRound> getCurrentRound(Tournament tournament) {
     return roundRepository.findFirstByTournamentIdAndStatusOrderByRoundNumberAsc(
         tournament.getId(), TournamentRoundStatus.IN_PROGRESS);
+  }
+
+  /**
+   * Detail-view lineage for a trophy: every edition of the named trophy, newest first. Delegates to
+   * {@link TrophyReignService} — the read side of what {@code markWinner} stamps.
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public List<TrophyReign> trophyLineage(String trophyName) {
+    return trophyReignService.lineageOf(trophyName);
+  }
+
+  /** The reign stamped for one tournament edition, if any (detail view winner line). */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public Optional<TrophyReign> trophyReignOf(Long tournamentId) {
+    return Optional.ofNullable(trophyReignService.reignOfTournament(tournamentId));
   }
 }

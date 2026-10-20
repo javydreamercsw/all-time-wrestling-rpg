@@ -50,6 +50,7 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundRepository;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus;
 import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
+import com.github.javydreamercsw.management.domain.tournament.TrophyReignRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -90,6 +91,8 @@ class BracketTournamentServiceTest {
   @Mock private TournamentFormat format;
 
   @Mock private TitleOpportunityService titleOpportunityService;
+  @Mock private TrophyReignRepository trophyReignRepository;
+  @Mock private TrophyReignService trophyReignService;
 
   private TournamentService tournamentService;
 
@@ -116,6 +119,8 @@ class BracketTournamentServiceTest {
             titleReignRepository,
             segmentRuleRepository,
             titleOpportunityService,
+            trophyReignRepository,
+            trophyReignService,
             List.of(format));
 
     tournament = new Tournament();

@@ -3091,6 +3091,81 @@ class TournamentTemplateBookingServiceTest {
     verify(tournamentRepository, never()).findByStatus(any());
   }
 
+  @Test
+  void tournamentNotes_trophyNamesTheCup() {
+    // A named-trophy tournament's bracket narration names the trophy and makes clear no
+    // championship changes hands — the trophy and its legacy are the stakes.
+    tournament.setTrophyName("Dusty Cup");
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    Wrestler ace = wrestler(30L, "Ace");
+    Wrestler bea = wrestler(31L, "Bea");
+    Wrestler cy = wrestler(32L, "Cy");
+    Wrestler di = wrestler(33L, "Di");
+    Team highFlyers = duoTeam(10L, "High Flyers", ace, bea);
+    Team faceTeam = duoTeam(20L, "Face Team", cy, di);
+    TournamentEntry duoEntry =
+        TournamentEntry.builder().tournament(tournament).team(highFlyers).seed(1).build();
+    TournamentEntry faceEntry =
+        TournamentEntry.builder().tournament(tournament).team(faceTeam).seed(2).build();
+    tournament.setEntries(new ArrayList<>(List.of(duoEntry, faceEntry)));
+    TournamentMatch match = match(1, duoEntry, faceEntry);
+    tournament.setRounds(new ArrayList<>(List.of(round(1, match))));
+    lenient()
+        .when(tournamentService.findFormat("SINGLE_ELIMINATION"))
+        .thenReturn(Optional.of(format));
+    lenient().when(format.estimateTotalMatches(tournament)).thenReturn(3);
+    lenient()
+        .when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(rumbleType));
+    SegmentType tagTeamType = new SegmentType();
+    tagTeamType.setId(11L);
+    tagTeamType.setName("Tag Team");
+    tagTeamType.setCode(WellKnownSegmentType.TAG_TEAM.getCode());
+    lenient()
+        .when(segmentTypeService.findByCode(WellKnownSegmentType.TAG_TEAM.getCode()))
+        .thenReturn(Optional.of(tagTeamType));
+    Segment booked = teamSegment(highFlyers, faceTeam, List.of(ace, bea), tagTeamType);
+    stubResolve(booked);
+
+    service.bookWeeklyRounds(assignment, show);
+
+    assertThat(booked.getNarration())
+        .contains("Tournament match: Crown Cup")
+        .contains("The winner lifts the Dusty Cup")
+        .contains("No championship changes hands");
+  }
+
+  @Test
+  void tournamentNotes_noPayoff_braggingRights() {
+    // No title, no trophy, no contender/briefcase flags: the narration sells bragging rights.
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    Wrestler ace = wrestler(30L, "Ace");
+    Wrestler bob2 = wrestler(31L, "Bobby");
+    TournamentEntry entryA = entry(ace, 1, TournamentEntryStatus.ACTIVE);
+    TournamentEntry entryB = entry(bob2, 2, TournamentEntryStatus.ACTIVE);
+    entryA.setTournament(tournament);
+    entryB.setTournament(tournament);
+    tournament.setEntries(new ArrayList<>(List.of(entryA, entryB)));
+    TournamentMatch match = match(1, entryA, entryB);
+    tournament.setRounds(new ArrayList<>(List.of(round(1, match))));
+    lenient()
+        .when(tournamentService.findFormat("SINGLE_ELIMINATION"))
+        .thenReturn(Optional.of(format));
+    lenient().when(format.estimateTotalMatches(tournament)).thenReturn(3);
+    lenient()
+        .when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(rumbleType));
+    Segment booked = singles(ace, bob2, ace);
+    stubResolve(booked);
+
+    service.bookWeeklyRounds(assignment, show);
+
+    assertThat(booked.getNarration())
+        .contains("Tournament match: Crown Cup")
+        .contains("There is no championship at stake")
+        .contains("bragging rights");
+  }
+
   // ── Helpers ───────────────────────────────────────────────────────────────
 
   private void stubResolve(Segment booked) {

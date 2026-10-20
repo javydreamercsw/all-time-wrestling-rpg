@@ -71,6 +71,7 @@ import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
+import com.github.javydreamercsw.management.service.tournament.TrophyReignService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
@@ -175,6 +176,7 @@ public class ShowDetailView extends Main
   private final GameSettingService gameSettingService;
   private final GameClock gameClock;
   private final TournamentService tournamentService;
+  private final TrophyReignService trophyReignService;
 
   private Button backButton;
   private Registration backButtonListener;
@@ -260,6 +262,7 @@ public class ShowDetailView extends Main
     this.gameSettingService = viewContext.getGameSettingService();
     this.gameClock = viewContext.getGameClock();
     this.tournamentService = showContextFacade.getTournamentService();
+    this.trophyReignService = showContextFacade.getTrophyReignService();
     initializeComponents();
   }
 
@@ -1438,7 +1441,8 @@ public class ShowDetailView extends Main
                                       notificationService,
                                       wrestlerStatsService,
                                       dramaEventService,
-                                      titleOpportunityService)
+                                      titleOpportunityService,
+                                      trophyReignService)
                                   .open()))
               .exceptionally(
                   ex -> {

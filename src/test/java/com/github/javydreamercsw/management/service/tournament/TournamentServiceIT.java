@@ -150,7 +150,8 @@ class TournamentServiceIT extends ManagementIntegrationTest {
             null,
             false,
             false,
-            TeamSize.DUO);
+            TeamSize.DUO,
+            null);
 
     TournamentEntry entry = tournamentService.addEntry(tournament, duo, 1);
 
@@ -285,7 +286,8 @@ class TournamentServiceIT extends ManagementIntegrationTest {
             null,
             false,
             false,
-            TeamSize.DUO);
+            TeamSize.DUO,
+            null);
 
     List<TournamentEntry> entries = tournamentService.seedAuto(tournament, 4, home.getId());
     // Seeded by team fans within the universe — the higher-fans away teams never appear.
@@ -347,7 +349,8 @@ class TournamentServiceIT extends ManagementIntegrationTest {
             null,
             false,
             false,
-            TeamSize.DUO);
+            TeamSize.DUO,
+            null);
     assertThat(tournamentService.findEligibleTeamsSortedByFans(probe).stream().map(Team::getId))
         .contains(created.getId());
   }

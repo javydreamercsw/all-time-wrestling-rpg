@@ -73,6 +73,7 @@ import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
@@ -179,6 +180,7 @@ class TournamentListViewTest extends AbstractViewTest {
                 any(),
                 anyBoolean(),
                 anyBoolean(),
+                any(),
                 any()))
         .thenAnswer(
             inv -> {
@@ -285,6 +287,7 @@ class TournamentListViewTest extends AbstractViewTest {
             any(),
             eq(false),
             eq(false),
+            isNull(),
             isNull());
     verify(tournamentService).seedAuto(any(Tournament.class), anyInt(), anyLong());
   }
@@ -356,6 +359,7 @@ class TournamentListViewTest extends AbstractViewTest {
             any(),
             eq(false),
             eq(true),
+            isNull(),
             isNull());
   }
 
@@ -386,6 +390,7 @@ class TournamentListViewTest extends AbstractViewTest {
             any(),
             eq(true),
             eq(false),
+            isNull(),
             isNull());
   }
 
@@ -475,7 +480,8 @@ class TournamentListViewTest extends AbstractViewTest {
             any(),
             eq(true),
             eq(false),
-            eq(true));
+            eq(true),
+            isNull());
   }
 
   @Test
@@ -512,7 +518,8 @@ class TournamentListViewTest extends AbstractViewTest {
             any(),
             eq(true),
             eq(false),
-            eq(false));
+            eq(false),
+            isNull());
   }
 
   @Test
@@ -628,6 +635,7 @@ class TournamentListViewTest extends AbstractViewTest {
             any(),
             eq(false),
             eq(false),
+            isNull(),
             isNull());
   }
 
@@ -767,7 +775,7 @@ class TournamentListViewTest extends AbstractViewTest {
         .when(
             tournamentService.updateTournament(
                 any(), any(), any(), any(), any(), any(), any(), any(), any(), eq(true), eq(false),
-                eq(false)))
+                eq(false), any()))
         .thenThrow(new IllegalArgumentException("A contender-deciding tournament needs a title"));
 
     view.openEditDialogForTest(tournament());
@@ -854,7 +862,8 @@ class TournamentListViewTest extends AbstractViewTest {
             any(),
             eq(false),
             eq(false),
-            eq(TeamSize.DUO));
+            eq(TeamSize.DUO),
+            isNull());
     // The seeding tab defaults to Auto — team mode delegates to the team seedAuto path.
     verify(tournamentService).seedAuto(any(Tournament.class), anyInt(), anyLong());
     verify(teamService, Mockito.never())
@@ -915,14 +924,10 @@ class TournamentListViewTest extends AbstractViewTest {
             MultiSelectComboBox.class,
             spec -> spec.withId("team-registry-picker"));
     registryPicker.setValue(new LinkedHashSet<>(List.of(duo)));
-    // Assemble a one-off team from the remaining wrestlers.
+    // Assemble a one-off team in the editor's seeded row.
     @SuppressWarnings({"rawtypes", "unchecked"})
-    MultiSelectComboBox<Wrestler> memberPicker =
-        _get(
-            UI.getCurrent(),
-            MultiSelectComboBox.class,
-            spec -> spec.withLabel("Assemble One-Off Teams (optional)"));
-    memberPicker.setValue(new LinkedHashSet<>(List.of(c, d)));
+    MultiSelectComboBox<Wrestler> teamRow = oneOffRowCombo(1);
+    teamRow.setValue(new LinkedHashSet<>(List.of(c, d)));
 
     _get(UI.getCurrent(), Button.class, spec -> spec.withText("Create Tournament")).click();
 
@@ -941,9 +946,75 @@ class TournamentListViewTest extends AbstractViewTest {
     verify(teamService, Mockito.never()).saveToRegistry(any(Team.class));
   }
 
+  /** The Nth (1-based) team row combo inside the wizard's one-off editor. */
+  @SuppressWarnings({"rawtypes", "unchecked"})
+  private MultiSelectComboBox<Wrestler> oneOffRowCombo(int rowNumber) {
+    com.github.javydreamercsw.management.ui.component.TeamRowsEditor editor =
+        _get(
+            UI.getCurrent(),
+            com.github.javydreamercsw.management.ui.component.TeamRowsEditor.class,
+            spec -> spec.withId("wizard-one-off-teams"));
+    List<MultiSelectComboBox<Wrestler>> rows = new ArrayList<>();
+    editor.getChildren().forEach(child -> flattenCombos(child, rows));
+    if (rows.size() < rowNumber) {
+      throw new AssertionError(
+          "Row " + rowNumber + " not found; editor has " + rows.size() + " row(s)");
+    }
+    return rows.get(rowNumber - 1);
+  }
+
+  /** The editor's own "+ Add Team" button (found through the editor, not the whole UI). */
+  private Button oneOffAddTeamButton() {
+    com.github.javydreamercsw.management.ui.component.TeamRowsEditor editor =
+        _get(
+            UI.getCurrent(),
+            com.github.javydreamercsw.management.ui.component.TeamRowsEditor.class,
+            spec -> spec.withId("wizard-one-off-teams"));
+    List<Button> buttons = new ArrayList<>();
+    editor.getChildren().forEach(child -> flattenButtons(child, buttons));
+    return buttons.stream()
+        .filter(b -> "+ Add Team".equals(b.getText()))
+        .findFirst()
+        .orElseThrow(() -> new AssertionError("+ Add Team button not found in the editor"));
+  }
+
+  private static void flattenButtons(
+      com.vaadin.flow.component.Component component, List<Button> sink) {
+    if (component instanceof Button button) {
+      sink.add(button);
+    }
+    component
+        .getChildren()
+        .forEach(
+            child -> {
+              if (child instanceof Button button) {
+                sink.add(button);
+              } else {
+                flattenButtons(child, sink);
+              }
+            });
+  }
+
+  private static void flattenCombos(
+      com.vaadin.flow.component.Component component, List<MultiSelectComboBox<Wrestler>> sink) {
+    if (component instanceof MultiSelectComboBox<?> combo) {
+      sink.add((MultiSelectComboBox<Wrestler>) combo);
+    }
+    component
+        .getChildren()
+        .forEach(
+            child -> {
+              if (child instanceof MultiSelectComboBox<?> combo) {
+                sink.add((MultiSelectComboBox<Wrestler>) combo);
+              } else {
+                flattenCombos(child, sink);
+              }
+            });
+  }
+
   @Test
-  @DisplayName("One-off picks chunk into teams of the declared size")
-  void wizardCreate_oneOffPicks_chunkByTeamSize() {
+  @DisplayName("One-off rows create one team per row with sequential seeds")
+  void wizardCreate_oneOffRows_createOneTeamPerRow() {
     Wrestler a = new Wrestler();
     a.setId(101L);
     a.setName("Alpha");
@@ -986,14 +1057,11 @@ class TournamentListViewTest extends AbstractViewTest {
     ComboBox<String> seedingMode =
         _get(UI.getCurrent(), ComboBox.class, spec -> spec.withLabel("Seeding Method"));
     seedingMode.setValue("Manual (pick wrestlers)");
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    MultiSelectComboBox<Wrestler> memberPicker =
-        _get(
-            UI.getCurrent(),
-            MultiSelectComboBox.class,
-            spec -> spec.withLabel("Assemble One-Off Teams (optional)"));
-    // Four picks in a duo tournament: two teams of two, seeded sequentially.
-    memberPicker.setValue(new LinkedHashSet<>(List.of(a, b, c, d)));
+
+    // Two rows, one duo each: row 1 = Alpha & Beta, row 2 = Gamma & Delta.
+    oneOffAddTeamButton().click();
+    oneOffRowCombo(1).setValue(new LinkedHashSet<>(List.of(a, b)));
+    oneOffRowCombo(2).setValue(new LinkedHashSet<>(List.of(c, d)));
 
     _get(UI.getCurrent(), Button.class, spec -> spec.withText("Create Tournament")).click();
 
@@ -1005,8 +1073,8 @@ class TournamentListViewTest extends AbstractViewTest {
   }
 
   @Test
-  @DisplayName("One-off picks leaving a partial team are rejected with a clear error")
-  void wizardCreate_oneOffPicks_partialTeamRejected() {
+  @DisplayName("A one-off row holding the wrong member count is rejected at create")
+  void wizardCreate_oneOffRow_wrongSize_rejected() {
     Wrestler a = new Wrestler();
     a.setId(101L);
     a.setName("Alpha");
@@ -1032,13 +1100,9 @@ class TournamentListViewTest extends AbstractViewTest {
     ComboBox<String> seedingMode =
         _get(UI.getCurrent(), ComboBox.class, spec -> spec.withLabel("Seeding Method"));
     seedingMode.setValue("Manual (pick wrestlers)");
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    MultiSelectComboBox<Wrestler> memberPicker =
-        _get(
-            UI.getCurrent(),
-            MultiSelectComboBox.class,
-            spec -> spec.withLabel("Assemble One-Off Teams (optional)"));
-    memberPicker.setValue(new LinkedHashSet<>(List.of(a, b, c)));
+    // The row editor trims over-size picks to the declared size; a solo pick in a duo row is
+    // the booker's partial team — create rejects it.
+    oneOffRowCombo(1).setValue(new LinkedHashSet<>(List.of(a, b, c)));
 
     _get(UI.getCurrent(), Button.class, spec -> spec.withText("Create Tournament")).click();
 
@@ -1049,7 +1113,7 @@ class TournamentListViewTest extends AbstractViewTest {
   }
 
   @Test
-  @DisplayName("One-off picker excludes inactive and wrong-gender wrestlers")
+  @DisplayName("One-off row picker excludes inactive and wrong-gender wrestlers")
   void wizardOneOffPicker_filtersByActiveAndGender() {
     Wrestler male = new Wrestler();
     male.setId(101L);
@@ -1076,21 +1140,14 @@ class TournamentListViewTest extends AbstractViewTest {
         _get(UI.getCurrent(), ComboBox.class, spec -> spec.withLabel("Gender Filter (optional)"));
     genderCombo.setValue(Gender.FEMALE);
 
-    // The one-off picker lives on the seeding tab: advance, then switch to Manual to reveal it.
+    // The one-off editor lives on the seeding tab: advance, then switch to Manual to reveal it.
     _get(UI.getCurrent(), Button.class, spec -> spec.withText("Next")).click();
     @SuppressWarnings({"rawtypes", "unchecked"})
     ComboBox<String> seedingMode =
         _get(UI.getCurrent(), ComboBox.class, spec -> spec.withLabel("Seeding Method"));
     seedingMode.setValue("Manual (pick wrestlers)");
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    MultiSelectComboBox<Wrestler> memberPicker =
-        _get(
-            UI.getCurrent(),
-            MultiSelectComboBox.class,
-            spec -> spec.withLabel("Assemble One-Off Teams (optional)"));
-
-    List<Wrestler> offered = memberPicker.getListDataView().getItems().toList();
+    List<Wrestler> offered = oneOffRowCombo(1).getListDataView().getItems().toList();
     // Women's-division filter: only gender-matching, active wrestlers are offered.
     assertTrue(offered.contains(female), "A matching-gender active wrestler must be offered");
     assertFalse(offered.contains(male), "A wrong-gender wrestler must not be offered");
