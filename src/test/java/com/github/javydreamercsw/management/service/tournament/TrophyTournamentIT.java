@@ -34,6 +34,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.show.ShowBookingService;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -238,7 +239,7 @@ class TrophyTournamentIT extends ManagementIntegrationTest {
   private Team duo(String name, Wrestler first, Wrestler second) {
     Team team = new Team();
     team.setName(name);
-    team.setMembers(new java.util.ArrayList<>(List.of(first, second)));
+    team.setMembers(new ArrayList<>(List.of(first, second)));
     team.setTeamSize(TeamSize.DUO);
     return teamRepository.save(team);
   }

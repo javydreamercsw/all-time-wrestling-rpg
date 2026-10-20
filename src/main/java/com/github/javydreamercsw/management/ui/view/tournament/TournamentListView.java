@@ -642,10 +642,8 @@ public class TournamentListView extends VerticalLayout {
     payoffMode.setItemEnabledProvider(
         item ->
             teamModeOf(entrantType.getValue())
-                ? "Winner becomes #1 contender".equals(item)
-                        || "Winner earns the briefcase".equals(item)
-                    ? false
-                    : true
+                ? !("Winner becomes #1 contender".equals(item)
+                    || "Winner earns the briefcase".equals(item))
                 : true);
     TextField wizardTrophyNameField = new TextField("Trophy Name");
     wizardTrophyNameField.setId("wizard-trophy-name");

@@ -24,7 +24,9 @@ import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TrophyReign;
 import com.github.javydreamercsw.management.domain.tournament.TrophyReignRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -103,7 +105,7 @@ class TrophyReignServiceTest {
     reign.setTournament(new Tournament());
     when(trophyReignRepository.findByTrophyNameOrderByYearWonDesc("Dusty Cup"))
         .thenReturn(List.of(reign));
-    when(trophyReignRepository.findByTournamentId(7L)).thenReturn(java.util.Optional.of(reign));
+    when(trophyReignRepository.findByTournamentId(7L)).thenReturn(Optional.of(reign));
 
     assertThat(service.lineageOf("Dusty Cup")).containsExactly(reign);
     assertThat(service.reignOfTournament(7L)).isSameAs(reign);
@@ -122,7 +124,7 @@ class TrophyReignServiceTest {
   private Team team(String name, Wrestler... members) {
     Team team = new Team();
     team.setName(name);
-    team.setMembers(new java.util.ArrayList<>(List.of(members)));
+    team.setMembers(new ArrayList<>(List.of(members)));
     return team;
   }
 

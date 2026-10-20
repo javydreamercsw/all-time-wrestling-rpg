@@ -58,6 +58,7 @@ import com.github.javydreamercsw.management.service.universe.UniverseContextServ
 import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.ViewContext;
+import com.github.javydreamercsw.management.ui.component.TeamRowsEditor;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentEvent;
@@ -949,11 +950,8 @@ class TournamentListViewTest extends AbstractViewTest {
   /** The Nth (1-based) team row combo inside the wizard's one-off editor. */
   @SuppressWarnings({"rawtypes", "unchecked"})
   private MultiSelectComboBox<Wrestler> oneOffRowCombo(int rowNumber) {
-    com.github.javydreamercsw.management.ui.component.TeamRowsEditor editor =
-        _get(
-            UI.getCurrent(),
-            com.github.javydreamercsw.management.ui.component.TeamRowsEditor.class,
-            spec -> spec.withId("wizard-one-off-teams"));
+    TeamRowsEditor editor =
+        _get(UI.getCurrent(), TeamRowsEditor.class, spec -> spec.withId("wizard-one-off-teams"));
     List<MultiSelectComboBox<Wrestler>> rows = new ArrayList<>();
     editor.getChildren().forEach(child -> flattenCombos(child, rows));
     if (rows.size() < rowNumber) {
@@ -965,11 +963,8 @@ class TournamentListViewTest extends AbstractViewTest {
 
   /** The editor's own "+ Add Team" button (found through the editor, not the whole UI). */
   private Button oneOffAddTeamButton() {
-    com.github.javydreamercsw.management.ui.component.TeamRowsEditor editor =
-        _get(
-            UI.getCurrent(),
-            com.github.javydreamercsw.management.ui.component.TeamRowsEditor.class,
-            spec -> spec.withId("wizard-one-off-teams"));
+    TeamRowsEditor editor =
+        _get(UI.getCurrent(), TeamRowsEditor.class, spec -> spec.withId("wizard-one-off-teams"));
     List<Button> buttons = new ArrayList<>();
     editor.getChildren().forEach(child -> flattenButtons(child, buttons));
     return buttons.stream()
@@ -978,8 +973,7 @@ class TournamentListViewTest extends AbstractViewTest {
         .orElseThrow(() -> new AssertionError("+ Add Team button not found in the editor"));
   }
 
-  private static void flattenButtons(
-      com.vaadin.flow.component.Component component, List<Button> sink) {
+  private static void flattenButtons(Component component, List<Button> sink) {
     if (component instanceof Button button) {
       sink.add(button);
     }
@@ -995,8 +989,7 @@ class TournamentListViewTest extends AbstractViewTest {
             });
   }
 
-  private static void flattenCombos(
-      com.vaadin.flow.component.Component component, List<MultiSelectComboBox<Wrestler>> sink) {
+  private static void flattenCombos(Component component, List<MultiSelectComboBox<Wrestler>> sink) {
     if (component instanceof MultiSelectComboBox<?> combo) {
       sink.add((MultiSelectComboBox<Wrestler>) combo);
     }
