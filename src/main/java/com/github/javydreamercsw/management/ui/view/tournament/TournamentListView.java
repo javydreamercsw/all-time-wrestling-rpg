@@ -1138,14 +1138,6 @@ public class TournamentListView extends VerticalLayout {
     return probe;
   }
 
-  /** Ordered member display names joined with " & " — the team's lineup as a single string. */
-  private static String memberNamesOf(@NonNull Team team) {
-    return team.getMembers().stream()
-        .map(TeamMember::getWrestler)
-        .map(Wrestler::getName)
-        .collect(Collectors.joining(" & "));
-  }
-
   void refreshGridForTest() {
     refresh();
   }
