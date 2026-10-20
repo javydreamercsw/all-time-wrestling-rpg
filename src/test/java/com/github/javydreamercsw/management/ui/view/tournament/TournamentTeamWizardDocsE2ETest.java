@@ -82,6 +82,8 @@ class TournamentTeamWizardDocsE2ETest extends AbstractDocsE2ETest {
     // singles wrestler picker's placement and visibility).
     selectRadio("wizard-entrant-type", "Tag Team");
     waitForVaadinElement(driver, By.id("wizard-next")).click();
+    WebElement seedingMode = waitForVaadinElement(driver, By.id("wizard-seeding-mode"));
+    selectFromVaadinComboBox(seedingMode, "Manual (pick wrestlers)");
     waitForVaadinElement(driver, By.id("team-registry-picker"));
     selectVaadinMultiSelect(driver.findElement(By.id("team-registry-picker")), 1);
 

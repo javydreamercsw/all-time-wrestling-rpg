@@ -679,6 +679,7 @@ public class TournamentListView extends VerticalLayout {
 
     // Tab 2: Seeding
     ComboBox<String> seedingMode = new ComboBox<>("Seeding Method");
+    seedingMode.setId("wizard-seeding-mode");
     seedingMode.setItems(
         "Auto (by fan count)", "Manual (pick wrestlers)", "Don't seed now (seed later)");
     seedingMode.setValue("Auto (by fan count)");
