@@ -103,22 +103,22 @@ public class TournamentBracketPreviewModel implements TournamentBracketModel {
 
     @Override
     public Long getWrestler1Id() {
-      return e1.getWrestler().getId();
+      return e1.entrantId();
     }
 
     @Override
     public String getWrestler1Name() {
-      return e1.getWrestler().getName();
+      return e1.entrantName();
     }
 
     @Override
     public Long getWrestler2Id() {
-      return e2.getWrestler().getId();
+      return e2.entrantId();
     }
 
     @Override
     public String getWrestler2Name() {
-      return e2.getWrestler().getName();
+      return e2.entrantName();
     }
 
     @Override

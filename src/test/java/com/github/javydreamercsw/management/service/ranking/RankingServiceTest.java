@@ -237,8 +237,10 @@ class RankingServiceTest {
     Team contenderTeam = new Team();
     contenderTeam.setId(2L);
     contenderTeam.setName("The Contenders");
-    contenderTeam.setWrestler1(team2member1);
-    contenderTeam.setWrestler2(team2member2);
+    contenderTeam.setMembers(List.of(team2member1, team2member2));
+    // Team fans are now the team-level counter; the migration backfilled it from the member sum,
+    // so a pre-existing team reports the same value under both metrics.
+    contenderTeam.setFans(1500L);
 
     when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
     when(teamRepository.findAll()).thenReturn(List.of(contenderTeam));
@@ -255,6 +257,184 @@ class RankingServiceTest {
         List.of("Team 2 Member 1", "Team 2 Member 2"),
         teamDto.getMemberNames(),
         "Both team members must be present, not just the first");
+  }
+
+  @Test
+  void teamRankingsSortByTeamFansNotMemberSum() {
+    title.setChampionshipType(ChampionshipType.TEAM);
+    title.setTier(WrestlerTier.MIDCARDER);
+    title.getTitleReigns().clear(); // No champion — all teams are contenders
+
+    // Team X: low team fans, high member fans
+    Wrestler x1 = createMockWrestler(4L, "X Member 1", 100L, WrestlerTier.ROOKIE);
+    Wrestler x2 = createMockWrestler(5L, "X Member 2", 100L, WrestlerTier.ROOKIE);
+    Team teamX = new Team();
+    teamX.setId(10L);
+    teamX.setName("Team X");
+    teamX.setMembers(List.of(x1, x2));
+    teamX.setFans(500L);
+
+    // Team Y: high team fans, low member fans
+    Wrestler y1 = createMockWrestler(6L, "Y Member 1", 1000L, WrestlerTier.RISER);
+    Wrestler y2 = createMockWrestler(7L, "Y Member 2", 1000L, WrestlerTier.RISER);
+    Team teamY = new Team();
+    teamY.setId(11L);
+    teamY.setName("Team Y");
+    teamY.setMembers(List.of(y1, y2));
+    teamY.setFans(300L);
+
+    when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
+    when(teamRepository.findAll()).thenReturn(new ArrayList<>(List.of(teamX, teamY)));
+
+    List<RankedTeamDTO> contenders = (List<RankedTeamDTO>) rankingService.getRankedContenders(1L);
+
+    assertEquals(2, contenders.size());
+    assertEquals(
+        "Team X",
+        contenders.get(0).getName(),
+        "Team X (team fans 500) must rank above Team Y (team fans 300) — "
+            + "ordering is by the team-level fan counter, not the member sum"
+            + contenders.stream().map(RankedTeamDTO::getName).toList());
+    assertEquals(500L, contenders.get(0).getFans());
+    assertEquals(300L, contenders.get(1).getFans());
+  }
+
+  @Test
+  void teamContendersFilteredByAllMemberGender() {
+    title.setChampionshipType(ChampionshipType.TEAM);
+    title.setTier(WrestlerTier.MIDCARDER);
+    title.getTitleReigns().clear();
+
+    // A DUO where only one member has the wrong gender → the whole team is excluded
+    Wrestler maleMember = createMockWrestler(4L, "Male Member", 500L, WrestlerTier.ROOKIE);
+    Wrestler femaleMember = createMockWrestler(5L, "Female Member", 600L, WrestlerTier.ROOKIE);
+    femaleMember.setGender(Gender.FEMALE);
+    Team mixedTeam = new Team();
+    mixedTeam.setId(10L);
+    mixedTeam.setName("Mixed Team");
+    mixedTeam.setMembers(List.of(maleMember, femaleMember));
+    mixedTeam.setFans(500L);
+
+    // A TRIO where one member has the wrong gender → also excluded
+    Wrestler trioA = createMockWrestler(6L, "Trio A", 700L, WrestlerTier.RISER);
+    Wrestler trioB = createMockWrestler(7L, "Trio B", 800L, WrestlerTier.RISER);
+    Wrestler trioC = createMockWrestler(8L, "Trio C", 900L, WrestlerTier.RISER);
+    trioC.setGender(Gender.FEMALE);
+    Team trioTeam = new Team();
+    trioTeam.setId(11L);
+    trioTeam.setName("Trio Team");
+    trioTeam.setMembers(List.of(trioA, trioB, trioC));
+    trioTeam.setFans(900L);
+
+    // All-male team → included
+    Wrestler ok1 = createMockWrestler(9L, "Ok Member 1", 100L, WrestlerTier.ROOKIE);
+    Wrestler ok2 = createMockWrestler(10L, "Ok Member 2", 200L, WrestlerTier.ROOKIE);
+    Team okTeam = new Team();
+    okTeam.setId(12L);
+    okTeam.setName("Ok Team");
+    okTeam.setMembers(List.of(ok1, ok2));
+    okTeam.setFans(100L);
+
+    when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
+    when(teamRepository.findAll())
+        .thenReturn(new ArrayList<>(List.of(mixedTeam, trioTeam, okTeam)));
+
+    List<RankedTeamDTO> contenders = (List<RankedTeamDTO>) rankingService.getRankedContenders(1L);
+
+    assertEquals(
+        1,
+        contenders.size(),
+        "Only the all-male team passes the all-member gender filter"
+            + contenders.stream().map(RankedTeamDTO::getName).toList());
+    assertEquals("Ok Team", contenders.getFirst().getName());
+  }
+
+  @Test
+  void championTeamRemovedByIdViaReignReference() {
+    title.setChampionshipType(ChampionshipType.TEAM);
+    title.setTier(WrestlerTier.MIDCARDER);
+
+    // The champion team (members A & B, team fans 1000)
+    Wrestler memberA = createMockWrestler(4L, "Member A", 500L, WrestlerTier.ROOKIE);
+    Wrestler memberB = createMockWrestler(5L, "Member B", 500L, WrestlerTier.ROOKIE);
+    Team championTeam = new Team();
+    championTeam.setId(10L);
+    championTeam.setName("Champion Team");
+    championTeam.setMembers(List.of(memberA, memberB));
+    championTeam.setFans(1000L);
+
+    // A DIFFERENT team with the exact same members — must stay in contention
+    Team rivalTeam = new Team();
+    rivalTeam.setId(11L);
+    rivalTeam.setName("Rival Team");
+    rivalTeam.setMembers(List.of(memberA, memberB));
+    rivalTeam.setFans(800L);
+
+    // Reign references the champion team explicitly
+    TitleReign reign = new TitleReign();
+    reign.setTitle(title);
+    reign.setChampions(new LinkedHashSet<>(List.of(memberA, memberB)));
+    reign.setTeam(championTeam);
+    reign.setStartDate(Instant.now());
+    title.getTitleReigns().clear();
+    title.getTitleReigns().add(reign);
+
+    when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
+    when(teamRepository.findAll()).thenReturn(new ArrayList<>(List.of(championTeam, rivalTeam)));
+
+    List<RankedTeamDTO> contenders = (List<RankedTeamDTO>) rankingService.getRankedContenders(1L);
+
+    assertEquals(
+        1,
+        contenders.size(),
+        "Only the rival team remains — the champion team is matched by ID"
+            + contenders.stream().map(RankedTeamDTO::getName).toList());
+    assertEquals("Rival Team", contenders.getFirst().getName());
+  }
+
+  @Test
+  void legacyReignWithoutTeamFallsBackToMemberSetMatch() {
+    title.setChampionshipType(ChampionshipType.TEAM);
+    title.setTier(WrestlerTier.MIDCARDER);
+
+    Wrestler memberA = createMockWrestler(4L, "Member A", 500L, WrestlerTier.ROOKIE);
+    Wrestler memberB = createMockWrestler(5L, "Member B", 500L, WrestlerTier.ROOKIE);
+    Team championTeam = new Team();
+    championTeam.setId(10L);
+    championTeam.setName("Champion Team");
+    championTeam.setMembers(List.of(memberA, memberB));
+    championTeam.setFans(1000L);
+
+    // A trio contender team whose champions held the title before the team reference existed
+    Wrestler trioA = createMockWrestler(6L, "Trio A", 400L, WrestlerTier.ROOKIE);
+    Wrestler trioB = createMockWrestler(7L, "Trio B", 400L, WrestlerTier.ROOKIE);
+    Wrestler trioC = createMockWrestler(8L, "Trio C", 400L, WrestlerTier.ROOKIE);
+    Team trioTeam = new Team();
+    trioTeam.setId(11L);
+    trioTeam.setName("Trio Team");
+    trioTeam.setMembers(List.of(trioA, trioB, trioC));
+    trioTeam.setFans(900L);
+
+    // Legacy reign: team == null, champions == the trio's member set
+    TitleReign trioReign = new TitleReign();
+    trioReign.setTitle(title);
+    trioReign.setChampions(new LinkedHashSet<>(List.of(trioA, trioB, trioC)));
+    trioReign.setStartDate(Instant.now());
+    title.getTitleReigns().clear();
+    title.getTitleReigns().add(trioReign);
+
+    when(titleRepository.findById(1L)).thenReturn(Optional.of(title));
+    when(teamRepository.findAll()).thenReturn(new ArrayList<>(List.of(championTeam, trioTeam)));
+
+    List<RankedTeamDTO> contenders = (List<RankedTeamDTO>) rankingService.getRankedContenders(1L);
+
+    assertEquals(
+        1,
+        contenders.size(),
+        "The legacy trio reign removes the trio team (member-set fallback); the duo team "
+            + "was never champion under this reign"
+            + contenders.stream().map(RankedTeamDTO::getName).toList());
+    assertEquals("Champion Team", contenders.getFirst().getName());
   }
 
   @Test

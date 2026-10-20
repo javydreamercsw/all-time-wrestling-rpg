@@ -185,6 +185,13 @@ public interface SegmentNarrationService {
      * a champion.
      */
     private String heldBriefcase;
+
+    /**
+     * Named-tournament trophies the wrestler has won: "2026 Dusty Cup winner" — or "2026 Dusty Cup
+     * winner (with A & B)" for a team win — so narration can reference past tournament glory the
+     * way it references championships. Historical honors, not stakes.
+     */
+    private List<String> trophyHonors;
   }
 
   /** Wrestler's move set including finishers and trademarks. */

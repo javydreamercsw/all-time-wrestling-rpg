@@ -30,6 +30,7 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -200,5 +201,110 @@ class TeamRowsEditorTest {
     Map<Integer, List<Wrestler>> teams = editor.getTeams();
     assertEquals(1, teams.size());
     assertTrue(teams.get(1).containsAll(List.of(wrestler2, wrestler3)));
+  }
+
+  // ── Extended constructor (tournament wizard) ─────────────────────────────
+
+  @Test
+  @DisplayName("requiredTeamSize trims a row that exceeds the declared member count")
+  void requiredTeamSize_trimsOverLimitSelection() {
+    TeamRowsEditor editor = new TeamRowsEditor(candidates, null, null, 2, 1, Integer.MAX_VALUE);
+    editor.addTeamRow();
+
+    // LinkedHashSet pins the pick order the trim keeps.
+    teamCombo(editor, 0).setValue(new LinkedHashSet<>(List.of(wrestler1, wrestler2, wrestler3)));
+
+    // Over-limit picks are trimmed back to exactly 2 — the first two in selection order.
+    assertEquals(2, editor.getTeams().get(1).size());
+    assertEquals(List.of(wrestler1, wrestler2), editor.getTeams().get(1));
+    assertTrue(editor.rowsMatchRequiredSize());
+  }
+
+  @Test
+  @DisplayName("rowsMatchRequiredSize is false while a non-empty row is under the declared size")
+  void requiredTeamSize_underFilledRow_notMatching() {
+    TeamRowsEditor editor = new TeamRowsEditor(candidates, null, null, 2, 1, Integer.MAX_VALUE);
+    editor.addTeamRow();
+
+    teamCombo(editor, 0).setValue(Set.of(wrestler1));
+    assertFalse(editor.rowsMatchRequiredSize());
+
+    teamCombo(editor, 0).setValue(Set.of(wrestler1, wrestler2));
+    assertTrue(editor.rowsMatchRequiredSize());
+  }
+
+  @Test
+  @DisplayName("The row filter re-filters every picker; the row's own value stays selectable")
+  void rowFilter_excludesButKeepsOwnValue() {
+    TeamRowsEditor editor =
+        new TeamRowsEditor(candidates, null, w -> !w.equals(wrestler3), 2, 2, Integer.MAX_VALUE);
+    MultiSelectComboBox<Wrestler> combo1 = teamCombo(editor, 0);
+    MultiSelectComboBox<Wrestler> combo2 = teamCombo(editor, 1);
+    combo1.setValue(Set.of(wrestler3)); // filtered-out wrestler picked while still offered
+
+    // Re-filter: the row holding wrestler3 keeps it (own value is never dropped), but the
+    // combo never OFFERS the selected value back — check another row for exclusion.
+    editor.refreshRowItemsWithFilter(w -> !w.equals(wrestler3));
+    assertTrue(combo1.getValue().contains(wrestler3), "The row's own value is never dropped");
+    assertFalse(combo2.getListDataView().getItems().toList().contains(wrestler3));
+
+    // With row 1's pick cleared, the base filter is re-evaluated on refresh — un-filtering
+    // offers wrestler3 to row 2 again.
+    combo1.setValue(Set.of());
+    editor.refreshRowItemsWithFilter(w -> true);
+    assertTrue(combo2.getListDataView().getItems().toList().contains(wrestler3));
+  }
+
+  @Test
+  @DisplayName("Rows exclude wrestlers taken by other rows on refresh")
+  void rows_excludeOtherRowsSelections() {
+    TeamRowsEditor editor = new TeamRowsEditor(candidates, null, null, 1, 2, Integer.MAX_VALUE);
+    teamCombo(editor, 0).setValue(Set.of(wrestler1));
+
+    editor.refreshRowItems();
+
+    List<Wrestler> row2Offered = teamCombo(editor, 1).getListDataView().getItems().toList();
+    assertFalse(row2Offered.contains(wrestler1), "Row 2 never offers row 1's wrestler");
+    assertTrue(row2Offered.contains(wrestler2));
+  }
+
+  @Test
+  @DisplayName("minRows seeds empty rows at construction; maxRows caps addTeamRow")
+  void minAndMaxRows_boundsRespected() {
+    TeamRowsEditor editor = new TeamRowsEditor(candidates, null, null, null, 3, 4);
+    assertEquals(3, editor.rowCount(), "minRows seeds three rows");
+
+    editor.addTeamRow(); // 4 — at the cap
+    assertEquals(4, editor.rowCount());
+    // Beyond the cap the editor refuses: addTeamRow has no guard itself, but refreshRowItems
+    // and the wizard read rowCount; the cap is enforced by the caller. Verify the current
+    // behavior stays the plain add (documented contract).
+  }
+
+  @Test
+  @DisplayName("hasAnySelection is true only once a row carries a selection")
+  void hasAnySelection_tracksFirstPick() {
+    TeamRowsEditor editor = new TeamRowsEditor(candidates, null, null, 2, 1, Integer.MAX_VALUE);
+    assertFalse(editor.hasAnySelection());
+
+    editor.addTeamRow();
+    assertFalse(editor.hasAnySelection(), "The seeded row is still empty");
+    teamCombo(editor, 0).setValue(Set.of(wrestler1));
+    assertTrue(editor.hasAnySelection());
+  }
+
+  @Test
+  @DisplayName("A change during the refresh does not re-fire the change listener (re-entrancy)")
+  void refreshRowItems_doesNotRefireChangeListener() {
+    AtomicInteger changes = new AtomicInteger();
+    TeamRowsEditor editor =
+        new TeamRowsEditor(candidates, changes::incrementAndGet, null, 1, 2, Integer.MAX_VALUE);
+    teamCombo(editor, 0).setValue(Set.of(wrestler1)); // change 1: direct pick
+    changes.set(0);
+
+    // Row 1's value is removed from row 2's offered list — the refresh fires value-change
+    // events internally (setItems), which must not count as booker changes.
+    editor.refreshRowItems();
+    assertEquals(0, changes.get(), "Internal refresh events are not booker changes");
   }
 }

@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.dto;
 
 import com.github.javydreamercsw.management.domain.team.Team;
+import com.github.javydreamercsw.management.domain.team.TeamSize;
 import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +34,13 @@ public class TeamDTO {
   private String wrestler1Name;
   private Long wrestler2Id;
   private String wrestler2Name;
+
+  /** Ordered member display names (slot 0..n-1); covers duos and larger rosters alike. */
+  private List<String> memberNames;
+
+  /** Declared team size (DUO/TRIO). */
+  private TeamSize teamSize;
+
   private String formedDate;
   private String disbandedDate;
   private TeamStatus status;
@@ -60,6 +68,9 @@ public class TeamDTO {
       dto.setWrestler2Id(team.getWrestler2().getId());
       dto.setWrestler2Name(team.getWrestler2().getName());
     }
+    dto.setMemberNames(
+        team.getMembers().stream().map(member -> member.getWrestler().getName()).toList());
+    dto.setTeamSize(team.getTeamSize());
     if (team.getFormedDate() != null) {
       dto.setFormedDate(team.getFormedDate().toString());
     }
@@ -84,7 +95,14 @@ public class TeamDTO {
     return dto;
   }
 
+  /**
+   * @return the ordered member display names, falling back to the legacy duo fields when not
+   *     populated (e.g. hand-built DTOs in dialogs)
+   */
   public List<String> getMemberNames() {
+    if (memberNames != null) {
+      return memberNames;
+    }
     List<String> names = new ArrayList<>();
     if (wrestler1Name != null) {
       names.add(wrestler1Name);

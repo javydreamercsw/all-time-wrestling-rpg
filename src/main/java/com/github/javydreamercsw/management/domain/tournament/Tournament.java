@@ -21,6 +21,7 @@ import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.team.TeamSize;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import jakarta.persistence.CascadeType;
@@ -87,12 +88,23 @@ public class Tournament extends AbstractEntity<Long> {
   @Nullable private Gender gender;
 
   /**
-   * QUALIFIER_GROUPS only: wrestlers per qualifier group (the Free-for-All qualifiers feeding the
-   * final). Null = format default (3-wrestler groups). Part of the entrant-count validation — the
-   * bracket needs at least two groups ({@code entrants >= 2 * groupSize}).
+   * QUALIFIER_GROUPS only: entries (teams or wrestlers) per qualifier group (the Free-for-All
+   * qualifiers feeding the final — a 3-team group is 6 wrestlers in a trio tournament). Null =
+   * format default (3-entrant groups). Part of the entrant-count validation — the bracket needs at
+   * least two groups ({@code entrants >= 2 * groupSize}); the math counts entries, not wrestlers.
    */
   @Column(name = "qualifier_group_size")
   @Nullable private Integer qualifierGroupSize;
+
+  /**
+   * Entrant type gate: {@code null} = singles (individual wrestlers only); {@code DUO}/{@code TRIO}
+   * = team tournament taking {@link com.github.javydreamercsw.management.domain.team.Team} entrants
+   * of exactly that declared size. Must match the linked TEAM title's own team size when one is
+   * linked; contender- and briefcase-deciding tournaments stay singles-only.
+   */
+  @Column(name = "team_size", length = 16)
+  @Enumerated(EnumType.STRING)
+  @Nullable private TeamSize teamSize;
 
   /**
    * Contender-deciding payoff (ATW-ewrp): the winner becomes the #1 contender for the linked title
@@ -113,6 +125,16 @@ public class Tournament extends AbstractEntity<Long> {
    */
   @Column(name = "briefcase_deciding", nullable = false)
   private boolean briefcaseDeciding = false;
+
+  /**
+   * Named trophy payoff: the winner lifts this trophy — "2026 Dusty Cup" — and the win is recorded
+   * into {@code trophy_reign} at completion for lineage and AI narration ("2026 Dusty Cup
+   * winners"). No championship changes hands. Mutually exclusive with a linked title and with the
+   * contender/briefcase payoffs; legal for team tournaments. A {@code null} trophy name with no
+   * flags and no title is the bragging-rights-only tournament.
+   */
+  @Column(name = "trophy_name")
+  @Nullable private String trophyName;
 
   /** Format identifier matching {@code TournamentFormat#getFormatId()}. */
   @Column(name = "format_id", nullable = false, length = 64)

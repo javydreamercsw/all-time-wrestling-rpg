@@ -345,6 +345,15 @@ public class ShowPlanningPromptBuilder {
           .forEach(line -> prompt.append("- ").append(sanitize(line)).append("\n"));
     }
 
+    if (context.getTrophyHonors() != null && !context.getTrophyHonors().isEmpty()) {
+      prompt.append("\nTrophy Honors (named-tournament trophies won — past tournament glory,");
+      prompt.append(" usable backstory; a returning-trophy edition is a strong proposal");
+      prompt.append(" candidate):\n");
+      context
+          .getTrophyHonors()
+          .forEach(line -> prompt.append("- ").append(sanitize(line)).append("\n"));
+    }
+
     if (context.getFullRoster() != null && !context.getFullRoster().isEmpty()) {
       // Wrestlers already locked into pre-determined slots (scripted beats, real-participant
       // tournament rows) are removed from the rendered roster — the deterministic passes book

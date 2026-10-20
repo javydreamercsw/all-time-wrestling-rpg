@@ -66,6 +66,7 @@ import com.github.javydreamercsw.management.service.segment.PromoService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.title.TitleScriptService;
+import com.github.javydreamercsw.management.service.tournament.TrophyReignService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.AbilityReminderTextService;
@@ -154,6 +155,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   @Autowired private WrestlerAbilityRepository wrestlerAbilityRepository;
   @Autowired private AbilityReminderTextService abilityReminderTextService;
   @Autowired private TitleOpportunityService titleOpportunityService;
+  @Autowired private TrophyReignService trophyReignService;
 
   private Segment segment;
   private TextArea narrationArea;
@@ -1209,6 +1211,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                     // Briefcase holder context (ATW-brrz): narration introduces a holder like a
                     // champion.
                     wc.setHeldBriefcase(titleOpportunityService.heldBriefcaseContextOf(w.getId()));
+                    // Trophy honors: past tournament wins the narrator can reference.
+                    wc.setTrophyHonors(trophyReignService.trophyHonorsOf(w.getId()));
 
                     // Set manager/supporter context
                     Object supporter = ringsideActionService.getBestSupporter(segment, w);

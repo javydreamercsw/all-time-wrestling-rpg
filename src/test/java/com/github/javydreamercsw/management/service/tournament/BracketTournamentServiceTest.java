@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
@@ -49,7 +50,9 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundRepository;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus;
 import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
+import com.github.javydreamercsw.management.domain.tournament.TrophyReignRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
@@ -76,6 +79,8 @@ class BracketTournamentServiceTest {
   @Mock private TournamentRoundRepository roundRepository;
   @Mock private TournamentMatchRepository matchRepository;
   @Mock private WrestlerRepository wrestlerRepository;
+  @Mock private TeamRepository teamRepository;
+  @Mock private UniverseRepository universeRepository;
   @Mock private ShowRepository showRepository;
   @Mock private ShowBookingService showBookingService;
   @Mock private ShowSegmentReservationService reservationService;
@@ -86,6 +91,8 @@ class BracketTournamentServiceTest {
   @Mock private TournamentFormat format;
 
   @Mock private TitleOpportunityService titleOpportunityService;
+  @Mock private TrophyReignRepository trophyReignRepository;
+  @Mock private TrophyReignService trophyReignService;
 
   private TournamentService tournamentService;
 
@@ -104,12 +111,16 @@ class BracketTournamentServiceTest {
             roundRepository,
             matchRepository,
             wrestlerRepository,
+            teamRepository,
+            universeRepository,
             showRepository,
             showBookingService,
             reservationService,
             titleReignRepository,
             segmentRuleRepository,
             titleOpportunityService,
+            trophyReignRepository,
+            trophyReignService,
             List.of(format));
 
     tournament = new Tournament();

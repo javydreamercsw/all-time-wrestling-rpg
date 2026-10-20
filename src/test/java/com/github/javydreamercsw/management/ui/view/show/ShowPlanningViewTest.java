@@ -62,6 +62,7 @@ import com.github.javydreamercsw.management.service.title.TitleOpportunityServic
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.service.tournament.TournamentTemplateBookingService;
+import com.github.javydreamercsw.management.service.tournament.TrophyReignService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.AbilityReminderTextService;
@@ -136,7 +137,8 @@ class ShowPlanningViewTest extends AbstractViewTest {
             showPlanningAiService,
             arenaService,
             mock(TournamentService.class),
-            tournamentTemplateBookingService);
+            tournamentTemplateBookingService,
+            mock(TrophyReignService.class));
     WrestlerFacade wrestlerFacade =
         new WrestlerFacade(
             wrestlerService,

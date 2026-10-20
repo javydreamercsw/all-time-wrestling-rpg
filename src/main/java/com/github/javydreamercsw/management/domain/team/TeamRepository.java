@@ -45,32 +45,39 @@ public interface TeamRepository extends JpaRepository<Team, Long>, JpaSpecificat
   List<Team> findByFaction(Faction faction);
 
   /** Find teams where a specific wrestler is a member. */
-  @Query("SELECT t FROM Team t WHERE t.wrestler1 = :wrestler OR t.wrestler2 = :wrestler")
+  @Query("SELECT DISTINCT t FROM Team t JOIN t.members m WHERE m.wrestler = :wrestler")
   List<Team> findByWrestler(@Param("wrestler") Wrestler wrestler);
 
   /** Find active teams where a specific wrestler is a member. */
   @Query(
       """
-      SELECT t FROM Team t WHERE (t.wrestler1 = :wrestler OR t.wrestler2 = :wrestler) AND t.status\
+      SELECT DISTINCT t FROM Team t JOIN t.members m WHERE m.wrestler = :wrestler AND t.status\
        = :status\
       """)
   List<Team> findByWrestlerAndStatus(
       @Param("wrestler") Wrestler wrestler, @Param("status") TeamStatus status);
 
-  /** Find team by both wrestlers (regardless of order). */
+  /**
+   * Find team whose member slots 0/1 hold exactly the two given wrestlers (either order) — the
+   * legacy duo lookup. The size guard keeps trios from matching a duo pair.
+   */
   @Query(
       """
-      SELECT t FROM Team t WHERE (t.wrestler1 = :wrestler1 AND t.wrestler2 = :wrestler2) OR\
-       (t.wrestler1 = :wrestler2 AND t.wrestler2 = :wrestler1)\
+      SELECT t FROM Team t JOIN t.members m0 JOIN t.members m1\
+       WHERE SIZE(t.members) = 2 AND m0.slot = 0 AND m1.slot = 1\
+       AND ((m0.wrestler = :wrestler1 AND m1.wrestler = :wrestler2)\
+       OR (m0.wrestler = :wrestler2 AND m1.wrestler = :wrestler1))\
       """)
   Optional<Team> findByBothWrestlers(
       @Param("wrestler1") Wrestler wrestler1, @Param("wrestler2") Wrestler wrestler2);
 
-  /** Find active team by both wrestlers (regardless of order). */
+  /** Find active team whose member slots 0/1 hold exactly the two given wrestlers. */
   @Query(
       """
-      SELECT t FROM Team t WHERE ((t.wrestler1 = :wrestler1 AND t.wrestler2 = :wrestler2) OR\
-       (t.wrestler1 = :wrestler2 AND t.wrestler2 = :wrestler1)) AND t.status = 'ACTIVE'\
+      SELECT t FROM Team t JOIN t.members m0 JOIN t.members m1\
+       WHERE SIZE(t.members) = 2 AND m0.slot = 0 AND m1.slot = 1\
+       AND ((m0.wrestler = :wrestler1 AND m1.wrestler = :wrestler2)\
+       OR (m0.wrestler = :wrestler2 AND m1.wrestler = :wrestler1)) AND t.status = 'ACTIVE'\
       """)
   Optional<Team> findActiveTeamByBothWrestlers(
       @Param("wrestler1") Wrestler wrestler1, @Param("wrestler2") Wrestler wrestler2);
@@ -81,23 +88,21 @@ public interface TeamRepository extends JpaRepository<Team, Long>, JpaSpecificat
   /** Find teams by faction and status. */
   List<Team> findByFactionAndStatus(Faction faction, TeamStatus status);
 
+  /**
+   * Paged variant deliberately avoids the {@code t.members} collection fetch: a collection {@code
+   * JOIN FETCH} with {@code Pageable} forces Hibernate to load the whole result set and paginate in
+   * memory (HHH000104). Members load lazily per team instead, so SQL-side pagination is preserved.
+   */
   @Query(
-      value =
-          """
-          SELECT t FROM Team t\
-           LEFT JOIN FETCH t.wrestler1\
-           LEFT JOIN FETCH t.wrestler2\
-           LEFT JOIN FETCH t.faction\
-          """,
+      value = "SELECT t FROM Team t LEFT JOIN FETCH t.faction",
       countQuery = "SELECT count(t) FROM Team t")
   @Override
   Page<Team> findAll(Pageable pageable);
 
   @Query(
       """
-      SELECT t FROM Team t\
-       LEFT JOIN FETCH t.wrestler1\
-       LEFT JOIN FETCH t.wrestler2\
+      SELECT DISTINCT t FROM Team t\
+       LEFT JOIN FETCH t.members\
        LEFT JOIN FETCH t.faction\
       """)
   @Override

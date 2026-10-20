@@ -23,6 +23,9 @@ import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.team.Team;
+import com.github.javydreamercsw.management.domain.team.TeamMember;
+import com.github.javydreamercsw.management.domain.team.TeamOrigin;
+import com.github.javydreamercsw.management.domain.team.TeamSize;
 import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -127,6 +130,29 @@ class TeamServiceTest extends ManagementIntegrationTest {
     activeTeams = teamService.getActiveTeams();
     assertThat(activeTeams).hasSize(1);
     assertThat(activeTeams.get(0).getName()).isEqualTo("Base Team");
+  }
+
+  @Test
+  @WithMockUser(
+      username = "admin",
+      roles = {"ADMIN"})
+  @DisplayName("Should exclude member-less husk teams from roster pools")
+  void shouldExcludeMemberlessTeamsFromRosterPools() {
+    // Given — a member-less ACTIVE team: the husk a wrestler delete leaves behind now that
+    // team_member (not the team row) cascades away with the wrestler (ATW-01g2 CI regression).
+    Team husk = new Team();
+    husk.setName("Husk Team");
+    husk.setTeamSize(TeamSize.DUO);
+    husk.setStatus(TeamStatus.ACTIVE);
+    teamRepository.saveAndFlush(husk);
+
+    // When — every roster pool that filters by expansion must skip it, not NPE on the duo
+    // accessors (getActiveTeams is the one the segment editor's async load hit).
+    List<Team> activeTeams = teamService.getActiveTeams();
+
+    // Then — the husk is excluded and its members stay empty (no NPE, no phantom entry).
+    assertThat(activeTeams).extracting(Team::getName).doesNotContain("Husk Team");
+    assertThat(teamService.countActiveTeams()).isZero();
   }
 
   @Test
@@ -432,5 +458,122 @@ class TeamServiceTest extends ManagementIntegrationTest {
     assertThat(found2).isPresent();
     assertThat(found1.get()).isEqualTo(found2.get());
     assertThat(found1.get().getName()).isEqualTo("Test Team");
+  }
+
+  @Test
+  @WithMockUser(
+      username = "admin",
+      roles = {"ADMIN"})
+  @DisplayName("Should create trio team from member list")
+  void createsTrioTeamFromMemberList() {
+    // When
+    Optional<Team> result =
+        teamService.createTeam(
+            "The Trios",
+            "Three-man squad",
+            List.of(wrestler1.getId(), wrestler2.getId(), wrestler3.getId()),
+            TeamSize.TRIO,
+            null,
+            null,
+            TeamOrigin.REGISTRY);
+
+    // Then
+    assertThat(result).isPresent();
+    Team savedTeam = result.get();
+    assertThat(savedTeam.getMembers()).hasSize(3);
+    assertThat(savedTeam.getTeamSize()).isEqualTo(TeamSize.TRIO);
+    assertThat(savedTeam.getOrigin()).isEqualTo(TeamOrigin.REGISTRY);
+    assertThat(savedTeam.getMembers())
+        .extracting(TeamMember::getWrestler)
+        .containsExactly(wrestler1, wrestler2, wrestler3);
+
+    // Verify it's persisted with the member list intact
+    Optional<Team> fromDb = teamRepository.findById(savedTeam.getId());
+    assertThat(fromDb).isPresent();
+    assertThat(fromDb.get().getMembers()).hasSize(3);
+    assertThat(fromDb.get().getTeamSize()).isEqualTo(TeamSize.TRIO);
+  }
+
+  @Test
+  @WithMockUser(
+      username = "admin",
+      roles = {"ADMIN"})
+  @DisplayName("Should not create team when member count does not match team size")
+  void rejectsTeamWhenMemberCountDoesNotMatchTeamSize() {
+    // When - 3 members declared as DUO
+    Optional<Team> mismatched =
+        teamService.createTeam(
+            "Bad Size",
+            "Description",
+            List.of(wrestler1.getId(), wrestler2.getId(), wrestler3.getId()),
+            TeamSize.DUO,
+            null,
+            null,
+            TeamOrigin.REGISTRY);
+
+    // Then
+    assertThat(mismatched).isEmpty();
+
+    // When - 2 members declared as TRIO
+    Optional<Team> undersized =
+        teamService.createTeam(
+            "Small Trio",
+            "Description",
+            List.of(wrestler1.getId(), wrestler2.getId()),
+            TeamSize.TRIO,
+            null,
+            null,
+            TeamOrigin.REGISTRY);
+
+    // Then
+    assertThat(undersized).isEmpty();
+    assertThat(teamRepository.count()).isZero();
+  }
+
+  @Test
+  @WithMockUser(
+      username = "admin",
+      roles = {"ADMIN"})
+  @DisplayName("Should uniquify generated name when base name is taken")
+  void uniquifiesGeneratedNameWhenTaken() {
+    // Given - a team already named "Wrestler 1 & Wrestler 2"
+    teamService.createTeam(
+        "Wrestler 1 & Wrestler 2", "Description", wrestler1.getId(), wrestler2.getId(), null, null);
+
+    // When - generate a name for the same pair
+    String generated = teamService.generateUniqueName(List.of(wrestler1, wrestler2));
+
+    // Then
+    assertThat(generated).isEqualTo("Wrestler 1 & Wrestler 2 (2)");
+    assertThat(teamService.getTeamByName(generated)).isEmpty();
+  }
+
+  @Test
+  @WithMockUser(
+      username = "admin",
+      roles = {"ADMIN"})
+  @DisplayName("Should flip origin to REGISTRY when saving an AD_HOC team to registry")
+  void saveToRegistryFlipsOrigin() {
+    // Given - a one-off team
+    Optional<Team> created =
+        teamService.createTeam(
+            "One Off Squad",
+            "Description",
+            List.of(wrestler1.getId(), wrestler2.getId()),
+            TeamSize.DUO,
+            null,
+            null,
+            TeamOrigin.AD_HOC);
+    assertThat(created).isPresent();
+    assertThat(created.get().getOrigin()).isEqualTo(TeamOrigin.AD_HOC);
+
+    // When
+    Team saved = teamService.saveToRegistry(created.get());
+
+    // Then
+    assertThat(saved.getOrigin()).isEqualTo(TeamOrigin.REGISTRY);
+    Optional<Team> fromDb = teamRepository.findById(saved.getId());
+    assertThat(fromDb).isPresent();
+    assertThat(fromDb.get().getOrigin()).isEqualTo(TeamOrigin.REGISTRY);
   }
 }
