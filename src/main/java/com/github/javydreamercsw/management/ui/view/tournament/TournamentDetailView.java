@@ -390,6 +390,17 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
     section.setPadding(false);
     section.add(new H4("Entrants"));
 
+    // Unbiased draw (ATW-exom): shuffles every seed at random, next to the manual reorder
+    // controls — same lock: only while SCHEDULED with no generated bracket.
+    if (tournament.getStatus() == TournamentStatus.SCHEDULED
+        && !tournament.getEntries().isEmpty()) {
+      Button randomize = new Button("Randomize Seeds", VaadinIcon.RANDOM.create());
+      randomize.addThemeVariants(ButtonVariant.LUMO_SMALL);
+      randomize.setTooltipText("Shuffle all seeds — the round-1 pairings redraw at random");
+      randomize.addClickListener(e -> randomizeSeeds());
+      section.add(randomize);
+    }
+
     Grid<TournamentEntry> grid = new Grid<>(TournamentEntry.class, false);
     grid.setAllRowsVisible(true);
     grid.addColumn(TournamentEntry::getSeed).setHeader("Seed").setWidth("80px").setFlexGrow(0);
@@ -495,6 +506,20 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
           .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
     } catch (Exception ex) {
       log.error("Error reordering seeds", ex);
+      Notification.show("Error: " + ex.getMessage(), 5000, Notification.Position.MIDDLE)
+          .addThemeVariants(NotificationVariant.LUMO_ERROR);
+    }
+  }
+
+  /** Random draw: shuffle every seed through the service and refresh the view. */
+  private void randomizeSeeds() {
+    try {
+      tournamentService.randomizeSeeds(tournament.getId());
+      refreshAfterSeedingEdit();
+      Notification.show("Seeds randomized", 2000, Notification.Position.BOTTOM_CENTER)
+          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+    } catch (Exception ex) {
+      log.error("Error randomizing seeds", ex);
       Notification.show("Error: " + ex.getMessage(), 5000, Notification.Position.MIDDLE)
           .addThemeVariants(NotificationVariant.LUMO_ERROR);
     }

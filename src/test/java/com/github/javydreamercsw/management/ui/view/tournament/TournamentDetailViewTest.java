@@ -545,7 +545,34 @@ class TournamentDetailViewTest extends AbstractViewTest {
 
     assertEquals(0, buttonsWithTooltip(view, "Move up one seed").size());
     assertEquals(0, _find(view, Button.class, spec -> spec.withText("Replace")).size());
+    assertEquals(0, _find(view, Button.class, spec -> spec.withText("Randomize Seeds")).size());
     verify(tournamentService, never()).reorderSeeds(anyLong(), any());
+    verify(tournamentService, never()).randomizeSeeds(anyLong());
+  }
+
+  // ── Randomize Seeds (unbiased draw) ───────────────────────────────────────
+
+  @Test
+  @DisplayName("Scheduled tournament with entrants shows the Randomize Seeds button")
+  void scheduledTournament_showsRandomizeSeedsButton() {
+    assertEquals(1, _find(view, Button.class, spec -> spec.withText("Randomize Seeds")).size());
+  }
+
+  @Test
+  @DisplayName("Clicking Randomize Seeds routes through the service and refreshes")
+  void randomizeSeedsButton_callsService() {
+    _get(view, Button.class, spec -> spec.withText("Randomize Seeds")).click();
+
+    verify(tournamentService).randomizeSeeds(1L);
+  }
+
+  @Test
+  @DisplayName("An empty tournament offers no Randomize Seeds button")
+  void emptyTournament_noRandomizeSeedsButton() {
+    tournament.getEntries().clear();
+    buildView();
+
+    assertEquals(0, _find(view, Button.class, spec -> spec.withText("Randomize Seeds")).size());
   }
 
   // ── Arrange Match-ups (ATW-hw6m) ──────────────────────────────────────────

@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -992,6 +993,79 @@ class TournamentServiceTest {
 
     assertThat(service.trophyLineage("Dusty Cup")).containsExactly(reign);
     assertThat(service.trophyReignOf(1L)).contains(reign);
+  }
+
+  // ── Randomize seeds (unbiased draw) ──────────────────────────────────────
+
+  @Test
+  @DisplayName("randomizeSeeds reshuffles the same entrants into a seed permutation of 1..n")
+  void randomizeSeeds_producesSeedPermutation() {
+    Tournament tournament = tournament(TeamSize.DUO);
+    List<TournamentEntry> stored = new ArrayList<>();
+    for (int i = 0; i < 6; i++) {
+      stored.add(
+          TournamentEntry.builder()
+              .id((long) (i + 1))
+              .team(
+                  duoTeam(
+                      "Team " + i,
+                      10L + i,
+                      100L + i,
+                      wrestler("A" + i, 100L + i),
+                      wrestler("B" + i, 200L + i)))
+              .seed(i + 1)
+              .build());
+    }
+    when(tournamentRepository.findById(1L)).thenReturn(Optional.of(tournament));
+    when(entryRepository.findByTournamentIdOrderBySeedAsc(1L))
+        .thenReturn(new ArrayList<>(stored))
+        .thenAnswer(inv -> new ArrayList<>(stored));
+    when(entryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    List<TournamentEntry> result = service.randomizeSeeds(1L);
+
+    // The shuffle persists exactly one new seed per entry: seeds 1..n over the same entrant
+    // set, no duplicates, nobody lost or added. (A random shuffle can coincide with the input
+    // order, so the contract is the permutation, not a different order.)
+    assertThat(result).hasSameSizeAs(stored);
+    assertThat(result)
+        .extracting(TournamentEntry::getSeed)
+        .containsExactlyInAnyOrder(1, 2, 3, 4, 5, 6);
+    assertThat(result)
+        .extracting(TournamentEntry::getId)
+        .containsExactlyInAnyOrder(1L, 2L, 3L, 4L, 5L, 6L);
+    for (TournamentEntry entry : result) {
+      assertThat(entry.getSeed()).isBetween(1, 6);
+    }
+    verify(entryRepository, atLeastOnce()).save(any(TournamentEntry.class));
+  }
+
+  @Test
+  @DisplayName("randomizeSeeds is locked outside SCHEDULED, like manual reordering")
+  void randomizeSeeds_lockedOutsideScheduled() {
+    Tournament tournament = tournament(TeamSize.DUO);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    when(tournamentRepository.findById(1L)).thenReturn(Optional.of(tournament));
+
+    assertThatThrownBy(() -> service.randomizeSeeds(1L))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("locked");
+    verify(entryRepository, never()).save(any(TournamentEntry.class));
+  }
+
+  @Test
+  @DisplayName("randomizeSeeds is locked once the bracket is generated")
+  void randomizeSeeds_lockedWithBracket() {
+    Tournament tournament = tournament(TeamSize.DUO);
+    tournament.setRounds(
+        new ArrayList<>(
+            List.of(TournamentRound.builder().roundNumber(1).roundName("Round 1").build())));
+    when(tournamentRepository.findById(1L)).thenReturn(Optional.of(tournament));
+
+    assertThatThrownBy(() -> service.randomizeSeeds(1L))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("locked");
+    verify(entryRepository, never()).save(any(TournamentEntry.class));
   }
 
   // ── Fixtures ─────────────────────────────────────────────────────────────
