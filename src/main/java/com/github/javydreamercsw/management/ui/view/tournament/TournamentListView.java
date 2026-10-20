@@ -78,9 +78,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @Route(value = "tournament-list", layout = MainLayout.class)
@@ -619,17 +619,19 @@ public class TournamentListView extends VerticalLayout {
     teamRegistryPicker.setVisible(false);
     teamRegistryPicker.setHelperText("Only teams eligible for this tournament are listed.");
 
-    // One-off assembly: members not already entered; the assembled team persists as AD_HOC
-    // unless "save to registry" (default off) flips it to REGISTRY after the tournament takes it.
+    // One-off assembly: members not already entered; the picks are chunked by the declared
+    // team size into several teams (4 picks in a duo tournament → two duos). Each assembled
+    // team persists as AD_HOC unless "save to registry" (default off) flips them to REGISTRY
+    // after the tournament takes them.
     MultiSelectComboBox<Wrestler> teamMemberPicker =
-        new MultiSelectComboBox<>("Assemble a One-Off Team (optional)");
+        new MultiSelectComboBox<>("Assemble One-Off Teams (optional)");
     teamMemberPicker.setId("wizard-one-off-members");
     teamMemberPicker.setItemLabelGenerator(Wrestler::getName);
     teamMemberPicker.setWidthFull();
     teamMemberPicker.setVisible(false);
-    teamMemberPicker.setHelperText("Pick exactly the number of wrestlers the format requires.");
+    teamMemberPicker.setHelperText("Every team-size group of wrestlers forms one team.");
 
-    Checkbox saveToRegistryCheckbox = new Checkbox("Save this team to the team registry");
+    Checkbox saveToRegistryCheckbox = new Checkbox("Save these teams to the team registry");
     saveToRegistryCheckbox.setId("wizard-save-to-registry");
     saveToRegistryCheckbox.setValue(false);
     saveToRegistryCheckbox.setVisible(false);
@@ -643,16 +645,8 @@ public class TournamentListView extends VerticalLayout {
           saveToRegistryCheckbox.setVisible(!members.isEmpty());
           oneOffNamePreview.setVisible(!members.isEmpty());
           if (!members.isEmpty()) {
-            // Preview only — the persisted name is uniquified via generateUniqueName at create.
-            // Same alphabetical order the create handler uses, so the preview always matches
-            // the stored member order.
-            oneOffNamePreview.setText(
-                "Team name: "
-                    + members.stream()
-                        .map(Wrestler::getName)
-                        .sorted()
-                        .collect(Collectors.joining(" & "))
-                    + " (uniquified on create)");
+            TeamSize size = teamSizeOf(entrantType.getValue());
+            oneOffNamePreview.setText(oneOffPreviewText(members, size));
           }
         });
 
@@ -815,6 +809,12 @@ public class TournamentListView extends VerticalLayout {
           teamRegistryPicker.setVisible(teamMode && manualSeeding);
           teamMemberPicker.setVisible(teamMode);
           teamEntrantsPanel.setVisible(teamMode && manualSeeding);
+          TeamSize pickerSize = teamSizeOf(entrantType.getValue());
+          if (pickerSize != null) {
+            teamMemberPicker.setHelperText(
+                "Every %d wrestlers form one team; pick in groups of %d."
+                    .formatted(pickerSize.getMemberCount(), pickerSize.getMemberCount()));
+          }
           // Entering team mode forces Title-on-the-line (the payoff normalization above only
           // touches the radio when LEAVING team mode).
           if (teamMode && !"Title on the line".equals(payoffMode.getValue())) {
@@ -1027,25 +1027,39 @@ public class TournamentListView extends VerticalLayout {
                                   + "' — clear the one-off team or the registry pick.");
                         }
                       }
-                      Team oneOff =
-                          teamService
-                              .createTeam(
-                                  teamService.generateUniqueName(members),
-                                  null,
-                                  members.stream().map(Wrestler::getId).toList(),
-                                  teamSize,
-                                  null,
-                                  null,
-                                  TeamOrigin.AD_HOC)
-                              .orElseThrow(
-                                  () ->
-                                      new IllegalStateException(
-                                          "Could not create the one-off team — check that the"
-                                              + " members are still eligible"));
-                      if (saveToRegistryCheckbox.getValue()) {
-                        oneOff = teamService.saveToRegistry(oneOff);
+                      // Chunk the picks by declared size: every full group of N (2 duo / 3 trios)
+                      // becomes one one-off team; a trailing partial group is a mistake, not a
+                      // smaller team (teams have a fixed size — the declared one).
+                      int memberCount = teamSize.getMemberCount();
+                      if (members.size() % memberCount != 0) {
+                        throw new IllegalStateException(
+                            "One-off picks must fill whole teams of %d — %d wrestlers leave a"
+                                + " partial team. Add or remove wrestlers to fix the groups."
+                                    .formatted(memberCount, members.size()));
                       }
-                      tournamentService.addEntry(t, oneOff, seed++);
+                      for (int i = 0; i < members.size(); i += memberCount) {
+                        List<Wrestler> group =
+                            members.subList(i, Math.min(i + memberCount, members.size()));
+                        Team oneOff =
+                            teamService
+                                .createTeam(
+                                    teamService.generateUniqueName(group),
+                                    null,
+                                    group.stream().map(Wrestler::getId).toList(),
+                                    teamSize,
+                                    null,
+                                    null,
+                                    TeamOrigin.AD_HOC)
+                                .orElseThrow(
+                                    () ->
+                                        new IllegalStateException(
+                                            "Could not create the one-off team — check that the"
+                                                + " members are still eligible"));
+                        if (saveToRegistryCheckbox.getValue()) {
+                          oneOff = teamService.saveToRegistry(oneOff);
+                        }
+                        tournamentService.addEntry(t, oneOff, seed++);
+                      }
                     }
                   } // "Don't seed now": seed later from the detail view or via a paired show.
                 } else if (auto) {
@@ -1127,6 +1141,31 @@ public class TournamentListView extends VerticalLayout {
   /** Whether the entrant-type radio selects a team mode (Tag Team or Trios). */
   static boolean teamModeOf(String entrantTypeValue) {
     return teamSizeOf(entrantTypeValue) != null;
+  }
+
+  /**
+   * The one-off preview text: the picked wrestlers chunked by the declared size into teams, joined
+   * with "&". A trailing partial group is called out — create rejects it. With no size (singles or
+   * the value not yet applied) the plain alphabetical list stands in.
+   */
+  static String oneOffPreviewText(Set<Wrestler> members, @Nullable TeamSize size) {
+    List<String> names = members.stream().map(Wrestler::getName).sorted().toList();
+    String joined = String.join(" & ", names);
+    if (size == null) {
+      return "Team name: " + joined + " (uniquified on create)";
+    }
+    int memberCount = size.getMemberCount();
+    StringBuilder text = new StringBuilder();
+    for (int i = 0; i < names.size(); i += memberCount) {
+      if (!text.isEmpty()) {
+        text.append(" | ");
+      }
+      text.append(String.join(" & ", names.subList(i, Math.min(i + memberCount, names.size()))));
+    }
+    if (names.size() % memberCount != 0) {
+      text.append(" — incomplete team: pick in groups of ").append(memberCount);
+    }
+    return "Teams: " + text + " (names uniquified on create)";
   }
 
   /**

@@ -110,10 +110,12 @@ class TournamentTeamWizardDocsE2ETest extends AbstractDocsE2ETest {
         "Team Tournaments — One-Off Assembly",
         "Prefer a team that is not in the registry? Assemble one right in the wizard: pick its"
             + " members (wrestlers already committed to a picked registry team are excluded),"
-            + " and the team name is generated from the lineup and uniquified on create. The"
-            + " assembled team persists as a one-off (AD_HOC) team unless 'Save this team to"
-            + " the team registry' is checked (default off), which flips it into the registry"
-            + " for future tournaments.",
+            + " and the team names are generated from the lineups and uniquified on create."
+            + " Every team-size group of picks forms one team — four picks in a duo tournament"
+            + " become two duos — and a partial group is rejected. The assembled teams persist"
+            + " as one-off (AD_HOC) teams unless 'Save these teams to the team registry' is"
+            + " checked (default off), which flips them into the registry for future"
+            + " tournaments.",
         "team-tournament-one-off-assembly");
   }
 

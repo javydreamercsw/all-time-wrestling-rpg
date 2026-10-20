@@ -921,7 +921,7 @@ class TournamentListViewTest extends AbstractViewTest {
         _get(
             UI.getCurrent(),
             MultiSelectComboBox.class,
-            spec -> spec.withLabel("Assemble a One-Off Team (optional)"));
+            spec -> spec.withLabel("Assemble One-Off Teams (optional)"));
     memberPicker.setValue(new LinkedHashSet<>(List.of(c, d)));
 
     _get(UI.getCurrent(), Button.class, spec -> spec.withText("Create Tournament")).click();
@@ -939,6 +939,113 @@ class TournamentListViewTest extends AbstractViewTest {
     verify(tournamentService).addEntry(any(Tournament.class), eq(oneOff), eq(2));
     // Default-off checkbox: no registry save.
     verify(teamService, Mockito.never()).saveToRegistry(any(Team.class));
+  }
+
+  @Test
+  @DisplayName("One-off picks chunk into teams of the declared size")
+  void wizardCreate_oneOffPicks_chunkByTeamSize() {
+    Wrestler a = new Wrestler();
+    a.setId(101L);
+    a.setName("Alpha");
+    Wrestler b = new Wrestler();
+    b.setId(102L);
+    b.setName("Beta");
+    Wrestler c = new Wrestler();
+    c.setId(103L);
+    c.setName("Gamma");
+    Wrestler d = new Wrestler();
+    d.setId(104L);
+    d.setName("Delta");
+    lenient()
+        .when(tournamentService.findEligibleTeamsSortedByFans(any(Tournament.class)))
+        .thenReturn(List.of());
+    lenient().when(wrestlerService.getAllWrestlers()).thenReturn(List.of(a, b, c, d));
+    Team first = new Team();
+    first.setId(901L);
+    first.setName("Alpha & Beta");
+    first.setTeamSize(TeamSize.DUO);
+    first.setMembers(List.of(a, b));
+    Team second = new Team();
+    second.setId(902L);
+    second.setName("Delta & Gamma");
+    second.setTeamSize(TeamSize.DUO);
+    second.setMembers(List.of(d, c));
+    lenient()
+        .when(teamService.createTeam(any(), any(), any(), eq(TeamSize.DUO), any(), any(), any()))
+        .thenReturn(Optional.of(first), Optional.of(second));
+    lenient().when(teamService.generateUniqueName(any())).thenReturn("One-Off Duo");
+
+    view.openCreationWizardForTest();
+    fillDetailsStep();
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    RadioButtonGroup<String> entrantType =
+        _get(UI.getCurrent(), RadioButtonGroup.class, spec -> spec.withLabel("Entrants"));
+    entrantType.setValue(TournamentListView.TAG_TEAM_LABEL);
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Next")).click();
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    ComboBox<String> seedingMode =
+        _get(UI.getCurrent(), ComboBox.class, spec -> spec.withLabel("Seeding Method"));
+    seedingMode.setValue("Manual (pick wrestlers)");
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    MultiSelectComboBox<Wrestler> memberPicker =
+        _get(
+            UI.getCurrent(),
+            MultiSelectComboBox.class,
+            spec -> spec.withLabel("Assemble One-Off Teams (optional)"));
+    // Four picks in a duo tournament: two teams of two, seeded sequentially.
+    memberPicker.setValue(new LinkedHashSet<>(List.of(a, b, c, d)));
+
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Create Tournament")).click();
+
+    verify(teamService, Mockito.times(2))
+        .createTeam(
+            any(), isNull(), any(), eq(TeamSize.DUO), isNull(), isNull(), eq(TeamOrigin.AD_HOC));
+    verify(tournamentService).addEntry(any(Tournament.class), eq(first), eq(1));
+    verify(tournamentService).addEntry(any(Tournament.class), eq(second), eq(2));
+  }
+
+  @Test
+  @DisplayName("One-off picks leaving a partial team are rejected with a clear error")
+  void wizardCreate_oneOffPicks_partialTeamRejected() {
+    Wrestler a = new Wrestler();
+    a.setId(101L);
+    a.setName("Alpha");
+    Wrestler b = new Wrestler();
+    b.setId(102L);
+    b.setName("Beta");
+    Wrestler c = new Wrestler();
+    c.setId(103L);
+    c.setName("Gamma");
+    lenient()
+        .when(tournamentService.findEligibleTeamsSortedByFans(any(Tournament.class)))
+        .thenReturn(List.of());
+    lenient().when(wrestlerService.getAllWrestlers()).thenReturn(List.of(a, b, c));
+
+    view.openCreationWizardForTest();
+    fillDetailsStep();
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    RadioButtonGroup<String> entrantType =
+        _get(UI.getCurrent(), RadioButtonGroup.class, spec -> spec.withLabel("Entrants"));
+    entrantType.setValue(TournamentListView.TAG_TEAM_LABEL);
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Next")).click();
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    ComboBox<String> seedingMode =
+        _get(UI.getCurrent(), ComboBox.class, spec -> spec.withLabel("Seeding Method"));
+    seedingMode.setValue("Manual (pick wrestlers)");
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    MultiSelectComboBox<Wrestler> memberPicker =
+        _get(
+            UI.getCurrent(),
+            MultiSelectComboBox.class,
+            spec -> spec.withLabel("Assemble One-Off Teams (optional)"));
+    memberPicker.setValue(new LinkedHashSet<>(List.of(a, b, c)));
+
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Create Tournament")).click();
+
+    verify(teamService, Mockito.never())
+        .createTeam(any(), any(), any(), any(), any(), any(), any());
+    verify(tournamentService, Mockito.never())
+        .addEntry(any(Tournament.class), any(Team.class), anyInt());
   }
 
   @Test
@@ -981,7 +1088,7 @@ class TournamentListViewTest extends AbstractViewTest {
         _get(
             UI.getCurrent(),
             MultiSelectComboBox.class,
-            spec -> spec.withLabel("Assemble a One-Off Team (optional)"));
+            spec -> spec.withLabel("Assemble One-Off Teams (optional)"));
 
     List<Wrestler> offered = memberPicker.getListDataView().getItems().toList();
     // Women's-division filter: only gender-matching, active wrestlers are offered.
