@@ -136,6 +136,29 @@ class TeamServiceTest extends ManagementIntegrationTest {
   @WithMockUser(
       username = "admin",
       roles = {"ADMIN"})
+  @DisplayName("Should exclude member-less husk teams from roster pools")
+  void shouldExcludeMemberlessTeamsFromRosterPools() {
+    // Given — a member-less ACTIVE team: the husk a wrestler delete leaves behind now that
+    // team_member (not the team row) cascades away with the wrestler (ATW-01g2 CI regression).
+    Team husk = new Team();
+    husk.setName("Husk Team");
+    husk.setTeamSize(TeamSize.DUO);
+    husk.setStatus(TeamStatus.ACTIVE);
+    teamRepository.saveAndFlush(husk);
+
+    // When — every roster pool that filters by expansion must skip it, not NPE on the duo
+    // accessors (getActiveTeams is the one the segment editor's async load hit).
+    List<Team> activeTeams = teamService.getActiveTeams();
+
+    // Then — the husk is excluded and its members stay empty (no NPE, no phantom entry).
+    assertThat(activeTeams).extracting(Team::getName).doesNotContain("Husk Team");
+    assertThat(teamService.countActiveTeams()).isZero();
+  }
+
+  @Test
+  @WithMockUser(
+      username = "admin",
+      roles = {"ADMIN"})
   @DisplayName("Should create team successfully with real database")
   void shouldCreateTeamSuccessfully() {
     // When

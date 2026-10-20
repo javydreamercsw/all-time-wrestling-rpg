@@ -151,13 +151,16 @@ public class RankingService {
     Gender gender = title.getGender() == null ? Gender.MALE : title.getGender();
 
     if (title.getChampionshipType() == ChampionshipType.TEAM) {
-      // A team contends only when it is active and every member is active with the title's
-      // gender — the tournament gender restriction applies per member, not per team.
+      // A team contends only when it is active, has members, and every member is active with the
+      // title's gender — the gender restriction applies per member, not per team. The member
+      // guard keeps empty husk teams (last member deleted; team_member cascades only the
+      // membership rows) out of the rankings — an empty list's allMatch is vacuously true.
       List<Team> contenders =
           teamRepository.findAll().stream()
               .filter(
                   team ->
                       team.isActive()
+                          && !team.getMembers().isEmpty()
                           && team.getMembers().stream()
                               .map(TeamMember::getWrestler)
                               .allMatch(

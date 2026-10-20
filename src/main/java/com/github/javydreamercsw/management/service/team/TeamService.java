@@ -75,6 +75,20 @@ public class TeamService {
         .orElseGet(() -> new HashSet<>(expansionService.getEnabledExpansionCodes()));
   }
 
+  /**
+   * Whether every member of the team holds an enabled expansion. A team with no members — a husk
+   * left behind when its last member was deleted, since the team_member cascade removes only the
+   * membership rows where the legacy wrestler1/2 columns cascaded the whole team row away — fails
+   * the check, keeping empty teams out of every roster/registry pool instead of NPE-ing on the duo
+   * accessors. Checking the full member list (not just slots 0/1) also covers trios.
+   */
+  private boolean membersInEnabledExpansions(final Team team, final Set<String> enabledExpansions) {
+    return !team.getMembers().isEmpty()
+        && team.getMembers().stream()
+            .map(TeamMember::getWrestler)
+            .allMatch(wrestler -> enabledExpansions.contains(wrestler.getExpansionCode()));
+  }
+
   // ==================== CRUD OPERATIONS ====================
 
   /** Get all teams with pagination. */
@@ -87,10 +101,7 @@ public class TeamService {
     // and then manually paginate.
     List<Team> allFiltered =
         teamRepository.findAll().stream()
-            .filter(
-                team ->
-                    enabledExpansions.contains(team.getWrestler1().getExpansionCode())
-                        && enabledExpansions.contains(team.getWrestler2().getExpansionCode()))
+            .filter(team -> membersInEnabledExpansions(team, enabledExpansions))
             .peek(
                 team -> {
                   // Hide manager if their expansion is disabled
@@ -122,10 +133,7 @@ public class TeamService {
   public long countAllTeams() {
     Set<String> enabledExpansions = enabledExpansionCodes();
     return teamRepository.findAll().stream()
-        .filter(
-            team ->
-                enabledExpansions.contains(team.getWrestler1().getExpansionCode())
-                    && enabledExpansions.contains(team.getWrestler2().getExpansionCode()))
+        .filter(team -> membersInEnabledExpansions(team, enabledExpansions))
         .count();
   }
 
@@ -370,10 +378,7 @@ public class TeamService {
   public List<Team> getActiveTeams() {
     Set<String> enabledExpansions = enabledExpansionCodes();
     return teamRepository.findByStatus(TeamStatus.ACTIVE).stream()
-        .filter(
-            team ->
-                enabledExpansions.contains(team.getWrestler1().getExpansionCode())
-                    && enabledExpansions.contains(team.getWrestler2().getExpansionCode()))
+        .filter(team -> membersInEnabledExpansions(team, enabledExpansions))
         .peek(
             team -> {
               // Hide manager if their expansion is disabled
@@ -396,10 +401,7 @@ public class TeamService {
   public List<Team> getTeamsByFaction(final Faction faction) {
     Set<String> enabledExpansions = enabledExpansionCodes();
     return teamRepository.findByFaction(faction).stream()
-        .filter(
-            team ->
-                enabledExpansions.contains(team.getWrestler1().getExpansionCode())
-                    && enabledExpansions.contains(team.getWrestler2().getExpansionCode()))
+        .filter(team -> membersInEnabledExpansions(team, enabledExpansions))
         .peek(
             team -> {
               if (team.getManager() != null
@@ -416,10 +418,7 @@ public class TeamService {
   public List<Team> getTeamsByWrestler(final Wrestler wrestler) {
     Set<String> enabledExpansions = enabledExpansionCodes();
     return teamRepository.findByWrestler(wrestler).stream()
-        .filter(
-            team ->
-                enabledExpansions.contains(team.getWrestler1().getExpansionCode())
-                    && enabledExpansions.contains(team.getWrestler2().getExpansionCode()))
+        .filter(team -> membersInEnabledExpansions(team, enabledExpansions))
         .peek(
             team -> {
               if (team.getManager() != null
@@ -436,10 +435,7 @@ public class TeamService {
   public List<Team> getActiveTeamsByWrestler(final Wrestler wrestler) {
     Set<String> enabledExpansions = enabledExpansionCodes();
     return teamRepository.findByWrestlerAndStatus(wrestler, TeamStatus.ACTIVE).stream()
-        .filter(
-            team ->
-                enabledExpansions.contains(team.getWrestler1().getExpansionCode())
-                    && enabledExpansions.contains(team.getWrestler2().getExpansionCode()))
+        .filter(team -> membersInEnabledExpansions(team, enabledExpansions))
         .peek(
             team -> {
               if (team.getManager() != null
@@ -457,10 +453,7 @@ public class TeamService {
     Set<String> enabledExpansions = enabledExpansionCodes();
     return teamRepository
         .findByBothWrestlers(wrestler1, wrestler2)
-        .filter(
-            team ->
-                enabledExpansions.contains(team.getWrestler1().getExpansionCode())
-                    && enabledExpansions.contains(team.getWrestler2().getExpansionCode()))
+        .filter(team -> membersInEnabledExpansions(team, enabledExpansions))
         .map(
             team -> {
               if (team.getManager() != null
@@ -479,10 +472,7 @@ public class TeamService {
     Set<String> enabledExpansions = enabledExpansionCodes();
     return teamRepository
         .findActiveTeamByBothWrestlers(wrestler1, wrestler2)
-        .filter(
-            team ->
-                enabledExpansions.contains(team.getWrestler1().getExpansionCode())
-                    && enabledExpansions.contains(team.getWrestler2().getExpansionCode()))
+        .filter(team -> membersInEnabledExpansions(team, enabledExpansions))
         .map(
             team -> {
               if (team.getManager() != null

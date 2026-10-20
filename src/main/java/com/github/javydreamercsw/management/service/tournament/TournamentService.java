@@ -1069,6 +1069,9 @@ public class TournamentService {
                     && team.getOrigin() == TeamOrigin.REGISTRY
                     && team.isActive()
                     && sameUniverse(team, universeId)
+                    // Non-empty: an empty husk team (last member deleted) would pass allMatch
+                    // vacuously and land in the wizard's registry picker without any members.
+                    && !team.getMembers().isEmpty()
                     && team.getMembers().stream()
                         .map(TeamMember::getWrestler)
                         .allMatch(

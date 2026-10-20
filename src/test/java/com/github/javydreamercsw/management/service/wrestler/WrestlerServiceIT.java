@@ -33,6 +33,9 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipa
 import com.github.javydreamercsw.management.domain.show.segment.SegmentStatus;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.team.Team;
+import com.github.javydreamercsw.management.domain.team.TeamRepository;
+import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
@@ -44,6 +47,7 @@ import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
+import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import java.time.Instant;
@@ -78,6 +82,8 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
 
   @Autowired private TierBoundaryService tierBoundaryService;
   @Autowired private WrestlerStatsService wrestlerStatsService;
+  @Autowired private TeamService teamService;
+  @Autowired private TeamRepository teamRepository;
 
   private static final Long DEFAULT_UNIVERSE_ID = 1L;
 
@@ -415,5 +421,38 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
             .findByWrestlerIdAndUniverseId(wrestler.getId(), defaultUniverse.getId())
             .get();
     assertEquals(0, state.getBumps());
+  }
+
+  @Test
+  @Transactional
+  void testDeleteDisbandsShortHandedTeams() {
+    // The legacy wrestler1/2 columns cascaded the team row away with a deleted wrestler; under
+    // team_member only the membership rows cascade, so delete must disband teams left below
+    // their declared size — otherwise an empty ACTIVE husk breaks every roster pool (ATW-01g2).
+    Wrestler a =
+        wrestlerService.createWrestler(
+            "Delete A", true, null, WrestlerTier.ROOKIE, defaultUniverse);
+    Wrestler b =
+        wrestlerService.createWrestler(
+            "Delete B", true, null, WrestlerTier.ROOKIE, defaultUniverse);
+    Team team =
+        teamService
+            .createTeam(
+                "Doomed Duo",
+                null,
+                List.of(a.getId(), b.getId()),
+                com.github.javydreamercsw.management.domain.team.TeamSize.DUO,
+                null,
+                null,
+                com.github.javydreamercsw.management.domain.team.TeamOrigin.REGISTRY)
+            .orElseThrow();
+
+    wrestlerService.delete(a.getId());
+
+    Team after =
+        teamRepository
+            .findById(team.getId())
+            .orElseThrow(() -> new AssertionError("team row must survive the delete (FK refs)"));
+    org.assertj.core.api.Assertions.assertThat(after.getStatus()).isEqualTo(TeamStatus.DISBANDED);
   }
 }
