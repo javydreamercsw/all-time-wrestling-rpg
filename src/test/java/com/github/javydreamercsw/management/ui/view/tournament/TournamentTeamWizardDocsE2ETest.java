@@ -24,12 +24,14 @@ import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.universe.UniverseService;
 import com.github.javydreamercsw.management.ui.view.AbstractDocsE2ETest;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
@@ -85,7 +87,7 @@ class TournamentTeamWizardDocsE2ETest extends AbstractDocsE2ETest {
     WebElement seedingMode = waitForVaadinElement(driver, By.id("wizard-seeding-mode"));
     selectFromVaadinComboBox(seedingMode, "Manual (pick wrestlers)");
     waitForVaadinElement(driver, By.id("team-registry-picker"));
-    selectVaadinMultiSelect(driver.findElement(By.id("team-registry-picker")), 1);
+    selectTeamsInRegistryPicker(driver.findElement(By.id("team-registry-picker")), 1);
 
     documentFeature(
         "Game Mechanics",
@@ -145,34 +147,57 @@ class TournamentTeamWizardDocsE2ETest extends AbstractDocsE2ETest {
   }
 
   /**
-   * Selects the first N options of a vaadin-multi-select-combo-box via its rendered overlay (the
-   * picker's rendered items live in the document-level overlay, slotted into the combo's internal
-   * list), so the screenshot shows entrants actually picked.
+   * Selects the first N teams from the registry multi-select combo via the base class's proven
+   * Vaadin-25 multiselect interaction (overlay open → wait for items → scroller selection-changed
+   * event).
    */
-  private void selectVaadinMultiSelect(WebElement combo, int count) {
+  private void selectTeamsInRegistryPicker(WebElement combo, int count) {
+    List<String> options = registryPickerOptionNames(combo);
+    if (options.size() < count) {
+      throw new IllegalStateException(
+          "Registry picker has "
+              + options.size()
+              + " eligible teams — expected at least "
+              + count
+              + " (no eligible teams seeded?)");
+    }
+    for (String option : options.subList(0, count)) {
+      selectFromVaadinMultiSelectComboBox(combo, option);
+    }
+  }
+
+  /**
+   * Opens the registry picker's overlay and reads the rendered option labels, so the caller can
+   * pick specific teams by name through the base helper.
+   */
+  private List<String> registryPickerOptionNames(WebElement combo) {
     waitForVaadinClientToLoad();
-    String script =
-        """
-        const combo = arguments[0];
-        combo.focus();
-        combo.dispatchEvent(new KeyboardEvent('keydown', {key: 'ArrowDown', bubbles: true}));
-        """;
-    ((JavascriptExecutor) driver).executeScript(script, combo);
-    waitForVaadinClientToLoad();
-    String pickScript =
-        """
-        const combo = arguments[0], count = arguments[1];
-        const overlay = document.querySelector('vaadin-multi-select-combo-box-overlay');
-        if (!overlay) throw new Error('Multi-select overlay not open');
-        const options = Array.from(
-          overlay.querySelectorAll('vaadin-multi-select-combo-box-item'))
-          .filter(o => o.getBoundingClientRect().height > 0);
-        if (options.length === 0) {
-          throw new Error('No eligible teams in the registry picker — none seeded?');
-        }
-        for (let i = 0; i < Math.min(count, options.length); i++) { options[i].click(); }
-        """;
-    ((JavascriptExecutor) driver).executeScript(pickScript, combo, count);
-    waitForVaadinClientToLoad();
+    JavascriptExecutor js = (JavascriptExecutor) driver;
+    scrollIntoView(combo);
+    js.executeScript("arguments[0].opened = true;", combo);
+    WebDriverWait wait = new WebDriverWait(driver, getWaitTimeout());
+    wait.until(
+        d ->
+            js.executeScript(
+                """
+                const items = Array.from(document.querySelectorAll(\
+                'vaadin-multi-select-combo-box-item'));\
+                return items.some(el => {\
+                  const r = el.getBoundingClientRect();\
+                  return r.width > 0 && r.height > 0;\
+                });\
+                """));
+    @SuppressWarnings("unchecked")
+    List<String> names =
+        (List<String>)
+            js.executeScript(
+                """
+                return Array.from(document.querySelectorAll(\
+                'vaadin-multi-select-combo-box-item'))\
+                  .filter(el => el.getBoundingClientRect().height > 0)\
+                  .map(el => (el.innerText || el.textContent).trim());\
+                """);
+    js.executeScript("arguments[0].opened = false;", combo);
+    return names == null ? List.of() : names;
   }
 }
