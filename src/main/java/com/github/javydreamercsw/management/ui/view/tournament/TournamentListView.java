@@ -212,7 +212,7 @@ public class TournamentListView extends VerticalLayout {
         tournamentService.findByIdWithDetails(tournament.getId()).orElse(tournament);
     Dialog dialog = new Dialog();
     dialog.setHeaderTitle("Edit Tournament");
-    dialog.setWidth("min(600px, 95vw)");
+    dialog.setWidth("min(950px, 95vw)");
 
     TextField nameField = new TextField("Tournament Name");
     nameField.setValue(managed.getName());
@@ -453,7 +453,7 @@ public class TournamentListView extends VerticalLayout {
   private void openCreationWizard() {
     Dialog dialog = new Dialog();
     dialog.setHeaderTitle("New Tournament");
-    dialog.setWidth("min(600px, 95vw)");
+    dialog.setWidth("min(950px, 95vw)");
 
     TabSheet tabs = new TabSheet();
     Tab tab1 = new Tab("1. Details");
@@ -607,21 +607,17 @@ public class TournamentListView extends VerticalLayout {
         });
 
     // ── Team entrants (ATW-01g2): registry picker + one-off assembly ──────────
-    Span teamEntrantsHeader = new Span("Team Entrants");
-    teamEntrantsHeader.getStyle().set("font-weight", "bold");
-    teamEntrantsHeader.setVisible(false);
-
-    // Registry picker: active REGISTRY teams of the declared size whose every member satisfies
-    // the gender filter, sorted by team fans — the same pool seedAuto draws from.
-    Grid<Team> teamRegistryGrid = new Grid<>(Team.class, false);
-    teamRegistryGrid.setId("team-registry-grid");
-    teamRegistryGrid.setWidthFull();
-    teamRegistryGrid.setHeight("220px");
-    teamRegistryGrid.setSelectionMode(Grid.SelectionMode.SINGLE);
-    teamRegistryGrid.addColumn(Team::getName).setHeader("Team").setFlexGrow(2);
-    teamRegistryGrid.addColumn(team -> memberNamesOf(team)).setHeader("Members").setFlexGrow(3);
-    teamRegistryGrid.addColumn(Team::getFans).setHeader("Fans").setFlexGrow(1);
-    teamRegistryGrid.setVisible(false);
+    // Registry picker mirrors the singles flow's wrestlerPicker: a multi-select combo on the
+    // seeding tab ("Select Teams"), visible only in Manual mode. Picked teams + an optional
+    // one-off become entries with sequential seeds in one Create pass. The query is the same
+    // pool seedAuto draws from: active REGISTRY teams of the declared size whose every member
+    // satisfies the gender filter, sorted by team fans.
+    MultiSelectComboBox<Team> teamRegistryPicker = new MultiSelectComboBox<>("Select Teams");
+    teamRegistryPicker.setId("team-registry-picker");
+    teamRegistryPicker.setItemLabelGenerator(Team::getName);
+    teamRegistryPicker.setWidthFull();
+    teamRegistryPicker.setVisible(false);
+    teamRegistryPicker.setHelperText("Only teams eligible for this tournament are listed.");
 
     // One-off assembly: members not already entered; the assembled team persists as AD_HOC
     // unless "save to registry" (default off) flips it to REGISTRY after the tournament takes it.
@@ -661,12 +657,7 @@ public class TournamentListView extends VerticalLayout {
         });
 
     VerticalLayout teamEntrantsPanel =
-        new VerticalLayout(
-            teamEntrantsHeader,
-            teamRegistryGrid,
-            teamMemberPicker,
-            saveToRegistryCheckbox,
-            oneOffNamePreview);
+        new VerticalLayout(teamMemberPicker, saveToRegistryCheckbox, oneOffNamePreview);
     teamEntrantsPanel.setPadding(false);
     teamEntrantsPanel.setVisible(false);
 
@@ -775,17 +766,15 @@ public class TournamentListView extends VerticalLayout {
     entrantType.addValueChangeListener(e -> refreshEntrantCap.run());
     refreshEntrantCap.run();
 
-    // Registry grid + member picker follow the entrant type and gender filter: the grid
-    // re-queries the eligible REGISTRY teams, the picker re-filters to wrestlers not already
-    // committed to a picked registry team (a wrestler may appear in only one entry) and to
-    // the tournament's eligibility rules (active, gender-matching — the same predicate the
-    // registry grid applies through the service). Picking a registry team excludes its
-    // members from the one-off picker — without re-querying the grid (setItems clears
-    // selection).
+    // Registry picker + member picker follow the entrant type and gender filter: the picker
+    // re-queries the eligible REGISTRY teams, the one-off picker re-filters to wrestlers not
+    // already committed to a picked registry team (a wrestler may appear in only one entry) and
+    // to the tournament's eligibility rules (active, gender-matching — the same predicate the
+    // picker's items apply through the service).
     Runnable refreshMemberPickerExclusions =
         () -> {
           Set<Long> committedMemberIds = new HashSet<>();
-          for (Team picked : teamRegistryGrid.getSelectedItems()) {
+          for (Team picked : teamRegistryPicker.getSelectedItems()) {
             picked.getMembers().stream()
                 .map(TeamMember::getWrestler)
                 .map(Wrestler::getId)
@@ -818,8 +807,13 @@ public class TournamentListView extends VerticalLayout {
         () -> {
           boolean teamMode = teamModeOf(entrantType.getValue());
           teamEntrantsPanel.setVisible(teamMode);
-          teamRegistryGrid.setVisible(teamMode);
           teamMemberPicker.setVisible(teamMode);
+          // Seeding-tab visibility mirrors the singles wrestler picker: only Manual mode shows
+          // the pickers. Initial wizard state is Auto, so everything starts hidden either way.
+          boolean manualSeeding = "Manual (pick wrestlers)".equals(seedingMode.getValue());
+          teamRegistryPicker.setVisible(teamMode && manualSeeding);
+          teamMemberPicker.setVisible(teamMode);
+          teamEntrantsPanel.setVisible(teamMode && manualSeeding);
           // Entering team mode forces Title-on-the-line (the payoff normalization above only
           // touches the radio when LEAVING team mode).
           if (teamMode && !"Title on the line".equals(payoffMode.getValue())) {
@@ -829,12 +823,13 @@ public class TournamentListView extends VerticalLayout {
             Tournament probe =
                 teamProbe(teamSizeOf(entrantType.getValue()), genderCombo.getValue());
             universeContextService.getCurrentUniverse().ifPresent(probe::setUniverse);
-            teamRegistryGrid.setItems(tournamentService.findEligibleTeamsSortedByFans(probe));
+            probe.setLinkedTitle(titleCombo.getValue());
+            teamRegistryPicker.setItems(tournamentService.findEligibleTeamsSortedByFans(probe));
             refreshMemberPickerExclusions.run();
           } else {
             // Leaving team mode clears any half-assembled one-off team.
             teamMemberPicker.clear();
-            teamRegistryGrid.deselectAll();
+            teamRegistryPicker.clear();
             saveToRegistryCheckbox.setVisible(false);
             oneOffNamePreview.setVisible(false);
           }
@@ -847,7 +842,8 @@ public class TournamentListView extends VerticalLayout {
           refreshTeamPickers.run();
         });
     genderCombo.addValueChangeListener(e -> refreshTeamPickers.run());
-    teamRegistryGrid.addSelectionListener(e -> refreshMemberPickerExclusions.run());
+    titleCombo.addValueChangeListener(e -> refreshTeamPickers.run());
+    teamRegistryPicker.addValueChangeListener(e -> refreshMemberPickerExclusions.run());
     refreshTeamPickers.run();
 
     MultiSelectComboBox<Wrestler> wrestlerPicker = new MultiSelectComboBox<>("Select Wrestlers");
@@ -860,8 +856,16 @@ public class TournamentListView extends VerticalLayout {
         e -> {
           boolean manual = "Manual (pick wrestlers)".equals(e.getValue());
           boolean skip = "Don't seed now (seed later)".equals(e.getValue());
+          boolean teamMode = teamModeOf(entrantType.getValue());
           countField.setVisible(!manual && !skip);
-          wrestlerPicker.setVisible(manual);
+          wrestlerPicker.setVisible(manual && !teamMode);
+          // Team mode mirrors the singles flow: the registry picker replaces the wrestler
+          // picker on the seeding tab; the one-off assembly panel rides along with it.
+          teamRegistryPicker.setVisible(manual && teamMode);
+          teamEntrantsPanel.setVisible(manual && teamMode);
+          boolean panelVisible = manual && teamMode;
+          saveToRegistryCheckbox.setVisible(panelVisible && !teamMemberPicker.isEmpty());
+          oneOffNamePreview.setVisible(panelVisible && !teamMemberPicker.isEmpty());
         });
 
     // Match-up preview for Auto seeding: what Create will build, before it commits.
@@ -903,7 +907,14 @@ public class TournamentListView extends VerticalLayout {
     seedingMode.addValueChangeListener(e -> refreshMatchups.run());
 
     VerticalLayout tab2Content =
-        new VerticalLayout(seedingMode, countField, groupSizeField, wrestlerPicker, matchupPreview);
+        new VerticalLayout(
+            seedingMode,
+            countField,
+            groupSizeField,
+            wrestlerPicker,
+            teamRegistryPicker,
+            teamEntrantsPanel,
+            matchupPreview);
     tab2Content.setPadding(false);
 
     tabs.add(tab1, tab1Content);
@@ -986,7 +997,7 @@ public class TournamentListView extends VerticalLayout {
                     tournamentService.seedAuto(
                         t, countField.getValue(), universe.map(Universe::getId).orElse(1L));
                   } else if (manual) {
-                    List<Team> picked = new ArrayList<>(teamRegistryGrid.getSelectedItems());
+                    List<Team> picked = new ArrayList<>(teamRegistryPicker.getSelectedItems());
                     int seed = 1;
                     for (Team team : picked) {
                       tournamentService.addEntry(t, team, seed++);

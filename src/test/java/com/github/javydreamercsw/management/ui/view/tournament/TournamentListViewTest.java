@@ -802,12 +802,17 @@ class TournamentListViewTest extends AbstractViewTest {
     RadioButtonGroup<String> entrantType =
         _get(UI.getCurrent(), RadioButtonGroup.class, spec -> spec.withLabel("Entrants"));
     assertEquals(TournamentListView.SINGLES_LABEL, entrantType.getValue());
-    // The registry grid exists but is hidden until a team mode is chosen (it is not visible,
-    // so it is located via _find, which does not apply the visibility filter _get does).
+    // The registry picker exists but is hidden until a team mode + Manual seeding is chosen
+    // (it is not visible, so it is located via _find, which does not apply the visibility
+    // filter _get does).
     assertTrue(
-        _find(UI.getCurrent(), Grid.class, spec -> spec.withId("team-registry-grid")).stream()
+        _find(
+                UI.getCurrent(),
+                MultiSelectComboBox.class,
+                spec -> spec.withId("team-registry-picker"))
+            .stream()
             .noneMatch(Component::isVisible),
-        "Registry grid must be hidden in singles mode");
+        "Registry picker must be hidden in singles mode");
   }
 
   @Test
@@ -896,10 +901,20 @@ class TournamentListViewTest extends AbstractViewTest {
     RadioButtonGroup<String> entrantType =
         _get(UI.getCurrent(), RadioButtonGroup.class, spec -> spec.withLabel("Entrants"));
     entrantType.setValue(TournamentListView.TAG_TEAM_LABEL);
-    Grid<Team> registryGrid =
-        _get(UI.getCurrent(), Grid.class, spec -> spec.withId("team-registry-grid"));
-    registryGrid.getListDataView().addItem(duo);
-    registryGrid.select(duo);
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Next")).click();
+    // Manual seeding on the seeding tab — reveals the registry picker (mirrors the singles
+    // wrestler picker's visibility). Auto is covered by wizardCreate_teamAutoSeed_callsSeedAuto.
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    ComboBox<String> seedingMode =
+        _get(UI.getCurrent(), ComboBox.class, spec -> spec.withLabel("Seeding Method"));
+    seedingMode.setValue("Manual (pick wrestlers)");
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    MultiSelectComboBox<Team> registryPicker =
+        _get(
+            UI.getCurrent(),
+            MultiSelectComboBox.class,
+            spec -> spec.withId("team-registry-picker"));
+    registryPicker.setValue(new LinkedHashSet<>(List.of(duo)));
     // Assemble a one-off team from the remaining wrestlers.
     @SuppressWarnings({"rawtypes", "unchecked"})
     MultiSelectComboBox<Wrestler> memberPicker =
@@ -909,13 +924,6 @@ class TournamentListViewTest extends AbstractViewTest {
             spec -> spec.withLabel("Assemble a One-Off Team (optional)"));
     memberPicker.setValue(new LinkedHashSet<>(List.of(c, d)));
 
-    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Next")).click();
-    // Manual seeding (the tab renders lazily) — Auto is covered by
-    // wizardCreate_teamAutoSeed_callsSeedAuto.
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    ComboBox<String> seedingMode =
-        _get(UI.getCurrent(), ComboBox.class, spec -> spec.withLabel("Seeding Method"));
-    seedingMode.setValue("Manual (pick wrestlers)");
     _get(UI.getCurrent(), Button.class, spec -> spec.withText("Create Tournament")).click();
 
     verify(tournamentService).addEntry(any(Tournament.class), eq(duo), eq(1));
@@ -960,6 +968,13 @@ class TournamentListViewTest extends AbstractViewTest {
     ComboBox<Gender> genderCombo =
         _get(UI.getCurrent(), ComboBox.class, spec -> spec.withLabel("Gender Filter (optional)"));
     genderCombo.setValue(Gender.FEMALE);
+
+    // The one-off picker lives on the seeding tab: advance, then switch to Manual to reveal it.
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Next")).click();
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    ComboBox<String> seedingMode =
+        _get(UI.getCurrent(), ComboBox.class, spec -> spec.withLabel("Seeding Method"));
+    seedingMode.setValue("Manual (pick wrestlers)");
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     MultiSelectComboBox<Wrestler> memberPicker =
