@@ -56,6 +56,7 @@ import com.github.javydreamercsw.management.service.title.TitleOpportunityServic
 import jakarta.annotation.Nullable;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -1513,6 +1514,25 @@ public class TournamentService {
       entryRepository.save(entry);
     }
     return entryRepository.findByTournamentIdOrderBySeedAsc(tournamentId);
+  }
+
+  /**
+   * Shuffle the tournament's seeds uniformly at random — the unbiased draw next to the manual
+   * reorder controls. Only allowed while SCHEDULED with no generated bracket (the same lock the
+   * manual reordering obeys): once the bracket exists the pairings are locked.
+   *
+   * @return the reshuffled entries, seeds 1..n
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public List<TournamentEntry> randomizeSeeds(@NonNull final Long tournamentId) {
+    requireEditableForSeeding(tournamentId);
+    List<Long> shuffledIds =
+        entryRepository.findByTournamentIdOrderBySeedAsc(tournamentId).stream()
+            .map(TournamentEntry::getId)
+            .collect(Collectors.toCollection(ArrayList::new));
+    Collections.shuffle(shuffledIds);
+    return reorderSeeds(tournamentId, shuffledIds);
   }
 
   /**
