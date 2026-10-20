@@ -34,7 +34,9 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentStatus;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.team.Team;
+import com.github.javydreamercsw.management.domain.team.TeamOrigin;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
+import com.github.javydreamercsw.management.domain.team.TeamSize;
 import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
@@ -441,10 +443,10 @@ class WrestlerServiceIT extends ManagementIntegrationTest {
                 "Doomed Duo",
                 null,
                 List.of(a.getId(), b.getId()),
-                com.github.javydreamercsw.management.domain.team.TeamSize.DUO,
+                TeamSize.DUO,
                 null,
                 null,
-                com.github.javydreamercsw.management.domain.team.TeamOrigin.REGISTRY)
+                TeamOrigin.REGISTRY)
             .orElseThrow();
 
     wrestlerService.delete(a.getId());
