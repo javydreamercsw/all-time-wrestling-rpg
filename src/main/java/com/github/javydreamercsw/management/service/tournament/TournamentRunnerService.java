@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentEntrySta
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
 import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
+import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
@@ -63,6 +64,7 @@ public class TournamentRunnerService {
 
   private final TournamentService tournamentService;
   private final BracketMatchResolver resolver;
+  private final SegmentService segmentService;
   private final ShowService showService;
   private final ShowTypeService showTypeService;
   private final UniverseContextService universeContextService;
@@ -75,6 +77,23 @@ public class TournamentRunnerService {
   /** Result of running the whole remaining bracket. */
   public record TournamentRunReport(
       Show hostShow, int matchesPlayed, boolean tournamentComplete, TournamentEntry winner) {}
+
+  /** Result of manually recording one match. */
+  public record ManualResultReport(
+      Show hostShow,
+      TournamentRound round,
+      TournamentEntry winner,
+      boolean roundDecided,
+      boolean tournamentComplete) {}
+
+  /** Result of engine-deciding one match. */
+  public record MatchRunReport(
+      Show hostShow,
+      TournamentRound round,
+      Segment segment,
+      TournamentEntry winner,
+      boolean roundDecided,
+      boolean tournamentComplete) {}
 
   /**
    * Play every open match of the earliest non-complete round.
@@ -94,10 +113,7 @@ public class TournamentRunnerService {
     Show hostShow = resolveHostShow(managed, requestedShowId);
     TournamentRound round = currentRunnableRound(managed);
     int played = playOpenMatches(managed, round, hostShow);
-    boolean complete = advanceIfRoundDecided(managed);
-    if (complete) {
-      grantBriefcaseOnRunnerCompletion(managed);
-    }
+    boolean complete = completeIfDecided(managed);
     log.info(
         "Ran round '{}' of tournament '{}': {} matches on show '{}'",
         round.getRoundName(),
@@ -127,7 +143,7 @@ public class TournamentRunnerService {
       iterations++;
       Optional<TournamentMatch> open = resolver.nextBookableMatch(managed);
       if (open.isEmpty()) {
-        complete = advanceIfRoundDecided(managed);
+        complete = completeIfDecided(managed);
         if (!complete) {
           // Nothing playable and the format says more matches should exist — stop rather than spin.
           log.warn(
@@ -139,7 +155,7 @@ public class TournamentRunnerService {
       }
       TournamentRound round = currentRunnableRound(managed);
       played += playOpenMatches(managed, round, hostShow);
-      complete = advanceIfRoundDecided(managed);
+      complete = completeIfDecided(managed);
     }
     if ((played >= cap || iterations >= cap) && !complete) {
       log.warn(
@@ -147,9 +163,6 @@ public class TournamentRunnerService {
           managed.getName(),
           played,
           iterations);
-    }
-    if (complete) {
-      grantBriefcaseOnRunnerCompletion(managed);
     }
     TournamentEntry winner = winnerOf(managed);
     log.info(
@@ -159,6 +172,91 @@ public class TournamentRunnerService {
         hostShow.getName(),
         complete);
     return new TournamentRunReport(hostShow, played, complete, winner);
+  }
+
+  /**
+   * Record the booker's winner for one open match — the interactive run screen's manual entry.
+   * Creates the match's segment on the host show (or reuses the one booked via Book Round on Show)
+   * and stamps the entered winner on it, so wrestler consequences flow through the normal
+   * adjudication path exactly like every other match.
+   *
+   * @param tournament an IN_PROGRESS tournament (Start Tournament remains the explicit step)
+   * @param matchId the open match to record; resolved from the managed graph
+   * @param winnerEntryId the winning entrant — must be one of the match's entrants
+   * @param requestedShowId the show to book the match on, or null to auto-create a host show
+   * @return what was recorded and whether the round/tournament advanced
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public ManualResultReport recordManualResult(
+      @NonNull final Tournament tournament,
+      @NonNull final Long matchId,
+      @NonNull final Long winnerEntryId,
+      @Nullable final Long requestedShowId) {
+    Tournament managed = requireManaged(tournament);
+    TournamentMatch match = requireOpenMatch(managed, matchId);
+    TournamentEntry winner = requireEntrant(match, winnerEntryId);
+    Show hostShow = resolveHostShow(managed, requestedShowId);
+    TournamentRound round = match.getRound();
+    Segment segment = match.getSegment();
+    if (segment == null) {
+      // Build the correctly-shaped segment (singles/team/multi-entrant routing, narration, title
+      // flags) through the shared booking core, then override the engine's pick with the booker's
+      // winner — consequences flow at adjudication from the segment's final winners, so the
+      // override is what counts. Mirrors the show-flow precedent of hand-correcting a segment.
+      String stipulation =
+          tournamentService.resolveRoundStipulation(
+              managed, round, null, resolver.defaultRoundRuleOf(managed));
+      boolean titleOnTheLine =
+          managed.getLinkedTitle() != null && resolver.isBracketFinal(managed, match);
+      segment =
+          resolver.resolveSegment(
+              match, managed, roundTypeOrThrow(managed), hostShow, stipulation, titleOnTheLine);
+      match.setSegment(segment);
+    }
+    segment.setWinners(resolver.segmentTeamOf(winner).getMembers());
+    segmentService.updateSegment(segment);
+    round.setShow(hostShow);
+    tournamentService.markRoundInProgress(round);
+    tournamentService.recordMatchResult(match, winner);
+    boolean complete = completeIfDecided(managed);
+    boolean roundDecided = round.getMatches().stream().noneMatch(m -> m.getWinner() == null);
+    log.info(
+        "Recorded manual winner '{}' for '{}' ({}) on show '{}'",
+        winner.entrantName(),
+        managed.getName(),
+        round.getRoundName(),
+        hostShow.getName());
+    return new ManualResultReport(hostShow, round, winner, roundDecided, complete);
+  }
+
+  /**
+   * Let the RPG engine decide one open match — the interactive run screen's per-match secondary
+   * option for matches the booker would rather not adjudicate by hand.
+   *
+   * @return the resolved segment and whether the round/tournament advanced
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public MatchRunReport runEngineMatch(
+      @NonNull final Tournament tournament,
+      @NonNull final Long matchId,
+      @Nullable final Long requestedShowId) {
+    Tournament managed = requireManaged(tournament);
+    TournamentMatch match = requireOpenMatch(managed, matchId);
+    Show hostShow = resolveHostShow(managed, requestedShowId);
+    Segment segment = playOneMatch(managed, match, hostShow, roundTypeOrThrow(managed));
+    TournamentEntry winner = resolver.pickBracketWinner(match, segment);
+    boolean complete = completeIfDecided(managed);
+    boolean roundDecided =
+        match.getRound().getMatches().stream().noneMatch(m -> m.getWinner() == null);
+    log.info(
+        "Engine decided '{}' for '{}' ({}) on show '{}'",
+        winner.entrantName(),
+        managed.getName(),
+        match.getRound().getRoundName(),
+        hostShow.getName());
+    return new MatchRunReport(hostShow, match.getRound(), segment, winner, roundDecided, complete);
   }
 
   /**
@@ -271,41 +369,85 @@ public class TournamentRunnerService {
                     "Tournament '" + tournament.getName() + "' has no open matches to run"));
   }
 
+  /**
+   * The open match with the given id from the managed graph — unknown ids and already-decided
+   * matches are rejected so a stale UI row cannot double-record.
+   */
+  private TournamentMatch requireOpenMatch(Tournament managed, Long matchId) {
+    TournamentMatch match =
+        managed.getRounds().stream()
+            .flatMap(r -> r.getMatches().stream())
+            .filter(m -> matchId.equals(m.getId()))
+            .findFirst()
+            .orElseThrow(
+                () -> new IllegalArgumentException("Match not found in tournament: " + matchId));
+    if (match.getWinner() != null) {
+      throw new IllegalStateException("Match " + matchId + " already has a winner recorded");
+    }
+    return match;
+  }
+
+  /** The winning entrant — must be one of the match's entrants. */
+  private TournamentEntry requireEntrant(TournamentMatch match, Long winnerEntryId) {
+    return match.entrants().stream()
+        .filter(e -> winnerEntryId.equals(e.getId()))
+        .findFirst()
+        .orElseThrow(
+            () ->
+                new IllegalArgumentException(
+                    "Entry " + winnerEntryId + " is not an entrant of match " + match.getId()));
+  }
+
+  /** The round's segment type — missing catalog rows fail the run with a clear message. */
+  private SegmentType roundTypeOrThrow(Tournament tournament) {
+    return resolver
+        .roundSegmentTypeOf(tournament)
+        .orElseThrow(
+            () ->
+                new IllegalStateException(
+                    "Cannot run tournament '"
+                        + tournament.getName()
+                        + "': its round segment type is missing from the catalog"));
+  }
+
   /** Resolve, record, and (first match only) activate every open match of the round. */
   private int playOpenMatches(Tournament tournament, TournamentRound round, Show hostShow) {
-    SegmentType roundType =
-        resolver
-            .roundSegmentTypeOf(tournament)
-            .orElseThrow(
-                () ->
-                    new IllegalStateException(
-                        "Cannot run tournament '"
-                            + tournament.getName()
-                            + "': its round segment type is missing from the catalog"));
+    SegmentType roundType = roundTypeOrThrow(tournament);
     List<TournamentMatch> open =
         round.getMatches().stream()
             .filter(m -> m.getWinner() == null && m.getSegment() == null)
             .toList();
     for (TournamentMatch match : open) {
-      String stipulation =
-          tournamentService.resolveRoundStipulation(
-              tournament, round, null, resolver.defaultRoundRuleOf(tournament));
-      boolean titleOnTheLine =
-          tournament.getLinkedTitle() != null && resolver.isBracketFinal(tournament, match);
-      Segment segment =
-          resolver.resolveSegment(
-              match, tournament, roundType, hostShow, stipulation, titleOnTheLine);
-      match.setSegment(segment);
-      tournamentService.markRoundInProgress(round);
-      tournamentService.recordMatchResult(match, resolver.pickBracketWinner(match, segment));
-      log.info(
-          "Ran tournament match for '{}' ({}): {} vs {} — winner decided",
-          tournament.getName(),
-          round.getRoundName(),
-          match.getEntrant1().entrantName(),
-          match.getEntrant2().entrantName());
+      playOneMatch(tournament, match, hostShow, roundType);
     }
     return open.size();
+  }
+
+  /**
+   * The per-match body every engine path shares: resolve the segment through the booking core, link
+   * it, activate the round, and record the engine's winner.
+   */
+  private Segment playOneMatch(
+      Tournament tournament, TournamentMatch match, Show hostShow, SegmentType roundType) {
+    String stipulation =
+        tournamentService.resolveRoundStipulation(
+            tournament, match.getRound(), null, resolver.defaultRoundRuleOf(tournament));
+    boolean titleOnTheLine =
+        tournament.getLinkedTitle() != null && resolver.isBracketFinal(tournament, match);
+    Segment segment =
+        resolver.resolveSegment(
+            match, tournament, roundType, hostShow, stipulation, titleOnTheLine);
+    match.setSegment(segment);
+    tournamentService.markRoundInProgress(match.getRound());
+    TournamentEntry winner = resolver.pickBracketWinner(match, segment);
+    tournamentService.recordMatchResult(match, winner);
+    log.info(
+        "Ran tournament match for '{}' ({}): {} vs {} — winner decided",
+        tournament.getName(),
+        match.getRound().getRoundName(),
+        match.getEntrant1().entrantName(),
+        match.getEntrant2().entrantName());
+    return segment;
   }
 
   /**
@@ -339,6 +481,19 @@ public class TournamentRunnerService {
             .map(fmt -> fmt.estimateTotalMatches(tournament))
             .orElse(64);
     return estimate + 1;
+  }
+
+  /**
+   * Advance the bracket when every match is decided, and grant the briefcase when that advance
+   * completes the tournament — the pair every run path must do together so the grant is never
+   * forgotten on a new path.
+   */
+  private boolean completeIfDecided(Tournament tournament) {
+    boolean complete = advanceIfRoundDecided(tournament);
+    if (complete) {
+      grantBriefcaseOnRunnerCompletion(tournament);
+    }
+    return complete;
   }
 
   /**

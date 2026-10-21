@@ -44,6 +44,7 @@ import com.github.javydreamercsw.management.domain.team.TeamOrigin;
 import com.github.javydreamercsw.management.domain.team.TeamSize;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
+import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
@@ -1167,5 +1168,55 @@ class TournamentListViewTest extends AbstractViewTest {
         .addEntry(any(Tournament.class), any(Team.class), anyInt());
     verify(teamService, Mockito.never())
         .createTeam(any(), any(), any(), any(), any(), any(), any());
+  }
+
+  // ── Catalog filter (ATW-p0sz.1) ─────────────────────────────────────────────
+
+  @Test
+  @DisplayName("A pristine catalog row (code set, SCHEDULED, zero entries) is hidden")
+  void pristineCatalogRow_hidden() {
+    Tournament catalog = tournament();
+    catalog.setCode("deadly_combat");
+    catalog.setStatus(TournamentStatus.SCHEDULED);
+    lenient().when(tournamentService.countEntries(catalog)).thenReturn(0L);
+    lenient().when(tournamentService.findAll()).thenReturn(List.of(catalog));
+
+    view.refreshGridForTest();
+
+    assertEquals(0, gridRowCount());
+  }
+
+  @Test
+  @DisplayName("A catalog row that has been seeded or started still lists")
+  void seededCatalogRow_visible() {
+    Tournament catalog = tournament();
+    catalog.setCode("deadly_combat");
+    catalog.setStatus(TournamentStatus.SCHEDULED);
+    lenient().when(tournamentService.findAll()).thenReturn(List.of(catalog));
+    // Default countEntries stub returns 8L (seeded) — the row stays visible.
+
+    view.refreshGridForTest();
+
+    assertEquals(1, gridRowCount());
+  }
+
+  @Test
+  @DisplayName("A player-created tournament (no code) always lists")
+  void playerCreatedTournament_visible() {
+    Tournament created = tournament();
+    created.setCode(null);
+    created.setStatus(TournamentStatus.SCHEDULED);
+    lenient().when(tournamentService.findAll()).thenReturn(List.of(created));
+    lenient().when(tournamentService.countEntries(created)).thenReturn(0L);
+
+    view.refreshGridForTest();
+
+    assertEquals(1, gridRowCount());
+  }
+
+  private long gridRowCount() {
+    @SuppressWarnings("unchecked")
+    Grid<Tournament> g = (Grid<Tournament>) _get(view, Grid.class);
+    return g.getListDataView().getItemCount();
   }
 }

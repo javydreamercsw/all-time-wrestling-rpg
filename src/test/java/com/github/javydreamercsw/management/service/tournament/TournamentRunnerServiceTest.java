@@ -18,11 +18,13 @@ package com.github.javydreamercsw.management.service.tournament;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -43,6 +45,7 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentRoundSta
 import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.segment.NPCSegmentResolutionService;
+import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
@@ -73,6 +76,7 @@ class TournamentRunnerServiceTest {
 
   @Mock private TournamentService tournamentService;
   @Mock private NPCSegmentResolutionService segmentResolutionService;
+  @Mock private SegmentService segmentService;
   @Mock private SegmentTypeService segmentTypeService;
   @Mock private ShowService showService;
   @Mock private ShowTypeService showTypeService;
@@ -97,6 +101,7 @@ class TournamentRunnerServiceTest {
         new TournamentRunnerService(
             tournamentService,
             resolver,
+            segmentService,
             showService,
             showTypeService,
             universeContextService,
@@ -501,6 +506,236 @@ class TournamentRunnerServiceTest {
             any(),
             any(),
             any());
+  }
+
+  // ── Per-match interactive path (ATW-p0sz.1) ─────────────────────────────────
+
+  @Test
+  void recordManualResult_stampsBookerWinnerOnSegment() {
+    TournamentEntry aliceEntry = entry(alice, 1);
+    TournamentEntry bobEntry = entry(bob, 2);
+    aliceEntry.setId(11L);
+    bobEntry.setId(12L);
+    TournamentMatch m1 = match(1, aliceEntry, bobEntry);
+    m1.setId(21L);
+    attach(tournament, List.of(aliceEntry, bobEntry), List.of(round(1, m1)));
+    // Engine pick is Bob — the booker overrides with Alice.
+    Segment booked = singles(bob, alice, bob);
+    when(segmentResolutionService.resolveTeamSegment(any(), any(), any(), any(), any()))
+        .thenReturn(booked);
+    when(segmentService.updateSegment(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    TournamentRunnerService.ManualResultReport report =
+        service.recordManualResult(tournament, 21L, 11L, 1L);
+
+    assertEquals(aliceEntry, report.winner());
+    // The segment's winners were overridden with Alice's side (solo → [alice]).
+    assertTrue(booked.getWinners().contains(alice));
+    assertFalse(booked.getWinners().contains(bob));
+    verify(segmentService).updateSegment(booked);
+    verify(tournamentService).recordMatchResult(m1, aliceEntry);
+  }
+
+  @Test
+  void recordManualResult_bookedMatch_reusesExistingSegment() {
+    TournamentEntry aliceEntry = entry(alice, 1);
+    TournamentEntry bobEntry = entry(bob, 2);
+    aliceEntry.setId(11L);
+    bobEntry.setId(12L);
+    TournamentMatch m1 = match(1, aliceEntry, bobEntry);
+    m1.setId(21L);
+    Segment existing = singles(bob, alice, bob);
+    m1.setSegment(existing);
+    attach(tournament, List.of(aliceEntry, bobEntry), List.of(round(1, m1)));
+    when(segmentService.updateSegment(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    service.recordManualResult(tournament, 21L, 11L, null);
+
+    // The booked segment is reused — no new resolution, winners stamped on it.
+    verify(segmentResolutionService, never()).resolveTeamSegment(any(), any(), any(), any(), any());
+    assertTrue(existing.getWinners().contains(alice));
+    verify(segmentService).updateSegment(existing);
+  }
+
+  @Test
+  void recordManualResult_lastMatchOfRound_advancesBracket() {
+    TournamentEntry aliceEntry = entry(alice, 1);
+    TournamentEntry bobEntry = entry(bob, 2);
+    aliceEntry.setId(11L);
+    bobEntry.setId(12L);
+    TournamentMatch m1 = match(1, aliceEntry, bobEntry);
+    m1.setId(21L);
+    attach(tournament, List.of(aliceEntry, bobEntry), List.of(round(1, m1)));
+    when(segmentResolutionService.resolveTeamSegment(any(), any(), any(), any(), any()))
+        .thenReturn(singles(alice, bob, alice));
+    when(segmentService.updateSegment(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    TournamentRunnerService.ManualResultReport report =
+        service.recordManualResult(tournament, 21L, 11L, null);
+
+    // Round fully decided → auto-advance ran (the v1 Generate-Next-Round click is gone).
+    verify(tournamentService).advanceToNextRound(tournament);
+    assertFalse(report.tournamentComplete()); // unresolvable format stub reports not-complete
+  }
+
+  @Test
+  void recordManualResult_completesTournament_grantsBriefcase() {
+    tournament = briefcaseTournament();
+    TournamentEntry aliceEntry = entry(alice, 1);
+    TournamentEntry bobEntry = entry(bob, 2);
+    aliceEntry.setId(11L);
+    bobEntry.setId(12L);
+    TournamentMatch m1 = match(1, aliceEntry, bobEntry);
+    m1.setId(21L);
+    attach(tournament, List.of(aliceEntry, bobEntry), List.of(round(1, m1)));
+    when(tournamentService.findByIdWithDetails(5L)).thenReturn(Optional.of(tournament));
+    when(segmentResolutionService.resolveTeamSegment(any(), any(), any(), any(), any()))
+        .thenReturn(singles(alice, bob, alice));
+    when(segmentService.updateSegment(any())).thenAnswer(inv -> inv.getArgument(0));
+    // markWinner (inside the real advanceToNextRound) stamps the status and winner entry —
+    // stub that whole flow so the grant path sees COMPLETE with a WINNER entry.
+    doAnswer(
+            inv -> {
+              TournamentMatch mm = inv.getArgument(0);
+              TournamentEntry w = inv.getArgument(1);
+              mm.setWinner(w);
+              w.setStatus(TournamentEntryStatus.WINNER);
+              return null;
+            })
+        .when(tournamentService)
+        .recordMatchResult(any(), any());
+    doAnswer(
+            inv -> {
+              Tournament t = inv.getArgument(0);
+              t.setStatus(TournamentStatus.COMPLETE);
+              return List.of();
+            })
+        .when(tournamentService)
+        .advanceToNextRound(tournament);
+    when(tournamentService.findFormat("SINGLE_ELIMINATION"))
+        .thenReturn(Optional.of(new SingleElimFormatStub(1, () -> true)));
+
+    service.recordManualResult(tournament, 21L, 11L, null);
+
+    verify(titleOpportunityService).grantFromTournament(tournament, alice);
+  }
+
+  @Test
+  void recordManualResult_unknownMatchId_throws() {
+    TournamentEntry aliceEntry = entry(alice, 1);
+    TournamentEntry bobEntry = entry(bob, 2);
+    attach(
+        tournament,
+        List.of(aliceEntry, bobEntry),
+        List.of(round(1, match(1, aliceEntry, bobEntry))));
+
+    IllegalArgumentException ex =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> service.recordManualResult(tournament, 999L, 11L, null));
+    assertTrue(ex.getMessage().contains("Match not found"));
+  }
+
+  @Test
+  void recordManualResult_alreadyDecided_throws() {
+    TournamentEntry aliceEntry = entry(alice, 1);
+    TournamentEntry bobEntry = entry(bob, 2);
+    aliceEntry.setId(11L);
+    TournamentMatch m1 = match(1, aliceEntry, bobEntry);
+    m1.setId(21L);
+    m1.setWinner(aliceEntry);
+    attach(tournament, List.of(aliceEntry, bobEntry), List.of(round(1, m1)));
+
+    IllegalStateException ex =
+        assertThrows(
+            IllegalStateException.class,
+            () -> service.recordManualResult(tournament, 21L, 11L, null));
+    assertTrue(ex.getMessage().contains("already has a winner"));
+  }
+
+  @Test
+  void recordManualResult_winnerNotInMatch_throws() {
+    TournamentEntry aliceEntry = entry(alice, 1);
+    TournamentEntry bobEntry = entry(bob, 2);
+    aliceEntry.setId(11L);
+    bobEntry.setId(12L);
+    TournamentMatch m1 = match(1, aliceEntry, bobEntry);
+    m1.setId(21L);
+    TournamentEntry outsider = entry(wrestler(9L, "Outsider"), 3);
+    outsider.setId(99L);
+    attach(tournament, List.of(aliceEntry, bobEntry), List.of(round(1, m1)));
+
+    IllegalArgumentException ex =
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> service.recordManualResult(tournament, 21L, 99L, null));
+    assertTrue(ex.getMessage().contains("not an entrant"));
+  }
+
+  @Test
+  void recordManualResult_scheduledTournament_rejected() {
+    tournament.setStatus(TournamentStatus.SCHEDULED);
+    assertThrows(
+        IllegalStateException.class, () -> service.recordManualResult(tournament, 21L, 11L, null));
+  }
+
+  @Test
+  void runEngineMatch_resolvesOnlyTheRequestedMatch() {
+    TournamentEntry aliceEntry = entry(alice, 1);
+    TournamentEntry bobEntry = entry(bob, 2);
+    TournamentEntry caraEntry = entry(wrestler(3L, "Cara"), 3);
+    TournamentEntry daveEntry = entry(wrestler(4L, "Dave"), 4);
+    aliceEntry.setId(11L);
+    bobEntry.setId(12L);
+    caraEntry.setId(13L);
+    daveEntry.setId(14L);
+    TournamentMatch m1 = match(1, aliceEntry, bobEntry);
+    m1.setId(21L);
+    TournamentMatch m2 = match(1, caraEntry, daveEntry);
+    m2.setId(22L);
+    attach(tournament, List.of(aliceEntry, bobEntry), List.of(round(1, m1, m2)));
+    Segment booked = singles(alice, bob, alice);
+    when(segmentResolutionService.resolveTeamSegment(any(), any(), any(), any(), any()))
+        .thenReturn(booked);
+
+    TournamentRunnerService.MatchRunReport report = service.runEngineMatch(tournament, 21L, null);
+
+    assertEquals(booked, report.segment());
+    verify(segmentResolutionService, times(1))
+        .resolveTeamSegment(any(), any(), any(), any(), any());
+    verify(tournamentService, times(1)).recordMatchResult(m1, aliceEntry);
+    // The other open match is untouched.
+    assertNull(m2.getWinner());
+    assertEquals(booked, m1.getSegment());
+  }
+
+  @Test
+  void runEngineMatch_completesRoundAndAdvances() {
+    TournamentEntry aliceEntry = entry(alice, 1);
+    TournamentEntry bobEntry = entry(bob, 2);
+    aliceEntry.setId(11L);
+    bobEntry.setId(12L);
+    TournamentMatch m1 = match(1, aliceEntry, bobEntry);
+    m1.setId(21L);
+    attach(tournament, List.of(aliceEntry, bobEntry), List.of(round(1, m1)));
+    when(segmentResolutionService.resolveTeamSegment(any(), any(), any(), any(), any()))
+        .thenReturn(singles(alice, bob, alice));
+
+    TournamentRunnerService.MatchRunReport report = service.runEngineMatch(tournament, 21L, null);
+
+    assertTrue(report.roundDecided());
+    verify(tournamentService).advanceToNextRound(tournament);
+  }
+
+  /** A briefcase-deciding variant of the fixture tournament. */
+  private Tournament briefcaseTournament() {
+    Tournament t = new Tournament();
+    t.setId(5L);
+    t.setName("Briefcase Cup");
+    t.setFormatId("SINGLE_ELIMINATION");
+    t.setStatus(TournamentStatus.IN_PROGRESS);
+    t.setBriefcaseDeciding(true);
+    return t;
   }
 
   // ── Fixture helpers (mirroring TournamentTemplateBookingServiceTest) ────────

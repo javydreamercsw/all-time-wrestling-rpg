@@ -273,18 +273,19 @@ class TournamentDocsE2ETest extends AbstractDocsE2ETest {
   void captureTournamentStandaloneRunner() {
     navigateToAndWaitForElement(
         "tournament-detail/" + inProgressId, By.xpath("//*[contains(., 'King of the Ring')]"));
-    // The Run buttons render when an open (winnerless, unbooked) match exists.
-    waitForVaadinElement(driver, By.xpath("//*[contains(text(), 'Run Round')]"));
+    // The interactive run section renders for the earliest round holding open matches.
+    waitForVaadinElement(driver, By.xpath("//*[contains(text(), 'Record Results')]"));
 
     documentFeature(
         "Booker",
         "Tournament — Standalone Runner",
-        "Run a tournament without booking it on a show: 'Run Round' plays the current"
-            + " round's open matches now and 'Run Tournament' plays out the whole bracket."
-            + " Winners are decided by the ATW RPG match engine — full health, stamina, fans"
-            + " and injury consequences, no AI provider needed. No shows yet? A '<tournament>"
-            + " Night' show is created automatically to host the matches, or pick an existing"
-            + " one from the dialog.",
+        "Run a tournament without booking it on a show: pick each open match's winner"
+            + " yourself, or use 'Decide by Engine' for a single match — full health,"
+            + " stamina, fans and injury consequences, no AI provider needed. The bracket"
+            + " advances automatically when a round's last match is decided, and payoffs"
+            + " (trophy, briefcase, title opportunity) are granted at completion. No shows"
+            + " yet? A '<tournament> Night' show is created automatically to host the"
+            + " matches, or pick one from the Host show box.",
         "booker-tournament-standalone-runner");
   }
 

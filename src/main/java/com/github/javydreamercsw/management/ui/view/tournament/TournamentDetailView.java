@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.tournament;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
@@ -40,7 +41,6 @@ import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.dnd.GridDropMode;
@@ -57,9 +57,11 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -81,6 +83,7 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
   private final UniverseContextService universeContextService;
   private final ShowRepository showRepository;
   private final WrestlerFacade wrestlerFacade;
+  private final SecurityUtils securityUtils;
 
   private Tournament tournament;
 
@@ -103,6 +106,7 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
     this.showRepository = showRepository;
     this.wrestlerFacade = wrestlerFacade;
     this.universeContextService = viewContext.getUniverseContextService();
+    this.securityUtils = viewContext.getSecurityUtils();
 
     setSizeFull();
     setPadding(false);
@@ -212,28 +216,6 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
                     + " adjudicated");
             actions.add(bookBtn);
           });
-
-      if (tournamentRunnerService.hasRunnableWork(tournament)) {
-        Button runRoundBtn = new Button("Run Round", e -> runRoundClicked());
-        runRoundBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
-        runRoundBtn.setTooltipText(
-            "Play this round's open matches now — winners decided by the RPG engine, full"
-                + " consequences, no AI needed");
-        runRoundBtn.setEnabled(true);
-        actions.add(runRoundBtn, buildRunTournamentButton());
-      }
-
-      Optional<TournamentRound> completeRound =
-          tournament.getRounds().stream()
-              .filter(r -> r.getStatus() == TournamentRoundStatus.COMPLETE)
-              .reduce((a, b) -> b);
-      if (completeRound.isPresent()
-          && tournament.getRounds().stream()
-              .noneMatch(r -> r.getStatus() == TournamentRoundStatus.PENDING)) {
-        Button advanceBtn = new Button("Generate Next Round", e -> advanceRound());
-        advanceBtn.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
-        actions.add(advanceBtn);
-      }
     }
 
     return new ViewToolbar(
@@ -661,20 +643,25 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
   }
 
   /**
-   * Returns the winner-recording controls for any in-progress round that has unresolved matches.
-   * Returns empty when there is nothing for the booker to act on.
+   * The interactive run section: one row per open match of the earliest round holding open matches
+   * (any status — a fresh bracket's round 1 is PENDING until the first result activates it), a
+   * host-show picker above the rows (results book as real segments on it, or on an auto-created
+   * "<tournament> Night" show when none exist). Booker/admin only — player-side entry is deferred.
    */
   private Optional<VerticalLayout> buildActiveMatchControls() {
-    Optional<TournamentRound> inProgressRound =
+    if (!securityUtils.isAdmin() && !securityUtils.isBooker()) {
+      return Optional.empty();
+    }
+    Optional<TournamentRound> activeRound =
         tournament.getRounds().stream()
-            .filter(r -> r.getStatus() == TournamentRoundStatus.IN_PROGRESS)
-            .findFirst();
+            .filter(r -> r.getMatches().stream().anyMatch(m -> m.getWinner() == null))
+            .min(Comparator.comparingInt(TournamentRound::getRoundNumber));
 
-    if (inProgressRound.isEmpty()) {
+    if (activeRound.isEmpty()) {
       return Optional.empty();
     }
 
-    TournamentRound round = inProgressRound.get();
+    TournamentRound round = activeRound.get();
     List<TournamentMatch> pending =
         round.getMatches().stream().filter(m -> m.getWinner() == null).toList();
 
@@ -686,13 +673,60 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
     section.setPadding(false);
     section.add(new H4("Record Results — " + round.getRoundName()));
 
+    // Sticky host-show selection shared by every row: prefilled with the first upcoming show, or
+    // absent (auto-create "<tournament> Night") when none exist.
+    ComboBox<Show> hostShowCombo = buildHostShowCombo();
+    if (hostShowCombo != null) {
+      section.add(hostShowCombo);
+    } else {
+      Span hint =
+          new Span(
+              "No shows yet — results book on a new '"
+                  + hostShowName()
+                  + "' show (created automatically).");
+      hint.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.SMALL);
+      section.add(hint);
+    }
+
     for (TournamentMatch match : pending) {
-      section.add(buildRecordMatchRow(match));
+      section.add(buildRecordMatchRow(match, hostShowCombo));
     }
     return Optional.of(section);
   }
 
-  private HorizontalLayout buildRecordMatchRow(TournamentMatch match) {
+  /**
+   * The sticky host-show picker: prefilled with the first upcoming show, or null when none exist
+   * (null selection → the service auto-creates the "<tournament> Night" show).
+   */
+  private ComboBox<Show> buildHostShowCombo() {
+    List<Show> upcoming =
+        showRepository.findByShowDateGreaterThanEqualOrderByShowDate(
+            LocalDate.now(), PageRequest.of(0, 20));
+    if (upcoming.isEmpty()) {
+      return null;
+    }
+    ComboBox<Show> combo = new ComboBox<>("Host show");
+    combo.setId("host-show-combo");
+    combo.setItems(upcoming);
+    combo.setItemLabelGenerator(
+        s -> s.getName() + (s.getShowDate() != null ? " (" + s.getShowDate() + ")" : ""));
+    combo.setWidthFull();
+    combo.setValue(upcoming.get(0));
+    combo.setTooltipText(
+        "Matches book onto this show as real segments; leave empty to auto-create a '"
+            + hostShowName()
+            + "' show");
+    return combo;
+  }
+
+  private Long selectedShowId(ComboBox<Show> hostShowCombo) {
+    return hostShowCombo != null && hostShowCombo.getValue() != null
+        ? hostShowCombo.getValue().getId()
+        : null;
+  }
+
+  private HorizontalLayout buildRecordMatchRow(
+      TournamentMatch match, ComboBox<Show> hostShowCombo) {
     HorizontalLayout row = new HorizontalLayout();
     row.setAlignItems(Alignment.CENTER);
 
@@ -702,6 +736,7 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
     row.add(new Span(label));
 
     ComboBox<TournamentEntry> winnerPicker = new ComboBox<>("Pick winner");
+    winnerPicker.setId("winner-picker-" + match.getId());
     winnerPicker.setItems(entrants);
     winnerPicker.setItemLabelGenerator(TournamentEntry::entrantName);
 
@@ -714,19 +749,52 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
                 Notification.show("Select a winner first.", 2000, Notification.Position.MIDDLE);
                 return;
               }
+              Long showId = selectedShowId(hostShowCombo);
               try {
-                tournamentService.recordMatchResult(match, selected);
-                tournament =
-                    tournamentService.findByIdWithDetails(tournament.getId()).orElse(tournament);
-                buildContent();
+                TournamentRunnerService.ManualResultReport report =
+                    tournamentRunnerService.recordManualResult(
+                        tournament, match.getId(), selected.getId(), showId);
+                refreshAfterRun();
+                String message = "Winner recorded: " + report.winner().entrantName() + " advances.";
+                if (report.tournamentComplete()) {
+                  message += " " + completionMessage();
+                }
+                Notification.show(message, 4000, Notification.Position.BOTTOM_CENTER)
+                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
               } catch (Exception ex) {
                 log.error("Error recording match result", ex);
                 Notification.show("Error: " + ex.getMessage(), 4000, Notification.Position.MIDDLE)
                     .addThemeVariants(NotificationVariant.LUMO_ERROR);
               }
             });
+    recordBtn.setId("record-btn-" + match.getId());
 
-    row.add(winnerPicker, recordBtn);
+    Button engineBtn =
+        new Button(
+            "Decide by Engine",
+            e -> {
+              Long showId = selectedShowId(hostShowCombo);
+              try {
+                TournamentRunnerService.MatchRunReport report =
+                    tournamentRunnerService.runEngineMatch(tournament, match.getId(), showId);
+                refreshAfterRun();
+                String message = "Engine decided: " + report.winner().entrantName() + " advances.";
+                if (report.tournamentComplete()) {
+                  message += " " + completionMessage();
+                }
+                Notification.show(message, 4000, Notification.Position.BOTTOM_CENTER)
+                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+              } catch (Exception ex) {
+                log.error("Error deciding match by engine", ex);
+                Notification.show("Error: " + ex.getMessage(), 4000, Notification.Position.MIDDLE)
+                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
+              }
+            });
+    engineBtn.setId("engine-btn-" + match.getId());
+    engineBtn.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
+    engineBtn.setTooltipText("Let the RPG engine decide this match");
+
+    row.add(winnerPicker, recordBtn, engineBtn);
     return row;
   }
 
@@ -800,145 +868,6 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
               }
             });
     dialog.open();
-  }
-
-  private void advanceRound() {
-    try {
-      tournamentService.advanceToNextRound(tournament);
-      tournament = tournamentService.findByIdWithDetails(tournament.getId()).orElse(tournament);
-      buildContent();
-      Notification.show("Next round generated!", 3000, Notification.Position.BOTTOM_CENTER)
-          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-    } catch (Exception e) {
-      log.error("Error advancing round", e);
-      Notification.show("Error: " + e.getMessage(), 5000, Notification.Position.MIDDLE)
-          .addThemeVariants(NotificationVariant.LUMO_ERROR);
-    }
-  }
-
-  private Button buildRunTournamentButton() {
-    long remaining = tournamentRunnerService.remainingMatches(tournament);
-    Button runTournamentBtn = new Button("Run Tournament", e -> confirmRunTournament(remaining));
-    runTournamentBtn.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
-    runTournamentBtn.setTooltipText(
-        "Play out the entire remaining bracket now (~"
-            + remaining
-            + " matches) — full RPG consequences, no AI needed");
-    return runTournamentBtn;
-  }
-
-  /** Run Round click: pick a show when any exist, auto-create one when none do. */
-  private void runRoundClicked() {
-    List<Show> upcoming =
-        showRepository.findByShowDateGreaterThanEqualOrderByShowDate(
-            LocalDate.now(), PageRequest.of(0, 20));
-    if (upcoming.isEmpty()) {
-      doRunRound(null);
-      return;
-    }
-    openRunOnShowDialog(upcoming);
-  }
-
-  private void openRunOnShowDialog(List<Show> upcoming) {
-    Dialog dialog = new Dialog();
-    dialog.setHeaderTitle("Run Round on Show");
-
-    ComboBox<Show> showCombo = new ComboBox<>("Show");
-    showCombo.setItems(upcoming);
-    showCombo.setItemLabelGenerator(
-        s -> s.getName() + (s.getShowDate() != null ? " (" + s.getShowDate() + ")" : ""));
-    showCombo.setWidthFull();
-    showCombo.setValue(upcoming.get(0));
-
-    String autoName = hostShowName();
-    Button cancel = new Button("Cancel", e -> dialog.close());
-    Button runOnShow =
-        new Button(
-            "Run on Selected Show",
-            e -> {
-              Show selected = showCombo.getValue();
-              if (selected == null) {
-                Notification.show("Select a show.", 2000, Notification.Position.MIDDLE);
-                return;
-              }
-              dialog.close();
-              doRunRound(selected.getId());
-            });
-    runOnShow.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-    Button createNew =
-        new Button(
-            "Create '" + autoName + "' Show",
-            e -> {
-              dialog.close();
-              doRunRound(null);
-            });
-    createNew.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
-
-    dialog.add(new VerticalLayout(showCombo));
-    dialog.getFooter().add(cancel, createNew, runOnShow);
-    dialog.open();
-  }
-
-  private void doRunRound(Long showId) {
-    try {
-      TournamentRunnerService.RoundRunReport report =
-          tournamentRunnerService.runRound(tournament, showId);
-      refreshAfterRun();
-      String message =
-          "Played "
-              + report.matchesPlayed()
-              + (report.matchesPlayed() == 1 ? " match" : " matches")
-              + " on "
-              + report.hostShow().getName()
-              + ".";
-      if (report.tournamentComplete()) {
-        message += " " + completionMessage();
-      }
-      Notification.show(message, 4000, Notification.Position.BOTTOM_CENTER)
-          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-    } catch (Exception e) {
-      log.error("Error running round", e);
-      Notification.show("Error: " + e.getMessage(), 5000, Notification.Position.MIDDLE)
-          .addThemeVariants(NotificationVariant.LUMO_ERROR);
-    }
-  }
-
-  private void confirmRunTournament(long remaining) {
-    ConfirmDialog dialog = new ConfirmDialog();
-    dialog.setHeader("Run Tournament");
-    dialog.setText(
-        "This will play all remaining matches (~"
-            + remaining
-            + ") with full RPG consequences and cannot be undone. Continue?");
-    dialog.setConfirmText("Run Tournament");
-    dialog.setCancelText("Cancel");
-    dialog.setConfirmButtonTheme("primary");
-    dialog.addConfirmListener(e -> doRunTournament());
-    dialog.open();
-  }
-
-  private void doRunTournament() {
-    try {
-      TournamentRunnerService.TournamentRunReport report =
-          tournamentRunnerService.runTournament(tournament, null);
-      refreshAfterRun();
-      String message =
-          "Played "
-              + report.matchesPlayed()
-              + (report.matchesPlayed() == 1 ? " match" : " matches")
-              + " on "
-              + report.hostShow().getName()
-              + ".";
-      if (report.tournamentComplete()) {
-        message += " " + completionMessage();
-      }
-      Notification.show(message, 5000, Notification.Position.BOTTOM_CENTER)
-          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-    } catch (Exception e) {
-      log.error("Error running tournament", e);
-      Notification.show("Error: " + e.getMessage(), 5000, Notification.Position.MIDDLE)
-          .addThemeVariants(NotificationVariant.LUMO_ERROR);
-    }
   }
 
   private void refreshAfterRun() {
@@ -1024,17 +953,9 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
               }
             });
     createAndBook.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-    Button runInstead =
-        new Button(
-            "Run Round Instead",
-            e -> {
-              dialog.close();
-              doRunRound(null);
-            });
-    runInstead.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
 
     dialog.add(new VerticalLayout(text));
-    dialog.getFooter().add(cancel, runInstead, createAndBook);
+    dialog.getFooter().add(cancel, createAndBook);
     dialog.open();
   }
 

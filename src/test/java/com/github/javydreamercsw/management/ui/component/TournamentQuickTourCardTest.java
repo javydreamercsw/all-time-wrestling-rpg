@@ -38,8 +38,8 @@ class TournamentQuickTourCardTest extends AbstractViewTest {
   }
 
   @Test
-  @DisplayName("Card renders heading, intro, and four steps")
-  void rendersHeadingAndFourSteps() {
+  @DisplayName("Card renders heading, intro, and five steps")
+  void rendersHeadingAndFiveSteps() {
     TournamentQuickTourCard card = buildCard();
 
     H3 heading =
@@ -49,11 +49,11 @@ class TournamentQuickTourCardTest extends AbstractViewTest {
 
     List<Button> goButtons =
         _find(card, Button.class, spec -> spec.withPredicate(b -> "Go".equals(b.getText())));
-    assertThat(goButtons).hasSize(4);
+    assertThat(goButtons).hasSize(5);
   }
 
   @Test
-  @DisplayName("Step rows describe create, seed, run, and crown")
+  @DisplayName("Step rows describe create, players, seed, results, and crown")
   void stepRowsDescribeTheFlow() {
     TournamentQuickTourCard card = buildCard();
 
@@ -69,10 +69,11 @@ class TournamentQuickTourCardTest extends AbstractViewTest {
                 .reduce("", String::concat);
     assertThat(all)
         .contains("Create a Tournament")
+        .contains("Add Players")
         .contains("Seed and Start")
-        .contains("Run It")
+        .contains("Enter Results")
         .contains("Crown the Winner")
-        .contains("no shows, seasons, or AI configuration");
+        .contains("assign each player their wrestler");
   }
 
   @Test

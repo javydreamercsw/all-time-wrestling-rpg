@@ -298,6 +298,152 @@ class TournamentRunnerServiceIT extends ManagementIntegrationTest {
     assertThat(briefcase.get().getEarnedFromTournament().getId()).isEqualTo(tournament.getId());
   }
 
+  @Test
+  @DisplayName("Mixed manual + engine per-match playthrough persists segments and completes")
+  void mixedManualAndEngine_perMatchPlaythrough_persistsSegmentsAndCompletes() {
+    String unique = String.valueOf(System.nanoTime());
+    List<Wrestler> roster = seedRoster(unique, 4);
+    Show picked =
+        showService.createShow(
+            "IT Mixed Show " + unique,
+            "IT fixture",
+            showTypeRepository.findAll().getFirst().getId(),
+            LocalDate.now(),
+            null,
+            null,
+            universe.getId(),
+            null,
+            null,
+            null);
+
+    Tournament tournament =
+        tournamentService.createTournament(
+            "IT Mixed Cup " + unique,
+            "SINGLE_ELIMINATION",
+            universe,
+            null,
+            LocalDate.now(),
+            List.of());
+    for (int i = 0; i < roster.size(); i++) {
+      tournamentService.addEntry(tournament, roster.get(i), i + 1);
+    }
+    tournamentService.startTournament(
+        tournamentService.findByIdWithDetails(tournament.getId()).orElseThrow());
+
+    long showCountAfterCreate = showRepository.count();
+    // Round 1, match 1: manual winner = seed 1's wrestler.
+    final Tournament round1 =
+        tournamentService.findByIdWithDetails(tournament.getId()).orElseThrow();
+    TournamentMatch r1m1 = openMatchOf(round1, 1);
+    TournamentEntry manualWinner = r1m1.getEntrant1();
+    transactionTemplate.execute(
+        status ->
+            runnerService.recordManualResult(
+                round1, r1m1.getId(), manualWinner.getId(), picked.getId()));
+    // Round 1, match 2: engine decides.
+    final Tournament round1b =
+        tournamentService.findByIdWithDetails(tournament.getId()).orElseThrow();
+    TournamentMatch r1m2 = openMatchOf(round1b, 1);
+    transactionTemplate.execute(
+        status -> runnerService.runEngineMatch(round1b, r1m2.getId(), picked.getId()));
+    // Final: manual winner.
+    final Tournament round2 =
+        tournamentService.findByIdWithDetails(tournament.getId()).orElseThrow();
+    TournamentMatch finalMatch = openMatchOf(round2, 2);
+    TournamentEntry finalWinner = finalMatch.getEntrant1();
+    TournamentRunnerService.ManualResultReport last =
+        transactionTemplate.execute(
+            status ->
+                runnerService.recordManualResult(
+                    round2, finalMatch.getId(), finalWinner.getId(), picked.getId()));
+
+    assertThat(last).isNotNull();
+    assertThat(last.tournamentComplete()).isTrue();
+    // No extra shows were created — everything landed on the picked show.
+    assertThat(showRepository.count()).isEqualTo(showCountAfterCreate);
+
+    Tournament completed = tournamentService.findByIdWithDetails(tournament.getId()).orElseThrow();
+    assertThat(completed.getStatus())
+        .isEqualTo(
+            com.github.javydreamercsw.management.domain.tournament.TournamentStatus.COMPLETE);
+    // Every match has a persisted segment on the picked show, and the manual winners match
+    // the booker's pick (segment winners = the winning entry's wrestlers).
+    List<Segment> segments =
+        completed.getRounds().stream()
+            .flatMap(r -> r.getMatches().stream())
+            .map(TournamentMatch::getSegment)
+            .toList();
+    // Show is a lazy proxy on a detached segment — compare ids, not instances.
+    assertThat(segments)
+        .hasSize(3)
+        .allMatch(
+            s -> s != null && s.getShow() != null && picked.getId().equals(s.getShow().getId()));
+    assertThat(
+            completed.getEntries().stream()
+                .filter(e -> e.getStatus() == TournamentEntryStatus.WINNER)
+                .findFirst()
+                .orElseThrow()
+                .getId())
+        .isEqualTo(finalWinner.getId());
+  }
+
+  @Test
+  @DisplayName("First manual result on a PENDING round 1 activates it and persists a segment")
+  void recordManualResult_pendingRound1_activatesRoundAndPersistsSegment() {
+    String unique = String.valueOf(System.nanoTime());
+    List<Wrestler> roster = seedRoster(unique, 4);
+
+    Tournament tournament =
+        tournamentService.createTournament(
+            "IT Pending Cup " + unique,
+            "SINGLE_ELIMINATION",
+            universe,
+            null,
+            LocalDate.now(),
+            List.of());
+    for (int i = 0; i < roster.size(); i++) {
+      tournamentService.addEntry(tournament, roster.get(i), i + 1);
+    }
+    tournamentService.startTournament(
+        tournamentService.findByIdWithDetails(tournament.getId()).orElseThrow());
+
+    // The v1 gap: a fresh bracket's round 1 is PENDING and the record section never showed.
+    Tournament started = tournamentService.findByIdWithDetails(tournament.getId()).orElseThrow();
+    assertThat(started.getRounds().getFirst().getStatus())
+        .isEqualTo(
+            com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus.PENDING);
+
+    TournamentMatch firstMatch = openMatchOf(started, 1);
+    TournamentRunnerService.ManualResultReport report =
+        transactionTemplate.execute(
+            status ->
+                runnerService.recordManualResult(
+                    started, firstMatch.getId(), firstMatch.getEntrant1().getId(), null));
+
+    assertThat(report).isNotNull();
+    // The round was activated by the first record and the match's segment persisted on the
+    // auto-created host show with the booker's winner.
+    assertThat(report.hostShow().getName()).isEqualTo("IT Pending Cup " + unique + " Night");
+    Tournament after = tournamentService.findByIdWithDetails(tournament.getId()).orElseThrow();
+    TournamentMatch recorded =
+        after.getRounds().getFirst().getMatches().stream()
+            .filter(m -> m.getId().equals(firstMatch.getId()))
+            .findFirst()
+            .orElseThrow();
+    assertThat(recorded.getSegment()).isNotNull();
+    assertThat(recorded.getWinner().getId()).isEqualTo(firstMatch.getEntrant1().getId());
+  }
+
+  /** The single open (winnerless) match of the given round number on a freshly-fetched graph. */
+  private TournamentMatch openMatchOf(Tournament tournament, int roundNumber) {
+    return tournament.getRounds().stream()
+        .filter(r -> r.getRoundNumber() == roundNumber)
+        .flatMap(r -> r.getMatches().stream())
+        .filter(m -> m.getWinner() == null)
+        .findFirst()
+        .orElseThrow();
+  }
+
   private List<Wrestler> seedRoster(String unique, int count) {
     return java.util.stream.IntStream.rangeClosed(1, count)
         .mapToObj(

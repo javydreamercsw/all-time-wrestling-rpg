@@ -27,8 +27,7 @@ import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.theme.lumo.LumoUtility;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.List;
 
 /**
  * The tutorial page's "Quick Tour: Run Your First Tournament" card — a stateless booker
@@ -87,36 +86,48 @@ public class TournamentQuickTourCard extends Div {
   }
 
   private VerticalLayout buildSteps() {
-    Map<String, String> steps = new LinkedHashMap<>();
-    steps.put(
-        "1. Create a Tournament",
-        "Open Tournaments and use New Tournament. Pick a format and a few entrants — your"
-            + " roster is ready.");
-    steps.put(
-        "2. Seed and Start",
-        "Randomize the seeds if you like, then click Start Tournament to generate the bracket.");
-    steps.put(
-        "3. Run It",
-        "On the tournament page, Run Round or Run Tournament. No shows? A '<tournament>"
-            + " Night' show is created for you automatically.");
-    steps.put(
-        "4. Crown the Winner",
-        "Trophies, briefcases and title opportunities are granted automatically when the"
-            + " bracket completes.");
+    List<Step> steps =
+        List.of(
+            new Step(
+                "1. Create a Tournament",
+                "Open Tournaments and use New Tournament. Pick a format and a few entrants —"
+                    + " your roster is ready.",
+                TOURNAMENT_LIST_ROUTE),
+            new Step(
+                "2. Add Players",
+                "Create player accounts under Accounts and assign each player their wrestler —"
+                    + " their wrestler's results then count for their account.",
+                "account-list"),
+            new Step(
+                "3. Seed and Start",
+                "Randomize the seeds if you like, then click Start Tournament to generate the"
+                    + " bracket.",
+                TOURNAMENT_LIST_ROUTE),
+            new Step(
+                "4. Enter Results",
+                "On the tournament page, pick the winner of each match yourself — or let the"
+                    + " engine decide a single match. No shows? A '<tournament> Night' show is"
+                    + " created for you automatically.",
+                TOURNAMENT_LIST_ROUTE),
+            new Step(
+                "5. Crown the Winner",
+                "Trophies, briefcases and title opportunities are granted automatically when"
+                    + " the bracket completes.",
+                TOURNAMENT_LIST_ROUTE));
 
     VerticalLayout stepsLayout = new VerticalLayout();
     stepsLayout.setPadding(false);
     stepsLayout.setSpacing(false);
 
     steps.forEach(
-        (title, description) -> {
-          Span stepTitle = new Span(title);
+        step -> {
+          Span stepTitle = new Span(step.title());
           stepTitle.addClassNames(LumoUtility.FontWeight.BOLD, LumoUtility.FontSize.SMALL);
-          Paragraph stepDesc = new Paragraph(description);
+          Paragraph stepDesc = new Paragraph(step.description());
           stepDesc.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.SMALL);
           stepDesc.getStyle().set("margin", "0 0 0.25rem 0");
 
-          Button go = new Button("Go", e -> navigateToTournaments());
+          Button go = new Button("Go", e -> navigateTo(step.route()));
           go.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
 
           HorizontalLayout row = new HorizontalLayout(stepTitle, go);
@@ -129,7 +140,10 @@ public class TournamentQuickTourCard extends Div {
     return stepsLayout;
   }
 
-  private void navigateToTournaments() {
-    getUI().ifPresent(ui -> ui.navigate(TOURNAMENT_LIST_ROUTE));
+  private void navigateTo(String route) {
+    getUI().ifPresent(ui -> ui.navigate(route));
   }
+
+  /** One Quick Tour step: what to do, how, and where the Go button lands. */
+  private record Step(String title, String description, String route) {}
 }

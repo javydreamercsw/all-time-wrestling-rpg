@@ -19,7 +19,9 @@ package com.github.javydreamercsw.management.ui.view.account;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.AccountService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -46,6 +48,7 @@ public class AccountFormView extends Main implements HasUrlParameter<Long> {
 
   private final AccountService accountService;
   private final RoleRepository roleRepository;
+  private final WrestlerService wrestlerService;
   private final Binder<Account> binder = new Binder<>(Account.class);
   private Account account;
 
@@ -53,12 +56,15 @@ public class AccountFormView extends Main implements HasUrlParameter<Long> {
   private final EmailField email = new EmailField("Email");
   private final PasswordField password = new PasswordField("Password");
   private final ComboBox<Role> role = new ComboBox<>("Role");
+  private final ComboBox<Wrestler> wrestler = new ComboBox<>("Assigned wrestler");
 
   public AccountFormView(
       @NonNull @Qualifier("managementAccountService") final AccountService accountService,
-      @NonNull final RoleRepository roleRepository) {
+      @NonNull final RoleRepository roleRepository,
+      @NonNull final WrestlerService wrestlerService) {
     this.accountService = accountService;
     this.roleRepository = roleRepository;
+    this.wrestlerService = wrestlerService;
     setupForm();
     setupBinder();
   }
@@ -76,6 +82,11 @@ public class AccountFormView extends Main implements HasUrlParameter<Long> {
     binder.readBean(account);
     // Don't show existing password
     password.clear();
+    // Preload the wrestler assignment (a soft pointer on the account, not a binder field).
+    wrestler.clear();
+    if (account.getActiveWrestlerId() != null) {
+      wrestlerService.findById(account.getActiveWrestlerId()).ifPresent(wrestler::setValue);
+    }
   }
 
   private void setupBinder() {
@@ -137,11 +148,16 @@ public class AccountFormView extends Main implements HasUrlParameter<Long> {
     FormLayout formLayout = new FormLayout();
     role.setItems(roleRepository.findAll());
     role.setItemLabelGenerator(r -> r.getName().name());
-    formLayout.add(username, email, password, role);
+    wrestler.setItems(wrestlerService.findAllActiveWrestlers());
+    wrestler.setItemLabelGenerator(Wrestler::getName);
+    wrestler.setClearButtonVisible(true);
+    wrestler.setHelperText("The wrestler this account plays. Clear to unassign.");
+    formLayout.add(username, email, password, role, wrestler);
     username.setId("username-field");
     email.setId("email-field");
     password.setId("password-field");
     role.setId("role-field");
+    wrestler.setId("wrestler-field");
     formLayout.setId("form-layout");
 
     Button saveButton =
@@ -150,6 +166,12 @@ public class AccountFormView extends Main implements HasUrlParameter<Long> {
             event -> {
               if (binder.writeBeanIfValid(account)) {
                 accountService.update(account);
+                // One call sets the account's active-wrestler pointer, back-links
+                // wrestler.account, and refreshes the security context. Null clears the
+                // assignment.
+                accountService.setActiveWrestlerId(
+                    account.getId(),
+                    wrestler.getValue() != null ? wrestler.getValue().getId() : null);
                 Notification.show("Account saved successfully.");
                 UI.getCurrent().navigate(AccountListView.class);
               }

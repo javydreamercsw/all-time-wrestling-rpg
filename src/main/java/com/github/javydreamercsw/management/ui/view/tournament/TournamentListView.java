@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.team.TeamSize;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRecurrence;
+import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
@@ -129,7 +130,7 @@ public class TournamentListView extends VerticalLayout {
     gridWrapper.addClassName("grid-scroll-container");
     add(buildToolbar(), gridWrapper);
     refresh();
-    if (tournamentService.findAll().isEmpty()) {
+    if (visibleTournaments().isEmpty()) {
       add(buildFirstTimeBanner());
     }
   }
@@ -471,15 +472,34 @@ public class TournamentListView extends VerticalLayout {
   }
 
   private void refresh() {
+    grid.setItems(visibleTournaments());
+  }
+
+  /**
+   * The listing the booker sees: the universe's tournaments (or all of them without a universe
+   * context), latest editions only by default, with pristine catalog rows filtered out — the seeded
+   * templates ("Deadly Combat" et al.) exist to be paired with show templates, and on a fresh
+   * install they read as an empty duplicate tournament. A catalog row that has been seeded
+   * (entries) or started leaves the pristine state and lists normally.
+   */
+  private List<Tournament> visibleTournaments() {
     Optional<Universe> universe = universeContextService.getCurrentUniverse();
     List<Tournament> items =
         universe.map(tournamentService::findByUniverse).orElseGet(tournamentService::findAll);
+    items =
+        items.stream()
+            .filter(
+                t ->
+                    !(t.getCode() != null
+                        && t.getStatus() == TournamentStatus.SCHEDULED
+                        && tournamentService.countEntries(t) == 0))
+            .toList();
     if (!showPastEditionsCheckbox.getValue()) {
       // Recurring chains show the latest edition only (ATW-o4ad) — past editions surface via
       // the toggle, and one-shot tournaments (no ordinal) always list.
       items = latestEditionPerChain(items);
     }
-    grid.setItems(items);
+    return items;
   }
 
   /**

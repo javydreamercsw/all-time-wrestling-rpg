@@ -143,7 +143,7 @@ class TutorialViewTest extends AbstractViewTest {
     assertThat(quickTourHeading).isNotNull();
     List<Button> goButtons =
         _find(view, Button.class, spec -> spec.withPredicate(b -> "Go".equals(b.getText())));
-    assertThat(goButtons).hasSize(4);
+    assertThat(goButtons).hasSize(5);
   }
 
   @Test

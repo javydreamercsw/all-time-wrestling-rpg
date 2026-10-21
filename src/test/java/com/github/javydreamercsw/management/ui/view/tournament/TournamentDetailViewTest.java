@@ -25,11 +25,14 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.title.TitleOpportunity;
@@ -91,6 +94,7 @@ class TournamentDetailViewTest extends AbstractViewTest {
   @Mock private ShowFacade showFacade;
   @Mock private WrestlerFacade wrestlerFacade;
   @Mock private ViewContext viewContext;
+  @Mock private SecurityUtils securityUtils;
   @Mock private SegmentRuleService segmentRuleService;
   @Mock private UniverseContextService universeContextService;
   @Mock private TournamentFormat format;
@@ -110,6 +114,8 @@ class TournamentDetailViewTest extends AbstractViewTest {
     lenient().when(segmentRuleService.findAll()).thenReturn(List.of());
     lenient().when(showFacade.getSegmentRuleService()).thenReturn(segmentRuleService);
     lenient().when(viewContext.getUniverseContextService()).thenReturn(universeContextService);
+    lenient().when(viewContext.getSecurityUtils()).thenReturn(securityUtils);
+    lenient().when(securityUtils.isAdmin()).thenReturn(true);
     lenient().when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
     lenient()
         .when(showRepository.findByShowDateGreaterThanEqualOrderByShowDate(any(), any()))
@@ -739,60 +745,41 @@ class TournamentDetailViewTest extends AbstractViewTest {
     assertEquals(2, picker.getListDataView().getItemCount());
   }
 
-  // ── Standalone runner (ATW-p0sz) ────────────────────────────────────────────
+  // ── Interactive run section (ATW-p0sz.1) ────────────────────────────────────
 
   @Test
-  @DisplayName("IN_PROGRESS with an open match shows Run Round and Run Tournament")
-  void inProgressWithOpenMatch_showsRunButtons() {
-    stubInProgressWithOpenMatch();
-    lenient().when(tournamentRunnerService.hasRunnableWork(tournament)).thenReturn(true);
-    lenient().when(tournamentRunnerService.remainingMatches(tournament)).thenReturn(1L);
-
+  @DisplayName("PENDING round 1 renders the record section right after Start")
+  void pendingRound1_showsRecordSection() {
+    stubInProgressWithPendingRound();
     buildView();
 
-    Button runRound = findButtonByPrefix("Run Round");
-    assertNotNull(runRound, "Run Round button should render when runnable work exists");
-    Button runTournament = findButtonByPrefix("Run Tournament");
-    assertNotNull(runTournament, "Run Tournament button should render when runnable work exists");
+    List<com.vaadin.flow.component.html.H4> headings =
+        _find(
+            view,
+            com.vaadin.flow.component.html.H4.class,
+            spec ->
+                spec.withPredicate(
+                    h -> h.getText() != null && h.getText().contains("Record Results")));
+    assertFalse(
+        headings.isEmpty(),
+        "The record section must render for a PENDING round 1 — the v1 IN_PROGRESS-only gate "
+            + "hid it until the round was booked");
+    assertNotNull(findButtonByPrefix("Record"));
   }
 
   @Test
-  @DisplayName("IN_PROGRESS with no open match hides the Run buttons")
-  void inProgressWithoutOpenMatch_hidesRunButtons() {
-    stubInProgressWithOpenMatch();
-    lenient().when(tournamentRunnerService.hasRunnableWork(tournament)).thenReturn(false);
-
+  @DisplayName("Record row has a Decide by Engine secondary option")
+  void recordRow_hasDecideByEngineButton() {
+    stubInProgressWithPendingRound();
     buildView();
 
-    assertNullButton("Run Round");
-    assertNullButton("Run Tournament");
+    assertNotNull(findButtonByPrefix("Decide by Engine"));
   }
 
   @Test
-  @DisplayName("Run Round with no shows auto-creates the host show (null show id)")
-  void runRound_noShows_passesNullShowId() {
-    stubInProgressWithOpenMatch();
-    lenient().when(tournamentRunnerService.hasRunnableWork(tournament)).thenReturn(true);
-    lenient().when(tournamentRunnerService.remainingMatches(tournament)).thenReturn(1L);
-    // No upcoming shows (default setUp stub returns an empty list).
-    lenient()
-        .when(tournamentRunnerService.runRound(any(), any()))
-        .thenReturn(
-            new TournamentRunnerService.RoundRunReport(
-                new Show(), tournament.getRounds().getFirst(), 1, false));
-
-    buildView();
-
-    findButtonByPrefix("Run Round").click();
-    verify(tournamentRunnerService).runRound(tournament, null);
-  }
-
-  @Test
-  @DisplayName("Run Round with upcoming shows opens the picker and passes the selected id")
-  void runRound_withUpcomingShows_passesSelectedShowId() {
-    stubInProgressWithOpenMatch();
-    lenient().when(tournamentRunnerService.hasRunnableWork(tournament)).thenReturn(true);
-    lenient().when(tournamentRunnerService.remainingMatches(tournament)).thenReturn(1L);
+  @DisplayName("Record click passes match id, winner entry id, and the selected show id")
+  void recordClick_passesMatchIdWinnerIdAndShowId() {
+    stubInProgressWithPendingRound();
     Show upcoming = new Show();
     upcoming.setId(7L);
     upcoming.setName("Friday Night");
@@ -800,93 +787,98 @@ class TournamentDetailViewTest extends AbstractViewTest {
     lenient()
         .when(showRepository.findByShowDateGreaterThanEqualOrderByShowDate(any(), any()))
         .thenReturn(List.of(upcoming));
+    TournamentMatch open = tournament.getRounds().getFirst().getMatches().getFirst();
     lenient()
-        .when(tournamentRunnerService.runRound(any(), any()))
+        .when(tournamentRunnerService.recordManualResult(any(), eq(open.getId()), any(), eq(7L)))
         .thenReturn(
-            new TournamentRunnerService.RoundRunReport(
-                upcoming, tournament.getRounds().getFirst(), 1, false));
+            new TournamentRunnerService.ManualResultReport(
+                upcoming, tournament.getRounds().getFirst(), entries.getFirst(), true, false));
 
     buildView();
 
-    findButtonByPrefix("Run Round").click();
-    Dialog dialog = _get(Dialog.class);
-    ComboBox<Show> combo = _get(dialog, ComboBox.class);
-    assertEquals(1, combo.getListDataView().getItemCount());
-    // "Create '...' Show" is the first footer button — simulate the picker path instead:
-    combo.setValue(upcoming);
-    Button runOnShow = findButtonInDialog(dialog, "Run on Selected Show");
-    assertNotNull(runOnShow);
-    runOnShow.click();
-    verify(tournamentRunnerService).runRound(tournament, 7L);
+    @SuppressWarnings("unchecked")
+    ComboBox<TournamentEntry> winnerPicker =
+        (ComboBox<TournamentEntry>)
+            _get(view, ComboBox.class, spec -> spec.withId("winner-picker-" + open.getId()));
+    winnerPicker.setValue(entries.getFirst());
+    findButtonByPrefix("Record").click();
+    verify(tournamentRunnerService).recordManualResult(any(), eq(open.getId()), any(), eq(7L));
   }
 
   @Test
-  @DisplayName("Run Tournament opens a confirm dialog before running")
-  void runTournament_confirmDialog() {
-    stubInProgressWithOpenMatch();
-    lenient().when(tournamentRunnerService.hasRunnableWork(tournament)).thenReturn(true);
-    lenient().when(tournamentRunnerService.remainingMatches(tournament)).thenReturn(3L);
+  @DisplayName("Record with no upcoming shows passes null (auto-create the host show)")
+  void recordClick_noUpcomingShows_passesNullShowId() {
+    stubInProgressWithPendingRound();
+    TournamentMatch open = tournament.getRounds().getFirst().getMatches().getFirst();
     lenient()
-        .when(tournamentRunnerService.runTournament(any(), any()))
+        .when(tournamentRunnerService.recordManualResult(any(), eq(open.getId()), any(), isNull()))
         .thenReturn(
-            new TournamentRunnerService.TournamentRunReport(
-                new Show(), 3, true, entries.getFirst()));
+            new TournamentRunnerService.ManualResultReport(
+                new Show(), tournament.getRounds().getFirst(), entries.getFirst(), true, false));
 
     buildView();
 
-    Button runTournament = findButtonByPrefix("Run Tournament");
-    assertNotNull(runTournament);
-    runTournament.click();
-    // Confirm before the runner fires.
-    verify(tournamentRunnerService, never()).runTournament(any(), any());
-    com.vaadin.flow.component.confirmdialog.ConfirmDialog confirm =
-        _get(com.vaadin.flow.component.confirmdialog.ConfirmDialog.class);
-    fireConfirm(confirm);
-    verify(tournamentRunnerService).runTournament(tournament, null);
-  }
-
-  /** Fires the confirm event on a ConfirmDialog (the click path is client-side only). */
-  private void fireConfirm(final com.vaadin.flow.component.confirmdialog.ConfirmDialog dialog) {
-    try {
-      Class<?> eventClass =
-          Class.forName(
-              com.vaadin.flow.component.confirmdialog.ConfirmDialog.class.getName()
-                  + "$ConfirmEvent");
-      var ctor =
-          eventClass.getDeclaredConstructor(
-              com.vaadin.flow.component.confirmdialog.ConfirmDialog.class, boolean.class);
-      ctor.setAccessible(true);
-      var event = ctor.newInstance(dialog, true);
-      var method =
-          com.vaadin.flow.component.Component.class.getDeclaredMethod(
-              "fireEvent", new Class<?>[] {com.vaadin.flow.component.ComponentEvent.class});
-      method.setAccessible(true);
-      method.invoke(dialog, event);
-    } catch (ReflectiveOperationException e) {
-      throw new IllegalStateException("Failed to fire confirm event", e);
-    }
+    @SuppressWarnings("unchecked")
+    ComboBox<TournamentEntry> winnerPicker =
+        (ComboBox<TournamentEntry>)
+            _get(view, ComboBox.class, spec -> spec.withId("winner-picker-" + open.getId()));
+    winnerPicker.setValue(entries.getFirst());
+    findButtonByPrefix("Record").click();
+    verify(tournamentRunnerService).recordManualResult(any(), eq(open.getId()), any(), isNull());
   }
 
   @Test
-  @DisplayName("Book Round with no shows offers create-show and run-instead escape hatches")
+  @DisplayName("Decide by Engine click calls runEngineMatch for the match")
+  void engineClick_callsRunEngineMatch() {
+    stubInProgressWithPendingRound();
+    TournamentMatch open = tournament.getRounds().getFirst().getMatches().getFirst();
+    lenient()
+        .when(tournamentRunnerService.runEngineMatch(any(), eq(open.getId()), any()))
+        .thenReturn(
+            new TournamentRunnerService.MatchRunReport(
+                new Show(),
+                tournament.getRounds().getFirst(),
+                null,
+                entries.getFirst(),
+                true,
+                false));
+
+    buildView();
+
+    findButtonByPrefix("Decide by Engine").click();
+    verify(tournamentRunnerService).runEngineMatch(any(), eq(open.getId()), any());
+  }
+
+  @Test
+  @DisplayName("Host show combo defaults to the first upcoming show")
+  void hostShowCombo_defaultsToFirstUpcomingShow() {
+    stubInProgressWithPendingRound();
+    Show first = new Show();
+    first.setId(7L);
+    first.setName("Friday Night");
+    first.setShowDate(LocalDate.now());
+    Show second = new Show();
+    second.setId(8L);
+    second.setName("Saturday Main");
+    second.setShowDate(LocalDate.now().plusDays(1));
+    lenient()
+        .when(showRepository.findByShowDateGreaterThanEqualOrderByShowDate(any(), any()))
+        .thenReturn(List.of(first, second));
+
+    buildView();
+
+    @SuppressWarnings("unchecked")
+    ComboBox<Show> combo =
+        (ComboBox<Show>) _get(view, ComboBox.class, spec -> spec.withId("host-show-combo"));
+    assertEquals(first, combo.getValue());
+    assertEquals(2, combo.getListDataView().getItemCount());
+  }
+
+  @Test
+  @DisplayName("Book Round with no shows offers the create-show escape hatch")
   void bookRound_noShows_degradesGracefully() {
-    stubInProgressWithOpenMatch();
-    TournamentRound pendingRound =
-        TournamentRound.builder()
-            .roundNumber(1)
-            .roundName("Round 1")
-            .status(TournamentRoundStatus.PENDING)
-            .matches(
-                new ArrayList<>(
-                    List.of(
-                        TournamentMatch.builder()
-                            .entrant1(entries.get(0))
-                            .entrant2(entries.get(1))
-                            .build())))
-            .build();
-    tournament.setRounds(new ArrayList<>(List.of(pendingRound)));
-    lenient().when(tournamentRunnerService.hasRunnableWork(tournament)).thenReturn(true);
-    lenient().when(tournamentRunnerService.remainingMatches(tournament)).thenReturn(1L);
+    stubInProgressWithPendingRound();
+    TournamentRound pendingRound = tournament.getRounds().getFirst();
     Show host = new Show();
     host.setId(9L);
     host.setName("Crown Cup Night");
@@ -898,7 +890,7 @@ class TournamentDetailViewTest extends AbstractViewTest {
     assertNotNull(bookBtn);
     bookBtn.click();
     Dialog dialog = _get(Dialog.class);
-    // The degraded dialog explains the situation and offers both escape hatches.
+    // The degraded dialog explains the situation and offers the create-show hatch.
     Button createAndBook = findButtonInDialog(dialog, "Show & Book");
     assertNotNull(createAndBook, "Degraded dialog should offer Create '<t> Night' Show & Book");
     createAndBook.click();
@@ -906,19 +898,29 @@ class TournamentDetailViewTest extends AbstractViewTest {
     verify(tournamentService).bookRoundOnShow(tournament, pendingRound, host);
   }
 
-  private void stubInProgressWithOpenMatch() {
+  /** IN_PROGRESS tournament with a PENDING round 1 holding one open match (fresh-start shape). */
+  private void stubInProgressWithPendingRound() {
     TournamentMatch open =
-        TournamentMatch.builder().entrant1(entries.get(0)).entrant2(entries.get(1)).build();
+        TournamentMatch.builder().id(21L).entrant1(entries.get(0)).entrant2(entries.get(1)).build();
     TournamentRound round =
         TournamentRound.builder()
             .roundNumber(1)
             .roundName("Round 1")
-            .status(TournamentRoundStatus.IN_PROGRESS)
+            .status(TournamentRoundStatus.PENDING)
             .matches(new ArrayList<>(List.of(open)))
             .build();
     open.setRound(round);
     tournament.setRounds(new ArrayList<>(List.of(round)));
     tournament.setStatus(TournamentStatus.IN_PROGRESS);
+  }
+
+  private Span findSpanContaining(String text) {
+    List<Span> found =
+        _find(
+            view,
+            Span.class,
+            spec -> spec.withPredicate(s -> s.getText() != null && s.getText().contains(text)));
+    return found.isEmpty() ? null : found.getFirst();
   }
 
   private Button findButtonByPrefix(String text) {
@@ -927,15 +929,6 @@ class TournamentDetailViewTest extends AbstractViewTest {
             Button.class,
             spec -> spec.withPredicate(b -> b.getText() != null && b.getText().startsWith(text)))
         .getFirst();
-  }
-
-  private void assertNullButton(String text) {
-    List<Button> found =
-        _find(
-            view,
-            Button.class,
-            spec -> spec.withPredicate(b -> b.getText() != null && b.getText().contains(text)));
-    assertTrue(found.isEmpty(), text + " should not render");
   }
 
   private Button findButtonInDialog(Dialog dialog, String text) {
