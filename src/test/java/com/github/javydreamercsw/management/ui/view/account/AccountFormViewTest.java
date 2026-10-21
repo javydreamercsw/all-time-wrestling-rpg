@@ -28,6 +28,7 @@ import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.AccountService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
@@ -45,6 +46,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.util.ReflectionTestUtils;
 
 class AccountFormViewTest extends AbstractViewTest {
 
@@ -137,8 +139,7 @@ class AccountFormViewTest extends AbstractViewTest {
     Account account = account(1L, "player");
     account.setActiveWrestlerId(42L);
     when(accountService.get(1L)).thenReturn(Optional.of(account));
-    com.github.javydreamercsw.management.domain.wrestler.Wrestler assigned =
-        new com.github.javydreamercsw.management.domain.wrestler.Wrestler();
+    Wrestler assigned = new Wrestler();
     assigned.setId(42L);
     assigned.setName("Assigned Star");
     when(wrestlerService.findById(42L)).thenReturn(Optional.of(assigned));
@@ -149,9 +150,8 @@ class AccountFormViewTest extends AbstractViewTest {
     view.setParameter(null, 1L);
 
     @SuppressWarnings("unchecked")
-    ComboBox<com.github.javydreamercsw.management.domain.wrestler.Wrestler> wrestlerCombo =
-        (ComboBox<com.github.javydreamercsw.management.domain.wrestler.Wrestler>)
-            _get(view, ComboBox.class, spec -> spec.withId("wrestler-field"));
+    ComboBox<Wrestler> wrestlerCombo =
+        (ComboBox<Wrestler>) _get(view, ComboBox.class, spec -> spec.withId("wrestler-field"));
     assertEquals(assigned, wrestlerCombo.getValue());
   }
 
@@ -176,7 +176,7 @@ class AccountFormViewTest extends AbstractViewTest {
 
   private Account account(Long id, String username) {
     Account a = new Account(username, "Password1!", username + "@test.com");
-    org.springframework.test.util.ReflectionTestUtils.setField(a, "id", id);
+    ReflectionTestUtils.setField(a, "id", id);
     Role adminRole = new Role();
     adminRole.setName(RoleName.ADMIN);
     a.setRoles(new HashSet<>(List.of(adminRole)));

@@ -35,7 +35,6 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentRoundSta
 import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.segment.NPCSegmentResolutionService;
-import com.github.javydreamercsw.management.service.segment.SegmentTeam;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import jakarta.annotation.Nullable;
@@ -1466,15 +1465,6 @@ public class TournamentTemplateBookingService {
   }
 
   /**
-   * The segment team for a bracket entry: the entry's team members in slot order for a team entry,
-   * the solo wrestler for a singles entry. Team names label the side for resolution logging and
-   * narration.
-   */
-  private SegmentTeam segmentTeamOf(TournamentEntry entry) {
-    return resolver.segmentTeamOf(entry);
-  }
-
-  /**
    * Resolve a team tournament's match segment type from the declared team size (ATW-01g2) — the
    * single place the teamSize → segment-type mapping lives. {@code DUO} books as the tag-team type
    * and {@code TRIO} as the trios type, both resolved against the seeded catalog through {@link
@@ -1490,12 +1480,6 @@ public class TournamentTemplateBookingService {
    */
   @Nullable private SegmentType teamSegmentTypeOf(Tournament tournament) {
     return resolver.teamSegmentTypeOf(tournament);
-  }
-
-  /** Booking narration describing the tournament stakes for AI narration. */
-  private String tournamentNotesOf(
-      final Tournament tournament, final TournamentMatch match, final boolean titleOnTheLine) {
-    return resolver.tournamentNotesOf(tournament, match, titleOnTheLine);
   }
 
   /**

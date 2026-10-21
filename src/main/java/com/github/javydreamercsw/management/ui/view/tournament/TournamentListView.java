@@ -490,9 +490,9 @@ public class TournamentListView extends VerticalLayout {
         items.stream()
             .filter(
                 t ->
-                    !(t.getCode() != null
-                        && t.getStatus() == TournamentStatus.SCHEDULED
-                        && tournamentService.countEntries(t) == 0))
+                    !(t.getCode() != null)
+                        || !(t.getStatus() == TournamentStatus.SCHEDULED)
+                        || !(tournamentService.countEntries(t) == 0))
             .toList();
     if (!showPastEditionsCheckbox.getValue()) {
       // Recurring chains show the latest edition only (ATW-o4ad) — past editions surface via

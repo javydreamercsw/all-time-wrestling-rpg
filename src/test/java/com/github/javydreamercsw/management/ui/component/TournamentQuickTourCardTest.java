@@ -24,6 +24,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Paragraph;
+import com.vaadin.flow.component.html.Span;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -58,8 +59,7 @@ class TournamentQuickTourCardTest extends AbstractViewTest {
     TournamentQuickTourCard card = buildCard();
 
     List<Paragraph> paragraphs = _find(card, Paragraph.class);
-    List<com.vaadin.flow.component.html.Span> spans =
-        _find(card, com.vaadin.flow.component.html.Span.class);
+    List<Span> spans = _find(card, Span.class);
     String all =
         paragraphs.stream()
                 .map(p -> p.getText() == null ? "" : p.getText())

@@ -25,12 +25,10 @@ import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
-import com.github.javydreamercsw.management.domain.tournament.Tournament;
-import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
-import com.github.javydreamercsw.management.domain.tournament.TournamentEntryStatus;
-import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
-import com.github.javydreamercsw.management.domain.tournament.TournamentRepository;
-import com.github.javydreamercsw.management.domain.tournament.TrophyReignRepository;
+import com.github.javydreamercsw.management.domain.title.TitleOpportunity;
+import com.github.javydreamercsw.management.domain.title.TitleOpportunityRepository;
+import com.github.javydreamercsw.management.domain.title.TitleOpportunityStatus;
+import com.github.javydreamercsw.management.domain.tournament.*;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -41,6 +39,7 @@ import com.github.javydreamercsw.management.service.show.ShowService;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -66,9 +65,7 @@ class TournamentRunnerServiceIT extends ManagementIntegrationTest {
   @Autowired private WrestlerStateRepository wrestlerStateRepository;
   @Autowired private TrophyReignRepository trophyReignRepository;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.title.TitleOpportunityRepository
-      titleOpportunityRepository;
+  @Autowired private TitleOpportunityRepository titleOpportunityRepository;
 
   @Autowired private TransactionTemplate transactionTemplate;
 
@@ -131,9 +128,7 @@ class TournamentRunnerServiceIT extends ManagementIntegrationTest {
 
     // Every bracket match landed a persisted, NPC-generated segment on the host show.
     Tournament completed = tournamentService.findByIdWithDetails(tournament.getId()).orElseThrow();
-    assertThat(completed.getStatus())
-        .isEqualTo(
-            com.github.javydreamercsw.management.domain.tournament.TournamentStatus.COMPLETE);
+    assertThat(completed.getStatus()).isEqualTo(TournamentStatus.COMPLETE);
     List<Segment> segments =
         completed.getRounds().stream()
             .flatMap(r -> r.getMatches().stream())
@@ -235,9 +230,7 @@ class TournamentRunnerServiceIT extends ManagementIntegrationTest {
     // After round 1: round 2 exists and the tournament is still IN_PROGRESS.
     Tournament midTournament =
         tournamentService.findByIdWithDetails(tournament.getId()).orElseThrow();
-    assertThat(midTournament.getStatus())
-        .isEqualTo(
-            com.github.javydreamercsw.management.domain.tournament.TournamentStatus.IN_PROGRESS);
+    assertThat(midTournament.getStatus()).isEqualTo(TournamentStatus.IN_PROGRESS);
     assertThat(midTournament.getRounds()).hasSize(2);
 
     TournamentRunnerService.RoundRunReport round2 =
@@ -290,10 +283,9 @@ class TournamentRunnerServiceIT extends ManagementIntegrationTest {
             .filter(e -> e.getStatus() == TournamentEntryStatus.WINNER)
             .findFirst()
             .orElseThrow();
-    Optional<com.github.javydreamercsw.management.domain.title.TitleOpportunity> briefcase =
+    Optional<TitleOpportunity> briefcase =
         titleOpportunityRepository.findFirstByWrestlerIdAndStatus(
-            winnerEntry.getWrestler().getId(),
-            com.github.javydreamercsw.management.domain.title.TitleOpportunityStatus.HELD);
+            winnerEntry.getWrestler().getId(), TitleOpportunityStatus.HELD);
     assertThat(briefcase).isPresent();
     assertThat(briefcase.get().getEarnedFromTournament().getId()).isEqualTo(tournament.getId());
   }
@@ -363,9 +355,7 @@ class TournamentRunnerServiceIT extends ManagementIntegrationTest {
     assertThat(showRepository.count()).isEqualTo(showCountAfterCreate);
 
     Tournament completed = tournamentService.findByIdWithDetails(tournament.getId()).orElseThrow();
-    assertThat(completed.getStatus())
-        .isEqualTo(
-            com.github.javydreamercsw.management.domain.tournament.TournamentStatus.COMPLETE);
+    assertThat(completed.getStatus()).isEqualTo(TournamentStatus.COMPLETE);
     // Every match has a persisted segment on the picked show, and the manual winners match
     // the booker's pick (segment winners = the winning entry's wrestlers).
     List<Segment> segments =
@@ -409,9 +399,7 @@ class TournamentRunnerServiceIT extends ManagementIntegrationTest {
 
     // The v1 gap: a fresh bracket's round 1 is PENDING and the record section never showed.
     Tournament started = tournamentService.findByIdWithDetails(tournament.getId()).orElseThrow();
-    assertThat(started.getRounds().getFirst().getStatus())
-        .isEqualTo(
-            com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus.PENDING);
+    assertThat(started.getRounds().getFirst().getStatus()).isEqualTo(TournamentRoundStatus.PENDING);
 
     TournamentMatch firstMatch = openMatchOf(started, 1);
     TournamentRunnerService.ManualResultReport report =
@@ -445,7 +433,7 @@ class TournamentRunnerServiceIT extends ManagementIntegrationTest {
   }
 
   private List<Wrestler> seedRoster(String unique, int count) {
-    return java.util.stream.IntStream.rangeClosed(1, count)
+    return IntStream.rangeClosed(1, count)
         .mapToObj(
             i ->
                 wrestlerRepository.save(

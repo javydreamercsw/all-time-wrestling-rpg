@@ -29,6 +29,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -55,7 +56,7 @@ class AccountListViewTest extends AbstractViewTest {
   void setup() {
     when(accountService.list(any(Pageable.class))).thenReturn(Page.empty());
 
-    when(wrestlerService.findAllActiveWrestlers()).thenReturn(java.util.List.of());
+    when(wrestlerService.findAllActiveWrestlers()).thenReturn(List.of());
     view = new AccountListView(accountService, wrestlerService);
     UI.getCurrent().add(view);
   }

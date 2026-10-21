@@ -36,6 +36,7 @@ import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntryStatus;
@@ -55,6 +56,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BooleanSupplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -334,8 +336,7 @@ class TournamentRunnerServiceTest {
 
   @Test
   void runRound_bracketFinalWithLinkedTitle_flagsTitleSegment() {
-    com.github.javydreamercsw.management.domain.title.Title title =
-        new com.github.javydreamercsw.management.domain.title.Title();
+    Title title = new Title();
     title.setId(7L);
     title.setName("World Championship");
     tournament.setLinkedTitle(title);
@@ -806,9 +807,9 @@ class TournamentRunnerServiceTest {
   /** Minimal format stub: configurable estimate and completion supplier. */
   private static final class SingleElimFormatStub implements TournamentFormat {
     private final int estimate;
-    private final java.util.function.BooleanSupplier complete;
+    private final BooleanSupplier complete;
 
-    SingleElimFormatStub(int estimate, java.util.function.BooleanSupplier complete) {
+    SingleElimFormatStub(int estimate, BooleanSupplier complete) {
       this.estimate = estimate;
       this.complete = complete;
     }

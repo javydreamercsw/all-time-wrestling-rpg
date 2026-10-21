@@ -62,6 +62,7 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.dnd.GridDropMode;
+import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Span;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -753,10 +754,10 @@ class TournamentDetailViewTest extends AbstractViewTest {
     stubInProgressWithPendingRound();
     buildView();
 
-    List<com.vaadin.flow.component.html.H4> headings =
+    List<H4> headings =
         _find(
             view,
-            com.vaadin.flow.component.html.H4.class,
+            H4.class,
             spec ->
                 spec.withPredicate(
                     h -> h.getText() != null && h.getText().contains("Record Results")));
@@ -912,15 +913,6 @@ class TournamentDetailViewTest extends AbstractViewTest {
     open.setRound(round);
     tournament.setRounds(new ArrayList<>(List.of(round)));
     tournament.setStatus(TournamentStatus.IN_PROGRESS);
-  }
-
-  private Span findSpanContaining(String text) {
-    List<Span> found =
-        _find(
-            view,
-            Span.class,
-            spec -> spec.withPredicate(s -> s.getText() != null && s.getText().contains(text)));
-    return found.isEmpty() ? null : found.getFirst();
   }
 
   private Button findButtonByPrefix(String text) {
