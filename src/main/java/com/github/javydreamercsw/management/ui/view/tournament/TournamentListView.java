@@ -58,6 +58,7 @@ import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
@@ -68,6 +69,7 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -127,6 +129,38 @@ public class TournamentListView extends VerticalLayout {
     gridWrapper.addClassName("grid-scroll-container");
     add(buildToolbar(), gridWrapper);
     refresh();
+    if (tournamentService.findAll().isEmpty()) {
+      add(buildFirstTimeBanner());
+    }
+  }
+
+  /**
+   * Stateless cross-link to the tutorial page's Quick Tour — shown once, when the list is empty.
+   */
+  private Div buildFirstTimeBanner() {
+    Div banner = new Div();
+    banner.addClassNames(
+        LumoUtility.Background.CONTRAST_5,
+        LumoUtility.BorderRadius.MEDIUM,
+        LumoUtility.Padding.MEDIUM,
+        LumoUtility.Margin.Horizontal.LARGE,
+        LumoUtility.Margin.Vertical.SMALL);
+
+    HorizontalLayout row = new HorizontalLayout();
+    row.setAlignItems(FlexComponent.Alignment.CENTER);
+    row.setWidthFull();
+    Span text =
+        new Span(
+            "First time here? Run a tournament in a few clicks — see the Quick Tour on the"
+                + " Tutorial page.");
+    text.addClassNames(LumoUtility.FontSize.SMALL);
+    Button tutorialLink =
+        new Button("Open Tutorial", e -> getUI().ifPresent(ui -> ui.navigate("tutorial")));
+    tutorialLink.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
+
+    row.add(text, tutorialLink);
+    banner.add(row);
+    return banner;
   }
 
   private ViewToolbar buildToolbar() {
