@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.ui.view.tournament;
 import static com.github.mvysny.kaributesting.v10.GridKt._getCellComponent;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._find;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -42,6 +43,7 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntryStatus;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
+import com.github.javydreamercsw.management.domain.tournament.TournamentRoundRepository;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus;
 import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -92,6 +94,7 @@ class TournamentDetailViewTest extends AbstractViewTest {
   @Mock private TournamentService tournamentService;
   @Mock private TournamentRunnerService tournamentRunnerService;
   @Mock private ShowRepository showRepository;
+  @Mock private TournamentRoundRepository roundRepository;
   @Mock private ShowFacade showFacade;
   @Mock private WrestlerFacade wrestlerFacade;
   @Mock private ViewContext viewContext;
@@ -168,6 +171,7 @@ class TournamentDetailViewTest extends AbstractViewTest {
             tournamentService,
             tournamentRunnerService,
             showRepository,
+            roundRepository,
             showFacade,
             wrestlerFacade,
             viewContext);
@@ -873,6 +877,51 @@ class TournamentDetailViewTest extends AbstractViewTest {
         (ComboBox<Show>) _get(view, ComboBox.class, spec -> spec.withId("host-show-combo"));
     assertEquals(first, combo.getValue());
     assertEquals(2, combo.getListDataView().getItemCount());
+  }
+
+  @Test
+  @DisplayName("Host show combo annotates shows already hosting another tournament's round")
+  void hostShowCombo_annotatesShowsAlreadyHostingRounds() {
+    stubInProgressWithPendingRound();
+    Show free = new Show();
+    free.setId(7L);
+    free.setName("Friday Night");
+    free.setShowDate(LocalDate.now());
+    Show busy = new Show();
+    busy.setId(8L);
+    busy.setName("Saturday Main");
+    busy.setShowDate(LocalDate.now().plusDays(1));
+    lenient()
+        .when(showRepository.findByShowDateGreaterThanEqualOrderByShowDate(any(), any()))
+        .thenReturn(List.of(free, busy));
+
+    // Another tournament's round 2 is booked onto "Saturday Main".
+    Tournament otherTournament = new Tournament();
+    otherTournament.setId(2L);
+    otherTournament.setName("King of the Ring");
+    TournamentRound bookedRound =
+        TournamentRound.builder()
+            .roundNumber(2)
+            .roundName("Semi-Final")
+            .status(TournamentRoundStatus.PENDING)
+            .show(busy)
+            .tournament(otherTournament)
+            .build();
+    lenient().when(roundRepository.findByShowIdIn(any())).thenReturn(List.of(bookedRound));
+
+    buildView();
+
+    @SuppressWarnings("unchecked")
+    ComboBox<Show> combo =
+        (ComboBox<Show>) _get(view, ComboBox.class, spec -> spec.withId("host-show-combo"));
+    assertEquals(free, combo.getValue());
+    // The busy show's label carries the conflict; the free show's stays clean.
+    assertThat(combo.getItemLabelGenerator().apply(busy))
+        .contains("Saturday Main")
+        .contains("King of the Ring")
+        .contains("Semi-Final");
+    assertThat(combo.getItemLabelGenerator().apply(free))
+        .isEqualTo("Friday Night (" + LocalDate.now() + ")");
   }
 
   @Test

@@ -62,8 +62,10 @@ import jakarta.annotation.security.RolesAllowed;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -82,6 +84,7 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
   private final SegmentRuleService segmentRuleService;
   private final UniverseContextService universeContextService;
   private final ShowRepository showRepository;
+  private final TournamentRoundRepository roundRepository;
   private final WrestlerFacade wrestlerFacade;
   private final SecurityUtils securityUtils;
 
@@ -97,6 +100,7 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
       TournamentService tournamentService,
       TournamentRunnerService tournamentRunnerService,
       ShowRepository showRepository,
+      TournamentRoundRepository roundRepository,
       ShowFacade showFacade,
       WrestlerFacade wrestlerFacade,
       ViewContext viewContext) {
@@ -104,6 +108,7 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
     this.tournamentRunnerService = tournamentRunnerService;
     this.segmentRuleService = showFacade.getSegmentRuleService();
     this.showRepository = showRepository;
+    this.roundRepository = roundRepository;
     this.wrestlerFacade = wrestlerFacade;
     this.universeContextService = viewContext.getUniverseContextService();
     this.securityUtils = viewContext.getSecurityUtils();
@@ -696,7 +701,9 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
 
   /**
    * The sticky host-show picker: prefilled with the first upcoming show, or null when none exist
-   * (null selection → the service auto-creates the "<tournament> Night" show).
+   * (null selection → the service auto-creates the "<tournament> Night" show). Shows already
+   * hosting another tournament's round are annotated in the label so the conflict is visible at
+   * pick time (ATW-kakg) — the picker stays open to them (a card can legitimately carry both).
    */
   private ComboBox<Show> buildHostShowCombo() {
     List<Show> upcoming =
@@ -705,11 +712,15 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
     if (upcoming.isEmpty()) {
       return null;
     }
+    Map<Long, String> conflictLabels = hostedRoundLabelsByShowId(upcoming);
     ComboBox<Show> combo = new ComboBox<>("Host show");
     combo.setId("host-show-combo");
     combo.setItems(upcoming);
     combo.setItemLabelGenerator(
-        s -> s.getName() + (s.getShowDate() != null ? " (" + s.getShowDate() + ")" : ""));
+        s ->
+            s.getName()
+                + (s.getShowDate() != null ? " (" + s.getShowDate() + ")" : "")
+                + conflictLabels.getOrDefault(s.getId(), ""));
     combo.setWidthFull();
     combo.setValue(upcoming.get(0));
     combo.setTooltipText(
@@ -717,6 +728,30 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
             + hostShowName()
             + "' show");
     return combo;
+  }
+
+  /**
+   * One conflict annotation per show that already hosts a round of a different tournament, e.g. " —
+   * hosts King of the Ring Semi-Final". Batch-loaded in one query (no N+1 over the 20 candidate
+   * shows).
+   */
+  private Map<Long, String> hostedRoundLabelsByShowId(List<Show> shows) {
+    List<Long> showIds = shows.stream().map(Show::getId).toList();
+    Map<Long, String> labels = new HashMap<>();
+    for (TournamentRound round : roundRepository.findByShowIdIn(showIds)) {
+      if (tournament.getId() != null && tournament.getId().equals(round.getTournament().getId())) {
+        continue; // This tournament's own round — not a conflict.
+      }
+      labels.putIfAbsent(
+          round.getShow().getId(),
+          " — hosts "
+              + round.getTournament().getName()
+              + " "
+              + (round.getRoundName() != null
+                  ? round.getRoundName()
+                  : "R" + round.getRoundNumber()));
+    }
+    return labels;
   }
 
   private Long selectedShowId(ComboBox<Show> hostShowCombo) {

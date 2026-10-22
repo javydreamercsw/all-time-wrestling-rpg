@@ -61,6 +61,7 @@ class TournamentRunnerServiceIT extends ManagementIntegrationTest {
   @Autowired private TournamentService tournamentService;
   @Autowired private ShowService showService;
   @Autowired private TournamentRepository tournamentRepository;
+  @Autowired private TournamentRoundRepository roundRepository;
   @Autowired private ShowRepository showRepository;
   @Autowired private ShowTypeRepository showTypeRepository;
   @Autowired private SegmentRepository segmentRepository;
@@ -426,6 +427,54 @@ class TournamentRunnerServiceIT extends ManagementIntegrationTest {
             .orElseThrow();
     assertThat(recorded.getSegment()).isNotNull();
     assertThat(recorded.getWinner().getId()).isEqualTo(firstMatch.getEntrant1().getId());
+  }
+
+  @Test
+  @DisplayName("Rounds linked to a show are discoverable by show id (host-conflict check)")
+  void findByShowIdIn_returnsLinkedRounds() {
+    String unique = String.valueOf(System.nanoTime());
+    List<Wrestler> roster = seedRoster(unique, 4);
+    Show picked =
+        showService.createShow(
+            "IT Conflict Show " + unique,
+            "IT fixture",
+            showTypeRepository.findAll().getFirst().getId(),
+            LocalDate.now(),
+            null,
+            null,
+            universe.getId(),
+            null,
+            null,
+            null);
+
+    Tournament tournament =
+        tournamentService.createTournament(
+            "IT Conflict Cup " + unique,
+            "SINGLE_ELIMINATION",
+            universe,
+            null,
+            LocalDate.now(),
+            List.of());
+    for (int i = 0; i < roster.size(); i++) {
+      tournamentService.addEntry(tournament, roster.get(i), i + 1);
+    }
+    tournamentService.startTournament(
+        tournamentService.findByIdWithDetails(tournament.getId()).orElseThrow());
+
+    // Book round 1 onto the picked show — the runner's record path sets round.show.
+    Tournament started = tournamentService.findByIdWithDetails(tournament.getId()).orElseThrow();
+    TournamentMatch firstMatch = openMatchOf(started, 1);
+    transactionTemplate.execute(
+        status ->
+            runnerService.recordManualResult(
+                started, firstMatch.getId(), firstMatch.getEntrant1().getId(), picked.getId()));
+
+    // The round-show link is discoverable in one query — the host-show combo's conflict
+    // annotation (ATW-kakg) builds on this.
+    List<TournamentRound> linked = roundRepository.findByShowIdIn(List.of(picked.getId()));
+    assertThat(linked).hasSize(1);
+    assertThat(linked.getFirst().getTournament().getId()).isEqualTo(tournament.getId());
+    assertThat(linked.getFirst().getRoundNumber()).isEqualTo(1);
   }
 
   /** The single open (winnerless) match of the given round number on a freshly-fetched graph. */
