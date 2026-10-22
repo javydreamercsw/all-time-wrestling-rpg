@@ -23,8 +23,6 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
 import com.github.javydreamercsw.management.domain.team.Team;
-import com.github.javydreamercsw.management.domain.team.TeamMember;
-import com.github.javydreamercsw.management.domain.team.TeamSize;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
@@ -37,7 +35,6 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentRoundSta
 import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.segment.NPCSegmentResolutionService;
-import com.github.javydreamercsw.management.service.segment.SegmentTeam;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import jakarta.annotation.Nullable;
@@ -47,8 +44,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -78,9 +75,26 @@ import org.springframework.transaction.annotation.Transactional;
  * supply participants — approval never fails because of a tournament.
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class TournamentTemplateBookingService {
+
+  @Autowired
+  public TournamentTemplateBookingService(
+      final TournamentService tournamentService,
+      final NPCSegmentResolutionService segmentResolutionService,
+      final TournamentPacingService pacingService,
+      final SegmentTypeService segmentTypeService,
+      final ShowService showService,
+      final TournamentRepository tournamentRepository) {
+    this.tournamentService = tournamentService;
+    this.segmentResolutionService = segmentResolutionService;
+    this.pacingService = pacingService;
+    this.segmentTypeService = segmentTypeService;
+    this.showService = showService;
+    this.tournamentRepository = tournamentRepository;
+    this.resolver =
+        new BracketMatchResolver(tournamentService, segmentResolutionService, segmentTypeService);
+  }
 
   private final TournamentService tournamentService;
   private final NPCSegmentResolutionService segmentResolutionService;
@@ -88,6 +102,13 @@ public class TournamentTemplateBookingService {
   private final SegmentTypeService segmentTypeService;
   private final ShowService showService;
   private final TournamentRepository tournamentRepository;
+
+  /**
+   * Shared booking core (open-match scan, segment creation, winner mapping) — extracted so the
+   * standalone tournament runner funnels through the exact same logic. Built from the same
+   * collaborators this service already holds, so the constructor signature is unchanged.
+   */
+  private final BracketMatchResolver resolver;
 
   /**
    * Result of a tournament-fed booking attempt. {@code titleMatch}/{@code title} mark the payoff:
@@ -258,19 +279,7 @@ public class TournamentTemplateBookingService {
    * warning) when neither exists — pacing skips the show rather than booking a wrong type.
    */
   private Optional<SegmentType> roundSegmentTypeOf(Tournament tournament) {
-    String code =
-        tournamentService
-            .findFormat(tournament.getFormatId())
-            .map(TournamentFormat::getRoundSegmentTypeCode)
-            .orElse(WellKnownSegmentType.ONE_ON_ONE.getCode());
-    Optional<SegmentType> resolved = segmentTypeService.findByCode(code);
-    if (resolved.isEmpty()) {
-      log.warn(
-          "Cannot book tournament rounds on show '{}': the '{}' segment type is missing",
-          tournament.getFormatId(),
-          code);
-    }
-    return resolved;
+    return resolver.roundSegmentTypeOf(tournament);
   }
 
   /**
@@ -279,11 +288,7 @@ public class TournamentTemplateBookingService {
    * (narration-only at worst), and "Normal" stays the fallback when the format declares no default.
    */
   private String defaultRoundRuleOf(Tournament tournament) {
-    return tournamentService
-        .findFormat(tournament.getFormatId())
-        .map(TournamentFormat::getDefaultRoundRuleName)
-        .filter(name -> !name.isEmpty())
-        .orElse("Normal");
+    return resolver.defaultRoundRuleOf(tournament);
   }
 
   // ── PLE-adjudication auto-start ─────────────────────────────────────────────
@@ -1365,11 +1370,7 @@ public class TournamentTemplateBookingService {
    * linked to a segment).
    */
   private Optional<TournamentMatch> nextBookableMatch(final Tournament tournament) {
-    return tournament.getRounds().stream()
-        .filter(r -> r.getStatus() != TournamentRoundStatus.COMPLETE)
-        .flatMap(r -> r.getMatches().stream())
-        .filter(m -> m.getWinner() == null && m.getSegment() == null)
-        .min(Comparator.comparingInt(m -> m.getRound().getRoundNumber()));
+    return resolver.nextBookableMatch(tournament);
   }
 
   /**
@@ -1377,19 +1378,7 @@ public class TournamentTemplateBookingService {
    * booked matches) says exactly one match remains.
    */
   private boolean isBracketFinal(Tournament tournament, TournamentMatch match) {
-    return tournamentService
-        .findFormat(tournament.getFormatId())
-        .map(fmt -> fmt.estimateTotalMatches(tournament))
-        .map(total -> total - countBooked(tournament) == 1 && match.getWinner() == null)
-        .orElse(false);
-  }
-
-  private int countBooked(Tournament tournament) {
-    return (int)
-        tournament.getRounds().stream()
-            .flatMap(r -> r.getMatches().stream())
-            .filter(m -> m.getSegment() != null || m.getWinner() != null)
-            .count();
+    return resolver.isBracketFinal(tournament, match);
   }
 
   /** The next PLE (from this show's date forward a year) whose template pairs this tournament. */
@@ -1436,33 +1425,8 @@ public class TournamentTemplateBookingService {
       final Show show,
       final String stipulation,
       final boolean titleOnTheLine) {
-    Segment segment;
-    // Team tournaments (ATW-01g2): the teamSize-resolved type (tag_team / trios) overrides the
-    // format's round type whenever the tournament declares a team size — for multi-entrant team
-    // fields and team-vs-team matches alike. Singles behavior is untouched.
-    SegmentType teamType = teamSegmentTypeOf(tournament);
-    SegmentType effectiveType = teamType != null ? teamType : segmentType;
-    if (match.isMultiEntrant()) {
-      // Multi-entrant match (Free-for-All qualifier, multi-man final): one team per entrant,
-      // resolved by the multi-team path so every participant lands in their own slot.
-      List<SegmentTeam> teams = match.entrants().stream().map(this::segmentTeamOf).toList();
-      segment =
-          segmentResolutionService.resolveMultiTeamSegment(teams, effectiveType, show, stipulation);
-    } else {
-      segment =
-          segmentResolutionService.resolveTeamSegment(
-              segmentTeamOf(match.getEntrant1()),
-              segmentTeamOf(match.getEntrant2()),
-              effectiveType,
-              show,
-              stipulation);
-    }
-    segment.setNarration(tournamentNotesOf(tournament, match, titleOnTheLine));
-    if (titleOnTheLine && tournament.getLinkedTitle() != null) {
-      segment.setIsTitleSegment(true);
-      segment.getTitles().add(tournament.getLinkedTitle());
-    }
-    return segment;
+    return resolver.resolveSegment(
+        match, tournament, segmentType, show, stipulation, titleOnTheLine);
   }
 
   /**
@@ -1501,26 +1465,12 @@ public class TournamentTemplateBookingService {
   }
 
   /**
-   * The segment team for a bracket entry: the entry's team members in slot order for a team entry,
-   * the solo wrestler for a singles entry. Team names label the side for resolution logging and
-   * narration.
-   */
-  private SegmentTeam segmentTeamOf(TournamentEntry entry) {
-    if (entry.getTeam() != null) {
-      Team team = entry.getTeam();
-      List<Wrestler> members =
-          team.getMembers().stream().map(TeamMember::getWrestler).collect(Collectors.toList());
-      return new SegmentTeam(members, team.getName());
-    }
-    return new SegmentTeam(entry.getWrestler());
-  }
-
-  /**
    * Resolve a team tournament's match segment type from the declared team size (ATW-01g2) — the
    * single place the teamSize → segment-type mapping lives. {@code DUO} books as the tag-team type
    * and {@code TRIO} as the trios type, both resolved against the seeded catalog through {@link
-   * SegmentTypeService}; every booking path (weekly rounds, PLE payoff, host-show payoff) funnels
-   * through {@link #resolveSegment}, so no per-format override is needed.
+   * SegmentTypeService}; every booking path (weekly rounds, PLE payoff, host-show payoff,
+   * standalone runner) funnels through {@link #resolveSegment}, so no per-format override is
+   * needed.
    *
    * <p>Returns empty-mapped {@code null} (with a warning) when the tournament is not a team
    * tournament or the catalog lacks the type — the caller then falls back to the type the booking
@@ -1529,72 +1479,7 @@ public class TournamentTemplateBookingService {
    * @return the resolved team segment type, or {@code null} to fall back to the caller's type
    */
   @Nullable private SegmentType teamSegmentTypeOf(Tournament tournament) {
-    TeamSize teamSize = tournament.getTeamSize();
-    if (teamSize == null) {
-      return null;
-    }
-    String code =
-        switch (teamSize) {
-          case DUO -> WellKnownSegmentType.TAG_TEAM.getCode();
-          case TRIO -> WellKnownSegmentType.TRIOS.getCode();
-        };
-    Optional<SegmentType> resolved = segmentTypeService.findByCode(code);
-    if (resolved.isEmpty()) {
-      log.warn(
-          "Team tournament '{}' books as '{}' — the '{}' segment type is missing from the catalog;"
-              + " falling back to the assigned type",
-          tournament.getName(),
-          teamSize,
-          code);
-      return null;
-    }
-    return resolved.get();
-  }
-
-  /** Booking narration describing the tournament stakes for AI narration. */
-  private String tournamentNotesOf(
-      final Tournament tournament, final TournamentMatch match, final boolean titleOnTheLine) {
-    StringBuilder notes = new StringBuilder();
-    notes
-        .append("Tournament match: ")
-        .append(tournament.getName())
-        .append(" — ")
-        .append(roundNameOf(match))
-        .append(". ");
-    if (titleOnTheLine && tournament.getLinkedTitle() != null) {
-      notes
-          .append("The winner advances in the tournament; the ")
-          .append(tournament.getLinkedTitle().getName())
-          .append(" is on the line. ");
-    } else {
-      notes.append("The winner advances in the tournament. ");
-    }
-    if (tournament.isBriefcaseDeciding()) {
-      notes
-          .append("The winner earns the ")
-          .append(tournament.getName())
-          .append(" briefcase: a cashable opportunity for a title match against any reigning")
-          .append(" champion. ");
-    } else if (tournament.getTrophyName() != null) {
-      notes
-          .append("The winner lifts the ")
-          .append(tournament.getTrophyName())
-          .append(" — the tournament's named trophy. No championship changes hands; the trophy")
-          .append(" and the legacy of its past winners are what the bracket is fought for. ");
-    } else if (tournament.getLinkedTitle() == null
-        && !tournament.isContenderDeciding()
-        && !titleOnTheLine) {
-      notes
-          .append("There is no championship at stake — the win itself, and the bragging rights")
-          .append(" that come with outlasting the field, are the prize. ");
-    } else if (tournament.getLinkedTitle() != null && !titleOnTheLine) {
-      notes
-          .append("The tournament winner earns a ")
-          .append(tournament.getLinkedTitle().getName())
-          .append(" opportunity at the tournament's payoff show. ");
-    }
-    notes.append("Narrate the tournament stakes and the crowd's investment in the bracket.");
-    return notes.toString();
+    return resolver.teamSegmentTypeOf(tournament);
   }
 
   /**
@@ -1609,29 +1494,11 @@ public class TournamentTemplateBookingService {
    * members (until then booking a team tournament fails earlier, in segment resolution).
    */
   TournamentEntry pickBracketWinner(final TournamentMatch match, final Segment segment) {
-    // First segment winner that is one of the match's entrants — works for both the classic
-    // two-entrant shape and multi-entrant matches (any entrant can win a Free-for-All).
-    List<TournamentEntry> entrants = match.entrants();
-    return segment.getWinners().stream()
-        .flatMap(winner -> entrants.stream().filter(entry -> isEntryWinner(entry, winner)))
-        .findFirst()
-        .orElse(entrants.get(0));
-  }
-
-  /**
-   * Whether {@code segmentWinner} wins {@code entry}: the wrestler himself for a singles entry, any
-   * member of the entry's team for a team entry.
-   */
-  private boolean isEntryWinner(TournamentEntry entry, Wrestler segmentWinner) {
-    if (entry.getTeam() != null) {
-      return entry.getTeam().getMembers().stream()
-          .anyMatch(member -> member.getWrestler().getId().equals(segmentWinner.getId()));
-    }
-    return entry.getWrestler() != null && entry.getWrestler().getId().equals(segmentWinner.getId());
+    return resolver.pickBracketWinner(match, segment);
   }
 
   private String roundNameOf(final TournamentMatch match) {
-    return match.getRound().getRoundName();
+    return resolver.roundNameOf(match);
   }
 
   // ── Auto-start (unchanged from ATW-oahn) ────────────────────────────────────

@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.team.TeamSize;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRecurrence;
+import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
@@ -58,6 +59,7 @@ import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
@@ -68,6 +70,7 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -127,6 +130,38 @@ public class TournamentListView extends VerticalLayout {
     gridWrapper.addClassName("grid-scroll-container");
     add(buildToolbar(), gridWrapper);
     refresh();
+    if (visibleTournaments().isEmpty()) {
+      add(buildFirstTimeBanner());
+    }
+  }
+
+  /**
+   * Stateless cross-link to the tutorial page's Quick Tour — shown once, when the list is empty.
+   */
+  private Div buildFirstTimeBanner() {
+    Div banner = new Div();
+    banner.addClassNames(
+        LumoUtility.Background.CONTRAST_5,
+        LumoUtility.BorderRadius.MEDIUM,
+        LumoUtility.Padding.MEDIUM,
+        LumoUtility.Margin.Horizontal.LARGE,
+        LumoUtility.Margin.Vertical.SMALL);
+
+    HorizontalLayout row = new HorizontalLayout();
+    row.setAlignItems(FlexComponent.Alignment.CENTER);
+    row.setWidthFull();
+    Span text =
+        new Span(
+            "First time here? Run a tournament in a few clicks — see the Quick Tour on the"
+                + " Tutorial page.");
+    text.addClassNames(LumoUtility.FontSize.SMALL);
+    Button tutorialLink =
+        new Button("Open Tutorial", e -> getUI().ifPresent(ui -> ui.navigate("tutorial")));
+    tutorialLink.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
+
+    row.add(text, tutorialLink);
+    banner.add(row);
+    return banner;
   }
 
   private ViewToolbar buildToolbar() {
@@ -437,15 +472,34 @@ public class TournamentListView extends VerticalLayout {
   }
 
   private void refresh() {
+    grid.setItems(visibleTournaments());
+  }
+
+  /**
+   * The listing the booker sees: the universe's tournaments (or all of them without a universe
+   * context), latest editions only by default, with pristine catalog rows filtered out — the seeded
+   * templates ("Deadly Combat" et al.) exist to be paired with show templates, and on a fresh
+   * install they read as an empty duplicate tournament. A catalog row that has been seeded
+   * (entries) or started leaves the pristine state and lists normally.
+   */
+  private List<Tournament> visibleTournaments() {
     Optional<Universe> universe = universeContextService.getCurrentUniverse();
     List<Tournament> items =
         universe.map(tournamentService::findByUniverse).orElseGet(tournamentService::findAll);
+    items =
+        items.stream()
+            .filter(
+                t ->
+                    t.getCode() == null
+                        || t.getStatus() != TournamentStatus.SCHEDULED
+                        || tournamentService.countEntries(t) != 0)
+            .toList();
     if (!showPastEditionsCheckbox.getValue()) {
       // Recurring chains show the latest edition only (ATW-o4ad) — past editions surface via
       // the toggle, and one-shot tournaments (no ordinal) always list.
       items = latestEditionPerChain(items);
     }
-    grid.setItems(items);
+    return items;
   }
 
   /**

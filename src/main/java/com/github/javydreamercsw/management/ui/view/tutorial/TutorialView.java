@@ -34,6 +34,7 @@ import com.github.javydreamercsw.management.service.tutorial.TutorialService;
 import com.github.javydreamercsw.management.service.tutorial.TutorialStep;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.ui.component.TournamentQuickTourCard;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -193,6 +194,7 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
             tutorialService.getDefinition(Universe.UniverseType.GLOBAL)));
 
     add(cards);
+    add(new TournamentQuickTourCard());
   }
 
   private Div modeCard(

@@ -46,6 +46,7 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import java.util.List;
 import java.util.Optional;
@@ -125,6 +126,24 @@ class TutorialViewTest extends AbstractViewTest {
     assertThat(buttons)
         .extracting(Button::getText)
         .contains("Choose Campaign", "Choose League", "Choose Universe");
+  }
+
+  @Test
+  @DisplayName("Mode selection renders the tournament Quick Tour card")
+  void noUniverse_showsTournamentQuickTourCard() {
+    enter();
+
+    H3 quickTourHeading =
+        _get(
+            view,
+            H3.class,
+            spec ->
+                spec.withPredicate(
+                    h -> h.getText().contains("Quick Tour: Run Your First" + " Tournament")));
+    assertThat(quickTourHeading).isNotNull();
+    List<Button> goButtons =
+        _find(view, Button.class, spec -> spec.withPredicate(b -> "Go".equals(b.getText())));
+    assertThat(goButtons).hasSize(5);
   }
 
   @Test
