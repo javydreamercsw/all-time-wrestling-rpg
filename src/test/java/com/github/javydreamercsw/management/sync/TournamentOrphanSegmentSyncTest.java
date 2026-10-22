@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatchRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.util.List;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -92,7 +93,7 @@ class TournamentOrphanSegmentSyncTest {
     when(tournamentMatchRepository.findOrphanCandidatesOnTournamentShows())
         .thenThrow(new IllegalStateException("db unavailable"));
 
-    assertThat(org.assertj.core.api.Assertions.catchException(() -> sync.sync()))
+    assertThat(Assertions.catchException(() -> sync.sync()))
         .isInstanceOf(IllegalStateException.class);
   }
 }
