@@ -17,6 +17,9 @@
 package com.github.javydreamercsw.management.service.tournament;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 
 import com.github.javydreamercsw.TestUtils;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
@@ -44,6 +47,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
@@ -68,6 +72,8 @@ class TournamentRunnerServiceIT extends ManagementIntegrationTest {
   @Autowired private TitleOpportunityRepository titleOpportunityRepository;
 
   @Autowired private TransactionTemplate transactionTemplate;
+
+  @MockitoSpyBean private TournamentService spyTournamentService;
 
   private Universe universe;
 
@@ -430,6 +436,59 @@ class TournamentRunnerServiceIT extends ManagementIntegrationTest {
         .filter(m -> m.getWinner() == null)
         .findFirst()
         .orElseThrow();
+  }
+
+  @Test
+  @DisplayName(
+      "A failure after the REQUIRES_NEW segment commit is compensated — no orphan segment remains")
+  void recordManualResult_postCommitFailure_compensatesOrphanSegment() {
+    String unique = String.valueOf(System.nanoTime());
+    List<Wrestler> roster = seedRoster(unique, 4);
+    long segmentCountBefore = segmentRepository.count();
+
+    Tournament tournament =
+        tournamentService.createTournament(
+            "IT Orphan Cup " + unique,
+            "SINGLE_ELIMINATION",
+            universe,
+            null,
+            LocalDate.now(),
+            List.of());
+    for (int i = 0; i < roster.size(); i++) {
+      tournamentService.addEntry(tournament, roster.get(i), i + 1);
+    }
+    tournamentService.startTournament(
+        tournamentService.findByIdWithDetails(tournament.getId()).orElseThrow());
+
+    // Force the failure AFTER resolution (whose REQUIRES_NEW insert is already committed) but
+    // inside the runner's outer transaction: recordMatchResult blows up.
+    doThrow(new IllegalStateException("injected bracket failure"))
+        .when(spyTournamentService)
+        .recordMatchResult(any(), any());
+
+    Tournament started = tournamentService.findByIdWithDetails(tournament.getId()).orElseThrow();
+    TournamentMatch firstMatch = openMatchOf(started, 1);
+    assertThatThrownBy(
+            () ->
+                runnerService.recordManualResult(
+                    started, firstMatch.getId(), firstMatch.getEntrant1().getId(), null))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("injected bracket failure");
+
+    // The compensation deleted the committed segment: no orphan row remains on any show, and
+    // no segment was added net.
+    assertThat(segmentRepository.count()).isEqualTo(segmentCountBefore);
+    // The bracket match is untouched (its segment link lived only in the rolled-back tx) and
+    // the match stays open for a retry.
+    Tournament after = tournamentService.findByIdWithDetails(tournament.getId()).orElseThrow();
+    TournamentMatch retry =
+        after.getRounds().stream()
+            .flatMap(r -> r.getMatches().stream())
+            .filter(m -> m.getId().equals(firstMatch.getId()))
+            .findFirst()
+            .orElseThrow();
+    assertThat(retry.getWinner()).isNull();
+    assertThat(retry.getSegment()).isNull();
   }
 
   private List<Wrestler> seedRoster(String unique, int count) {

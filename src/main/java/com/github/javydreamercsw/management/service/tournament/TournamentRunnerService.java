@@ -218,8 +218,14 @@ public class TournamentRunnerService {
     segmentService.updateSegment(segment);
     round.setShow(hostShow);
     tournamentService.markRoundInProgress(round);
-    tournamentService.recordMatchResult(match, winner);
-    boolean complete = completeIfDecided(managed);
+    boolean complete;
+    try {
+      tournamentService.recordMatchResult(match, winner);
+      complete = completeIfDecided(managed);
+    } catch (RuntimeException e) {
+      compensateOrphanSegment(segment, e);
+      throw e;
+    }
     boolean roundDecided = round.getMatches().stream().noneMatch(m -> m.getWinner() == null);
     log.info(
         "Recorded manual winner '{}' for '{}' ({}) on show '{}'",
@@ -425,7 +431,9 @@ public class TournamentRunnerService {
 
   /**
    * The per-match body every engine path shares: resolve the segment through the booking core, link
-   * it, activate the round, and record the engine's winner.
+   * it, activate the round, and record the engine's winner. The resolution commits its segment in a
+   * REQUIRES_NEW transaction, so any later failure is compensated by deleting the committed segment
+   * — without that, a rollback would leave an orphaned match on the host show.
    */
   private Segment playOneMatch(
       Tournament tournament, TournamentMatch match, Show hostShow, SegmentType roundType) {
@@ -438,9 +446,14 @@ public class TournamentRunnerService {
         resolver.resolveSegment(
             match, tournament, roundType, hostShow, stipulation, titleOnTheLine);
     match.setSegment(segment);
-    tournamentService.markRoundInProgress(match.getRound());
-    TournamentEntry winner = resolver.pickBracketWinner(match, segment);
-    tournamentService.recordMatchResult(match, winner);
+    try {
+      tournamentService.markRoundInProgress(match.getRound());
+      TournamentEntry winner = resolver.pickBracketWinner(match, segment);
+      tournamentService.recordMatchResult(match, winner);
+    } catch (RuntimeException e) {
+      compensateOrphanSegment(segment, e);
+      throw e;
+    }
     log.info(
         "Ran tournament match for '{}' ({}): {} vs {} — winner decided",
         tournament.getName(),
@@ -448,6 +461,33 @@ public class TournamentRunnerService {
         match.getEntrant1().entrantName(),
         match.getEntrant2().entrantName());
     return segment;
+  }
+
+  /**
+   * Best-effort compensation for the REQUIRES_NEW segment commit inside resolution: when a later
+   * step fails, the outer transaction rolls back but the segment insert is already committed, so
+   * the row would be orphaned on the host show. Delete it in an independent transaction; if even
+   * the compensation fails, keep the original error — the sync-level orphan detector is the second
+   * line of defense.
+   */
+  private void compensateOrphanSegment(Segment segment, RuntimeException cause) {
+    if (segment == null || segment.getId() == null) {
+      return;
+    }
+    try {
+      segmentService.deleteSegmentInNewTransaction(segment.getId());
+      log.warn(
+          "Compensated orphaned segment {} on host show after failure: {}",
+          segment.getId(),
+          cause.getMessage());
+    } catch (RuntimeException cleanupFailure) {
+      log.error(
+          "FAILED to compensate orphaned segment {} after failure — a stale match may remain on"
+              + " the host show. Cleanup error: {}",
+          segment.getId(),
+          cleanupFailure.getMessage(),
+          cause);
+    }
   }
 
   /**

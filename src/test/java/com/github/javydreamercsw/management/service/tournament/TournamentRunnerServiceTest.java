@@ -25,6 +25,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -671,6 +672,101 @@ class TournamentRunnerServiceTest {
             IllegalArgumentException.class,
             () -> service.recordManualResult(tournament, 21L, 99L, null));
     assertTrue(ex.getMessage().contains("not an entrant"));
+  }
+
+  @Test
+  void recordManualResult_postResolutionFailure_compensatesOrphanSegment() {
+    // NPCSegmentResolutionService commits its segment insert in a REQUIRES_NEW transaction;
+    // if a later step (here recordMatchResult) fails, the outer transaction rolls back but the
+    // committed segment would be orphaned on the host show. The runner must compensate by
+    // deleting it in a fresh transaction before rethrowing.
+    TournamentEntry aliceEntry = entry(alice, 1);
+    TournamentEntry bobEntry = entry(bob, 2);
+    aliceEntry.setId(11L);
+    bobEntry.setId(12L);
+    TournamentMatch m1 = match(1, aliceEntry, bobEntry);
+    m1.setId(21L);
+    attach(tournament, List.of(aliceEntry, bobEntry), List.of(round(1, m1)));
+    Segment committed = singles(alice, bob, alice);
+    stubBookedSegment(committed);
+    doThrow(new IllegalStateException("bracket advance blew up"))
+        .when(tournamentService)
+        .recordMatchResult(any(), any());
+
+    IllegalStateException ex =
+        assertThrows(
+            IllegalStateException.class,
+            () -> service.recordManualResult(tournament, 21L, 11L, null));
+    assertEquals("bracket advance blew up", ex.getMessage());
+    // The compensation ran in a fresh transaction: the orphaned segment is deleted by id.
+    verify(segmentService).deleteSegmentInNewTransaction(100L);
+  }
+
+  @Test
+  void recordManualResult_preResolutionFailure_noCompensationNeeded() {
+    // Failures before any segment is created (here: the resolve call itself) must not attempt
+    // a compensation delete — there is nothing to delete.
+    TournamentEntry aliceEntry = entry(alice, 1);
+    TournamentEntry bobEntry = entry(bob, 2);
+    aliceEntry.setId(11L);
+    bobEntry.setId(12L);
+    TournamentMatch m1 = match(1, aliceEntry, bobEntry);
+    m1.setId(21L);
+    attach(tournament, List.of(aliceEntry, bobEntry), List.of(round(1, m1)));
+    when(segmentResolutionService.resolveTeamSegment(any(), any(), any(), any(), any()))
+        .thenThrow(new IllegalStateException("resolution blew up"));
+
+    IllegalStateException ex =
+        assertThrows(
+            IllegalStateException.class,
+            () -> service.recordManualResult(tournament, 21L, 11L, null));
+    assertEquals("resolution blew up", ex.getMessage());
+    verify(segmentService, never()).deleteSegmentInNewTransaction(any());
+  }
+
+  @Test
+  void runEngineMatch_postResolutionFailure_compensatesOrphanSegment() {
+    TournamentEntry aliceEntry = entry(alice, 1);
+    TournamentEntry bobEntry = entry(bob, 2);
+    aliceEntry.setId(11L);
+    bobEntry.setId(12L);
+    TournamentMatch m1 = match(1, aliceEntry, bobEntry);
+    m1.setId(21L);
+    attach(tournament, List.of(aliceEntry, bobEntry), List.of(round(1, m1)));
+    Segment committed = singles(alice, bob, alice);
+    stubBookedSegment(committed);
+    doThrow(new IllegalStateException("advance blew up"))
+        .when(tournamentService)
+        .recordMatchResult(any(), any());
+
+    assertThrows(IllegalStateException.class, () -> service.runEngineMatch(tournament, 21L, null));
+    verify(segmentService).deleteSegmentInNewTransaction(100L);
+  }
+
+  @Test
+  void runEngineMatch_compensationFailure_stillThrowsOriginal() {
+    // The compensation is best-effort: if the delete itself fails, the original error still
+    // surfaces (the compensation failure is logged, not swallowed into the throw path).
+    TournamentEntry aliceEntry = entry(alice, 1);
+    TournamentEntry bobEntry = entry(bob, 2);
+    aliceEntry.setId(11L);
+    bobEntry.setId(12L);
+    TournamentMatch m1 = match(1, aliceEntry, bobEntry);
+    m1.setId(21L);
+    attach(tournament, List.of(aliceEntry, bobEntry), List.of(round(1, m1)));
+    Segment committed = singles(alice, bob, alice);
+    stubBookedSegment(committed);
+    doThrow(new IllegalStateException("advance blew up"))
+        .when(tournamentService)
+        .recordMatchResult(any(), any());
+    doThrow(new IllegalStateException("delete blew up"))
+        .when(segmentService)
+        .deleteSegmentInNewTransaction(any());
+
+    IllegalStateException ex =
+        assertThrows(
+            IllegalStateException.class, () -> service.runEngineMatch(tournament, 21L, null));
+    assertEquals("advance blew up", ex.getMessage());
   }
 
   @Test
