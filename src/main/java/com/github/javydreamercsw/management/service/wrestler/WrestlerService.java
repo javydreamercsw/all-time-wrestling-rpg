@@ -478,15 +478,32 @@ public class WrestlerService {
         .findById(wrestlerId)
         .ifPresent(
             w -> {
+              Account previousOwner = w.getAccount();
               if (accountId != null) {
                 accountRepository
                     .findById(accountId)
                     .ifPresent(
                         account -> {
+                          // Sweep a stale pointer: if the wrestler was reassigned from another
+                          // account that still lists this wrestler as its active one, clear
+                          // that pointer so the old account does not keep claiming it.
+                          if (previousOwner != null
+                              && !previousOwner.equals(account)
+                              && wrestlerId.equals(previousOwner.getActiveWrestlerId())) {
+                            previousOwner.setActiveWrestlerId(null);
+                            accountRepository.save(previousOwner);
+                          }
                           w.setAccount(account);
                           log.info("Setting account {} for wrestler {}", accountId, wrestlerId);
                         });
               } else {
+                // Unassigning leaves the same stale-pointer problem behind: clear the old
+                // account's active pointer too.
+                if (previousOwner != null
+                    && wrestlerId.equals(previousOwner.getActiveWrestlerId())) {
+                  previousOwner.setActiveWrestlerId(null);
+                  accountRepository.save(previousOwner);
+                }
                 w.setAccount(null);
               }
               wrestlerRepository.save(w);
