@@ -61,9 +61,13 @@ import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerAbilityRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.service.GameClock;
+import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.ai.AiOnboardingService;
 import com.github.javydreamercsw.management.service.campaign.CampaignEncounterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.deck.DeckService;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
@@ -81,12 +85,14 @@ import com.github.javydreamercsw.management.service.universe.UniverseContextServ
 import com.github.javydreamercsw.management.service.wrestler.AbilityReminderTextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
+import com.github.javydreamercsw.management.ui.ViewContext;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
@@ -99,6 +105,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -145,6 +152,21 @@ class MatchViewTest extends AbstractViewTest {
 
   private MatchView matchView;
 
+  private ViewContext viewContext() {
+    AiOnboardingService aiOnboardingService = mock(AiOnboardingService.class);
+    lenient()
+        .when(aiOnboardingService.evaluateGate())
+        .thenReturn(AiOnboardingService.GateState.CAN_CONFIGURE);
+    return new ViewContext(
+        notificationService,
+        securityUtils,
+        universeContextService,
+        mock(ExpansionService.class),
+        mock(GameSettingService.class),
+        mock(GameClock.class),
+        aiOnboardingService);
+  }
+
   @BeforeEach
   public void setup() {
     lenient().when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
@@ -171,7 +193,8 @@ class MatchViewTest extends AbstractViewTest {
             ringsideAiService,
             ringsideActionDataService,
             titleScriptService,
-            notificationService);
+            notificationService,
+            viewContext());
     ReflectionTestUtils.setField(matchView, "campaignEncounterService", campaignEncounterService);
     ReflectionTestUtils.setField(matchView, "deckService", deckService);
     ReflectionTestUtils.setField(matchView, "wrestlerAbilityRepository", wrestlerAbilityRepository);
@@ -1391,5 +1414,28 @@ class MatchViewTest extends AbstractViewTest {
         dialogs.isEmpty(),
         "The briefcase run-in confirm dialog must be offered when a title-match participant"
             + " hits half their starting HP and a HELD case exists");
+  }
+
+  @Test
+  void noAi_generateNarration_showsSetUpAiButton_opensOnboardingDialog() {
+    Segment segment = buildMinimalMatchSegment(1L, "Singles Match");
+    when(segmentService.findByIdWithDetails(1L)).thenReturn(Optional.of(segment));
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.empty());
+    when(securityUtils.isBooker()).thenReturn(true);
+    when(narrationServiceFactory.getAvailableServicesInPriorityOrder()).thenReturn(List.of());
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "1"));
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    _click(_get(Button.class, spec -> spec.withId("ai-generate-narration-button")));
+
+    // The error notification carries the "Set up AI…" entry point (overlay → UI-level lookup)
+    Button setUpAi = _get(Button.class, spec -> spec.withText("Set up AI…"));
+    setUpAi.click();
+
+    Dialog dialog = _get(Dialog.class, spec -> spec.withId("ai-onboarding-dialog"));
+    Assertions.assertThat(dialog.isOpened()).isTrue();
   }
 }

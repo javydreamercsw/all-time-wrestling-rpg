@@ -42,6 +42,7 @@ import com.github.javydreamercsw.management.service.tournament.TrophyReignServic
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
+import com.github.javydreamercsw.management.ui.ViewContext;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -109,6 +110,7 @@ public class NarrationDialog extends Dialog {
   private final SegmentNarrationController segmentNarrationController;
   private final Consumer<Segment> onSaveCallback;
   private final List<WrestlerDTO> allWrestlerDTOs;
+  private final ViewContext viewContext;
 
   public NarrationDialog(
       final PreloadedData preloaded,
@@ -126,7 +128,9 @@ public class NarrationDialog extends Dialog {
       final WrestlerStatsService wrestlerStatsService,
       final DramaEventService dramaEventService,
       final TitleOpportunityService titleOpportunityService,
-      final TrophyReignService trophyReignService) {
+      final TrophyReignService trophyReignService,
+      final ViewContext viewContext) {
+    this.viewContext = viewContext;
     this.segmentService = segmentService;
     this.segment = preloaded.segment();
     this.allWrestlerDTOs = preloaded.allWrestlerDTOs();
@@ -295,8 +299,7 @@ public class NarrationDialog extends Dialog {
 
   private void generateNarration() {
     if (aiFactory.getAvailableServicesInPriorityOrder().isEmpty()) {
-      String reason = "No AI providers are currently enabled or reachable.";
-      notificationService.showError(reason);
+      viewContext.showAiSetupNotification("No AI providers are currently enabled or reachable.");
       return;
     }
 
