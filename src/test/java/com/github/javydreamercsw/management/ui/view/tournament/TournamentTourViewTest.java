@@ -185,7 +185,7 @@ class TournamentTourViewTest extends AbstractViewTest {
 
     verify(tournamentService).seedAuto(any(), anyInt(), anyLong());
     verify(tournamentService).startTournament(t);
-    verify(tournamentService, org.mockito.Mockito.never()).findById(anyLong());
+    verify(tournamentService, Mockito.never()).findById(anyLong());
   }
 
   // ── Step 4: Enter Results ────────────────────────────────────────────────
