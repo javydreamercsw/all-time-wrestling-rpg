@@ -25,19 +25,18 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.theme.lumo.LumoUtility;
-import java.util.List;
 
 /**
- * The tutorial page's "Quick Tour: Run Your First Tournament" card — a stateless booker
- * walkthrough, not a {@code TutorialDefinition}. The mode tutorials (Campaign/League/Universe)
- * create tutorial universes and track per-account completion; this card just points a brand-new
- * player at the tournament flow they can run in a few clicks with no shows, seasons, or AI setup.
+ * The tutorial page's "Quick Tour: Run Your First Tournament" teaser card. The interactive tour — a
+ * five-step wizard that performs each step for the user (create, add players, seed+start, record
+ * results, crown) — lives at {@code tournament-tour} (ATW-6h2y); this card points a brand-new
+ * player at it. Unlike the mode tutorials it tracks no per-account completion.
  */
 public class TournamentQuickTourCard extends Div {
 
   public static final String TOURNAMENT_LIST_ROUTE = "tournament-list";
+  public static final String TOUR_ROUTE = "tournament-tour";
 
   public TournamentQuickTourCard() {
     addClassNames(
@@ -76,74 +75,22 @@ public class TournamentQuickTourCard extends Div {
 
     Paragraph intro =
         new Paragraph(
-            "Skip the universe modes for now — you can run a full tournament in a few clicks,"
-                + " with no shows, seasons, or AI configuration. The matches are real: health,"
-                + " stamina, fans and injuries all apply.");
+            "A five-step guided tour that does the work for you: creates the tournament, walks"
+                + " player setup, seeds and starts the bracket, records results, and crowns the"
+                + " winner. No shows, seasons, or AI configuration needed — and the matches are"
+                + " real: health, stamina, fans and injuries all apply.");
     intro.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.SMALL);
     intro.getStyle().set("margin", "0");
 
-    add(iconSpan, titleRow, intro, buildSteps());
-  }
+    Button startTour = new Button("Start the interactive tour", e -> navigateTo(TOUR_ROUTE));
+    startTour.setId("quick-tour-start-button");
+    startTour.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    startTour.addClassNames(LumoUtility.Margin.Top.SMALL);
 
-  private VerticalLayout buildSteps() {
-    List<Step> steps =
-        List.of(
-            new Step(
-                "1. Create a Tournament",
-                "Open Tournaments and use New Tournament. Pick a format and a few entrants —"
-                    + " your roster is ready.",
-                TOURNAMENT_LIST_ROUTE),
-            new Step(
-                "2. Add Players",
-                "Create player accounts under Accounts and assign each player their wrestler —"
-                    + " their wrestler's results then count for their account.",
-                "account-list"),
-            new Step(
-                "3. Seed and Start",
-                "Randomize the seeds if you like, then click Start Tournament to generate the"
-                    + " bracket.",
-                TOURNAMENT_LIST_ROUTE),
-            new Step(
-                "4. Enter Results",
-                "On the tournament page, pick the winner of each match yourself — or let the"
-                    + " engine decide a single match. No shows? A '<tournament> Night' show is"
-                    + " created for you automatically.",
-                TOURNAMENT_LIST_ROUTE),
-            new Step(
-                "5. Crown the Winner",
-                "Trophies, briefcases and title opportunities are granted automatically when"
-                    + " the bracket completes.",
-                TOURNAMENT_LIST_ROUTE));
-
-    VerticalLayout stepsLayout = new VerticalLayout();
-    stepsLayout.setPadding(false);
-    stepsLayout.setSpacing(false);
-
-    steps.forEach(
-        step -> {
-          Span stepTitle = new Span(step.title());
-          stepTitle.addClassNames(LumoUtility.FontWeight.BOLD, LumoUtility.FontSize.SMALL);
-          Paragraph stepDesc = new Paragraph(step.description());
-          stepDesc.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.SMALL);
-          stepDesc.getStyle().set("margin", "0 0 0.25rem 0");
-
-          Button go = new Button("Go", e -> navigateTo(step.route()));
-          go.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
-
-          HorizontalLayout row = new HorizontalLayout(stepTitle, go);
-          row.setAlignItems(FlexComponent.Alignment.CENTER);
-          row.setWidthFull();
-          stepsLayout.add(row, stepDesc);
-        });
-
-    stepsLayout.addClassNames(LumoUtility.Margin.Top.SMALL);
-    return stepsLayout;
+    add(iconSpan, titleRow, intro, startTour);
   }
 
   private void navigateTo(String route) {
     getUI().ifPresent(ui -> ui.navigate(route));
   }
-
-  /** One Quick Tour step: what to do, how, and where the Go button lands. */
-  private record Step(String title, String description, String route) {}
 }

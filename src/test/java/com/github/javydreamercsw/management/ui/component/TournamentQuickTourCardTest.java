@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.ui.component;
 
 import static com.github.mvysny.kaributesting.v10.LocatorJ._find;
+import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
@@ -24,12 +25,11 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Paragraph;
-import com.vaadin.flow.component.html.Span;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-/** Karibu tests for the tutorial page's Quick Tour card (ATW-p0sz). */
+/** Karibu tests for the tutorial page's Quick Tour teaser card (ATW-6h2y). */
 class TournamentQuickTourCardTest extends AbstractViewTest {
 
   private TournamentQuickTourCard buildCard() {
@@ -39,8 +39,8 @@ class TournamentQuickTourCardTest extends AbstractViewTest {
   }
 
   @Test
-  @DisplayName("Card renders heading, intro, and five steps")
-  void rendersHeadingAndFiveSteps() {
+  @DisplayName("Card renders the heading and teaser intro")
+  void rendersHeadingAndIntro() {
     TournamentQuickTourCard card = buildCard();
 
     H3 heading =
@@ -48,45 +48,28 @@ class TournamentQuickTourCardTest extends AbstractViewTest {
             .getFirst();
     assertThat(heading.getText()).contains("Run Your First Tournament");
 
-    List<Button> goButtons =
-        _find(card, Button.class, spec -> spec.withPredicate(b -> "Go".equals(b.getText())));
-    assertThat(goButtons).hasSize(5);
-  }
-
-  @Test
-  @DisplayName("Step rows describe create, players, seed, results, and crown")
-  void stepRowsDescribeTheFlow() {
-    TournamentQuickTourCard card = buildCard();
-
     List<Paragraph> paragraphs = _find(card, Paragraph.class);
-    List<Span> spans = _find(card, Span.class);
-    String all =
-        paragraphs.stream()
-                .map(p -> p.getText() == null ? "" : p.getText())
-                .reduce("", String::concat)
-            + spans.stream()
-                .map(s -> s.getText() == null ? "" : s.getText())
-                .reduce("", String::concat);
-    assertThat(all)
-        .contains("Create a Tournament")
-        .contains("Add Players")
-        .contains("Seed and Start")
-        .contains("Enter Results")
-        .contains("Crown the Winner")
-        .contains("assign each player their wrestler");
+    assertThat(paragraphs).hasSize(1);
+    assertThat(paragraphs.getFirst().getText()).contains("does the work for you");
   }
 
   @Test
-  @DisplayName("Go button click handler runs (navigation against the mock route registry)")
-  void goButtonClickHandlerRuns() {
+  @DisplayName("Start button navigates to the interactive tour route (handler runs)")
+  void startButton_targetsTourRoute() {
     TournamentQuickTourCard card = buildCard();
 
-    Button go =
-        _find(card, Button.class, spec -> spec.withPredicate(b -> "Go".equals(b.getText())))
-            .getFirst();
-    go.click();
-
+    Button start = _get(card, Button.class, spec -> spec.withId("quick-tour-start-button"));
+    assertThat(start.getText()).contains("interactive tour");
+    start.click();
     // Navigation is attempted against the mocked route registry; the handler ran without error.
-    assertThat(go.isEnabled()).isTrue();
+    assertThat(start.isEnabled()).isTrue();
+  }
+
+  @Test
+  @DisplayName("The card is a teaser: no per-step Go buttons")
+  void noPerStepButtons() {
+    TournamentQuickTourCard card = buildCard();
+
+    assertThat(_find(card, Button.class)).hasSize(1);
   }
 }
