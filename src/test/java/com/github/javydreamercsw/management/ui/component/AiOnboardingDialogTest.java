@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
@@ -59,70 +60,72 @@ class AiOnboardingDialogTest extends AbstractViewTest {
     dialog.open();
   }
 
+  // ── CAN_CONFIGURE: the two-step flow ──────────────────────────────────────
+
   @Test
-  @DisplayName("CAN_CONFIGURE: full layout with key field and save")
-  void canConfigure_fullLayout() {
+  @DisplayName("Step 1 shows the key-page affordances only — no key field, no save yet")
+  void step1_keyAcquisitionOnly() {
     openDialog();
 
-    _get(dialog, PasswordField.class, spec -> spec.withId("gemini-key-field"));
-    _get(dialog, Button.class, spec -> spec.withId("save-button"));
     _get(dialog, Button.class, spec -> spec.withId("open-key-page-button"));
     TextField link = _get(dialog, TextField.class, spec -> spec.withId("key-link-field"));
     assertEquals(AiOnboardingDialog.GEMINI_KEY_URL, link.getValue());
-  }
 
-  @Test
-  @DisplayName("NO_UNIVERSE_SELECTED: key field and save hidden, guidance shown")
-  void preUniverse_saveDisabled() {
-    when(aiOnboardingService.evaluateGate())
-        .thenReturn(AiOnboardingService.GateState.NO_UNIVERSE_SELECTED);
-    openDialog();
-
+    // The paste/save affordances belong to step 2
     assertTrue(_find(dialog, PasswordField.class).isEmpty());
     assertTrue(_find(dialog, Button.class, spec -> spec.withId("save-button")).isEmpty());
-    Span status = _get(dialog, Span.class, spec -> spec.withId("status-line"));
-    assertThat(status.getText()).contains("Create your universe first");
+    // Back is meaningless on the first step
+    assertThat(
+            _find(dialog, Button.class, spec -> spec.withId("back-button")).stream()
+                .allMatch(b -> !b.isVisible()))
+        .isTrue();
   }
 
   @Test
-  @DisplayName("ALREADY_CONFIGURED: informational setup state, no key field")
-  void alreadyConfigured_showsSetupState() {
-    when(aiOnboardingService.evaluateGate())
-        .thenReturn(AiOnboardingService.GateState.ALREADY_CONFIGURED);
+  @DisplayName("Step title reads as 'Step 1 of 2' in the CAN_CONFIGURE flow")
+  void step1_title() {
     openDialog();
 
-    assertTrue(
-        _find(dialog, PasswordField.class, spec -> spec.withId("gemini-key-field")).isEmpty());
-    assertTrue(_find(dialog, Button.class, spec -> spec.withId("save-button")).isEmpty());
-    Span status = _get(dialog, Span.class, spec -> spec.withId("status-line"));
-    assertThat(status.getText()).contains("already set up");
+    H3 title = _get(dialog, H3.class, spec -> spec.withId("wizard-step-title"));
+    assertThat(title.getText()).contains("Step 1 of 2");
   }
 
   @Test
-  @DisplayName("NOT_UNIVERSE_OWNER: read-only guidance")
-  void nonOwner_readOnly() {
-    when(aiOnboardingService.evaluateGate())
-        .thenReturn(AiOnboardingService.GateState.NOT_UNIVERSE_OWNER);
+  @DisplayName("Next advances to step 2 with the paste field and Save & Finish")
+  void next_advancesToStep2() {
     openDialog();
 
+    _get(dialog, Button.class, spec -> spec.withId("next-button")).click();
+
+    H3 title = _get(dialog, H3.class, spec -> spec.withId("wizard-step-title"));
+    assertThat(title.getText()).contains("Step 2 of 2");
+    _get(dialog, PasswordField.class, spec -> spec.withId("gemini-key-field"));
+    _get(dialog, Button.class, spec -> spec.withId("save-button"));
+    // The key-page affordances stay behind on step 1
+    assertTrue(_find(dialog, Button.class, spec -> spec.withId("open-key-page-button")).isEmpty());
+  }
+
+  @Test
+  @DisplayName("Back from step 2 returns to step 1 with the key-page affordances restored")
+  void back_returnsToStep1() {
+    openDialog();
+    _get(dialog, Button.class, spec -> spec.withId("next-button")).click();
+
+    _get(dialog, Button.class, spec -> spec.withId("back-button")).click();
+
+    H3 title = _get(dialog, H3.class, spec -> spec.withId("wizard-step-title"));
+    assertThat(title.getText()).contains("Step 1 of 2");
+    _get(dialog, Button.class, spec -> spec.withId("open-key-page-button"));
     assertTrue(_find(dialog, PasswordField.class).isEmpty());
-    Span status = _get(dialog, Span.class, spec -> spec.withId("status-line"));
-    assertThat(status.getText()).contains("universe owner");
   }
 
-  @Test
-  @DisplayName("Link fallback is always present")
-  void linkFallback_present() {
-    openDialog();
-
-    TextField link = _get(dialog, TextField.class, spec -> spec.withId("key-link-field"));
-    assertThat(link.getValue()).isNotBlank();
-  }
+  // ── Save behavior (step 2) ────────────────────────────────────────────────
 
   @Test
   @DisplayName("Save success: status flips, field cleared, button becomes Close")
   void saveButton_roundTrip_success() {
     openDialog();
+    _get(dialog, Button.class, spec -> spec.withId("next-button")).click();
     when(aiOnboardingService.saveGeminiKey("AIza-key")).thenReturn(true);
 
     PasswordField keyField =
@@ -141,6 +144,7 @@ class AiOnboardingDialogTest extends AbstractViewTest {
   @DisplayName("Save failure: status shows could-not-verify, field kept")
   void saveButton_roundTrip_failure() {
     openDialog();
+    _get(dialog, Button.class, spec -> spec.withId("next-button")).click();
     when(aiOnboardingService.saveGeminiKey("bad-key")).thenReturn(false);
 
     PasswordField keyField =
@@ -152,6 +156,76 @@ class AiOnboardingDialogTest extends AbstractViewTest {
     Span status = _get(dialog, Span.class, spec -> spec.withId("status-line"));
     assertThat(status.getText()).contains("Could not verify");
     assertThat(keyField.getValue()).isEqualTo("bad-key");
+  }
+
+  @Test
+  @DisplayName("Save blank key surfaces the message")
+  void saveBlankKey_showsMessage() {
+    openDialog();
+    _get(dialog, Button.class, spec -> spec.withId("next-button")).click();
+    when(aiOnboardingService.saveGeminiKey(""))
+        .thenThrow(new IllegalArgumentException("API key is required"));
+
+    Button save = _get(dialog, Button.class, spec -> spec.withId("save-button"));
+    save.click();
+
+    Span status = _get(dialog, Span.class, spec -> spec.withId("status-line"));
+    assertThat(status.getText()).contains("API key is required");
+  }
+
+  // ── Informational gate states: single panel, no wizard chrome ─────────────
+
+  @Test
+  @DisplayName("NO_UNIVERSE_SELECTED: guidance shown, no key field, no wizard nav")
+  void preUniverse_saveDisabled() {
+    when(aiOnboardingService.evaluateGate())
+        .thenReturn(AiOnboardingService.GateState.NO_UNIVERSE_SELECTED);
+    openDialog();
+
+    assertTrue(_find(dialog, PasswordField.class).isEmpty());
+    assertTrue(_find(dialog, Button.class, spec -> spec.withId("save-button")).isEmpty());
+    assertTrue(_find(dialog, Button.class, spec -> spec.withId("next-button")).isEmpty());
+    Span status = _get(dialog, Span.class, spec -> spec.withId("status-line"));
+    assertThat(status.getText()).contains("Create your universe first");
+  }
+
+  @Test
+  @DisplayName("ALREADY_CONFIGURED: informational setup state, no key field, no wizard nav")
+  void alreadyConfigured_showsSetupState() {
+    when(aiOnboardingService.evaluateGate())
+        .thenReturn(AiOnboardingService.GateState.ALREADY_CONFIGURED);
+    openDialog();
+
+    assertTrue(
+        _find(dialog, PasswordField.class, spec -> spec.withId("gemini-key-field")).isEmpty());
+    assertTrue(_find(dialog, Button.class, spec -> spec.withId("save-button")).isEmpty());
+    assertTrue(_find(dialog, Button.class, spec -> spec.withId("next-button")).isEmpty());
+    Span status = _get(dialog, Span.class, spec -> spec.withId("status-line"));
+    assertThat(status.getText()).contains("already set up");
+  }
+
+  @Test
+  @DisplayName("NOT_UNIVERSE_OWNER: read-only guidance, no wizard nav")
+  void nonOwner_readOnly() {
+    when(aiOnboardingService.evaluateGate())
+        .thenReturn(AiOnboardingService.GateState.NOT_UNIVERSE_OWNER);
+    openDialog();
+
+    assertTrue(_find(dialog, PasswordField.class).isEmpty());
+    assertTrue(_find(dialog, Button.class, spec -> spec.withId("next-button")).isEmpty());
+    Span status = _get(dialog, Span.class, spec -> spec.withId("status-line"));
+    assertThat(status.getText()).contains("universe owner");
+  }
+
+  // ── Dialog chrome ─────────────────────────────────────────────────────────
+
+  @Test
+  @DisplayName("Link fallback is always present on step 1")
+  void linkFallback_present() {
+    openDialog();
+
+    TextField link = _get(dialog, TextField.class, spec -> spec.withId("key-link-field"));
+    assertThat(link.getValue()).isNotBlank();
   }
 
   @Test
@@ -185,20 +259,6 @@ class AiOnboardingDialogTest extends AbstractViewTest {
     Button cancel = _get(dialog, Button.class, spec -> spec.withId("cancel-button"));
     cancel.click();
     assertThat(dialog.isOpened()).isFalse();
-  }
-
-  @Test
-  @DisplayName("Save blank key surfaces the message")
-  void saveBlankKey_showsMessage() {
-    openDialog();
-    when(aiOnboardingService.saveGeminiKey(""))
-        .thenThrow(new IllegalArgumentException("API key is required"));
-
-    Button save = _get(dialog, Button.class, spec -> spec.withId("save-button"));
-    save.click();
-
-    Span status = _get(dialog, Span.class, spec -> spec.withId("status-line"));
-    assertThat(status.getText()).contains("API key is required");
   }
 
   @Test
