@@ -173,7 +173,10 @@ class TournamentTourViewTest extends AbstractViewTest {
   @DisplayName("Step 3 seeds automatically and starts the tournament")
   void step3_seedAndStart() {
     Tournament t = tournamentWithId(42L);
-    when(tournamentService.findById(42L)).thenReturn(Optional.of(t));
+    // The tour must resolve tournaments through the detached-safe accessor — a plain
+    // findById leaves lazy collections uninitialized and startTournament throws
+    // LazyInitializationException outside the session (found in live testing, ATW-6h2y).
+    when(tournamentService.findByIdWithDetails(42L)).thenReturn(Optional.of(t));
     when(tournamentService.seedAuto(any(), anyInt(), anyLong())).thenReturn(List.of());
     when(tournamentService.startTournament(any())).thenReturn(t);
     startAtStep(3);
@@ -182,6 +185,7 @@ class TournamentTourViewTest extends AbstractViewTest {
 
     verify(tournamentService).seedAuto(any(), anyInt(), anyLong());
     verify(tournamentService).startTournament(t);
+    verify(tournamentService, org.mockito.Mockito.never()).findById(anyLong());
   }
 
   // ── Step 4: Enter Results ────────────────────────────────────────────────
@@ -190,7 +194,7 @@ class TournamentTourViewTest extends AbstractViewTest {
   @DisplayName("Step 4 lists open matches and records a manual winner")
   void step4_recordManualResult() {
     Tournament t = startedTournamentWithOpenMatch();
-    when(tournamentService.findById(42L)).thenReturn(Optional.of(t));
+    when(tournamentService.findByIdWithDetails(42L)).thenReturn(Optional.of(t));
     startAtStep(4);
 
     TournamentEntry winner = t.getRounds().getFirst().getMatches().getFirst().getEntrant1();
@@ -206,7 +210,8 @@ class TournamentTourViewTest extends AbstractViewTest {
   @Test
   @DisplayName("Step 4 offers Decide by Engine per match")
   void step4_engineOption() {
-    when(tournamentService.findById(42L)).thenReturn(Optional.of(startedTournamentWithOpenMatch()));
+    when(tournamentService.findByIdWithDetails(42L))
+        .thenReturn(Optional.of(startedTournamentWithOpenMatch()));
     startAtStep(4);
 
     _get(view, Button.class, spec -> spec.withId("tour-engine-button-1"));

@@ -255,7 +255,7 @@ public class TournamentTourView extends VerticalLayout implements BeforeEnterObs
 
   private void seedAndStart() {
     tournamentService
-        .findById(tournamentId)
+        .findByIdWithDetails(tournamentId)
         .ifPresentOrElse(
             t -> {
               try {
@@ -279,7 +279,7 @@ public class TournamentTourView extends VerticalLayout implements BeforeEnterObs
   // ── Step 4: Enter Results ─────────────────────────────────────────────────
 
   private void renderResultsStep() {
-    Tournament t = tournamentService.findById(tournamentId).orElse(null);
+    Tournament t = tournamentService.findByIdWithDetails(tournamentId).orElse(null);
     if (t == null) {
       showStatus("Tournament not found — go back and create it.", false);
       return;
@@ -351,7 +351,7 @@ public class TournamentTourView extends VerticalLayout implements BeforeEnterObs
   // ── Step 5: Crown the Winner ──────────────────────────────────────────────
 
   private void renderCrownStep() {
-    Tournament t = tournamentService.findById(tournamentId).orElse(null);
+    Tournament t = tournamentService.findByIdWithDetails(tournamentId).orElse(null);
     if (t != null && t.getStatus() == TournamentStatus.COMPLETE) {
       stepContent.add(
           new Paragraph(
