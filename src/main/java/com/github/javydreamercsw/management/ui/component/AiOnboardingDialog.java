@@ -35,11 +35,12 @@ import com.vaadin.flow.component.textfield.TextField;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * The AI onboarding wizard (ATW-pq0s): opens at every "No AI providers" dead end, walks the user
- * through Gemini's free tier (browser-open of the key page, paste, save), and confirms with the
- * cheap configured check. Rendering is driven by {@link AiOnboardingService#evaluateGate()} —
- * already-configured, pre-universe, and non-owner states are informational; only CAN_CONFIGURE
- * offers the key field.
+ * The AI onboarding wizard (ATW-pq0s): opens at every "No AI providers" dead end and walks the user
+ * through Gemini's free tier. The configurable path is a two-step flow matching the app's other
+ * wizards (FeudScriptWizardDialog): step 1 gets the key page open (browser + copyable fallback),
+ * step 2 pastes and verifies. Informational gate states (already-configured, pre-universe,
+ * non-owner) render as a single panel with no wizard chrome. Rendering is driven by {@link
+ * AiOnboardingService#evaluateGate()}.
  */
 @Slf4j
 public class AiOnboardingDialog extends Dialog {
@@ -49,35 +50,38 @@ public class AiOnboardingDialog extends Dialog {
   private final AiOnboardingService service;
   private final SecurityUtils securityUtils;
 
+  private final H3 stepTitle = new H3();
+  private final VerticalLayout content = new VerticalLayout();
+  private final Button backButton = new Button("Back");
+  private final Button nextButton = new Button("Next");
   private final Span statusLine = new Span();
-  private final PasswordField keyField = new PasswordField("Gemini API key");
-  private final Button saveButton = new Button("Save & Finish");
-  private final VerticalLayout configureSection = new VerticalLayout();
+  private PasswordField keyField;
+  private Button saveButton;
+  private boolean saved;
+
+  private boolean twoStepFlow;
 
   public AiOnboardingDialog(AiOnboardingService service, SecurityUtils securityUtils) {
     this.service = service;
     this.securityUtils = securityUtils;
 
     setId("ai-onboarding-dialog");
-    setModal(true);
     setWidth("420px");
 
     VerticalLayout layout = new VerticalLayout();
     layout.setPadding(false);
     layout.setSpacing(false);
 
-    layout.add(new H3("Set up AI features"));
-    layout.add(
-        new Paragraph(
-            "AI narration, news and planning need an AI provider. Google Gemini's free tier"
-                + " covers this game's usage."));
+    stepTitle.setId("wizard-step-title");
+    layout.add(stepTitle);
+
+    content.setPadding(false);
+    content.setSpacing(false);
+    layout.add(content);
 
     statusLine.setId("status-line");
     statusLine.setWidthFull();
     statusLine.setVisible(false);
-
-    buildConfigureSection();
-    layout.add(configureSection);
     layout.add(statusLine);
 
     HorizontalLayout buttons = new HorizontalLayout();
@@ -95,6 +99,14 @@ public class AiOnboardingDialog extends Dialog {
       advanced.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
       buttons.add(advanced);
     }
+    backButton.setId("back-button");
+    backButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+    backButton.addClickListener(e -> navigateBack());
+    buttons.add(backButton);
+    nextButton.setId("next-button");
+    nextButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    nextButton.addClickListener(e -> navigateForward());
+    buttons.add(nextButton);
     Button cancel = new Button("Cancel", e -> close());
     cancel.setId("cancel-button");
     cancel.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
@@ -105,15 +117,73 @@ public class AiOnboardingDialog extends Dialog {
     renderForGate(service.evaluateGate());
   }
 
-  private void buildConfigureSection() {
-    configureSection.setPadding(false);
-    configureSection.setSpacing(false);
+  private void renderForGate(AiOnboardingService.GateState gate) {
+    switch (gate) {
+      case ALREADY_CONFIGURED -> {
+        twoStepFlow = false;
+        stepTitle.setText("AI is already set up");
+        content.add(
+            new Paragraph(
+                "AI narration, news and planning are ready to use. Provider settings live in"
+                    + " Admin → AI Settings."));
+        statusLine.setText("✓ AI is already set up.");
+        statusLine.getStyle().set("color", "var(--lumo-success-color)");
+        statusLine.setVisible(true);
+        backButton.setVisible(false);
+        nextButton.setVisible(false);
+      }
+      case NO_UNIVERSE_SELECTED -> {
+        twoStepFlow = false;
+        stepTitle.setText("Set up AI features");
+        content.add(
+            new Paragraph(
+                "AI narration, news and planning need an AI provider. Google Gemini's free tier"
+                    + " covers this game's usage."));
+        statusLine.setText("Create your universe first — the AI key is stored per universe.");
+        statusLine.getStyle().set("color", "var(--lumo-secondary-text-color)");
+        statusLine.setVisible(true);
+        backButton.setVisible(false);
+        nextButton.setVisible(false);
+      }
+      case NOT_UNIVERSE_OWNER -> {
+        twoStepFlow = false;
+        stepTitle.setText("Set up AI features");
+        content.add(
+            new Paragraph(
+                "AI narration, news and planning need an AI provider. Google Gemini's free tier"
+                    + " covers this game's usage."));
+        statusLine.setText("Ask your universe owner to configure AI.");
+        statusLine.getStyle().set("color", "var(--lumo-secondary-text-color)");
+        statusLine.setVisible(true);
+        backButton.setVisible(false);
+        nextButton.setVisible(false);
+      }
+      case CAN_CONFIGURE -> {
+        twoStepFlow = true;
+        renderStep1();
+      }
+    }
+  }
+
+  // ── Two-step flow (CAN_CONFIGURE) ─────────────────────────────────────────
+
+  private void renderStep1() {
+    content.removeAll();
+    stepTitle.setText("Step 1 of 2 — Get a free API key");
+    backButton.setVisible(false);
+    nextButton.setText("Next");
+    nextButton.setId("next-button");
+
+    content.add(
+        new Paragraph(
+            "AI narration, news and planning need an AI provider. Google Gemini's free tier"
+                + " covers this game's usage."));
 
     Button openKeyPage = new Button("Get a free API key", VaadinIcon.EXTERNAL_LINK.create());
     openKeyPage.setId("open-key-page-button");
     openKeyPage.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     openKeyPage.addClickListener(e -> openKeyPageInBrowser());
-    configureSection.add(openKeyPage);
+    content.add(openKeyPage);
 
     TextField linkField = new TextField("Or paste this link into your browser");
     linkField.setId("key-link-field");
@@ -121,17 +191,47 @@ public class AiOnboardingDialog extends Dialog {
     linkField.setReadOnly(true);
     linkField.setHelperText("Use this if the button didn't open a new tab.");
     linkField.setWidthFull();
-    configureSection.add(linkField);
+    content.add(linkField);
+  }
 
+  private void renderStep2() {
+    content.removeAll();
+    stepTitle.setText("Step 2 of 2 — Connect");
+    backButton.setVisible(true);
+    nextButton.setText("Save & Finish");
+
+    keyField = new PasswordField("Gemini API key");
     keyField.setId("gemini-key-field");
     keyField.setPlaceholder("AIza…");
     keyField.setWidthFull();
-    configureSection.add(keyField);
+    content.add(keyField);
 
-    saveButton.setId("save-button");
-    saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-    saveButton.addClickListener(e -> save());
-    configureSection.add(saveButton);
+    // The primary button's role changes per step (Next → Save & Finish → Close);
+    // its id follows the role so lookups stay stable.
+    nextButton.setId("save-button");
+    saveButton = nextButton;
+    statusLine.setVisible(false);
+  }
+
+  private void navigateForward() {
+    if (!twoStepFlow) {
+      return;
+    }
+    if (saved) {
+      close();
+      return;
+    }
+    if (stepTitle.getText().startsWith("Step 1")) {
+      renderStep2();
+    } else {
+      save();
+    }
+  }
+
+  private void navigateBack() {
+    if (twoStepFlow && stepTitle.getText().startsWith("Step 2")) {
+      renderStep1();
+    }
   }
 
   private void openKeyPageInBrowser() {
@@ -147,11 +247,11 @@ public class AiOnboardingDialog extends Dialog {
     statusLine.setVisible(true);
     try {
       if (service.saveGeminiKey(keyField.getValue())) {
+        saved = true;
         statusLine.setText("✓ AI is set up.");
         statusLine.getStyle().set("color", "var(--lumo-success-color)");
         keyField.clear();
-        saveButton.setText("Close");
-        saveButton.addClickListener(e -> close());
+        nextButton.setText("Close");
       } else {
         statusLine.setText("Could not verify — check the key and try again.");
         statusLine.getStyle().set("color", "var(--lumo-error-color)");
@@ -159,34 +259,6 @@ public class AiOnboardingDialog extends Dialog {
     } catch (IllegalArgumentException e) {
       statusLine.setText(e.getMessage());
       statusLine.getStyle().set("color", "var(--lumo-error-color)");
-    }
-  }
-
-  private void renderForGate(AiOnboardingService.GateState gate) {
-    switch (gate) {
-      case ALREADY_CONFIGURED -> {
-        configureSection.setVisible(false);
-        statusLine.setText("✓ AI is already set up.");
-        statusLine.getStyle().set("color", "var(--lumo-success-color)");
-        statusLine.setVisible(true);
-      }
-      case NO_UNIVERSE_SELECTED -> {
-        keyField.setVisible(false);
-        saveButton.setVisible(false);
-        statusLine.setText("Create your universe first — the AI key is stored per universe.");
-        statusLine.getStyle().set("color", "var(--lumo-secondary-text-color)");
-        statusLine.setVisible(true);
-      }
-      case NOT_UNIVERSE_OWNER -> {
-        keyField.setVisible(false);
-        saveButton.setVisible(false);
-        statusLine.setText("Ask your universe owner to configure AI.");
-        statusLine.getStyle().set("color", "var(--lumo-secondary-text-color)");
-        statusLine.setVisible(true);
-      }
-      case CAN_CONFIGURE -> {
-        // Full layout, already built.
-      }
     }
   }
 }
