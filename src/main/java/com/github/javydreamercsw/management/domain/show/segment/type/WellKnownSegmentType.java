@@ -30,6 +30,7 @@ import org.jspecify.annotations.Nullable;
 public enum WellKnownSegmentType {
   ONE_ON_ONE("one_on_one", "One on One"),
   TAG_TEAM("tag_team", "Tag Team"),
+  TRIOS("trios", "Trios"),
   PROMO("promo", "Promo"),
   ABU_DHABI_RUMBLE("abu_dhabi_rumble", "Abu Dhabi Rumble"),
   FREE_FOR_ALL("free_for_all", "Free-for-All"),

@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.show;
 
+import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -56,6 +57,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.GameClock;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.ai.AiOnboardingService;
 import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.feud.FeudScriptService;
@@ -82,6 +84,7 @@ import com.github.javydreamercsw.management.service.title.TitleOpportunityServic
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.service.tournament.TournamentTemplateBookingService;
+import com.github.javydreamercsw.management.service.tournament.TrophyReignService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.AbilityReminderTextService;
@@ -93,6 +96,7 @@ import com.github.javydreamercsw.management.ui.ViewContext;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.github.mvysny.kaributesting.v10.LocatorJ;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
@@ -396,6 +400,12 @@ class ShowDetailViewTest extends AbstractViewTest {
     assertThat(dialogText).contains("Are you sure");
   }
 
+  private AiOnboardingService aiOnboardingServiceWithGate() {
+    AiOnboardingService ai = mock(AiOnboardingService.class);
+    Mockito.when(ai.evaluateGate()).thenReturn(AiOnboardingService.GateState.CAN_CONFIGURE);
+    return ai;
+  }
+
   private ShowDetailView buildView(final SecurityUtils su) {
     ShowFacade showFacade =
         new ShowFacade(
@@ -418,7 +428,8 @@ class ShowDetailViewTest extends AbstractViewTest {
             showPlanningAiService,
             arenaService,
             tournamentService,
-            tournamentTemplateBookingService);
+            tournamentTemplateBookingService,
+            mock(TrophyReignService.class));
     WrestlerFacade wrestlerFacade =
         new WrestlerFacade(
             wrestlerService,
@@ -437,7 +448,8 @@ class ShowDetailViewTest extends AbstractViewTest {
             universeContextService,
             expansionService,
             mock(GameSettingService.class),
-            mock(GameClock.class));
+            mock(GameClock.class),
+            aiOnboardingServiceWithGate());
     return new ShowDetailView(
         showFacade,
         showContextFacade,
@@ -1002,5 +1014,45 @@ class ShowDetailViewTest extends AbstractViewTest {
     Assertions.assertThat(all).contains("Rise of Dom");
     // A 100 rating renders as a full 5 stars.
     Assertions.assertThat(all).contains("★★★★★");
+  }
+
+  @Test
+  void noAi_generateSummary_showsSetUpAiButton_opensOnboardingDialog() {
+    when(securityUtils.isViewer()).thenReturn(false);
+    ShowType showType = new ShowType();
+    showType.setName("Test");
+    Show show = new Show();
+    show.setId(1L);
+    show.setName("Test Show");
+    show.setType(showType);
+
+    Segment segment = new Segment();
+    segment.setId(10L);
+    segment.setShow(show);
+    segment.setNarration("Raw narration text");
+
+    when(showService.getShowById(any())).thenReturn(Optional.of(show));
+    when(segmentRepository.findByShow(any(Show.class))).thenReturn(List.of(segment));
+    when(segmentRepository.findByShowOrderBySegmentOrderAsc(any(Show.class)))
+        .thenReturn(List.of(segment));
+    when(segmentNarrationServiceFactory.getAvailableServicesInPriorityOrder())
+        .thenReturn(List.of());
+
+    ShowDetailView view = buildView(securityUtils);
+    UI.getCurrent().add(view);
+    BeforeEvent event = Mockito.mock(BeforeEvent.class);
+    Mockito.when(event.getLocation()).thenReturn(new Location(""));
+    view.setParameter(event, 1L);
+
+    // The Summarize button lives inside a grid component renderer that Karibu does not
+    // materialize — drive generateSummary(segment) directly instead.
+    ReflectionTestUtils.invokeMethod(view, "generateSummary", segment);
+
+    // The error notification carries the "Set up AI…" entry point (overlay → UI-level lookup)
+    Button setUpAi = _get(Button.class, spec -> spec.withText("Set up AI…"));
+    setUpAi.click();
+
+    Dialog dialog = _get(Dialog.class, spec -> spec.withId("ai-onboarding-dialog"));
+    Assertions.assertThat(dialog.isOpened()).isTrue();
   }
 }

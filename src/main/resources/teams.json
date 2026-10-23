@@ -1,37 +1,37 @@
 [ {
   "name": "The British Bulldogs",
   "description": "The legendary professional wrestling tag team of cousins Davey Boy Smith (The British Bulldog) and Dynamite Kid (Tom Billington), known for their high-impact style in the 1980s",
-  "wrestler1": "The British Bulldog",
-  "wrestler2": "Dynamite Kid"
+  "members": [ "The British Bulldog", "Dynamite Kid" ],
+  "teamSize": "DUO"
 }, {
   "name": "The Whole Fuckin' Show",
   "description": "They blended RVD’s martial arts style with Sabu’s hardcore, table-breaking antics. They won the ECW World Tag Team Championship twice, blending aerial grace with extreme violence.",
-  "wrestler1": "Rob Van Dam",
-  "wrestler2": "Sabu"
+  "members": [ "Rob Van Dam", "Sabu" ],
+  "teamSize": "DUO"
 }, {
   "name": "The Trailblazers",
   "description": "High flying duo with amazing moves. With talent that transcends time.",
-  "wrestler1": "Jax Felix",
-  "wrestler2": "Rey Jaguar"
+  "members": [ "Jax Felix", "Rey Jaguar" ],
+  "teamSize": "DUO"
 }, {
   "name": "Desolation Smile",
   "description": "The Ugandan Giant Kamala and the insane Daemon are just a pairing made in hell.",
-  "wrestler1": "Kamala",
-  "wrestler2": "Daemon"
+  "members": [ "Kamala", "Daemon" ],
+  "teamSize": "DUO"
 }, {
   "name": "The Mega Powers",
   "description": "An unlikely but dominant pairing of the Macho Man and the 8th Wonder of the World.",
-  "wrestler1": "Randy Savage",
-  "wrestler2": "André the Giant"
+  "members": [ "Randy Savage", "André the Giant" ],
+  "teamSize": "DUO"
 }, {
   "name": "The IInspiration",
   "description": "A world-renowned duo from Australia, Cassie Lee and Jessie McKay bring a unique blend of comedic arrogance and tactical synergy. As multi-time tag team champions across multiple eras, they rely on their life-long friendship and a 'mental game' that leaves opponents both annoyed and defeated.",
-  "wrestler1": "Cassie Lee",
-  "wrestler2": "Jessie McKay"
+  "members": [ "Cassie Lee", "Jessie McKay" ],
+  "teamSize": "DUO"
 }, {
   "name": "The Hurt Business",
   "description": "Bobby Lashley, MVP, and Shelton Benjamin are a dominant faction that combines Lashley's raw power with MVP's strategic mind and Benjamin's technical prowess. They have held multiple championships across various promotions, using their collective strength and cunning to maintain their position at the top of the wrestling world.",
-  "wrestler1": "Bobby Lashley",
-  "wrestler2": "Shelton Benjamin",
+  "members": [ "Bobby Lashley", "Shelton Benjamin" ],
+  "teamSize": "DUO",
   "manager": "MVP"
 } ]

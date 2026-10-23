@@ -29,20 +29,28 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.team.Team;
+import com.github.javydreamercsw.management.domain.team.TeamOrigin;
+import com.github.javydreamercsw.management.domain.team.TeamSize;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
+import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowFacade;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.tournament.QualifierGroupsFormat;
 import com.github.javydreamercsw.management.service.tournament.TournamentFormat;
@@ -51,12 +59,14 @@ import com.github.javydreamercsw.management.service.universe.UniverseContextServ
 import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.ViewContext;
+import com.github.javydreamercsw.management.ui.component.TeamRowsEditor;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
@@ -65,6 +75,8 @@ import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -73,6 +85,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -100,6 +113,7 @@ class TournamentListViewTest extends AbstractViewTest {
   @Mock private SecurityUtils securityUtils;
   @Mock private TitleService titleService;
   @Mock private WrestlerService wrestlerService;
+  @Mock private TeamService teamService;
   @Mock private TournamentFormat format;
   @Mock private TournamentFormat qualifierFormat;
 
@@ -121,6 +135,7 @@ class TournamentListViewTest extends AbstractViewTest {
     lenient().when(wrestlerService.getAllWrestlers()).thenReturn(List.of());
     lenient().when(wrestlerFacade.getTitleService()).thenReturn(titleService);
     lenient().when(wrestlerFacade.getWrestlerService()).thenReturn(wrestlerService);
+    lenient().when(wrestlerFacade.getTeamService()).thenReturn(teamService);
     lenient().when(showFacade.getSegmentRuleService()).thenReturn(segmentRuleService);
     lenient().when(showFacade.getSegmentTypeService()).thenReturn(segmentTypeService);
     lenient().when(showFacade.getShowService()).thenReturn(showService);
@@ -166,12 +181,20 @@ class TournamentListViewTest extends AbstractViewTest {
                 any(),
                 any(),
                 anyBoolean(),
-                anyBoolean()))
+                anyBoolean(),
+                any(),
+                any()))
         .thenAnswer(
             inv -> {
               Tournament t = tournament();
               return t;
             });
+    lenient()
+        .when(tournamentService.countEligibleTeamEntrants(any(TeamSize.class), any(), any(), any()))
+        .thenReturn(6);
+    lenient()
+        .when(tournamentService.findEligibleTeamsSortedByFans(any(Tournament.class)))
+        .thenReturn(List.of());
     lenient().when(tournamentService.deleteTournament(anyLong())).thenReturn(true);
 
     view = new TournamentListView(tournamentService, wrestlerFacade, showFacade, viewContext);
@@ -265,7 +288,9 @@ class TournamentListViewTest extends AbstractViewTest {
             any(),
             any(),
             eq(false),
-            eq(false));
+            eq(false),
+            isNull(),
+            isNull());
     verify(tournamentService).seedAuto(any(Tournament.class), anyInt(), anyLong());
   }
 
@@ -335,7 +360,9 @@ class TournamentListViewTest extends AbstractViewTest {
             any(),
             any(),
             eq(false),
-            eq(true));
+            eq(true),
+            isNull(),
+            isNull());
   }
 
   @Test
@@ -364,7 +391,9 @@ class TournamentListViewTest extends AbstractViewTest {
             any(),
             any(),
             eq(true),
-            eq(false));
+            eq(false),
+            isNull(),
+            isNull());
   }
 
   @Test
@@ -387,6 +416,30 @@ class TournamentListViewTest extends AbstractViewTest {
 
     payoffMode.setValue("Title on the line");
     assertTrue(titleCombo.isEnabled(), "Title mode must re-enable the title combo");
+  }
+
+  @Test
+  @DisplayName(
+      "Changing the gender filter in singles mode keeps a briefcase selection (fix-wave T7)")
+  void wizardGenderChange_singlesMode_keepsBriefcaseSelected() {
+    view.openCreationWizardForTest();
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    RadioButtonGroup<String> payoffMode =
+        _get(UI.getCurrent(), RadioButtonGroup.class, spec -> spec.withLabel("Payoff"));
+    payoffMode.setValue("Winner earns the briefcase");
+
+    // The gender filter also re-runs refreshTeamPickers — it must not clobber the briefcase
+    // the booker just picked in singles mode (the payoff reset runs only on a team→singles
+    // entrant-type transition).
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    ComboBox<Gender> genderCombo =
+        _get(UI.getCurrent(), ComboBox.class, spec -> spec.withLabel("Gender Filter (optional)"));
+    genderCombo.setValue(Gender.FEMALE);
+
+    assertEquals(
+        "Winner earns the briefcase",
+        payoffMode.getValue(),
+        "A gender-filter change in singles mode must leave the briefcase selection intact");
   }
 
   @Test
@@ -429,7 +482,8 @@ class TournamentListViewTest extends AbstractViewTest {
             any(),
             eq(true),
             eq(false),
-            eq(true));
+            eq(true),
+            isNull());
   }
 
   @Test
@@ -466,7 +520,8 @@ class TournamentListViewTest extends AbstractViewTest {
             any(),
             eq(true),
             eq(false),
-            eq(false));
+            eq(false),
+            isNull());
   }
 
   @Test
@@ -581,7 +636,9 @@ class TournamentListViewTest extends AbstractViewTest {
             any(),
             any(),
             eq(false),
-            eq(false));
+            eq(false),
+            isNull(),
+            isNull());
   }
 
   @Test
@@ -720,7 +777,7 @@ class TournamentListViewTest extends AbstractViewTest {
         .when(
             tournamentService.updateTournament(
                 any(), any(), any(), any(), any(), any(), any(), any(), any(), eq(true), eq(false),
-                eq(false)))
+                eq(false), any()))
         .thenThrow(new IllegalArgumentException("A contender-deciding tournament needs a title"));
 
     view.openEditDialogForTest(tournament());
@@ -742,5 +799,424 @@ class TournamentListViewTest extends AbstractViewTest {
     } catch (ReflectiveOperationException e) {
       throw new IllegalStateException("Failed to fire confirm event", e);
     }
+  }
+
+  // ── Team entrant wizard (ATW-01g2) ───────────────────────────────────────
+
+  @Test
+  @DisplayName("Wizard defaults to Singles and hides the team panel")
+  void wizardEntrantType_defaultsToSingles() {
+    view.openCreationWizardForTest();
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    RadioButtonGroup<String> entrantType =
+        _get(UI.getCurrent(), RadioButtonGroup.class, spec -> spec.withLabel("Entrants"));
+    assertEquals(TournamentListView.SINGLES_LABEL, entrantType.getValue());
+    // The registry picker exists but is hidden until a team mode + Manual seeding is chosen
+    // (it is not visible, so it is located via _find, which does not apply the visibility
+    // filter _get does).
+    assertTrue(
+        _find(
+                UI.getCurrent(),
+                MultiSelectComboBox.class,
+                spec -> spec.withId("team-registry-picker"))
+            .stream()
+            .noneMatch(Component::isVisible),
+        "Registry picker must be hidden in singles mode");
+  }
+
+  @Test
+  @DisplayName("Tag Team mode passes teamSize=DUO and null payoff modes to createTournament")
+  void wizardCreate_tagTeamMode_passesTeamSize() {
+    view.openCreationWizardForTest();
+    fillDetailsStep();
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    RadioButtonGroup<String> entrantType =
+        _get(UI.getCurrent(), RadioButtonGroup.class, spec -> spec.withLabel("Entrants"));
+    entrantType.setValue(TournamentListView.TAG_TEAM_LABEL);
+
+    // Team tournaments are inaugural-champion only: contender/briefcase are disabled (the
+    // itemEnabledProvider grays them out; the disabled items still enumerate in the view).
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    RadioButtonGroup<String> payoffMode =
+        _get(UI.getCurrent(), RadioButtonGroup.class, spec -> spec.withLabel("Payoff"));
+    assertFalse(
+        payoffMode.getItemEnabledProvider().test("Winner earns the briefcase"),
+        "Briefcase must be disabled in team mode");
+    assertTrue(
+        payoffMode.getItemEnabledProvider().test("Title on the line"),
+        "Title-on-the-line must stay enabled in team mode");
+
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Next")).click();
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Create Tournament")).click();
+
+    verify(tournamentService)
+        .createTournament(
+            eq("Fed Cup"),
+            eq("SINGLE_ELIMINATION"),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            any(),
+            eq(false),
+            eq(false),
+            eq(TeamSize.DUO),
+            isNull());
+    // The seeding tab defaults to Auto — team mode delegates to the team seedAuto path.
+    verify(tournamentService).seedAuto(any(Tournament.class), anyInt(), anyLong());
+    verify(teamService, Mockito.never())
+        .createTeam(any(), any(), any(), any(), any(), any(), any());
+  }
+
+  @Test
+  @DisplayName("Team create seeds the picked registry team and a one-off assembled team")
+  void wizardCreate_teamEntrants_registryAndOneOff() {
+    Wrestler a = new Wrestler();
+    a.setId(101L);
+    a.setName("Alpha");
+    Wrestler b = new Wrestler();
+    b.setId(102L);
+    b.setName("Beta");
+    Wrestler c = new Wrestler();
+    c.setId(103L);
+    c.setName("Gamma");
+    Wrestler d = new Wrestler();
+    d.setId(104L);
+    d.setName("Delta");
+    Team duo = new Team();
+    duo.setId(900L);
+    duo.setName("Picked Duo");
+    duo.setTeamSize(TeamSize.DUO);
+    duo.setMembers(List.of(a, b));
+    lenient()
+        .when(tournamentService.findEligibleTeamsSortedByFans(any(Tournament.class)))
+        .thenReturn(List.of(duo));
+    lenient().when(wrestlerService.getAllWrestlers()).thenReturn(List.of(a, b, c, d));
+    Team oneOff = new Team();
+    oneOff.setId(901L);
+    oneOff.setName("Gamma & Delta");
+    oneOff.setTeamSize(TeamSize.DUO);
+    oneOff.setMembers(List.of(c, d));
+    lenient()
+        .when(teamService.createTeam(any(), any(), any(), eq(TeamSize.DUO), any(), any(), any()))
+        .thenReturn(Optional.of(oneOff));
+    lenient().when(teamService.generateUniqueName(any())).thenReturn("Gamma & Delta");
+
+    view.openCreationWizardForTest();
+    fillDetailsStep();
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    RadioButtonGroup<String> entrantType =
+        _get(UI.getCurrent(), RadioButtonGroup.class, spec -> spec.withLabel("Entrants"));
+    entrantType.setValue(TournamentListView.TAG_TEAM_LABEL);
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Next")).click();
+    // Manual seeding on the seeding tab — reveals the registry picker (mirrors the singles
+    // wrestler picker's visibility). Auto is covered by wizardCreate_teamAutoSeed_callsSeedAuto.
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    ComboBox<String> seedingMode =
+        _get(UI.getCurrent(), ComboBox.class, spec -> spec.withLabel("Seeding Method"));
+    seedingMode.setValue("Manual (pick wrestlers)");
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    MultiSelectComboBox<Team> registryPicker =
+        _get(
+            UI.getCurrent(),
+            MultiSelectComboBox.class,
+            spec -> spec.withId("team-registry-picker"));
+    registryPicker.setValue(new LinkedHashSet<>(List.of(duo)));
+    // Assemble a one-off team in the editor's seeded row.
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    MultiSelectComboBox<Wrestler> teamRow = oneOffRowCombo(1);
+    teamRow.setValue(new LinkedHashSet<>(List.of(c, d)));
+
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Create Tournament")).click();
+
+    verify(tournamentService).addEntry(any(Tournament.class), eq(duo), eq(1));
+    verify(teamService)
+        .createTeam(
+            eq("Gamma & Delta"),
+            isNull(),
+            any(),
+            eq(TeamSize.DUO),
+            isNull(),
+            isNull(),
+            eq(TeamOrigin.AD_HOC));
+    verify(tournamentService).addEntry(any(Tournament.class), eq(oneOff), eq(2));
+    // Default-off checkbox: no registry save.
+    verify(teamService, Mockito.never()).saveToRegistry(any(Team.class));
+  }
+
+  /** The Nth (1-based) team row combo inside the wizard's one-off editor. */
+  @SuppressWarnings({"rawtypes", "unchecked"})
+  private MultiSelectComboBox<Wrestler> oneOffRowCombo(int rowNumber) {
+    TeamRowsEditor editor =
+        _get(UI.getCurrent(), TeamRowsEditor.class, spec -> spec.withId("wizard-one-off-teams"));
+    List<MultiSelectComboBox<Wrestler>> rows = new ArrayList<>();
+    editor.getChildren().forEach(child -> flattenCombos(child, rows));
+    if (rows.size() < rowNumber) {
+      throw new AssertionError(
+          "Row " + rowNumber + " not found; editor has " + rows.size() + " row(s)");
+    }
+    return rows.get(rowNumber - 1);
+  }
+
+  /** The editor's own "+ Add Team" button (found through the editor, not the whole UI). */
+  private Button oneOffAddTeamButton() {
+    TeamRowsEditor editor =
+        _get(UI.getCurrent(), TeamRowsEditor.class, spec -> spec.withId("wizard-one-off-teams"));
+    List<Button> buttons = new ArrayList<>();
+    editor.getChildren().forEach(child -> flattenButtons(child, buttons));
+    return buttons.stream()
+        .filter(b -> "+ Add Team".equals(b.getText()))
+        .findFirst()
+        .orElseThrow(() -> new AssertionError("+ Add Team button not found in the editor"));
+  }
+
+  private static void flattenButtons(Component component, List<Button> sink) {
+    if (component instanceof Button button) {
+      sink.add(button);
+    }
+    component
+        .getChildren()
+        .forEach(
+            child -> {
+              if (child instanceof Button button) {
+                sink.add(button);
+              } else {
+                flattenButtons(child, sink);
+              }
+            });
+  }
+
+  private static void flattenCombos(Component component, List<MultiSelectComboBox<Wrestler>> sink) {
+    if (component instanceof MultiSelectComboBox<?> combo) {
+      sink.add((MultiSelectComboBox<Wrestler>) combo);
+    }
+    component
+        .getChildren()
+        .forEach(
+            child -> {
+              if (child instanceof MultiSelectComboBox<?> combo) {
+                sink.add((MultiSelectComboBox<Wrestler>) combo);
+              } else {
+                flattenCombos(child, sink);
+              }
+            });
+  }
+
+  @Test
+  @DisplayName("One-off rows create one team per row with sequential seeds")
+  void wizardCreate_oneOffRows_createOneTeamPerRow() {
+    Wrestler a = new Wrestler();
+    a.setId(101L);
+    a.setName("Alpha");
+    Wrestler b = new Wrestler();
+    b.setId(102L);
+    b.setName("Beta");
+    Wrestler c = new Wrestler();
+    c.setId(103L);
+    c.setName("Gamma");
+    Wrestler d = new Wrestler();
+    d.setId(104L);
+    d.setName("Delta");
+    lenient()
+        .when(tournamentService.findEligibleTeamsSortedByFans(any(Tournament.class)))
+        .thenReturn(List.of());
+    lenient().when(wrestlerService.getAllWrestlers()).thenReturn(List.of(a, b, c, d));
+    Team first = new Team();
+    first.setId(901L);
+    first.setName("Alpha & Beta");
+    first.setTeamSize(TeamSize.DUO);
+    first.setMembers(List.of(a, b));
+    Team second = new Team();
+    second.setId(902L);
+    second.setName("Delta & Gamma");
+    second.setTeamSize(TeamSize.DUO);
+    second.setMembers(List.of(d, c));
+    lenient()
+        .when(teamService.createTeam(any(), any(), any(), eq(TeamSize.DUO), any(), any(), any()))
+        .thenReturn(Optional.of(first), Optional.of(second));
+    lenient().when(teamService.generateUniqueName(any())).thenReturn("One-Off Duo");
+
+    view.openCreationWizardForTest();
+    fillDetailsStep();
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    RadioButtonGroup<String> entrantType =
+        _get(UI.getCurrent(), RadioButtonGroup.class, spec -> spec.withLabel("Entrants"));
+    entrantType.setValue(TournamentListView.TAG_TEAM_LABEL);
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Next")).click();
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    ComboBox<String> seedingMode =
+        _get(UI.getCurrent(), ComboBox.class, spec -> spec.withLabel("Seeding Method"));
+    seedingMode.setValue("Manual (pick wrestlers)");
+
+    // Two rows, one duo each: row 1 = Alpha & Beta, row 2 = Gamma & Delta.
+    oneOffAddTeamButton().click();
+    oneOffRowCombo(1).setValue(new LinkedHashSet<>(List.of(a, b)));
+    oneOffRowCombo(2).setValue(new LinkedHashSet<>(List.of(c, d)));
+
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Create Tournament")).click();
+
+    verify(teamService, Mockito.times(2))
+        .createTeam(
+            any(), isNull(), any(), eq(TeamSize.DUO), isNull(), isNull(), eq(TeamOrigin.AD_HOC));
+    verify(tournamentService).addEntry(any(Tournament.class), eq(first), eq(1));
+    verify(tournamentService).addEntry(any(Tournament.class), eq(second), eq(2));
+  }
+
+  @Test
+  @DisplayName("A one-off row holding the wrong member count is rejected at create")
+  void wizardCreate_oneOffRow_wrongSize_rejected() {
+    Wrestler a = new Wrestler();
+    a.setId(101L);
+    a.setName("Alpha");
+    Wrestler b = new Wrestler();
+    b.setId(102L);
+    b.setName("Beta");
+    Wrestler c = new Wrestler();
+    c.setId(103L);
+    c.setName("Gamma");
+    lenient()
+        .when(tournamentService.findEligibleTeamsSortedByFans(any(Tournament.class)))
+        .thenReturn(List.of());
+    lenient().when(wrestlerService.getAllWrestlers()).thenReturn(List.of(a, b, c));
+
+    view.openCreationWizardForTest();
+    fillDetailsStep();
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    RadioButtonGroup<String> entrantType =
+        _get(UI.getCurrent(), RadioButtonGroup.class, spec -> spec.withLabel("Entrants"));
+    entrantType.setValue(TournamentListView.TAG_TEAM_LABEL);
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Next")).click();
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    ComboBox<String> seedingMode =
+        _get(UI.getCurrent(), ComboBox.class, spec -> spec.withLabel("Seeding Method"));
+    seedingMode.setValue("Manual (pick wrestlers)");
+    // The row editor trims over-size picks to the declared size; a solo pick in a duo row is
+    // the booker's partial team — create rejects it.
+    oneOffRowCombo(1).setValue(new LinkedHashSet<>(List.of(a, b, c)));
+
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Create Tournament")).click();
+
+    verify(teamService, Mockito.never())
+        .createTeam(any(), any(), any(), any(), any(), any(), any());
+    verify(tournamentService, Mockito.never())
+        .addEntry(any(Tournament.class), any(Team.class), anyInt());
+  }
+
+  @Test
+  @DisplayName("One-off row picker excludes inactive and wrong-gender wrestlers")
+  void wizardOneOffPicker_filtersByActiveAndGender() {
+    Wrestler male = new Wrestler();
+    male.setId(101L);
+    male.setName("Alpha");
+    Wrestler female = new Wrestler();
+    female.setId(102L);
+    female.setName("Bravo");
+    female.setGender(Gender.FEMALE);
+    Wrestler inactive = new Wrestler();
+    inactive.setId(103L);
+    inactive.setName("Charlie");
+    inactive.setActive(false);
+    lenient().when(wrestlerService.getAllWrestlers()).thenReturn(List.of(male, female, inactive));
+
+    view.openCreationWizardForTest();
+    fillDetailsStep();
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    RadioButtonGroup<String> entrantType =
+        _get(UI.getCurrent(), RadioButtonGroup.class, spec -> spec.withLabel("Entrants"));
+    entrantType.setValue(TournamentListView.TAG_TEAM_LABEL);
+    // Women's-division gender filter on the tournament.
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    ComboBox<Gender> genderCombo =
+        _get(UI.getCurrent(), ComboBox.class, spec -> spec.withLabel("Gender Filter (optional)"));
+    genderCombo.setValue(Gender.FEMALE);
+
+    // The one-off editor lives on the seeding tab: advance, then switch to Manual to reveal it.
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Next")).click();
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    ComboBox<String> seedingMode =
+        _get(UI.getCurrent(), ComboBox.class, spec -> spec.withLabel("Seeding Method"));
+    seedingMode.setValue("Manual (pick wrestlers)");
+
+    List<Wrestler> offered = oneOffRowCombo(1).getListDataView().getItems().toList();
+    // Women's-division filter: only gender-matching, active wrestlers are offered.
+    assertTrue(offered.contains(female), "A matching-gender active wrestler must be offered");
+    assertFalse(offered.contains(male), "A wrong-gender wrestler must not be offered");
+    assertFalse(offered.contains(inactive), "An inactive wrestler must not be offered");
+  }
+
+  @Test
+  @DisplayName(
+      "Team create with Auto seeding delegates to seedAuto (seeding tab works in team mode)")
+  void wizardCreate_teamAutoSeed_callsSeedAuto() {
+    view.openCreationWizardForTest();
+    fillDetailsStep();
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    RadioButtonGroup<String> entrantType =
+        _get(UI.getCurrent(), RadioButtonGroup.class, spec -> spec.withLabel("Entrants"));
+    entrantType.setValue(TournamentListView.TAG_TEAM_LABEL);
+    // Seeding tab defaults to Auto.
+
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Next")).click();
+    _get(UI.getCurrent(), Button.class, spec -> spec.withText("Create Tournament")).click();
+
+    verify(tournamentService).seedAuto(any(Tournament.class), anyInt(), anyLong());
+    verify(tournamentService, Mockito.never())
+        .addEntry(any(Tournament.class), any(Team.class), anyInt());
+    verify(teamService, Mockito.never())
+        .createTeam(any(), any(), any(), any(), any(), any(), any());
+  }
+
+  // ── Catalog filter (ATW-p0sz.1) ─────────────────────────────────────────────
+
+  @Test
+  @DisplayName("A pristine catalog row (code set, SCHEDULED, zero entries) is hidden")
+  void pristineCatalogRow_hidden() {
+    Tournament catalog = tournament();
+    catalog.setCode("deadly_combat");
+    catalog.setStatus(TournamentStatus.SCHEDULED);
+    lenient().when(tournamentService.countEntries(catalog)).thenReturn(0L);
+    lenient().when(tournamentService.findAll()).thenReturn(List.of(catalog));
+
+    view.refreshGridForTest();
+
+    assertEquals(0, gridRowCount());
+  }
+
+  @Test
+  @DisplayName("A catalog row that has been seeded or started still lists")
+  void seededCatalogRow_visible() {
+    Tournament catalog = tournament();
+    catalog.setCode("deadly_combat");
+    catalog.setStatus(TournamentStatus.SCHEDULED);
+    lenient().when(tournamentService.findAll()).thenReturn(List.of(catalog));
+    // Default countEntries stub returns 8L (seeded) — the row stays visible.
+
+    view.refreshGridForTest();
+
+    assertEquals(1, gridRowCount());
+  }
+
+  @Test
+  @DisplayName("A player-created tournament (no code) always lists")
+  void playerCreatedTournament_visible() {
+    Tournament created = tournament();
+    created.setCode(null);
+    created.setStatus(TournamentStatus.SCHEDULED);
+    lenient().when(tournamentService.findAll()).thenReturn(List.of(created));
+    lenient().when(tournamentService.countEntries(created)).thenReturn(0L);
+
+    view.refreshGridForTest();
+
+    assertEquals(1, gridRowCount());
+  }
+
+  private long gridRowCount() {
+    @SuppressWarnings("unchecked")
+    Grid<Tournament> g = (Grid<Tournament>) _get(view, Grid.class);
+    return g.getListDataView().getItemCount();
   }
 }

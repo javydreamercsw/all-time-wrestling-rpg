@@ -40,6 +40,12 @@ public class ShowPlanningContextDTO {
   /** Currently held Money in the Bank-style briefcases ("holder — name" lines, ATW-brrz). */
   private List<String> heldBriefcases = new ArrayList<>();
 
+  /**
+   * Named-tournament trophy honors on the roster: "wrestler — 2026 Dusty Cup winner" lines — past
+   * tournament glory usable as backstory.
+   */
+  private List<String> trophyHonors = new ArrayList<>();
+
   private List<FeudScriptBeatDTO> upcomingScriptedBeats;
 
   /**

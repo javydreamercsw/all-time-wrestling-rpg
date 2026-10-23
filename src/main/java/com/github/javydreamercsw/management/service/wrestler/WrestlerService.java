@@ -31,6 +31,7 @@ import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignmentRepository;
 import com.github.javydreamercsw.management.domain.injury.Injury;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpSource;
+import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.universe.UniverseWrestlerExclusionRepository;
@@ -79,6 +80,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class WrestlerService {
 
   private final WrestlerRepository wrestlerRepository;
+  private final TeamRepository teamRepository;
   private final WrestlerStateRepository wrestlerStateRepository;
   private final TierBoundaryRepository tierBoundaryRepository;
   private final ApplicationEventPublisher eventPublisher;
@@ -97,6 +99,7 @@ public class WrestlerService {
   @Autowired
   public WrestlerService(
       final WrestlerRepository wrestlerRepository,
+      final TeamRepository teamRepository,
       final WrestlerStateRepository wrestlerStateRepository,
       final TierBoundaryRepository tierBoundaryRepository,
       final ApplicationEventPublisher eventPublisher,
@@ -112,6 +115,7 @@ public class WrestlerService {
       final UniverseSettingsService universeSettingsService,
       final AccountRepository accountRepository) {
     this.wrestlerRepository = wrestlerRepository;
+    this.teamRepository = teamRepository;
     this.wrestlerStateRepository = wrestlerStateRepository;
     this.tierBoundaryRepository = tierBoundaryRepository;
     this.eventPublisher = eventPublisher;
@@ -163,6 +167,35 @@ public class WrestlerService {
       allEntries = true)
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
   public void delete(@NonNull final Long id) {
+    // Disband teams left short-handed by this delete. The legacy wrestler1/2 columns cascaded
+    // the whole team row away with the wrestler; under team_member only the membership rows
+    // cascade, so the team row would survive as an empty ACTIVE husk that NPEs every roster
+    // pool reading its members (segment editor, rankings, tournament registry). A below-size
+    // team is disbanded rather than deleted — title_reign and tournament_entry may still
+    // reference it (no cascade on those FKs), and a disband keeps the lineage readable.
+    wrestlerRepository
+        .findById(id)
+        .ifPresent(
+            wrestler ->
+                teamRepository
+                    .findByWrestler(wrestler)
+                    .forEach(
+                        team -> {
+                          long remaining =
+                              team.getMembers().stream()
+                                  .filter(member -> !member.getWrestler().getId().equals(id))
+                                  .count();
+                          if (team.getTeamSize() != null
+                              && remaining < team.getTeamSize().getMemberCount()) {
+                            team.disband();
+                            teamRepository.save(team);
+                            log.info(
+                                "Disbanded team '{}' — member '{}' deleted left it below its"
+                                    + " declared size",
+                                team.getName(),
+                                wrestler.getName());
+                          }
+                        }));
     wrestlerRepository.deleteById(id);
   }
 
@@ -478,15 +511,32 @@ public class WrestlerService {
         .findById(wrestlerId)
         .ifPresent(
             w -> {
+              Account previousOwner = w.getAccount();
               if (accountId != null) {
                 accountRepository
                     .findById(accountId)
                     .ifPresent(
                         account -> {
+                          // Sweep a stale pointer: if the wrestler was reassigned from another
+                          // account that still lists this wrestler as its active one, clear
+                          // that pointer so the old account does not keep claiming it.
+                          if (previousOwner != null
+                              && !previousOwner.equals(account)
+                              && wrestlerId.equals(previousOwner.getActiveWrestlerId())) {
+                            previousOwner.setActiveWrestlerId(null);
+                            accountRepository.save(previousOwner);
+                          }
                           w.setAccount(account);
                           log.info("Setting account {} for wrestler {}", accountId, wrestlerId);
                         });
               } else {
+                // Unassigning leaves the same stale-pointer problem behind: clear the old
+                // account's active pointer too.
+                if (previousOwner != null
+                    && wrestlerId.equals(previousOwner.getActiveWrestlerId())) {
+                  previousOwner.setActiveWrestlerId(null);
+                  accountRepository.save(previousOwner);
+                }
                 w.setAccount(null);
               }
               wrestlerRepository.save(w);

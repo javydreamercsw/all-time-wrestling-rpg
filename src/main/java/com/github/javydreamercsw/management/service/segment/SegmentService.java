@@ -61,6 +61,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -555,6 +556,29 @@ public class SegmentService {
             });
     segmentRepository.deleteById(id);
     log.info("Deleted match with ID: {}", id);
+  }
+
+  /**
+   * Compensation delete for callers whose transaction outlives an inner REQUIRES_NEW segment insert
+   * (e.g. the tournament runner around {@code NPCSegmentResolutionService}): when the outer
+   * transaction rolls back after the inner one already committed, the segment row is left on the
+   * show referenced by no tournament match. This method deletes it in its own independent
+   * transaction — REQUIRED would join the caller's rollback-marked transaction and undo nothing.
+   * Best-effort by contract: callers wrap it and keep the original failure.
+   *
+   * @param id the id of the orphaned segment to delete
+   */
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public void deleteSegmentInNewTransaction(@NonNull final Long id) {
+    tournamentMatchRepository
+        .findBySegmentId(id)
+        .ifPresent(
+            match -> {
+              match.setSegment(null);
+              tournamentMatchRepository.save(match);
+            });
+    segmentRepository.deleteById(id);
+    log.info("Compensation delete of orphaned segment {}", id);
   }
 
   /**

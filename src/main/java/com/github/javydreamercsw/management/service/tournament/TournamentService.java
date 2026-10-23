@@ -20,9 +20,16 @@ import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.reservation.ShowSegmentReservationPurpose;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.team.Team;
+import com.github.javydreamercsw.management.domain.team.TeamMember;
+import com.github.javydreamercsw.management.domain.team.TeamOrigin;
+import com.github.javydreamercsw.management.domain.team.TeamRepository;
+import com.github.javydreamercsw.management.domain.team.TeamSize;
+import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
@@ -37,7 +44,10 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundRepository;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus;
 import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
+import com.github.javydreamercsw.management.domain.tournament.TrophyReign;
+import com.github.javydreamercsw.management.domain.tournament.TrophyReignRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.show.ShowBookingService;
@@ -46,7 +56,9 @@ import com.github.javydreamercsw.management.service.title.TitleOpportunityServic
 import jakarta.annotation.Nullable;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -71,12 +83,16 @@ public class TournamentService {
   private final TournamentRoundRepository roundRepository;
   private final TournamentMatchRepository matchRepository;
   private final WrestlerRepository wrestlerRepository;
+  private final TeamRepository teamRepository;
+  private final UniverseRepository universeRepository;
   private final ShowRepository showRepository;
   private final ShowBookingService showBookingService;
   private final ShowSegmentReservationService reservationService;
   private final TitleReignRepository titleReignRepository;
   private final SegmentRuleRepository segmentRuleRepository;
   private final TitleOpportunityService titleOpportunityService;
+  private final TrophyReignRepository trophyReignRepository;
+  private final TrophyReignService trophyReignService;
   private final List<TournamentFormat> formats;
 
   private TournamentFormatContext formatContext() {
@@ -170,7 +186,9 @@ public class TournamentService {
   }
 
   private Tournament initializeGraph(@NonNull Tournament t) {
-    t.getEntries().forEach(e -> e.getWrestler().getName());
+    // entrantName() touches whichever side the entry carries (team name or wrestler name) so the
+    // detached detail view reads it without a lazy-initialization exception.
+    t.getEntries().forEach(e -> e.entrantName());
     t.getAllowedRules().forEach(SegmentRule::getName);
     // The detail view reads the linked championship's name outside the session.
     if (t.getLinkedTitle() != null) {
@@ -189,10 +207,10 @@ public class TournamentService {
               r.getMatches()
                   .forEach(
                       m -> {
-                        m.getEntrant1().getWrestler().getName();
-                        m.getEntrant2().getWrestler().getName();
+                        m.getEntrant1().entrantName();
+                        m.getEntrant2().entrantName();
                         if (m.getWinner() != null) {
-                          m.getWinner().getWrestler().getName();
+                          m.getWinner().entrantName();
                         }
                         // The bracket label reads the booked segment's applied rule (and the
                         // segment link itself) outside the session — touch both eagerly.
@@ -334,6 +352,69 @@ public class TournamentService {
       Gender gender,
       boolean contenderDeciding,
       boolean briefcaseDeciding) {
+    return createTournament(
+        name,
+        formatId,
+        universe,
+        linkedTitle,
+        startDate,
+        allowedRules,
+        payoffShow,
+        payoffSegmentType,
+        payoffSegmentRule,
+        gender,
+        contenderDeciding,
+        briefcaseDeciding,
+        null,
+        null);
+  }
+
+  /**
+   * Full overload including the entrant type: {@code teamSize} null keeps the singles semantics; a
+   * non-null value creates a team tournament taking team entrants of exactly that declared size.
+   * Team tournaments cannot decide contenders or briefcases (both stay singles-only — the winner is
+   * a team, and a team neither challenges as an individual nor holds a cashable briefcase), and
+   * when a TEAM title is linked its {@code Title.getTeamSize()} must match.
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public Tournament createTournament(
+      String name,
+      String formatId,
+      Universe universe,
+      Title linkedTitle,
+      LocalDate startDate,
+      List<SegmentRule> allowedRules,
+      Show payoffShow,
+      SegmentType payoffSegmentType,
+      SegmentRule payoffSegmentRule,
+      Gender gender,
+      boolean contenderDeciding,
+      boolean briefcaseDeciding,
+      TeamSize teamSize,
+      @Nullable String trophyName) {
+    if (teamSize != null) {
+      if (contenderDeciding || briefcaseDeciding) {
+        throw new IllegalArgumentException(
+            "Team tournaments are inaugural-champion tournaments only — contender- and"
+                + " briefcase-deciding payoffs stay singles");
+      }
+      if (linkedTitle != null) {
+        if (linkedTitle.getChampionshipType() != ChampionshipType.TEAM) {
+          throw new IllegalArgumentException(
+              "A team tournament must link a TEAM championship — '"
+                  + linkedTitle.getName()
+                  + "' is a singles title");
+        }
+        if (linkedTitle.getTeamSize() != null && linkedTitle.getTeamSize() != teamSize) {
+          throw new IllegalArgumentException(
+              "Tournament team size "
+                  + teamSize
+                  + " does not match the linked championship's team size "
+                  + linkedTitle.getTeamSize());
+        }
+      }
+    }
     if (contenderDeciding && briefcaseDeciding) {
       throw new IllegalArgumentException(
           "Choose one payoff mode — a tournament cannot be both contender-deciding and"
@@ -349,6 +430,7 @@ public class TournamentService {
           "A briefcase-deciding tournament must not link a title — the winner can cash in against"
               + " any champion");
     }
+    validateTrophyName(trophyName, linkedTitle, contenderDeciding, briefcaseDeciding);
     validatePayoffShow(universe, payoffShow);
     findFormat(formatId)
         .orElseThrow(() -> new IllegalArgumentException("Unknown format: " + formatId));
@@ -363,12 +445,38 @@ public class TournamentService {
     t.setGender(gender);
     t.setContenderDeciding(contenderDeciding);
     t.setBriefcaseDeciding(briefcaseDeciding);
+    t.setTeamSize(teamSize);
+    t.setTrophyName(trophyName != null ? trophyName.trim() : null);
     t.setStartDate(startDate);
     t.setStatus(TournamentStatus.SCHEDULED);
     t.setEntries(new ArrayList<>());
     t.setRounds(new ArrayList<>());
     t.setAllowedRules(allowedRules != null ? new ArrayList<>(allowedRules) : new ArrayList<>());
     return tournamentRepository.save(t);
+  }
+
+  /**
+   * Trophy payoff validation: a named trophy is its own payoff kind — it can never share a
+   * tournament with a linked title or the contender/briefcase payoffs (the winner lifts the trophy;
+   * nothing else changes hands). Legal for team tournaments. A blank name is a UI slip, not a
+   * trophy tournament.
+   */
+  private void validateTrophyName(
+      @Nullable String trophyName,
+      @Nullable Title linkedTitle,
+      boolean contenderDeciding,
+      boolean briefcaseDeciding) {
+    if (trophyName == null) {
+      return;
+    }
+    if (trophyName.isBlank()) {
+      throw new IllegalArgumentException("Trophy name is required when the winner earns a trophy");
+    }
+    if (linkedTitle != null || contenderDeciding || briefcaseDeciding) {
+      throw new IllegalArgumentException(
+          "Choose one payoff mode — the trophy goes to the winner alone, with no title, contender"
+              + " slot, or briefcase attached");
+    }
   }
 
   /**
@@ -402,6 +510,9 @@ public class TournamentService {
     next.setUniverse(completed.getUniverse());
     next.setLinkedTitle(completed.getLinkedTitle());
     next.setGender(completed.getGender());
+    // The declared team size is format identity too — a recurring team tournament's successor
+    // stays a team tournament of the same size (ATW-01g2 review).
+    next.setTeamSize(completed.getTeamSize());
     next.setDefaultEntrantCount(completed.getDefaultEntrantCount());
     next.setQualifierGroupSize(completed.getQualifierGroupSize());
     next.setContenderDeciding(completed.isContenderDeciding());
@@ -622,6 +733,8 @@ public class TournamentService {
         payoffSegmentType,
         payoffSegmentRule,
         setPayoffFields,
+        null,
+        null,
         null);
   }
 
@@ -657,12 +770,16 @@ public class TournamentService {
         payoffSegmentRule,
         setPayoffFields,
         contenderDeciding,
+        null,
         null);
   }
 
   /**
-   * Full update including both payoff-mode flags. {@code briefcaseDeciding} null leaves the
-   * existing flag untouched (compat); a non-null value overwrites it.
+   * Full update including both payoff-mode flags and the trophy payoff. {@code
+   * briefcaseDeciding}/{@code trophyName} null leaves the existing value untouched (compat); a
+   * non-null value overwrites it. The trophy name follows the Boolean-flag pattern: passing a name
+   * arms the trophy payoff, passing {@code ""} clears it, passing {@code null} keeps whatever the
+   * tournament already carries.
    */
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
@@ -678,7 +795,8 @@ public class TournamentService {
       final SegmentRule payoffSegmentRule,
       final boolean setPayoffFields,
       final Boolean contenderDeciding,
-      final Boolean briefcaseDeciding) {
+      final Boolean briefcaseDeciding,
+      final String trophyName) {
     Tournament t =
         tournamentRepository
             .findById(id)
@@ -695,6 +813,8 @@ public class TournamentService {
     boolean effectiveBriefcaseDeciding =
         briefcaseDeciding != null ? briefcaseDeciding : t.isBriefcaseDeciding();
     Title effectiveTitle = linkedTitle != null ? linkedTitle : t.getLinkedTitle();
+    String effectiveTrophyName =
+        trophyName != null ? (trophyName.isBlank() ? null : trophyName.trim()) : t.getTrophyName();
     if (effectiveContenderDeciding && effectiveBriefcaseDeciding) {
       throw new IllegalArgumentException(
           "Choose one payoff mode — a tournament cannot be both contender-deciding and"
@@ -709,6 +829,12 @@ public class TournamentService {
       throw new IllegalArgumentException(
           "A briefcase-deciding tournament must not link a title — the winner can cash in against"
               + " any champion");
+    }
+    if (effectiveTrophyName != null
+        && (effectiveTitle != null || effectiveContenderDeciding || effectiveBriefcaseDeciding)) {
+      throw new IllegalArgumentException(
+          "Choose one payoff mode — the trophy goes to the winner alone, with no title, contender"
+              + " slot, or briefcase attached");
     }
     t.setName(name);
     if (formatId != null && !formatId.equals(t.getFormatId())) {
@@ -728,6 +854,9 @@ public class TournamentService {
     }
     if (briefcaseDeciding != null) {
       t.setBriefcaseDeciding(briefcaseDeciding);
+    }
+    if (trophyName != null) {
+      t.setTrophyName(trophyName.isBlank() ? null : trophyName.trim());
     }
     if (setPayoffFields) {
       t.setPayoffShow(payoffShow);
@@ -780,15 +909,117 @@ public class TournamentService {
 
   // ── Entry management ──────────────────────────────────────────────────────
 
+  /**
+   * Guard for the exactly-one-entrant-shape invariant the DB check constraint {@code
+   * chk_entry_entrant_type} backstops: an entry holds either a wrestler or a team, never both,
+   * never neither. Called on every entry this service builds.
+   */
+  static void validateEntrantShape(TournamentEntry entry) {
+    if ((entry.getWrestler() == null) == (entry.getTeam() == null)) {
+      throw new IllegalArgumentException(
+          "A tournament entry holds exactly one entrant — either a wrestler or a team, got"
+              + " wrestler="
+              + (entry.getWrestler() != null)
+              + ", team="
+              + (entry.getTeam() != null));
+    }
+  }
+
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public TournamentEntry addEntry(Tournament tournament, Wrestler wrestler, int seed) {
+    if (tournament.getTeamSize() != null) {
+      throw new IllegalArgumentException(
+          "'"
+              + tournament.getName()
+              + "' is a team tournament — entrants are teams of "
+              + tournament.getTeamSize()
+              + ", not individual wrestlers");
+    }
     if (entryRepository.existsByTournamentIdAndWrestlerId(tournament.getId(), wrestler.getId())) {
       throw new IllegalStateException(
           wrestler.getName() + " is already entered in this tournament");
     }
     TournamentEntry entry =
         TournamentEntry.builder().tournament(tournament).wrestler(wrestler).seed(seed).build();
+    validateEntrantShape(entry);
+    return entryRepository.save(entry);
+  }
+
+  /**
+   * Enter a {@link Team} into a team tournament ({@code Tournament.getTeamSize() != null}).
+   * Validates the tournament takes teams, the declared size matches, every member satisfies the
+   * effective gender restriction (the tournament's filter, else the linked TEAM championship's own
+   * constraint — the same fallback the eligibility pool applies), and no member is already entered
+   * in the tournament through any other entry (team or individual) — a wrestler may appear in only
+   * one entry per tournament.
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public TournamentEntry addEntry(Tournament tournament, Team team, int seed) {
+    if (tournament.getTeamSize() == null) {
+      throw new IllegalArgumentException(
+          "'"
+              + tournament.getName()
+              + "' is a singles tournament — entrants are individual wrestlers, not teams");
+    }
+    if (team.getTeamSize() != tournament.getTeamSize()) {
+      throw new IllegalArgumentException(
+          "Team '"
+              + team.getName()
+              + "' is a "
+              + team.getTeamSize()
+              + " team — '"
+              + tournament.getName()
+              + "' takes "
+              + tournament.getTeamSize()
+              + " teams");
+    }
+    Gender gender = effectiveTeamGenderOf(tournament.getGender(), tournament.getLinkedTitle());
+    if (gender != null) {
+      for (TeamMember member : team.getMembers()) {
+        if (member.getWrestler().getGender() != gender) {
+          throw new IllegalArgumentException(
+              "Team '"
+                  + team.getName()
+                  + "' cannot enter: member "
+                  + member.getWrestler().getName()
+                  + " does not satisfy the tournament's "
+                  + gender
+                  + " gender restriction");
+        }
+      }
+    }
+    Set<Long> memberIds =
+        team.getMembers().stream()
+            .map(TeamMember::getWrestler)
+            .map(Wrestler::getId)
+            .collect(Collectors.toSet());
+    for (TournamentEntry existing :
+        entryRepository.findByTournamentIdOrderBySeedAsc(tournament.getId())) {
+      validateEntrantShape(existing);
+      if (existing.getTeam() != null) {
+        Set<Long> existingIds =
+            existing.getTeam().getMembers().stream()
+                .map(TeamMember::getWrestler)
+                .map(Wrestler::getId)
+                .collect(Collectors.toSet());
+        Set<Long> overlap = new HashSet<>(memberIds);
+        overlap.retainAll(existingIds);
+        if (!overlap.isEmpty()) {
+          throw new IllegalStateException(
+              "Wrestler is already entered in this tournament (via team '"
+                  + existing.getTeam().getName()
+                  + "')");
+        }
+      } else if (memberIds.contains(existing.getWrestler().getId())) {
+        throw new IllegalStateException(
+            existing.getWrestler().getName() + " is already entered in this tournament");
+      }
+    }
+    TournamentEntry entry =
+        TournamentEntry.builder().tournament(tournament).team(team).seed(seed).build();
+    validateEntrantShape(entry);
     return entryRepository.save(entry);
   }
 
@@ -798,6 +1029,47 @@ public class TournamentService {
     TournamentFormat fmt =
         findFormat(tournament.getFormatId())
             .orElseThrow(() -> new IllegalStateException("Format not found"));
+    if (tournament.getTeamSize() != null) {
+      List<Team> teamPool = findEligibleTeamsSortedByFans(tournament);
+      if (teamPool.size() < fmt.getMinEntrants()) {
+        throw new IllegalStateException(
+            "Not enough eligible teams to seed '"
+                + tournament.getName()
+                + "': "
+                + teamPool.size()
+                + " available, the format needs at least "
+                + fmt.getMinEntrants()
+                + eligibilityNote(
+                    tournament.getLinkedTitle(),
+                    effectiveTeamGenderOf(tournament.getGender(), tournament.getLinkedTitle())));
+      }
+      int effectiveTeams = Math.min(count, teamPool.size());
+      if (effectiveTeams < count) {
+        log.info(
+            "Seeding '{}' with {} teams ({} requested, the eligible registry holds only that"
+                + " many)",
+            tournament.getName(),
+            effectiveTeams,
+            count);
+      }
+      // The format's bracket cannot generate beyond its maximum — the same range check the
+      // wrestler path enforces through seedWith, applied to the team count (ATW-01g2 review).
+      if (effectiveTeams > fmt.getMaxEntrants()) {
+        throw new IllegalArgumentException(
+            "Team entrant count "
+                + effectiveTeams
+                + " out of range ["
+                + fmt.getMinEntrants()
+                + ", "
+                + fmt.getMaxEntrants()
+                + "]");
+      }
+      List<TournamentEntry> teamEntries = new ArrayList<>();
+      for (int i = 0; i < effectiveTeams; i++) {
+        teamEntries.add(addEntry(tournament, teamPool.get(i), i + 1));
+      }
+      return teamEntries;
+    }
     List<Wrestler> pool =
         findEligibleWrestlersSortedByFans(
             tournament.getLinkedTitle(), tournament.getGender(), universeId);
@@ -825,6 +1097,64 @@ public class TournamentService {
     return seedWith(tournament, active);
   }
 
+  /**
+   * The active REGISTRY teams of the declared size eligible to seed a team tournament with the
+   * given gender filter, sorted by the team's own fan counter (most fans first) — the team-level
+   * mirror of {@link #findEligibleWrestlersSortedByFans}. The gender restriction applies per
+   * member: every member must be active with that gender (the same shape the TEAM ranking filter
+   * uses). When the tournament sets no gender, the linked TEAM championship's own constraint
+   * applies instead (the same effective-gender rule the singles path uses). Champion exclusion does
+   * not apply — an inaugural-champion tournament links a vacant (or not-yet-created) title, so
+   * there is no champion to exclude. Scoped to the tournament's universe when one is set (teams are
+   * universe-scoped; the same scoping the singles path gets from the universe-bound fan states).
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public List<Team> findEligibleTeamsSortedByFans(Tournament tournament) {
+    Gender gender = effectiveTeamGenderOf(tournament.getGender(), tournament.getLinkedTitle());
+    Long universeId = tournament.getUniverse() != null ? tournament.getUniverse().getId() : null;
+    return teamRepository.findAll().stream()
+        .filter(
+            team ->
+                team.getTeamSize() == tournament.getTeamSize()
+                    && team.getOrigin() == TeamOrigin.REGISTRY
+                    && team.isActive()
+                    && sameUniverse(team, universeId)
+                    // Non-empty: an empty husk team (last member deleted) would pass allMatch
+                    // vacuously and land in the wizard's registry picker without any members.
+                    && !team.getMembers().isEmpty()
+                    && team.getMembers().stream()
+                        .map(TeamMember::getWrestler)
+                        .allMatch(
+                            w ->
+                                Boolean.TRUE.equals(w.getActive())
+                                    && (gender == null || w.getGender() == gender)))
+        .sorted(Comparator.comparingLong(Team::getFans).reversed())
+        .toList();
+  }
+
+  /**
+   * The gender a team tournament's pool is narrowed by: the tournament's own filter when set, else
+   * the linked championship's constraint (ATW-01g2 review) — the same fallback the singles path's
+   * {@link #findEligibleWrestlersSortedByFans} applies, so a linked women's tag-title tournament
+   * takes women's teams even with no explicit division filter.
+   */
+  private static Gender effectiveTeamGenderOf(Gender gender, Title linkedTitle) {
+    return gender != null ? gender : linkedTitle != null ? linkedTitle.getGender() : null;
+  }
+
+  /**
+   * Universe scoping for the eligibility pool: when the tournament has a universe, only teams of
+   * that universe are eligible; when it does not (no universe selected), teams from any universe
+   * pass — matching the singles path, whose fan-state lookup also widens when no universe is given.
+   */
+  private static boolean sameUniverse(@NonNull Team team, Long universeId) {
+    if (universeId == null) {
+      return true;
+    }
+    return team.getUniverse() != null && universeId.equals(team.getUniverse().getId());
+  }
+
   /** Human-readable note appended to eligibility errors when a constraint narrowed the pool. */
   private String eligibilityNote(Title linkedTitle, Gender gender) {
     if (linkedTitle == null && gender == null) {
@@ -841,15 +1171,49 @@ public class TournamentService {
   }
 
   /**
-   * How many active wrestlers are eligible to seed a tournament with the given linked title and
-   * gender filter — the active roster, narrowed by both gender constraints and minus the current
-   * champion(s) (see {@link #findEligibleWrestlersSortedByFans}). The creation wizard caps its
-   * entrant-count field at this value.
+   * How many entrants are eligible to seed a tournament with the given linked title and gender
+   * filter — the active roster, narrowed by both gender constraints and minus the current
+   * champion(s) (see {@link #findEligibleWrestlersSortedByFans}). For a TEAM title the count is
+   * team-based instead: the active REGISTRY teams of the title's declared size whose every member
+   * satisfies the gender (see {@link #findEligibleTeamsSortedByFans}; a TEAM title with no declared
+   * size counts its backfilled DUO default). Scoped to the title's universe when it has one. The
+   * creation wizard caps its entrant-count field at this value.
    */
   @Transactional(readOnly = true)
   @PreAuthorize("isAuthenticated()")
   public int countEligibleEntrants(Title linkedTitle, Gender gender) {
+    if (linkedTitle != null && linkedTitle.getChampionshipType() == ChampionshipType.TEAM) {
+      Tournament probe = new Tournament();
+      probe.setTeamSize(
+          linkedTitle.getTeamSize() != null ? linkedTitle.getTeamSize() : TeamSize.DUO);
+      probe.setGender(gender);
+      probe.setUniverse(linkedTitle.getUniverse());
+      return findEligibleTeamsSortedByFans(probe).size();
+    }
     return findEligibleWrestlersSortedByFans(linkedTitle, gender, null).size();
+  }
+
+  /**
+   * How many teams are eligible to seed a team tournament of the given size with the given gender
+   * filter — the team mirror of {@link #countEligibleEntrants} (active REGISTRY teams whose every
+   * member is active with the gender; see {@link #findEligibleTeamsSortedByFans}). The linked
+   * championship's own gender constraint applies when the tournament sets no filter (ATW-01g2
+   * review) — the same effective-gender rule the eligibility pool and the singles count apply.
+   * Scoped to the given universe when non-null. The creation wizard caps its team-entrant-count
+   * field at this value.
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public int countEligibleTeamEntrants(
+      TeamSize teamSize, Gender gender, Title linkedTitle, Long universeId) {
+    Tournament probe = new Tournament();
+    probe.setTeamSize(teamSize);
+    probe.setGender(gender);
+    probe.setLinkedTitle(linkedTitle);
+    if (universeId != null) {
+      probe.setUniverse(universeRepository.findById(universeId).orElse(null));
+    }
+    return findEligibleTeamsSortedByFans(probe).size();
   }
 
   /**
@@ -1024,7 +1388,12 @@ public class TournamentService {
     }
   }
 
-  /** Book all pending matches in the current round onto a show, creating segment reservations. */
+  /**
+   * Book all pending matches in the current round onto a show, creating segment reservations.
+   * Team-aware (ATW-01g2 review): team entries book through the same team-segment construction the
+   * template-fed path uses (sides = the entry team's members in slot order), never through the
+   * solo-wrestler path whose @NonNull params an entrant with no wrestler would trip.
+   */
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public void bookRoundOnShow(Tournament tournament, TournamentRound round, Show show) {
@@ -1039,9 +1408,9 @@ public class TournamentService {
               + " — "
               + round.getRoundName()
               + ": "
-              + match.getEntrant1().getWrestler().getName()
+              + match.getEntrant1().entrantName()
               + " vs "
-              + match.getEntrant2().getWrestler().getName();
+              + match.getEntrant2().entrantName();
 
       String stipulation = resolveStipulation(tournament, round, label);
 
@@ -1049,24 +1418,54 @@ public class TournamentService {
       reservationService.reserveSlot(
           show, ShowSegmentReservationPurpose.TOURNAMENT_ROUND, match.getId(), label);
 
-      // Book the actual segment with the resolved stipulation
-      showBookingService
-          .bookSpecificMatch(
-              show,
-              match.getEntrant1().getWrestler(),
-              match.getEntrant2().getWrestler(),
-              label,
-              stipulation)
-          .ifPresent(
-              segment -> {
-                match.setSegment(segment);
-                matchRepository.save(match);
-              });
+      // Book the actual segment with the resolved stipulation — team sides when either entrant
+      // is a team, solo wrestlers otherwise.
+      Optional<Segment> booked =
+          teamSidesOf(match)
+              .map(
+                  sides ->
+                      showBookingService.bookSpecificTeamMatch(
+                          show, sides.get(0), sides.get(1), label, stipulation))
+              .orElseGet(
+                  () ->
+                      showBookingService.bookSpecificMatch(
+                          show,
+                          match.getEntrant1().getWrestler(),
+                          match.getEntrant2().getWrestler(),
+                          label,
+                          stipulation));
+      booked.ifPresent(
+          segment -> {
+            match.setSegment(segment);
+            matchRepository.save(match);
+          });
     }
 
     round.setShow(show);
     round.setStatus(TournamentRoundStatus.IN_PROGRESS);
     roundRepository.save(round);
+  }
+
+  /**
+   * The match's two sides as member lists when EITHER entrant is a team (slot-ordered members),
+   * empty when both are solo wrestlers (the classic path books those). Sized sides keep mixed
+   * team/solo pairings bookable — the resolution treats a 1-wrestler side as its own team.
+   */
+  private Optional<List<List<Wrestler>>> teamSidesOf(TournamentMatch match) {
+    if (match.getEntrant1().getTeam() == null && match.getEntrant2().getTeam() == null) {
+      return Optional.empty();
+    }
+    return Optional.of(List.of(membersOf(match.getEntrant1()), membersOf(match.getEntrant2())));
+  }
+
+  /** The entry's side: the team's members in slot order, or the solo wrestler alone. */
+  private static List<Wrestler> membersOf(TournamentEntry entry) {
+    if (entry.getTeam() != null) {
+      return entry.getTeam().getMembers().stream()
+          .map(TeamMember::getWrestler)
+          .collect(Collectors.toList());
+    }
+    return List.of(entry.getWrestler());
   }
 
   /**
@@ -1118,8 +1517,29 @@ public class TournamentService {
   }
 
   /**
+   * Shuffle the tournament's seeds uniformly at random — the unbiased draw next to the manual
+   * reorder controls. Only allowed while SCHEDULED with no generated bracket (the same lock the
+   * manual reordering obeys): once the bracket exists the pairings are locked.
+   *
+   * @return the reshuffled entries, seeds 1..n
+   */
+  @Transactional
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
+  public List<TournamentEntry> randomizeSeeds(@NonNull final Long tournamentId) {
+    requireEditableForSeeding(tournamentId);
+    List<Long> shuffledIds =
+        entryRepository.findByTournamentIdOrderBySeedAsc(tournamentId).stream()
+            .map(TournamentEntry::getId)
+            .collect(Collectors.toCollection(ArrayList::new));
+    Collections.shuffle(shuffledIds);
+    return reorderSeeds(tournamentId, shuffledIds);
+  }
+
+  /**
    * Replace one entrant with a different wrestler, keeping the vacated seed. Only allowed while
-   * SCHEDULED with no generated bracket.
+   * SCHEDULED with no generated bracket. Team entries are not replaceable this way — swapping one
+   * member of a team entry would corrupt the entrant shape (wrestler + team on one entry); team
+   * rosters are managed on the team itself.
    */
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
@@ -1133,6 +1553,12 @@ public class TournamentService {
             .findById(entryId)
             .filter(e -> e.getTournament().getId().equals(tournamentId))
             .orElseThrow(() -> new IllegalArgumentException("Entry not found: " + entryId));
+    if (entry.getTeam() != null) {
+      throw new IllegalStateException(
+          "Team entrant '"
+              + entry.entrantName()
+              + "' cannot be replaced with an individual wrestler — edit the team roster instead");
+    }
     Wrestler replacement = wrestlerRepository.findById(newWrestlerId).orElse(null);
     if (replacement == null) {
       throw new IllegalArgumentException("Wrestler not found: " + newWrestlerId);
@@ -1280,8 +1706,59 @@ public class TournamentService {
             entry -> {
               entry.setStatus(TournamentEntryStatus.WINNER);
               entryRepository.save(entry);
-              grantBriefcaseOnManualCompletion(tournament, entry.getWrestler());
+              // Briefcase-deciding tournaments are singles-only (creation validation rejects
+              // teamSize), so this entry always carries a wrestler — the guard keeps a
+              // shapeless/legacy row from NPEing rather than changing the semantics.
+              if (entry.getWrestler() != null) {
+                grantBriefcaseOnManualCompletion(tournament, entry.getWrestler());
+              }
+              recordTrophyWin(tournament, entry);
             });
+  }
+
+  /**
+   * Records the trophy lineage row for a completed trophy tournament. Runs on every completion path
+   * — markWinner is the single choke point (manual results in the detail view and bracket-played
+   * ones both funnel through advanceToNextRound). Best-effort and idempotent: a failed stamp is
+   * logged, never thrown (the tournament completion itself must not break), and a re-run cannot
+   * duplicate the reign (unique tournament FK). The winner comes off the WINNER entry — a team
+   * tournament stores the team FK and expands members at read time.
+   */
+  private void recordTrophyWin(Tournament tournament, TournamentEntry winnerEntry) {
+    if (tournament.getTrophyName() == null) {
+      return;
+    }
+    try {
+      if (trophyReignRepository.existsByTournamentId(tournament.getId())) {
+        log.debug(
+            "Trophy '{}' already recorded for tournament {} — skipping (idempotent)",
+            tournament.getTrophyName(),
+            tournament.getId());
+        return;
+      }
+      TrophyReign reign = new TrophyReign();
+      reign.setTournament(tournament);
+      reign.setTrophyName(tournament.getTrophyName());
+      LocalDate wonOn = tournament.getEndDate() != null ? tournament.getEndDate() : LocalDate.now();
+      reign.setWonOn(wonOn);
+      reign.setYearWon(wonOn.getYear());
+      reign.setWinnerWrestler(winnerEntry.getWrestler());
+      reign.setWinnerTeam(winnerEntry.getTeam());
+      reign.setUniverse(tournament.getUniverse());
+      trophyReignRepository.save(reign);
+      log.info(
+          "Recorded trophy win: '{}' ({}), winner: {}",
+          tournament.getTrophyName(),
+          reign.getYearWon(),
+          reign.getWinnerWrestler() != null
+              ? reign.getWinnerWrestler().getName()
+              : reign.getWinnerTeam().getName());
+    } catch (Exception ex) {
+      log.error(
+          "Failed to record trophy win for tournament {} — the completion is unaffected",
+          tournament.getId(),
+          ex);
+    }
   }
 
   /**
@@ -1339,5 +1816,22 @@ public class TournamentService {
   public Optional<TournamentRound> getCurrentRound(Tournament tournament) {
     return roundRepository.findFirstByTournamentIdAndStatusOrderByRoundNumberAsc(
         tournament.getId(), TournamentRoundStatus.IN_PROGRESS);
+  }
+
+  /**
+   * Detail-view lineage for a trophy: every edition of the named trophy, newest first. Delegates to
+   * {@link TrophyReignService} — the read side of what {@code markWinner} stamps.
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public List<TrophyReign> trophyLineage(String trophyName) {
+    return trophyReignService.lineageOf(trophyName);
+  }
+
+  /** The reign stamped for one tournament edition, if any (detail view winner line). */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public Optional<TrophyReign> trophyReignOf(Long tournamentId) {
+    return Optional.ofNullable(trophyReignService.reignOfTournament(tournamentId));
   }
 }

@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.tournament;
 
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
@@ -28,6 +29,7 @@ import com.github.javydreamercsw.management.service.show.ShowFacade;
 import com.github.javydreamercsw.management.service.tournament.QualifierGroupsFormat;
 import com.github.javydreamercsw.management.service.tournament.SingleEliminationFormat;
 import com.github.javydreamercsw.management.service.tournament.TournamentFormat;
+import com.github.javydreamercsw.management.service.tournament.TournamentRunnerService;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
@@ -43,6 +45,7 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.dnd.GridDropMode;
 import com.vaadin.flow.component.html.H4;
+import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
@@ -54,11 +57,15 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -73,10 +80,13 @@ import org.springframework.data.domain.PageRequest;
 public class TournamentDetailView extends VerticalLayout implements BeforeEnterObserver {
 
   private final TournamentService tournamentService;
+  private final TournamentRunnerService tournamentRunnerService;
   private final SegmentRuleService segmentRuleService;
   private final UniverseContextService universeContextService;
   private final ShowRepository showRepository;
+  private final TournamentRoundRepository roundRepository;
   private final WrestlerFacade wrestlerFacade;
+  private final SecurityUtils securityUtils;
 
   private Tournament tournament;
 
@@ -88,15 +98,20 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
   @Autowired
   public TournamentDetailView(
       TournamentService tournamentService,
+      TournamentRunnerService tournamentRunnerService,
       ShowRepository showRepository,
+      TournamentRoundRepository roundRepository,
       ShowFacade showFacade,
       WrestlerFacade wrestlerFacade,
       ViewContext viewContext) {
     this.tournamentService = tournamentService;
+    this.tournamentRunnerService = tournamentRunnerService;
     this.segmentRuleService = showFacade.getSegmentRuleService();
     this.showRepository = showRepository;
+    this.roundRepository = roundRepository;
     this.wrestlerFacade = wrestlerFacade;
     this.universeContextService = viewContext.getUniverseContextService();
+    this.securityUtils = viewContext.getSecurityUtils();
 
     setSizeFull();
     setPadding(false);
@@ -201,20 +216,11 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
           round -> {
             Button bookBtn = new Button("Book Round on Show", e -> openBookRoundDialog(round));
             bookBtn.addThemeVariants(ButtonVariant.LUMO_SUCCESS);
+            bookBtn.setTooltipText(
+                "Book this round onto an upcoming show — results are recorded when the show is"
+                    + " adjudicated");
             actions.add(bookBtn);
           });
-
-      Optional<TournamentRound> completeRound =
-          tournament.getRounds().stream()
-              .filter(r -> r.getStatus() == TournamentRoundStatus.COMPLETE)
-              .reduce((a, b) -> b);
-      if (completeRound.isPresent()
-          && tournament.getRounds().stream()
-              .noneMatch(r -> r.getStatus() == TournamentRoundStatus.PENDING)) {
-        Button advanceBtn = new Button("Generate Next Round", e -> advanceRound());
-        advanceBtn.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
-        actions.add(advanceBtn);
-      }
     }
 
     return new ViewToolbar(
@@ -260,6 +266,10 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
               "Payoff: briefcase — the winner earns a cashable title shot against any"
                   + " reigning champion"));
       buildBriefcaseStatus(info);
+    }
+    if (tournament.getTrophyName() != null) {
+      info.add(new Span("Payoff: the " + tournament.getTrophyName() + " trophy — bragging rights"));
+      buildTrophyStatus(info);
     }
     if (tournament.getLinkedTitle() != null) {
       info.add(new Span("Championship: " + tournament.getLinkedTitle().getName()));
@@ -339,15 +349,68 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
     info.add(new Span("Briefcase: " + winner.getName() + division + " — " + statusText));
   }
 
+  /**
+   * Trophy status for a trophy tournament: who lifted the trophy this edition (once complete) and
+   * the trophy's lineage across editions — "2026 — X", "2025 — Team Y", newest first.
+   */
+  private void buildTrophyStatus(VerticalLayout info) {
+    if (tournament.getStatus() == TournamentStatus.COMPLETE) {
+      tournamentService
+          .trophyReignOf(tournament.getId())
+          .ifPresent(
+              reign -> {
+                String winnerName =
+                    reign.getWinnerWrestler() != null
+                        ? reign.getWinnerWrestler().getName()
+                        : reign.getWinnerTeam() != null ? reign.getWinnerTeam().getName() : "?";
+                info.add(
+                    new Span(
+                        reign.getTrophyName()
+                            + ": won by "
+                            + winnerName
+                            + " ("
+                            + reign.getYearWon()
+                            + ")"));
+              });
+    }
+    List<TrophyReign> lineage = tournamentService.trophyLineage(tournament.getTrophyName());
+    if (lineage.size() > 1) {
+      StringBuilder line = new StringBuilder("Past winners: ");
+      for (int i = 0; i < lineage.size(); i++) {
+        TrophyReign reign = lineage.get(i);
+        if (i > 0) {
+          line.append(", ");
+        }
+        String winnerName =
+            reign.getWinnerWrestler() != null
+                ? reign.getWinnerWrestler().getName()
+                : reign.getWinnerTeam() != null ? reign.getWinnerTeam().getName() : "?";
+        line.append(reign.getYearWon()).append(" — ").append(winnerName);
+      }
+      info.add(new Span(line.toString()));
+    }
+  }
+
   private VerticalLayout buildEntrantsGrid() {
     VerticalLayout section = new VerticalLayout();
     section.setPadding(false);
     section.add(new H4("Entrants"));
 
+    // Unbiased draw (ATW-exom): shuffles every seed at random, next to the manual reorder
+    // controls — same lock: only while SCHEDULED with no generated bracket.
+    if (tournament.getStatus() == TournamentStatus.SCHEDULED
+        && !tournament.getEntries().isEmpty()) {
+      Button randomize = new Button("Randomize Seeds", VaadinIcon.RANDOM.create());
+      randomize.addThemeVariants(ButtonVariant.LUMO_SMALL);
+      randomize.setTooltipText("Shuffle all seeds — the round-1 pairings redraw at random");
+      randomize.addClickListener(e -> randomizeSeeds());
+      section.add(randomize);
+    }
+
     Grid<TournamentEntry> grid = new Grid<>(TournamentEntry.class, false);
     grid.setAllRowsVisible(true);
     grid.addColumn(TournamentEntry::getSeed).setHeader("Seed").setWidth("80px").setFlexGrow(0);
-    grid.addColumn(e -> e.getWrestler().getName()).setHeader("Wrestler").setFlexGrow(1);
+    grid.addColumn(TournamentEntry::entrantName).setHeader("Entrant").setFlexGrow(1);
     grid.addColumn(e -> e.getStatus().name()).setHeader("Status");
     grid.setItems(tournament.getEntries());
 
@@ -454,16 +517,30 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
     }
   }
 
+  /** Random draw: shuffle every seed through the service and refresh the view. */
+  private void randomizeSeeds() {
+    try {
+      tournamentService.randomizeSeeds(tournament.getId());
+      refreshAfterSeedingEdit();
+      Notification.show("Seeds randomized", 2000, Notification.Position.BOTTOM_CENTER)
+          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+    } catch (Exception ex) {
+      log.error("Error randomizing seeds", ex);
+      Notification.show("Error: " + ex.getMessage(), 5000, Notification.Position.MIDDLE)
+          .addThemeVariants(NotificationVariant.LUMO_ERROR);
+    }
+  }
+
   /** Dialog replacing one entrant with another wrestler (same seed). */
   private void openReplaceDialog(TournamentEntry entry) {
     Dialog dialog = new Dialog();
-    dialog.setHeaderTitle("Replace seed " + entry.getSeed() + ": " + entry.getWrestler().getName());
+    dialog.setHeaderTitle("Replace seed " + entry.getSeed() + ": " + entry.entrantName());
 
     ComboBox<Wrestler> picker = new ComboBox<>("New wrestler");
     // Offer the eligible pool minus anyone already entered — the service rejects duplicates,
     // but showing them as choices would guarantee an error after selection.
     Set<Long> enteredIds = new HashSet<>();
-    tournament.getEntries().forEach(e -> enteredIds.add(e.getWrestler().getId()));
+    tournament.getEntries().forEach(e -> enteredIds.add(e.entrantId()));
     picker.setItems(
         tournamentService
             .findEligibleWrestlersSortedByFans(
@@ -571,20 +648,25 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
   }
 
   /**
-   * Returns the winner-recording controls for any in-progress round that has unresolved matches.
-   * Returns empty when there is nothing for the booker to act on.
+   * The interactive run section: one row per open match of the earliest round holding open matches
+   * (any status — a fresh bracket's round 1 is PENDING until the first result activates it), a
+   * host-show picker above the rows (results book as real segments on it, or on an auto-created
+   * "<tournament> Night" show when none exist). Booker/admin only — player-side entry is deferred.
    */
   private Optional<VerticalLayout> buildActiveMatchControls() {
-    Optional<TournamentRound> inProgressRound =
+    if (!securityUtils.isAdmin() && !securityUtils.isBooker()) {
+      return Optional.empty();
+    }
+    Optional<TournamentRound> activeRound =
         tournament.getRounds().stream()
-            .filter(r -> r.getStatus() == TournamentRoundStatus.IN_PROGRESS)
-            .findFirst();
+            .filter(r -> r.getMatches().stream().anyMatch(m -> m.getWinner() == null))
+            .min(Comparator.comparingInt(TournamentRound::getRoundNumber));
 
-    if (inProgressRound.isEmpty()) {
+    if (activeRound.isEmpty()) {
       return Optional.empty();
     }
 
-    TournamentRound round = inProgressRound.get();
+    TournamentRound round = activeRound.get();
     List<TournamentMatch> pending =
         round.getMatches().stream().filter(m -> m.getWinner() == null).toList();
 
@@ -596,24 +678,102 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
     section.setPadding(false);
     section.add(new H4("Record Results — " + round.getRoundName()));
 
+    // Sticky host-show selection shared by every row: prefilled with the first upcoming show, or
+    // absent (auto-create "<tournament> Night") when none exist.
+    ComboBox<Show> hostShowCombo = buildHostShowCombo();
+    if (hostShowCombo != null) {
+      section.add(hostShowCombo);
+    } else {
+      Span hint =
+          new Span(
+              "No shows yet — results book on a new '"
+                  + hostShowName()
+                  + "' show (created automatically).");
+      hint.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.SMALL);
+      section.add(hint);
+    }
+
     for (TournamentMatch match : pending) {
-      section.add(buildRecordMatchRow(match));
+      section.add(buildRecordMatchRow(match, hostShowCombo));
     }
     return Optional.of(section);
   }
 
-  private HorizontalLayout buildRecordMatchRow(TournamentMatch match) {
+  /**
+   * The sticky host-show picker: prefilled with the first upcoming show, or null when none exist
+   * (null selection → the service auto-creates the "<tournament> Night" show). Shows already
+   * hosting another tournament's round are annotated in the label so the conflict is visible at
+   * pick time (ATW-kakg) — the picker stays open to them (a card can legitimately carry both).
+   */
+  private ComboBox<Show> buildHostShowCombo() {
+    List<Show> upcoming =
+        showRepository.findByShowDateGreaterThanEqualOrderByShowDate(
+            LocalDate.now(), PageRequest.of(0, 20));
+    if (upcoming.isEmpty()) {
+      return null;
+    }
+    Map<Long, String> conflictLabels = hostedRoundLabelsByShowId(upcoming);
+    ComboBox<Show> combo = new ComboBox<>("Host show");
+    combo.setId("host-show-combo");
+    combo.setItems(upcoming);
+    combo.setItemLabelGenerator(
+        s ->
+            s.getName()
+                + (s.getShowDate() != null ? " (" + s.getShowDate() + ")" : "")
+                + conflictLabels.getOrDefault(s.getId(), ""));
+    combo.setWidthFull();
+    combo.setValue(upcoming.get(0));
+    combo.setTooltipText(
+        "Matches book onto this show as real segments; leave empty to auto-create a '"
+            + hostShowName()
+            + "' show");
+    return combo;
+  }
+
+  /**
+   * One conflict annotation per show that already hosts a round of a different tournament, e.g. " —
+   * hosts King of the Ring Semi-Final". Batch-loaded in one query (no N+1 over the 20 candidate
+   * shows).
+   */
+  private Map<Long, String> hostedRoundLabelsByShowId(List<Show> shows) {
+    List<Long> showIds = shows.stream().map(Show::getId).toList();
+    Map<Long, String> labels = new HashMap<>();
+    for (TournamentRound round : roundRepository.findByShowIdIn(showIds)) {
+      if (tournament.getId() != null && tournament.getId().equals(round.getTournament().getId())) {
+        continue; // This tournament's own round — not a conflict.
+      }
+      labels.putIfAbsent(
+          round.getShow().getId(),
+          " — hosts "
+              + round.getTournament().getName()
+              + " "
+              + (round.getRoundName() != null
+                  ? round.getRoundName()
+                  : "R" + round.getRoundNumber()));
+    }
+    return labels;
+  }
+
+  private Long selectedShowId(ComboBox<Show> hostShowCombo) {
+    return hostShowCombo != null && hostShowCombo.getValue() != null
+        ? hostShowCombo.getValue().getId()
+        : null;
+  }
+
+  private HorizontalLayout buildRecordMatchRow(
+      TournamentMatch match, ComboBox<Show> hostShowCombo) {
     HorizontalLayout row = new HorizontalLayout();
     row.setAlignItems(Alignment.CENTER);
 
     List<TournamentEntry> entrants = match.entrants();
     String label =
-        entrants.stream().map(e -> e.getWrestler().getName()).collect(Collectors.joining(" vs "));
+        entrants.stream().map(TournamentEntry::entrantName).collect(Collectors.joining(" vs "));
     row.add(new Span(label));
 
     ComboBox<TournamentEntry> winnerPicker = new ComboBox<>("Pick winner");
+    winnerPicker.setId("winner-picker-" + match.getId());
     winnerPicker.setItems(entrants);
-    winnerPicker.setItemLabelGenerator(e -> e.getWrestler().getName());
+    winnerPicker.setItemLabelGenerator(TournamentEntry::entrantName);
 
     Button recordBtn =
         new Button(
@@ -624,19 +784,52 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
                 Notification.show("Select a winner first.", 2000, Notification.Position.MIDDLE);
                 return;
               }
+              Long showId = selectedShowId(hostShowCombo);
               try {
-                tournamentService.recordMatchResult(match, selected);
-                tournament =
-                    tournamentService.findByIdWithDetails(tournament.getId()).orElse(tournament);
-                buildContent();
+                TournamentRunnerService.ManualResultReport report =
+                    tournamentRunnerService.recordManualResult(
+                        tournament, match.getId(), selected.getId(), showId);
+                refreshAfterRun();
+                String message = "Winner recorded: " + report.winner().entrantName() + " advances.";
+                if (report.tournamentComplete()) {
+                  message += " " + completionMessage();
+                }
+                Notification.show(message, 4000, Notification.Position.BOTTOM_CENTER)
+                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
               } catch (Exception ex) {
                 log.error("Error recording match result", ex);
                 Notification.show("Error: " + ex.getMessage(), 4000, Notification.Position.MIDDLE)
                     .addThemeVariants(NotificationVariant.LUMO_ERROR);
               }
             });
+    recordBtn.setId("record-btn-" + match.getId());
 
-    row.add(winnerPicker, recordBtn);
+    Button engineBtn =
+        new Button(
+            "Decide by Engine",
+            e -> {
+              Long showId = selectedShowId(hostShowCombo);
+              try {
+                TournamentRunnerService.MatchRunReport report =
+                    tournamentRunnerService.runEngineMatch(tournament, match.getId(), showId);
+                refreshAfterRun();
+                String message = "Engine decided: " + report.winner().entrantName() + " advances.";
+                if (report.tournamentComplete()) {
+                  message += " " + completionMessage();
+                }
+                Notification.show(message, 4000, Notification.Position.BOTTOM_CENTER)
+                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+              } catch (Exception ex) {
+                log.error("Error deciding match by engine", ex);
+                Notification.show("Error: " + ex.getMessage(), 4000, Notification.Position.MIDDLE)
+                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
+              }
+            });
+    engineBtn.setId("engine-btn-" + match.getId());
+    engineBtn.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
+    engineBtn.setTooltipText("Let the RPG engine decide this match");
+
+    row.add(winnerPicker, recordBtn, engineBtn);
     return row;
   }
 
@@ -712,27 +905,98 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
     dialog.open();
   }
 
-  private void advanceRound() {
-    try {
-      tournamentService.advanceToNextRound(tournament);
-      tournament = tournamentService.findByIdWithDetails(tournament.getId()).orElse(tournament);
-      buildContent();
-      Notification.show("Next round generated!", 3000, Notification.Position.BOTTOM_CENTER)
-          .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-    } catch (Exception e) {
-      log.error("Error advancing round", e);
-      Notification.show("Error: " + e.getMessage(), 5000, Notification.Position.MIDDLE)
-          .addThemeVariants(NotificationVariant.LUMO_ERROR);
-    }
+  private void refreshAfterRun() {
+    tournament = tournamentService.findByIdWithDetails(tournament.getId()).orElse(tournament);
+    buildContent();
+  }
+
+  private String completionMessage() {
+    return tournament.getEntries().stream()
+        .filter(entry -> entry.getStatus() == TournamentEntryStatus.WINNER)
+        .findFirst()
+        .map(
+            entry -> {
+              String name =
+                  entry.getWrestler() != null
+                      ? entry.getWrestler().getName()
+                      : entry.getTeam() != null ? entry.getTeam().getName() : "Unknown";
+              String prize =
+                  tournament.getTrophyName() != null
+                      ? "wins the " + tournament.getTrophyName()
+                      : tournament.isBriefcaseDeciding()
+                          ? "earns the briefcase"
+                          : tournament.getLinkedTitle() != null
+                              ? "earns a " + tournament.getLinkedTitle().getName() + " opportunity"
+                              : "wins the tournament";
+              return name + " " + prize + "!";
+            })
+        .orElse("Tournament complete!");
+  }
+
+  private String hostShowName() {
+    return tournament.getName() != null && !tournament.getName().isBlank()
+        ? tournament.getName().trim() + " Night"
+        : "Tournament Night";
   }
 
   private void openBookRoundDialog(TournamentRound round) {
-    Dialog dialog = new Dialog();
-    dialog.setHeaderTitle("Book Round on Show");
-
     List<Show> upcoming =
         showRepository.findByShowDateGreaterThanEqualOrderByShowDate(
             LocalDate.now(), PageRequest.of(0, 20));
+    if (upcoming.isEmpty()) {
+      openBookRoundNoShowsDialog(round);
+      return;
+    }
+    openBookRoundOnShowDialog(round, upcoming);
+  }
+
+  /**
+   * The fresh-install case: no shows exist to book onto. Explain what booking does and offer the
+   * escape hatches — create the host show and book, or skip the show and run the round directly.
+   */
+  private void openBookRoundNoShowsDialog(TournamentRound round) {
+    Dialog dialog = new Dialog();
+    dialog.setHeaderTitle("Book Round on Show");
+
+    Paragraph text =
+        new Paragraph(
+            "No shows exist yet. Booking a round places its matches on a show's card; results are"
+                + " recorded when the show is adjudicated. You can also skip the show entirely and"
+                + " play the round right now.");
+    text.getStyle().set("max-width", "28rem");
+
+    String autoName = hostShowName();
+    Button cancel = new Button("Cancel", e -> dialog.close());
+    Button createAndBook =
+        new Button(
+            "Create '" + autoName + "' Show & Book",
+            e -> {
+              try {
+                Show show = tournamentRunnerService.autoCreateHostShow(tournament);
+                tournamentService.bookRoundOnShow(tournament, round, show);
+                dialog.close();
+                refreshAfterRun();
+                Notification.show(
+                        "Round booked on " + show.getName() + "!",
+                        3000,
+                        Notification.Position.BOTTOM_CENTER)
+                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+              } catch (Exception ex) {
+                log.error("Error creating host show", ex);
+                Notification.show("Error: " + ex.getMessage(), 5000, Notification.Position.MIDDLE)
+                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
+              }
+            });
+    createAndBook.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+    dialog.add(new VerticalLayout(text));
+    dialog.getFooter().add(cancel, createAndBook);
+    dialog.open();
+  }
+
+  private void openBookRoundOnShowDialog(TournamentRound round, List<Show> upcoming) {
+    Dialog dialog = new Dialog();
+    dialog.setHeaderTitle("Book Round on Show");
 
     ComboBox<Show> showCombo = new ComboBox<>("Show");
     showCombo.setItems(upcoming);

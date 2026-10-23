@@ -71,6 +71,7 @@ import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
+import com.github.javydreamercsw.management.service.tournament.TrophyReignService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
@@ -174,7 +175,9 @@ public class ShowDetailView extends Main
   private final TeamService teamService;
   private final GameSettingService gameSettingService;
   private final GameClock gameClock;
+  private final ViewContext viewContext;
   private final TournamentService tournamentService;
+  private final TrophyReignService trophyReignService;
 
   private Button backButton;
   private Registration backButtonListener;
@@ -259,7 +262,9 @@ public class ShowDetailView extends Main
     this.expansionService = viewContext.getExpansionService();
     this.gameSettingService = viewContext.getGameSettingService();
     this.gameClock = viewContext.getGameClock();
+    this.viewContext = viewContext;
     this.tournamentService = showContextFacade.getTournamentService();
+    this.trophyReignService = showContextFacade.getTrophyReignService();
     initializeComponents();
   }
 
@@ -1438,7 +1443,9 @@ public class ShowDetailView extends Main
                                       notificationService,
                                       wrestlerStatsService,
                                       dramaEventService,
-                                      titleOpportunityService)
+                                      titleOpportunityService,
+                                      trophyReignService,
+                                      viewContext)
                                   .open()))
               .exceptionally(
                   ex -> {
@@ -1490,7 +1497,7 @@ public class ShowDetailView extends Main
 
   private void generateSummary(@NonNull Segment segment) {
     if (segmentNarrationServiceFactory.getAvailableServicesInPriorityOrder().isEmpty()) {
-      notificationService.showError("No AI providers are currently enabled or reachable.");
+      viewContext.showAiSetupNotification("No AI providers are currently enabled or reachable.");
       return;
     }
 

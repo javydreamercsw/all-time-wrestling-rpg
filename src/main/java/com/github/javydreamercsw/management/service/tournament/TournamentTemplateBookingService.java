@@ -22,6 +22,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
+import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
@@ -29,11 +30,11 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentEntrySta
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRecurrence;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRepository;
+import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus;
 import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.segment.NPCSegmentResolutionService;
-import com.github.javydreamercsw.management.service.segment.SegmentTeam;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import jakarta.annotation.Nullable;
@@ -43,8 +44,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -74,9 +75,26 @@ import org.springframework.transaction.annotation.Transactional;
  * supply participants — approval never fails because of a tournament.
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class TournamentTemplateBookingService {
+
+  @Autowired
+  public TournamentTemplateBookingService(
+      final TournamentService tournamentService,
+      final NPCSegmentResolutionService segmentResolutionService,
+      final TournamentPacingService pacingService,
+      final SegmentTypeService segmentTypeService,
+      final ShowService showService,
+      final TournamentRepository tournamentRepository) {
+    this.tournamentService = tournamentService;
+    this.segmentResolutionService = segmentResolutionService;
+    this.pacingService = pacingService;
+    this.segmentTypeService = segmentTypeService;
+    this.showService = showService;
+    this.tournamentRepository = tournamentRepository;
+    this.resolver =
+        new BracketMatchResolver(tournamentService, segmentResolutionService, segmentTypeService);
+  }
 
   private final TournamentService tournamentService;
   private final NPCSegmentResolutionService segmentResolutionService;
@@ -84,6 +102,13 @@ public class TournamentTemplateBookingService {
   private final SegmentTypeService segmentTypeService;
   private final ShowService showService;
   private final TournamentRepository tournamentRepository;
+
+  /**
+   * Shared booking core (open-match scan, segment creation, winner mapping) — extracted so the
+   * standalone tournament runner funnels through the exact same logic. Built from the same
+   * collaborators this service already holds, so the constructor signature is unchanged.
+   */
+  private final BracketMatchResolver resolver;
 
   /**
    * Result of a tournament-fed booking attempt. {@code titleMatch}/{@code title} mark the payoff:
@@ -254,19 +279,7 @@ public class TournamentTemplateBookingService {
    * warning) when neither exists — pacing skips the show rather than booking a wrong type.
    */
   private Optional<SegmentType> roundSegmentTypeOf(Tournament tournament) {
-    String code =
-        tournamentService
-            .findFormat(tournament.getFormatId())
-            .map(TournamentFormat::getRoundSegmentTypeCode)
-            .orElse(WellKnownSegmentType.ONE_ON_ONE.getCode());
-    Optional<SegmentType> resolved = segmentTypeService.findByCode(code);
-    if (resolved.isEmpty()) {
-      log.warn(
-          "Cannot book tournament rounds on show '{}': the '{}' segment type is missing",
-          tournament.getFormatId(),
-          code);
-    }
-    return resolved;
+    return resolver.roundSegmentTypeOf(tournament);
   }
 
   /**
@@ -275,11 +288,7 @@ public class TournamentTemplateBookingService {
    * (narration-only at worst), and "Normal" stays the fallback when the format declares no default.
    */
   private String defaultRoundRuleOf(Tournament tournament) {
-    return tournamentService
-        .findFormat(tournament.getFormatId())
-        .map(TournamentFormat::getDefaultRoundRuleName)
-        .filter(name -> !name.isEmpty())
-        .orElse("Normal");
+    return resolver.defaultRoundRuleOf(tournament);
   }
 
   // ── PLE-adjudication auto-start ─────────────────────────────────────────────
@@ -662,10 +671,10 @@ public class TournamentTemplateBookingService {
     }
     List<List<String>> names = new ArrayList<>();
     for (TournamentEntry entry : match.entrants()) {
-      if (entry == null || entry.getWrestler() == null || entry.getWrestler().getName() == null) {
+      if (entry == null || entry.entrantName() == null) {
         return List.of(List.of("Tournament bracket"), List.of("Tournament bracket"));
       }
-      names.add(List.of(entry.getWrestler().getName()));
+      names.add(List.of(entry.entrantName()));
     }
     if (names.size() < 2) {
       return List.of(List.of("Tournament bracket"), List.of("Tournament bracket"));
@@ -1101,8 +1110,8 @@ public class TournamentTemplateBookingService {
         tournament.getName(),
         roundNameOf(match),
         show.getName(),
-        match.getEntrant1().getWrestler().getName(),
-        match.getEntrant2().getWrestler().getName(),
+        match.getEntrant1().entrantName(),
+        match.getEntrant2().entrantName(),
         payoff ? (contenderPayoff ? " — CONTENDER PAYOFF" : " — PAYOFF") : "");
     return Optional.of(
         new TournamentBooking(
@@ -1142,20 +1151,24 @@ public class TournamentTemplateBookingService {
       return Optional.empty();
     }
 
+    // Team tournaments (ATW-01g2): the challenger side is the winner entry's team members and
+    // the showcase books with the teamSize-resolved type (tag_team/trios) — funneled through
+    // segmentTeamOf/resolveSegment so team entries never hit the solo-wrestler @NonNull path.
+    SegmentType showcaseType = teamSegmentTypeOf(tournament);
+    // titleOnTheLine=true inside the funnel flags the segment and attaches the linked title.
     Segment segment =
-        segmentResolutionService.resolveTeamSegment(
-            new SegmentTeam(champions),
-            new SegmentTeam(winner.getWrestler()),
-            segmentType,
+        resolveSegment(
+            showcaseMatchOf(tournament, winner, champions),
+            tournament,
+            showcaseType != null ? showcaseType : segmentType,
             show,
-            stipulationOf(payoffRule));
-    segment.setIsTitleSegment(true);
-    segment.getTitles().add(linkedTitle);
+            stipulationOf(payoffRule),
+            true);
     segment.setNarration(
         "Tournament payoff: "
             + tournament.getName()
             + " champion showcase. The tournament winner ("
-            + winner.getWrestler().getName()
+            + winner.entrantName()
             + ") challenges the reigning "
             + linkedTitle.getName()
             + " champion"
@@ -1168,12 +1181,12 @@ public class TournamentTemplateBookingService {
         tournament.getName(),
         show.getName(),
         champions.stream().map(Wrestler::getName).collect(Collectors.joining(" & ")),
-        winner.getWrestler().getName());
+        winner.entrantName());
     return Optional.of(
         new TournamentBooking(
             segment,
             tournament,
-            "Champion showcase — champion vs " + winner.getWrestler().getName(),
+            "Champion showcase — champion vs " + winner.entrantName(),
             true,
             linkedTitle));
   }
@@ -1344,8 +1357,8 @@ public class TournamentTemplateBookingService {
         tournament.getName(),
         roundNameOf(match),
         show.getName(),
-        match.getEntrant1().getWrestler().getName(),
-        match.getEntrant2().getWrestler().getName());
+        match.getEntrant1().entrantName(),
+        match.getEntrant2().entrantName());
     return Optional.of(
         new TournamentBooking(
             segment, tournament, roundNameOf(match) + " — tournament-fed", false, null));
@@ -1357,11 +1370,7 @@ public class TournamentTemplateBookingService {
    * linked to a segment).
    */
   private Optional<TournamentMatch> nextBookableMatch(final Tournament tournament) {
-    return tournament.getRounds().stream()
-        .filter(r -> r.getStatus() != TournamentRoundStatus.COMPLETE)
-        .flatMap(r -> r.getMatches().stream())
-        .filter(m -> m.getWinner() == null && m.getSegment() == null)
-        .min(Comparator.comparingInt(m -> m.getRound().getRoundNumber()));
+    return resolver.nextBookableMatch(tournament);
   }
 
   /**
@@ -1369,19 +1378,7 @@ public class TournamentTemplateBookingService {
    * booked matches) says exactly one match remains.
    */
   private boolean isBracketFinal(Tournament tournament, TournamentMatch match) {
-    return tournamentService
-        .findFormat(tournament.getFormatId())
-        .map(fmt -> fmt.estimateTotalMatches(tournament))
-        .map(total -> total - countBooked(tournament) == 1 && match.getWinner() == null)
-        .orElse(false);
-  }
-
-  private int countBooked(Tournament tournament) {
-    return (int)
-        tournament.getRounds().stream()
-            .flatMap(r -> r.getMatches().stream())
-            .filter(m -> m.getSegment() != null || m.getWinner() != null)
-            .count();
+    return resolver.isBracketFinal(tournament, match);
   }
 
   /** The next PLE (from this show's date forward a year) whose template pairs this tournament. */
@@ -1415,6 +1412,11 @@ public class TournamentTemplateBookingService {
    *
    * <p>Narration carries the tournament context (tournament, round, stakes) so AI narration knows
    * what this match is and why it matters — the Narrate dialog generates from the narration field.
+   *
+   * <p>Team tournaments (ATW-01g2): sides are the entry teams' members in slot order for team
+   * entries (the solo wrestler otherwise), and the segment type resolves from {@link
+   * Tournament#getTeamSize()} through {@link #teamSegmentTypeOf(Tournament)} rather than the
+   * format's round type.
    */
   private Segment resolveSegment(
       final TournamentMatch match,
@@ -1423,82 +1425,80 @@ public class TournamentTemplateBookingService {
       final Show show,
       final String stipulation,
       final boolean titleOnTheLine) {
-    Segment segment;
-    if (match.isMultiEntrant()) {
-      // Multi-entrant match (Free-for-All qualifier, multi-man final): one team per entrant,
-      // resolved by the multi-team path so every participant lands in their own slot.
-      List<SegmentTeam> teams =
-          match.entrants().stream().map(entry -> new SegmentTeam(entry.getWrestler())).toList();
-      segment =
-          segmentResolutionService.resolveMultiTeamSegment(teams, segmentType, show, stipulation);
-    } else {
-      segment =
-          segmentResolutionService.resolveTeamSegment(
-              new SegmentTeam(match.getEntrant1().getWrestler()),
-              new SegmentTeam(match.getEntrant2().getWrestler()),
-              segmentType,
-              show,
-              stipulation);
-    }
-    segment.setNarration(tournamentNotesOf(tournament, match, titleOnTheLine));
-    if (titleOnTheLine && tournament.getLinkedTitle() != null) {
-      segment.setIsTitleSegment(true);
-      segment.getTitles().add(tournament.getLinkedTitle());
-    }
-    return segment;
+    return resolver.resolveSegment(
+        match, tournament, segmentType, show, stipulation, titleOnTheLine);
   }
 
-  /** Booking narration describing the tournament stakes for AI narration. */
-  private String tournamentNotesOf(
-      final Tournament tournament, final TournamentMatch match, final boolean titleOnTheLine) {
-    StringBuilder notes = new StringBuilder();
-    notes
-        .append("Tournament match: ")
-        .append(tournament.getName())
-        .append(" — ")
-        .append(roundNameOf(match))
-        .append(". ");
-    if (titleOnTheLine && tournament.getLinkedTitle() != null) {
-      notes
-          .append("The winner advances in the tournament; the ")
-          .append(tournament.getLinkedTitle().getName())
-          .append(" is on the line. ");
+  /**
+   * A synthetic bracket match for the champion showcase: champion(s) (side 1) vs the tournament
+   * winner entry (side 2). Reuses the standard {@link #resolveSegment} funnel so the sides and the
+   * segment type follow the same team-tournament rules as every other match. Not persisted — the
+   * showcase is not part of the bracket.
+   */
+  private TournamentMatch showcaseMatchOf(
+      Tournament tournament, TournamentEntry winner, List<Wrestler> champions) {
+    TournamentEntry championEntry =
+        TournamentEntry.builder().tournament(tournament).seed(0).build();
+    if (tournament.getTeamSize() != null) {
+      // The champions defend as a team — a synthetic team entry keeps the sides team-shaped
+      // (members in slot order) without touching a persisted team row.
+      Team championTeam = new Team();
+      championTeam.setName("Reigning champions");
+      championTeam.setTeamSize(tournament.getTeamSize());
+      List<Wrestler> championMembers =
+          champions.size() > tournament.getTeamSize().getMemberCount()
+              ? champions.subList(0, tournament.getTeamSize().getMemberCount())
+              : champions;
+      championTeam.setMembers(new ArrayList<>(championMembers));
+      championEntry.setTeam(championTeam);
     } else {
-      notes.append("The winner advances in the tournament. ");
+      // Singles showcase: the primary champion defends.
+      championEntry.setWrestler(champions.get(0));
     }
-    if (tournament.isBriefcaseDeciding()) {
-      notes
-          .append("The winner earns the ")
-          .append(tournament.getName())
-          .append(" briefcase: a cashable opportunity for a title match against any reigning")
-          .append(" champion. ");
-    } else if (tournament.getLinkedTitle() != null && !titleOnTheLine) {
-      notes
-          .append("The tournament winner earns a ")
-          .append(tournament.getLinkedTitle().getName())
-          .append(" opportunity at the tournament's payoff show. ");
-    }
-    notes.append("Narrate the tournament stakes and the crowd's investment in the bracket.");
-    return notes.toString();
+    TournamentMatch match =
+        TournamentMatch.builder().entrant1(championEntry).entrant2(winner).build();
+    // Narration resolves the round name — the showcase is not a bracket round, name it as one.
+    TournamentRound showcaseRound =
+        TournamentRound.builder().roundNumber(0).roundName("Champion Showcase").build();
+    match.setRound(showcaseRound);
+    return match;
+  }
+
+  /**
+   * Resolve a team tournament's match segment type from the declared team size (ATW-01g2) — the
+   * single place the teamSize → segment-type mapping lives. {@code DUO} books as the tag-team type
+   * and {@code TRIO} as the trios type, both resolved against the seeded catalog through {@link
+   * SegmentTypeService}; every booking path (weekly rounds, PLE payoff, host-show payoff,
+   * standalone runner) funnels through {@link #resolveSegment}, so no per-format override is
+   * needed.
+   *
+   * <p>Returns empty-mapped {@code null} (with a warning) when the tournament is not a team
+   * tournament or the catalog lacks the type — the caller then falls back to the type the booking
+   * path already carries, never failing the booking because of a missing catalog row.
+   *
+   * @return the resolved team segment type, or {@code null} to fall back to the caller's type
+   */
+  @Nullable private SegmentType teamSegmentTypeOf(Tournament tournament) {
+    return resolver.teamSegmentTypeOf(tournament);
   }
 
   /**
    * Derive the bracket winner from the booked segment's actual winners so the tournament state
    * matches the match result shown on the card.
+   *
+   * <p>Segment winners are wrestlers; {@code entrantId()} is a team id on a team entry — those live
+   * in disjoint id spaces (and a wrestler/team id collision would misattribute the win). Team
+   * entries therefore match by MEMBER wrestler ids: any segment winner being one of the entry
+   * team's members makes that entry the winner. Package-private for direct testing — the full
+   * booking path cannot materialize team segments until Task 6 builds sides from the entry team's
+   * members (until then booking a team tournament fails earlier, in segment resolution).
    */
-  private TournamentEntry pickBracketWinner(final TournamentMatch match, final Segment segment) {
-    // First segment winner that is one of the match's entrants — works for both the classic
-    // two-entrant shape and multi-entrant matches (any entrant can win a Free-for-All).
-    List<TournamentEntry> entrants = match.entrants();
-    return segment.getWinners().stream()
-        .flatMap(
-            winner -> entrants.stream().filter(e -> e.getWrestler().getId().equals(winner.getId())))
-        .findFirst()
-        .orElse(entrants.get(0));
+  TournamentEntry pickBracketWinner(final TournamentMatch match, final Segment segment) {
+    return resolver.pickBracketWinner(match, segment);
   }
 
   private String roundNameOf(final TournamentMatch match) {
-    return match.getRound().getRoundName();
+    return resolver.roundNameOf(match);
   }
 
   // ── Auto-start (unchanged from ATW-oahn) ────────────────────────────────────

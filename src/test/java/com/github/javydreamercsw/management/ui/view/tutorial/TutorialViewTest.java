@@ -29,11 +29,15 @@ import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.image.ImageResolution;
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.AccountService;
+import com.github.javydreamercsw.management.service.GameClock;
+import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.ai.AiOnboardingService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.tutorial.TutorialDefinition;
 import com.github.javydreamercsw.management.service.tutorial.TutorialService;
@@ -41,11 +45,14 @@ import com.github.javydreamercsw.management.service.tutorial.TutorialStep;
 import com.github.javydreamercsw.management.service.tutorial.TutorialStep.InteractionMode;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.ui.ViewContext;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import java.util.List;
 import java.util.Optional;
@@ -53,6 +60,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.springframework.test.util.ReflectionTestUtils;
 
 class TutorialViewTest extends AbstractViewTest {
@@ -97,8 +105,26 @@ class TutorialViewTest extends AbstractViewTest {
             accountService,
             wrestlerService,
             aiSettingsService,
-            expansionService);
+            expansionService,
+            viewContext());
     UI.getCurrent().add(view);
+  }
+
+  private ViewContext viewContext() {
+    return new ViewContext(
+        mock(NotificationService.class),
+        securityUtils,
+        universeContextService,
+        mock(ExpansionService.class),
+        mock(GameSettingService.class),
+        mock(GameClock.class),
+        stubbedAiOnboardingService());
+  }
+
+  private AiOnboardingService stubbedAiOnboardingService() {
+    AiOnboardingService ai = mock(AiOnboardingService.class);
+    Mockito.when(ai.evaluateGate()).thenReturn(AiOnboardingService.GateState.CAN_CONFIGURE);
+    return ai;
   }
 
   private void enter() {
@@ -125,6 +151,25 @@ class TutorialViewTest extends AbstractViewTest {
     assertThat(buttons)
         .extracting(Button::getText)
         .contains("Choose Campaign", "Choose League", "Choose Universe");
+  }
+
+  @Test
+  @DisplayName("Mode selection renders the tournament Quick Tour card")
+  void noUniverse_showsTournamentQuickTourCard() {
+    enter();
+
+    H3 quickTourHeading =
+        _get(
+            view,
+            H3.class,
+            spec ->
+                spec.withPredicate(
+                    h -> h.getText().contains("Quick Tour: Run Your First" + " Tournament")));
+    assertThat(quickTourHeading).isNotNull();
+    // The card is a stepper: exactly one Go button for the current step
+    List<Button> goButtons =
+        _find(view, Button.class, spec -> spec.withPredicate(b -> "Go".equals(b.getText())));
+    assertThat(goButtons).hasSize(1);
   }
 
   @Test
@@ -170,6 +215,80 @@ class TutorialViewTest extends AbstractViewTest {
     assertThat(checkboxes).isNotEmpty();
     assertThat(checkboxes).allMatch(Checkbox::isEnabled);
     assertThat(checkboxes).allMatch(Checkbox::getValue);
+  }
+
+  @Test
+  @DisplayName(
+      "Feature config screen: disabled AI News offers no Set up AI link (pre-universe phase)")
+  void featureConfig_noUniverse_noSetUpAiLink() {
+    // The key is stored per universe — feature-config renders before any universe exists
+    // (for admins MainLayout may have auto-selected Default Universe 1, so phase-gating,
+    // not session presence, is what keeps a key from being mis-scoped).
+    enter();
+    _get(view, Button.class, spec -> spec.withText("Choose League")).click();
+
+    List<Button> setUpAi = _find(view, Button.class, spec -> spec.withText("Set up AI →"));
+    assertThat(setUpAi).isEmpty();
+  }
+
+  @Test
+  @DisplayName(
+      "Feature config screen: no Set up AI link even with a session universe (admin auto-select)")
+  void featureConfig_sessionUniverse_noSetUpAiLink() {
+    // An admin's session may hold Default Universe 1 auto-selected by MainLayout — saving
+    // there would strand the credential. The link defers to the wizard phase, where the
+    // session universe is the freshly created tutorial universe the user owns.
+    Universe sessionUniverse = universeOf(Universe.UniverseType.CAMPAIGN);
+    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.of(sessionUniverse));
+    enter();
+    _get(view, Button.class, spec -> spec.withText("Choose League")).click();
+
+    List<Button> setUpAi = _find(view, Button.class, spec -> spec.withText("Set up AI →"));
+    assertThat(setUpAi).isEmpty();
+  }
+
+  @Test
+  @DisplayName("Wizard phase: disabled-AI step offers the Set up AI link, opening the dialog")
+  void wizardPhase_aiNotConfigured_showsSetUpAiLink() {
+    Universe universe = universeOf(Universe.UniverseType.GLOBAL);
+    when(tutorialService.findTutorialUniverse("player")).thenReturn(Optional.of(universe));
+
+    TutorialStep step = inlineStepMock("Pick Your Featured Wrestler", "hint");
+    TutorialDefinition def = definitionOf(Universe.UniverseType.GLOBAL, step);
+    when(tutorialService.getDefinition(Universe.UniverseType.GLOBAL)).thenReturn(def);
+    when(tutorialService.getCurrentStep(1L, Universe.UniverseType.GLOBAL)).thenReturn(0);
+    when(wrestlerService.findAllActiveWithAlignments()).thenReturn(List.of());
+    when(aiSettingsService.isClaudeEnabled()).thenReturn(false);
+    when(aiSettingsService.isOpenAIEnabled()).thenReturn(false);
+    when(aiSettingsService.isGeminiEnabled()).thenReturn(false);
+    when(aiSettingsService.isPollinationsEnabled()).thenReturn(false);
+
+    enter();
+
+    Button setUpAi = _get(view, Button.class, spec -> spec.withText("Set up AI →"));
+    setUpAi.click();
+
+    // The onboarding dialog attaches to the UI, not the view's component tree
+    assertThat(_find(Dialog.class)).isNotEmpty();
+  }
+
+  @Test
+  @DisplayName("Wizard phase: no Set up AI link once AI is configured")
+  void wizardPhase_aiConfigured_noSetUpAiLink() {
+    Universe universe = universeOf(Universe.UniverseType.GLOBAL);
+    when(tutorialService.findTutorialUniverse("player")).thenReturn(Optional.of(universe));
+
+    TutorialStep step = inlineStepMock("Pick Your Featured Wrestler", "hint");
+    TutorialDefinition def = definitionOf(Universe.UniverseType.GLOBAL, step);
+    when(tutorialService.getDefinition(Universe.UniverseType.GLOBAL)).thenReturn(def);
+    when(tutorialService.getCurrentStep(1L, Universe.UniverseType.GLOBAL)).thenReturn(0);
+    when(wrestlerService.findAllActiveWithAlignments()).thenReturn(List.of());
+    when(aiSettingsService.isClaudeEnabled()).thenReturn(true);
+
+    enter();
+
+    List<Button> setUpAi = _find(view, Button.class, spec -> spec.withText("Set up AI →"));
+    assertThat(setUpAi).isEmpty();
   }
 
   @Test

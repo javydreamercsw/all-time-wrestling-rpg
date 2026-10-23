@@ -141,7 +141,17 @@ class TournamentDocsE2ETest extends AbstractDocsE2ETest {
             .roundName("Semi-Final")
             .status(TournamentRoundStatus.PENDING)
             .build();
-    roundRepository.saveAndFlush(round2);
+    round2 = roundRepository.saveAndFlush(round2);
+
+    // The open semi-final match — the standalone runner's Run Round / Run Tournament buttons
+    // render only when a winnerless, unbooked match exists.
+    TournamentMatch openSemi =
+        TournamentMatch.builder()
+            .round(round2)
+            .entrant1(entries.get(0))
+            .entrant2(entries.get(1))
+            .build();
+    matchRepository.saveAndFlush(openSemi);
   }
 
   @Test
@@ -257,6 +267,26 @@ class TournamentDocsE2ETest extends AbstractDocsE2ETest {
             + " the weekly shows before it. The payoff match type and rule default to"
             + " One-on-One but can be anything, e.g. a Free-for-All TLC match for a title.",
         "booker-tournament-host-show");
+  }
+
+  @Test
+  void captureTournamentStandaloneRunner() {
+    navigateToAndWaitForElement(
+        "tournament-detail/" + inProgressId, By.xpath("//*[contains(., 'King of the Ring')]"));
+    // The interactive run section renders for the earliest round holding open matches.
+    waitForVaadinElement(driver, By.xpath("//*[contains(text(), 'Record Results')]"));
+
+    documentFeature(
+        "Booker",
+        "Tournament — Standalone Runner",
+        "Run a tournament without booking it on a show: pick each open match's winner"
+            + " yourself, or use 'Decide by Engine' for a single match — full health,"
+            + " stamina, fans and injury consequences, no AI provider needed. The bracket"
+            + " advances automatically when a round's last match is decided, and payoffs"
+            + " (trophy, briefcase, title opportunity) are granted at completion. No shows"
+            + " yet? A '<tournament> Night' show is created automatically to host the"
+            + " matches, or pick one from the Host show box.",
+        "booker-tournament-standalone-runner");
   }
 
   private List<Wrestler> seedWrestlers(String... names) {

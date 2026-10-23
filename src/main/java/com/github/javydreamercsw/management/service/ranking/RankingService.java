@@ -23,6 +23,7 @@ import com.github.javydreamercsw.base.image.ImageCategory;
 import com.github.javydreamercsw.management.config.CacheConfig;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.team.Team;
+import com.github.javydreamercsw.management.domain.team.TeamMember;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
@@ -43,11 +44,11 @@ import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import lombok.NonNull;
@@ -150,49 +151,42 @@ public class RankingService {
     Gender gender = title.getGender() == null ? Gender.MALE : title.getGender();
 
     if (title.getChampionshipType() == ChampionshipType.TEAM) {
+      // A team contends only when it is active, has members, and every member is active with the
+      // title's gender — the gender restriction applies per member, not per team. The member
+      // guard keeps empty husk teams (last member deleted; team_member cascades only the
+      // membership rows) out of the rankings — an empty list's allMatch is vacuously true.
       List<Team> contenders =
           teamRepository.findAll().stream()
               .filter(
                   team ->
-                      team.getWrestler1().getGender() == gender
-                          && team.getWrestler2().getGender() == gender
-                          && team.isActive()
-                          && Boolean.TRUE.equals(team.getWrestler1().getActive())
-                          && Boolean.TRUE.equals(team.getWrestler2().getActive()))
+                      team.isActive()
+                          && !team.getMembers().isEmpty()
+                          && team.getMembers().stream()
+                              .map(TeamMember::getWrestler)
+                              .allMatch(
+                                  w ->
+                                      Boolean.TRUE.equals(w.getActive())
+                                          && w.getGender() == gender))
               .collect(Collectors.toList());
 
-      // Remove champion team from the contender list
+      // Remove the champion team from the contender list. Reigns carrying a team reference
+      // match exactly by team ID (a different team with the same members stays in contention);
+      // legacy reigns without one fall back to comparing the champion set with the member set.
       title
           .getCurrentReign()
           .ifPresent(
-              reign -> {
-                List<Wrestler> champions = new ArrayList<>(reign.getChampions());
-                if (champions.size() == 2) {
+              reign ->
                   contenders.removeIf(
-                      contender ->
-                          (contender.getWrestler1().equals(champions.get(0))
-                                  && contender.getWrestler2().equals(champions.get(1)))
-                              || (contender.getWrestler1().equals(champions.get(1))
-                                  && contender.getWrestler2().equals(champions.get(0))));
-                }
-              });
+                      team ->
+                          reign.getTeam() != null
+                              ? team.getId().equals(reign.getTeam().getId())
+                              : sameMemberSet(team, reign.getChampions())));
 
+      // Teams rank by their own fan counter, not the sum of member fans.
       AtomicInteger rank = new AtomicInteger(1);
-      final Long universeId = title.getUniverse() != null ? title.getUniverse().getId() : 1L;
       return contenders.stream()
-          .sorted(
-              Comparator.comparing(
-                      (Team team) -> {
-                        WrestlerState s1 =
-                            wrestlerService.getOrCreateState(
-                                team.getWrestler1().getId(), universeId);
-                        WrestlerState s2 =
-                            wrestlerService.getOrCreateState(
-                                team.getWrestler2().getId(), universeId);
-                        return s1.getFans() + s2.getFans();
-                      })
-                  .reversed())
-          .map(t -> toRankedTeamDTO(t, rank.getAndIncrement(), universeId))
+          .sorted(Comparator.comparingLong(Team::getFans).reversed())
+          .map(t -> toRankedTeamDTO(t, rank.getAndIncrement()))
           .collect(Collectors.toList());
     } else {
       log.debug(
@@ -376,17 +370,32 @@ public class RankingService {
         .build();
   }
 
-  private RankedTeamDTO toRankedTeamDTO(
-      @NonNull final Team team, final int rank, @NonNull final Long universeId) {
-    WrestlerState s1 = wrestlerService.getOrCreateState(team.getWrestler1().getId(), universeId);
-    WrestlerState s2 = wrestlerService.getOrCreateState(team.getWrestler2().getId(), universeId);
+  private RankedTeamDTO toRankedTeamDTO(@NonNull final Team team, final int rank) {
     return RankedTeamDTO.builder()
         .id(team.getId())
         .name(team.getName())
-        .memberNames(List.of(team.getWrestler1().getName(), team.getWrestler2().getName()))
-        .fans(s1.getFans() + s2.getFans())
+        .memberNames(
+            team.getMembers().stream()
+                .map(TeamMember::getWrestler)
+                .map(Wrestler::getName)
+                .collect(Collectors.toList()))
+        .fans(team.getFans())
         .rank(rank)
         .build();
+  }
+
+  /**
+   * Legacy champion matching for reigns without a team reference: the team is the champion when its
+   * member set equals the reign's champion set.
+   */
+  private boolean sameMemberSet(@NonNull final Team team, @NonNull final Set<Wrestler> champions) {
+    Set<Long> memberIds =
+        team.getMembers().stream()
+            .map(TeamMember::getWrestler)
+            .map(Wrestler::getId)
+            .collect(Collectors.toSet());
+    Set<Long> championIds = champions.stream().map(Wrestler::getId).collect(Collectors.toSet());
+    return memberIds.equals(championIds);
   }
 
   private TitleReignDTO toTitleReignDTO(@NonNull final TitleReign reign) {

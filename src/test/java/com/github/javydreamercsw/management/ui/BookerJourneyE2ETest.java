@@ -365,23 +365,13 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
       log.info("Waiting for notification");
       waitForNotification("Segments created for " + showName);
 
-      // Navigate directly back to the show detail view
+      // Navigate directly back to the show detail view — navigateToAndWaitForElement retries
+      // the transient cold deep-route init failures (e2e-route-init-flake, ATW-cp59) that a
+      // bare driver.get() leaves unprotected.
       log.info("Navigating back to show detail view");
-      driver.get(
-          "http://localhost:"
-              + serverPort
-              + getContextPath()
-              + "/show-detail/"
-              + showService.findByName(showName).getFirst().getId());
-
-      // Verify navigation to the show detail view
-      log.info("Waiting for show detail URL again");
-      wait.until(ExpectedConditions.urlContains("/show-detail"));
-      waitForVaadinClientToLoad();
-
-      log.info("Waiting for segments grid (URL: {})", driver.getCurrentUrl());
-      // segments-grid may be hidden (no segments yet) but present in DOM
-      waitForVaadinElement(driver, By.id("segments-grid-wrapper"));
+      navigateToAndWaitForElement(
+          "show-detail/" + showService.findByName(showName).getFirst().getId(),
+          By.id("segments-grid-wrapper"));
       waitForGridToPopulate("segments-grid");
 
       captureCaption(
@@ -436,12 +426,9 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
 
       // Navigate back to the list.
       log.info("Navigating back to show detail view");
-      driver.get(
-          "http://localhost:"
-              + serverPort
-              + getContextPath()
-              + "/show-detail/"
-              + showService.findByName(showName).getFirst().getId());
+      navigateToAndWaitForElement(
+          "show-detail/" + showService.findByName(showName).getFirst().getId(),
+          By.cssSelector("vaadin-grid-cell-content"));
 
       // Verify the description has been updated
       log.info("Verifying description update");
@@ -564,15 +551,11 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     // Wait for the Save Order button to disappear (indicates async save completed)
     wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("save-order-btn")));
 
-    // Navigate back to the Show Detail view to verify the persisted order
-    driver.get(
-        "http://localhost:" + serverPort + getContextPath() + "/show-detail/" + show.getId());
-
-    wait.until(ExpectedConditions.urlContains("/show-detail"));
-
-    wait.until(
-        ExpectedConditions.presenceOfAllElementsLocatedBy(
-            By.cssSelector("vaadin-grid > vaadin-grid-cell-content:not(:empty)")));
+    // Navigate back to the Show Detail view to verify the persisted order (retrying
+    // navigation guards against the transient cold deep-route init failure)
+    navigateToAndWaitForElement(
+        "show-detail/" + show.getId(),
+        By.cssSelector("vaadin-grid > vaadin-grid-cell-content:not(:empty)"));
     captureCaption(
         "Order updated — the opener is now in position 1 and the main event has moved to"
             + " position 2. Adjustments are reflected in the show card, match sequence,"
@@ -702,13 +685,11 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     captureCaption("Summary is generated from the full narration.");
     clickElement(summaryButton);
 
-    // Navigate to the Show Detail view
-    driver.get(
-        "http://localhost:" + serverPort + getContextPath() + "/show-detail/" + show.getId());
-
-    // Verify navigation to the show detail view (or planning view)
-    wait.until(ExpectedConditions.urlContains("/show-detail"));
-
+    // Navigate to the Show Detail view (retrying navigation guards against the transient
+    // cold deep-route init failure)
+    navigateToAndWaitForElement(
+        "show-detail/" + show.getId(),
+        By.cssSelector("vaadin-grid > vaadin-grid-cell-content:not(:empty)"));
     List<WebElement> cells =
         wait.until(
             ExpectedConditions.presenceOfAllElementsLocatedBy(

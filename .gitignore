@@ -108,3 +108,6 @@ node/
 .code-review-graph/
 /.scratch/
 /.playwright-mcp/
+
+# Superpowers working docs (specs/plans) — local only
+docs/superpowers/

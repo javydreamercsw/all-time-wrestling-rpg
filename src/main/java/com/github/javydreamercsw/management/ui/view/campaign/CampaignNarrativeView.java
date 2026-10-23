@@ -35,6 +35,7 @@ import com.github.javydreamercsw.management.service.campaign.CampaignEncounterSe
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.campaign.FeatureDataService;
 import com.github.javydreamercsw.management.service.campaign.PlaceholderResolverService;
+import com.github.javydreamercsw.management.ui.ViewContext;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.UI;
@@ -73,6 +74,7 @@ public class CampaignNarrativeView extends VerticalLayout {
   private final FeatureDataService featureDataService;
   private final CampaignStateRepository campaignStateRepository;
   private final PlaceholderResolverService placeholderResolver;
+  private final ViewContext viewContext;
 
   private Campaign currentCampaign;
   private VerticalLayout narrativeContainer;
@@ -89,7 +91,8 @@ public class CampaignNarrativeView extends VerticalLayout {
       final NotificationService notificationService,
       final FeatureDataService featureDataService,
       final CampaignStateRepository campaignStateRepository,
-      final PlaceholderResolverService placeholderResolver) {
+      final PlaceholderResolverService placeholderResolver,
+      final ViewContext viewContext) {
     this.wrestlerRepository = wrestlerRepository;
     this.encounterService = encounterService;
     this.campaignService = campaignService;
@@ -99,6 +102,7 @@ public class CampaignNarrativeView extends VerticalLayout {
     this.featureDataService = featureDataService;
     this.campaignStateRepository = campaignStateRepository;
     this.placeholderResolver = placeholderResolver;
+    this.viewContext = viewContext;
 
     setSpacing(true);
     setPadding(true);
@@ -232,7 +236,10 @@ public class CampaignNarrativeView extends VerticalLayout {
           new Paragraph(
               reason + " Please check your configuration and ensure the AI service is running."));
 
-      notificationService.showError(reason);
+      Button setupAi = new Button("Set up AI…", e -> viewContext.createAiOnboardingDialog().open());
+      setupAi.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+      narrativeContainer.add(setupAi);
+
       addRetryButton();
       return;
     }
