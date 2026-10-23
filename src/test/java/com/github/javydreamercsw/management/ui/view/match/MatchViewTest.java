@@ -87,6 +87,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
@@ -145,6 +146,24 @@ class MatchViewTest extends AbstractViewTest {
 
   private MatchView matchView;
 
+  private com.github.javydreamercsw.management.ui.ViewContext viewContext() {
+    com.github.javydreamercsw.management.service.ai.AiOnboardingService aiOnboardingService =
+        mock(com.github.javydreamercsw.management.service.ai.AiOnboardingService.class);
+    lenient()
+        .when(aiOnboardingService.evaluateGate())
+        .thenReturn(
+            com.github.javydreamercsw.management.service.ai.AiOnboardingService.GateState
+                .CAN_CONFIGURE);
+    return new com.github.javydreamercsw.management.ui.ViewContext(
+        notificationService,
+        securityUtils,
+        universeContextService,
+        mock(com.github.javydreamercsw.management.service.expansion.ExpansionService.class),
+        mock(com.github.javydreamercsw.management.service.GameSettingService.class),
+        mock(com.github.javydreamercsw.management.service.GameClock.class),
+        aiOnboardingService);
+  }
+
   @BeforeEach
   public void setup() {
     lenient().when(universeContextService.getCurrentUniverseId()).thenReturn(1L);
@@ -171,7 +190,8 @@ class MatchViewTest extends AbstractViewTest {
             ringsideAiService,
             ringsideActionDataService,
             titleScriptService,
-            notificationService);
+            notificationService,
+            viewContext());
     ReflectionTestUtils.setField(matchView, "campaignEncounterService", campaignEncounterService);
     ReflectionTestUtils.setField(matchView, "deckService", deckService);
     ReflectionTestUtils.setField(matchView, "wrestlerAbilityRepository", wrestlerAbilityRepository);
@@ -1391,5 +1411,28 @@ class MatchViewTest extends AbstractViewTest {
         dialogs.isEmpty(),
         "The briefcase run-in confirm dialog must be offered when a title-match participant"
             + " hits half their starting HP and a HELD case exists");
+  }
+
+  @Test
+  void noAi_generateNarration_showsSetUpAiButton_opensOnboardingDialog() {
+    Segment segment = buildMinimalMatchSegment(1L, "Singles Match");
+    when(segmentService.findByIdWithDetails(1L)).thenReturn(Optional.of(segment));
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.empty());
+    when(securityUtils.isBooker()).thenReturn(true);
+    when(narrationServiceFactory.getAvailableServicesInPriorityOrder()).thenReturn(List.of());
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "1"));
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    _click(_get(Button.class, spec -> spec.withId("ai-generate-narration-button")));
+
+    // The error notification carries the "Set up AI…" entry point (overlay → UI-level lookup)
+    Button setUpAi = _get(Button.class, spec -> spec.withText("Set up AI…"));
+    setUpAi.click();
+
+    Dialog dialog = _get(Dialog.class, spec -> spec.withId("ai-onboarding-dialog"));
+    org.assertj.core.api.Assertions.assertThat(dialog.isOpened()).isTrue();
   }
 }

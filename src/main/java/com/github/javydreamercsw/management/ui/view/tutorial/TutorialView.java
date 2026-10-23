@@ -34,6 +34,7 @@ import com.github.javydreamercsw.management.service.tutorial.TutorialService;
 import com.github.javydreamercsw.management.service.tutorial.TutorialStep;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.ui.ViewContext;
 import com.github.javydreamercsw.management.ui.component.TournamentQuickTourCard;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.UI;
@@ -83,6 +84,7 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
   private final WrestlerService wrestlerService;
   private final AiSettingsService aiSettingsService;
   private final ExpansionService expansionService;
+  private final ViewContext viewContext;
 
   private Account account;
   private Universe.UniverseType universeType;
@@ -98,7 +100,8 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
       final AccountService accountService,
       final WrestlerService wrestlerService,
       final AiSettingsService aiSettingsService,
-      final ExpansionService expansionService) {
+      final ExpansionService expansionService,
+      final ViewContext viewContext) {
     this.tutorialService = tutorialService;
     this.securityUtils = securityUtils;
     this.universeContextService = universeContextService;
@@ -106,6 +109,7 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
     this.wrestlerService = wrestlerService;
     this.aiSettingsService = aiSettingsService;
     this.expansionService = expansionService;
+    this.viewContext = viewContext;
     setSizeFull();
     setPadding(true);
     setSpacing(true);
@@ -340,6 +344,14 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
             cb.setEnabled(false);
             features.put(key, false);
             cb.setHelperText("Requires an AI provider configured in Game Settings");
+            // The onboarding wizard needs a universe to store the key in — the session-level
+            // check is false in this pre-universe phase and true after createTutorialUniverse.
+            if (universeContextService.getCurrentUniverse().isPresent()) {
+              Button setupAi =
+                  new Button("Set up AI →", e -> viewContext.createAiOnboardingDialog().open());
+              setupAi.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+              featureList.add(setupAi);
+            }
           } else {
             cb.addValueChangeListener(e -> features.put(key, e.getValue()));
           }

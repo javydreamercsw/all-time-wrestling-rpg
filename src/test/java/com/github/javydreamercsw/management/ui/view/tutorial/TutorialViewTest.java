@@ -98,8 +98,31 @@ class TutorialViewTest extends AbstractViewTest {
             accountService,
             wrestlerService,
             aiSettingsService,
-            expansionService);
+            expansionService,
+            viewContext());
     UI.getCurrent().add(view);
+  }
+
+  private com.github.javydreamercsw.management.ui.ViewContext viewContext() {
+    return new com.github.javydreamercsw.management.ui.ViewContext(
+        mock(com.github.javydreamercsw.base.ui.service.NotificationService.class),
+        securityUtils,
+        universeContextService,
+        mock(com.github.javydreamercsw.management.service.expansion.ExpansionService.class),
+        mock(com.github.javydreamercsw.management.service.GameSettingService.class),
+        mock(com.github.javydreamercsw.management.service.GameClock.class),
+        stubbedAiOnboardingService());
+  }
+
+  private com.github.javydreamercsw.management.service.ai.AiOnboardingService
+      stubbedAiOnboardingService() {
+    com.github.javydreamercsw.management.service.ai.AiOnboardingService ai =
+        mock(com.github.javydreamercsw.management.service.ai.AiOnboardingService.class);
+    org.mockito.Mockito.when(ai.evaluateGate())
+        .thenReturn(
+            com.github.javydreamercsw.management.service.ai.AiOnboardingService.GateState
+                .CAN_CONFIGURE);
+    return ai;
   }
 
   private void enter() {
@@ -189,6 +212,36 @@ class TutorialViewTest extends AbstractViewTest {
     assertThat(checkboxes).isNotEmpty();
     assertThat(checkboxes).allMatch(Checkbox::isEnabled);
     assertThat(checkboxes).allMatch(Checkbox::getValue);
+  }
+
+  @Test
+  @DisplayName(
+      "Feature config screen: disabled AI News offers no Set up AI link (pre-universe phase)")
+  void featureConfig_noUniverse_noSetUpAiLink() {
+    // Session has no universe → the onboarding gate would report NO_UNIVERSE_SELECTED,
+    // so the link must not render in the pre-universe feature-config phase.
+    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.empty());
+    enter();
+    _get(view, Button.class, spec -> spec.withText("Choose League")).click();
+
+    List<Button> setUpAi = _find(view, Button.class, spec -> spec.withText("Set up AI →"));
+    assertThat(setUpAi).isEmpty();
+  }
+
+  @Test
+  @DisplayName("Feature config screen: disabled AI News shows Set up AI link when universe exists")
+  void featureConfig_universePresent_showsSetUpAiLink() {
+    // Session universe present (wizard phase after createTutorialUniverse) → the link renders.
+    Universe sessionUniverse = universeOf(Universe.UniverseType.CAMPAIGN);
+    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.of(sessionUniverse));
+    enter();
+    _get(view, Button.class, spec -> spec.withText("Choose League")).click();
+
+    Button setUpAi = _get(view, Button.class, spec -> spec.withText("Set up AI →"));
+    setUpAi.click();
+
+    // The onboarding dialog attaches to the UI, not the view's component tree
+    assertThat(_find(com.vaadin.flow.component.dialog.Dialog.class)).isNotEmpty();
   }
 
   @Test

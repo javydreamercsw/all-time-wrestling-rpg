@@ -135,7 +135,15 @@ class MatchPromoUITest extends AbstractViewTest {
             ringsideAiService,
             ringsideActionDataService,
             titleScriptService,
-            notificationService);
+            notificationService,
+            new com.github.javydreamercsw.management.ui.ViewContext(
+                notificationService,
+                securityUtils,
+                universeContextService,
+                mock(com.github.javydreamercsw.management.service.expansion.ExpansionService.class),
+                mock(com.github.javydreamercsw.management.service.GameSettingService.class),
+                mock(com.github.javydreamercsw.management.service.GameClock.class),
+                mock(com.github.javydreamercsw.management.service.ai.AiOnboardingService.class)));
     ReflectionTestUtils.setField(matchView, "wrestlerAbilityRepository", wrestlerAbilityRepository);
     ReflectionTestUtils.setField(
         matchView, "abilityReminderTextService", abilityReminderTextService);

@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.ui.view.campaign;
 
 import static com.github.mvysny.kaributesting.v10.LocatorJ._find;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -88,7 +89,8 @@ class CampaignNarrativeViewTest extends AbstractViewTest {
             notificationService,
             featureDataService,
             campaignStateRepository,
-            placeholderResolverService);
+            placeholderResolverService,
+            viewContext());
     UI.getCurrent().add(view);
   }
 
@@ -97,6 +99,24 @@ class CampaignNarrativeViewTest extends AbstractViewTest {
   void shouldRenderHeading() {
     H2 heading = _get(view, H2.class, spec -> spec.withText("Story Narrative"));
     assertTrue(heading.isVisible());
+  }
+
+  private com.github.javydreamercsw.management.ui.ViewContext viewContext() {
+    com.github.javydreamercsw.management.service.ai.AiOnboardingService ai =
+        Mockito.mock(com.github.javydreamercsw.management.service.ai.AiOnboardingService.class);
+    Mockito.when(ai.evaluateGate())
+        .thenReturn(
+            com.github.javydreamercsw.management.service.ai.AiOnboardingService.GateState
+                .CAN_CONFIGURE);
+    return new com.github.javydreamercsw.management.ui.ViewContext(
+        notificationService,
+        securityUtils,
+        Mockito.mock(
+            com.github.javydreamercsw.management.service.universe.UniverseContextService.class),
+        Mockito.mock(com.github.javydreamercsw.management.service.expansion.ExpansionService.class),
+        Mockito.mock(com.github.javydreamercsw.management.service.GameSettingService.class),
+        Mockito.mock(com.github.javydreamercsw.management.service.GameClock.class),
+        ai);
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -129,7 +149,8 @@ class CampaignNarrativeViewTest extends AbstractViewTest {
             notificationService,
             featureDataService,
             campaignStateRepository,
-            placeholderResolverService);
+            placeholderResolverService,
+            viewContext());
     UI.getCurrent().add(v);
     return v;
   }
@@ -259,5 +280,25 @@ class CampaignNarrativeViewTest extends AbstractViewTest {
 
     _get(v, H2.class, spec -> spec.withText("All Story Events Complete"));
     _get(v, Button.class, spec -> spec.withText("Back to Dashboard"));
+  }
+
+  @Test
+  @DisplayName("Story Director Offline panel offers the Set up AI entry point")
+  void storyDirectorOffline_showsSetUpAiButton_opensOnboardingDialog() {
+    CampaignChapterDTO chapter =
+        CampaignChapterDTO.builder()
+            .id("ch")
+            .title("Test Chapter")
+            .mode(CampaignChapterMode.AI_ONLY)
+            .build();
+    when(aiFactory.getAvailableServicesInPriorityOrder()).thenReturn(List.of());
+
+    CampaignNarrativeView v = viewWithCampaign(chapter);
+    v.onAttach(new com.vaadin.flow.component.AttachEvent(v, true));
+
+    Button setUpAi = _get(v, Button.class, spec -> spec.withText("Set up AI…"));
+    setUpAi.click();
+
+    assertThat(_find(com.vaadin.flow.component.dialog.Dialog.class)).isNotEmpty();
   }
 }

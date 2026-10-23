@@ -175,6 +175,7 @@ public class ShowDetailView extends Main
   private final TeamService teamService;
   private final GameSettingService gameSettingService;
   private final GameClock gameClock;
+  private final ViewContext viewContext;
   private final TournamentService tournamentService;
   private final TrophyReignService trophyReignService;
 
@@ -261,6 +262,7 @@ public class ShowDetailView extends Main
     this.expansionService = viewContext.getExpansionService();
     this.gameSettingService = viewContext.getGameSettingService();
     this.gameClock = viewContext.getGameClock();
+    this.viewContext = viewContext;
     this.tournamentService = showContextFacade.getTournamentService();
     this.trophyReignService = showContextFacade.getTrophyReignService();
     initializeComponents();
@@ -1442,7 +1444,8 @@ public class ShowDetailView extends Main
                                       wrestlerStatsService,
                                       dramaEventService,
                                       titleOpportunityService,
-                                      trophyReignService)
+                                      trophyReignService,
+                                      viewContext)
                                   .open()))
               .exceptionally(
                   ex -> {
@@ -1494,7 +1497,7 @@ public class ShowDetailView extends Main
 
   private void generateSummary(@NonNull Segment segment) {
     if (segmentNarrationServiceFactory.getAvailableServicesInPriorityOrder().isEmpty()) {
-      notificationService.showError("No AI providers are currently enabled or reachable.");
+      viewContext.showAiSetupNotification("No AI providers are currently enabled or reachable.");
       return;
     }
 

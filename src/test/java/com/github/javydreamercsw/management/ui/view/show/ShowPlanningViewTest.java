@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.show;
 
+import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -35,6 +36,7 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.GameClock;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.ai.AiOnboardingService;
 import com.github.javydreamercsw.management.service.drama.DramaEventService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.feud.FeudScriptService;
@@ -76,6 +78,7 @@ import com.github.mvysny.kaributesting.v10.MockVaadin;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextArea;
@@ -150,14 +153,21 @@ class ShowPlanningViewTest extends AbstractViewTest {
             mock(TitleOpportunityService.class),
             mock(WrestlerStateHistoryService.class),
             mock(AbilityReminderTextService.class));
+    com.github.javydreamercsw.base.security.SecurityUtils securityUtilsMock =
+        mock(com.github.javydreamercsw.base.security.SecurityUtils.class);
+    Mockito.when(securityUtilsMock.isAdmin()).thenReturn(true);
+    AiOnboardingService aiOnboardingServiceMock = mock(AiOnboardingService.class);
+    Mockito.when(aiOnboardingServiceMock.evaluateGate())
+        .thenReturn(AiOnboardingService.GateState.CAN_CONFIGURE);
     ViewContext viewContext =
         new ViewContext(
             notificationService,
-            null,
+            securityUtilsMock,
             universeContextService,
             expansionService,
             mock(GameSettingService.class),
-            mock(GameClock.class));
+            mock(GameClock.class),
+            aiOnboardingServiceMock);
 
     showPlanningView =
         new ShowPlanningView(
@@ -766,5 +776,32 @@ class ShowPlanningViewTest extends AbstractViewTest {
     } finally {
       UI.setCurrent(karibuUI);
     }
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void noAi_showsSetUpAiButton_opensOnboardingDialog() {
+    Show show = new Show();
+    show.setId(1L);
+    show.setName("Test Show");
+    show.setShowDate(LocalDate.now());
+    when(showPlanningService.getShowPlanningContext(show)).thenReturn(new ShowPlanningContextDTO());
+    ReflectionTestUtils.setField(showPlanningView, "objectMapper", new ObjectMapper());
+    selectShowAndAwaitAutoLoad(show);
+
+    // AI factory empty → proposeSegments takes the no-AI error branch
+    when(aiFactory.getAvailableServicesInPriorityOrder()).thenReturn(List.of());
+    ((CompletableFuture<Void>)
+            Objects.requireNonNull(
+                ReflectionTestUtils.invokeMethod(showPlanningView, "proposeSegments")))
+        .join();
+    MockVaadin.runUIQueue();
+
+    // The error notification carries the "Set up AI…" entry point (overlay → UI-level lookup)
+    Button setUpAi = _get(Button.class, spec -> spec.withText("Set up AI…"));
+    setUpAi.click();
+
+    Dialog dialog = _get(Dialog.class, spec -> spec.withId("ai-onboarding-dialog"));
+    org.assertj.core.api.Assertions.assertThat(dialog.isOpened()).isTrue();
   }
 }

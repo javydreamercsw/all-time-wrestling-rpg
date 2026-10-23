@@ -72,6 +72,7 @@ import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.AbilityReminderTextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
+import com.github.javydreamercsw.management.ui.ViewContext;
 import com.github.javydreamercsw.management.ui.component.AdjudicationTable;
 import com.github.javydreamercsw.management.ui.component.CommentaryComponent;
 import com.github.javydreamercsw.management.ui.component.DashboardCard;
@@ -148,6 +149,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private final RingsideAiService ringsideAiService;
   private final RingsideActionDataService ringsideActionDataService;
   private final NotificationService notificationService;
+  private final ViewContext viewContext;
   private final TitleScriptService titleScriptService;
   @Autowired private ArenaService arenaService;
   @Autowired private CampaignEncounterService campaignEncounterService;
@@ -193,7 +195,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       final RingsideAiService ringsideAiService,
       final RingsideActionDataService ringsideActionDataService,
       final TitleScriptService titleScriptService,
-      final NotificationService notificationService) {
+      final NotificationService notificationService,
+      final ViewContext viewContext) {
     this.segmentService = segmentService;
     this.wrestlerService = wrestlerService;
     this.wrestlerStatsService = wrestlerStatsService;
@@ -215,6 +218,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     this.ringsideActionDataService = ringsideActionDataService;
     this.titleScriptService = titleScriptService;
     this.notificationService = notificationService;
+    this.viewContext = viewContext;
   }
 
   @Override
@@ -1143,8 +1147,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
   private void generateAiNarration() {
     if (narrationServiceFactory.getAvailableServicesInPriorityOrder().isEmpty()) {
-      String reason = "No AI providers are currently enabled or reachable.";
-      Notification.show(reason).addThemeVariants(NotificationVariant.LUMO_ERROR);
+      viewContext.showAiSetupNotification("No AI providers are currently enabled or reachable.");
       return;
     }
 
