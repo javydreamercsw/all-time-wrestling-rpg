@@ -166,9 +166,10 @@ class TutorialViewTest extends AbstractViewTest {
                 spec.withPredicate(
                     h -> h.getText().contains("Quick Tour: Run Your First" + " Tournament")));
     assertThat(quickTourHeading).isNotNull();
+    // The card is a stepper: exactly one Go button for the current step
     List<Button> goButtons =
         _find(view, Button.class, spec -> spec.withPredicate(b -> "Go".equals(b.getText())));
-    assertThat(goButtons).hasSize(5);
+    assertThat(goButtons).hasSize(1);
   }
 
   @Test
