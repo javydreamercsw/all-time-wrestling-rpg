@@ -34,10 +34,53 @@ import java.util.List;
  * walkthrough, not a {@code TutorialDefinition}. The mode tutorials (Campaign/League/Universe)
  * create tutorial universes and track per-account completion; this card just points a brand-new
  * player at the tournament flow they can run in a few clicks with no shows, seasons, or AI setup.
+ *
+ * <p>The five steps render one at a time as an in-card stepper (ATW-eqj5): a "Step N of 5"
+ * indicator with progress dots, the current step's title and description, and Back / Go / Next.
+ * Progress is session-only (a field on the component instance) — a reload restarts the tour,
+ * matching the card's stateless design.
  */
 public class TournamentQuickTourCard extends Div {
 
   public static final String TOURNAMENT_LIST_ROUTE = "tournament-list";
+
+  private final List<Step> steps =
+      List.of(
+          new Step(
+              "1. Create a Tournament",
+              "Open Tournaments and use New Tournament. Pick a format and a few entrants —"
+                  + " your roster is ready.",
+              TOURNAMENT_LIST_ROUTE),
+          new Step(
+              "2. Add Players",
+              "Create player accounts under Accounts and assign each player their wrestler —"
+                  + " their wrestler's results then count for their account.",
+              "account-list"),
+          new Step(
+              "3. Seed and Start",
+              "Randomize the seeds if you like, then click Start Tournament to generate the"
+                  + " bracket.",
+              TOURNAMENT_LIST_ROUTE),
+          new Step(
+              "4. Enter Results",
+              "On the tournament page, pick the winner of each match yourself — or let the"
+                  + " engine decide a single match. No shows? A '<tournament> Night' show is"
+                  + " created for you automatically.",
+              TOURNAMENT_LIST_ROUTE),
+          new Step(
+              "5. Crown the Winner",
+              "Trophies, briefcases and title opportunities are granted automatically when"
+                  + " the bracket completes.",
+              TOURNAMENT_LIST_ROUTE));
+
+  private final Span stepIndicator = new Span();
+  private final Span stepTitle = new Span();
+  private final Paragraph stepDescription = new Paragraph();
+  private final Button backButton = new Button("← Back");
+  private final Button goButton = new Button("Go");
+  private final Button nextButton = new Button("Next →");
+
+  private int currentStepIndex;
 
   public TournamentQuickTourCard() {
     addClassNames(
@@ -82,62 +125,93 @@ public class TournamentQuickTourCard extends Div {
     intro.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.SMALL);
     intro.getStyle().set("margin", "0");
 
-    add(iconSpan, titleRow, intro, buildSteps());
+    add(iconSpan, titleRow, intro, buildStepper());
+    renderStep();
   }
 
-  private VerticalLayout buildSteps() {
-    List<Step> steps =
-        List.of(
-            new Step(
-                "1. Create a Tournament",
-                "Open Tournaments and use New Tournament. Pick a format and a few entrants —"
-                    + " your roster is ready.",
-                TOURNAMENT_LIST_ROUTE),
-            new Step(
-                "2. Add Players",
-                "Create player accounts under Accounts and assign each player their wrestler —"
-                    + " their wrestler's results then count for their account.",
-                "account-list"),
-            new Step(
-                "3. Seed and Start",
-                "Randomize the seeds if you like, then click Start Tournament to generate the"
-                    + " bracket.",
-                TOURNAMENT_LIST_ROUTE),
-            new Step(
-                "4. Enter Results",
-                "On the tournament page, pick the winner of each match yourself — or let the"
-                    + " engine decide a single match. No shows? A '<tournament> Night' show is"
-                    + " created for you automatically.",
-                TOURNAMENT_LIST_ROUTE),
-            new Step(
-                "5. Crown the Winner",
-                "Trophies, briefcases and title opportunities are granted automatically when"
-                    + " the bracket completes.",
-                TOURNAMENT_LIST_ROUTE));
+  private VerticalLayout buildStepper() {
+    stepIndicator.setId("quick-tour-step-indicator");
+    stepIndicator.addClassNames(LumoUtility.FontSize.XSMALL, LumoUtility.TextColor.SECONDARY);
 
-    VerticalLayout stepsLayout = new VerticalLayout();
-    stepsLayout.setPadding(false);
-    stepsLayout.setSpacing(false);
+    HorizontalLayout indicatorRow = new HorizontalLayout(stepIndicator, buildProgressDots());
+    indicatorRow.setAlignItems(FlexComponent.Alignment.CENTER);
+    indicatorRow.setSpacing(true);
+    indicatorRow.addClassNames(LumoUtility.Margin.Top.SMALL, LumoUtility.Margin.Bottom.XSMALL);
 
-    steps.forEach(
-        step -> {
-          Span stepTitle = new Span(step.title());
-          stepTitle.addClassNames(LumoUtility.FontWeight.BOLD, LumoUtility.FontSize.SMALL);
-          Paragraph stepDesc = new Paragraph(step.description());
-          stepDesc.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.SMALL);
-          stepDesc.getStyle().set("margin", "0 0 0.25rem 0");
+    stepTitle.setId("quick-tour-step-title");
+    stepTitle.addClassNames(LumoUtility.FontWeight.BOLD);
 
-          Button go = new Button("Go", e -> navigateTo(step.route()));
-          go.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
+    stepDescription.addClassNames(LumoUtility.TextColor.SECONDARY, LumoUtility.FontSize.SMALL);
+    stepDescription.getStyle().set("margin", "0");
 
-          HorizontalLayout row = new HorizontalLayout(stepTitle, go);
-          row.setAlignItems(FlexComponent.Alignment.CENTER);
-          row.setWidthFull();
-          stepsLayout.add(row, stepDesc);
+    backButton.setId("back-button");
+    backButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
+    backButton.addClickListener(
+        e -> {
+          if (currentStepIndex > 0) {
+            currentStepIndex--;
+            renderStep();
+          }
         });
 
-    stepsLayout.addClassNames(LumoUtility.Margin.Top.SMALL);
-    return stepsLayout;
+    goButton.setId("go-button");
+    goButton.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
+    goButton.addClickListener(e -> navigateTo(steps.get(currentStepIndex).route()));
+
+    nextButton.setId("next-button");
+    nextButton.addThemeVariants(ButtonVariant.LUMO_SMALL);
+    nextButton.addClickListener(
+        e -> {
+          if (currentStepIndex < steps.size() - 1) {
+            currentStepIndex++;
+            renderStep();
+          }
+        });
+
+    HorizontalLayout navRow = new HorizontalLayout(backButton, goButton, nextButton);
+    navRow.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
+    navRow.setWidthFull();
+    navRow.setSpacing(true);
+    navRow.addClassNames(LumoUtility.Margin.Top.SMALL);
+
+    VerticalLayout stepper = new VerticalLayout(indicatorRow, stepTitle, stepDescription, navRow);
+    stepper.setPadding(false);
+    stepper.setSpacing(false);
+    stepper.addClassNames(LumoUtility.Margin.Top.SMALL);
+    return stepper;
+  }
+
+  private HorizontalLayout buildProgressDots() {
+    HorizontalLayout dots = new HorizontalLayout();
+    dots.setSpacing(true);
+    dots.getStyle().set("line-height", "1");
+    for (int i = 0; i < steps.size(); i++) {
+      Span dot = new Span();
+      dot.setWidth("8px");
+      dot.setHeight("8px");
+      dot.getStyle()
+          .set("border-radius", "50%")
+          .set(
+              "background",
+              i == currentStepIndex ? "var(--lumo-primary-color)" : "var(--lumo-contrast-20pct)");
+      dots.add(dot);
+    }
+    return dots;
+  }
+
+  private void renderStep() {
+    Step step = steps.get(currentStepIndex);
+    stepIndicator.setText("Step " + (currentStepIndex + 1) + " of " + steps.size());
+    stepTitle.setText(step.title());
+    stepDescription.setText(step.description());
+
+    backButton.setVisible(currentStepIndex > 0);
+    nextButton.setVisible(currentStepIndex < steps.size() - 1);
+
+    // Re-render the dots: simplest is to rebuild the indicator row's dot layout.
+    HorizontalLayout indicatorRow = (HorizontalLayout) stepIndicator.getParent().orElseThrow();
+    indicatorRow.removeAll();
+    indicatorRow.add(stepIndicator, buildProgressDots());
   }
 
   private void navigateTo(String route) {
