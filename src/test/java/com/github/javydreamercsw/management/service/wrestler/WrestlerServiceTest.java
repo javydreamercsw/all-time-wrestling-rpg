@@ -18,9 +18,12 @@ package com.github.javydreamercsw.management.service.wrestler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
+import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.AccountRepository;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundary;
 import com.github.javydreamercsw.base.domain.wrestler.TierBoundaryRepository;
@@ -89,6 +92,8 @@ class WrestlerServiceTest {
   @Mock private SecurityUtils securityUtils;
   @Mock private UniverseWrestlerExclusionRepository wrestlerExclusionRepository;
   @Mock private UniverseSettingsService universeSettingsService;
+
+  @Mock private AccountRepository accountRepository;
 
   @InjectMocks private WrestlerService wrestlerService;
 
@@ -571,5 +576,59 @@ class WrestlerServiceTest {
 
     assertEquals(2L, count);
     verify(wrestlerRepository).count(any(Specification.class));
+  }
+
+  @Test
+  void setAccountForWrestler_reassignment_sweepsOldAccountPointer() {
+    // Wrestler 1 currently belongs to account 2, which still lists it as its active wrestler.
+    Account previousOwner = new Account("oldOwner", "$2a$10$encodedPassword", "old@test.com");
+    previousOwner.setId(2L);
+    previousOwner.setActiveWrestlerId(1L);
+    Account newOwner = new Account("newOwner", "$2a$10$encodedPassword", "new@test.com");
+    newOwner.setId(3L);
+    wrestler.setAccount(previousOwner);
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
+    when(accountRepository.findById(2L)).thenReturn(Optional.of(previousOwner));
+    when(accountRepository.findById(3L)).thenReturn(Optional.of(newOwner));
+
+    wrestlerService.setAccountForWrestler(1L, 3L);
+
+    // The old account's pointer is swept; the wrestler now belongs to the new owner.
+    assertNull(previousOwner.getActiveWrestlerId());
+    verify(accountRepository).save(previousOwner);
+    assertEquals(newOwner, wrestler.getAccount());
+    verify(wrestlerRepository).save(wrestler);
+  }
+
+  @Test
+  void setAccountForWrestler_firstAssignment_noSweep() {
+    // Wrestler has no account yet — just set the back-link, no old account to clear.
+    Account newOwner = new Account("newOwner", "$2a$10$encodedPassword", "new@test.com");
+    newOwner.setId(3L);
+    wrestler.setAccount(null);
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
+    when(accountRepository.findById(3L)).thenReturn(Optional.of(newOwner));
+
+    wrestlerService.setAccountForWrestler(1L, 3L);
+
+    verify(accountRepository, never()).save(any(Account.class));
+    assertEquals(newOwner, wrestler.getAccount());
+  }
+
+  @Test
+  void setAccountForWrestler_nullAccountId_unlinksAndSweepsOldPointer() {
+    // Unassigning (accountId = null) clears the back-link AND the old account's stale
+    // active pointer — the invariant is the same as a reassignment.
+    Account oldOwner = new Account("oldOwner", "$2a$10$encodedPassword", "old@test.com");
+    oldOwner.setId(2L);
+    oldOwner.setActiveWrestlerId(1L);
+    wrestler.setAccount(oldOwner);
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
+
+    wrestlerService.setAccountForWrestler(1L, null);
+
+    assertNull(wrestler.getAccount());
+    assertNull(oldOwner.getActiveWrestlerId());
+    verify(accountRepository).save(oldOwner);
   }
 }

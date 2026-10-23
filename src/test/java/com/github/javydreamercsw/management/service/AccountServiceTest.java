@@ -19,6 +19,8 @@ package com.github.javydreamercsw.management.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -264,6 +266,62 @@ class AccountServiceTest {
 
     verify(accountRepository).save(account);
     assertThat(account.getActiveWrestlerId()).isEqualTo(42L);
+  }
+
+  @Test
+  void testSetActiveWrestlerId_reassignment_clearsOldAccountPointer() {
+    // Wrestler 42 currently belongs to (and is pointed at by) account 2.
+    Account previousOwner = new Account("oldOwner", "$2a$10$encodedPassword", "old@test.com");
+    previousOwner.setId(2L);
+    previousOwner.setActiveWrestlerId(42L);
+    Wrestler wrestler = new Wrestler();
+    wrestler.setId(42L);
+    wrestler.setAccount(previousOwner);
+    when(accountRepository.findById(2L)).thenReturn(Optional.of(previousOwner));
+    when(wrestlerRepository.findById(42L)).thenReturn(Optional.of(wrestler));
+
+    accountService.setActiveWrestlerId(1L, 42L);
+
+    // The old account's pointer is swept and persisted; the new account got the pointer.
+    assertThat(previousOwner.getActiveWrestlerId()).isNull();
+    verify(accountRepository).save(previousOwner);
+    assertThat(account.getActiveWrestlerId()).isEqualTo(42L);
+    verify(wrestlerRepository).save(wrestler);
+    assertThat(wrestler.getAccount()).isEqualTo(account);
+  }
+
+  @Test
+  void testSetActiveWrestlerId_reassignment_oldAccountPointsElsewhere_leftAlone() {
+    // The wrestler's linked account exists but its active pointer is null or another
+    // wrestler — nothing to sweep.
+    Account linkedAccount = new Account("linked", "$2a$10$encodedPassword", "linked@test.com");
+    linkedAccount.setId(2L);
+    linkedAccount.setActiveWrestlerId(null);
+    Wrestler wrestler = new Wrestler();
+    wrestler.setId(42L);
+    wrestler.setAccount(linkedAccount);
+    when(accountRepository.findById(2L)).thenReturn(Optional.of(linkedAccount));
+    when(wrestlerRepository.findById(42L)).thenReturn(Optional.of(wrestler));
+
+    accountService.setActiveWrestlerId(1L, 42L);
+
+    verify(accountRepository, never()).save(linkedAccount);
+    assertThat(account.getActiveWrestlerId()).isEqualTo(42L);
+  }
+
+  @Test
+  void testSetActiveWrestlerId_firstAssignment_noSweep() {
+    // Wrestler has no account yet (tutorial-seeded): just back-link, no other account to clear.
+    Wrestler wrestler = new Wrestler();
+    wrestler.setId(42L);
+    wrestler.setAccount(null);
+    when(wrestlerRepository.findById(42L)).thenReturn(Optional.of(wrestler));
+
+    accountService.setActiveWrestlerId(1L, 42L);
+
+    assertThat(wrestler.getAccount()).isEqualTo(account);
+    assertThat(account.getActiveWrestlerId()).isEqualTo(42L);
+    verify(accountRepository, times(1)).save(any(Account.class));
   }
 
   @Test
