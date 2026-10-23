@@ -84,7 +84,13 @@ public class AiOnboardingDialog extends Dialog {
     buttons.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
     buttons.setWidthFull();
     if (securityUtils.isAdmin()) {
-      Button advanced = new Button("Advanced…", e -> close());
+      Button advanced =
+          new Button(
+              "Advanced…",
+              e -> {
+                close();
+                UI.getCurrent().navigate("admin");
+              });
       advanced.setId("advanced-button");
       advanced.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
       buttons.add(advanced);

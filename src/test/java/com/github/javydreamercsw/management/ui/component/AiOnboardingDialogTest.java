@@ -166,6 +166,19 @@ class AiOnboardingDialogTest extends AbstractViewTest {
   }
 
   @Test
+  @DisplayName("Advanced closes and navigates to the admin AI Settings")
+  void advanced_navigatesToAdminAiSettings() {
+    openDialog();
+    Button advanced = _get(dialog, Button.class, spec -> spec.withId("advanced-button"));
+    advanced.click();
+
+    assertThat(dialog.isOpened()).isFalse();
+    // Karibu executes navigation synchronously — the router chain must hold the admin view
+    assertThat(UI.getCurrent().getInternals().getActiveRouterTargetsChain())
+        .anyMatch(t -> t.getClass().getSimpleName().contains("Admin"));
+  }
+
+  @Test
   @DisplayName("Cancel closes the dialog")
   void cancel_closes() {
     openDialog();

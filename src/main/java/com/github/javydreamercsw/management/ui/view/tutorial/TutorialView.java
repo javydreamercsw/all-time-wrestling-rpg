@@ -344,14 +344,6 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
             cb.setEnabled(false);
             features.put(key, false);
             cb.setHelperText("Requires an AI provider configured in Game Settings");
-            // The onboarding wizard needs a universe to store the key in — the session-level
-            // check is false in this pre-universe phase and true after createTutorialUniverse.
-            if (universeContextService.getCurrentUniverse().isPresent()) {
-              Button setupAi =
-                  new Button("Set up AI →", e -> viewContext.createAiOnboardingDialog().open());
-              setupAi.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
-              featureList.add(setupAi);
-            }
           } else {
             cb.addValueChangeListener(e -> features.put(key, e.getValue()));
           }
@@ -465,6 +457,21 @@ public class TutorialView extends VerticalLayout implements BeforeEnterObserver 
     add(title);
 
     add(new Paragraph(step.getInstructions()));
+
+    // AI news is on by default; with no provider configured it silently stays off. The
+    // tutorial universe now owns the session (created in beforeEnter), so a key saved here
+    // is scoped to the universe the user just created — never Default Universe 1.
+    boolean aiConfigured =
+        aiSettingsService.isClaudeEnabled()
+            || aiSettingsService.isOpenAIEnabled()
+            || aiSettingsService.isGeminiEnabled()
+            || aiSettingsService.isPollinationsEnabled();
+    if (!aiConfigured) {
+      Button setupAi =
+          new Button("Set up AI →", e -> viewContext.createAiOnboardingDialog().open());
+      setupAi.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+      add(setupAi);
+    }
 
     if (step.getImagePath() != null) {
       Div imgContainer = new Div();

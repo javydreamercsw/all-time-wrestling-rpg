@@ -220,9 +220,9 @@ class TutorialViewTest extends AbstractViewTest {
   @DisplayName(
       "Feature config screen: disabled AI News offers no Set up AI link (pre-universe phase)")
   void featureConfig_noUniverse_noSetUpAiLink() {
-    // Session has no universe → the onboarding gate would report NO_UNIVERSE_SELECTED,
-    // so the link must not render in the pre-universe feature-config phase.
-    when(universeContextService.getCurrentUniverse()).thenReturn(Optional.empty());
+    // The key is stored per universe — feature-config renders before any universe exists
+    // (for admins MainLayout may have auto-selected Default Universe 1, so phase-gating,
+    // not session presence, is what keeps a key from being mis-scoped).
     enter();
     _get(view, Button.class, spec -> spec.withText("Choose League")).click();
 
@@ -231,19 +231,63 @@ class TutorialViewTest extends AbstractViewTest {
   }
 
   @Test
-  @DisplayName("Feature config screen: disabled AI News shows Set up AI link when universe exists")
-  void featureConfig_universePresent_showsSetUpAiLink() {
-    // Session universe present (wizard phase after createTutorialUniverse) → the link renders.
+  @DisplayName(
+      "Feature config screen: no Set up AI link even with a session universe (admin auto-select)")
+  void featureConfig_sessionUniverse_noSetUpAiLink() {
+    // An admin's session may hold Default Universe 1 auto-selected by MainLayout — saving
+    // there would strand the credential. The link defers to the wizard phase, where the
+    // session universe is the freshly created tutorial universe the user owns.
     Universe sessionUniverse = universeOf(Universe.UniverseType.CAMPAIGN);
     when(universeContextService.getCurrentUniverse()).thenReturn(Optional.of(sessionUniverse));
     enter();
     _get(view, Button.class, spec -> spec.withText("Choose League")).click();
+
+    List<Button> setUpAi = _find(view, Button.class, spec -> spec.withText("Set up AI →"));
+    assertThat(setUpAi).isEmpty();
+  }
+
+  @Test
+  @DisplayName("Wizard phase: disabled-AI step offers the Set up AI link, opening the dialog")
+  void wizardPhase_aiNotConfigured_showsSetUpAiLink() {
+    Universe universe = universeOf(Universe.UniverseType.GLOBAL);
+    when(tutorialService.findTutorialUniverse("player")).thenReturn(Optional.of(universe));
+
+    TutorialStep step = inlineStepMock("Pick Your Featured Wrestler", "hint");
+    TutorialDefinition def = definitionOf(Universe.UniverseType.GLOBAL, step);
+    when(tutorialService.getDefinition(Universe.UniverseType.GLOBAL)).thenReturn(def);
+    when(tutorialService.getCurrentStep(1L, Universe.UniverseType.GLOBAL)).thenReturn(0);
+    when(wrestlerService.findAllActiveWithAlignments()).thenReturn(List.of());
+    when(aiSettingsService.isClaudeEnabled()).thenReturn(false);
+    when(aiSettingsService.isOpenAIEnabled()).thenReturn(false);
+    when(aiSettingsService.isGeminiEnabled()).thenReturn(false);
+    when(aiSettingsService.isPollinationsEnabled()).thenReturn(false);
+
+    enter();
 
     Button setUpAi = _get(view, Button.class, spec -> spec.withText("Set up AI →"));
     setUpAi.click();
 
     // The onboarding dialog attaches to the UI, not the view's component tree
     assertThat(_find(Dialog.class)).isNotEmpty();
+  }
+
+  @Test
+  @DisplayName("Wizard phase: no Set up AI link once AI is configured")
+  void wizardPhase_aiConfigured_noSetUpAiLink() {
+    Universe universe = universeOf(Universe.UniverseType.GLOBAL);
+    when(tutorialService.findTutorialUniverse("player")).thenReturn(Optional.of(universe));
+
+    TutorialStep step = inlineStepMock("Pick Your Featured Wrestler", "hint");
+    TutorialDefinition def = definitionOf(Universe.UniverseType.GLOBAL, step);
+    when(tutorialService.getDefinition(Universe.UniverseType.GLOBAL)).thenReturn(def);
+    when(tutorialService.getCurrentStep(1L, Universe.UniverseType.GLOBAL)).thenReturn(0);
+    when(wrestlerService.findAllActiveWithAlignments()).thenReturn(List.of());
+    when(aiSettingsService.isClaudeEnabled()).thenReturn(true);
+
+    enter();
+
+    List<Button> setUpAi = _find(view, Button.class, spec -> spec.withText("Set up AI →"));
+    assertThat(setUpAi).isEmpty();
   }
 
   @Test
