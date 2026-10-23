@@ -194,7 +194,7 @@ class AiOnboardingDialogTest extends AbstractViewTest {
     openDialog();
     _get(dialog, Button.class, spec -> spec.withId("open-key-page-button"));
     assertThat(
-            _find(dialog, com.vaadin.flow.component.textfield.TextField.class).stream()
+            _find(dialog, TextField.class).stream()
                 .anyMatch(t -> AiOnboardingDialog.GEMINI_KEY_URL.equals(t.getValue())))
         .isTrue();
     List<Dialog> dialogs = _find(Dialog.class);

@@ -33,6 +33,7 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.relationship.RelationshipType;
@@ -43,7 +44,11 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
+import com.github.javydreamercsw.management.service.GameClock;
+import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.ai.AiOnboardingService;
 import com.github.javydreamercsw.management.service.drama.DramaEventService;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
@@ -55,6 +60,7 @@ import com.github.javydreamercsw.management.service.tournament.TrophyReignServic
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
+import com.github.javydreamercsw.management.ui.ViewContext;
 import com.github.mvysny.kaributesting.v10.MockVaadin;
 import com.github.mvysny.kaributesting.v10.Routes;
 import com.vaadin.flow.component.button.Button;
@@ -69,6 +75,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -99,20 +106,16 @@ class NarrationDialogTest {
 
   @Mock private MultiSelectComboBox<WrestlerDTO> mockWrestlersCombo;
 
-  private com.github.javydreamercsw.management.ui.ViewContext viewContext() {
-    com.github.javydreamercsw.management.service.ai.AiOnboardingService ai =
-        mock(com.github.javydreamercsw.management.service.ai.AiOnboardingService.class);
-    when(ai.evaluateGate())
-        .thenReturn(
-            com.github.javydreamercsw.management.service.ai.AiOnboardingService.GateState
-                .CAN_CONFIGURE);
-    return new com.github.javydreamercsw.management.ui.ViewContext(
+  private ViewContext viewContext() {
+    AiOnboardingService ai = mock(AiOnboardingService.class);
+    when(ai.evaluateGate()).thenReturn(AiOnboardingService.GateState.CAN_CONFIGURE);
+    return new ViewContext(
         notificationService,
-        mock(com.github.javydreamercsw.base.security.SecurityUtils.class),
+        mock(SecurityUtils.class),
         universeContextService,
-        mock(com.github.javydreamercsw.management.service.expansion.ExpansionService.class),
-        mock(com.github.javydreamercsw.management.service.GameSettingService.class),
-        mock(com.github.javydreamercsw.management.service.GameClock.class),
+        mock(ExpansionService.class),
+        mock(GameSettingService.class),
+        mock(GameClock.class),
         ai);
   }
 
@@ -122,7 +125,7 @@ class NarrationDialogTest {
     MockVaadin.setup(new Routes());
   }
 
-  @org.junit.jupiter.api.AfterEach
+  @AfterEach
   public void tearDownKaribu() {
     MockVaadin.tearDown();
   }

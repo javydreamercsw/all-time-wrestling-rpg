@@ -1053,6 +1053,6 @@ class ShowDetailViewTest extends AbstractViewTest {
     setUpAi.click();
 
     Dialog dialog = _get(Dialog.class, spec -> spec.withId("ai-onboarding-dialog"));
-    org.assertj.core.api.Assertions.assertThat(dialog.isOpened()).isTrue();
+    Assertions.assertThat(dialog.isOpened()).isTrue();
   }
 }

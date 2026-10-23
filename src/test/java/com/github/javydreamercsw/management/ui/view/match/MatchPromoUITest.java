@@ -42,7 +42,11 @@ import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerAbilityRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.service.GameClock;
+import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.ai.AiOnboardingService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
@@ -59,6 +63,7 @@ import com.github.javydreamercsw.management.service.universe.UniverseContextServ
 import com.github.javydreamercsw.management.service.wrestler.AbilityReminderTextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
+import com.github.javydreamercsw.management.ui.ViewContext;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -136,14 +141,14 @@ class MatchPromoUITest extends AbstractViewTest {
             ringsideActionDataService,
             titleScriptService,
             notificationService,
-            new com.github.javydreamercsw.management.ui.ViewContext(
+            new ViewContext(
                 notificationService,
                 securityUtils,
                 universeContextService,
-                mock(com.github.javydreamercsw.management.service.expansion.ExpansionService.class),
-                mock(com.github.javydreamercsw.management.service.GameSettingService.class),
-                mock(com.github.javydreamercsw.management.service.GameClock.class),
-                mock(com.github.javydreamercsw.management.service.ai.AiOnboardingService.class)));
+                mock(ExpansionService.class),
+                mock(GameSettingService.class),
+                mock(GameClock.class),
+                mock(AiOnboardingService.class)));
     ReflectionTestUtils.setField(matchView, "wrestlerAbilityRepository", wrestlerAbilityRepository);
     ReflectionTestUtils.setField(
         matchView, "abilityReminderTextService", abilityReminderTextService);

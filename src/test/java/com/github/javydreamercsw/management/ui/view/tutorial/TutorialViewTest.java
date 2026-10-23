@@ -29,11 +29,15 @@ import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.image.ImageResolution;
 import com.github.javydreamercsw.base.security.SecurityUtils;
+import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.AccountService;
+import com.github.javydreamercsw.management.service.GameClock;
+import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.ai.AiOnboardingService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.tutorial.TutorialDefinition;
 import com.github.javydreamercsw.management.service.tutorial.TutorialService;
@@ -41,10 +45,12 @@ import com.github.javydreamercsw.management.service.tutorial.TutorialStep;
 import com.github.javydreamercsw.management.service.tutorial.TutorialStep.InteractionMode;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.ui.ViewContext;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.router.BeforeEnterEvent;
@@ -54,6 +60,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.springframework.test.util.ReflectionTestUtils;
 
 class TutorialViewTest extends AbstractViewTest {
@@ -103,25 +110,20 @@ class TutorialViewTest extends AbstractViewTest {
     UI.getCurrent().add(view);
   }
 
-  private com.github.javydreamercsw.management.ui.ViewContext viewContext() {
-    return new com.github.javydreamercsw.management.ui.ViewContext(
-        mock(com.github.javydreamercsw.base.ui.service.NotificationService.class),
+  private ViewContext viewContext() {
+    return new ViewContext(
+        mock(NotificationService.class),
         securityUtils,
         universeContextService,
-        mock(com.github.javydreamercsw.management.service.expansion.ExpansionService.class),
-        mock(com.github.javydreamercsw.management.service.GameSettingService.class),
-        mock(com.github.javydreamercsw.management.service.GameClock.class),
+        mock(ExpansionService.class),
+        mock(GameSettingService.class),
+        mock(GameClock.class),
         stubbedAiOnboardingService());
   }
 
-  private com.github.javydreamercsw.management.service.ai.AiOnboardingService
-      stubbedAiOnboardingService() {
-    com.github.javydreamercsw.management.service.ai.AiOnboardingService ai =
-        mock(com.github.javydreamercsw.management.service.ai.AiOnboardingService.class);
-    org.mockito.Mockito.when(ai.evaluateGate())
-        .thenReturn(
-            com.github.javydreamercsw.management.service.ai.AiOnboardingService.GateState
-                .CAN_CONFIGURE);
+  private AiOnboardingService stubbedAiOnboardingService() {
+    AiOnboardingService ai = mock(AiOnboardingService.class);
+    Mockito.when(ai.evaluateGate()).thenReturn(AiOnboardingService.GateState.CAN_CONFIGURE);
     return ai;
   }
 
@@ -241,7 +243,7 @@ class TutorialViewTest extends AbstractViewTest {
     setUpAi.click();
 
     // The onboarding dialog attaches to the UI, not the view's component tree
-    assertThat(_find(com.vaadin.flow.component.dialog.Dialog.class)).isNotEmpty();
+    assertThat(_find(Dialog.class)).isNotEmpty();
   }
 
   @Test

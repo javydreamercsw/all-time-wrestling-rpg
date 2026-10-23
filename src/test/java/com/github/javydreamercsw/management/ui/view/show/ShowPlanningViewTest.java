@@ -31,6 +31,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -89,6 +90,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -153,8 +155,7 @@ class ShowPlanningViewTest extends AbstractViewTest {
             mock(TitleOpportunityService.class),
             mock(WrestlerStateHistoryService.class),
             mock(AbilityReminderTextService.class));
-    com.github.javydreamercsw.base.security.SecurityUtils securityUtilsMock =
-        mock(com.github.javydreamercsw.base.security.SecurityUtils.class);
+    SecurityUtils securityUtilsMock = mock(SecurityUtils.class);
     Mockito.when(securityUtilsMock.isAdmin()).thenReturn(true);
     AiOnboardingService aiOnboardingServiceMock = mock(AiOnboardingService.class);
     Mockito.when(aiOnboardingServiceMock.evaluateGate())
@@ -802,6 +803,6 @@ class ShowPlanningViewTest extends AbstractViewTest {
     setUpAi.click();
 
     Dialog dialog = _get(Dialog.class, spec -> spec.withId("ai-onboarding-dialog"));
-    org.assertj.core.api.Assertions.assertThat(dialog.isOpened()).isTrue();
+    Assertions.assertThat(dialog.isOpened()).isTrue();
   }
 }

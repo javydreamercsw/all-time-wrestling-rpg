@@ -61,9 +61,13 @@ import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerAbilityRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.service.GameClock;
+import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.ai.AiOnboardingService;
 import com.github.javydreamercsw.management.service.campaign.CampaignEncounterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.deck.DeckService;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.injury.InjuryService;
 import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
@@ -81,6 +85,7 @@ import com.github.javydreamercsw.management.service.universe.UniverseContextServ
 import com.github.javydreamercsw.management.service.wrestler.AbilityReminderTextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
+import com.github.javydreamercsw.management.ui.ViewContext;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -100,6 +105,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -146,21 +152,18 @@ class MatchViewTest extends AbstractViewTest {
 
   private MatchView matchView;
 
-  private com.github.javydreamercsw.management.ui.ViewContext viewContext() {
-    com.github.javydreamercsw.management.service.ai.AiOnboardingService aiOnboardingService =
-        mock(com.github.javydreamercsw.management.service.ai.AiOnboardingService.class);
+  private ViewContext viewContext() {
+    AiOnboardingService aiOnboardingService = mock(AiOnboardingService.class);
     lenient()
         .when(aiOnboardingService.evaluateGate())
-        .thenReturn(
-            com.github.javydreamercsw.management.service.ai.AiOnboardingService.GateState
-                .CAN_CONFIGURE);
-    return new com.github.javydreamercsw.management.ui.ViewContext(
+        .thenReturn(AiOnboardingService.GateState.CAN_CONFIGURE);
+    return new ViewContext(
         notificationService,
         securityUtils,
         universeContextService,
-        mock(com.github.javydreamercsw.management.service.expansion.ExpansionService.class),
-        mock(com.github.javydreamercsw.management.service.GameSettingService.class),
-        mock(com.github.javydreamercsw.management.service.GameClock.class),
+        mock(ExpansionService.class),
+        mock(GameSettingService.class),
+        mock(GameClock.class),
         aiOnboardingService);
   }
 
@@ -1433,6 +1436,6 @@ class MatchViewTest extends AbstractViewTest {
     setUpAi.click();
 
     Dialog dialog = _get(Dialog.class, spec -> spec.withId("ai-onboarding-dialog"));
-    org.assertj.core.api.Assertions.assertThat(dialog.isOpened()).isTrue();
+    Assertions.assertThat(dialog.isOpened()).isTrue();
   }
 }

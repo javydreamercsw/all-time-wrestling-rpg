@@ -40,13 +40,21 @@ import com.github.javydreamercsw.management.dto.campaign.CampaignChapterDTO;
 import com.github.javydreamercsw.management.dto.campaign.CampaignChapterMode;
 import com.github.javydreamercsw.management.dto.campaign.CampaignEncounterResponseDTO;
 import com.github.javydreamercsw.management.dto.campaign.StaticEncounterDTO;
+import com.github.javydreamercsw.management.service.GameClock;
+import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.ai.AiOnboardingService;
 import com.github.javydreamercsw.management.service.campaign.CampaignEncounterService;
 import com.github.javydreamercsw.management.service.campaign.CampaignService;
 import com.github.javydreamercsw.management.service.campaign.FeatureDataService;
 import com.github.javydreamercsw.management.service.campaign.PlaceholderResolverService;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
+import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.ui.ViewContext;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
+import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Paragraph;
 import java.util.List;
@@ -101,21 +109,16 @@ class CampaignNarrativeViewTest extends AbstractViewTest {
     assertTrue(heading.isVisible());
   }
 
-  private com.github.javydreamercsw.management.ui.ViewContext viewContext() {
-    com.github.javydreamercsw.management.service.ai.AiOnboardingService ai =
-        Mockito.mock(com.github.javydreamercsw.management.service.ai.AiOnboardingService.class);
-    Mockito.when(ai.evaluateGate())
-        .thenReturn(
-            com.github.javydreamercsw.management.service.ai.AiOnboardingService.GateState
-                .CAN_CONFIGURE);
-    return new com.github.javydreamercsw.management.ui.ViewContext(
+  private ViewContext viewContext() {
+    AiOnboardingService ai = Mockito.mock(AiOnboardingService.class);
+    Mockito.when(ai.evaluateGate()).thenReturn(AiOnboardingService.GateState.CAN_CONFIGURE);
+    return new ViewContext(
         notificationService,
         securityUtils,
-        Mockito.mock(
-            com.github.javydreamercsw.management.service.universe.UniverseContextService.class),
-        Mockito.mock(com.github.javydreamercsw.management.service.expansion.ExpansionService.class),
-        Mockito.mock(com.github.javydreamercsw.management.service.GameSettingService.class),
-        Mockito.mock(com.github.javydreamercsw.management.service.GameClock.class),
+        Mockito.mock(UniverseContextService.class),
+        Mockito.mock(ExpansionService.class),
+        Mockito.mock(GameSettingService.class),
+        Mockito.mock(GameClock.class),
         ai);
   }
 
@@ -294,11 +297,11 @@ class CampaignNarrativeViewTest extends AbstractViewTest {
     when(aiFactory.getAvailableServicesInPriorityOrder()).thenReturn(List.of());
 
     CampaignNarrativeView v = viewWithCampaign(chapter);
-    v.onAttach(new com.vaadin.flow.component.AttachEvent(v, true));
+    v.onAttach(new AttachEvent(v, true));
 
     Button setUpAi = _get(v, Button.class, spec -> spec.withText("Set up AI…"));
     setUpAi.click();
 
-    assertThat(_find(com.vaadin.flow.component.dialog.Dialog.class)).isNotEmpty();
+    assertThat(_find(Dialog.class)).isNotEmpty();
   }
 }
