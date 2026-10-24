@@ -1329,23 +1329,38 @@ public class TournamentService {
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public Tournament startTournament(Tournament tournament) {
-    if (tournament.getStatus() != TournamentStatus.SCHEDULED) {
+    // Re-resolve id-bearing callers to the managed graph (found in live tour testing): a
+    // detached instance whose entries collection was initialized before seedAuto ran fails the
+    // entrants check with a stale-empty collection — an initialized lazy collection never
+    // re-queries.
+    // Managed callers (template-fed approval) get the same instance back from the persistence
+    // context, so seeding inside the caller's transaction stays visible exactly as before.
+    Tournament managed =
+        tournament.getId() == null
+            ? tournament
+            : tournamentRepository
+                .findById(tournament.getId())
+                .orElseThrow(
+                    () ->
+                        new IllegalArgumentException(
+                            "Tournament not found: " + tournament.getId()));
+    if (managed.getStatus() != TournamentStatus.SCHEDULED) {
       throw new IllegalStateException("Tournament is not in SCHEDULED state");
     }
-    if (tournament.getEntries().isEmpty()) {
+    if (managed.getEntries().isEmpty()) {
       throw new IllegalStateException("No entrants — seed the tournament before starting");
     }
     TournamentFormat fmt =
-        findFormat(tournament.getFormatId())
+        findFormat(managed.getFormatId())
             .orElseThrow(() -> new IllegalStateException("Format not found"));
-    List<TournamentRound> generated = fmt.generateBracket(tournament, formatContext());
+    List<TournamentRound> generated = fmt.generateBracket(managed, formatContext());
     // The format persists the bracket through the owning side; attach it to the in-memory
     // collection so callers holding this instance (template-fed approval, ATW-oahn) can scan
     // round 1 without re-fetching — a lazy collection already initialized inside the current
     // transaction never re-queries.
-    attachGenerated(tournament, generated.stream().flatMap(r -> r.getMatches().stream()).toList());
-    tournament.setStatus(TournamentStatus.IN_PROGRESS);
-    return tournamentRepository.save(tournament);
+    attachGenerated(managed, generated.stream().flatMap(r -> r.getMatches().stream()).toList());
+    managed.setStatus(TournamentStatus.IN_PROGRESS);
+    return tournamentRepository.save(managed);
   }
 
   /**
