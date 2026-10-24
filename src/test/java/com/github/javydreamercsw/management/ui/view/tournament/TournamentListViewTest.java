@@ -232,7 +232,11 @@ class TournamentListViewTest extends AbstractViewTest {
   void newTournamentButton_opensWizard() {
     _get(view, Button.class, spec -> spec.withText("New Tournament")).click();
 
-    Dialog wizard = _get(UI.getCurrent(), Dialog.class);
+    Dialog wizard =
+        _get(
+            UI.getCurrent(),
+            TournamentCreationWizardDialog.class,
+            spec -> spec.withPredicate(Dialog::isOpened));
     assertTrue(wizard.isOpened());
   }
 
@@ -811,7 +815,7 @@ class TournamentListViewTest extends AbstractViewTest {
     @SuppressWarnings({"rawtypes", "unchecked"})
     RadioButtonGroup<String> entrantType =
         _get(UI.getCurrent(), RadioButtonGroup.class, spec -> spec.withLabel("Entrants"));
-    assertEquals(TournamentListView.SINGLES_LABEL, entrantType.getValue());
+    assertEquals(TournamentCreationWizardDialog.SINGLES_LABEL, entrantType.getValue());
     // The registry picker exists but is hidden until a team mode + Manual seeding is chosen
     // (it is not visible, so it is located via _find, which does not apply the visibility
     // filter _get does).
@@ -833,7 +837,7 @@ class TournamentListViewTest extends AbstractViewTest {
     @SuppressWarnings({"rawtypes", "unchecked"})
     RadioButtonGroup<String> entrantType =
         _get(UI.getCurrent(), RadioButtonGroup.class, spec -> spec.withLabel("Entrants"));
-    entrantType.setValue(TournamentListView.TAG_TEAM_LABEL);
+    entrantType.setValue(TournamentCreationWizardDialog.TAG_TEAM_LABEL);
 
     // Team tournaments are inaugural-champion only: contender/briefcase are disabled (the
     // itemEnabledProvider grays them out; the disabled items still enumerate in the view).
@@ -911,7 +915,7 @@ class TournamentListViewTest extends AbstractViewTest {
     @SuppressWarnings({"rawtypes", "unchecked"})
     RadioButtonGroup<String> entrantType =
         _get(UI.getCurrent(), RadioButtonGroup.class, spec -> spec.withLabel("Entrants"));
-    entrantType.setValue(TournamentListView.TAG_TEAM_LABEL);
+    entrantType.setValue(TournamentCreationWizardDialog.TAG_TEAM_LABEL);
     _get(UI.getCurrent(), Button.class, spec -> spec.withText("Next")).click();
     // Manual seeding on the seeding tab — reveals the registry picker (mirrors the singles
     // wrestler picker's visibility). Auto is covered by wizardCreate_teamAutoSeed_callsSeedAuto.
@@ -1045,7 +1049,7 @@ class TournamentListViewTest extends AbstractViewTest {
     @SuppressWarnings({"rawtypes", "unchecked"})
     RadioButtonGroup<String> entrantType =
         _get(UI.getCurrent(), RadioButtonGroup.class, spec -> spec.withLabel("Entrants"));
-    entrantType.setValue(TournamentListView.TAG_TEAM_LABEL);
+    entrantType.setValue(TournamentCreationWizardDialog.TAG_TEAM_LABEL);
     _get(UI.getCurrent(), Button.class, spec -> spec.withText("Next")).click();
     @SuppressWarnings({"rawtypes", "unchecked"})
     ComboBox<String> seedingMode =
@@ -1088,7 +1092,7 @@ class TournamentListViewTest extends AbstractViewTest {
     @SuppressWarnings({"rawtypes", "unchecked"})
     RadioButtonGroup<String> entrantType =
         _get(UI.getCurrent(), RadioButtonGroup.class, spec -> spec.withLabel("Entrants"));
-    entrantType.setValue(TournamentListView.TAG_TEAM_LABEL);
+    entrantType.setValue(TournamentCreationWizardDialog.TAG_TEAM_LABEL);
     _get(UI.getCurrent(), Button.class, spec -> spec.withText("Next")).click();
     @SuppressWarnings({"rawtypes", "unchecked"})
     ComboBox<String> seedingMode =
@@ -1127,7 +1131,7 @@ class TournamentListViewTest extends AbstractViewTest {
     @SuppressWarnings({"rawtypes", "unchecked"})
     RadioButtonGroup<String> entrantType =
         _get(UI.getCurrent(), RadioButtonGroup.class, spec -> spec.withLabel("Entrants"));
-    entrantType.setValue(TournamentListView.TAG_TEAM_LABEL);
+    entrantType.setValue(TournamentCreationWizardDialog.TAG_TEAM_LABEL);
     // Women's-division gender filter on the tournament.
     @SuppressWarnings({"rawtypes", "unchecked"})
     ComboBox<Gender> genderCombo =
@@ -1157,7 +1161,7 @@ class TournamentListViewTest extends AbstractViewTest {
     @SuppressWarnings({"rawtypes", "unchecked"})
     RadioButtonGroup<String> entrantType =
         _get(UI.getCurrent(), RadioButtonGroup.class, spec -> spec.withLabel("Entrants"));
-    entrantType.setValue(TournamentListView.TAG_TEAM_LABEL);
+    entrantType.setValue(TournamentCreationWizardDialog.TAG_TEAM_LABEL);
     // Seeding tab defaults to Auto.
 
     _get(UI.getCurrent(), Button.class, spec -> spec.withText("Next")).click();
