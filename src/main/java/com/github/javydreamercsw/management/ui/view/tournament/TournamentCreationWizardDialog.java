@@ -81,6 +81,9 @@ public class TournamentCreationWizardDialog extends Dialog {
   private final SegmentTypeService segmentTypeService;
   private final Consumer<Tournament> onCreated;
 
+  /** Runs every wizard write (create/seed/entry/save) — lets hosts elevate (tour admin bridge). */
+  private final transient Consumer<Runnable> writeRunner;
+
   @SuppressWarnings("java:S107")
   public TournamentCreationWizardDialog(
       final TournamentService tournamentService,
@@ -89,10 +92,31 @@ public class TournamentCreationWizardDialog extends Dialog {
       final UniverseContextService universeContextService,
       final TeamService teamService,
       final Consumer<Tournament> onCreated) {
+    this(
+        tournamentService,
+        wrestlerFacade,
+        showFacade,
+        universeContextService,
+        teamService,
+        onCreated,
+        Runnable::run);
+  }
+
+  @SuppressWarnings("java:S107")
+  public TournamentCreationWizardDialog(
+      final TournamentService tournamentService,
+      final WrestlerFacade wrestlerFacade,
+      final ShowFacade showFacade,
+      final UniverseContextService universeContextService,
+      final TeamService teamService,
+      final Consumer<Tournament> onCreated,
+      final Consumer<Runnable> writeRunner) {
     this.onCreated = onCreated;
+    this.writeRunner = writeRunner;
     this.segmentRuleService = showFacade.getSegmentRuleService();
     this.segmentTypeService = showFacade.getSegmentTypeService();
-    Dialog dialog = new Dialog();
+    // The class IS the dialog — hosts construct it and call open() themselves.
+    Dialog dialog = this;
     dialog.setHeaderTitle("New Tournament");
     dialog.setWidth("min(950px, 95vw)");
 
@@ -670,105 +694,122 @@ public class TournamentCreationWizardDialog extends Dialog {
                 }
                 boolean noPayoff = "No payoff — bragging rights".equals(payoffMode.getValue());
                 TeamSize teamSize = teamSizeOf(entrantType.getValue());
-                Tournament t =
-                    tournamentService.createTournament(
-                        nameField.getValue(),
-                        formatCombo.getValue().getFormatId(),
-                        universe.orElse(null),
-                        briefcaseSelected || trophySelected || noPayoff
-                            ? null
-                            : titleCombo.getValue(),
-                        LocalDate.now(),
-                        new ArrayList<>(rulesPicker.getSelectedItems()),
-                        hostShowCombo.getValue(),
-                        payoffTypeCombo.getValue(),
-                        payoffRuleCombo.getValue(),
-                        genderCombo.getValue(),
-                        contenderSelected,
-                        briefcaseSelected,
-                        teamSize,
-                        trophySelected ? wizardTrophyNameField.getValue() : null);
-                t.setRecurrence(recurrenceCombo.getValue());
-                t.setQualifierGroupSize(groupSizeField.getValue());
-                tournamentService.save(t);
+                List<Tournament> createdHolder = new ArrayList<>();
+                // All wizard writes run through the host's runner — the tour elevates to admin so
+                // PLAYERs can complete step 1; the list view runs them as the logged-in booker.
+                writeRunner.accept(
+                    () -> {
+                      Tournament t =
+                          tournamentService.createTournament(
+                              nameField.getValue(),
+                              formatCombo.getValue().getFormatId(),
+                              universe.orElse(null),
+                              briefcaseSelected || trophySelected || noPayoff
+                                  ? null
+                                  : titleCombo.getValue(),
+                              LocalDate.now(),
+                              new ArrayList<>(rulesPicker.getSelectedItems()),
+                              hostShowCombo.getValue(),
+                              payoffTypeCombo.getValue(),
+                              payoffRuleCombo.getValue(),
+                              genderCombo.getValue(),
+                              contenderSelected,
+                              briefcaseSelected,
+                              teamSize,
+                              trophySelected ? wizardTrophyNameField.getValue() : null);
+                      t.setRecurrence(recurrenceCombo.getValue());
+                      t.setQualifierGroupSize(groupSizeField.getValue());
+                      tournamentService.save(t);
 
-                boolean auto = "Auto (by fan count)".equals(seedingMode.getValue());
-                boolean manual = "Manual (pick wrestlers)".equals(seedingMode.getValue());
-                if (teamSize != null) {
-                  // Team tournaments follow the same seeding tab: Auto seeds eligible REGISTRY
-                  // teams by fans (the service validates the format range); Manual seeds the
-                  // wizard's explicit picks — the picked registry team(s) first, then a one-off
-                  // assembled team when one was put together.
-                  if (auto) {
-                    tournamentService.seedAuto(
-                        t, countField.getValue(), universe.map(Universe::getId).orElse(1L));
-                  } else if (manual) {
-                    List<Team> picked = new ArrayList<>(teamRegistryPicker.getSelectedItems());
-                    int seed = 1;
-                    for (Team team : picked) {
-                      tournamentService.addEntry(t, team, seed++);
-                    }
-                    if (oneOffEditorHolder[0].hasAnySelection()) {
-                      Map<Integer, List<Wrestler>> rowTeams = oneOffEditorHolder[0].getTeams();
-                      // Rows hold exactly the declared size by construction; the re-check keeps
-                      // a stale UI state (rows edited between validation and create) honest.
-                      int memberCount = teamSize.getMemberCount();
-                      for (List<Wrestler> members : rowTeams.values()) {
-                        if (members.size() != memberCount) {
-                          throw new IllegalStateException(
-                              "Every one-off team needs exactly %d wrestlers — one row holds %d."
-                                  .formatted(memberCount, members.size()));
-                        }
-                        // Re-check at create time: a registry team picked after assembly may
-                        // have claimed one of these members (a wrestler appears in one entry
-                        // only).
-                        for (Team team : picked) {
-                          if (members.stream().anyMatch(team::hasMember)) {
-                            throw new IllegalStateException(
-                                "Wrestler '"
-                                    + members.stream()
-                                        .filter(team::hasMember)
-                                        .map(Wrestler::getName)
-                                        .findFirst()
-                                        .orElse("")
-                                    + "' is already in the picked registry team '"
-                                    + team.getName()
-                                    + "' — clear the one-off team or the registry pick.");
+                      boolean auto = "Auto (by fan count)".equals(seedingMode.getValue());
+                      boolean manual = "Manual (pick wrestlers)".equals(seedingMode.getValue());
+                      if (teamSize != null) {
+                        // Team tournaments follow the same seeding tab: Auto seeds eligible
+                        // REGISTRY
+                        // teams by fans (the service validates the format range); Manual seeds the
+                        // wizard's explicit picks — the picked registry team(s) first, then a
+                        // one-off
+                        // assembled team when one was put together.
+                        if (auto) {
+                          tournamentService.seedAuto(
+                              t, countField.getValue(), universe.map(Universe::getId).orElse(1L));
+                        } else if (manual) {
+                          List<Team> picked =
+                              new ArrayList<>(teamRegistryPicker.getSelectedItems());
+                          int seed = 1;
+                          for (Team team : picked) {
+                            tournamentService.addEntry(t, team, seed++);
                           }
+                          if (oneOffEditorHolder[0].hasAnySelection()) {
+                            Map<Integer, List<Wrestler>> rowTeams =
+                                oneOffEditorHolder[0].getTeams();
+                            // Rows hold exactly the declared size by construction; the re-check
+                            // keeps
+                            // a stale UI state (rows edited between validation and create) honest.
+                            int memberCount = teamSize.getMemberCount();
+                            for (List<Wrestler> members : rowTeams.values()) {
+                              if (members.size() != memberCount) {
+                                throw new IllegalStateException(
+                                    "Every one-off team needs exactly %d wrestlers — one row holds %d."
+                                        .formatted(memberCount, members.size()));
+                              }
+                              // Re-check at create time: a registry team picked after assembly may
+                              // have claimed one of these members (a wrestler appears in one entry
+                              // only).
+                              for (Team team : picked) {
+                                if (members.stream().anyMatch(team::hasMember)) {
+                                  throw new IllegalStateException(
+                                      "Wrestler '"
+                                          + members.stream()
+                                              .filter(team::hasMember)
+                                              .map(Wrestler::getName)
+                                              .findFirst()
+                                              .orElse("")
+                                          + "' is already in the picked registry team '"
+                                          + team.getName()
+                                          + "' — clear the one-off team or the registry pick.");
+                                }
+                              }
+                            }
+                            for (List<Wrestler> group : rowTeams.values()) {
+                              Team oneOff =
+                                  teamService
+                                      .createTeam(
+                                          teamService.generateUniqueName(group),
+                                          null,
+                                          group.stream().map(Wrestler::getId).toList(),
+                                          teamSize,
+                                          null,
+                                          null,
+                                          TeamOrigin.AD_HOC)
+                                      .orElseThrow(
+                                          () ->
+                                              new IllegalStateException(
+                                                  "Could not create the one-off team — check that"
+                                                      + " the members are still eligible"));
+                              if (saveToRegistryCheckbox.getValue()) {
+                                oneOff = teamService.saveToRegistry(oneOff);
+                              }
+                              tournamentService.addEntry(t, oneOff, seed++);
+                            }
+                          }
+                        } // "Don't seed now": seed later from the detail view or via a paired show.
+                      } else if (auto) {
+                        tournamentService.seedAuto(
+                            t, countField.getValue(), universe.map(Universe::getId).orElse(1L));
+                      } else if (manual) {
+                        List<Wrestler> selected =
+                            new ArrayList<>(wrestlerPicker.getSelectedItems());
+                        for (int i = 0; i < selected.size(); i++) {
+                          tournamentService.addEntry(t, selected.get(i), i + 1);
                         }
-                      }
-                      for (List<Wrestler> group : rowTeams.values()) {
-                        Team oneOff =
-                            teamService
-                                .createTeam(
-                                    teamService.generateUniqueName(group),
-                                    null,
-                                    group.stream().map(Wrestler::getId).toList(),
-                                    teamSize,
-                                    null,
-                                    null,
-                                    TeamOrigin.AD_HOC)
-                                .orElseThrow(
-                                    () ->
-                                        new IllegalStateException(
-                                            "Could not create the one-off team — check that the"
-                                                + " members are still eligible"));
-                        if (saveToRegistryCheckbox.getValue()) {
-                          oneOff = teamService.saveToRegistry(oneOff);
-                        }
-                        tournamentService.addEntry(t, oneOff, seed++);
-                      }
-                    }
-                  } // "Don't seed now": seed later from the detail view or via a paired show.
-                } else if (auto) {
-                  tournamentService.seedAuto(
-                      t, countField.getValue(), universe.map(Universe::getId).orElse(1L));
-                } else if (manual) {
-                  List<Wrestler> selected = new ArrayList<>(wrestlerPicker.getSelectedItems());
-                  for (int i = 0; i < selected.size(); i++) {
-                    tournamentService.addEntry(t, selected.get(i), i + 1);
-                  }
-                } // "Don't seed now": seed later from the detail view or via a paired show.
+                      } // "Don't seed now": seed later from the detail view or via a paired show.
+                      createdHolder.add(t);
+                    });
+                if (createdHolder.isEmpty()) {
+                  return; // defensive — the runner either wrote or threw
+                }
+                Tournament t = createdHolder.getFirst();
 
                 dialog.close();
                 Notification.show("Tournament created!", 3000, Notification.Position.BOTTOM_CENTER)

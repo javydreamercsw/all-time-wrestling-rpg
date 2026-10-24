@@ -17,17 +17,15 @@
 package com.github.javydreamercsw.management.ui.view.tournament;
 
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
-import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
 import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
-import com.github.javydreamercsw.management.service.AccountService;
-import com.github.javydreamercsw.management.service.tournament.SingleEliminationFormat;
+import com.github.javydreamercsw.management.service.show.ShowFacade;
 import com.github.javydreamercsw.management.service.tournament.TournamentRunnerService;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
-import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -39,16 +37,13 @@ import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
-import java.time.LocalDate;
-import java.util.List;
-import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -66,9 +61,8 @@ public class TournamentTourView extends VerticalLayout implements BeforeEnterObs
 
   private final TournamentService tournamentService;
   private final TournamentRunnerService tournamentRunnerService;
-  private final WrestlerService wrestlerService;
-  private final AccountService accountService;
-  private final SecurityUtils securityUtils;
+  private final WrestlerFacade wrestlerFacade;
+  private final ShowFacade showFacade;
   private final UniverseContextService universeContextService;
 
   private final H2 stepTitle = new H2();
@@ -79,20 +73,18 @@ public class TournamentTourView extends VerticalLayout implements BeforeEnterObs
 
   private int currentStep;
   private Long tournamentId;
-  private TextField nameField;
+  private IntegerField entrantCount;
 
   public TournamentTourView(
       final TournamentService tournamentService,
       final TournamentRunnerService tournamentRunnerService,
-      final WrestlerService wrestlerService,
-      final AccountService accountService,
-      final SecurityUtils securityUtils,
+      final WrestlerFacade wrestlerFacade,
+      final ShowFacade showFacade,
       final UniverseContextService universeContextService) {
     this.tournamentService = tournamentService;
     this.tournamentRunnerService = tournamentRunnerService;
-    this.wrestlerService = wrestlerService;
-    this.accountService = accountService;
-    this.securityUtils = securityUtils;
+    this.wrestlerFacade = wrestlerFacade;
+    this.showFacade = showFacade;
     this.universeContextService = universeContextService;
 
     setSizeFull();
@@ -176,55 +168,33 @@ public class TournamentTourView extends VerticalLayout implements BeforeEnterObs
   private void renderCreateStep() {
     stepContent.add(
         new Paragraph(
-            "Name your tournament — the tour creates it as a Single Elimination bracket in your"
-                + " current universe. You can rename or reconfigure it later on the tournament"
-                + " page."));
+            "Open the New Tournament wizard and configure your bracket — format, payoff,"
+                + " entrants and seeding are all yours to choose. Nothing is decided for you."));
 
-    nameField = new TextField("Tournament name");
-    nameField.setId("tour-name-field");
-    nameField.setPlaceholder("My First Tournament");
-    nameField.setWidthFull();
-    stepContent.add(nameField);
-
-    Button create = new Button("Create Tournament", e -> createTournament());
+    Button create = new Button("Open the Creation Wizard", e -> openWizard());
     create.setId("tour-create-button");
     create.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     stepContent.add(create);
   }
 
-  private void createTournament() {
-    String name = nameField.getValue();
-    if (name == null || name.isBlank()) {
-      showStatus("Give your tournament a name first.", false);
-      return;
-    }
-    try {
-      Tournament created =
-          createUnderAdmin(
-              () ->
-                  tournamentService.createTournament(
-                      name.trim(),
-                      SingleEliminationFormat.FORMAT_ID,
-                      universeContextService.getCurrentUniverse().orElse(null),
-                      null,
-                      LocalDate.now(),
-                      List.of(),
-                      null,
-                      null,
-                      null,
-                      null,
-                      false,
-                      false,
-                      null,
-                      null));
-      tournamentId = created.getId();
-      currentStep = 2;
-      renderStep();
-      showStatus("✓ \"" + created.getName() + "\" created. Next: add players.", true);
-    } catch (RuntimeException e) {
-      log.warn("Tour tournament creation failed", e);
-      showStatus("Could not create the tournament: " + e.getMessage(), false);
-    }
+  private void openWizard() {
+    TournamentCreationWizardDialog wizard =
+        new TournamentCreationWizardDialog(
+            tournamentService,
+            wrestlerFacade,
+            showFacade,
+            universeContextService,
+            wrestlerFacade.getTeamService(),
+            created -> {
+              tournamentId = created.getId();
+              currentStep = 2;
+              renderStep();
+              showStatus("✓ \"" + created.getName() + "\" created. Next: add players.", true);
+            },
+            // The tour elevates every wizard write through the admin bridge, like all tour
+            // actions — PLAYERs can complete this step without write grants of their own.
+            action -> runUnderAdmin(action));
+    wizard.open();
   }
 
   // ── Step 2: Add Players ───────────────────────────────────────────────────
@@ -243,11 +213,33 @@ public class TournamentTourView extends VerticalLayout implements BeforeEnterObs
   // ── Step 3: Seed and Start ────────────────────────────────────────────────
 
   private void renderStartStep() {
-    stepContent.add(
-        new Paragraph(
-            "This seeds the bracket automatically by fan count and starts the tournament —"
-                + " round 1 is generated and ready to record."));
-    Button start = new Button("Seed & Start", e -> seedAndStart());
+    Tournament t = tournamentService.findByIdWithDetails(tournamentId).orElse(null);
+    if (t == null) {
+      showStatus("Tournament not found — go back and create it.", false);
+      return;
+    }
+    boolean alreadySeeded = !t.getEntries().isEmpty();
+    if (alreadySeeded) {
+      stepContent.add(
+          new Paragraph(
+              "Your wizard seeding is in place ("
+                  + t.getEntries().size()
+                  + " entrants). Starting the tournament generates round 1 — ready to record."));
+    } else {
+      stepContent.add(
+          new Paragraph(
+              "Choose how many wrestlers to seed — the top entrants by fan count fill the"
+                  + " bracket, then the tournament starts and round 1 is ready to record."));
+      entrantCount = new IntegerField("Number of wrestlers");
+      entrantCount.setId("tour-entrant-count");
+      entrantCount.setValue(8);
+      entrantCount.setMin(3);
+      entrantCount.setMax(64);
+      entrantCount.setWidthFull();
+      stepContent.add(entrantCount);
+    }
+    Button start =
+        new Button(alreadySeeded ? "Start Tournament" : "Seed & Start", e -> seedAndStart());
     start.setId("tour-start-button");
     start.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     stepContent.add(start);
@@ -261,8 +253,12 @@ public class TournamentTourView extends VerticalLayout implements BeforeEnterObs
               try {
                 runUnderAdmin(
                     () -> {
-                      tournamentService.seedAuto(
-                          t, 8, universeContextService.getCurrentUniverseId());
+                      if (entrantCount != null && entrantCount.isVisible()) {
+                        tournamentService.seedAuto(
+                            t,
+                            entrantCount.getValue(),
+                            universeContextService.getCurrentUniverseId());
+                      }
                       tournamentService.startTournament(t);
                     });
                 showStatus("✓ Bracket generated. Next: record results.", true);
@@ -388,10 +384,5 @@ public class TournamentTourView extends VerticalLayout implements BeforeEnterObs
   /** Tour actions run under the admin bridge, like every mode-tutorial step action. */
   private void runUnderAdmin(Runnable action) {
     GeneralSecurityUtils.runAsAdmin(action);
-  }
-
-  /** Value-returning variant (delegates to the Supplier overload of runAsAdmin). */
-  private <T> T createUnderAdmin(Supplier<T> action) {
-    return GeneralSecurityUtils.runAsAdmin(action);
   }
 }
