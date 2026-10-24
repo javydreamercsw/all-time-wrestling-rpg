@@ -34,6 +34,7 @@ import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntryRepository;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRepository;
+import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -295,6 +296,47 @@ class TournamentServiceIT extends ManagementIntegrationTest {
     // with whichever 4 home teams hold the most fans — the contract under test is the away
     // exclusion, not the exact roster.)
     assertThat(entries).extracting(TournamentEntry::getTeam).doesNotContain(awayDuoA, awayDuoB);
+  }
+
+  @Test
+  @DisplayName(
+      "startTournament accepts a detached instance seeded after it was loaded (live tour failure)")
+  void startTournament_acceptsDetachedInstanceSeededAfterLoad() {
+    Universe universe = anyUniverse();
+    // The single-elimination format needs at least 4 eligible wrestlers.
+    wrestlerRepository.save(
+        TestUtils.createWrestler("IT TourAce " + System.nanoTime(), 400L, universe));
+    wrestlerRepository.save(
+        TestUtils.createWrestler("IT TourBea " + System.nanoTime(), 300L, universe));
+    wrestlerRepository.save(
+        TestUtils.createWrestler("IT TourEd " + System.nanoTime(), 200L, universe));
+    wrestlerRepository.save(
+        TestUtils.createWrestler("IT TourFay " + System.nanoTime(), 100L, universe));
+
+    Tournament tournament =
+        tournamentService.createTournament(
+            "IT Tour Cup " + System.nanoTime(),
+            "SINGLE_ELIMINATION",
+            universe,
+            null,
+            LocalDate.now(),
+            List.of());
+
+    // The tour's exact sequence: fetch the empty tournament through the detached-safe accessor
+    // (entries initialized empty), then seed through the service's own transaction.
+    Tournament held = tournamentService.findByIdWithDetails(tournament.getId()).orElseThrow();
+    assertThat(held.getEntries()).isEmpty();
+    tournamentService.seedAuto(held, 4, universe.getId());
+
+    // The held instance still shows zero entrants in memory — an initialized lazy collection
+    // never re-queries. startTournament must consult the database, not this stale collection
+    // (live failure: IllegalStateException "No entrants — seed the tournament before starting").
+    assertThat(held.getEntries()).isEmpty();
+    Tournament started = tournamentService.startTournament(held);
+
+    assertThat(started.getStatus()).isEqualTo(TournamentStatus.IN_PROGRESS);
+    assertThat(started.getEntries()).hasSize(4);
+    assertThat(started.getRounds()).hasSize(1);
   }
 
   @Test

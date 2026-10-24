@@ -1068,6 +1068,103 @@ class TournamentServiceTest {
     verify(entryRepository, never()).save(any(TournamentEntry.class));
   }
 
+  // ── Detached-instance start (live tour regression) ─────────────────────────
+
+  @Test
+  @DisplayName(
+      "startTournament re-resolves a detached instance whose entries were seeded after"
+          + " it was loaded")
+  void startTournament_reResolvesDetachedInstanceSeededAfterLoad() {
+    // The live-tested failure (tour step 3): the view fetched the empty tournament, seedAuto
+    // persisted entrants through its own transaction, and the view's stale in-memory copy
+    // (entries initialized empty before seeding) hit startTournament — the entrants check read
+    // the stale collection, not the database.
+    Tournament stale = tournament(null); // entries: [] (initialized before seeding)
+    stale.setStatus(TournamentStatus.SCHEDULED);
+
+    // The managed graph the repository would return inside startTournament's transaction.
+    Tournament managed = tournament(null);
+    managed.setStatus(TournamentStatus.SCHEDULED);
+    Wrestler w1 = wrestler("Apollo", 1L);
+    Wrestler w2 = wrestler("Tormenta", 2L);
+    managed
+        .getEntries()
+        .add(TournamentEntry.builder().id(101L).tournament(managed).wrestler(w1).seed(1).build());
+    managed
+        .getEntries()
+        .add(TournamentEntry.builder().id(102L).tournament(managed).wrestler(w2).seed(2).build());
+
+    when(tournamentRepository.findById(1L)).thenReturn(Optional.of(managed));
+    when(format.generateBracket(eq(managed), any()))
+        .thenAnswer(
+            inv -> {
+              TournamentRound round =
+                  TournamentRound.builder()
+                      .tournament(managed)
+                      .roundNumber(1)
+                      .roundName("Quarter-Final")
+                      .status(TournamentRoundStatus.PENDING)
+                      .build();
+              TournamentMatch match =
+                  TournamentMatch.builder().entrant1(managed.getEntries().getFirst()).build();
+              match.setRound(round);
+              round.setMatches(new ArrayList<>(List.of(match)));
+              return new ArrayList<>(List.of(round));
+            });
+    when(tournamentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    Tournament started = service.startTournament(stale);
+
+    // Started from the managed graph, not the stale copy: bracket generated, IN_PROGRESS.
+    assertThat(started.getStatus()).isEqualTo(TournamentStatus.IN_PROGRESS);
+    verify(format).generateBracket(eq(managed), any());
+    assertThat(started.getRounds()).hasSize(1);
+  }
+
+  @Test
+  @DisplayName("startTournament keeps working when handed an already-managed instance")
+  void startTournament_managedInstanceStillStarts() {
+    Tournament managed = tournament(null);
+    managed.setStatus(TournamentStatus.SCHEDULED);
+    managed
+        .getEntries()
+        .add(
+            TournamentEntry.builder()
+                .id(101L)
+                .tournament(managed)
+                .wrestler(wrestler("Apollo", 1L))
+                .seed(1)
+                .build());
+    managed
+        .getEntries()
+        .add(
+            TournamentEntry.builder()
+                .id(102L)
+                .tournament(managed)
+                .wrestler(wrestler("Tormenta", 2L))
+                .seed(2)
+                .build());
+    when(tournamentRepository.findById(1L)).thenReturn(Optional.of(managed));
+    when(format.generateBracket(eq(managed), any()))
+        .thenAnswer(
+            inv -> {
+              TournamentRound round =
+                  TournamentRound.builder()
+                      .tournament(managed)
+                      .roundNumber(1)
+                      .roundName("Quarter-Final")
+                      .status(TournamentRoundStatus.PENDING)
+                      .build();
+              return new ArrayList<>(List.of(round));
+            });
+    when(tournamentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    Tournament started = service.startTournament(managed);
+
+    assertThat(started.getStatus()).isEqualTo(TournamentStatus.IN_PROGRESS);
+    verify(format).generateBracket(eq(managed), any());
+  }
+
   // ── Fixtures ─────────────────────────────────────────────────────────────
 
   private Tournament tournament(TeamSize teamSize) {

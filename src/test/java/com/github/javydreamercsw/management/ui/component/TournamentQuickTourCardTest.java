@@ -25,13 +25,11 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Paragraph;
-import com.vaadin.flow.component.html.Span;
-import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-/** Karibu tests for the tutorial page's Quick Tour card (ATW-p0sz, stepper ATW-eqj5). */
+/** Karibu tests for the tutorial page's Quick Tour teaser card (ATW-6h2y). */
 class TournamentQuickTourCardTest extends AbstractViewTest {
 
   private TournamentQuickTourCard buildCard() {
@@ -41,8 +39,8 @@ class TournamentQuickTourCardTest extends AbstractViewTest {
   }
 
   @Test
-  @DisplayName("Card renders heading, intro, and the step indicator")
-  void rendersHeadingAndStepIndicator() {
+  @DisplayName("Card renders the heading and teaser intro")
+  void rendersHeadingAndIntro() {
     TournamentQuickTourCard card = buildCard();
 
     H3 heading =
@@ -50,91 +48,28 @@ class TournamentQuickTourCardTest extends AbstractViewTest {
             .getFirst();
     assertThat(heading.getText()).contains("Run Your First Tournament");
 
-    Span indicator = _get(card, Span.class, spec -> spec.withId("quick-tour-step-indicator"));
-    assertThat(indicator.getText()).contains("Step 1 of 5");
+    List<Paragraph> paragraphs = _find(card, Paragraph.class);
+    assertThat(paragraphs).hasSize(1);
+    assertThat(paragraphs.getFirst().getText()).contains("does the work for you");
   }
 
   @Test
-  @DisplayName("Only the current step is visible at a time")
-  void onlyCurrentStepVisible() {
+  @DisplayName("Start button navigates to the interactive tour route (handler runs)")
+  void startButton_targetsTourRoute() {
     TournamentQuickTourCard card = buildCard();
 
-    List<Paragraph> visible =
-        _find(
-            card,
-            Paragraph.class,
-            spec ->
-                spec.withPredicate(
-                    p ->
-                        p.isVisible()
-                            && p.getText() != null
-                            && (p.getText().contains("New Tournament")
-                                || p.getText().contains("assign each player")
-                                || p.getText().contains("Randomize")
-                                || p.getText().contains("winner of each match")
-                                || p.getText().contains("granted automatically"))));
-    assertThat(visible).hasSize(1);
-  }
-
-  @Test
-  @DisplayName("All five step titles are reachable via Next, ending at step 5")
-  void nextWalksAllFiveSteps() {
-    TournamentQuickTourCard card = buildCard();
-
-    List<String> seen = new ArrayList<>();
-    for (int i = 1; i < 5 + 1; i++) {
-      Span indicator = _get(card, Span.class, spec -> spec.withId("quick-tour-step-indicator"));
-      assertThat(indicator.getText()).contains("Step " + i + " of 5");
-      seen.add(currentStepText(card));
-      if (i < 5) {
-        _get(card, Button.class, spec -> spec.withId("next-button")).click();
-      }
-    }
-    assertThat(seen)
-        .containsExactly(
-            "1. Create a Tournament",
-            "2. Add Players",
-            "3. Seed and Start",
-            "4. Enter Results",
-            "5. Crown the Winner");
-  }
-
-  @Test
-  @DisplayName("Back returns to the previous step; step 1 has no Back")
-  void backNavigation() {
-    TournamentQuickTourCard card = buildCard();
-
-    assertThat(_find(card, Button.class, spec -> spec.withId("back-button"))).isEmpty();
-
-    _get(card, Button.class, spec -> spec.withId("next-button")).click();
-    Span indicator = _get(card, Span.class, spec -> spec.withId("quick-tour-step-indicator"));
-    assertThat(indicator.getText()).contains("Step 2 of 5");
-
-    _get(card, Button.class, spec -> spec.withId("back-button")).click();
-    indicator = _get(card, Span.class, spec -> spec.withId("quick-tour-step-indicator"));
-    assertThat(indicator.getText()).contains("Step 1 of 5");
-  }
-
-  @Test
-  @DisplayName("Next is hidden on the last step; Go click handler runs")
-  void lastStepHidesNext_goRuns() {
-    TournamentQuickTourCard card = buildCard();
-    for (int i = 1; i < 5; i++) {
-      _get(card, Button.class, spec -> spec.withId("next-button")).click();
-    }
-
-    assertThat(_get(card, Span.class, spec -> spec.withId("quick-tour-step-indicator")).getText())
-        .contains("Step 5 of 5");
-    assertThat(_find(card, Button.class, spec -> spec.withId("next-button"))).isEmpty();
-
-    Button go = _get(card, Button.class, spec -> spec.withId("go-button"));
-    go.click();
+    Button start = _get(card, Button.class, spec -> spec.withId("quick-tour-start-button"));
+    assertThat(start.getText()).contains("interactive tour");
+    start.click();
     // Navigation is attempted against the mocked route registry; the handler ran without error.
-    assertThat(go.isEnabled()).isTrue();
+    assertThat(start.isEnabled()).isTrue();
   }
 
-  private String currentStepText(TournamentQuickTourCard card) {
-    // The step title is the bold Span inside the step area (ids: quick-tour-step-title)
-    return _get(card, Span.class, spec -> spec.withId("quick-tour-step-title")).getText();
+  @Test
+  @DisplayName("The card is a teaser: no per-step Go buttons")
+  void noPerStepButtons() {
+    TournamentQuickTourCard card = buildCard();
+
+    assertThat(_find(card, Button.class)).hasSize(1);
   }
 }
