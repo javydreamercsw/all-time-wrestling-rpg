@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
@@ -304,10 +305,24 @@ public class TournamentTourView extends VerticalLayout implements BeforeEnterObs
                 + match.getEntrant2().entrantName());
     label.getStyle().set("flex", "1");
 
+    ComboBox<TournamentEntry> winnerPicker =
+        new ComboBox<>(null, match.getEntrant1(), match.getEntrant2());
+    winnerPicker.setId("tour-winner-picker-" + match.getId());
+    winnerPicker.setItemLabelGenerator(TournamentEntry::entrantName);
+    winnerPicker.setPlaceholder("Pick the winner");
+    winnerPicker.setWidth("220px");
+
     Button record =
         new Button(
-            "Winner: " + match.getEntrant1().entrantName(),
-            e -> recordManual(t, match, match.getEntrant1()));
+            "Record",
+            e -> {
+              TournamentEntry winner = winnerPicker.getValue();
+              if (winner == null) {
+                showStatus("Pick a winner first.", false);
+                return;
+              }
+              recordManual(t, match, winner);
+            });
     record.setId("tour-record-button-" + match.getId());
     record.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SMALL);
 
@@ -315,7 +330,7 @@ public class TournamentTourView extends VerticalLayout implements BeforeEnterObs
     engine.setId("tour-engine-button-" + match.getId());
     engine.addThemeVariants(ButtonVariant.LUMO_CONTRAST, ButtonVariant.LUMO_SMALL);
 
-    HorizontalLayout row = new HorizontalLayout(label, record, engine);
+    HorizontalLayout row = new HorizontalLayout(label, winnerPicker, record, engine);
     row.setAlignItems(FlexComponent.Alignment.CENTER);
     row.setWidthFull();
     return row;

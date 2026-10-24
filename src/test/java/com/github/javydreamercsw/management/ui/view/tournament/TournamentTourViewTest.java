@@ -244,20 +244,42 @@ class TournamentTourViewTest extends AbstractViewTest {
   // ── Step 4: Enter Results ────────────────────────────────────────────────
 
   @Test
-  @DisplayName("Step 4 lists open matches and records a manual winner")
+  @DisplayName("Step 4 records the winner chosen from the participant drop-down")
   void step4_recordManualResult() {
     Tournament t = startedTournamentWithOpenMatch();
     when(tournamentService.findByIdWithDetails(42L)).thenReturn(Optional.of(t));
     startAtStep(4);
 
-    TournamentEntry winner = t.getRounds().getFirst().getMatches().getFirst().getEntrant1();
+    TournamentMatch match = t.getRounds().getFirst().getMatches().getFirst();
+    // Each side of the match is selectable — not just entrant 1 (user feedback: only one
+    // participant was offered as winner).
+    ComboBox<TournamentEntry> picker =
+        _get(view, ComboBox.class, spec -> spec.withId("tour-winner-picker-1"));
+    assertThat(picker.getListDataView().getItems())
+        .extracting(TournamentEntry::entrantName)
+        .containsExactly("Apollo", "Tormenta");
+
+    TournamentEntry winner = match.getEntrant2(); // the second participant
     when(tournamentRunnerService.recordManualResult(any(), anyLong(), anyLong(), any()))
         .thenReturn(new ManualResultReport(null, t.getRounds().getFirst(), winner, true, false));
 
-    Button record = _get(view, Button.class, spec -> spec.withId("tour-record-button-1"));
-    record.click();
+    picker.setValue(winner);
+    _get(view, Button.class, spec -> spec.withId("tour-record-button-1")).click();
 
     verify(tournamentRunnerService).recordManualResult(eq(t), eq(1L), eq(winner.getId()), any());
+  }
+
+  @Test
+  @DisplayName("Step 4 refuses to record without a winner selected")
+  void step4_recordRequiresSelection() {
+    Tournament t = startedTournamentWithOpenMatch();
+    when(tournamentService.findByIdWithDetails(42L)).thenReturn(Optional.of(t));
+    startAtStep(4);
+
+    _get(view, Button.class, spec -> spec.withId("tour-record-button-1")).click();
+
+    verify(tournamentRunnerService, Mockito.never())
+        .recordManualResult(any(), anyLong(), anyLong(), any());
   }
 
   @Test
