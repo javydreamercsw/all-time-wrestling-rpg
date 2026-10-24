@@ -112,7 +112,7 @@
     "strip-css-comments": "5.0.0",
     "transform-ast": "2.4.4",
     "typescript": "npm:@typescript/typescript6@6.0.2",
-    "vite": "8.3.1",
+    "vite": "8.3.5",
     "vite-plugin-checker": "0.14.5"
   },
   "overrides": {
@@ -322,7 +322,7 @@
       "strip-css-comments": "5.0.0",
       "transform-ast": "2.4.4",
       "typescript": "npm:@typescript/typescript6@6.0.2",
-      "vite": "8.3.1",
+      "vite": "8.3.5",
       "vite-plugin-checker": "0.14.5"
     },
     "hash": "0eafe809467f40740264eb51eca420872de34261e963012dea05590d2dfe9934"
