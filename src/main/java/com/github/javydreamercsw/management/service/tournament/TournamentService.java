@@ -109,6 +109,18 @@ public class TournamentService {
     return formats.stream().filter(f -> f.getFormatId().equals(formatId)).findFirst();
   }
 
+  /**
+   * The format's standings table (ATW-2aq3) — a live view over the decided matches on hand. Empty
+   * for formats without a points table (single elimination, qualifier groups).
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public List<TournamentFormat.Standing> standingsFor(Tournament tournament) {
+    return findFormat(tournament.getFormatId())
+        .map(fmt -> fmt.standings(tournament))
+        .orElse(List.of());
+  }
+
   // ── CRUD ──────────────────────────────────────────────────────────────────
 
   @Transactional(readOnly = true)
@@ -1665,13 +1677,20 @@ public class TournamentService {
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public void recordMatchResult(TournamentMatch match, TournamentEntry winner) {
-    // Every non-winning entrant is eliminated — for the classic two-entrant shape that is the
-    // single loser; for multi-entrant matches (ATW-oloa) everyone else in the Free-for-All is
-    // out too.
-    for (TournamentEntry entrant : match.entrants()) {
-      if (!entrant.equals(winner)) {
-        entrant.setStatus(TournamentEntryStatus.ELIMINATED);
-        entryRepository.save(entrant);
+    // Bracket formats eliminate every non-winning entrant — for the classic two-entrant shape
+    // that is the single loser; for multi-entrant matches (ATW-oloa) everyone else in the
+    // Free-for-All is out too. Round robin (ATW-2aq3) does NOT: a loss costs points, not the
+    // tournament — the entrant keeps playing every scheduled opponent.
+    boolean eliminates =
+        findFormat(match.getRound().getTournament().getFormatId())
+            .map(TournamentFormat::eliminatesLosers)
+            .orElse(true); // unknown format: keep the legacy bracket semantics
+    if (eliminates) {
+      for (TournamentEntry entrant : match.entrants()) {
+        if (!entrant.equals(winner)) {
+          entrant.setStatus(TournamentEntryStatus.ELIMINATED);
+          entryRepository.save(entrant);
+        }
       }
     }
 
@@ -1713,22 +1732,37 @@ public class TournamentService {
     tournament.setStatus(TournamentStatus.COMPLETE);
     tournament.setEndDate(LocalDate.now());
     tournamentRepository.save(tournament);
-    entryRepository
-        .findByTournamentIdAndStatus(tournament.getId(), TournamentEntryStatus.ACTIVE)
-        .stream()
-        .findFirst()
-        .ifPresent(
-            entry -> {
-              entry.setStatus(TournamentEntryStatus.WINNER);
-              entryRepository.save(entry);
-              // Briefcase-deciding tournaments are singles-only (creation validation rejects
-              // teamSize), so this entry always carries a wrestler — the guard keeps a
-              // shapeless/legacy row from NPEing rather than changing the semantics.
-              if (entry.getWrestler() != null) {
-                grantBriefcaseOnManualCompletion(tournament, entry.getWrestler());
-              }
-              recordTrophyWin(tournament, entry);
-            });
+    // The champion comes from the format (ATW-2aq3): round robin crowns its points leader —
+    // a split bracket has NO remaining ACTIVE entry for the legacy protocol, which used to
+    // silently complete the tournament with nobody crowned. Formats without an override
+    // (single elimination, qualifier groups) keep the sole-ACTIVE protocol.
+    Optional<TournamentEntry> champion =
+        findFormat(tournament.getFormatId())
+            .flatMap(fmt -> fmt.selectWinner(tournament))
+            .or(
+                () ->
+                    entryRepository
+                        .findByTournamentIdAndStatus(
+                            tournament.getId(), TournamentEntryStatus.ACTIVE)
+                        .stream()
+                        .findFirst());
+    champion.ifPresentOrElse(
+        entry -> {
+          entry.setStatus(TournamentEntryStatus.WINNER);
+          entryRepository.save(entry);
+          // Briefcase-deciding tournaments are singles-only (creation validation rejects
+          // teamSize), so this entry always carries a wrestler — the guard keeps a
+          // shapeless/legacy row from NPEing rather than changing the semantics.
+          if (entry.getWrestler() != null) {
+            grantBriefcaseOnManualCompletion(tournament, entry.getWrestler());
+          }
+          recordTrophyWin(tournament, entry);
+        },
+        () ->
+            log.warn(
+                "Tournament '{}' completed with no determinable winner (no format pick, no"
+                    + " remaining ACTIVE entry)",
+                tournament.getName()));
   }
 
   /**

@@ -164,12 +164,47 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
     content.add(buildEntrantsGrid());
 
     if (!tournament.getRounds().isEmpty()) {
+      buildStandingsSection().ifPresent(content::add);
       content.add(buildBracketSection());
       content.add(buildRoundRulesSection());
       if (tournament.getStatus() == TournamentStatus.IN_PROGRESS) {
         buildActiveMatchControls().ifPresent(content::add);
       }
     }
+  }
+
+  /**
+   * Standings table (ATW-2aq3): the format's live points table over the decided matches on hand —
+   * visible mid-tournament and at completion, so "who's winning" is always answerable. Round robin
+   * only; formats without a points table render no section.
+   */
+  private Optional<VerticalLayout> buildStandingsSection() {
+    List<TournamentFormat.Standing> standings = tournamentService.standingsFor(tournament);
+    if (standings.isEmpty()) {
+      return Optional.empty();
+    }
+    VerticalLayout section = new VerticalLayout();
+    section.setPadding(false);
+    section.add(new H4("Standings"));
+
+    Grid<TournamentFormat.Standing> grid = new Grid<>(TournamentFormat.Standing.class, false);
+    grid.setId("standings-grid");
+    grid.setAllRowsVisible(true);
+    grid.addColumn(TournamentFormat.Standing::rank).setHeader("#").setWidth("60px").setFlexGrow(0);
+    grid.addColumn(TournamentFormat.Standing::entrantName).setHeader("Entrant").setFlexGrow(1);
+    grid.addColumn(TournamentFormat.Standing::wins).setHeader("W").setWidth("60px").setFlexGrow(0);
+    grid.addColumn(TournamentFormat.Standing::draws).setHeader("D").setWidth("60px").setFlexGrow(0);
+    grid.addColumn(TournamentFormat.Standing::losses)
+        .setHeader("L")
+        .setWidth("60px")
+        .setFlexGrow(0);
+    grid.addColumn(TournamentFormat.Standing::points)
+        .setHeader("Points")
+        .setWidth("80px")
+        .setFlexGrow(0);
+    grid.setItems(standings);
+    section.add(grid);
+    return Optional.of(section);
   }
 
   private ViewToolbar buildToolbar() {

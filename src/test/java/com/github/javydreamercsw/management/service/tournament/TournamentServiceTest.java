@@ -109,6 +109,8 @@ class TournamentServiceTest {
     lenient().when(format.getFormatId()).thenReturn("SINGLE_ELIMINATION");
     lenient().when(format.getMinEntrants()).thenReturn(2);
     lenient().when(format.getMaxEntrants()).thenReturn(8);
+    // Default interface behavior: a bracket format eliminates its losers.
+    lenient().when(format.eliminatesLosers()).thenReturn(true);
     // Construct manually: Mockito cannot inject a plain List into the constructor.
     service =
         new TournamentService(
@@ -1165,6 +1167,106 @@ class TournamentServiceTest {
     verify(format).generateBracket(eq(managed), any());
   }
 
+  // ── Round-robin winner & standings (ATW-2aq3) ─────────────────────────────
+
+  @Test
+  @DisplayName(
+      "recordMatchResult keeps round-robin losers ACTIVE (a loss is points, not elimination)")
+  void recordMatchResult_roundRobin_losersStayActive() {
+    // The mocked format answers as round-robin: no elimination on a decided match.
+    lenient().when(format.getFormatId()).thenReturn("ROUND_ROBIN");
+    when(format.eliminatesLosers()).thenReturn(false);
+    Tournament rr = rrTournament();
+    TournamentEntry winner = rrEntry(rr, 1);
+    TournamentEntry loser = rrEntry(rr, 2);
+    TournamentMatch match = rrMatch(rr, winner, loser);
+
+    when(matchRepository.findByRoundIdAndWinnerIsNull(21L)).thenReturn(List.of());
+
+    service.recordMatchResult(match, winner);
+
+    assertThat(loser.getStatus()).isEqualTo(TournamentEntryStatus.ACTIVE);
+    verify(entryRepository, never()).save(loser);
+  }
+
+  @Test
+  @DisplayName("recordMatchResult still eliminates single-elimination losers")
+  void recordMatchResult_singleElim_losersEliminated() {
+    Tournament se = tournament(null); // SINGLE_ELIMINATION fixture
+    TournamentEntry winner = seEntry(se, 1);
+    TournamentEntry loser = seEntry(se, 2);
+    TournamentMatch match = rrMatch(se, winner, loser);
+
+    when(matchRepository.findByRoundIdAndWinnerIsNull(21L)).thenReturn(List.of());
+
+    service.recordMatchResult(match, winner);
+
+    assertThat(loser.getStatus()).isEqualTo(TournamentEntryStatus.ELIMINATED);
+    verify(entryRepository).save(loser);
+  }
+
+  @Test
+  @DisplayName("markWinner crowns the format's selectWinner pick (round-robin points leader)")
+  void markWinner_roundRobin_crownsPointsLeader() {
+    // Round-robin semantics: the format answers the champion — a split bracket has no "last
+    // ACTIVE entry" for the legacy protocol to promote (that was the bug: nobody got crowned).
+    lenient().when(format.getFormatId()).thenReturn("ROUND_ROBIN");
+    Tournament rr = rrTournament();
+    rrEntry(rr, 1);
+    TournamentEntry b = rrEntry(rr, 2);
+    rrEntry(rr, 3);
+    rrEntry(rr, 4);
+
+    when(format.isComplete(rr)).thenReturn(true);
+    when(format.selectWinner(rr)).thenReturn(Optional.of(b));
+    when(tournamentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    when(entryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    service.advanceToNextRound(rr); // format.isComplete → markWinner
+
+    assertThat(rr.getStatus()).isEqualTo(TournamentStatus.COMPLETE);
+    verify(entryRepository)
+        .save(
+            argThat(
+                e ->
+                    e.getStatus() == TournamentEntryStatus.WINNER
+                        && e.getId().equals(2L))); // B — the format's pick, NOT the first ACTIVE
+  }
+
+  @Test
+  @DisplayName("markWinner falls back to the sole ACTIVE entry when the format defers")
+  void markWinner_legacyActiveFallback() {
+    // Single-elimination (and any format without an override): the legacy "sole remaining
+    // ACTIVE" protocol — the existing trophy tests pin the ceremony, this pins the fallback.
+    Tournament se = tournament(null);
+    TournamentEntry active = seEntry(se, 1);
+    when(format.isComplete(se)).thenReturn(true);
+    when(format.selectWinner(se)).thenReturn(Optional.empty());
+    when(entryRepository.findByTournamentIdAndStatus(1L, TournamentEntryStatus.ACTIVE))
+        .thenReturn(List.of(active));
+    when(tournamentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    when(entryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    service.advanceToNextRound(se);
+
+    verify(entryRepository)
+        .save(argThat(e -> e.getStatus() == TournamentEntryStatus.WINNER && e.getId().equals(1L)));
+  }
+
+  @Test
+  @DisplayName("standingsFor returns the format's table — empty when the format defers")
+  void standingsFor_delegatesToFormat() {
+    TournamentFormat.Standing row =
+        new TournamentFormat.Standing(1, 1L, "Wrestler 1", 1, 2, 0, 1, 4);
+    when(format.standings(any())).thenReturn(List.of(row));
+
+    List<TournamentFormat.Standing> table = service.standingsFor(tournament(null));
+    assertThat(table).containsExactly(row);
+
+    when(format.standings(any())).thenReturn(List.of());
+    assertThat(service.standingsFor(tournament(null))).isEmpty();
+  }
+
   // ── Fixtures ─────────────────────────────────────────────────────────────
 
   private Tournament tournament(TeamSize teamSize) {
@@ -1176,6 +1278,88 @@ class TournamentServiceTest {
     tournament.setEntries(new ArrayList<>());
     tournament.setRounds(new ArrayList<>());
     return tournament;
+  }
+
+  // ── Round-robin fixtures (ATW-2aq3) ───────────────────────────────────────
+
+  private TournamentEntry seEntry(Tournament t, int i) {
+    Wrestler w = new Wrestler();
+    w.setId((long) i);
+    w.setName("Wrestler " + i);
+    TournamentEntry e =
+        TournamentEntry.builder()
+            .tournament(t)
+            .wrestler(w)
+            .seed(i)
+            .status(TournamentEntryStatus.ACTIVE)
+            .build();
+    e.setId((long) i);
+    t.getEntries().add(e);
+    return e;
+  }
+
+  private Tournament rrTournament() {
+    Tournament t = new Tournament();
+    t.setId(1L);
+    t.setName("Round Robin Cup");
+    t.setFormatId("ROUND_ROBIN");
+    t.setEntries(new ArrayList<>());
+    t.setRounds(new ArrayList<>());
+    return t;
+  }
+
+  private TournamentEntry rrEntry(Tournament t, int i) {
+    Wrestler w = new Wrestler();
+    w.setId((long) i);
+    w.setName("Wrestler " + i);
+    TournamentEntry e =
+        TournamentEntry.builder()
+            .tournament(t)
+            .wrestler(w)
+            .seed(i)
+            .status(TournamentEntryStatus.ACTIVE)
+            .build();
+    e.setId((long) i);
+    t.getEntries().add(e);
+    return e;
+  }
+
+  private TournamentMatch rrMatch(Tournament t, TournamentEntry e1, TournamentEntry e2) {
+    TournamentRound round = new TournamentRound();
+    round.setId(21L);
+    round.setTournament(t);
+    round.setStatus(TournamentRoundStatus.COMPLETE);
+    round.setMatches(new ArrayList<>());
+    TournamentMatch match =
+        TournamentMatch.builder().round(round).entrant1(e1).entrant2(e2).build();
+    round.getMatches().add(match);
+    t.getRounds().add(round);
+    return match;
+  }
+
+  /**
+   * Create one complete round of decided matches: {@code pairs} are (winnerIndex, loserIndex) into
+   * the tournament's entries, 0-based.
+   */
+  private void roundDecided(Tournament t, int roundNumber, List<int[]> pairs) {
+    TournamentRound round = new TournamentRound();
+    round.setId((long) (20 + roundNumber));
+    round.setTournament(t);
+    round.setRoundNumber(roundNumber);
+    round.setRoundName("Round " + roundNumber);
+    round.setStatus(TournamentRoundStatus.COMPLETE);
+    round.setMatches(new ArrayList<>());
+    for (int[] pair : pairs) {
+      TournamentMatch match =
+          TournamentMatch.builder()
+              .round(round)
+              .entrant1(t.getEntries().get(pair[0]))
+              .entrant2(t.getEntries().get(pair[1]))
+              .build();
+      match.setWinner(t.getEntries().get(pair[0]));
+      round.getMatches().add(match);
+    }
+    t.getRounds().add(round);
   }
 
   private Wrestler wrestler(String name, long id) {
