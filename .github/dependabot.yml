@@ -10,3 +10,13 @@ updates:
     schedule:
       interval: "weekly"
     target-branch: "release/2.X.X"
+  - package-ecosystem: "npm" # Frontend deps (root package.json + docs/site)
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    target-branch: "release/2.X.X"
+    ignore:
+      # flow-server bundles its own vite default and reverts any newer pin on
+      # every frontend build (see ATW-qzaj). Re-enable when Vaadin ships a
+      # newer bundled vite.
+      - dependency-name: "vite"

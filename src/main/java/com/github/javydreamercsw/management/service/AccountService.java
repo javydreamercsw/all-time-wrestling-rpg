@@ -263,11 +263,22 @@ public class AccountService {
     if (wrestlerId != null) {
       wrestlerRepository
           .findById(wrestlerId)
-          .filter(w -> !saved.equals(w.getAccount()))
           .ifPresent(
               w -> {
-                w.setAccount(saved);
-                wrestlerRepository.save(w);
+                // Sweep a stale pointer: if the wrestler was reassigned from another account
+                // that still lists this wrestler as its active one, clear that pointer so the
+                // old account does not keep claiming the wrestler.
+                Account previousOwner = w.getAccount();
+                if (previousOwner != null
+                    && !previousOwner.equals(saved)
+                    && wrestlerId.equals(previousOwner.getActiveWrestlerId())) {
+                  previousOwner.setActiveWrestlerId(null);
+                  accountRepository.save(previousOwner);
+                }
+                if (!saved.equals(w.getAccount())) {
+                  w.setAccount(saved);
+                  wrestlerRepository.save(w);
+                }
               });
     }
 
