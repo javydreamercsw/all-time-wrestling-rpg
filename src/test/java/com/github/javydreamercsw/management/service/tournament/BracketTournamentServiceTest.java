@@ -103,6 +103,8 @@ class BracketTournamentServiceTest {
     lenient().when(format.getFormatId()).thenReturn("SINGLE_ELIMINATION");
     lenient().when(format.getMinEntrants()).thenReturn(4);
     lenient().when(format.getMaxEntrants()).thenReturn(8);
+    // Default interface behavior: a bracket format eliminates its losers (ATW-2aq3).
+    lenient().when(format.eliminatesLosers()).thenReturn(true);
     // Construct manually: Mockito cannot inject a plain List into the constructor.
     tournamentService =
         new TournamentService(
@@ -431,6 +433,7 @@ class BracketTournamentServiceTest {
                 participant(match, loser3, 2))));
     TournamentRound round = new TournamentRound();
     round.setId(21L);
+    round.setTournament(tournament); // recordMatchResult resolves the format off the round
     match.setRound(round);
 
     when(matchRepository.findByRoundIdAndWinnerIsNull(21L)).thenReturn(List.of());
@@ -455,6 +458,7 @@ class BracketTournamentServiceTest {
     match.setEntrant2(loser);
     TournamentRound round = new TournamentRound();
     round.setId(21L);
+    round.setTournament(tournament); // recordMatchResult resolves the format off the round
     match.setRound(round);
 
     when(matchRepository.findByRoundIdAndWinnerIsNull(21L)).thenReturn(List.of(match));

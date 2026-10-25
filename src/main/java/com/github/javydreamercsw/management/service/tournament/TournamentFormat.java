@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.tournament;
 
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
+import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
 import java.util.List;
@@ -67,6 +68,47 @@ public interface TournamentFormat {
    * Rounds generate lazily, so the count is estimated from the entrant count, not scanned.
    */
   int estimateTotalMatches(Tournament tournament);
+
+  /**
+   * Whether a decided match eliminates its losers — the bracket semantics of {@code
+   * TournamentService#recordMatchResult}. False for round robin (ATW-2aq3): a loss there costs
+   * points, not the tournament — entrants keep playing every scheduled opponent.
+   */
+  default boolean eliminatesLosers() {
+    return true;
+  }
+
+  /**
+   * Pick the champion once the format's bracket is complete. The default delegates the legacy
+   * single-elimination protocol to the caller: the sole remaining ACTIVE entry found via the entry
+   * repository. A format overrides this when its champion is not "the last one standing" — round
+   * robin crowns the points leader (ATW-2aq3). Empty = the champion could not be determined.
+   */
+  default Optional<TournamentEntry> selectWinner(Tournament tournament) {
+    return Optional.empty();
+  }
+
+  /**
+   * One standings row: 1-based rank, points = 2·wins + 1·draws (ATW-2aq3). Ties resolve
+   * head-to-head (points earned in matches among the tied group), then by lower seed number.
+   */
+  record Standing(
+      int rank,
+      @Nullable Long entryId,
+      @Nullable String entrantName,
+      int seed,
+      int wins,
+      int draws,
+      int losses,
+      int points) {}
+
+  /**
+   * The format's standings table computed from the decided matches on hand. Empty for formats
+   * without a points table — the round-robin grid is the only renderer today.
+   */
+  default List<Standing> standings(Tournament tournament) {
+    return List.of();
+  }
 
   /**
    * The segment type code this format's non-final rounds book as. Single-elimination rounds are

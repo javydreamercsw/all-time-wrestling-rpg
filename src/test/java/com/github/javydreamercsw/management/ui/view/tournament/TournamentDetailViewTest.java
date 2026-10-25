@@ -215,6 +215,79 @@ class TournamentDetailViewTest extends AbstractViewTest {
   }
 
   @Test
+  @DisplayName("Round-robin tournament shows a standings table (ATW-2aq3)")
+  void roundRobin_standingsTable_renders() {
+    tournament.setFormatId("ROUND_ROBIN");
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    TournamentRound round = new TournamentRound();
+    round.setRoundNumber(1);
+    round.setRoundName("Round 1");
+    round.setStatus(TournamentRoundStatus.COMPLETE);
+    round.setMatches(new ArrayList<>());
+    tournament.getRounds().add(round);
+    TournamentMatch match =
+        TournamentMatch.builder()
+            .round(round)
+            .entrant1(entries.get(0))
+            .entrant2(entries.get(1))
+            .build();
+    match.setWinner(entries.get(0));
+    round.getMatches().add(match);
+    lenient()
+        .when(tournamentService.standingsFor(tournament))
+        .thenReturn(
+            List.of(
+                new TournamentFormat.Standing(1, 1L, "Alpha", 1, 1, 0, 0, 2),
+                new TournamentFormat.Standing(2, 2L, "Bravo", 2, 0, 0, 1, 0),
+                new TournamentFormat.Standing(2, 3L, "Charlie", 3, 0, 0, 0, 0),
+                new TournamentFormat.Standing(2, 4L, "Delta", 4, 0, 0, 0, 0)));
+
+    buildView();
+
+    List<Grid> grids = _find(view, Grid.class, spec -> spec.withId("standings-grid"));
+    assertTrue(grids.size() == 1, "The standings grid must render exactly once");
+    // The standings header marks the section (H4 — every section header on the view).
+    List<H4> headers =
+        _find(
+            view,
+            H4.class,
+            spec ->
+                spec.withPredicate(
+                    h4 -> "Standings".equals(h4.getText() != null ? h4.getText() : "")));
+    assertEquals(1, headers.size(), "The standings section header must render exactly once");
+  }
+
+  @Test
+  @DisplayName("Single-elimination tournament shows no standings table")
+  void singleElimination_noStandingsTable() {
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    TournamentRound round = new TournamentRound();
+    round.setRoundNumber(1);
+    round.setRoundName("Round 1");
+    round.setStatus(TournamentRoundStatus.COMPLETE);
+    round.setMatches(new ArrayList<>());
+    tournament.getRounds().add(round);
+
+    buildView();
+
+    List<Span> headers =
+        _find(
+            view,
+            Span.class,
+            spec ->
+                spec.withPredicate(
+                    span -> "Standings".equals(span.getText() != null ? span.getText() : "")));
+    List<H4> h4Headers =
+        _find(
+            view,
+            H4.class,
+            spec ->
+                spec.withPredicate(
+                    h4 -> "Standings".equals(h4.getText() != null ? h4.getText() : "")));
+    assertEquals(0, headers.size() + h4Headers.size(), "Bracket formats have no standings table");
+  }
+
+  @Test
   @DisplayName("Qualifier-groups tournament shows its pinned group size")
   void qualifierGroups_pinnedGroupSize_displays() {
     tournament.setFormatId("QUALIFIER_GROUPS");
