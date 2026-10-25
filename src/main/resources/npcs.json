@@ -33,6 +33,42 @@
   "type": "Referee",
   "awareness": 90
 }, {
+  "name": "Tomás “Kid Whistle” Iglesias",
+  "description": "A fresh-faced rookie official from the San Juan territory, barely out of his teens, with a wiry build, an oversized striped shirt, and a brand-new chrome whistle he polishes between bells. Eager, earnest, and desperate to be taken seriously, Tomás second-guesses his own eyes whenever the crowd roars, and a showboating heel can talk him out of almost any call. Illegal tactics sail right past him whenever there is a big pop to gawk at. 'Wait — was that illegal? Somebody tell me when to ring the bell.'",
+  "expansion_code": "CUSTOM",
+  "type": "Referee",
+  "awareness": 35
+}, {
+  "name": "Beatrix “Trixie” Halvorsen",
+  "description": "A gum-snapping former diner waitress from the neon glory days of 1950s television, Trixie officiates in a pleated skirt, saddle shoes, and a pillbox hat that has survived more chair shots than most wrestlers. Warm, chatty, and hopelessly star-struck, she adores flamboyant showmen and forgets the rulebook the moment someone works the crowd. She misses nearly everything that happens behind her back and starts the count only after she finishes the sentence she was saying. 'Honey, hold still — I'm counting!'",
+  "expansion_code": "CUSTOM",
+  "type": "Referee",
+  "awareness": 48
+}, {
+  "name": "Brother Cassian",
+  "description": "A tonsured monk of the Scriptorium of the Unblinking Eye, Cassian took a vow of neutrality and has never broken it, nor his gaze from the mat. Robed in grey with referee stripes stitched into the hem, he is calm, deliberate, and maddeningly slow, consulting his illuminated rulebook before every count. He does eventually catch nearly every infraction, but by then the interference is long over and the cheating party is posing for the crowd.",
+  "expansion_code": "CUSTOM",
+  "type": "Referee",
+  "awareness": 55
+}, {
+  "name": "Dr. Yumi Sato",
+  "description": "A sports-biomechanics researcher from the coastal arcologies of the near future, Dr. Sato referees in a crisp white uniform with sensor-lined cuffs and a wrist slate that logs every impact. Polite, precise, and incurably academic, she calls the match exactly as the data reads, but insists on reviewing her readouts before any big ruling, which buys cheaters just enough time to hide the evidence. She spots most blatant weapon use and quietly logs the rest for her research. 'Fascinating technique. Also: disqualification.'",
+  "expansion_code": "CUSTOM",
+  "type": "Referee",
+  "awareness": 62
+}, {
+  "name": "Reginald Fairfax III",
+  "description": "An Edwardian sporting gentleman who refuses to retire, Fairfax officiates in striped sleeves, a tailored waistcoat, and a monocle that catches the ring lights like a searchlight. Impeccably courteous and scrupulously fair, he watches every hold with a falconer's patience and rarely misses a low blow or a foot on the ropes. His one weakness is charm: a gracious apology and a tip of the hat has stayed his hand more than once. 'One reserves the count of five for gentlemen.'",
+  "expansion_code": "CUSTOM",
+  "type": "Referee",
+  "awareness": 72
+}, {
+  "name": "Amara Diallo",
+  "description": "A former Olympic-grade fencing and wrestling official from the Dakar circuit, Amara Diallo is tall, unflappable, and utterly still at ringside, with close-cropped hair and a hawk's patience. She speaks rarely and sees everything — closed fists, boots on the ropes, a manager leaning one inch too far onto the apron. Wrestlers describe being officiated by her as being watched by the sun, and heels request her assignment only when they plan to win clean. 'I do not miss. Ask anyone who tried.'",
+  "expansion_code": "CUSTOM",
+  "type": "Referee",
+  "awareness": 78
+}, {
   "name": "MVP",
   "description": "",
   "expansion_code": "HURT_BUSINESS",

@@ -270,7 +270,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     if (referees.isEmpty()) {
       return;
     }
-    Npc referee = referees.get(new Random().nextInt(referees.size()));
+    Npc referee = pickUnusedReferee(referees);
     segment.setReferee(referee);
     segment.setRefereeAwarenessLevel(npcService.getAwareness(referee));
     // Persist the referee assignment as a system operation so it succeeds regardless
@@ -286,6 +286,35 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     // from findByIdWithDetails(), so we continue to use it as-is.
     GeneralSecurityUtils.runAsAdmin(() -> segmentService.updateSegment(segment));
     log.debug("Auto-assigned referee {} to segment {}", referee.getName(), segment.getId());
+  }
+
+  /**
+   * Picks a referee for this segment, preferring officials not already assigned to another segment
+   * of the same show so one official doesn't work two matches on one card. Falls back to the full
+   * pool when every active referee is already booked elsewhere.
+   */
+  private Npc pickUnusedReferee(List<Npc> referees) {
+    Set<Long> usedIds = new HashSet<>();
+    if (segment.getShow() != null) {
+      for (Segment sibling : segmentService.getSegmentsByShow(segment.getShow())) {
+        if (sibling.getReferee() == null || Objects.equals(sibling.getId(), segment.getId())) {
+          continue;
+        }
+        Npc used = sibling.getReferee();
+        if (used.getId() != null) {
+          usedIds.add(used.getId());
+        }
+      }
+    }
+    List<Npc> available =
+        referees.stream()
+            .filter(r -> r.getId() == null || !usedIds.contains(r.getId()))
+            .collect(Collectors.toList());
+    if (available.isEmpty()) {
+      // Every active referee is already working this show — reuse the full pool.
+      available = referees;
+    }
+    return available.get(new Random().nextInt(available.size()));
   }
 
   private void buildView() {
