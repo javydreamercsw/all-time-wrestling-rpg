@@ -539,6 +539,76 @@ class MatchViewTest extends AbstractViewTest {
     verify(npcService, never()).findAllByType(any());
   }
 
+  @Test
+  void autoAssignAvoidsRefereeAlreadyUsedOnShow() {
+    Show show = new Show();
+    show.setName("Shared Show");
+    Npc bookedRef = new Npc();
+    bookedRef.setId(7L);
+    bookedRef.setName("Booked Ref");
+    Npc freeRef = new Npc();
+    freeRef.setId(8L);
+    freeRef.setName("Free Ref");
+
+    Segment segment = buildMinimalMatchSegment(5L, "Singles Match");
+    segment.setShow(show);
+    Segment sibling = new Segment();
+    sibling.setId(9L);
+    sibling.setShow(show);
+    sibling.setReferee(bookedRef);
+
+    when(segmentService.findByIdWithDetails(5L)).thenReturn(Optional.of(segment));
+    when(npcService.findAllByType("Referee")).thenReturn(List.of(bookedRef, freeRef));
+    when(segmentService.getSegmentsByShow(show)).thenReturn(List.of(sibling, segment));
+    when(npcService.getAwareness(freeRef)).thenReturn(60);
+    when(segmentService.updateSegment(any())).thenAnswer(inv -> inv.getArgument(0));
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.empty());
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "5"));
+
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    // The referee already working another segment of this show must not be picked again.
+    assertEquals(freeRef, segment.getReferee());
+    assertEquals(60, segment.getRefereeAwarenessLevel());
+    verify(segmentService).updateSegment(segment);
+  }
+
+  @Test
+  void autoAssignFallsBackToFullPoolWhenAllRefereesBooked() {
+    Show show = new Show();
+    show.setName("Shared Show");
+    Npc onlyRef = new Npc();
+    onlyRef.setId(7L);
+    onlyRef.setName("Only Ref");
+
+    Segment segment = buildMinimalMatchSegment(6L, "Singles Match");
+    segment.setShow(show);
+    Segment sibling = new Segment();
+    sibling.setId(9L);
+    sibling.setShow(show);
+    sibling.setReferee(onlyRef);
+
+    when(segmentService.findByIdWithDetails(6L)).thenReturn(Optional.of(segment));
+    when(npcService.findAllByType("Referee")).thenReturn(List.of(onlyRef));
+    when(segmentService.getSegmentsByShow(show)).thenReturn(List.of(sibling, segment));
+    when(npcService.getAwareness(onlyRef)).thenReturn(60);
+    when(segmentService.updateSegment(any())).thenAnswer(inv -> inv.getArgument(0));
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.empty());
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "6"));
+
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    // Every active referee is already booked on this show — the match still gets one.
+    assertEquals(onlyRef, segment.getReferee());
+    verify(segmentService).updateSegment(segment);
+  }
+
   /**
    * Verifies that a PLAYER-role viewer still gets a referee auto-assigned and that {@code
    * segmentService.updateSegment} is called even when the security context only carries {@code
