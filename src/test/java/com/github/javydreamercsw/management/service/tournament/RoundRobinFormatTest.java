@@ -32,6 +32,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.tournament.TournamentFormat.RenderMode;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -214,7 +215,7 @@ class RoundRobinFormatTest {
     decided(entries.get(3), entries.get(2)); // D beats C
     // Standings: B 2-1, A 2-1 (B via h2h), D 1-2, C 1-2 (D via h2h).
 
-    java.util.Optional<TournamentEntry> winner = format.selectWinner(t);
+    Optional<TournamentEntry> winner = format.selectWinner(t);
 
     assertThat(winner).isPresent();
     assertThat(winner.get()).isSameAs(entries.get(1));

@@ -1337,31 +1337,6 @@ class TournamentServiceTest {
     return match;
   }
 
-  /**
-   * Create one complete round of decided matches: {@code pairs} are (winnerIndex, loserIndex) into
-   * the tournament's entries, 0-based.
-   */
-  private void roundDecided(Tournament t, int roundNumber, List<int[]> pairs) {
-    TournamentRound round = new TournamentRound();
-    round.setId((long) (20 + roundNumber));
-    round.setTournament(t);
-    round.setRoundNumber(roundNumber);
-    round.setRoundName("Round " + roundNumber);
-    round.setStatus(TournamentRoundStatus.COMPLETE);
-    round.setMatches(new ArrayList<>());
-    for (int[] pair : pairs) {
-      TournamentMatch match =
-          TournamentMatch.builder()
-              .round(round)
-              .entrant1(t.getEntries().get(pair[0]))
-              .entrant2(t.getEntries().get(pair[1]))
-              .build();
-      match.setWinner(t.getEntries().get(pair[0]));
-      round.getMatches().add(match);
-    }
-    t.getRounds().add(round);
-  }
-
   private Wrestler wrestler(String name, long id) {
     return wrestler(name, id, Gender.MALE);
   }
