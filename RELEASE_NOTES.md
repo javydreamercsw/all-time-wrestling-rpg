@@ -19,6 +19,7 @@
 ### Documentation
 
 - Regenerate Game Guide for v2.12.0
+- Regenerate Game Guide for v2.12.0
 ### Fixed bugs
 
 - **inbox:** dedup update notifications and clear stale ones after upgrade (ATW-rap2)
