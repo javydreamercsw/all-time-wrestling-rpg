@@ -50,7 +50,7 @@
     <testcontainers.version>2.0.5</testcontainers.version>
     <!-- npm packages for @vaadin/* components lag behind Maven releases. Set this to the latest
          version actually published to npm. Update when npm catches up to vaadin.version. -->
-    <vaadin.npm.version>25.3.2</vaadin.npm.version>
+    <vaadin.npm.version>25.3.3</vaadin.npm.version>
     <vaadin.version>25.3.1</vaadin.version>
     <webdriver.chrome.driver/>
     <webdriver.chrome.whitelistedIps/>
@@ -281,7 +281,7 @@
     <dependency>
       <groupId>com.mysql</groupId>
       <artifactId>mysql-connector-j</artifactId>
-      <version>26.7.0</version>
+      <version>26.10.0</version>
       <scope>runtime</scope>
     </dependency>
     <dependency>
@@ -535,12 +535,12 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>1.6.5</version>
+      <version>1.6.6</version>
     </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-core</artifactId>
-      <version>1.6.5</version>
+      <version>1.6.6</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.security</groupId>
