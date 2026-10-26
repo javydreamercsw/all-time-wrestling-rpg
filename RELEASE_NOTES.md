@@ -1,16 +1,8 @@
-## [v2.11.3](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v2.11.3) (2026-10-16)
-### Documentation
-
-- make code comments self-contained
+## [v2.12.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v2.12.0) (2026-10-26)
 ### Fixed bugs
 
-- remove #1 challenger status after successful title defense (#594)
+- **security:** bump Spring Boot 4.1.0→4.1.2, replace stale starter-aop, dompurify 3.4.16→3.4.17 (ATW-beaa) (#626) ([#626](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/626))
 ### Other
 
-- Migrate changelog generation to git-cliff (#592)
-[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v2.11.2...v2.11.3)
-## Unreleased
-### Release
-
-- Sync main back to release/2.X.X after release 2.11.2
-- Merge release 2.11.2 back to main
+- Release 2.12.0 (#593) ([#593](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/593))
+[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v2.11.3...v2.12.0)
