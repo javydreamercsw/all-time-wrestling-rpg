@@ -17,6 +17,8 @@
 package com.github.javydreamercsw.management.sync;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -29,9 +31,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -58,8 +63,35 @@ class NpcSyncTest {
 
   @Test
   void sync_skipsWhenNotEmptyFlagSet() {
+    // Skip gate with a complete catalog: every seeded NPC exists → top-up inserts nothing.
     NpcSync skipSync = new NpcSync(true, npcService, new ObjectMapper());
-    when(npcService.count()).thenReturn(5L);
+    when(npcService.count()).thenReturn(15L);
+    when(npcService.findAllUnfiltered())
+        .thenReturn(
+            List.of(
+                    "Colonel Mustafa",
+                    "Charles",
+                    "Samuel Winters",
+                    "Rezan the Resolved",
+                    "Rigo Del Sarto",
+                    "Anika Stroud",
+                    "Tomás “Kid Whistle” Iglesias",
+                    "Beatrix “Trixie” Halvorsen",
+                    "Brother Cassian",
+                    "Dr. Yumi Sato",
+                    "Reginald Fairfax III",
+                    "Amara Diallo",
+                    "MVP",
+                    "Commissioner Blake",
+                    "Lena Voss")
+                .stream()
+                .map(
+                    name -> {
+                      Npc npc = new Npc();
+                      npc.setName(name);
+                      return npc;
+                    })
+                .toList());
 
     skipSync.sync();
 
@@ -93,5 +125,58 @@ class NpcSyncTest {
     verify(npcService, atLeastOnce()).saveAll(any());
     // the existing object's description was overwritten by the sync with the file value
     assertEquals("The mysterious owner of ATW.", existing.getDescription());
+  }
+
+  @Test
+  void sync_topUpInsertsOnlyMissingNpcsWhenSkipFlagSet() {
+    // Simulates a prod install with the skip flag set: 4 pre-2.12.0 referees exist, the 6 new
+    // ones (and the rest of the seed catalog) are missing. Top-up must insert exactly the 11
+    // missing seed NPCs and never re-save an existing row.
+    NpcSync skipSync = new NpcSync(true, npcService, new ObjectMapper());
+    when(npcService.count()).thenReturn(4L);
+    List<String> existingNames =
+        List.of("Samuel Winters", "Rezan the Resolved", "Rigo Del Sarto", "Anika Stroud");
+    when(npcService.findAllUnfiltered())
+        .thenReturn(
+            existingNames.stream()
+                .map(
+                    name -> {
+                      Npc npc = new Npc();
+                      npc.setName(name);
+                      return npc;
+                    })
+                .toList());
+
+    skipSync.sync();
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Npc>> captor = ArgumentCaptor.forClass(List.class);
+    verify(npcService).saveAll(captor.capture());
+    List<Npc> saved = captor.getValue();
+    assertEquals(11, saved.size(), "npcs.json seeds 15 NPCs; 4 exist → 11 must be inserted");
+    Set<String> savedNames = saved.stream().map(Npc::getName).collect(Collectors.toSet());
+    // 2.12.0's new referees must be among the inserted rows
+    assertTrue(savedNames.contains("Tomás “Kid Whistle” Iglesias"));
+    assertTrue(savedNames.contains("Amara Diallo"));
+    for (String existing : existingNames) {
+      assertFalse(savedNames.contains(existing), "existing NPC must not be re-saved: " + existing);
+    }
+  }
+
+  @Test
+  void sync_topUpLeavesExistingNpcUntouchedWhenSkipFlagSet() {
+    NpcSync skipSync = new NpcSync(true, npcService, new ObjectMapper());
+    when(npcService.count()).thenReturn(1L);
+    Npc existing = new Npc();
+    existing.setName("Charles");
+    existing.setDescription("stale description");
+    when(npcService.findAllUnfiltered()).thenReturn(List.of(existing));
+
+    skipSync.sync();
+
+    // Charles is in npcs.json but already exists — under the skip gate his row must not be
+    // re-saved (data-protection guarantee) and his stale description must survive.
+    verify(npcService, never()).saveAll(argThat(list -> list.contains(existing)));
+    assertEquals("stale description", existing.getDescription());
   }
 }
