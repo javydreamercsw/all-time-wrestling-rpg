@@ -17,8 +17,10 @@
 package com.github.javydreamercsw.management.ui.view.account;
 
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -26,7 +28,9 @@ import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.domain.account.Role;
 import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.base.domain.account.RoleRepository;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.AccountService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -42,6 +46,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.util.ReflectionTestUtils;
 
 class AccountFormViewTest extends AbstractViewTest {
 
@@ -49,6 +54,7 @@ class AccountFormViewTest extends AbstractViewTest {
   private AccountService accountService;
 
   @Mock private RoleRepository roleRepository;
+  @Mock private WrestlerService wrestlerService;
 
   private AccountFormView view;
 
@@ -58,7 +64,8 @@ class AccountFormViewTest extends AbstractViewTest {
     adminRole.setName(RoleName.ADMIN);
     when(roleRepository.findAll()).thenReturn(List.of(adminRole));
 
-    view = new AccountFormView(accountService, roleRepository);
+    when(wrestlerService.findAllActiveWrestlers()).thenReturn(List.of());
+    view = new AccountFormView(accountService, roleRepository, wrestlerService);
     UI.getCurrent().add(view);
   }
 
@@ -124,5 +131,55 @@ class AccountFormViewTest extends AbstractViewTest {
     saveButton.click();
 
     verify(accountService).update(any(Account.class));
+  }
+
+  @Test
+  @DisplayName("Wrestler field preloads the account's active wrestler")
+  void wrestlerField_preloadsActiveWrestler() {
+    Account account = account(1L, "player");
+    account.setActiveWrestlerId(42L);
+    when(accountService.get(1L)).thenReturn(Optional.of(account));
+    Wrestler assigned = new Wrestler();
+    assigned.setId(42L);
+    assigned.setName("Assigned Star");
+    when(wrestlerService.findById(42L)).thenReturn(Optional.of(assigned));
+    when(wrestlerService.findAllActiveWrestlers()).thenReturn(List.of(assigned));
+    // Rebuild the view so setup() reflects the richer stubs.
+    view = new AccountFormView(accountService, roleRepository, wrestlerService);
+    UI.getCurrent().add(view);
+    view.setParameter(null, 1L);
+
+    @SuppressWarnings("unchecked")
+    ComboBox<Wrestler> wrestlerCombo =
+        (ComboBox<Wrestler>) _get(view, ComboBox.class, spec -> spec.withId("wrestler-field"));
+    assertEquals(assigned, wrestlerCombo.getValue());
+  }
+
+  @Test
+  @DisplayName("Save passes the picked wrestler id to setActiveWrestlerId")
+  void save_callsSetActiveWrestlerId() {
+    Account account = account(1L, "player");
+    when(accountService.get(1L)).thenReturn(Optional.of(account));
+    view.setParameter(null, 1L);
+
+    // The stored password never round-trips into the field, so writeBeanIfValid needs a
+    // valid one typed in before Save will reach the assignment call.
+    PasswordField passwordField =
+        _get(view, PasswordField.class, spec -> spec.withId("password-field"));
+    passwordField.setValue("Password1!");
+
+    Button saveButton = _get(view, Button.class, spec -> spec.withId("save-button"));
+    saveButton.click();
+
+    verify(accountService).setActiveWrestlerId(eq(1L), any());
+  }
+
+  private Account account(Long id, String username) {
+    Account a = new Account(username, "Password1!", username + "@test.com");
+    ReflectionTestUtils.setField(a, "id", id);
+    Role adminRole = new Role();
+    adminRole.setName(RoleName.ADMIN);
+    a.setRoles(new HashSet<>(List.of(adminRole)));
+    return a;
   }
 }

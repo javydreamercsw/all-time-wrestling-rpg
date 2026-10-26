@@ -18,7 +18,9 @@ package com.github.javydreamercsw.management.ui.view.account;
 
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.AccountService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
@@ -31,6 +33,8 @@ import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.PageRequest;
 
@@ -41,11 +45,18 @@ import org.springframework.data.domain.PageRequest;
 public class AccountListView extends Main {
 
   private final AccountService accountService;
+  private final Map<Long, String> wrestlerNamesById;
   private final Grid<Account> grid = new Grid<>(Account.class, false);
 
   public AccountListView(
-      @Qualifier("managementAccountService") final AccountService accountService) {
+      @Qualifier("managementAccountService") final AccountService accountService,
+      final WrestlerService wrestlerService) {
     this.accountService = accountService;
+    // One prefetch for the Wrestler column — rows render detached, so lazy walker state is
+    // unreachable here.
+    this.wrestlerNamesById =
+        wrestlerService.findAllActiveWrestlers().stream()
+            .collect(Collectors.toMap(Wrestler::getId, Wrestler::getName));
 
     Button createButton = new Button("New Account", VaadinIcon.PLUS.create());
     createButton.setId("new-account-button");
@@ -74,6 +85,9 @@ public class AccountListView extends Main {
   private void setupGrid() {
     grid.addColumn(Account::getUsername).setHeader("Username").setSortable(true).setFlexGrow(1);
     grid.addColumn(Account::getEmail).setHeader("Email").setSortable(true).setFlexGrow(2);
+    grid.addColumn(a -> wrestlerNamesById.getOrDefault(a.getActiveWrestlerId(), "—"))
+        .setHeader("Wrestler")
+        .setFlexGrow(2);
     grid.addColumn(
             account ->
                 account.getRoles().stream()

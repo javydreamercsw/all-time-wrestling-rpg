@@ -45,6 +45,29 @@
     }
   }
 }, {
+  "name": "Trios",
+  "description": "Team-based wrestling match between two three-wrestler teams with tag-in/tag-out mechanics",
+  "expansion_code": "BASE_GAME",
+  "code": "trios",
+  "playerAmount": -1,
+  "guide": {
+    "solo": {
+      "overview": "A solo trios match is a **3v3 contest** where you and two AI partners face off against an opposing team; victory is achieved by pinning a legal opposing wrestler.",
+      "setup": "Configure boards for yourself and your two partners, and prepare the NPC team with their Automa decks. Keep the **Tag Team cards** (Hot Tag, Tag Attacks, Save, and Partner Abilities) within reach for both sides.",
+      "attacking": "Standard initiative rules apply. To tag in a partner, you must first **deal 2 or more damage** to the legal NPC. You can then perform a **Normal Tag**, an unblockable **Tag Attack** (where the active players roll for success), or a powerful one-time **Hot Tag**.",
+      "defending": "When your active wrestler suffers an attack, your inactive partners receive **defender compensation** (1 card or 1 stamina). Inactive partners can also attempt to break up NPC pinfall attempts using a **Save card** or a **kick-out roll**.",
+      "winCondition": "Execute a move with a **PIN icon** against the legal NPC. You win if the NPC fails to kick out after drawing **three Automa cards** where the K-values exceed their current health.",
+      "npcRecovery": "NPC wrestlers will automatically attempt to **tag out after their 4th move** to bring in a fresh partner. If an NPC eliminates one of your wrestlers, they **gain 7 health** and recover all PIN attack cards from their discard pile."
+    },
+    "multiplayer": {
+      "concepts": "Trios matches feature one **Legal Man** per team in the ring, while **Inactive** partners support from the apron. Only the legal wrestler can score a pinfall or be pinned.",
+      "setup": "Players form two three-wrestler teams and alternate selecting wrestlers. Each team readies their player boards and a set of **Tag Team cards**, including the Hot Tag, Tag Attacks, and Save maneuvers.",
+      "gameplayChanges": "Successful attacks grant **compensation** (1 card or 1 stamina) to all participants except the current attacker. To tag out, the legal man must have **dealt at least 2 damage** earlier in their turn.",
+      "modeSpecificAbilities": "Teams can execute coordinated **Tag Attacks** where multiple players roll for success, or trigger a **Hot Tag** once per match if health is 7 or less. Inactive partners can use **Partner Saves** to interrupt pinfalls or **Cut Off** to prevent opponent tags.",
+      "gameEndConditions": "The match ends via **pinfall or submission** of the legal man. If all members of a team are defeated by **referee stoppage** (deck depletion), the entire team loses the match."
+    }
+  }
+}, {
   "name": "Free-for-All",
   "description": "Multi-person match where everyone fights at once",
   "expansion_code": "RUMBLE",

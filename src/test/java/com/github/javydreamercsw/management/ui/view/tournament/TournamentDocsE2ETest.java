@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentRoundSta
 import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.service.tournament.RoundRobinFormat;
 import com.github.javydreamercsw.management.service.tournament.SingleEliminationFormat;
 import com.github.javydreamercsw.management.ui.view.AbstractDocsE2ETest;
 import java.time.LocalDate;
@@ -49,6 +50,7 @@ class TournamentDocsE2ETest extends AbstractDocsE2ETest {
 
   private Long scheduledId;
   private Long inProgressId;
+  private Long roundRobinId;
 
   @BeforeEach
   void seedTournaments() {
@@ -141,7 +143,84 @@ class TournamentDocsE2ETest extends AbstractDocsE2ETest {
             .roundName("Semi-Final")
             .status(TournamentRoundStatus.PENDING)
             .build();
-    roundRepository.saveAndFlush(round2);
+    round2 = roundRepository.saveAndFlush(round2);
+
+    // The open semi-final match — the standalone runner's Run Round / Run Tournament buttons
+    // render only when a winnerless, unbooked match exists.
+    TournamentMatch openSemi =
+        TournamentMatch.builder()
+            .round(round2)
+            .entrant1(entries.get(0))
+            .entrant2(entries.get(1))
+            .build();
+    matchRepository.saveAndFlush(openSemi);
+
+    // Round-robin tournament (ATW-2aq3) with a partial table: A 2-0 leads, B/C/D follow.
+    Tournament roundRobin = new Tournament();
+    roundRobin.setName("Continental Cup");
+    roundRobin.setFormatId(RoundRobinFormat.FORMAT_ID);
+    roundRobin.setStatus(TournamentStatus.IN_PROGRESS);
+    roundRobin.setStartDate(LocalDate.now().minusDays(3));
+    roundRobin.setEntries(new ArrayList<>());
+    roundRobin.setRounds(new ArrayList<>());
+    roundRobin = tournamentRepository.saveAndFlush(roundRobin);
+    roundRobinId = roundRobin.getId();
+
+    List<TournamentEntry> rrEntries = new ArrayList<>();
+    for (int i = 0; i < 4; i++) {
+      TournamentEntry e =
+          TournamentEntry.builder()
+              .tournament(roundRobin)
+              .wrestler(wrestlers.get(i))
+              .seed(i + 1)
+              .status(TournamentEntryStatus.ACTIVE)
+              .build();
+      rrEntries.add(entryRepository.saveAndFlush(e));
+    }
+
+    TournamentRound rrRound1 =
+        TournamentRound.builder()
+            .tournament(roundRobin)
+            .roundNumber(1)
+            .roundName("Round 1")
+            .status(TournamentRoundStatus.COMPLETE)
+            .build();
+    rrRound1 = roundRepository.saveAndFlush(rrRound1);
+    matchRepository.saveAndFlush(
+        TournamentMatch.builder()
+            .round(rrRound1)
+            .entrant1(rrEntries.get(0))
+            .entrant2(rrEntries.get(3))
+            .winner(rrEntries.get(0))
+            .build());
+    matchRepository.saveAndFlush(
+        TournamentMatch.builder()
+            .round(rrRound1)
+            .entrant1(rrEntries.get(1))
+            .entrant2(rrEntries.get(2))
+            .winner(rrEntries.get(1))
+            .build());
+
+    TournamentRound rrRound2 =
+        TournamentRound.builder()
+            .tournament(roundRobin)
+            .roundNumber(2)
+            .roundName("Round 2")
+            .status(TournamentRoundStatus.PENDING)
+            .build();
+    roundRepository.saveAndFlush(rrRound2);
+    matchRepository.saveAndFlush(
+        TournamentMatch.builder()
+            .round(rrRound2)
+            .entrant1(rrEntries.get(0))
+            .entrant2(rrEntries.get(1))
+            .build());
+    matchRepository.saveAndFlush(
+        TournamentMatch.builder()
+            .round(rrRound2)
+            .entrant1(rrEntries.get(2))
+            .entrant2(rrEntries.get(3))
+            .build());
   }
 
   @Test
@@ -257,6 +336,43 @@ class TournamentDocsE2ETest extends AbstractDocsE2ETest {
             + " the weekly shows before it. The payoff match type and rule default to"
             + " One-on-One but can be anything, e.g. a Free-for-All TLC match for a title.",
         "booker-tournament-host-show");
+  }
+
+  @Test
+  void captureTournamentStandaloneRunner() {
+    navigateToAndWaitForElement(
+        "tournament-detail/" + inProgressId, By.xpath("//*[contains(., 'King of the Ring')]"));
+    // The interactive run section renders for the earliest round holding open matches.
+    waitForVaadinElement(driver, By.xpath("//*[contains(text(), 'Record Results')]"));
+
+    documentFeature(
+        "Booker",
+        "Tournament — Standalone Runner",
+        "Run a tournament without booking it on a show: pick each open match's winner"
+            + " yourself, or use 'Decide by Engine' for a single match — full health,"
+            + " stamina, fans and injury consequences, no AI provider needed. The bracket"
+            + " advances automatically when a round's last match is decided, and payoffs"
+            + " (trophy, briefcase, title opportunity) are granted at completion. No shows"
+            + " yet? A '<tournament> Night' show is created automatically to host the"
+            + " matches, or pick one from the Host show box.",
+        "booker-tournament-standalone-runner");
+  }
+
+  @Test
+  void captureRoundRobinStandings() {
+    navigateToAndWaitForElement(
+        "tournament-detail/" + roundRobinId, By.xpath("//*[contains(., 'Continental Cup')]"));
+    waitForVaadinElement(driver, By.xpath("//*[contains(text(), 'Standings')]"));
+
+    documentFeature(
+        "Booker",
+        "Tournament — Round Robin Standings",
+        "Round robin tournaments score every match: a win earns 2 points, a draw 1, a loss"
+            + " 0 — nobody is eliminated, everyone plays everyone. The live standings table"
+            + " ranks entrants by points, breaking ties head-to-head (results among the tied"
+            + " group) and then by seed. When the final round completes, the points leader"
+            + " is crowned the tournament winner automatically.",
+        "booker-tournament-round-robin-standings");
   }
 
   private List<Wrestler> seedWrestlers(String... names) {

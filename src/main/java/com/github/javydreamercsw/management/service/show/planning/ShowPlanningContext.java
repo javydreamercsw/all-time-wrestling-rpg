@@ -43,4 +43,11 @@ public class ShowPlanningContext {
    * A cash-in or champion-vs-holder angle is a strong proposal candidate.
    */
   private List<String> heldBriefcases = new ArrayList<>();
+
+  /**
+   * Named-tournament trophy honors on the roster: "wrestler — 2026 Dusty Cup winner" lines. Past
+   * tournament glory is usable backstory for angles and a returning-trophy edition is a strong
+   * proposal candidate.
+   */
+  private List<String> trophyHonors = new ArrayList<>();
 }

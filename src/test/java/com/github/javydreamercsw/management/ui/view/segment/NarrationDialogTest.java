@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.segment;
 
+import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -32,6 +33,7 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.relationship.RelationshipType;
@@ -42,7 +44,11 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerDTO;
+import com.github.javydreamercsw.management.service.GameClock;
+import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.ai.AiOnboardingService;
 import com.github.javydreamercsw.management.service.drama.DramaEventService;
+import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionService;
@@ -50,11 +56,17 @@ import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
+import com.github.javydreamercsw.management.service.tournament.TrophyReignService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
+import com.github.javydreamercsw.management.ui.ViewContext;
+import com.github.mvysny.kaributesting.v10.MockVaadin;
+import com.github.mvysny.kaributesting.v10.Routes;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import java.lang.reflect.Field;
@@ -63,6 +75,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -92,6 +105,30 @@ class NarrationDialogTest {
   @Mock private TitleOpportunityService titleOpportunityService;
 
   @Mock private MultiSelectComboBox<WrestlerDTO> mockWrestlersCombo;
+
+  private ViewContext viewContext() {
+    AiOnboardingService ai = mock(AiOnboardingService.class);
+    when(ai.evaluateGate()).thenReturn(AiOnboardingService.GateState.CAN_CONFIGURE);
+    return new ViewContext(
+        notificationService,
+        mock(SecurityUtils.class),
+        universeContextService,
+        mock(ExpansionService.class),
+        mock(GameSettingService.class),
+        mock(GameClock.class),
+        ai);
+  }
+
+  @BeforeEach
+  public void setUpKaribu() {
+    // Plain UI without route discovery — navigating routes would instantiate HomeView (no DI).
+    MockVaadin.setup(new Routes());
+  }
+
+  @AfterEach
+  public void tearDownKaribu() {
+    MockVaadin.tearDown();
+  }
 
   @BeforeEach
   public void setUp() {
@@ -137,7 +174,9 @@ class NarrationDialogTest {
             notificationService,
             wrestlerStatsService,
             dramaEventService,
-            titleOpportunityService);
+            titleOpportunityService,
+            mock(TrophyReignService.class),
+            viewContext());
   }
 
   @Test
@@ -439,6 +478,24 @@ class NarrationDialogTest {
         notificationService,
         wrestlerStatsService,
         mock(DramaEventService.class),
-        mock(TitleOpportunityService.class));
+        mock(TitleOpportunityService.class),
+        mock(TrophyReignService.class),
+        viewContext());
+  }
+
+  @Test
+  void noAi_generateNarration_showsSetUpAiButton_opensOnboardingDialog() {
+    when(aiFactory.getAvailableServicesInPriorityOrder()).thenReturn(List.of());
+
+    narrationDialog.open();
+
+    _get(Button.class, spec -> spec.withId("generate-narration-button")).click();
+
+    // The error notification carries the "Set up AI…" entry point (overlay → UI-level lookup)
+    Button setUpAi = _get(Button.class, spec -> spec.withText("Set up AI…"));
+    setUpAi.click();
+
+    Dialog dialog = _get(Dialog.class, spec -> spec.withId("ai-onboarding-dialog"));
+    assertThat(dialog.isOpened()).isTrue();
   }
 }

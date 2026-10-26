@@ -73,7 +73,7 @@ public class ArrangeMatchupsDialog extends Dialog {
       TournamentEntry bye = bySeed.get(n / 2);
       if (placed.contains(bye.getId())) {
         throw new IllegalArgumentException(
-            bye.getWrestler().getName() + " has the bye and cannot be picked into a match");
+            bye.entrantName() + " has the bye and cannot be picked into a match");
       }
       order[n / 2] = bye.getId();
     }
@@ -88,8 +88,7 @@ public class ArrangeMatchupsDialog extends Dialog {
 
   private static void place(Long[] order, Set<Long> placed, int position, TournamentEntry entry) {
     if (!placed.add(entry.getId())) {
-      throw new IllegalArgumentException(
-          entry.getWrestler().getName() + " is picked more than once");
+      throw new IllegalArgumentException(entry.entrantName() + " is picked more than once");
     }
     order[position] = entry.getId();
   }
@@ -124,7 +123,7 @@ public class ArrangeMatchupsDialog extends Dialog {
     }
     if (n % 2 != 0) {
       TournamentEntry bye = bySeed.get(n / 2);
-      Span byeLabel = new Span("Bye: " + bye.getWrestler().getName() + " — sits out round 1");
+      Span byeLabel = new Span("Bye: " + bye.entrantName() + " — sits out round 1");
       byeLabel.getStyle().set("color", "var(--lumo-secondary-text-color)");
       body.add(byeLabel);
     }
@@ -162,7 +161,7 @@ public class ArrangeMatchupsDialog extends Dialog {
     ComboBox<TournamentEntry> picker = new ComboBox<>();
     picker.setWidth("220px");
     picker.setItems(bySeed);
-    picker.setItemLabelGenerator(e -> e.getWrestler().getName());
+    picker.setItemLabelGenerator(TournamentEntry::entrantName);
     picker.setValue(defaultEntry);
     picker.addValueChangeListener(e -> revalidate());
     slotPickers.add(picker);

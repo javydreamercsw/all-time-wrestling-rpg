@@ -45,6 +45,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
+import com.github.javydreamercsw.management.service.tournament.TrophyReignService;
 import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -68,6 +69,7 @@ class NewsGenerationServiceTest {
   private NpcRepository npcRepository;
   private TitleReignRepository titleReignRepository;
   private TitleOpportunityService titleOpportunityService;
+  private TrophyReignService trophyReignService;
 
   @BeforeEach
   public void setUp() {
@@ -83,6 +85,7 @@ class NewsGenerationServiceTest {
     titleReignRepository = mock(TitleReignRepository.class);
     objectMapper = new ObjectMapper();
     titleOpportunityService = mock(TitleOpportunityService.class);
+    trophyReignService = mock(TrophyReignService.class);
     newsGenerationService =
         new NewsGenerationService(
             newsService,
@@ -95,7 +98,8 @@ class NewsGenerationServiceTest {
             wrestlerRepository,
             npcRepository,
             titleReignRepository,
-            titleOpportunityService);
+            titleOpportunityService,
+            trophyReignService);
 
     when(aiFactory.getBestAvailableService()).thenReturn(aiService);
     when(aiService.isAvailable()).thenReturn(true);
@@ -577,6 +581,70 @@ class NewsGenerationServiceTest {
 
     when(titleOpportunityService.heldBriefcaseContextOf(8L))
         .thenThrow(new IllegalStateException("boom"));
+    when(aiService.generateText(anyString()))
+        .thenReturn(
+            "{\"headline\": \"H\", \"content\": \"C\", \"category\": \"BREAKING\", "
+                + "\"isRumor\": false, \"importance\": 3}");
+
+    newsGenerationService.generateNewsForSegment(segment);
+
+    verify(newsService, times(1)).createNewsItem(eq("H"), eq("C"), any(), eq(false), eq(3));
+  }
+
+  @Test
+  void testTrophyHonors_promptIncludesHonorLines() {
+    // A segment participant with past tournament wins gets "Trophy honors:" lines in the AI
+    // news prompt — historical honors the reporter can reference, not stakes.
+    Wrestler winner = Wrestler.builder().name("Mukundi Shumba").id(8L).build();
+    Wrestler loser = Wrestler.builder().name("Loser").id(9L).build();
+
+    Show show = new Show();
+    show.setName("Test Show");
+    SegmentType type = new SegmentType();
+    type.setName("One on One");
+
+    Segment segment = new Segment();
+    segment.setShow(show);
+    segment.setSegmentType(type);
+    segment.addParticipant(winner);
+    segment.addParticipant(loser);
+    segment.setWinners(List.of(winner));
+    segment.setIsTitleSegment(false);
+
+    when(trophyReignService.trophyHonorsOf(8L)).thenReturn(List.of("2026 Dusty Cup winner"));
+    when(trophyReignService.trophyHonorsOf(9L)).thenReturn(List.of());
+
+    StringBuilder prompt = new StringBuilder();
+    when(aiService.generateText(anyString()))
+        .thenAnswer(
+            inv -> {
+              prompt.append((String) inv.getArgument(0));
+              return "{\"headline\": \"H\", \"content\": \"C\", \"category\": \"BREAKING\", "
+                  + "\"isRumor\": false, \"importance\": 3}";
+            });
+
+    newsGenerationService.generateNewsForSegment(segment);
+
+    String sent = prompt.toString();
+    assertThat(sent).contains("Trophy honors: 2026 Dusty Cup winner");
+  }
+
+  @Test
+  void testTrophyHonorsServiceThrows_promptStillGenerated() {
+    // Never-fail contract: a trophy-context failure must not break news generation.
+    Wrestler winner = Wrestler.builder().name("Holder").id(8L).build();
+    Show show = new Show();
+    SegmentType type = new SegmentType();
+    type.setName("Match");
+
+    Segment segment = new Segment();
+    segment.setShow(show);
+    segment.setSegmentType(type);
+    segment.addParticipant(winner);
+    segment.setWinners(List.of(winner));
+    segment.setIsTitleSegment(false);
+
+    when(trophyReignService.trophyHonorsOf(8L)).thenThrow(new IllegalStateException("boom"));
     when(aiService.generateText(anyString()))
         .thenReturn(
             "{\"headline\": \"H\", \"content\": \"C\", \"category\": \"BREAKING\", "
