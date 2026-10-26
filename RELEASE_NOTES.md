@@ -16,12 +16,16 @@
 - **deps-dev:** Bump vite (#599)
 - **deps-dev:** Bump com.diffplug.spotless:spotless-maven-plugin (#595)
 - **deps-dev:** Bump org.codehaus.mojo:versions-maven-plugin (#596)
+### Documentation
+
+- Regenerate Game Guide for v2.12.0
 ### Fixed bugs
 
+- **inbox:** dedup update notifications and clear stale ones after upgrade (ATW-rap2)
+- **sync:** top up missing seed entries under skip-if-not-empty gate (ATW-dn45)
 - align vite to flow-server's bundled 8.3.1 — stop the upgrade fight (ATW-qzaj)
 - sweep stale activeWrestlerId when a wrestler is reassigned between accounts
 - **docs:** escape <tournament> placeholder in docs feature description (ATW-h09t) (#628)
-- **security:** bump Spring Boot 4.1.0→4.1.2, replace stale starter-aop, dompurify 3.4.16→3.4.17 (ATW-beaa) (#626) ([#626](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/626))
 ### Miscellaneous
 
 - ignore vite npm bumps while flow-server pins 8.3.1 (ATW-qzaj)
@@ -29,5 +33,4 @@
 
 - keep vite 8.3.5 (flow-server 25.3.1 bundled default 8.3.1 churns it back via rewrite hook)
 - Update version
-- Release 2.12.0 (#593) ([#593](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/593))
 [Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v2.11.3...v2.12.0)
