@@ -45,6 +45,11 @@
     <maven.compiler.target>25</maven.compiler.target>
     <selenium.version>4.51.0</selenium.version>
     <skipTests>false</skipTests>
+    <!-- Surefire forked-JVM parallelism for unit tests (ATW-5jhs). "1C" = one fork
+         per core. Each fork runs its classes sequentially, so test isolation is
+         unchanged; lower it (e.g. -Dsurefire.forkCount=2) on memory-constrained
+         machines since every fork carries -Xmx3g. -->
+    <surefire.forkCount>1C</surefire.forkCount>
     <surefire.skip>${skipTests}</surefire.skip>
     <surefireArgLine/>
     <testcontainers.version>2.0.5</testcontainers.version>
@@ -872,15 +877,37 @@
         <version>3.6.0</version>
         <configuration>
           <skipTests>${surefire.skip}</skipTests>
-          <!-- Enable parallel execution for unit tests -->
-          <parallel>classes</parallel>
+          <!--
+            Parallelize at the PROCESS level: N forked JVMs, each running its
+            slice of test classes sequentially. The JUnit Platform provider
+            (auto-detected) ignores Surefire's thread-level <parallel>/<threadCount>
+            config, so the previous thread settings were dead and classes ran
+            sequentially (~62 min in CI, ATW-5jhs).
 
-          <threadCount>4</threadCount>
-          <perCoreThreadCount>true</perCoreThreadCount>
-          <useUnlimitedThreads>false</useUnlimitedThreads>
-          <!-- Optimize for faster execution -->
-          <forkCount>1</forkCount>
+            Forks are used instead of junit-platform.properties parallelism
+            deliberately: in-JVM class parallelism is unsafe here — the
+            @DirtiesContext base classes close Spring contexts shared across
+            classes, SecurityContextHolder is JVM-global, and several tests
+            mutate system properties. A fork boundary gives each class the same
+            isolation it has today, just several JVMs at once. Cross-fork DB
+            conflicts are impossible: every context gets its own
+            jdbc:h2:mem:${random.uuid} database.
+          -->
+          <forkCount>${surefire.forkCount}</forkCount>
           <reuseForks>true</reuseForks>
+          <!--
+            Sort the class queue alphabetically (default runOrder=filesystem is
+            effectively arbitrary). Cross-fork scheduling pulls classes from one
+            queue, so queue order decides which class runs last — and the last
+            class sets the tail: the first CI run (forkCount=4) landed
+            LauncherTest (~11 min, javac + child JVMs) at the END of the queue,
+            leaving 3 forks idle for 9.5 min (run 40326507793, 50.2 min total).
+            Alphabetical FQCN sort puts com.github.javydreamercsw.LauncherTest at
+            position 32/431 (uppercase sorts before the lowercase package
+            segments), so its runtime overlaps the busy main phase instead of
+            extending the tail.
+          -->
+          <runOrder>alphabetical</runOrder>
           <!-- Include unit tests, exclude integration tests -->
           <includes>
             <include>**/*Test.java</include>
