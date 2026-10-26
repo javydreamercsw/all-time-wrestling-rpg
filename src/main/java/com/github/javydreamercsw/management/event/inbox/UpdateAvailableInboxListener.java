@@ -53,9 +53,7 @@ public class UpdateAvailableInboxListener implements ApplicationListener<UpdateA
 
   @Override
   public void onApplicationEvent(@NonNull final UpdateAvailableEvent event) {
-    String message =
-        "A new version of All Time Wrestling RPG is available: v%s. Visit %s to download."
-            .formatted(event.getNewVersion(), event.getReleaseUrl());
+    String subject = "Update Available: v" + event.getNewVersion();
 
     List<InboxService.TargetInfo> adminTargets =
         GeneralSecurityUtils.runAsAdmin(
@@ -73,19 +71,31 @@ public class UpdateAvailableInboxListener implements ApplicationListener<UpdateA
       return;
     }
 
+    // Dedup: this event fires on every startup while the build is behind. Skip when the same
+    // version's notification is still unread (ATW-rap2).
+    if (inboxService.hasUnreadInboxItem(updateAvailableEventType, subject)) {
+      log.debug("Unread '{}' inbox item already exists — skipping duplicate.", subject);
+      return;
+    }
+
+    // An unread notification for a different (older) version is superseded by this one.
+    int superseded = inboxService.markUnreadInboxItemsAsRead(updateAvailableEventType);
+
+    String message =
+        "A new version of All Time Wrestling RPG is available: v%s. Visit %s to download."
+            .formatted(event.getNewVersion(), event.getReleaseUrl());
+
     GeneralSecurityUtils.runAsAdmin(
         () ->
             inboxService.createInboxItem(
-                updateAvailableEventType,
-                "Update Available: v" + event.getNewVersion(),
-                message,
-                InboxItem.Urgency.INFO,
-                adminTargets));
+                updateAvailableEventType, subject, message, InboxItem.Urgency.INFO, adminTargets));
 
     inboxUpdateBroadcaster.broadcast(new InboxUpdateEvent(this));
     log.info(
-        "Update available notification sent to {} admin(s) for v{}",
+        "Update available notification sent to {} admin(s) for v{} ({} older unread item(s)"
+            + " superseded)",
         adminTargets.size(),
-        event.getNewVersion());
+        event.getNewVersion(),
+        superseded);
   }
 }
