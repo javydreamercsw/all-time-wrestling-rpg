@@ -895,6 +895,19 @@
           -->
           <forkCount>${surefire.forkCount}</forkCount>
           <reuseForks>true</reuseForks>
+          <!--
+            Sort the class queue alphabetically (default runOrder=filesystem is
+            effectively arbitrary). Cross-fork scheduling pulls classes from one
+            queue, so queue order decides which class runs last — and the last
+            class sets the tail: the first CI run (forkCount=4) landed
+            LauncherTest (~11 min, javac + child JVMs) at the END of the queue,
+            leaving 3 forks idle for 9.5 min (run 40326507793, 50.2 min total).
+            Alphabetical FQCN sort puts com.github.javydreamercsw.LauncherTest at
+            position 32/431 (uppercase sorts before the lowercase package
+            segments), so its runtime overlaps the busy main phase instead of
+            extending the tail.
+          -->
+          <runOrder>alphabetical</runOrder>
           <!-- Include unit tests, exclude integration tests -->
           <includes>
             <include>**/*Test.java</include>
