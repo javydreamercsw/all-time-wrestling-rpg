@@ -194,6 +194,22 @@ For a one-off tournament, attach it directly to a show instead of pairing it wit
 
 ---
 
+## Tournament — Standalone Runner
+
+Run a tournament without booking it on a show: pick each open match's winner yourself, or use 'Decide by Engine' for a single match — full health, stamina, fans and injury consequences, no AI provider needed. The bracket advances automatically when a round's last match is decided, and payoffs (trophy, briefcase, title opportunity) are granted at completion. No shows yet? A '<code>&lt;tournament&gt; Night</code>' show is created automatically to host the matches, or pick one from the Host show box.
+
+![Tournament — Standalone Runner](/screenshots/booker-tournament-standalone-runner.png)
+
+---
+
+## Tournament — Round Robin Standings
+
+Round robin tournaments score every match: a win earns 2 points, a draw 1, a loss 0 — nobody is eliminated, everyone plays everyone. The live standings table ranks entrants by points, breaking ties head-to-head (results among the tied group) and then by seed. When the final round completes, the points leader is crowned the tournament winner automatically.
+
+![Tournament — Round Robin Standings](/screenshots/booker-tournament-round-robin-standings.png)
+
+---
+
 ## Dashboard with News Ticker
 
 Latest headlines and rumors are visible directly on the booker dashboard.

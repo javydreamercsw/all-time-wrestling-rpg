@@ -1037,5 +1037,33 @@
     "description": "Fresh installs ship with no AI provider configured. Every AI action — match narration, show summaries, segment planning — dead-ends into this entry point. \"Set up AI…\" opens the wizard, which walks you through Google Gemini's free tier: it opens the API key page in your browser, you paste the key, and the game verifies the provider is live. The key is stored per universe, so each player configures their own.",
     "imagePath": "screenshots/admin-ai-onboarding.png",
     "order": 0
+  }, {
+    "id": "game-mechanics-team-tournament-wizard",
+    "category": "Game Mechanics",
+    "title": "Team Tournaments",
+    "description": "Tournaments can be crowned with team champions: pick Tag Team or Trios entrants and the seeding step swaps the wrestler picker for a team registry — active, seeded teams of the declared size (DUO/TRIO) filtered by the gender restriction, sorted by team fans. The linked championship must be a TEAM title, and the payoff always puts it on the line: the winning team becomes the inaugural champions.",
+    "imagePath": "screenshots/team-tournament-wizard.png",
+    "order": 0
+  }, {
+    "id": "game-mechanics-team-tournament-one-off-assembly",
+    "category": "Game Mechanics",
+    "title": "Team Tournaments — One-Off Assembly",
+    "description": "Prefer a team that is not in the registry? Assemble one right in the wizard with the add-team rows: each row is one team accepting exactly the declared member count (a duo row takes two picks), \"+ Add Team\" adds another, and every picker excludes wrestlers already committed to a picked registry team or another row. Team names are generated from the lineups and uniquified on create. The assembled teams persist as one-off (AD_HOC) teams unless 'Save these teams to the team registry' is checked (default off), which flips them into the registry for future tournaments.",
+    "imagePath": "screenshots/team-tournament-one-off-assembly.png",
+    "order": 0
+  }, {
+    "id": "booker-booker-tournament-standalone-runner",
+    "category": "Booker",
+    "title": "Tournament — Standalone Runner",
+    "description": "Run a tournament without booking it on a show: pick each open match's winner yourself, or use 'Decide by Engine' for a single match — full health, stamina, fans and injury consequences, no AI provider needed. The bracket advances automatically when a round's last match is decided, and payoffs (trophy, briefcase, title opportunity) are granted at completion. No shows yet? A '<code>&lt;tournament&gt; Night</code>' show is created automatically to host the matches, or pick one from the Host show box.",
+    "imagePath": "screenshots/booker-tournament-standalone-runner.png",
+    "order": 0
+  }, {
+    "id": "booker-booker-tournament-round-robin-standings",
+    "category": "Booker",
+    "title": "Tournament — Round Robin Standings",
+    "description": "Round robin tournaments score every match: a win earns 2 points, a draw 1, a loss 0 — nobody is eliminated, everyone plays everyone. The live standings table ranks entrants by points, breaking ties head-to-head (results among the tied group) and then by seed. When the final round completes, the points leader is crowned the tournament winner automatically.",
+    "imagePath": "screenshots/booker-tournament-round-robin-standings.png",
+    "order": 0
   } ]
 }
