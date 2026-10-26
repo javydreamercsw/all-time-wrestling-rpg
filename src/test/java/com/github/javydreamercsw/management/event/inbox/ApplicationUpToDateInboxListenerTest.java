@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.base.event.ApplicationUpToDateEvent;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -71,14 +72,14 @@ class ApplicationUpToDateInboxListenerTest {
 
   @Test
   void constructor_nullEventTypeRejected() {
-    org.assertj.core.api.Assertions.assertThatThrownBy(
+    Assertions.assertThatThrownBy(
             () -> new ApplicationUpToDateInboxListener(inboxService, null, inboxUpdateBroadcaster))
         .isInstanceOf(NullPointerException.class);
   }
 
   @Test
   void onApplicationEvent_nullEventRejected() {
-    org.assertj.core.api.Assertions.assertThatThrownBy(() -> listener.onApplicationEvent(null))
+    Assertions.assertThatThrownBy(() -> listener.onApplicationEvent(null))
         .isInstanceOf(NullPointerException.class);
   }
 }
