@@ -205,7 +205,11 @@ jobs:
     - name: Run unit tests with coverage and verify WAR packaging
       # Single Maven invocation: compile once, run tests, then package WAR.
       # Previously two separate invocations caused a full recompile in the WAR step (~3-5 min wasted).
-      run: mvn -B package -Pwar,coverage -DnvdApiKey=${{ secrets.NVD_API }}
+      # surefire.forkCount=4 caps the forked-JVM parallelism (ATW-5jhs): the runner
+      # has 4 vCPUs and each fork carries -Xmx3g, so 4 forks ≈ peak heap demand
+      # well within the 16 GB runner limit while cutting the ~62 min sequential
+      # unit-test phase to roughly a quarter.
+      run: mvn -B package -Pwar,coverage -DnvdApiKey=${{ secrets.NVD_API }} -Dsurefire.forkCount=4
 
     - name: Test release-cleanup helper scripts
       # cleanup-rc-releases.sh deletes superseded RC releases on final releases
