@@ -74,6 +74,14 @@ Pair a tournament with a show template so its bracket feeds the participants of 
 
 ---
 
+## AI Onboarding Wizard
+
+Fresh installs ship with no AI provider configured. Every AI action — match narration, show summaries, segment planning — dead-ends into this entry point. "Set up AI…" opens the wizard, which walks you through Google Gemini's free tier: it opens the API key page in your browser, you paste the key, and the game verifies the provider is live. The key is stored per universe, so each player configures their own.
+
+![AI Onboarding Wizard](/screenshots/admin-ai-onboarding.png)
+
+---
+
 ## Wrestler Relationships Management
 
 Manage the social fabric of your promotion. Define marriages, family ties, and deep friendships that influence chemistry, AI narration, and random backstage events.

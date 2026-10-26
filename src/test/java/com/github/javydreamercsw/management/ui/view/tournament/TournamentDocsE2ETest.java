@@ -353,8 +353,8 @@ class TournamentDocsE2ETest extends AbstractDocsE2ETest {
             + " stamina, fans and injury consequences, no AI provider needed. The bracket"
             + " advances automatically when a round's last match is decided, and payoffs"
             + " (trophy, briefcase, title opportunity) are granted at completion. No shows"
-            + " yet? A '<tournament> Night' show is created automatically to host the"
-            + " matches, or pick one from the Host show box.",
+            + " yet? A '<code>&lt;tournament&gt; Night</code>' show is created automatically"
+            + " to host the matches, or pick one from the Host show box.",
         "booker-tournament-standalone-runner");
   }
 

@@ -82,6 +82,22 @@ Bookers manage the Money in the Bank-style briefcases from the Entities menu: ev
 
 ---
 
+## Team Tournaments
+
+Tournaments can be crowned with team champions: pick Tag Team or Trios entrants and the seeding step swaps the wrestler picker for a team registry — active, seeded teams of the declared size (DUO/TRIO) filtered by the gender restriction, sorted by team fans. The linked championship must be a TEAM title, and the payoff always puts it on the line: the winning team becomes the inaugural champions.
+
+![Team Tournaments](/screenshots/team-tournament-wizard.png)
+
+---
+
+## Team Tournaments — One-Off Assembly
+
+Prefer a team that is not in the registry? Assemble one right in the wizard with the add-team rows: each row is one team accepting exactly the declared member count (a duo row takes two picks), "+ Add Team" adds another, and every picker excludes wrestlers already committed to a picked registry team or another row. Team names are generated from the lineups and uniquified on create. The assembled teams persist as one-off (AD_HOC) teams unless 'Save these teams to the team registry' is checked (default off), which flips them into the registry for future tournaments.
+
+![Team Tournaments — One-Off Assembly](/screenshots/team-tournament-one-off-assembly.png)
+
+---
+
 ## Cards
 
 The heart of the ATW RPG battle system. Each card represents a move (Strike, Grapple, Aerial, Throw) with specific health and stamina costs and damage effects.

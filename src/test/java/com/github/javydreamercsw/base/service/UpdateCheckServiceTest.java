@@ -23,6 +23,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.event.ApplicationUpToDateEvent;
 import com.github.javydreamercsw.base.event.UpdateAvailableEvent;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
@@ -142,7 +143,12 @@ class UpdateCheckServiceTest {
         "http://127.0.0.1:" + server.getAddress().getPort() + "/releases");
     try {
       service.checkForUpdates();
-      verify(publisher, never()).publishEvent(ArgumentMatchers.any());
+      // No UpdateAvailableEvent — but an up-to-date signal IS published so listeners can
+      // clear stale "update available" inbox items from before the upgrade.
+      verify(publisher, never()).publishEvent(ArgumentMatchers.any(UpdateAvailableEvent.class));
+      ArgumentCaptor<ApplicationUpToDateEvent> captor =
+          ArgumentCaptor.forClass(ApplicationUpToDateEvent.class);
+      verify(publisher).publishEvent(captor.capture());
     } finally {
       server.stop(0);
     }

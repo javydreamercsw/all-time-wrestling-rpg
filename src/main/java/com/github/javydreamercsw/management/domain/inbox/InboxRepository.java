@@ -48,6 +48,22 @@ public interface InboxRepository
 
   @Query(
       """
+      SELECT COUNT(i) > 0 FROM InboxItem i
+      WHERE i.eventType = :eventType AND i.subject = :subject AND i.isRead = false
+      """)
+  boolean existsUnreadByEventTypeAndSubject(
+      @Param("eventType") InboxEventType eventType, @Param("subject") String subject);
+
+  @Modifying
+  @Query(
+      """
+      UPDATE InboxItem i SET i.isRead = true
+      WHERE i.eventType = :eventType AND i.isRead = false
+      """)
+  int markUnreadAsReadByEventType(@Param("eventType") InboxEventType eventType);
+
+  @Query(
+      """
       SELECT i FROM InboxItem i JOIN i.targets t
       WHERE t.targetId = :wrestlerId AND i.isRead = false
       AND i.eventTimestamp >= :since

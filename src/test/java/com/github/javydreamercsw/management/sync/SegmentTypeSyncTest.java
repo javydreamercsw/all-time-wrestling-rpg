@@ -102,11 +102,54 @@ class SegmentTypeSyncTest {
   void sync_skipsWhenNotEmptyAndSkipFlagSet() {
     SegmentTypeSync skipSync = new SegmentTypeSync(true, segmentTypeService, new ObjectMapper());
     when(segmentTypeService.count()).thenReturn(5L);
+    when(segmentTypeService.findAll())
+        .thenReturn(
+            List.of(
+                segmentType("One on One"),
+                segmentType("Tag Team"),
+                segmentType("Promo"),
+                segmentType("Handicap Match"),
+                segmentType("Free-for-All")));
+
+    skipSync.sync();
+
+    // Top-up inserts only what's missing: Trios + Abu Dhabi Rumble; the 5 existing rows are
+    // never passed to the service.
+    verify(segmentTypeService)
+        .createOrUpdateSegmentType(eq("Trios"), any(), any(), any(), any(), any());
+    verify(segmentTypeService)
+        .createOrUpdateSegmentType(eq("Abu Dhabi Rumble"), any(), any(), any(), any(), any());
+    verify(segmentTypeService, Mockito.never())
+        .createOrUpdateSegmentType(eq("One on One"), any(), any(), any(), any(), any());
+    verify(segmentTypeService, Mockito.never())
+        .createOrUpdateSegmentType(eq("Tag Team"), any(), any(), any(), any(), any());
+  }
+
+  @Test
+  void sync_topUpInsertsNothingWhenCatalogComplete() {
+    SegmentTypeSync skipSync = new SegmentTypeSync(true, segmentTypeService, new ObjectMapper());
+    when(segmentTypeService.count()).thenReturn(7L);
+    when(segmentTypeService.findAll())
+        .thenReturn(
+            List.of(
+                segmentType("One on One"),
+                segmentType("Tag Team"),
+                segmentType("Trios"),
+                segmentType("Free-for-All"),
+                segmentType("Abu Dhabi Rumble"),
+                segmentType("Promo"),
+                segmentType("Handicap Match")));
 
     skipSync.sync();
 
     verify(segmentTypeService, Mockito.never())
         .createOrUpdateSegmentType(
             anyString(), anyString(), anyString(), any(), anyString(), anyBoolean());
+  }
+
+  private static SegmentType segmentType(String name) {
+    SegmentType st = new SegmentType();
+    st.setName(name);
+    return st;
   }
 }

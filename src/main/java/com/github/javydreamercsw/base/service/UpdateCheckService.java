@@ -18,6 +18,7 @@ package com.github.javydreamercsw.base.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.event.ApplicationUpToDateEvent;
 import com.github.javydreamercsw.base.event.UpdateAvailableEvent;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -95,6 +96,9 @@ public class UpdateCheckService {
         eventPublisher.publishEvent(new UpdateAvailableEvent(this, latestVersion, htmlUrl));
       } else {
         log.debug("Application is up to date ({})", currentVersion);
+        // Signals listeners to clear stale "update available" inbox items left over from
+        // before an upgrade (ATW-rap2).
+        eventPublisher.publishEvent(new ApplicationUpToDateEvent(this));
       }
     } catch (Exception e) {
       log.warn("Update check failed: {}", e.getMessage());
