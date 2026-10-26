@@ -16,7 +16,6 @@
 */
 package com.github.javydreamercsw.management.ui.view.tournament;
 
-import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -24,13 +23,12 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
-import com.github.javydreamercsw.management.domain.tournament.TournamentRecurrence;
+import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.domain.universe.Universe;
-import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowFacade;
-import com.github.javydreamercsw.management.service.tournament.QualifierGroupsFormat;
+import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.tournament.TournamentFormat;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
@@ -52,24 +50,21 @@ import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
-import com.vaadin.flow.component.tabs.Tab;
-import com.vaadin.flow.component.tabs.TabSheet;
-import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.theme.lumo.LumoUtility;
 import jakarta.annotation.security.RolesAllowed;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -90,6 +85,9 @@ public class TournamentListView extends VerticalLayout {
   private final SecurityUtils securityUtils;
   private final ShowFacade showFacade;
 
+  /** Unpacked from {@link WrestlerFacade} — the wizard's team-entrant sources. */
+  private final TeamService teamService;
+
   private final Grid<Tournament> grid;
   private Checkbox showPastEditionsCheckbox;
 
@@ -102,6 +100,7 @@ public class TournamentListView extends VerticalLayout {
     this.tournamentService = tournamentService;
     this.wrestlerFacade = wrestlerFacade;
     this.showFacade = showFacade;
+    this.teamService = wrestlerFacade.getTeamService();
     this.segmentRuleService = showFacade.getSegmentRuleService();
     this.segmentTypeService = showFacade.getSegmentTypeService();
     this.universeContextService = viewContext.getUniverseContextService();
@@ -115,6 +114,38 @@ public class TournamentListView extends VerticalLayout {
     gridWrapper.addClassName("grid-scroll-container");
     add(buildToolbar(), gridWrapper);
     refresh();
+    if (visibleTournaments().isEmpty()) {
+      add(buildFirstTimeBanner());
+    }
+  }
+
+  /**
+   * Stateless cross-link to the tutorial page's Quick Tour — shown once, when the list is empty.
+   */
+  private Div buildFirstTimeBanner() {
+    Div banner = new Div();
+    banner.addClassNames(
+        LumoUtility.Background.CONTRAST_5,
+        LumoUtility.BorderRadius.MEDIUM,
+        LumoUtility.Padding.MEDIUM,
+        LumoUtility.Margin.Horizontal.LARGE,
+        LumoUtility.Margin.Vertical.SMALL);
+
+    HorizontalLayout row = new HorizontalLayout();
+    row.setAlignItems(FlexComponent.Alignment.CENTER);
+    row.setWidthFull();
+    Span text =
+        new Span(
+            "First time here? Run a tournament in a few clicks — see the Quick Tour on the"
+                + " Tutorial page.");
+    text.addClassNames(LumoUtility.FontSize.SMALL);
+    Button tutorialLink =
+        new Button("Open Tutorial", e -> getUI().ifPresent(ui -> ui.navigate("tutorial")));
+    tutorialLink.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_TERTIARY);
+
+    row.add(text, tutorialLink);
+    banner.add(row);
+    return banner;
   }
 
   private ViewToolbar buildToolbar() {
@@ -200,7 +231,7 @@ public class TournamentListView extends VerticalLayout {
         tournamentService.findByIdWithDetails(tournament.getId()).orElse(tournament);
     Dialog dialog = new Dialog();
     dialog.setHeaderTitle("Edit Tournament");
-    dialog.setWidth("min(600px, 95vw)");
+    dialog.setWidth("min(950px, 95vw)");
 
     TextField nameField = new TextField("Tournament Name");
     nameField.setValue(managed.getName());
@@ -220,32 +251,54 @@ public class TournamentListView extends VerticalLayout {
     titleCombo.setWidthFull();
     titleCombo.setClearButtonVisible(true);
 
-    // Payoff mode (ATW-ewrp / ATW-8p72): classic title-on-the-line, contender-deciding, or
-    // briefcase-deciding. Briefcase clears and disables the title combo (no linked title).
+    // Payoff mode (ATW-ewrp / ATW-8p72): classic title-on-the-line, contender-deciding,
+    // briefcase-deciding, named trophy, or bragging rights. Briefcase/trophy/no-payoff all clear
+    // and disable the title combo (no linked title).
     RadioButtonGroup<String> payoffMode = new RadioButtonGroup<>("Payoff");
     payoffMode.setItems(
-        "Title on the line", "Winner becomes #1 contender", "Winner earns the briefcase");
+        "Title on the line",
+        "Winner becomes #1 contender",
+        "Winner earns the briefcase",
+        "Winner earns a trophy",
+        "No payoff — bragging rights");
     payoffMode.setValue(
         managed.isBriefcaseDeciding()
             ? "Winner earns the briefcase"
-            : managed.isContenderDeciding() ? "Winner becomes #1 contender" : "Title on the line");
+            : managed.isContenderDeciding()
+                ? "Winner becomes #1 contender"
+                : managed.getTrophyName() != null ? "Winner earns a trophy" : "Title on the line");
     payoffMode.setHelperText(
         "Contender: needs a linked championship with a reigning champion — the winner becomes its"
             + " #1 contender. Briefcase: no linked championship — the winner earns a cashable"
-            + " title shot against ANY reigning champion.");
+            + " title shot against ANY reigning champion. Trophy: the winner lifts the named"
+            + " trophy (e.g. the 2026 Dusty Cup) — recorded for the AI's past-glory references."
+            + " Bragging rights: the win is all the prize.");
+    TextField trophyNameField = new TextField("Trophy Name");
+    trophyNameField.setId("trophy-name-field");
+    trophyNameField.setPlaceholder("Dusty Cup");
+    trophyNameField.setWidthFull();
+    trophyNameField.setValue(managed.getTrophyName() != null ? managed.getTrophyName() : "");
+    trophyNameField.setVisible("Winner earns a trophy".equals(payoffMode.getValue()));
     titleCombo.addValueChangeListener(
         e -> {
-          if (e.getValue() != null && "Winner earns the briefcase".equals(payoffMode.getValue())) {
+          if (e.getValue() != null
+              && ("Winner earns the briefcase".equals(payoffMode.getValue())
+                  || "Winner earns a trophy".equals(payoffMode.getValue())
+                  || "No payoff — bragging rights".equals(payoffMode.getValue()))) {
             payoffMode.setValue("Title on the line");
           }
         });
     payoffMode.addValueChangeListener(
         e -> {
-          boolean briefcase = "Winner earns the briefcase".equals(e.getValue());
-          if (briefcase) {
+          boolean noTitle =
+              "Winner earns the briefcase".equals(e.getValue())
+                  || "Winner earns a trophy".equals(e.getValue())
+                  || "No payoff — bragging rights".equals(e.getValue());
+          if (noTitle) {
             titleCombo.clear();
           }
-          titleCombo.setEnabled(!briefcase);
+          titleCombo.setEnabled(!noTitle);
+          trophyNameField.setVisible("Winner earns a trophy".equals(e.getValue()));
         });
 
     // One-time host-show binding (ATW-xbn4).
@@ -307,11 +360,31 @@ public class TournamentListView extends VerticalLayout {
                     "Winner earns the briefcase".equals(payoffMode.getValue());
                 boolean contenderSelected =
                     "Winner becomes #1 contender".equals(payoffMode.getValue());
+                boolean trophySelected = "Winner earns a trophy".equals(payoffMode.getValue());
+                if (trophySelected && trophyNameField.isEmpty()) {
+                  Notification.show("Trophy name is required.", 3000, Notification.Position.MIDDLE)
+                      .addThemeVariants(NotificationVariant.LUMO_ERROR);
+                  return;
+                }
+                // The Boolean-flag pattern: a value arms/clears ("" clears), null leaves the
+                // existing name untouched. Switching away from trophy mode clears it.
+                String trophyName;
+                if (trophySelected) {
+                  trophyName = trophyNameField.getValue();
+                } else if (managed.getTrophyName() != null) {
+                  trophyName = "";
+                } else {
+                  trophyName = null;
+                }
                 tournamentService.updateTournament(
                     tournament.getId(),
                     nameField.getValue(),
                     formatCombo.getValue() != null ? formatCombo.getValue().getFormatId() : null,
-                    briefcaseSelected ? null : titleCombo.getValue(),
+                    briefcaseSelected
+                            || trophySelected
+                            || "No payoff — bragging rights".equals(payoffMode.getValue())
+                        ? null
+                        : titleCombo.getValue(),
                     managed.getStartDate(),
                     new ArrayList<>(rulesPicker.getSelectedItems()),
                     hostShowCombo.getValue(),
@@ -319,7 +392,8 @@ public class TournamentListView extends VerticalLayout {
                     payoffRuleCombo.getValue(),
                     true,
                     contenderSelected,
-                    briefcaseSelected);
+                    briefcaseSelected,
+                    trophyName);
                 dialog.close();
                 refresh();
                 Notification.show("Tournament updated!", 3000, Notification.Position.BOTTOM_CENTER)
@@ -338,6 +412,7 @@ public class TournamentListView extends VerticalLayout {
             nameField,
             formatCombo,
             payoffMode,
+            trophyNameField,
             titleCombo,
             hostShowCombo,
             payoffTypeCombo,
@@ -381,15 +456,34 @@ public class TournamentListView extends VerticalLayout {
   }
 
   private void refresh() {
+    grid.setItems(visibleTournaments());
+  }
+
+  /**
+   * The listing the booker sees: the universe's tournaments (or all of them without a universe
+   * context), latest editions only by default, with pristine catalog rows filtered out — the seeded
+   * templates ("Deadly Combat" et al.) exist to be paired with show templates, and on a fresh
+   * install they read as an empty duplicate tournament. A catalog row that has been seeded
+   * (entries) or started leaves the pristine state and lists normally.
+   */
+  private List<Tournament> visibleTournaments() {
     Optional<Universe> universe = universeContextService.getCurrentUniverse();
     List<Tournament> items =
         universe.map(tournamentService::findByUniverse).orElseGet(tournamentService::findAll);
+    items =
+        items.stream()
+            .filter(
+                t ->
+                    t.getCode() == null
+                        || t.getStatus() != TournamentStatus.SCHEDULED
+                        || tournamentService.countEntries(t) != 0)
+            .toList();
     if (!showPastEditionsCheckbox.getValue()) {
       // Recurring chains show the latest edition only (ATW-o4ad) — past editions surface via
       // the toggle, and one-shot tournaments (no ordinal) always list.
       items = latestEditionPerChain(items);
     }
-    grid.setItems(items);
+    return items;
   }
 
   /**
@@ -439,410 +533,20 @@ public class TournamentListView extends VerticalLayout {
   // ── Creation wizard ───────────────────────────────────────────────────────
 
   private void openCreationWizard() {
-    Dialog dialog = new Dialog();
-    dialog.setHeaderTitle("New Tournament");
-    dialog.setWidth("min(600px, 95vw)");
-
-    TabSheet tabs = new TabSheet();
-    Tab tab1 = new Tab("1. Details");
-    Tab tab2 = new Tab("2. Seeding");
-
-    // Tab 1: Name, format, title link, start date
-    TextField nameField = new TextField("Tournament Name");
-    nameField.setRequired(true);
-    nameField.setWidthFull();
-
-    ComboBox<TournamentFormat> formatCombo = new ComboBox<>("Format");
-    formatCombo.setItems(tournamentService.getAvailableFormats());
-    formatCombo.setItemLabelGenerator(TournamentFormat::getDisplayName);
-    formatCombo.setRequired(true);
-    formatCombo.setWidthFull();
-
-    ComboBox<Title> titleCombo = new ComboBox<>("Linked Championship (optional)");
-    titleCombo.setItems(wrestlerFacade.getTitleService().findAll());
-    titleCombo.setItemLabelGenerator(Title::getName);
-    titleCombo.setWidthFull();
-
-    // One-time host-show binding (ATW-xbn4): the payoff books on this show exactly once; the
-    // non-final rounds pace automatically onto the weekly shows before it. Template pairing
-    // stays reserved for recurring tournaments.
-    ComboBox<Show> hostShowCombo = new ComboBox<>("Host Show (optional)");
-    hostShowCombo.setItems(
-        showFacade.getShowService().getUpcomingShows(50).stream()
-            .filter(
-                s ->
-                    universeContextService.getCurrentUniverse().isEmpty()
-                        || s.getUniverse() == null
-                        || universeContextService
-                            .getCurrentUniverse()
-                            .map(u -> u.getId().equals(s.getUniverse().getId()))
-                            .orElse(false))
-            .toList());
-    hostShowCombo.setItemLabelGenerator(
-        s -> s.getName() + (s.getShowDate() != null ? " — " + s.getShowDate() : ""));
-    hostShowCombo.setWidthFull();
-    hostShowCombo.setClearButtonVisible(true);
-    hostShowCombo.setAllowCustomValue(false);
-    hostShowCombo.setHelperText(
-        "Payoff books on this show exactly once; rounds pace onto the weekly shows before"
-            + " it automatically.");
-
-    ComboBox<SegmentType> payoffTypeCombo = new ComboBox<>("Payoff Match Type (optional)");
-    payoffTypeCombo.setItems(segmentTypeService.findAll());
-    payoffTypeCombo.setItemLabelGenerator(SegmentType::getName);
-    payoffTypeCombo.setWidthFull();
-    payoffTypeCombo.setClearButtonVisible(true);
-    payoffTypeCombo.setHelperText("Defaults to One on One.");
-
-    ComboBox<SegmentRule> payoffRuleCombo = new ComboBox<>("Payoff Rule (optional)");
-    payoffRuleCombo.setItems(segmentRuleService.findAll());
-    payoffRuleCombo.setItemLabelGenerator(SegmentRule::getName);
-    payoffRuleCombo.setWidthFull();
-    payoffRuleCombo.setClearButtonVisible(true);
-    // The payoff only exists on a show — keep the payoff pickers inert until a host is chosen.
-    payoffTypeCombo.setEnabled(false);
-    payoffRuleCombo.setEnabled(false);
-    hostShowCombo.addValueChangeListener(
-        e -> {
-          boolean hasHost = e.getValue() != null;
-          payoffTypeCombo.setEnabled(hasHost);
-          payoffRuleCombo.setEnabled(hasHost);
-          if (!hasHost) {
-            payoffTypeCombo.clear();
-            payoffRuleCombo.clear();
-          }
-        });
-
-    // Edition cadence (ATW-o4ad): recurring editions re-arm the PLE template pairing each cycle
-    // — the next edition auto-creates when the payoff books, instead of consuming the pairing.
-    ComboBox<TournamentRecurrence> recurrenceCombo =
-        new ComboBox<>("Edition Cadence (recurring tournaments)");
-    recurrenceCombo.setItems(TournamentRecurrence.values());
-    recurrenceCombo.setItemLabelGenerator(
-        r ->
-            switch (r) {
-              case NONE -> "One-time";
-              case ANNUAL -> "Annual";
-            });
-    recurrenceCombo.setValue(TournamentRecurrence.NONE);
-    recurrenceCombo.setWidthFull();
-    recurrenceCombo.setHelperText(
-        "Annual editions pair with a PLE show template: when a payoff books, the next edition"
-            + " is created automatically and the template pairing re-points to it — no manual"
-            + " re-arming each year.");
-
-    MultiSelectComboBox<SegmentRule> rulesPicker =
-        new MultiSelectComboBox<>("Allowed Segment Rules (optional)");
-    rulesPicker.setItems(segmentRuleService.findAll());
-    rulesPicker.setItemLabelGenerator(SegmentRule::getName);
-    rulesPicker.setWidthFull();
-    rulesPicker.setHelperText(
-        "Rules randomly applied to matches. A fixed rule can be set per round later.");
-
-    ComboBox<Gender> genderCombo = new ComboBox<>("Gender Filter (optional)");
-    genderCombo.setItems(Gender.values());
-    genderCombo.setItemLabelGenerator(
-        g ->
-            switch (g) {
-              case MALE -> "Men's division";
-              case FEMALE -> "Women's division";
-            });
-    genderCombo.setWidthFull();
-    genderCombo.setClearButtonVisible(true);
-    genderCombo.setHelperText(
-        "Restricts entrants to one gender. The linked championship's own constraint also applies.");
-
-    // Payoff mode (ATW-ewrp / ATW-8p72): classic title-on-the-line, contender-deciding, or
-    // briefcase-deciding. Briefcase clears and disables the title combo (no linked title).
-    RadioButtonGroup<String> payoffMode = new RadioButtonGroup<>("Payoff");
-    payoffMode.setItems(
-        "Title on the line", "Winner becomes #1 contender", "Winner earns the briefcase");
-    payoffMode.setValue("Title on the line");
-    payoffMode.setHelperText(
-        "Contender: needs a linked championship with a reigning champion — the winner becomes its"
-            + " #1 contender. Briefcase: no linked championship — the winner earns a cashable"
-            + " title shot against ANY reigning champion.");
-    titleCombo.addValueChangeListener(
-        e -> {
-          if (e.getValue() != null && "Winner earns the briefcase".equals(payoffMode.getValue())) {
-            payoffMode.setValue("Title on the line");
-          }
-        });
-    payoffMode.addValueChangeListener(
-        e -> {
-          boolean briefcase = "Winner earns the briefcase".equals(e.getValue());
-          if (briefcase) {
-            titleCombo.clear();
-          }
-          titleCombo.setEnabled(!briefcase);
-        });
-
-    VerticalLayout tab1Content =
-        new VerticalLayout(
-            nameField,
-            formatCombo,
-            payoffMode,
-            titleCombo,
-            genderCombo,
-            hostShowCombo,
-            payoffTypeCombo,
-            payoffRuleCombo,
-            recurrenceCombo,
-            rulesPicker);
-    tab1Content.setPadding(false);
-
-    // Tab 2: Seeding
-    ComboBox<String> seedingMode = new ComboBox<>("Seeding Method");
-    seedingMode.setItems(
-        "Auto (by fan count)", "Manual (pick wrestlers)", "Don't seed now (seed later)");
-    seedingMode.setValue("Auto (by fan count)");
-    seedingMode.setWidthFull();
-    seedingMode.setHelperText(
-        "Auto seeds the top wrestlers by fan count. A tournament paired with a show template"
-            + " can also be seeded automatically when the paired show is approved.");
-
-    IntegerField countField = new IntegerField("Number of Entrants");
-    countField.setValue(8);
-    countField.setMin(3);
-    countField.setMax(64);
-    countField.setWidthFull();
-    countField.setHelperText("Capped at the number of eligible active wrestlers.");
-
-    // QUALIFIER_GROUPS group size: wrestlers per qualifier Free-for-All. Part of the entrant
-    // validation — the bracket needs at least two groups, so entrants must cover 2 × group size.
-    IntegerField groupSizeField = new IntegerField("Wrestlers per Qualifier Group (optional)");
-    groupSizeField.setMin(2);
-    groupSizeField.setMax(QualifierGroupsFormat.MAX_GROUP_SIZE);
-    groupSizeField.setWidthFull();
-    groupSizeField.setVisible(false);
-    groupSizeField.setHelperText("Leave empty for auto-sized groups (≈3 wrestlers each).");
-    formatCombo.addValueChangeListener(
-        e -> {
-          boolean qualifierGroups =
-              e.getValue() != null
-                  && QualifierGroupsFormat.FORMAT_ID.equals(e.getValue().getFormatId());
-          groupSizeField.setVisible(qualifierGroups);
-          if (!qualifierGroups) {
-            groupSizeField.clear();
-          }
-        });
-
-    // Entrant-count validation across the pair: with a group size G the bracket needs at least
-    // two groups (entrants ≥ 2G). Re-checks whenever either field changes.
-    Runnable validateGroupSplit =
-        () -> {
-          Integer groupSize = groupSizeField.getValue();
-          Integer entrants = countField.getValue();
-          boolean invalid =
-              qualifierGroupsSelected(formatCombo)
-                  && groupSize != null
-                  && entrants != null
-                  && entrants
-                      < 2 * Math.max(2, Math.min(groupSize, QualifierGroupsFormat.MAX_GROUP_SIZE));
-          groupSizeField.setInvalid(invalid);
-          groupSizeField.setErrorMessage(
-              "At least "
-                  + (groupSize == null ? 2 : 2 * groupSize)
-                  + " entrants are needed for"
-                  + " groups of "
-                  + (groupSize == null ? 3 : groupSize)
-                  + " — two groups minimum.");
-        };
-    groupSizeField.addValueChangeListener(e -> validateGroupSplit.run());
-    countField.addValueChangeListener(e -> validateGroupSplit.run());
-    formatCombo.addValueChangeListener(e -> validateGroupSplit.run());
-
-    // Cap the entrant count at the eligible roster (narrowed by the linked championship's
-    // gender constraint) — the format's 64 max means nothing to a 12-wrestler universe.
-    Runnable refreshEntrantCap =
-        () -> {
-          int eligible =
-              tournamentService.countEligibleEntrants(
-                  titleCombo.getValue(), genderCombo.getValue());
-          int cap = Math.clamp(eligible, 3, 64);
-          countField.setMax(cap);
-          if (countField.getValue() == null || countField.getValue() > cap) {
-            countField.setValue(cap);
-          }
-        };
-    titleCombo.addValueChangeListener(e -> refreshEntrantCap.run());
-    genderCombo.addValueChangeListener(e -> refreshEntrantCap.run());
-    refreshEntrantCap.run();
-
-    MultiSelectComboBox<Wrestler> wrestlerPicker = new MultiSelectComboBox<>("Select Wrestlers");
-    wrestlerPicker.setItems(wrestlerFacade.getWrestlerService().getAllWrestlers());
-    wrestlerPicker.setItemLabelGenerator(Wrestler::getName);
-    wrestlerPicker.setWidthFull();
-    wrestlerPicker.setVisible(false);
-
-    seedingMode.addValueChangeListener(
-        e -> {
-          boolean manual = "Manual (pick wrestlers)".equals(e.getValue());
-          boolean skip = "Don't seed now (seed later)".equals(e.getValue());
-          countField.setVisible(!manual && !skip);
-          wrestlerPicker.setVisible(manual);
-        });
-
-    // Match-up preview for Auto seeding: what Create will build, before it commits.
-    Span matchupPreview = new Span();
-    matchupPreview.getStyle().set("color", "var(--lumo-secondary-text-color)");
-    matchupPreview.setVisible(false);
-    Runnable refreshMatchups =
-        () -> {
-          boolean autoMode = "Auto (by fan count)".equals(seedingMode.getValue());
-          Integer entrants = countField.getValue();
-          if (!autoMode || entrants == null || entrants < 2) {
-            matchupPreview.setVisible(false);
-            return;
-          }
-          // Fans walk the lazy wrestlerStates collection — rank inside the service's
-          // transaction instead of touching detached entities here.
-          List<Wrestler> pool =
-              new ArrayList<>(
-                  tournamentService.findEligibleWrestlersSortedByFans(
-                      titleCombo.getValue(),
-                      genderCombo.getValue(),
-                      universeContextService.getCurrentUniverse().map(Universe::getId).orElse(1L)));
-          int take = Math.min(entrants, pool.size());
-          StringBuilder sb = new StringBuilder();
-          for (int i = 0; i < take / 2; i++) {
-            if (!sb.isEmpty()) {
-              sb.append(" · ");
-            }
-            sb.append(pool.get(i).getName())
-                .append(" vs ")
-                .append(pool.get(take - 1 - i).getName());
-          }
-          matchupPreview.setText(sb.isEmpty() ? "No eligible wrestlers yet." : sb.toString());
-          matchupPreview.setVisible(true);
-        };
-    countField.addValueChangeListener(e -> refreshMatchups.run());
-    titleCombo.addValueChangeListener(e -> refreshMatchups.run());
-    genderCombo.addValueChangeListener(e -> refreshMatchups.run());
-    seedingMode.addValueChangeListener(e -> refreshMatchups.run());
-
-    VerticalLayout tab2Content =
-        new VerticalLayout(seedingMode, countField, groupSizeField, wrestlerPicker, matchupPreview);
-    tab2Content.setPadding(false);
-
-    tabs.add(tab1, tab1Content);
-    tabs.add(tab2, tab2Content);
-    tabs.setSizeFull();
-
-    // Wizard gating: only the Details tab is selectable until name + format are filled — the
-    // Create button lives on the last step, so nothing can be created with an invalid step 1.
-    Button back = new Button("Back", e -> tabs.setSelectedIndex(0));
-    back.setEnabled(false);
-
-    Button next =
-        new Button(
-            "Next",
-            e -> {
-              if (nameField.isEmpty() || formatCombo.isEmpty()) {
-                Notification.show(
-                        "Name and format are required before seeding.",
-                        3000,
-                        Notification.Position.MIDDLE)
-                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
-                return;
-              }
-              if (groupSizeField.isInvalid()) {
-                Notification.show(
-                        "Fix the qualifier group size before continuing.",
-                        3000,
-                        Notification.Position.MIDDLE)
-                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
-                return;
-              }
-              tabs.setSelectedIndex(1);
-            });
-
-    Button cancel = new Button("Cancel", e -> dialog.close());
-    Button create =
-        new Button(
-            "Create Tournament",
-            e -> {
-              if (nameField.isEmpty() || formatCombo.isEmpty()) {
-                Notification.show(
-                        "Name and format are required.", 3000, Notification.Position.MIDDLE)
-                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
-                return;
-              }
-              try {
-                Optional<Universe> universe = universeContextService.getCurrentUniverse();
-                boolean briefcaseSelected =
-                    "Winner earns the briefcase".equals(payoffMode.getValue());
-                boolean contenderSelected =
-                    "Winner becomes #1 contender".equals(payoffMode.getValue());
-                Tournament t =
-                    tournamentService.createTournament(
-                        nameField.getValue(),
-                        formatCombo.getValue().getFormatId(),
-                        universe.orElse(null),
-                        briefcaseSelected ? null : titleCombo.getValue(),
-                        LocalDate.now(),
-                        new ArrayList<>(rulesPicker.getSelectedItems()),
-                        hostShowCombo.getValue(),
-                        payoffTypeCombo.getValue(),
-                        payoffRuleCombo.getValue(),
-                        genderCombo.getValue(),
-                        contenderSelected,
-                        briefcaseSelected);
-                t.setRecurrence(recurrenceCombo.getValue());
-                t.setQualifierGroupSize(groupSizeField.getValue());
-                tournamentService.save(t);
-
-                boolean auto = "Auto (by fan count)".equals(seedingMode.getValue());
-                boolean manual = "Manual (pick wrestlers)".equals(seedingMode.getValue());
-                if (auto) {
-                  tournamentService.seedAuto(
-                      t, countField.getValue(), universe.map(Universe::getId).orElse(1L));
-                } else if (manual) {
-                  List<Wrestler> selected = new ArrayList<>(wrestlerPicker.getSelectedItems());
-                  for (int i = 0; i < selected.size(); i++) {
-                    tournamentService.addEntry(t, selected.get(i), i + 1);
-                  }
-                } // "Don't seed now": seed later from the detail view or via a paired show.
-
-                dialog.close();
-                refresh();
-                Notification.show("Tournament created!", 3000, Notification.Position.BOTTOM_CENTER)
-                    .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-                UI.getCurrent().navigate("tournament-detail/" + t.getId());
-              } catch (Exception ex) {
-                log.error("Error creating tournament", ex);
-                Notification.show("Error: " + ex.getMessage(), 5000, Notification.Position.MIDDLE)
-                    .addThemeVariants(NotificationVariant.LUMO_ERROR);
-              }
-            });
-    create.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-
-    // Wizard button visibility follows the selected tab: on Details only Next is offered, so
-    // Create is unreachable until the seeding step.
-    Runnable updateWizardButtons =
-        () -> {
-          boolean onDetails = Objects.equals(tabs.getSelectedIndex(), 0);
-          back.setEnabled(!onDetails);
-          next.setVisible(onDetails);
-          create.setVisible(!onDetails);
-        };
-    tabs.addSelectedChangeListener(e -> updateWizardButtons.run());
-    updateWizardButtons.run();
-
-    dialog.getFooter().add(cancel, back, next, create);
-    dialog.add(tabs);
-    dialog.open();
+    TournamentCreationWizardDialog wizard =
+        new TournamentCreationWizardDialog(
+            tournamentService,
+            wrestlerFacade,
+            showFacade,
+            universeContextService,
+            wrestlerFacade.getTeamService(),
+            created -> UI.getCurrent().navigate("tournament-detail/" + created.getId()));
+    wizard.open();
   }
 
   /** Test hooks: drive the dialogs directly (Karibu tests can't traverse grid cell components). */
   void openCreationWizardForTest() {
     openCreationWizard();
-  }
-
-  /** Whether the wizard's current format selection is the qualifier-groups format. */
-  private static boolean qualifierGroupsSelected(ComboBox<TournamentFormat> formatCombo) {
-    return formatCombo.getValue() != null
-        && QualifierGroupsFormat.FORMAT_ID.equals(formatCombo.getValue().getFormatId());
   }
 
   void refreshGridForTest() {

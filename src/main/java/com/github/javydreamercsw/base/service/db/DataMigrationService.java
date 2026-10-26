@@ -20,6 +20,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.Driver;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -29,6 +30,7 @@ import javax.sql.DataSource;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.flywaydb.core.Flyway;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.jdbc.datasource.SimpleDriverDataSource;
@@ -1866,11 +1868,31 @@ public class DataMigrationService {
   private void migrateTeams(
       @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
       throws SQLException {
-    String sql =
+    // ATW-01g2: the target schema (V164+) holds teams as ordered member lists — the
+    // wrestler1_id/wrestler2_id columns are gone there. The SOURCE shape depends on how old
+    // the migrated install is: pre-V164 installs carry the legacy pair (real-world upgrade
+    // path), while V164+ sources (e.g. the repair tool re-run on a current install) already
+    // hold team_member rows. Detect the source shape once and branch:
+    //  - LEGACY: read the pair from source team, write the new team shape + two
+    //    team_member slots (0 = wrestler1, 1 = wrestler2), backfilling
+    //    team_size/origin/fans/universe_id exactly as V164 does.
+    //  - MODERN: copy the new-shape columns verbatim (team_member rows ride the
+    //    generic per-table copy below via the same table list the truncate used).
+    boolean legacySource = hasColumn(sourceConnection, "team", "WRESTLER1_ID");
+    if (!legacySource) {
+      // Source is already ATW-01g2-shaped: copy teams and members with the modern columns.
+      copyTeamRowsModern(sourceConnection, targetConnection);
+      return;
+    }
+    String teamSql =
         """
-        INSERT INTO team (TEAM_ID, NAME, DESCRIPTION, WRESTLER1_ID, WRESTLER2_ID, FACTION_ID,\
-         STATUS, FORMED_DATE, DISBANDED_DATE, MANAGER_ID) VALUES (?,\
-         ?, ?, ?, ?, ?, ?, ?, ?, ?)\
+        INSERT INTO team (TEAM_ID, NAME, DESCRIPTION, FACTION_ID, STATUS, FORMED_DATE,\
+         DISBANDED_DATE, MANAGER_ID, TEAM_SIZE, ORIGIN, FANS, UNIVERSE_ID) VALUES (?,\
+         ?, ?, ?, ?, ?, ?, ?, 'DUO', 'REGISTRY', ?, ?)\
+        """;
+    String memberSql =
+        """
+        INSERT INTO team_member (TEAM_ID, WRESTLER_ID, SLOT) VALUES (?, ?, ?)\
         """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
@@ -1879,37 +1901,227 @@ public class DataMigrationService {
                 SELECT TEAM_ID, NAME, DESCRIPTION, WRESTLER1_ID, WRESTLER2_ID, FACTION_ID, STATUS,\
                  FORMED_DATE, DISBANDED_DATE, MANAGER_ID FROM team\
                 """);
-        PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
+        PreparedStatement teamStatement = targetConnection.prepareStatement(teamSql);
+        PreparedStatement memberStatement = targetConnection.prepareStatement(memberSql)) {
 
       int count = 0;
       while (resultSet.next()) {
-        targetStatement.setLong(1, resultSet.getLong("TEAM_ID"));
-        targetStatement.setString(2, resultSet.getString("NAME"));
-        targetStatement.setString(3, resultSet.getString("DESCRIPTION"));
-        targetStatement.setLong(4, resultSet.getLong("WRESTLER1_ID"));
-        targetStatement.setLong(5, resultSet.getLong("WRESTLER2_ID"));
+        long teamId = resultSet.getLong("TEAM_ID");
+        long wrestler1Id = resultSet.getLong("WRESTLER1_ID");
+        long wrestler2Id = resultSet.getLong("WRESTLER2_ID");
+        teamStatement.setLong(1, teamId);
+        teamStatement.setString(2, resultSet.getString("NAME"));
+        teamStatement.setString(3, resultSet.getString("DESCRIPTION"));
         if (resultSet.getObject("FACTION_ID") != null) {
-          targetStatement.setLong(6, resultSet.getLong("FACTION_ID"));
+          teamStatement.setLong(4, resultSet.getLong("FACTION_ID"));
         } else {
-          targetStatement.setObject(6, null);
+          teamStatement.setObject(4, null);
         }
-        targetStatement.setString(7, resultSet.getString("STATUS"));
-        targetStatement.setTimestamp(8, resultSet.getTimestamp("FORMED_DATE"));
-        targetStatement.setTimestamp(9, resultSet.getTimestamp("DISBANDED_DATE"));
+        teamStatement.setString(5, resultSet.getString("STATUS"));
+        teamStatement.setTimestamp(6, resultSet.getTimestamp("FORMED_DATE"));
+        teamStatement.setTimestamp(7, resultSet.getTimestamp("DISBANDED_DATE"));
         if (resultSet.getObject("MANAGER_ID") != null) {
-          targetStatement.setLong(10, resultSet.getLong("MANAGER_ID"));
+          teamStatement.setLong(8, resultSet.getLong("MANAGER_ID"));
         } else {
-          targetStatement.setObject(10, null);
+          teamStatement.setObject(8, null);
         }
-        targetStatement.addBatch();
+        // Fans = the member-fan sum in the team's resolved universe (the V164 backfill
+        // semantics, computed inline since the source is the pre-V164 schema). Universe =
+        // member agreement (both members share exactly one state universe); NULL when
+        // ambiguous or stateless — the eligibility pool treats unassigned teams as never
+        // scoped.
+        Long universeId = resolveTeamUniverse(targetConnection, teamId, wrestler1Id, wrestler2Id);
+        teamStatement.setLong(
+            9, computeTeamFans(targetConnection, universeId, wrestler1Id, wrestler2Id));
+        if (universeId != null) {
+          teamStatement.setLong(10, universeId);
+        } else {
+          teamStatement.setObject(10, null);
+        }
+        teamStatement.addBatch();
+
+        memberStatement.setLong(1, teamId);
+        memberStatement.setLong(2, wrestler1Id);
+        memberStatement.setInt(3, 0);
+        memberStatement.addBatch();
+        memberStatement.setLong(1, teamId);
+        memberStatement.setLong(2, wrestler2Id);
+        memberStatement.setInt(3, 1);
+        memberStatement.addBatch();
+
         count++;
         if (count % 1000 == 0) {
-          targetStatement.executeBatch();
+          teamStatement.executeBatch();
+          memberStatement.executeBatch();
         }
       }
       if (count > 0) {
-        targetStatement.executeBatch();
-        log.debug("Migrated {} Teams", count);
+        teamStatement.executeBatch();
+        memberStatement.executeBatch();
+        log.debug("Migrated {} Teams (with member slots)", count);
+      }
+    }
+  }
+
+  /** True when the given table on the connection carries the named column. */
+  private boolean hasColumn(
+      @NonNull final Connection connection,
+      @NonNull final String table,
+      @NonNull final String column)
+      throws SQLException {
+    DatabaseMetaData meta = connection.getMetaData();
+    try (ResultSet rs = meta.getColumns(null, null, table.toUpperCase(), column.toUpperCase())) {
+      if (rs.next()) {
+        return true;
+      }
+    }
+    // Some H2 configurations return mixed-case identifiers — probe lowercase too.
+    try (ResultSet rs = meta.getColumns(null, null, table.toLowerCase(), column.toLowerCase())) {
+      return rs.next();
+    }
+  }
+
+  /**
+   * Copy team rows from an already-ATW-01g2-shaped source (team without the legacy pair,
+   * memberships in team_member). Column lists match the V164+ schema on both ends.
+   */
+  private void copyTeamRowsModern(
+      @NonNull final Connection sourceConnection, @NonNull final Connection targetConnection)
+      throws SQLException {
+    String teamSql =
+        """
+        INSERT INTO team (TEAM_ID, NAME, DESCRIPTION, FACTION_ID, STATUS, FORMED_DATE,\
+         DISBANDED_DATE, MANAGER_ID, TEAM_SIZE, ORIGIN, FANS, UNIVERSE_ID) VALUES (?,\
+         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\
+        """;
+    String memberSql =
+        """
+        INSERT INTO team_member (ID, TEAM_ID, WRESTLER_ID, SLOT) VALUES (?, ?, ?, ?)\
+        """;
+    try (Statement sourceStatement = sourceConnection.createStatement();
+        ResultSet teams =
+            sourceStatement.executeQuery(
+                """
+                SELECT TEAM_ID, NAME, DESCRIPTION, FACTION_ID, STATUS, FORMED_DATE,\
+                 DISBANDED_DATE, MANAGER_ID, TEAM_SIZE, ORIGIN, FANS, UNIVERSE_ID FROM team\
+                """);
+        PreparedStatement teamStatement = targetConnection.prepareStatement(teamSql)) {
+      int count = 0;
+      while (teams.next()) {
+        teamStatement.setLong(1, teams.getLong("TEAM_ID"));
+        teamStatement.setString(2, teams.getString("NAME"));
+        teamStatement.setString(3, teams.getString("DESCRIPTION"));
+        if (teams.getObject("FACTION_ID") != null) {
+          teamStatement.setLong(4, teams.getLong("FACTION_ID"));
+        } else {
+          teamStatement.setObject(4, null);
+        }
+        teamStatement.setString(5, teams.getString("STATUS"));
+        teamStatement.setTimestamp(6, teams.getTimestamp("FORMED_DATE"));
+        teamStatement.setTimestamp(7, teams.getTimestamp("DISBANDED_DATE"));
+        if (teams.getObject("MANAGER_ID") != null) {
+          teamStatement.setLong(8, teams.getLong("MANAGER_ID"));
+        } else {
+          teamStatement.setObject(8, null);
+        }
+        teamStatement.setString(9, teams.getString("TEAM_SIZE"));
+        teamStatement.setString(10, teams.getString("ORIGIN"));
+        teamStatement.setLong(11, teams.getLong("FANS"));
+        if (teams.getObject("UNIVERSE_ID") != null) {
+          teamStatement.setLong(12, teams.getLong("UNIVERSE_ID"));
+        } else {
+          teamStatement.setObject(12, null);
+        }
+        teamStatement.addBatch();
+        count++;
+        if (count % 1000 == 0) {
+          teamStatement.executeBatch();
+        }
+      }
+      if (count > 0) {
+        teamStatement.executeBatch();
+        log.debug("Migrated {} Teams (modern shape)", count);
+      }
+    }
+    try (Statement sourceStatement = sourceConnection.createStatement();
+        ResultSet members =
+            sourceStatement.executeQuery("SELECT ID, TEAM_ID, WRESTLER_ID, SLOT FROM team_member");
+        PreparedStatement memberStatement = targetConnection.prepareStatement(memberSql)) {
+      int count = 0;
+      while (members.next()) {
+        memberStatement.setLong(1, members.getLong("ID"));
+        memberStatement.setLong(2, members.getLong("TEAM_ID"));
+        memberStatement.setLong(3, members.getLong("WRESTLER_ID"));
+        memberStatement.setInt(4, members.getInt("SLOT"));
+        memberStatement.addBatch();
+        count++;
+        if (count % 1000 == 0) {
+          memberStatement.executeBatch();
+        }
+      }
+      if (count > 0) {
+        memberStatement.executeBatch();
+        log.debug("Migrated {} team members (modern shape)", count);
+      }
+    }
+  }
+
+  /**
+   * Resolve a migrated team's universe from member agreement — the V164 backfill rule: both members
+   * hold a wrestler_state in the SAME universe and that universe is unique across the pair. Returns
+   * null when ambiguous or stateless.
+   */
+  private Long resolveTeamUniverse(
+      @NonNull final Connection targetConnection,
+      final long teamId,
+      final long wrestler1Id,
+      final long wrestler2Id)
+      throws SQLException {
+    String sql =
+        """
+        SELECT ws.universe_id, COUNT(DISTINCT ws.wrestler_id) AS member_count\
+         FROM wrestler_state ws\
+         WHERE ws.wrestler_id IN (?, ?)\
+         GROUP BY ws.universe_id\
+        """;
+    Long agreeingUniverse = null;
+    int fullyCovering = 0;
+    try (PreparedStatement ps = targetConnection.prepareStatement(sql)) {
+      ps.setLong(1, wrestler1Id);
+      ps.setLong(2, wrestler2Id);
+      try (ResultSet rs = ps.executeQuery()) {
+        while (rs.next()) {
+          if (rs.getLong("member_count") == 2) {
+            fullyCovering++;
+            agreeingUniverse = rs.getLong("universe_id");
+          }
+        }
+      }
+    }
+    return fullyCovering == 1 ? agreeingUniverse : null;
+  }
+
+  /** Sum both members' fans in the given universe (0 for each member with no state there). */
+  private long computeTeamFans(
+      @NonNull final Connection targetConnection,
+      @Nullable final Long universeId,
+      final long wrestler1Id,
+      final long wrestler2Id)
+      throws SQLException {
+    if (universeId == null) {
+      return 0L;
+    }
+    String sql =
+        """
+        SELECT COALESCE(SUM(fans), 0) FROM wrestler_state\
+         WHERE universe_id = ? AND wrestler_id IN (?, ?)\
+        """;
+    try (PreparedStatement ps = targetConnection.prepareStatement(sql)) {
+      ps.setLong(1, universeId);
+      ps.setLong(2, wrestler1Id);
+      ps.setLong(3, wrestler2Id);
+      try (ResultSet rs = ps.executeQuery()) {
+        return rs.next() ? rs.getLong(1) : 0L;
       }
     }
   }

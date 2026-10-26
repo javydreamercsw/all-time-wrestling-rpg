@@ -256,22 +256,22 @@ public class TournamentEntityAdapter implements TournamentBracketModel {
 
     @Override
     public Long getWrestler1Id() {
-      return match.getEntrant1().getWrestler().getId();
+      return match.getEntrant1().entrantId();
     }
 
     @Override
     public String getWrestler1Name() {
-      return match.getEntrant1().getWrestler().getName();
+      return match.getEntrant1().entrantName();
     }
 
     @Override
     public Long getWrestler2Id() {
-      return match.getEntrant2().getWrestler().getId();
+      return match.getEntrant2().entrantId();
     }
 
     @Override
     public String getWrestler2Name() {
-      return match.getEntrant2().getWrestler().getName();
+      return match.getEntrant2().entrantName();
     }
 
     @Override
@@ -280,7 +280,7 @@ public class TournamentEntityAdapter implements TournamentBracketModel {
       // advances in lockstep with the card, but the match isn't official until adjudicated —
       // showing it early would crown winners of matches that haven't happened (ATW-ip8v).
       return match.isResultOfficial() && match.getWinner() != null
-          ? match.getWinner().getWrestler().getId()
+          ? match.getWinner().entrantId()
           : null;
     }
 
@@ -292,7 +292,7 @@ public class TournamentEntityAdapter implements TournamentBracketModel {
       // Slots 0 and 1 render through the classic two lines; slot 2+ land here.
       return match.entrants().stream()
           .skip(2)
-          .map(e -> new ExtraEntrant(e.getWrestler().getName(), e.getWrestler().getId()))
+          .map(e -> new ExtraEntrant(e.entrantName(), e.entrantId()))
           .toList();
     }
 

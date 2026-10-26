@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.tournament;
 
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -33,4 +34,17 @@ public interface TournamentMatchRepository extends JpaRepository<TournamentMatch
       "SELECT m FROM TournamentMatch m JOIN FETCH m.round r JOIN FETCH r.tournament"
           + " WHERE m.segment.id = :segmentId")
   Optional<TournamentMatch> findBySegmentId(@Param("segmentId") Long segmentId);
+
+  /**
+   * Orphan candidates for the startup detector: match segments living on a show that hosts a
+   * tournament round, referenced by no bracket match. A hit is usually the runner's
+   * compensation-deletion failure path (REQUIRES_NEW insert committed, outer rollback) — logged,
+   * not deleted, so a human decides. Cancelled segments are never candidates (deliberate, not
+   * orphans).
+   */
+  @Query(
+      "SELECT s FROM Segment s WHERE s.show.id IN (SELECT r.show.id FROM TournamentRound r WHERE"
+          + " r.show IS NOT NULL) AND s.status != 'CANCELLED'"
+          + " AND NOT EXISTS (SELECT m FROM TournamentMatch m WHERE m.segment = s)")
+  List<Segment> findOrphanCandidatesOnTournamentShows();
 }

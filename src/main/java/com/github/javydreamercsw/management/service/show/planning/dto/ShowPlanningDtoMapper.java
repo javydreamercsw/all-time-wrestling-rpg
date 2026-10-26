@@ -74,6 +74,7 @@ public class ShowPlanningDtoMapper {
     dto.setPremiumLiveEvent(context.isPremiumLiveEvent());
     dto.setIntergenderAllowed(context.isIntergenderAllowed());
     dto.setHeldBriefcases(context.getHeldBriefcases());
+    dto.setTrophyHonors(context.getTrophyHonors());
     return dto;
   }
 

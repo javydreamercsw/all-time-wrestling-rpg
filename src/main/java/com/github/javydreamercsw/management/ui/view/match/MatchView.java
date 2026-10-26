@@ -66,11 +66,13 @@ import com.github.javydreamercsw.management.service.segment.PromoService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.title.TitleScriptService;
+import com.github.javydreamercsw.management.service.tournament.TrophyReignService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.wrestler.AbilityReminderTextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
+import com.github.javydreamercsw.management.ui.ViewContext;
 import com.github.javydreamercsw.management.ui.component.AdjudicationTable;
 import com.github.javydreamercsw.management.ui.component.CommentaryComponent;
 import com.github.javydreamercsw.management.ui.component.DashboardCard;
@@ -147,6 +149,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private final RingsideAiService ringsideAiService;
   private final RingsideActionDataService ringsideActionDataService;
   private final NotificationService notificationService;
+  private final ViewContext viewContext;
   private final TitleScriptService titleScriptService;
   @Autowired private ArenaService arenaService;
   @Autowired private CampaignEncounterService campaignEncounterService;
@@ -154,6 +157,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   @Autowired private WrestlerAbilityRepository wrestlerAbilityRepository;
   @Autowired private AbilityReminderTextService abilityReminderTextService;
   @Autowired private TitleOpportunityService titleOpportunityService;
+  @Autowired private TrophyReignService trophyReignService;
 
   private Segment segment;
   private TextArea narrationArea;
@@ -191,7 +195,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
       final RingsideAiService ringsideAiService,
       final RingsideActionDataService ringsideActionDataService,
       final TitleScriptService titleScriptService,
-      final NotificationService notificationService) {
+      final NotificationService notificationService,
+      final ViewContext viewContext) {
     this.segmentService = segmentService;
     this.wrestlerService = wrestlerService;
     this.wrestlerStatsService = wrestlerStatsService;
@@ -213,6 +218,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     this.ringsideActionDataService = ringsideActionDataService;
     this.titleScriptService = titleScriptService;
     this.notificationService = notificationService;
+    this.viewContext = viewContext;
   }
 
   @Override
@@ -264,7 +270,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     if (referees.isEmpty()) {
       return;
     }
-    Npc referee = referees.get(new Random().nextInt(referees.size()));
+    Npc referee = pickUnusedReferee(referees);
     segment.setReferee(referee);
     segment.setRefereeAwarenessLevel(npcService.getAwareness(referee));
     // Persist the referee assignment as a system operation so it succeeds regardless
@@ -280,6 +286,35 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     // from findByIdWithDetails(), so we continue to use it as-is.
     GeneralSecurityUtils.runAsAdmin(() -> segmentService.updateSegment(segment));
     log.debug("Auto-assigned referee {} to segment {}", referee.getName(), segment.getId());
+  }
+
+  /**
+   * Picks a referee for this segment, preferring officials not already assigned to another segment
+   * of the same show so one official doesn't work two matches on one card. Falls back to the full
+   * pool when every active referee is already booked elsewhere.
+   */
+  private Npc pickUnusedReferee(List<Npc> referees) {
+    Set<Long> usedIds = new HashSet<>();
+    if (segment.getShow() != null) {
+      for (Segment sibling : segmentService.getSegmentsByShow(segment.getShow())) {
+        if (sibling.getReferee() == null || Objects.equals(sibling.getId(), segment.getId())) {
+          continue;
+        }
+        Npc used = sibling.getReferee();
+        if (used.getId() != null) {
+          usedIds.add(used.getId());
+        }
+      }
+    }
+    List<Npc> available =
+        referees.stream()
+            .filter(r -> r.getId() == null || !usedIds.contains(r.getId()))
+            .collect(Collectors.toList());
+    if (available.isEmpty()) {
+      // Every active referee is already working this show — reuse the full pool.
+      available = referees;
+    }
+    return available.get(new Random().nextInt(available.size()));
   }
 
   private void buildView() {
@@ -1141,8 +1176,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
 
   private void generateAiNarration() {
     if (narrationServiceFactory.getAvailableServicesInPriorityOrder().isEmpty()) {
-      String reason = "No AI providers are currently enabled or reachable.";
-      Notification.show(reason).addThemeVariants(NotificationVariant.LUMO_ERROR);
+      viewContext.showAiSetupNotification("No AI providers are currently enabled or reachable.");
       return;
     }
 
@@ -1209,6 +1243,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                     // Briefcase holder context (ATW-brrz): narration introduces a holder like a
                     // champion.
                     wc.setHeldBriefcase(titleOpportunityService.heldBriefcaseContextOf(w.getId()));
+                    // Trophy honors: past tournament wins the narrator can reference.
+                    wc.setTrophyHonors(trophyReignService.trophyHonorsOf(w.getId()));
 
                     // Set manager/supporter context
                     Object supporter = ringsideActionService.getBestSupporter(segment, w);

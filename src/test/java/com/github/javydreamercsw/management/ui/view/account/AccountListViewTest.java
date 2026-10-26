@@ -23,14 +23,17 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.service.AccountService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -42,13 +45,19 @@ class AccountListViewTest extends AbstractViewTest {
 
   @MockitoBean private SecurityUtils securityUtils;
 
+  // Plain @Mock, not @MockitoBean: a mocked WrestlerService in the Spring context forces a
+  // fresh context whose DataInitializer/WrestlerSync startup hits the mock (getOrCreateState
+  // → null → NPE). Constructing the view with a local mock keeps the shared context intact.
+  @Mock private WrestlerService wrestlerService;
+
   private AccountListView view;
 
   @BeforeEach
   void setup() {
     when(accountService.list(any(Pageable.class))).thenReturn(Page.empty());
 
-    view = new AccountListView(accountService);
+    when(wrestlerService.findAllActiveWrestlers()).thenReturn(List.of());
+    view = new AccountListView(accountService, wrestlerService);
     UI.getCurrent().add(view);
   }
 

@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
+import com.github.javydreamercsw.management.service.tournament.TrophyReignService;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
@@ -63,6 +64,7 @@ public class NewsGenerationService {
   private final NpcRepository npcRepository;
   private final TitleReignRepository titleReignRepository;
   private final TitleOpportunityService titleOpportunityService;
+  private final TrophyReignService trophyReignService;
 
   private static final String SYSTEM_PROMPT =
       """
@@ -79,6 +81,11 @@ public class NewsGenerationService {
       When a "Briefcase:" line is present, the named wrestler holds a Money in the Bank-style
       briefcase (a cashable title shot against any reigning champion) — reference them as a
       briefcase holder with title-follower prestige ("...still clutching the briefcase").
+
+      When a "Trophy honors:" line is present, the named wrestler has WON that named tournament
+      trophy in a past year (e.g. "2026 Dusty Cup winner") — a historical honor you may reference
+      as past glory ("...the 2026 Dusty Cup winner looking to add another chapter"). It is NOT a
+      current championship and not a stake in tonight's match.
 
       Output MUST be a valid JSON object with the following fields:
       - headline: A catchy, sports-journalism style headline (max 255 chars).
@@ -195,6 +202,10 @@ public class NewsGenerationService {
     String briefcaseContext = briefcaseContextOf(segment);
     if (briefcaseContext != null) {
       prompt.append(briefcaseContext).append("\n");
+    }
+    String trophyHonorsContext = trophyHonorsContextOf(segment);
+    if (trophyHonorsContext != null) {
+      prompt.append(trophyHonorsContext).append("\n");
     }
     if (segment.getNarration() != null && !segment.getNarration().isEmpty()) {
       prompt.append("Match Highlights: ").append(segment.getNarration()).append("\n");
@@ -317,6 +328,25 @@ public class NewsGenerationService {
           .transform(s -> s.isEmpty() ? null : s);
     } catch (Exception e) {
       log.debug("Briefcase context unavailable for segment {}", segment.getId(), e);
+      return null;
+    }
+  }
+
+  /**
+   * "Trophy honors: 2026 Dusty Cup winner (with A & B)" lines for participants' past tournament
+   * wins — historical honors the reporter can reference, not stakes. Null when no participant holds
+   * any. Never throws: news generation must not fail over a context enhancement.
+   */
+  private @Nullable String trophyHonorsContextOf(Segment segment) {
+    try {
+      return segment.getWrestlers().stream()
+          .flatMap(w -> trophyReignService.trophyHonorsOf(w.getId()).stream())
+          .distinct()
+          .map(line -> "Trophy honors: " + line)
+          .collect(Collectors.joining("; "))
+          .transform(s -> s.isEmpty() ? null : s);
+    } catch (Exception e) {
+      log.debug("Trophy honors context unavailable for segment {}", segment.getId(), e);
       return null;
     }
   }

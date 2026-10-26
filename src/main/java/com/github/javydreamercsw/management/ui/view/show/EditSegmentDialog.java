@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.team.Team;
+import com.github.javydreamercsw.management.domain.team.TeamMember;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
@@ -500,7 +501,11 @@ public class EditSegmentDialog extends Dialog {
             rosterTeamPicker.setItemLabelGenerator(
                 t -> {
                   String name = t.getName();
-                  String members = t.getWrestler1().getName() + " & " + t.getWrestler2().getName();
+                  String members =
+                      t.getMembers().stream()
+                          .map(TeamMember::getWrestler)
+                          .map(Wrestler::getName)
+                          .collect(Collectors.joining(" & "));
                   return name != null && !name.isBlank() ? name + " (" + members + ")" : members;
                 });
             rosterTeamPicker.addValueChangeListener(
@@ -508,15 +513,9 @@ public class EditSegmentDialog extends Dialog {
                   Team picked = e.getValue();
                   if (picked != null) {
                     Set<Wrestler> current = new HashSet<>(teamCombo.getValue());
-                    if (picked.getWrestler1() != null) {
-                      current.add(
-                          activeById.getOrDefault(
-                              picked.getWrestler1().getId(), picked.getWrestler1()));
-                    }
-                    if (picked.getWrestler2() != null) {
-                      current.add(
-                          activeById.getOrDefault(
-                              picked.getWrestler2().getId(), picked.getWrestler2()));
+                    for (TeamMember member : picked.getMembers()) {
+                      Wrestler memberWrestler = member.getWrestler();
+                      current.add(activeById.getOrDefault(memberWrestler.getId(), memberWrestler));
                     }
                     List<Wrestler> newItems = getFilteredWrestlers(current);
                     teamCombo.setItems(newItems);

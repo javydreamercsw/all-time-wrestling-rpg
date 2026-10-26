@@ -335,6 +335,27 @@ public class InboxService {
     return inboxRepository.deleteItemsOlderThan(cutoff);
   }
 
+  /**
+   * Returns true if an unread item of the given event type and subject exists. Used by listeners
+   * that fire on every startup to avoid flooding the inbox with duplicate notifications.
+   */
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional(readOnly = true)
+  public boolean hasUnreadInboxItem(
+      @NonNull final InboxEventType eventType, @NonNull final String subject) {
+    return inboxRepository.existsUnreadByEventTypeAndSubject(eventType, subject);
+  }
+
+  /**
+   * Marks every unread item of the given event type as read. Returns the number of items updated.
+   * Used to clear stale notifications (e.g. "update available") after the condition is resolved.
+   */
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public int markUnreadInboxItemsAsRead(@NonNull final InboxEventType eventType) {
+    return inboxRepository.markUnreadAsReadByEventType(eventType);
+  }
+
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
   public InboxItem addInboxItem(@NonNull final Wrestler wrestler, @NonNull final String message) {
     InboxEventType eventType = eventTypeRegistry.getEventTypes().getFirst();

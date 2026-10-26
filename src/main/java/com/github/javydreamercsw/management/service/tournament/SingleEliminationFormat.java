@@ -234,7 +234,7 @@ public class SingleEliminationFormat implements TournamentFormat {
   }
 
   private String wrestlerNameOf(TournamentEntry entry) {
-    return entry != null && entry.getWrestler() != null ? entry.getWrestler().getName() : null;
+    return entry != null ? entry.entrantName() : null;
   }
 
   /**
@@ -255,16 +255,16 @@ public class SingleEliminationFormat implements TournamentFormat {
   }
 
   private Long wrestlerIdOf(TournamentEntry entry) {
-    return entry != null && entry.getWrestler() != null ? entry.getWrestler().getId() : null;
+    return entry != null ? entry.entrantId() : null;
   }
 
   private Long winnerIdOf(TournamentMatch match) {
-    return officialWinner(match) != null ? officialWinner(match).getWrestler().getId() : null;
+    return officialWinner(match) != null ? officialWinner(match).entrantId() : null;
   }
 
   private String winnerNameOf(TournamentMatch match) {
     TournamentEntry winner = officialWinner(match);
-    return winner != null && winner.getWrestler() != null ? winner.getWrestler().getName() : null;
+    return winner != null ? winner.entrantName() : null;
   }
 
   /**

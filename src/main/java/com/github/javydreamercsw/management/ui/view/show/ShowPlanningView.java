@@ -107,6 +107,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   private final ExpansionService expansionService;
   private final TeamService teamService;
   private final GameSettingService gameSettingService;
+  private final ViewContext viewContext;
   private final ShowContextFacade showContextFacade;
 
   private final ComboBox<Show> showComboBox;
@@ -157,6 +158,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     this.expansionService = viewContext.getExpansionService();
     this.teamService = wrestlerFacade.getTeamService();
     this.gameSettingService = viewContext.getGameSettingService();
+    this.viewContext = viewContext;
 
     setSizeFull();
     addClassNames(LumoUtility.Padding.MEDIUM, LumoUtility.Gap.MEDIUM);
@@ -539,7 +541,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     }
 
     if (aiFactory.getAvailableServicesInPriorityOrder().isEmpty()) {
-      notificationService.showError("No AI providers available.");
+      viewContext.showAiSetupNotification("No AI providers are currently enabled or reachable.");
       return CompletableFuture.completedFuture(null);
     }
 

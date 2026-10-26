@@ -58,6 +58,7 @@ import com.github.javydreamercsw.management.service.title.BriefcaseCashInAdvisor
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.tournament.TournamentTemplateBookingService;
+import com.github.javydreamercsw.management.service.tournament.TrophyReignService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.Instant;
@@ -107,6 +108,7 @@ public class ShowPlanningService {
   private final ShowTemplateRepository showTemplateRepository;
   private final TournamentTemplateBookingService tournamentTemplateBookingService;
   private final TitleOpportunityService titleOpportunityService;
+  private final TrophyReignService trophyReignService;
   private final BriefcaseCashInAdvisorService briefcaseCashInAdvisorService;
 
   @Transactional
@@ -286,6 +288,15 @@ public class ShowPlanningService {
             .findById(holder.getId())
             .ifPresent(
                 w -> context.getHeldBriefcases().add(w.getName() + " — " + opportunity.getName()));
+      }
+    }
+
+    // Trophy honors: past tournament glory on the roster — backstory the planning
+    // AI can lean on, and a returning-trophy edition is a strong proposal candidate.
+    for (Wrestler rosterWrestler : wrestlerRepository.findAll()) {
+      List<String> honors = trophyReignService.trophyHonorsOf(rosterWrestler.getId());
+      for (String honor : honors) {
+        context.getTrophyHonors().add(rosterWrestler.getName() + " — " + honor);
       }
     }
 

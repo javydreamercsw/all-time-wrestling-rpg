@@ -22,7 +22,10 @@ import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.npc.NpcRepository;
 import com.github.javydreamercsw.management.domain.team.Team;
+import com.github.javydreamercsw.management.domain.team.TeamMember;
+import com.github.javydreamercsw.management.domain.team.TeamOrigin;
 import com.github.javydreamercsw.management.domain.team.TeamRepository;
+import com.github.javydreamercsw.management.domain.team.TeamSize;
 import com.github.javydreamercsw.management.domain.team.TeamStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -33,6 +36,7 @@ import com.github.javydreamercsw.management.service.universe.UniverseSettingsSer
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -71,6 +75,20 @@ public class TeamService {
         .orElseGet(() -> new HashSet<>(expansionService.getEnabledExpansionCodes()));
   }
 
+  /**
+   * Whether every member of the team holds an enabled expansion. A team with no members — a husk
+   * left behind when its last member was deleted, since the team_member cascade removes only the
+   * membership rows where the legacy wrestler1/2 columns cascaded the whole team row away — fails
+   * the check, keeping empty teams out of every roster/registry pool instead of NPE-ing on the duo
+   * accessors. Checking the full member list (not just slots 0/1) also covers trios.
+   */
+  private boolean membersInEnabledExpansions(final Team team, final Set<String> enabledExpansions) {
+    return !team.getMembers().isEmpty()
+        && team.getMembers().stream()
+            .map(TeamMember::getWrestler)
+            .allMatch(wrestler -> enabledExpansions.contains(wrestler.getExpansionCode()));
+  }
+
   // ==================== CRUD OPERATIONS ====================
 
   /** Get all teams with pagination. */
@@ -83,10 +101,7 @@ public class TeamService {
     // and then manually paginate.
     List<Team> allFiltered =
         teamRepository.findAll().stream()
-            .filter(
-                team ->
-                    enabledExpansions.contains(team.getWrestler1().getExpansionCode())
-                        && enabledExpansions.contains(team.getWrestler2().getExpansionCode()))
+            .filter(team -> membersInEnabledExpansions(team, enabledExpansions))
             .peek(
                 team -> {
                   // Hide manager if their expansion is disabled
@@ -118,10 +133,7 @@ public class TeamService {
   public long countAllTeams() {
     Set<String> enabledExpansions = enabledExpansionCodes();
     return teamRepository.findAll().stream()
-        .filter(
-            team ->
-                enabledExpansions.contains(team.getWrestler1().getExpansionCode())
-                    && enabledExpansions.contains(team.getWrestler2().getExpansionCode()))
+        .filter(team -> membersInEnabledExpansions(team, enabledExpansions))
         .count();
   }
 
@@ -145,7 +157,10 @@ public class TeamService {
     return teamRepository.findByName(name);
   }
 
-  /** Create a new team. */
+  /**
+   * Create a new duo team from two wrestler IDs. Delegates to {@link #createTeam(String, String,
+   * List, TeamSize, Long, Long, TeamOrigin)}.
+   */
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   public Optional<Team> createTeam(
@@ -159,24 +174,65 @@ public class TeamService {
       log.debug("Cannot create team: Wrestler IDs cannot be null");
       return Optional.empty();
     }
-    // Validate wrestlers exist
-    Optional<Wrestler> wrestler1Opt = wrestlerRepository.findById(wrestler1Id);
-    Optional<Wrestler> wrestler2Opt = wrestlerRepository.findById(wrestler2Id);
+    return createTeam(
+        name,
+        description,
+        List.of(wrestler1Id, wrestler2Id),
+        TeamSize.DUO,
+        factionId,
+        managerId,
+        TeamOrigin.REGISTRY);
+  }
 
-    if (wrestler1Opt.isEmpty() || wrestler2Opt.isEmpty()) {
+  /**
+   * Create a new team from an ordered member-ID list.
+   *
+   * @param name unique team name
+   * @param description optional description
+   * @param memberIds ordered wrestler IDs (slot 0..n-1)
+   * @param teamSize declared size; must match {@code memberIds.size()}
+   * @param factionId optional faction
+   * @param managerId optional manager (NPC)
+   * @param origin where this team came from (registry seed vs one-off assembly)
+   * @return the saved team, or empty when validation fails
+   */
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  public Optional<Team> createTeam(
+      final String name,
+      final String description,
+      final List<Long> memberIds,
+      final TeamSize teamSize,
+      final Long factionId,
+      final Long managerId,
+      final TeamOrigin origin) {
+    if (memberIds == null || memberIds.isEmpty() || memberIds.stream().anyMatch(Objects::isNull)) {
+      log.debug("Cannot create team: Member IDs must be provided and non-null");
+      return Optional.empty();
+    }
+    if (teamSize == null || memberIds.size() != teamSize.getMemberCount()) {
       log.debug(
-          "Cannot create team: One or both wrestlers not found (IDs: {}, {})",
-          wrestler1Id,
-          wrestler2Id);
+          "Cannot create team: Member count {} does not match declared team size {}",
+          memberIds.size(),
+          teamSize);
       return Optional.empty();
     }
 
-    Wrestler wrestler1 = wrestler1Opt.get();
-    Wrestler wrestler2 = wrestler2Opt.get();
+    // Validate wrestlers exist
+    List<Wrestler> members = new ArrayList<>();
+    for (Long memberId : memberIds) {
+      Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(memberId);
+      if (wrestlerOpt.isEmpty()) {
+        log.debug("Cannot create team: Wrestler not found (ID: {})", memberId);
+        return Optional.empty();
+      }
+      members.add(wrestlerOpt.get());
+    }
 
-    // Check if wrestlers are the same
-    if (wrestler1.equals(wrestler2)) {
-      log.debug("Cannot create team: Both wrestlers are the same ({})", wrestler1.getName());
+    // Check for duplicate members
+    Set<Long> distinctIds = new HashSet<>(memberIds);
+    if (distinctIds.size() != memberIds.size()) {
+      log.debug("Cannot create team: Duplicate member in list {}", memberIds);
       return Optional.empty();
     }
 
@@ -186,14 +242,11 @@ public class TeamService {
       return Optional.empty();
     }
 
-    // Check if these wrestlers already have an active team together
-    Optional<Team> existingTeam =
-        teamRepository.findActiveTeamByBothWrestlers(wrestler1, wrestler2);
+    // Check if an active team with the same member set already exists
+    Optional<Team> existingTeam = findActiveTeamByMembers(members);
     if (existingTeam.isPresent()) {
       log.debug(
-          "Cannot create team: {} and {} already have an active team: {}",
-          wrestler1.getName(),
-          wrestler2.getName(),
+          "Cannot create team: Active team '{}' already has the same members",
           existingTeam.get().getName());
       return Optional.empty();
     }
@@ -201,13 +254,20 @@ public class TeamService {
     Team team = new Team();
     team.setName(name);
     team.setDescription(description);
-    team.setWrestler1(wrestler1);
-    team.setWrestler2(wrestler2);
+    team.setMembers(members);
+    team.setTeamSize(teamSize);
+    team.setOrigin(origin != null ? origin : TeamOrigin.REGISTRY);
     team.setStatus(TeamStatus.ACTIVE);
+
+    // Scope the team to the session's current universe (ATW-01g2 review): tournament
+    // eligibility pools the registry through team.universe, so a team created without one
+    // never appears in the wizard's registry grid. No current universe — leave null
+    // (unassigned teams are simply never scoped), the same behavior tournament creation
+    // shows when the session carries no universe.
+    team.setUniverse(universeContextService.getCurrentUniverse().orElse(null));
 
     // Set faction if provided
     if (factionId != null) {
-      // Note: We'd need FactionRepository here, but keeping it simple for now
       team.setFaction(factionRepository.findById(factionId).orElse(null));
     }
 
@@ -217,13 +277,35 @@ public class TeamService {
     }
 
     Team savedTeam = teamRepository.saveAndFlush(team);
-    log.debug(
-        "Created team: {} with members {} & {}",
-        savedTeam.getName(),
-        wrestler1.getName(),
-        wrestler2.getName());
+    log.debug("Created team: {} with members {}", savedTeam.getName(), savedTeam.getMemberNames());
 
     return Optional.of(savedTeam);
+  }
+
+  /**
+   * Finds an active team whose member set matches the given wrestlers exactly, regardless of order
+   * or declared size.
+   *
+   * @param members the wrestlers to match
+   * @return the matching active team, if any
+   */
+  private Optional<Team> findActiveTeamByMembers(final List<Wrestler> members) {
+    Set<Long> memberIds = members.stream().map(Wrestler::getId).collect(Collectors.toSet());
+    return teamRepository.findByWrestlerAndStatus(members.getFirst(), TeamStatus.ACTIVE).stream()
+        .filter(
+            team -> {
+              List<TeamMember> teamMembers = team.getMembers();
+              if (teamMembers.size() != members.size()) {
+                return false;
+              }
+              Set<Long> teamMemberIds =
+                  teamMembers.stream()
+                      .map(TeamMember::getWrestler)
+                      .map(Wrestler::getId)
+                      .collect(Collectors.toSet());
+              return teamMemberIds.equals(memberIds);
+            })
+        .findFirst();
   }
 
   /** Update an existing team. */
@@ -296,10 +378,7 @@ public class TeamService {
   public List<Team> getActiveTeams() {
     Set<String> enabledExpansions = enabledExpansionCodes();
     return teamRepository.findByStatus(TeamStatus.ACTIVE).stream()
-        .filter(
-            team ->
-                enabledExpansions.contains(team.getWrestler1().getExpansionCode())
-                    && enabledExpansions.contains(team.getWrestler2().getExpansionCode()))
+        .filter(team -> membersInEnabledExpansions(team, enabledExpansions))
         .peek(
             team -> {
               // Hide manager if their expansion is disabled
@@ -322,10 +401,7 @@ public class TeamService {
   public List<Team> getTeamsByFaction(final Faction faction) {
     Set<String> enabledExpansions = enabledExpansionCodes();
     return teamRepository.findByFaction(faction).stream()
-        .filter(
-            team ->
-                enabledExpansions.contains(team.getWrestler1().getExpansionCode())
-                    && enabledExpansions.contains(team.getWrestler2().getExpansionCode()))
+        .filter(team -> membersInEnabledExpansions(team, enabledExpansions))
         .peek(
             team -> {
               if (team.getManager() != null
@@ -342,10 +418,7 @@ public class TeamService {
   public List<Team> getTeamsByWrestler(final Wrestler wrestler) {
     Set<String> enabledExpansions = enabledExpansionCodes();
     return teamRepository.findByWrestler(wrestler).stream()
-        .filter(
-            team ->
-                enabledExpansions.contains(team.getWrestler1().getExpansionCode())
-                    && enabledExpansions.contains(team.getWrestler2().getExpansionCode()))
+        .filter(team -> membersInEnabledExpansions(team, enabledExpansions))
         .peek(
             team -> {
               if (team.getManager() != null
@@ -362,10 +435,7 @@ public class TeamService {
   public List<Team> getActiveTeamsByWrestler(final Wrestler wrestler) {
     Set<String> enabledExpansions = enabledExpansionCodes();
     return teamRepository.findByWrestlerAndStatus(wrestler, TeamStatus.ACTIVE).stream()
-        .filter(
-            team ->
-                enabledExpansions.contains(team.getWrestler1().getExpansionCode())
-                    && enabledExpansions.contains(team.getWrestler2().getExpansionCode()))
+        .filter(team -> membersInEnabledExpansions(team, enabledExpansions))
         .peek(
             team -> {
               if (team.getManager() != null
@@ -383,10 +453,7 @@ public class TeamService {
     Set<String> enabledExpansions = enabledExpansionCodes();
     return teamRepository
         .findByBothWrestlers(wrestler1, wrestler2)
-        .filter(
-            team ->
-                enabledExpansions.contains(team.getWrestler1().getExpansionCode())
-                    && enabledExpansions.contains(team.getWrestler2().getExpansionCode()))
+        .filter(team -> membersInEnabledExpansions(team, enabledExpansions))
         .map(
             team -> {
               if (team.getManager() != null
@@ -405,10 +472,7 @@ public class TeamService {
     Set<String> enabledExpansions = enabledExpansionCodes();
     return teamRepository
         .findActiveTeamByBothWrestlers(wrestler1, wrestler2)
-        .filter(
-            team ->
-                enabledExpansions.contains(team.getWrestler1().getExpansionCode())
-                    && enabledExpansions.contains(team.getWrestler2().getExpansionCode()))
+        .filter(team -> membersInEnabledExpansions(team, enabledExpansions))
         .map(
             team -> {
               if (team.getManager() != null
@@ -427,6 +491,42 @@ public class TeamService {
   }
 
   // ==================== BUSINESS OPERATIONS ====================
+
+  /**
+   * Saves a one-off ({@link TeamOrigin#AD_HOC}) team to the registry by flipping its origin to
+   * {@link TeamOrigin#REGISTRY}. The team row itself is kept — this is a transition, not a
+   * re-create.
+   *
+   * @param team the team to register
+   * @return the persisted team with {@code REGISTRY} origin
+   */
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  public Team saveToRegistry(final Team team) {
+    team.setOrigin(TeamOrigin.REGISTRY);
+    Team saved = teamRepository.saveAndFlush(team);
+    log.debug("Saved team {} to registry", saved.getName());
+    return saved;
+  }
+
+  /**
+   * Generates a unique team name from the given members: "A & B", then "A & B (2)", "A & B (3)", …
+   * as needed to satisfy the unique {@code team.name} constraint.
+   *
+   * @param members the ordered team members
+   * @return a team name not currently taken
+   */
+  @Transactional(readOnly = true)
+  public String generateUniqueName(final List<Wrestler> members) {
+    String baseName = members.stream().map(Wrestler::getName).collect(Collectors.joining(" & "));
+    String candidate = baseName;
+    int suffix = 2;
+    while (teamRepository.existsByName(candidate)) {
+      candidate = baseName + " (" + suffix + ")";
+      suffix++;
+    }
+    return candidate;
+  }
 
   /** Disband a team. */
   @PreAuthorize(

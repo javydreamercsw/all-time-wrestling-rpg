@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.tournament;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -26,4 +27,7 @@ public interface TournamentRoundRepository extends JpaRepository<TournamentRound
 
   Optional<TournamentRound> findFirstByTournamentIdAndStatusOrderByRoundNumberAsc(
       Long tournamentId, TournamentRoundStatus status);
+
+  /** Every round booked onto any of the given shows — the host-show conflict check (ATW-kakg). */
+  List<TournamentRound> findByShowIdIn(Collection<Long> showIds);
 }

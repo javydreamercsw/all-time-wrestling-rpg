@@ -90,4 +90,54 @@ class UpdateAvailableInboxListenerTest {
     verifyNoInteractions(inboxService);
     verifyNoInteractions(inboxUpdateBroadcaster);
   }
+
+  @Test
+  void onApplicationEvent_skipsWhenSameVersionUnreadItemExists() {
+    Account admin = new Account();
+    admin.setId(1L);
+    when(accountRepository.findAllByRoles_Name(RoleName.ADMIN)).thenReturn(List.of(admin));
+    // v2.6.0 notification already sitting unread in the inbox (e.g. created at last startup)
+    when(inboxService.hasUnreadInboxItem(updateAvailableEventType, "Update Available: v2.6.0"))
+        .thenReturn(true);
+
+    listener.onApplicationEvent(
+        new UpdateAvailableEvent(this, "2.6.0", "https://example.com/releases/v2.6.0"));
+
+    verify(inboxService, never()).createInboxItem(any(), any(), any(), any(), any());
+    verifyNoInteractions(inboxUpdateBroadcaster);
+  }
+
+  @Test
+  void onApplicationEvent_createsItemWhenNoUnreadDuplicate() {
+    Account admin = new Account();
+    admin.setId(1L);
+    when(accountRepository.findAllByRoles_Name(RoleName.ADMIN)).thenReturn(List.of(admin));
+    when(inboxService.hasUnreadInboxItem(updateAvailableEventType, "Update Available: v2.6.0"))
+        .thenReturn(false);
+    when(inboxService.createInboxItem(any(), any(), any(), any(), any()))
+        .thenReturn(new InboxItem());
+
+    listener.onApplicationEvent(
+        new UpdateAvailableEvent(this, "2.6.0", "https://example.com/releases/v2.6.0"));
+
+    verify(inboxService).createInboxItem(any(), any(), any(), any(), any());
+  }
+
+  @Test
+  void onApplicationEvent_supersedesOlderVersionUnreadItems() {
+    Account admin = new Account();
+    admin.setId(1L);
+    when(accountRepository.findAllByRoles_Name(RoleName.ADMIN)).thenReturn(List.of(admin));
+    // v2.6.0 is up; an older unread v2.5.2 item still lingers → must be marked read
+    when(inboxService.hasUnreadInboxItem(updateAvailableEventType, "Update Available: v2.6.0"))
+        .thenReturn(false);
+    when(inboxService.markUnreadInboxItemsAsRead(updateAvailableEventType)).thenReturn(1);
+    when(inboxService.createInboxItem(any(), any(), any(), any(), any()))
+        .thenReturn(new InboxItem());
+
+    listener.onApplicationEvent(
+        new UpdateAvailableEvent(this, "2.6.0", "https://example.com/releases/v2.6.0"));
+
+    verify(inboxService).markUnreadInboxItemsAsRead(updateAvailableEventType);
+  }
 }
