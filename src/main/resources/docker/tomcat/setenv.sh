@@ -9,7 +9,9 @@ LAN_IP=$(ipconfig getifaddr en0 2>/dev/null \
 
 if [[ -n "$LAN_IP" ]]; then
   export LAN_IP
-  export QR_BASE_URL="https://${LAN_IP}"
+  # The app deploys as atw-rpg.war, so Tomcat serves it under /atw-rpg — the
+  # QR base URL must include that context path or every generated QR 404s.
+  export QR_BASE_URL="https://${LAN_IP}/atw-rpg"
 
   CADDYFILE="$(dirname "$0")/../conf/Caddyfile"
   if [[ -f "$CADDYFILE" ]] && command -v caddy &>/dev/null; then
