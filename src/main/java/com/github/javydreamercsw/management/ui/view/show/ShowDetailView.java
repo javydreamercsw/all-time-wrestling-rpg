@@ -2340,7 +2340,7 @@ public class ShowDetailView extends Main
       content.add(narrateIntro);
       ListBox<String> narrateList = new ListBox<>();
       narrateList.setItems(toNarrate);
-      narrateList.setMaxHeight("150px");
+      narrateList.setMaxHeight("320px");
       // ListBox doesn't scroll by itself inside ConfirmDialog's fixed-height content area —
       // without overflow the tail items paint over whatever renders below (seen in sandbox).
       narrateList.getElement().getStyle().set("overflowY", "auto");
@@ -2353,7 +2353,7 @@ public class ShowDetailView extends Main
       content.add(warningIntro);
       ListBox<String> warningList = new ListBox<>();
       warningList.setItems(missingWinnerWarnings);
-      warningList.setMaxHeight("150px");
+      warningList.setMaxHeight("320px");
       warningList.getElement().getStyle().set("overflowY", "auto");
       content.add(warningList);
     }
