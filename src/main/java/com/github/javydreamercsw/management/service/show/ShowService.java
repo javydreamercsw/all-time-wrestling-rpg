@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
@@ -62,6 +63,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -533,6 +535,46 @@ public class ShowService {
     }
     return false;
   }
+
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  public AdjudicationPreFlight getAdjudicationPreFlight(@NonNull final Long showId) {
+    Show show =
+        showRepository
+            .findById(showId)
+            .orElseThrow(() -> new IllegalArgumentException("Show not found: " + showId));
+
+    List<String> missingWinnerWarnings = new ArrayList<>();
+    List<String> toNarrate = new ArrayList<>();
+    for (Segment segment : segmentRepository.findByShow(show)) {
+      if (segment.getAdjudicationStatus() != AdjudicationStatus.PENDING) {
+        continue;
+      }
+      if (!segment.isNarrationGenerated()) {
+        toNarrate.add(
+            "Segment %d: %s (AI narration will be generated)"
+                .formatted(segment.getSegmentOrder(), describeSegment(segment)));
+      }
+      boolean isPromo = WellKnownSegmentType.PROMO.matches(segment.getSegmentType());
+      if (!isPromo
+          && segment.getResult() == SegmentResult.WINNERS
+          && segment.getWinners().isEmpty()) {
+        missingWinnerWarnings.add(
+            "Segment %d: %s — no winner selected"
+                .formatted(segment.getSegmentOrder(), describeSegment(segment)));
+      }
+    }
+    return new AdjudicationPreFlight(missingWinnerWarnings, toNarrate);
+  }
+
+  private String describeSegment(@NonNull final Segment segment) {
+    String names =
+        segment.getWrestlers().stream().map(Wrestler::getName).collect(Collectors.joining(" vs "));
+    return names.isEmpty() ? "Unnamed segment" : names;
+  }
+
+  /** Pre-adjudication summary shown in the ShowDetailView confirm dialog. */
+  public record AdjudicationPreFlight(List<String> missingWinnerWarnings, List<String> toNarrate) {}
 
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")

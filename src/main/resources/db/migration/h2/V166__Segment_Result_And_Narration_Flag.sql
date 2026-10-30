@@ -13,9 +13,9 @@ UPDATE segment SET narration_generated = TRUE WHERE adjudication_status = 'ADJUD
 UPDATE segment
    SET result = 'DRAW'
  WHERE adjudication_status = 'ADJUDICATED'
-   AND segment_type_id <> (SELECT id FROM segment_type WHERE name = 'Promo')
+   AND segment_type_id <> (SELECT segment_type_id FROM segment_type WHERE name = 'Promo')
    AND NOT EXISTS (
        SELECT 1 FROM segment_participant p
-        WHERE p.segment_id = segment.id AND p.is_winner = TRUE);
+        WHERE p.segment_id = segment.segment_id AND p.is_winner = TRUE);
 
 ALTER TABLE league_roster ADD COLUMN IF NOT EXISTS no_contests INTEGER DEFAULT 0;

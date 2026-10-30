@@ -36,6 +36,7 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.export.ShowExportService;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
@@ -89,6 +90,7 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
@@ -104,6 +106,7 @@ import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.listbox.ListBox;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
@@ -699,7 +702,7 @@ public class ShowDetailView extends Main
     adjudicateButton = new Button("Adjudicate Fans", new Icon(VaadinIcon.GROUP));
     adjudicateButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     adjudicateButton.setId("adjudicate-show-btn");
-    adjudicateButton.addClickListener(e -> adjudicateShow(show));
+    adjudicateButton.addClickListener(e -> confirmThenAdjudicate(show));
 
     boolean hasPendingSegments =
         segmentRepository.findByShow(show).stream()
@@ -970,6 +973,23 @@ public class ShowDetailView extends Main
           .set("color", "var(--lumo-success-text-color)")
           .set("margin-top", "var(--lumo-space-xs)");
       card.add(winners);
+    } else if (segment.getResult() == SegmentResult.DRAW) {
+      Span draw = new Span("🤝 Draw");
+      draw.addClassNames(LumoUtility.FontWeight.SEMIBOLD);
+      draw.getStyle()
+          .set("display", "block")
+          .set("color", "var(--lumo-tertiary-text-color)")
+          .set("margin-top", "var(--lumo-space-xs)");
+      card.add(draw);
+    } else if (segment.getResult() == SegmentResult.NO_CONTEST) {
+      Span noContest = new Span("🚫 No Contest");
+      noContest.addClassNames(LumoUtility.FontWeight.SEMIBOLD);
+      noContest
+          .getStyle()
+          .set("display", "block")
+          .set("color", "var(--lumo-error-text-color)")
+          .set("margin-top", "var(--lumo-space-xs)");
+      card.add(noContest);
     }
 
     // League status
@@ -2257,6 +2277,66 @@ public class ShowDetailView extends Main
       notificationService.showError("Error saving segment: " + e.getMessage());
       return false;
     }
+  }
+
+  /**
+   * Pre-flight for adjudication: asks the service what would happen, shows one confirm dialog with
+   * the to-narrate list (info) and the missing-winner list (warning), and only then starts the
+   * async adjudication. A pre-flight failure never blocks — adjudication proceeds directly.
+   */
+  private void confirmThenAdjudicate(@NonNull final Show show) {
+    List<String> missingWinnerWarnings;
+    List<String> toNarrate;
+    try {
+      ShowService.AdjudicationPreFlight preFlight =
+          GeneralSecurityUtils.runAsAdminAsync(
+                  () -> showService.getAdjudicationPreFlight(show.getId()))
+              .join();
+      missingWinnerWarnings = preFlight.missingWinnerWarnings();
+      toNarrate = preFlight.toNarrate();
+    } catch (Exception e) {
+      log.warn("Adjudication pre-flight failed — adjudicating without the advisory", e);
+      adjudicateShow(show);
+      return;
+    }
+    if (missingWinnerWarnings.isEmpty() && toNarrate.isEmpty()) {
+      adjudicateShow(show);
+      return;
+    }
+    ConfirmDialog dialog = new ConfirmDialog();
+    dialog.setHeader("Adjudicate Show");
+    VerticalLayout content = new VerticalLayout();
+    content.setPadding(false);
+    if (!toNarrate.isEmpty()) {
+      Paragraph narrateIntro =
+          new Paragraph(
+              "AI narration will be generated for "
+                  + toNarrate.size()
+                  + " segment(s) before adjudication:");
+      narrateIntro.addClassNames(LumoUtility.TextColor.SECONDARY);
+      content.add(narrateIntro);
+      ListBox<String> narrateList = new ListBox<>();
+      narrateList.setItems(toNarrate);
+      narrateList.setMaxHeight("150px");
+      content.add(narrateList);
+    }
+    if (!missingWinnerWarnings.isEmpty()) {
+      Paragraph warningIntro =
+          new Paragraph("These segments have no winner selected — they will be recorded as draws:");
+      warningIntro.addClassNames(LumoUtility.TextColor.ERROR);
+      content.add(warningIntro);
+      ListBox<String> warningList = new ListBox<>();
+      warningList.setItems(missingWinnerWarnings);
+      warningList.setMaxHeight("150px");
+      content.add(warningList);
+    }
+    dialog.add(content);
+    dialog.setCancelable(true);
+    dialog.setCancelText("Go Back");
+    dialog.setConfirmText(missingWinnerWarnings.isEmpty() ? "Adjudicate" : "Adjudicate Anyway");
+    dialog.setConfirmButtonTheme(missingWinnerWarnings.isEmpty() ? "primary" : "primary error");
+    dialog.addConfirmListener(e -> adjudicateShow(show));
+    dialog.open();
   }
 
   private void adjudicateShow(@NonNull final Show show) {

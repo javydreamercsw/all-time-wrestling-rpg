@@ -40,7 +40,9 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
@@ -704,6 +706,46 @@ class ShowServiceTest {
   // ---------------------------------------------------------------------------
   // adjudicateShow() — core scenarios
   // ---------------------------------------------------------------------------
+
+  @Test
+  void preFlight_listsMissingWinnerSegmentsAndToNarrate() {
+    pendingSegment.addParticipant(wrestler1);
+    pendingSegment.addParticipant(wrestler2);
+    when(showRepository.findById(1L)).thenReturn(Optional.of(show));
+    // pendingSegment is a non-promo match with no winners → warning; also unnarrated → to-narrate.
+    when(segmentRepository.findByShow(show)).thenReturn(Arrays.asList(pendingSegment));
+
+    ShowService.AdjudicationPreFlight preFlight = showService.getAdjudicationPreFlight(1L);
+
+    Assertions.assertEquals(1, preFlight.missingWinnerWarnings().size());
+    Assertions.assertTrue(preFlight.missingWinnerWarnings().get(0).contains("Wrestler A"));
+    Assertions.assertEquals(1, preFlight.toNarrate().size());
+  }
+
+  @Test
+  void preFlight_bookedDrawIsNotAWarning() {
+    pendingSegment.declareResult(SegmentResult.DRAW);
+    when(showRepository.findById(1L)).thenReturn(Optional.of(show));
+    when(segmentRepository.findByShow(show)).thenReturn(Arrays.asList(pendingSegment));
+
+    ShowService.AdjudicationPreFlight preFlight = showService.getAdjudicationPreFlight(1L);
+
+    Assertions.assertEquals(0, preFlight.missingWinnerWarnings().size());
+  }
+
+  @Test
+  void preFlight_promoWithoutWinnersIsNotAWarning() {
+    SegmentType promoType = new SegmentType();
+    promoType.setName("Promo");
+    promoType.setCode(WellKnownSegmentType.PROMO.getCode());
+    pendingSegment.setSegmentType(promoType);
+    when(showRepository.findById(1L)).thenReturn(Optional.of(show));
+    when(segmentRepository.findByShow(show)).thenReturn(Arrays.asList(pendingSegment));
+
+    ShowService.AdjudicationPreFlight preFlight = showService.getAdjudicationPreFlight(1L);
+
+    Assertions.assertEquals(0, preFlight.missingWinnerWarnings().size());
+  }
 
   @Test
   void adjudicateShow_adjudicatesPendingSegmentsOnly() {
