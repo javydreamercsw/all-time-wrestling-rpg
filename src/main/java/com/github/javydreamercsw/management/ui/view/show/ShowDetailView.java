@@ -1198,12 +1198,22 @@ public class ShowDetailView extends Main
         .setSortable(false)
         .setFlexGrow(4);
 
-    // Winner column
-    grid.addColumn(
+    // Winner column — shows the declared outcome (draw / no contest) when booked
+    grid.addComponentColumn(
             segment -> {
+              Span cell = new Span();
               List<String> winnerNames =
                   segment.getWinners().stream().map(Wrestler::getName).toList();
-              return String.join(", ", winnerNames);
+              if (!winnerNames.isEmpty()) {
+                cell.setText(String.join(", ", winnerNames));
+              } else if (segment.getResult() == SegmentResult.DRAW) {
+                cell.setText("🤝 Draw");
+                cell.getStyle().set("color", "var(--lumo-tertiary-text-color)");
+              } else if (segment.getResult() == SegmentResult.NO_CONTEST) {
+                cell.setText("🚫 No Contest");
+                cell.getStyle().set("color", "var(--lumo-error-text-color)");
+              }
+              return (Component) cell;
             })
         .setHeader("Winner(s)")
         .setSortable(false)

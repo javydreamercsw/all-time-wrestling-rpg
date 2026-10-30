@@ -42,8 +42,10 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.export.ShowExportService;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -589,6 +591,86 @@ class ShowDetailViewTest extends AbstractViewTest {
     Assertions.assertThat(badge.getElement().getText()).contains("Crown Cup");
     Assertions.assertThat(badge.getElement().getText()).contains("🏆");
     Mockito.verify(tournamentMatchRepository, Mockito.atLeastOnce()).findBySegmentId(20L);
+  }
+
+  @Test
+  void segmentGrid_winnerColumn_showsDrawAndNoContestBadges() {
+    // 2.13.0: a segment booked as a draw or no contest must not render a blank
+    // Winner(s) cell — the booker sees the declared outcome right in the grid.
+    ShowType showType = new ShowType();
+    showType.setName("Test");
+    Show show = new Show();
+    show.setId(31L);
+    show.setName("Result Badge Show");
+    show.setType(showType);
+
+    SegmentType singlesType = new SegmentType();
+    singlesType.setName("Singles");
+    singlesType.setCode(WellKnownSegmentType.ONE_ON_ONE.getCode());
+
+    Segment draw = new Segment();
+    draw.setId(40L);
+    draw.setShow(show);
+    draw.setSegmentType(singlesType);
+    draw.setSegmentDate(Instant.parse("2026-09-03T00:00:00Z"));
+    draw.declareResult(SegmentResult.DRAW);
+
+    Segment noContest = new Segment();
+    noContest.setId(41L);
+    noContest.setShow(show);
+    noContest.setSegmentType(singlesType);
+    noContest.setSegmentDate(Instant.parse("2026-09-03T00:00:00Z"));
+    noContest.declareResult(SegmentResult.NO_CONTEST);
+
+    Mockito.when(showService.getShowById(any())).thenReturn(Optional.of(show));
+    Mockito.when(segmentRepository.findByShowOrderBySegmentOrderAsc(any(Show.class)))
+        .thenReturn(List.of(draw, noContest));
+    Mockito.when(segmentRepository.findByShow(any(Show.class)))
+        .thenReturn(List.of(draw, noContest));
+    Mockito.when(feudScriptService.findBeatForSegment(Mockito.any(Segment.class)))
+        .thenReturn(Optional.empty());
+    Mockito.when(tournamentMatchRepository.findBySegmentId(Mockito.anyLong()))
+        .thenReturn(Optional.empty());
+
+    ShowDetailView view = buildView(mock(SecurityUtils.class));
+    BeforeEvent event = Mockito.mock(BeforeEvent.class);
+    Mockito.when(event.getLocation()).thenReturn(new Location(""));
+    view.setParameter(event, 31L);
+
+    // Drive the winner column's renderer directly (component renderers run at
+    // row render): probe each column for the declared-outcome text.
+    Grid<Segment> grid = LocatorJ._get(view, Grid.class, spec -> spec.withId("segments-grid"));
+    ComponentRenderer<?, Segment> winnerRenderer = null;
+    for (var column : grid.getColumns()) {
+      if (column.getRenderer() instanceof ComponentRenderer<?, ?> cr) {
+        var probe = (ComponentRenderer<Component, Segment>) cr;
+        Component test = probe.createComponent(draw);
+        if (test != null && test.getElement().getText().contains("Draw")) {
+          winnerRenderer = (ComponentRenderer<?, Segment>) column.getRenderer();
+          break;
+        }
+      }
+    }
+    Assertions.assertThat(winnerRenderer).as("Winner(s) column").isNotNull();
+    Component drawCell = winnerRenderer.createComponent(draw);
+    Component noContestCell = winnerRenderer.createComponent(noContest);
+    Assertions.assertThat(drawCell.getElement().getText()).contains("🤝 Draw");
+    Assertions.assertThat(noContestCell.getElement().getText()).contains("🚫 No Contest");
+
+    // A segment with winners still shows the winner names, not the badges.
+    Segment withWinner = new Segment();
+    withWinner.setId(42L);
+    withWinner.setShow(show);
+    withWinner.setSegmentType(singlesType);
+    withWinner.setSegmentDate(Instant.parse("2026-09-03T00:00:00Z"));
+    Wrestler champ = new Wrestler();
+    champ.setId(7L);
+    champ.setName("Champ");
+    withWinner.addParticipant(champ);
+    withWinner.getParticipants().iterator().next().setIsWinner(true);
+    Component winnersCell = winnerRenderer.createComponent(withWinner);
+    Assertions.assertThat(winnersCell.getElement().getText()).contains("Champ");
+    Assertions.assertThat(winnersCell.getElement().getText()).doesNotContain("Draw");
   }
 
   @Test
