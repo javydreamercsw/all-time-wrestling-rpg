@@ -522,3 +522,8 @@ vaadin-grid::part(ple-show) {
     filter: brightness(1.2);
     text-decoration: underline;
 }
+/* Adjudication pre-flight dialog: the ListBox lists must stack and scroll, not
+   overlap inside the ConfirmDialog's fixed-height content flex area. */
+vaadin-confirm-dialog vaadin-list-box {
+    display: block;
+}

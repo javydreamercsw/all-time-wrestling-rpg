@@ -2327,8 +2327,9 @@ public class ShowDetailView extends Main
     }
     ConfirmDialog dialog = new ConfirmDialog();
     dialog.setHeader("Adjudicate Show");
-    VerticalLayout content = new VerticalLayout();
-    content.setPadding(false);
+    // Plain Div flow (not VerticalLayout): ConfirmDialog's content slot is a fixed-height
+    // flex area — a VerticalLayout child collapses and its items overlap each other.
+    Div content = new Div();
     if (!toNarrate.isEmpty()) {
       Paragraph narrateIntro =
           new Paragraph(
