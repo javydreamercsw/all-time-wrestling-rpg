@@ -105,6 +105,7 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.listbox.ListBox;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.data.provider.Query;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
@@ -414,6 +415,26 @@ class ShowDetailViewTest extends AbstractViewTest {
     collectComponentText(dialog, dialogText);
     assertThat(dialogText.toString()).contains("AI narration will be generated for 1 segment(s)");
     assertThat(dialogText.toString()).contains("no winner selected");
+    // The lists must scroll, not overlap: each ListBox clips its items with overflow-y auto
+    // (a bare maxHeight lets long lists paint over the content below — seen in the sandbox).
+    ListBox<String> narrateList = findListBox(dialog);
+    assertThat(narrateList).isNotNull();
+    assertThat(narrateList.getElement().getStyle().get("overflowY")).isEqualTo("auto");
+  }
+
+  private static ListBox<String> findListBox(Component root) {
+    if (root instanceof ListBox<?>) {
+      @SuppressWarnings("unchecked")
+      ListBox<String> box = (ListBox<String>) root;
+      return box;
+    }
+    for (Component child : root.getChildren().toList()) {
+      ListBox<String> found = findListBox(child);
+      if (found != null) {
+        return found;
+      }
+    }
+    return null;
   }
 
   private static void collectComponentText(Component component, StringBuilder sb) {
