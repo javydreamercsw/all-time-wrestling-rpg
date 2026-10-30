@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
@@ -649,6 +650,20 @@ public class ShowPlanningService {
 
     reconcileTeamsWithIds(cardSegments);
 
+    // Tournament matches must resolve — a booked draw/no-contest would stall the bracket
+    // forever (owner decision). Force WINNERS on tournament-source rows.
+    for (ProposedSegment ps : proposedSegments) {
+      if (ProposedSegment.SOURCE_TOURNAMENT.equals(ps.getSource())
+          && ps.getResult() != null
+          && ps.getResult() != SegmentResult.WINNERS) {
+        log.info(
+            "Tournament segment proposed with result {} — forcing WINNERS so the bracket"
+                + " resolves",
+            ps.getResult());
+        ps.setResult(SegmentResult.WINNERS);
+      }
+    }
+
     CardValidationResult validation =
         validateCard(cardSegments, rivalryService.getActiveRivalries());
     if (!validation.isValid()) {
@@ -814,14 +829,31 @@ public class ShowPlanningService {
         }
       }
 
-      // Set winners — prefer ID-based lookup, fall back to name
-      List<Wrestler> actualWinners = new ArrayList<>();
-      if (proposedSegment.getWinners() != null && !proposedSegment.getWinners().isEmpty()) {
-        for (String winnerName : proposedSegment.getWinners()) {
-          wrestlerRepository.findByName(winnerName).ifPresent(actualWinners::add);
-        }
+      // Declared result first: DRAW/NO_CONTEST clear any winner flags — a booked
+      // draw/no-contest must not carry winners, and the declared result is what the
+      // missing-winner warning keys off.
+      segment.declareResult(
+          proposedSegment.getResult() != null
+              ? proposedSegment.getResult()
+              : SegmentResult.WINNERS);
+      if (segment.getResult() != SegmentResult.WINNERS
+          && proposedSegment.getWinners() != null
+          && !proposedSegment.getWinners().isEmpty()) {
+        log.info(
+            "AI proposed result {} with winners {} for segment — clearing winners",
+            segment.getResult(),
+            proposedSegment.getWinners());
       }
-      segment.setWinners(actualWinners);
+      if (segment.getResult() == SegmentResult.WINNERS) {
+        // Set winners — prefer ID-based lookup, fall back to name
+        List<Wrestler> actualWinners = new ArrayList<>();
+        if (proposedSegment.getWinners() != null && !proposedSegment.getWinners().isEmpty()) {
+          for (String winnerName : proposedSegment.getWinners()) {
+            wrestlerRepository.findByName(winnerName).ifPresent(actualWinners::add);
+          }
+        }
+        segment.setWinners(actualWinners);
+      }
 
       if (proposedSegment.getRules() != null && !proposedSegment.getRules().isEmpty()) {
         List<SegmentRule> newSegmentRules =
