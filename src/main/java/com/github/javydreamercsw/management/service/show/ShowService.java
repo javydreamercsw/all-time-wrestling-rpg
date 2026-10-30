@@ -105,6 +105,7 @@ public class ShowService {
   private final ShowQualityService showQualityService;
   private final TournamentService tournamentService;
   private final SegmentNarrationGenerationService segmentNarrationGenerationService;
+  @jakarta.persistence.PersistenceContext private jakarta.persistence.EntityManager entityManager;
 
   ShowService(
       final CampaignRepository campaignRepository,
@@ -609,6 +610,15 @@ public class ShowService {
                 + " description: {}",
             pending.getId(),
             e.getMessage());
+      }
+      // The generation committed in its own transaction (REQUIRES_NEW); this outer
+      // persistence context still holds the pre-generation copy (and findById would
+      // return that same instance from the first-level cache). Refresh the managed
+      // instance from the database so the adjudication loop below persists the fresh
+      // narration, not the stale one. (Null entityManager = mocked unit test; the
+      // mocks already return what a refresh would.)
+      if (entityManager != null) {
+        entityManager.refresh(pending);
       }
     }
 
