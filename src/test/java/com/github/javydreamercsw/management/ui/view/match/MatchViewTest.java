@@ -479,6 +479,7 @@ class MatchViewTest extends AbstractViewTest {
 
     when(segmentService.findByIdWithDetails(1L)).thenReturn(Optional.of(segment));
     when(npcService.findAllByType("Referee")).thenReturn(List.of(referee));
+    when(npcService.pickUnusedReferee(any(), any())).thenReturn(referee);
     when(npcService.getAwareness(referee)).thenReturn(75);
     when(segmentService.updateSegment(any())).thenAnswer(inv -> inv.getArgument(0));
     when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.empty());
@@ -560,6 +561,9 @@ class MatchViewTest extends AbstractViewTest {
     when(segmentService.findByIdWithDetails(5L)).thenReturn(Optional.of(segment));
     when(npcService.findAllByType("Referee")).thenReturn(List.of(bookedRef, freeRef));
     when(segmentService.getSegmentsByShow(show)).thenReturn(List.of(sibling, segment));
+    // The avoid-double-booking selection logic lives in NpcService (covered there);
+    // here the view just delegates with the sibling referees it collected.
+    when(npcService.pickUnusedReferee(any(), any())).thenReturn(freeRef);
     when(npcService.getAwareness(freeRef)).thenReturn(60);
     when(segmentService.updateSegment(any())).thenAnswer(inv -> inv.getArgument(0));
     when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.empty());
@@ -594,6 +598,8 @@ class MatchViewTest extends AbstractViewTest {
     when(segmentService.findByIdWithDetails(6L)).thenReturn(Optional.of(segment));
     when(npcService.findAllByType("Referee")).thenReturn(List.of(onlyRef));
     when(segmentService.getSegmentsByShow(show)).thenReturn(List.of(sibling, segment));
+    // Full-pool fallback happens inside NpcService.pickUnusedReferee (covered there).
+    when(npcService.pickUnusedReferee(any(), any())).thenReturn(onlyRef);
     when(npcService.getAwareness(onlyRef)).thenReturn(60);
     when(segmentService.updateSegment(any())).thenAnswer(inv -> inv.getArgument(0));
     when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.empty());
@@ -637,6 +643,7 @@ class MatchViewTest extends AbstractViewTest {
 
       when(segmentService.findByIdWithDetails(4L)).thenReturn(Optional.of(segment));
       when(npcService.findAllByType("Referee")).thenReturn(List.of(referee));
+      when(npcService.pickUnusedReferee(any(), any())).thenReturn(referee);
       when(npcService.getAwareness(referee)).thenReturn(80);
       // Mock updateSegment to return the same segment (simulates a successful save)
       when(segmentService.updateSegment(any())).thenAnswer(inv -> inv.getArgument(0));

@@ -2078,7 +2078,13 @@ public class ShowDetailView extends Main
                                 seg.syncSegmentRules(new ArrayList<>(saveData.rules()));
                                 seg.setAdjudicationStatus(AdjudicationStatus.PENDING);
                                 seg.setSegmentType(saveData.segmentType());
-                                if (saveData.winners() != null) {
+                                // Declared result first: DRAW/NO_CONTEST clear any winner flags.
+                                seg.declareResult(
+                                    saveData.result() != null
+                                        ? saveData.result()
+                                        : SegmentResult.WINNERS);
+                                if (saveData.winners() != null
+                                    && seg.getResult() == SegmentResult.WINNERS) {
                                   seg.setWinners(new ArrayList<>(saveData.winners()));
                                 }
                                 // Async DB write

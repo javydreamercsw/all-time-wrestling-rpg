@@ -40,6 +40,7 @@ import com.github.javydreamercsw.management.domain.league.MatchFulfillmentReposi
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
@@ -163,6 +164,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private TextArea narrationArea;
   private TextArea feedbackArea;
   private MultiSelectComboBox<Wrestler> winnersComboBox;
+  private RadioButtonGroup<SegmentResult> resultRadio;
   private Map<Long, IntegerField> momentumFields = new HashMap<>();
   private Map<Long, IntegerField> staminaFields = new HashMap<>();
   private Map<Long, IntegerField> healthFields = new HashMap<>();
@@ -855,13 +857,40 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
             winners != null ? winners.stream().filter(Objects::nonNull).toList() : List.of()));
     winnersComboBox.setId("winners-combobox");
 
+    // Declared result: DRAW / NO_CONTEST disable the winners combo (owner decision —
+    // a booked draw/no-contest is authoritative and carries no winner).
+    resultRadio = new RadioButtonGroup<>("Outcome");
+    resultRadio.setItems(SegmentResult.values());
+    resultRadio.setItemLabelGenerator(
+        r ->
+            switch (r) {
+              case WINNERS -> "Winners";
+              case DRAW -> "Draw";
+              case NO_CONTEST -> "No Contest";
+            });
+    resultRadio.setValue(segment.getResult() != null ? segment.getResult() : SegmentResult.WINNERS);
+    resultRadio.setId("match-result-radio");
+    resultRadio.addValueChangeListener(
+        e -> {
+          boolean hasWinners = e.getValue() == SegmentResult.WINNERS;
+          winnersComboBox.setEnabled(hasWinners);
+          if (!hasWinners) {
+            winnersComboBox.clear();
+          }
+        });
+    if (segment.getResult() != null && segment.getResult() != SegmentResult.WINNERS) {
+      // Booked draw/no-contest: outcome is fixed, result entry is disabled.
+      resultRadio.setEnabled(false);
+      winnersComboBox.setEnabled(false);
+    }
+
     String saveButtonText = isBookerOrAdmin ? "Adjudicate Match" : "Submit Result";
     Button saveWinnersButton = new Button(saveButtonText, event -> saveWinners());
     saveWinnersButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SUCCESS);
     saveWinnersButton.setWidthFull();
     saveWinnersButton.setId("save-winners-button");
 
-    winnersCard.add(winnersComboBox);
+    winnersCard.add(resultRadio, winnersComboBox);
 
     boolean hasPlayerWrestler =
         wrestlers.stream().filter(Objects::nonNull).anyMatch(w -> w.getAccount() != null);
@@ -1437,6 +1466,9 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                       () -> {
                         narrationArea.setValue(generated);
                         segment.setNarration(generated);
+                        // The flag marks narration as final so the adjudication flow
+                        // never regenerates over it.
+                        segment.setNarrationGenerated(true);
                         // Persist the feedback that drove this generation (ATW-mkvj) so it
                         // survives regeneration and shows in segment notes.
                         segment.setNotes(feedback);
@@ -1500,7 +1532,12 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         "Adjudicating match {}: winners={}",
         segment.getId(),
         winners.stream().map(Wrestler::getName).toList());
-    segment.setWinners(winners);
+    // Declared result first: DRAW/NO_CONTEST clear any winner flags.
+    segment.declareResult(
+        resultRadio.getValue() != null ? resultRadio.getValue() : SegmentResult.WINNERS);
+    if (segment.getResult() == SegmentResult.WINNERS) {
+      segment.setWinners(winners);
+    }
     segment.setNotes(feedbackArea.getValue());
 
     // Persist final momentum values entered by the player/booker

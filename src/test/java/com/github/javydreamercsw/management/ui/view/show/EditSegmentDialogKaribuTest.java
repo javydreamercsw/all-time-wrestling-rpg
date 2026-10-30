@@ -310,7 +310,18 @@ class EditSegmentDialogKaribuTest extends AbstractViewTest {
       Map<Integer, List<Wrestler>> teams, String typeName, boolean intergenderAllowed) {
     EditSegmentDialog.SegmentDialogData initial =
         new EditSegmentDialog.SegmentDialogData(
-            typeName, teams, new ArrayList<>(), Set.of(), null, "", "", "", false, false, Set.of());
+            typeName,
+            teams,
+            new ArrayList<>(),
+            Set.of(),
+            null,
+            "",
+            "",
+            "",
+            false,
+            false,
+            Set.of(),
+            com.github.javydreamercsw.management.domain.show.segment.SegmentResult.WINNERS);
 
     EditSegmentDialog dialog =
         new EditSegmentDialog(
