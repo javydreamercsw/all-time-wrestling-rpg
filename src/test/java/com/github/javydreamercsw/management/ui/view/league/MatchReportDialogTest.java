@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
@@ -139,8 +140,7 @@ class MatchReportDialogTest {
   void winnersResultDialogKeepsWinnerSelector() {
     MatchFulfillment fulfillment = fulfillmentWithResult(SegmentResult.WINNERS);
     Segment segment = fulfillment.getSegment();
-    com.github.javydreamercsw.management.domain.wrestler.Wrestler w =
-        new com.github.javydreamercsw.management.domain.wrestler.Wrestler();
+    Wrestler w = new Wrestler();
     w.setName("Alice");
     segment.addParticipant(w);
     when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.empty());

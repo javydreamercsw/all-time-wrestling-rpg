@@ -30,6 +30,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.ai.AIServiceException;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.management.domain.npc.Npc;
@@ -50,6 +51,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -150,8 +152,7 @@ class SegmentNarrationGenerationServiceTest {
 
     service.generateForSegment(10L);
 
-    var captor =
-        org.mockito.ArgumentCaptor.forClass(SegmentNarrationService.SegmentNarrationContext.class);
+    var captor = ArgumentCaptor.forClass(SegmentNarrationService.SegmentNarrationContext.class);
     verify(narrationService).narrateSegment(captor.capture());
     assertTrue(captor.getValue().getDeterminedOutcome().toLowerCase().contains("draw"));
   }
@@ -201,13 +202,9 @@ class SegmentNarrationGenerationServiceTest {
   void providerFailurePropagatesToShowService() {
     when(narrationService.narrateSegment(
             any(SegmentNarrationService.SegmentNarrationContext.class)))
-        .thenThrow(
-            new com.github.javydreamercsw.base.ai.AIServiceException(
-                500, "Error", "Claude", "boom", null));
+        .thenThrow(new AIServiceException(500, "Error", "Claude", "boom", null));
 
-    assertThrows(
-        com.github.javydreamercsw.base.ai.AIServiceException.class,
-        () -> service.generateForSegment(10L));
+    assertThrows(AIServiceException.class, () -> service.generateForSegment(10L));
     // Flag never set — ShowService's catch decides what happens next.
     assertFalse(segment.isNarrationGenerated());
   }

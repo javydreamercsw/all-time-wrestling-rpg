@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.show;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -29,6 +30,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
+import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
@@ -75,7 +77,7 @@ class ShowAdjudicationNarrationIT extends ManagementIntegrationTest {
     wrestlerA = seedWrestler("Narration IT A");
     wrestlerB = seedWrestler("Narration IT B");
 
-    com.github.javydreamercsw.management.domain.show.type.ShowType weeklyType =
+    ShowType weeklyType =
         showTypeRepository.findAll().stream()
             .filter(t -> t.getCategory() == ShowCategory.WEEKLY)
             .findFirst()
@@ -101,7 +103,7 @@ class ShowAdjudicationNarrationIT extends ManagementIntegrationTest {
     w.setName(name + " " + System.nanoTime());
     w.setActive(true);
     w.setIsPlayer(false);
-    w.setGender(com.github.javydreamercsw.base.domain.wrestler.Gender.MALE);
+    w.setGender(Gender.MALE);
     w = wrestlerRepository.saveAndFlush(w);
     return w;
   }

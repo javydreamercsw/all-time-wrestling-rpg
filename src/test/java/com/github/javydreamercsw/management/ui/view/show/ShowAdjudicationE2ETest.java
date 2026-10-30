@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.AbstractE2ETest;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
@@ -38,6 +39,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.List;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
@@ -123,7 +125,7 @@ class ShowAdjudicationE2ETest extends AbstractE2ETest {
     w.setName(name + " " + System.nanoTime());
     w.setActive(true);
     w.setIsPlayer(false);
-    w.setGender(com.github.javydreamercsw.base.domain.wrestler.Gender.MALE);
+    w.setGender(Gender.MALE);
     return wrestlerRepository.saveAndFlush(w);
   }
 
@@ -158,8 +160,8 @@ class ShowAdjudicationE2ETest extends AbstractE2ETest {
 
     // Wait for adjudication to complete: segments become ADJUDICATED and the button
     // disables (no pending segments left).
-    org.awaitility.Awaitility.await()
-        .atMost(java.time.Duration.ofSeconds(90))
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(90))
         .untilAsserted(
             () -> {
               List<Segment> segments = segmentRepository.findByShow(testShow);
@@ -189,7 +191,7 @@ class ShowAdjudicationE2ETest extends AbstractE2ETest {
     WebDriverWait refreshWait = new WebDriverWait(driver, Duration.ofSeconds(30));
     refreshWait.until(ExpectedConditions.presenceOfElementLocated(By.id("segments-grid-wrapper")));
     // Grid cells live inside vaadin-grid's shadow DOM; getPageSource() includes it.
-    org.awaitility.Awaitility.await()
+    Awaitility.await()
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () -> {

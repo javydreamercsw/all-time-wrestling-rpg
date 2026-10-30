@@ -27,6 +27,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -321,7 +322,7 @@ class EditSegmentDialogKaribuTest extends AbstractViewTest {
             false,
             false,
             Set.of(),
-            com.github.javydreamercsw.management.domain.show.segment.SegmentResult.WINNERS,
+            SegmentResult.WINNERS,
             false);
 
     EditSegmentDialog dialog =

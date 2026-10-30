@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.show;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -28,6 +29,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
+import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
@@ -40,6 +42,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -77,7 +80,7 @@ class ShowAdjudicationNarrationFailureIT extends ManagementIntegrationTest {
     wrestlerA = seedWrestler("Narration Failure IT A");
     wrestlerB = seedWrestler("Narration Failure IT B");
 
-    com.github.javydreamercsw.management.domain.show.type.ShowType weeklyType =
+    ShowType weeklyType =
         showTypeRepository.findAll().stream()
             .filter(t -> t.getCategory() == ShowCategory.WEEKLY)
             .findFirst()
@@ -98,8 +101,8 @@ class ShowAdjudicationNarrationFailureIT extends ManagementIntegrationTest {
         segmentTypeRepository.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()).orElseThrow();
 
     // The mocked factory provides no provider — getBestAvailableService() returns null.
-    org.mockito.Mockito.when(narrationServiceFactory.getBestAvailableService()).thenReturn(null);
-    org.mockito.Mockito.when(narrationServiceFactory.summarizeNarration(org.mockito.Mockito.any()))
+    Mockito.when(narrationServiceFactory.getBestAvailableService()).thenReturn(null);
+    Mockito.when(narrationServiceFactory.summarizeNarration(Mockito.any()))
         .thenThrow(new IllegalStateException("No provider"));
   }
 
@@ -108,7 +111,7 @@ class ShowAdjudicationNarrationFailureIT extends ManagementIntegrationTest {
     w.setName(name + " " + System.nanoTime());
     w.setActive(true);
     w.setIsPlayer(false);
-    w.setGender(com.github.javydreamercsw.base.domain.wrestler.Gender.MALE);
+    w.setGender(Gender.MALE);
     return wrestlerRepository.saveAndFlush(w);
   }
 

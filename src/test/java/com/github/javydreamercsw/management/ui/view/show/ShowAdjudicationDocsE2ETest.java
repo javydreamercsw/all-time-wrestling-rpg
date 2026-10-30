@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view.show;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
@@ -103,7 +104,7 @@ class ShowAdjudicationDocsE2ETest extends AbstractDocsE2ETest {
     w.setName(name + " " + System.nanoTime());
     w.setActive(true);
     w.setIsPlayer(false);
-    w.setGender(com.github.javydreamercsw.base.domain.wrestler.Gender.MALE);
+    w.setGender(Gender.MALE);
     return wrestlerRepository.saveAndFlush(w);
   }
 

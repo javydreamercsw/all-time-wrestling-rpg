@@ -466,7 +466,7 @@ class EditSegmentDialogTest {
 
     // Seed a winner, then declare a draw — the combo must clear and disable.
     Wrestler wrestler1 = wrestlerService.findAllFiltered(null, null, 1L).get(0);
-    dialog.getWinnersCombo().setValue(java.util.Set.of(wrestler1));
+    dialog.getWinnersCombo().setValue(Set.of(wrestler1));
     dialog.getResultRadio().setValue(SegmentResult.DRAW);
     assertFalse(dialog.getWinnersCombo().isEnabled());
 
