@@ -46,6 +46,7 @@ import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.rivalry.RivalryService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -134,6 +135,60 @@ class SegmentNarrationGenerationServiceTest {
     assertTrue(segment.isNarrationGenerated());
     assertEquals("Alice defeats Bob.", segment.getSummary());
     verify(segmentRepository).save(segment);
+  }
+
+  @Test
+  void showCommentaryTeamTakesPrecedenceOverPool() {
+    // Owner follow-up (2.13.0 review): when the show has an assigned commentary team
+    // (from its template), the narration context uses that team — not the global pool.
+    com.github.javydreamercsw.management.domain.commentator.CommentaryTeam team =
+        new com.github.javydreamercsw.management.domain.commentator.CommentaryTeam();
+    team.setName("Raw announce");
+    com.github.javydreamercsw.management.domain.commentator.Commentator lead =
+        new com.github.javydreamercsw.management.domain.commentator.Commentator();
+    Npc leadNpc = new Npc();
+    leadNpc.setName("Michael Cole");
+    lead.setNpc(leadNpc);
+    lead.setStyle("Play-by-play");
+    team.setCommentators(new ArrayList<>(List.of(lead)));
+    show.setCommentaryTeam(team);
+    segment.setShow(show);
+
+    Npc poolCommentator = new Npc();
+    poolCommentator.setName("Some Pool Voice");
+    when(npcService.findAllByTypeUnfiltered("Commentator"))
+        .thenReturn(new ArrayList<>(List.of(poolCommentator)));
+
+    service.generateForSegment(10L);
+
+    var captor = ArgumentCaptor.forClass(SegmentNarrationService.SegmentNarrationContext.class);
+    verify(narrationService).narrateSegment(captor.capture());
+    List<String> names =
+        captor.getValue().getNpcs().stream()
+            .map(SegmentNarrationService.NPCContext::getName)
+            .toList();
+    assertTrue(names.contains("Michael Cole"), "assigned team commentator must be used");
+    assertFalse(names.contains("Some Pool Voice"), "pool must not be used when a team is set");
+  }
+
+  @Test
+  void noCommentaryTeamFallsBackToPool() {
+    // Owner follow-up (2.13.0 review): shows without an assigned team keep the
+    // NarrationDialog default behavior — the full Commentator pool as context.
+    Npc poolCommentator = new Npc();
+    poolCommentator.setName("Some Pool Voice");
+    when(npcService.findAllByTypeUnfiltered(anyString()))
+        .thenReturn(new ArrayList<>(List.of(poolCommentator)));
+
+    service.generateForSegment(10L);
+
+    var captor = ArgumentCaptor.forClass(SegmentNarrationService.SegmentNarrationContext.class);
+    verify(narrationService).narrateSegment(captor.capture());
+    List<String> names =
+        captor.getValue().getNpcs().stream()
+            .map(SegmentNarrationService.NPCContext::getName)
+            .toList();
+    assertTrue(names.contains("Some Pool Voice"), "pool used when show has no team");
   }
 
   @Test

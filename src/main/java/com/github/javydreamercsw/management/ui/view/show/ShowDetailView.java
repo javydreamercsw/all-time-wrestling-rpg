@@ -2020,8 +2020,12 @@ public class ShowDetailView extends Main
                       Segment seg = (Segment) result[0];
                       EditSegmentDialog.PreloadedData preloaded =
                           (EditSegmentDialog.PreloadedData) result[1];
+                      // Tournament-bound segments stay resolvable: non-admin bookers can't
+                      // book a draw/no-contest on them from the edit dialog. Admins may
+                      // always edit (owner decision).
                       boolean tournamentBound =
-                          tournamentMatchRepository.findBySegmentId(seg.getId()).isPresent();
+                          tournamentMatchRepository.findBySegmentId(seg.getId()).isPresent()
+                              && !securityUtils.isAdmin();
                       EditSegmentDialog.SegmentDialogData initial =
                           EditSegmentDialog.SegmentDialogData.from(seg, tournamentBound);
 

@@ -21,6 +21,8 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationService.NPCContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
+import com.github.javydreamercsw.management.domain.commentator.Commentator;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
@@ -35,7 +37,7 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsServic
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -236,27 +238,45 @@ public class SegmentNarrationGenerationService {
   }
 
   /**
-   * The announce team as context-only NPCs: one ring announcer from the Announcer pool and the full
-   * Commentator pool, mirroring NarrationDialog's defaults.
+   * The announce team as context-only NPCs: one ring announcer from the Announcer pool and the
+   * show's commentary team (from its template) when one is assigned — falling back to the full
+   * Commentator pool when the show has none, mirroring NarrationDialog's defaults.
    */
   private List<NPCContext> buildAnnounceTeam(@NonNull final Segment segment) {
     List<NPCContext> npcs = new ArrayList<>();
-    Random random = new Random();
     List<Npc> announcers = npcService.findAllByTypeUnfiltered("Announcer");
     if (!announcers.isEmpty()) {
-      Npc announcer = announcers.get(random.nextInt(announcers.size()));
+      Npc announcer = announcers.get(ThreadLocalRandom.current().nextInt(announcers.size()));
       NPCContext npc = new NPCContext();
       npc.setName(announcer.getName());
       npc.setRole("Ring Announcer");
       npc.setDescription("Wrestling ring announcer");
       npcs.add(npc);
     }
-    for (Npc commentator : npcService.findAllByTypeUnfiltered("Commentator")) {
-      NPCContext npc = new NPCContext();
-      npc.setName(commentator.getName());
-      npc.setRole("Commentator");
-      npc.setDescription("Wrestling commentator");
-      npcs.add(npc);
+    CommentaryTeam team = segment.getShow() != null ? segment.getShow().getCommentaryTeam() : null;
+    if (team != null && team.getCommentators() != null && !team.getCommentators().isEmpty()) {
+      // The show's assigned announce team speaks this card.
+      for (Commentator commentator : team.getCommentators()) {
+        if (commentator.getNpc() == null) {
+          continue;
+        }
+        NPCContext npc = new NPCContext();
+        npc.setName(commentator.getNpc().getName());
+        npc.setRole("Commentator");
+        npc.setDescription(
+            commentator.getStyle() != null
+                ? commentator.getStyle() + " commentator"
+                : "Wrestling commentator");
+        npcs.add(npc);
+      }
+    } else {
+      for (Npc commentator : npcService.findAllByTypeUnfiltered("Commentator")) {
+        NPCContext npc = new NPCContext();
+        npc.setName(commentator.getName());
+        npc.setRole("Commentator");
+        npc.setDescription("Wrestling commentator");
+        npcs.add(npc);
+      }
     }
     return npcs;
   }
