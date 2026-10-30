@@ -460,6 +460,8 @@ public class EditSegmentDialog extends Dialog {
           }
         });
     if (initial.tournamentBound()) {
+      // Tournament-bound segments stay resolvable: the caller disables the selector for
+      // non-admin bookers (admins may always edit — owner decision).
       resultRadio.setEnabled(false);
       resultRadio.setValue(SegmentResult.WINNERS);
     }

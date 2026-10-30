@@ -33,6 +33,8 @@ import static org.mockito.Mockito.when;
 import com.github.javydreamercsw.base.ai.AIServiceException;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
+import com.github.javydreamercsw.management.domain.commentator.Commentator;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
@@ -141,11 +143,9 @@ class SegmentNarrationGenerationServiceTest {
   void showCommentaryTeamTakesPrecedenceOverPool() {
     // Owner follow-up (2.13.0 review): when the show has an assigned commentary team
     // (from its template), the narration context uses that team — not the global pool.
-    com.github.javydreamercsw.management.domain.commentator.CommentaryTeam team =
-        new com.github.javydreamercsw.management.domain.commentator.CommentaryTeam();
+    CommentaryTeam team = new CommentaryTeam();
     team.setName("Raw announce");
-    com.github.javydreamercsw.management.domain.commentator.Commentator lead =
-        new com.github.javydreamercsw.management.domain.commentator.Commentator();
+    Commentator lead = new Commentator();
     Npc leadNpc = new Npc();
     leadNpc.setName("Michael Cole");
     lead.setNpc(leadNpc);
