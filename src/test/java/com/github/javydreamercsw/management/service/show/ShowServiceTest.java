@@ -34,6 +34,7 @@ import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
+import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -787,6 +788,45 @@ class ShowServiceTest {
     verify(segmentNarrationGenerationService, never()).generateForSegment(11L);
     // Narration runs before adjudication: the adjudication loop still processed the segment.
     verify(segmentAdjudicationService, times(1)).adjudicateMatch(pendingSegment);
+  }
+
+  @Test
+  void adjudicateShow_appliesGeneratedNarrationToManagedSegment() {
+    // 2.13.0 review fix: the generation commits in a REQUIRES_NEW transaction the outer
+    // (MySQL REPEATABLE READ) snapshot cannot see — the returned state must be applied
+    // to the managed entity or the adjudication loop persists the stale copy.
+    when(showRepository.findById(1L)).thenReturn(Optional.of(show));
+    when(segmentRepository.findByShow(show)).thenReturn(Arrays.asList(pendingSegment));
+    when(wrestlerRepository.findAll()).thenReturn(Collections.emptyList());
+    when(segmentNarrationGenerationService.generateForSegment(10L))
+        .thenReturn(
+            new SegmentNarrationGenerationService.GeneratedNarration(
+                "Fresh AI narration", "Fresh summary", null, 0));
+
+    showService.adjudicateShow(1L);
+
+    Assertions.assertEquals("Fresh AI narration", pendingSegment.getNarration());
+    Assertions.assertEquals("Fresh summary", pendingSegment.getSummary());
+    Assertions.assertEquals(AdjudicationStatus.ADJUDICATED, pendingSegment.getAdjudicationStatus());
+  }
+
+  @Test
+  void adjudicateShow_appliesGeneratedRefereeToManagedSegment() {
+    Npc referee = new Npc();
+    referee.setId(77L);
+    referee.setName("Earl Hebner");
+    when(showRepository.findById(1L)).thenReturn(Optional.of(show));
+    when(segmentRepository.findByShow(show)).thenReturn(Arrays.asList(pendingSegment));
+    when(wrestlerRepository.findAll()).thenReturn(Collections.emptyList());
+    when(segmentNarrationGenerationService.generateForSegment(10L))
+        .thenReturn(
+            new SegmentNarrationGenerationService.GeneratedNarration(
+                "Fresh AI narration", null, referee, 3));
+
+    showService.adjudicateShow(1L);
+
+    Assertions.assertSame(referee, pendingSegment.getReferee());
+    Assertions.assertEquals(3, pendingSegment.getRefereeAwarenessLevel());
   }
 
   @Test

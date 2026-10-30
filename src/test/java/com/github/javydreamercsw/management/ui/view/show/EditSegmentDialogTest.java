@@ -500,4 +500,65 @@ class EditSegmentDialogTest {
     dialog.getResultRadio().setValue(SegmentResult.WINNERS);
     assertTrue(dialog.getWinnersCombo().isEnabled());
   }
+
+  @Test
+  void tournamentBoundSegment_locksResultAtWinners() {
+    // Review fix: a tournament-bound segment edited directly in the booking dialog must not
+    // be bookable as a draw/no-contest — the bracket could never resolve. The AI path is
+    // already guarded in ShowPlanningService.approveSegments; this closes the direct-edit gap.
+    segment.setSource(ProposedSegment.SOURCE_TOURNAMENT);
+
+    EditSegmentDialog dialog =
+        new EditSegmentDialog(
+            segment,
+            wrestlerService,
+            titleService,
+            segmentTypeService,
+            segmentRuleService,
+            npcService,
+            expansionService,
+            null,
+            1L,
+            onSave);
+    dialog.open();
+    dialog.getSegmentTypeCombo().setValue(matchType);
+
+    assertFalse(
+        dialog.getResultRadio().isEnabled(),
+        "tournament-bound segment must lock the outcome selector at Winners");
+    assertEquals(
+        SegmentResult.WINNERS,
+        dialog.getResultRadio().getValue(),
+        "tournament-bound segment must load with Winners selected");
+    assertTrue(
+        dialog.getWinnersCombo().isEnabled(),
+        "winners combo stays enabled for tournament segments");
+
+    // Save still works and declares WINNERS.
+    dialog.save();
+    assertEquals(SegmentResult.WINNERS, segment.getResult());
+    verify(onSave).run();
+  }
+
+  @Test
+  void nonTournamentSegment_keepsResultRadioEnabled() {
+    EditSegmentDialog dialog =
+        new EditSegmentDialog(
+            segment,
+            wrestlerService,
+            titleService,
+            segmentTypeService,
+            segmentRuleService,
+            npcService,
+            expansionService,
+            null,
+            1L,
+            onSave);
+    dialog.open();
+    dialog.getSegmentTypeCombo().setValue(matchType);
+
+    assertTrue(
+        dialog.getResultRadio().isEnabled(),
+        "non-tournament segments keep the outcome selector enabled");
+  }
 }

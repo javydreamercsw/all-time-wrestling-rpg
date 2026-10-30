@@ -65,28 +65,38 @@ public class SegmentNarrationGenerationService {
   private final UniverseContextService universeContextService;
   private final SegmentNarrationServiceFactory narrationServiceFactory;
 
+  /** What the generation pass produced; null fields mean "not generated" (nothing changed). */
+  public record GeneratedNarration(
+      String narration, String summary, Npc referee, int refereeAwareness) {}
+
   /**
-   * Generates narration for the segment (if a provider is available), sets {@code
-   * narrationGenerated}, and fills a blank summary from the fresh narration.
+   * Generates narration for the segment (if a provider is available), persists it with {@code
+   * narrationGenerated} set, fills a blank summary from the fresh narration, and returns what was
+   * produced so the caller can apply the same values to its own (possibly stale) entity instance.
+   *
+   * <p>Returning the generated state (instead of making the caller re-read the segment) matters on
+   * MySQL: the caller's transaction pinned a REPEATABLE READ snapshot before this REQUIRES_NEW
+   * commit, so a re-read there would still see the pre-generation row.
    *
    * <p>Failure posture: throws on AI failure so the caller (ShowService) can warn-and-continue per
-   * segment; returns quietly when no provider is available at all, leaving the segment untouched.
+   * segment; returns {@code null} when nothing was generated (segment missing/already flagged or no
+   * provider available), leaving the segment untouched.
    */
   @Transactional(propagation = Propagation.REQUIRES_NEW)
-  public void generateForSegment(@NonNull final Long segmentId) {
+  public GeneratedNarration generateForSegment(@NonNull final Long segmentId) {
     Segment segment = segmentRepository.findByIdWithDetails(segmentId).orElse(null);
     if (segment == null) {
       log.warn("Cannot generate narration: segment {} not found", segmentId);
-      return;
+      return null;
     }
     if (segment.isNarrationGenerated()) {
-      return;
+      return null;
     }
 
     SegmentNarrationService narrationService = narrationServiceFactory.getBestAvailableService();
     if (narrationService == null || !narrationService.isAvailable()) {
       log.info("No AI narration provider available — skipping narration for segment {}", segmentId);
-      return;
+      return null;
     }
 
     enrichSegment(segment);
@@ -95,14 +105,16 @@ public class SegmentNarrationGenerationService {
     String narration = narrationService.narrateSegment(context);
     if (narration == null || narration.isBlank()) {
       log.warn("AI provider returned empty narration for segment {}", segmentId);
-      return;
+      return null;
     }
     segment.setNarration(narration);
     segment.setNarrationGenerated(true);
 
+    String summary = null;
     if (segment.getSummary() == null || segment.getSummary().isBlank()) {
       try {
-        segment.setSummary(narrationServiceFactory.summarizeNarration(narration));
+        summary = narrationServiceFactory.summarizeNarration(narration);
+        segment.setSummary(summary);
       } catch (Exception e) {
         // Summary is a nice-to-have; narration failure posture applies to it too.
         log.warn("Failed to summarize narration for segment {}: {}", segmentId, e.getMessage());
@@ -110,6 +122,11 @@ public class SegmentNarrationGenerationService {
     }
     segmentRepository.save(segment);
     log.info("Generated narration for segment {} ({} chars)", segmentId, narration.length());
+    return new GeneratedNarration(
+        narration,
+        summary,
+        segment.getReferee(),
+        segment.getReferee() != null ? segment.getRefereeAwarenessLevel() : 0);
   }
 
   /**

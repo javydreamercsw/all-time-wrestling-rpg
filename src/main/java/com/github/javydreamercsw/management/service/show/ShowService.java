@@ -105,7 +105,6 @@ public class ShowService {
   private final ShowQualityService showQualityService;
   private final TournamentService tournamentService;
   private final SegmentNarrationGenerationService segmentNarrationGenerationService;
-  @jakarta.persistence.PersistenceContext private jakarta.persistence.EntityManager entityManager;
 
   ShowService(
       final CampaignRepository campaignRepository,
@@ -603,22 +602,30 @@ public class ShowService {
         continue;
       }
       try {
-        segmentNarrationGenerationService.generateForSegment(pending.getId());
+        SegmentNarrationGenerationService.GeneratedNarration generated =
+            segmentNarrationGenerationService.generateForSegment(pending.getId());
+        if (generated != null) {
+          // The generation committed in its own transaction (REQUIRES_NEW); this outer
+          // persistence context still holds the pre-generation copy — and on MySQL its
+          // REPEATABLE READ snapshot would make even a re-read return that stale row.
+          // Apply the returned values to the managed instance instead, so the
+          // adjudication loop below persists the fresh narration, not the stale one.
+          pending.setNarration(generated.narration());
+          pending.setNarrationGenerated(true);
+          if (generated.summary() != null) {
+            pending.setSummary(generated.summary());
+          }
+          if (generated.referee() != null) {
+            pending.setReferee(generated.referee());
+            pending.setRefereeAwarenessLevel(generated.refereeAwareness());
+          }
+        }
       } catch (Exception e) {
         log.warn(
             "Narration generation failed for segment {} — proceeding with the existing"
                 + " description: {}",
             pending.getId(),
             e.getMessage());
-      }
-      // The generation committed in its own transaction (REQUIRES_NEW); this outer
-      // persistence context still holds the pre-generation copy (and findById would
-      // return that same instance from the first-level cache). Refresh the managed
-      // instance from the database so the adjudication loop below persists the fresh
-      // narration, not the stale one. (Null entityManager = mocked unit test; the
-      // mocks already return what a refresh would.)
-      if (entityManager != null) {
-        entityManager.refresh(pending);
       }
     }
 

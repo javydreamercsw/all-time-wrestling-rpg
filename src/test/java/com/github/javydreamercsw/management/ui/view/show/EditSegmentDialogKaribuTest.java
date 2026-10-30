@@ -321,7 +321,8 @@ class EditSegmentDialogKaribuTest extends AbstractViewTest {
             false,
             false,
             Set.of(),
-            com.github.javydreamercsw.management.domain.show.segment.SegmentResult.WINNERS);
+            com.github.javydreamercsw.management.domain.show.segment.SegmentResult.WINNERS,
+            false);
 
     EditSegmentDialog dialog =
         new EditSegmentDialog(

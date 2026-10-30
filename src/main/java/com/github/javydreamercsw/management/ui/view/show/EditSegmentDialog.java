@@ -161,7 +161,8 @@ public class EditSegmentDialog extends Dialog {
       boolean isTitleSegment,
       boolean isContenderMatch,
       Set<Title> titles,
-      SegmentResult result) {
+      SegmentResult result,
+      boolean tournamentBound) {
 
     /** Build from a planning DTO using pre-loaded wrestler map for name resolution. */
     public static SegmentDialogData from(final ProposedSegment proposed, final PreloadedData data) {
@@ -236,11 +237,20 @@ public class EditSegmentDialog extends Dialog {
           Boolean.TRUE.equals(proposed.getIsTitleSegment()),
           Boolean.TRUE.equals(proposed.getIsContenderMatch()),
           proposed.getTitles() != null ? proposed.getTitles() : new HashSet<>(),
-          proposed.getResult() != null ? proposed.getResult() : SegmentResult.WINNERS);
+          proposed.getResult() != null ? proposed.getResult() : SegmentResult.WINNERS,
+          ProposedSegment.SOURCE_TOURNAMENT.equals(proposed.getSource()));
     }
 
-    /** Build from a persisted Segment entity. */
+    /** Build from a persisted Segment entity (not tournament-bound by default). */
     public static SegmentDialogData from(final Segment segment) {
+      return from(segment, false);
+    }
+
+    /**
+     * Build from a persisted Segment entity. {@code tournamentBound} locks the outcome selector at
+     * WINNERS — the caller resolves tournament linkage (the repository isn't reachable here).
+     */
+    public static SegmentDialogData from(final Segment segment, final boolean tournamentBound) {
       Map<Integer, List<Wrestler>> teams = segment.getWrestlersByTeam();
       if (teams.isEmpty()) {
         for (Wrestler w : segment.getWrestlers()) {
@@ -265,7 +275,8 @@ public class EditSegmentDialog extends Dialog {
           Boolean.TRUE.equals(segment.getIsTitleSegment()),
           segment.isContenderMatch(),
           segment.getTitles() != null ? segment.getTitles() : new HashSet<>(),
-          segment.getResult() != null ? segment.getResult() : SegmentResult.WINNERS);
+          segment.getResult() != null ? segment.getResult() : SegmentResult.WINNERS,
+          tournamentBound);
     }
   }
 
@@ -427,7 +438,8 @@ public class EditSegmentDialog extends Dialog {
 
     // Declared result: DRAW / NO_CONTEST disable the winners combo — a booked
     // draw/no-contest must not carry winners. Locked at WINNERS for tournament
-    // segments (brackets must resolve).
+    // segments (brackets must resolve) — the service chokepoint covers the AI path;
+    // this covers direct edits of persisted tournament segments.
     resultRadio = new RadioButtonGroup<>("Outcome");
     resultRadio.setItems(SegmentResult.values());
     resultRadio.setItemLabelGenerator(
@@ -447,6 +459,10 @@ public class EditSegmentDialog extends Dialog {
             winnersCombo.clear();
           }
         });
+    if (initial.tournamentBound()) {
+      resultRadio.setEnabled(false);
+      resultRadio.setValue(SegmentResult.WINNERS);
+    }
 
     // Dummy field to satisfy @Getter contract (teams replace participantsCombo functionally)
     participantsCombo = new MultiSelectComboBox<>();

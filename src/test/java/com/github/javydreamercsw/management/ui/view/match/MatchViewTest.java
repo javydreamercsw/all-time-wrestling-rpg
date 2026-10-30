@@ -281,6 +281,10 @@ class MatchViewTest extends AbstractViewTest {
     _click(_get(Button.class, spec -> spec.withId("save-narration-button")));
 
     assertEquals("Updated narration", segment.getNarration());
+    // 2.13.0 review fix: hand-typed narration is final — adjudication must not
+    // overwrite it, so the save marks the segment as narrated.
+    assertTrue(
+        segment.isNarrationGenerated(), "saving hand-typed narration must set narrationGenerated");
 
     MultiSelectComboBox<Wrestler> winnersComboBox =
         _get(MultiSelectComboBox.class, spec -> spec.withId("winners-combobox"));

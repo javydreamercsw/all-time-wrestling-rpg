@@ -473,6 +473,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
             narrationArea.setValue(currentNarration.trim());
 
             segment.setNarration(narrationArea.getValue());
+            // Chat-mode retorts are part of the final promo narration.
+            segment.setNarrationGenerated(true);
             segmentService.updateSegment(segment);
             UI.getCurrent().push();
           }
@@ -1783,6 +1785,8 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
   private void saveNarration() {
     segment.setNarration(narrationArea.getValue());
     segment.setNotes(feedbackArea.getValue());
+    // Hand-typed narration is final too — adjudication must not overwrite it.
+    segment.setNarrationGenerated(true);
     segmentService.updateSegment(segment);
     updateCommentaryDisplay();
     Notification.show("Narration saved!");

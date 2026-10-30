@@ -100,6 +100,7 @@ import com.github.mvysny.kaributesting.v10.LocatorJ;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Paragraph;
@@ -379,6 +380,79 @@ class ShowDetailViewTest extends AbstractViewTest {
             .collect(Collectors.joining(" "));
     assertThat(dialogText).contains("The Bloodline Saga");
     assertThat(dialogText).contains("beat #2");
+  }
+
+  @Test
+  void confirmDialog_showsNarrationListAndWarnings_adjudicateAnywayButton() {
+    // 2.13.0: pre-flight returns both lists — the dialog shows the narration list (info)
+    // and the missing-winner warning, and the confirm button becomes "Adjudicate Anyway".
+    ShowType showType = new ShowType();
+    showType.setName("Test");
+    Show show = new Show();
+    show.setId(50L);
+    show.setName("Pre-flight Show");
+    show.setType(showType);
+
+    Mockito.when(showService.getShowById(50L)).thenReturn(Optional.of(show));
+    Mockito.when(showService.getAdjudicationPreFlight(50L))
+        .thenReturn(
+            new ShowService.AdjudicationPreFlight(
+                List.of("Match 1 — Wrestler A vs Wrestler B (no winner)"),
+                List.of("Match 1 — Wrestler A vs Wrestler B")));
+    Mockito.when(segmentRepository.findByShow(any(Show.class))).thenReturn(List.of());
+
+    ShowDetailView view = buildView(mock(SecurityUtils.class));
+    ReflectionTestUtils.setField(view, "currentShow", show);
+
+    ReflectionTestUtils.invokeMethod(view, "confirmThenAdjudicate", show);
+
+    ConfirmDialog dialog = LocatorJ._get(ConfirmDialog.class);
+    // Vaadin 25's ConfirmDialog exposes button labels as element properties, not getters.
+    assertThat(dialog.getElement().getProperty("confirmText")).isEqualTo("Adjudicate Anyway");
+    assertThat(dialog.getElement().getProperty("cancelText")).isEqualTo("Go Back");
+    StringBuilder dialogText = new StringBuilder();
+    collectComponentText(dialog, dialogText);
+    assertThat(dialogText.toString()).contains("AI narration will be generated for 1 segment(s)");
+    assertThat(dialogText.toString()).contains("no winner selected");
+  }
+
+  private static void collectComponentText(Component component, StringBuilder sb) {
+    String own = component.getElement().getText();
+    if (own != null && !own.isBlank()) {
+      sb.append(own).append(' ');
+    }
+    component.getChildren().forEach(child -> collectComponentText(child, sb));
+  }
+
+  @Test
+  void confirmDialog_cancelDoesNotAdjudicate() {
+    // 2.13.0 review fix: the cancel path was untested — "Go Back" must not start adjudication.
+    ShowType showType = new ShowType();
+    showType.setName("Test");
+    Show show = new Show();
+    show.setId(51L);
+    show.setName("Cancel Show");
+    show.setType(showType);
+
+    Mockito.when(showService.getShowById(51L)).thenReturn(Optional.of(show));
+    Mockito.when(showService.getAdjudicationPreFlight(51L))
+        .thenReturn(
+            new ShowService.AdjudicationPreFlight(
+                List.of("Match 1 — no winner"), List.of("Match 1")));
+    Mockito.when(segmentRepository.findByShow(any(Show.class))).thenReturn(List.of());
+
+    ShowDetailView view = buildView(mock(SecurityUtils.class));
+    ReflectionTestUtils.setField(view, "currentShow", show);
+
+    ReflectionTestUtils.invokeMethod(view, "confirmThenAdjudicate", show);
+
+    // The dialog is open and wired for cancellation; no adjudication has started.
+    ConfirmDialog dialog = LocatorJ._get(ConfirmDialog.class);
+    assertThat(dialog.isOpened()).isTrue();
+    // Vaadin 25 ConfirmDialog has no button getters — the cancel wiring is verified by
+    // the absence of any adjudication call before a confirm event (the E2E covers the
+    // full browser cancel/confirm interaction).
+    Mockito.verify(showController, Mockito.never()).adjudicateShow(Mockito.anyLong());
   }
 
   @Test

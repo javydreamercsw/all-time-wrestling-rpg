@@ -2020,8 +2020,10 @@ public class ShowDetailView extends Main
                       Segment seg = (Segment) result[0];
                       EditSegmentDialog.PreloadedData preloaded =
                           (EditSegmentDialog.PreloadedData) result[1];
+                      boolean tournamentBound =
+                          tournamentMatchRepository.findBySegmentId(seg.getId()).isPresent();
                       EditSegmentDialog.SegmentDialogData initial =
-                          EditSegmentDialog.SegmentDialogData.from(seg);
+                          EditSegmentDialog.SegmentDialogData.from(seg, tournamentBound);
 
                       EditSegmentDialog[] dialogHolder = new EditSegmentDialog[1];
                       dialogHolder[0] =
