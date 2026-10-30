@@ -21,6 +21,7 @@ import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.season.WrestlerSeasonSnapshotRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -96,6 +97,8 @@ public class SeasonStatsService {
       if (isMatch(segment)) {
         if (segment.getWinners().contains(managedWrestler)) {
           wins++;
+        } else if (segment.getResult() == SegmentResult.NO_CONTEST) {
+          // A booked no-contest is neither a win, a loss, nor a draw.
         } else if (segment.getWinners().isEmpty()) {
           draws++;
         } else {
