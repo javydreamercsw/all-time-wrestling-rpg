@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -57,6 +58,7 @@ import com.github.javydreamercsw.management.service.gm.GmModeService;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.news.NewsGenerationService;
+import com.github.javydreamercsw.management.service.segment.SegmentNarrationGenerationService;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.math.BigDecimal;
@@ -104,6 +106,7 @@ class ShowServiceTest {
   @Mock private Clock clock;
   @Mock private ShowQualityService showQualityService;
   @Mock private TournamentService tournamentService;
+  @Mock private SegmentNarrationGenerationService segmentNarrationGenerationService;
 
   private ShowService showService;
 
@@ -141,7 +144,8 @@ class ShowServiceTest {
             arenaRepository,
             gmModeService,
             showQualityService,
-            tournamentService);
+            tournamentService,
+            segmentNarrationGenerationService);
 
     // Default recovery outcome for the post-show healing loop
     when(wrestlerService.performNpcRecovery(anyLong(), anyLong(), any()))
@@ -724,6 +728,52 @@ class ShowServiceTest {
     assertThatThrownBy(() -> showService.adjudicateShow(999L))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Show not found: 999");
+  }
+
+  @Test
+  void adjudicateShow_generatesNarrationForPendingUnnarratedSegmentsFirst() {
+    when(showRepository.findById(1L)).thenReturn(Optional.of(show));
+    when(segmentRepository.findByShow(show))
+        .thenReturn(Arrays.asList(pendingSegment, adjudicatedSegment));
+    when(wrestlerRepository.findAll()).thenReturn(Collections.emptyList());
+
+    showService.adjudicateShow(1L);
+
+    // Narration generation happens for the pending, not-yet-narrated segment.
+    verify(segmentNarrationGenerationService).generateForSegment(10L);
+    // Already-adjudicated segments are never re-narrated.
+    verify(segmentNarrationGenerationService, never()).generateForSegment(11L);
+    // Narration runs before adjudication: the adjudication loop still processed the segment.
+    verify(segmentAdjudicationService, times(1)).adjudicateMatch(pendingSegment);
+  }
+
+  @Test
+  void adjudicateShow_narrationFailureDoesNotBlockAdjudication() {
+    when(showRepository.findById(1L)).thenReturn(Optional.of(show));
+    when(segmentRepository.findByShow(show))
+        .thenReturn(Arrays.asList(pendingSegment, adjudicatedSegment));
+    when(wrestlerRepository.findAll()).thenReturn(Collections.emptyList());
+    doThrow(new RuntimeException("AI provider down"))
+        .when(segmentNarrationGenerationService)
+        .generateForSegment(10L);
+
+    showService.adjudicateShow(1L);
+
+    // The AI failure is contained: adjudication proceeded for every pending segment.
+    verify(segmentAdjudicationService, times(1)).adjudicateMatch(pendingSegment);
+    Assertions.assertEquals(AdjudicationStatus.ADJUDICATED, pendingSegment.getAdjudicationStatus());
+  }
+
+  @Test
+  void adjudicateShow_skipsNarrationWhenAlreadyGenerated() {
+    pendingSegment.setNarrationGenerated(true);
+    when(showRepository.findById(1L)).thenReturn(Optional.of(show));
+    when(segmentRepository.findByShow(show)).thenReturn(Arrays.asList(pendingSegment));
+    when(wrestlerRepository.findAll()).thenReturn(Collections.emptyList());
+
+    showService.adjudicateShow(1L);
+
+    verify(segmentNarrationGenerationService, never()).generateForSegment(anyLong());
   }
 
   @Test

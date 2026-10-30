@@ -294,27 +294,15 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
    * pool when every active referee is already booked elsewhere.
    */
   private Npc pickUnusedReferee(List<Npc> referees) {
-    Set<Long> usedIds = new HashSet<>();
+    List<Npc> assignedReferees = new ArrayList<>();
     if (segment.getShow() != null) {
       for (Segment sibling : segmentService.getSegmentsByShow(segment.getShow())) {
-        if (sibling.getReferee() == null || Objects.equals(sibling.getId(), segment.getId())) {
-          continue;
-        }
-        Npc used = sibling.getReferee();
-        if (used.getId() != null) {
-          usedIds.add(used.getId());
+        if (sibling.getReferee() != null && !Objects.equals(sibling.getId(), segment.getId())) {
+          assignedReferees.add(sibling.getReferee());
         }
       }
     }
-    List<Npc> available =
-        referees.stream()
-            .filter(r -> r.getId() == null || !usedIds.contains(r.getId()))
-            .collect(Collectors.toList());
-    if (available.isEmpty()) {
-      // Every active referee is already working this show — reuse the full pool.
-      available = referees;
-    }
-    return available.get(new Random().nextInt(available.size()));
+    return npcService.pickUnusedReferee(referees, assignedReferees);
   }
 
   private void buildView() {

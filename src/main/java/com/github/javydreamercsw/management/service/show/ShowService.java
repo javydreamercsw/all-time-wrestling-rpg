@@ -46,6 +46,7 @@ import com.github.javydreamercsw.management.service.gm.GmModeService;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.news.NewsGenerationService;
+import com.github.javydreamercsw.management.service.segment.SegmentNarrationGenerationService;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService.NpcRecoveryResult;
@@ -101,6 +102,7 @@ public class ShowService {
   private final GmModeService gmModeService;
   private final ShowQualityService showQualityService;
   private final TournamentService tournamentService;
+  private final SegmentNarrationGenerationService segmentNarrationGenerationService;
 
   ShowService(
       final CampaignRepository campaignRepository,
@@ -124,7 +126,8 @@ public class ShowService {
       final ArenaRepository arenaRepository,
       final GmModeService gmModeService,
       final ShowQualityService showQualityService,
-      final TournamentService tournamentService) {
+      final TournamentService tournamentService,
+      final SegmentNarrationGenerationService segmentNarrationGenerationService) {
     this.campaignRepository = campaignRepository;
     this.showRepository = showRepository;
     this.showTypeRepository = showTypeRepository;
@@ -147,6 +150,7 @@ public class ShowService {
     this.gmModeService = gmModeService;
     this.showQualityService = showQualityService;
     this.tournamentService = tournamentService;
+    this.segmentNarrationGenerationService = segmentNarrationGenerationService;
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -542,6 +546,29 @@ public class ShowService {
             .orElseThrow(() -> new IllegalArgumentException("Show not found: " + showId));
 
     Set<Long> participatingWrestlerIds = new HashSet<>();
+
+    // Narration phase (2.13.0): generate full narrations for pending segments still
+    // carrying only the AI-planning brief description. Each segment commits in its own
+    // transaction (REQUIRES_NEW) before adjudication starts, so news generation below
+    // works from real narrations. AI failure never blocks the show: warn and continue.
+    List<Segment> pendingSegments =
+        segmentRepository.findByShow(show).stream()
+            .filter(segment -> segment.getAdjudicationStatus() == AdjudicationStatus.PENDING)
+            .toList();
+    for (Segment pending : pendingSegments) {
+      if (pending.isNarrationGenerated()) {
+        continue;
+      }
+      try {
+        segmentNarrationGenerationService.generateForSegment(pending.getId());
+      } catch (Exception e) {
+        log.warn(
+            "Narration generation failed for segment {} — proceeding with the existing"
+                + " description: {}",
+            pending.getId(),
+            e.getMessage());
+      }
+    }
 
     segmentRepository.findByShow(show).stream()
         .filter(segment -> segment.getAdjudicationStatus() == AdjudicationStatus.PENDING)
