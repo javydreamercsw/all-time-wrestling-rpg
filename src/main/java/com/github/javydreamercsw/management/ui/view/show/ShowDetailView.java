@@ -1443,48 +1443,7 @@ public class ShowDetailView extends Main
     narrateButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     narrateButton.setTooltipText("Generate AI Narration");
     narrateButton.setId("generate-narration-button-" + segment.getId());
-    narrateButton.addClickListener(
-        e -> {
-          final UI ui = UI.getCurrent();
-          GeneralSecurityUtils.runAsAdminAsync(
-                  () ->
-                      NarrationDialog.PreloadedData.load(
-                          segmentService,
-                          npcService,
-                          wrestlerStatsService,
-                          universeContextService,
-                          segment))
-              .thenAccept(
-                  preloaded ->
-                      ui.access(
-                          () ->
-                              new NarrationDialog(
-                                      preloaded,
-                                      wrestlerService,
-                                      showService,
-                                      segmentService,
-                                      updatedSegment -> refreshSegmentsGrid(),
-                                      rivalryService,
-                                      segmentNarrationController,
-                                      segmentNarrationServiceFactory,
-                                      ringsideActionService,
-                                      relationshipService,
-                                      universeContextService,
-                                      notificationService,
-                                      wrestlerStatsService,
-                                      dramaEventService,
-                                      titleOpportunityService,
-                                      trophyReignService,
-                                      viewContext)
-                                  .open()))
-              .exceptionally(
-                  ex -> {
-                    log.error("Error loading narration dialog data", ex);
-                    ui.access(
-                        () -> notificationService.showError("Failed to open narration dialog."));
-                    return null;
-                  });
-        });
+    narrateButton.addClickListener(e -> openNarrationDialog(segment));
 
     Button editButton = new Button("Edit", new Icon(VaadinIcon.EDIT));
     editButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
@@ -1523,6 +1482,48 @@ public class ShowDetailView extends Main
 
     return new VerticalLayout(
         summaryButton, narrateButton, editButton, deleteButton, qrButton, infoButton);
+  }
+
+  /** Opens the narration dialog with preloaded context (extracted for testability). */
+  private void openNarrationDialog(@NonNull Segment segment) {
+    final UI ui = UI.getCurrent();
+    GeneralSecurityUtils.runAsAdminAsync(
+            () ->
+                NarrationDialog.PreloadedData.load(
+                    segmentService,
+                    npcService,
+                    wrestlerStatsService,
+                    universeContextService,
+                    segment))
+        .thenAccept(
+            preloaded ->
+                ui.access(
+                    () ->
+                        new NarrationDialog(
+                                preloaded,
+                                wrestlerService,
+                                showService,
+                                segmentService,
+                                updatedSegment -> refreshSegmentsGrid(),
+                                rivalryService,
+                                segmentNarrationController,
+                                segmentNarrationServiceFactory,
+                                ringsideActionService,
+                                relationshipService,
+                                universeContextService,
+                                notificationService,
+                                wrestlerStatsService,
+                                dramaEventService,
+                                titleOpportunityService,
+                                trophyReignService,
+                                viewContext)
+                            .open()))
+        .exceptionally(
+            ex -> {
+              log.error("Error loading narration dialog data", ex);
+              ui.access(() -> notificationService.showError("Failed to open narration dialog."));
+              return null;
+            });
   }
 
   private void generateSummary(@NonNull Segment segment) {
@@ -2309,6 +2310,7 @@ public class ShowDetailView extends Main
   private void confirmThenAdjudicate(@NonNull final Show show) {
     List<String> missingWinnerWarnings;
     List<String> toNarrate;
+    boolean narrationProviderAvailable;
     try {
       ShowService.AdjudicationPreFlight preFlight =
           GeneralSecurityUtils.runAsAdminAsync(
@@ -2316,6 +2318,7 @@ public class ShowDetailView extends Main
               .join();
       missingWinnerWarnings = preFlight.missingWinnerWarnings();
       toNarrate = preFlight.toNarrate();
+      narrationProviderAvailable = preFlight.narrationProviderAvailable();
     } catch (Exception e) {
       log.warn("Adjudication pre-flight failed — adjudicating without the advisory", e);
       adjudicateShow(show);
@@ -2330,7 +2333,7 @@ public class ShowDetailView extends Main
     // Plain Div flow (not VerticalLayout): ConfirmDialog's content slot is a fixed-height
     // flex area — a VerticalLayout child collapses and its items overlap each other.
     Div content = new Div();
-    if (!toNarrate.isEmpty()) {
+    if (!toNarrate.isEmpty() && narrationProviderAvailable) {
       Paragraph narrateIntro =
           new Paragraph(
               "AI narration will be generated for "
@@ -2345,6 +2348,15 @@ public class ShowDetailView extends Main
       // without overflow the tail items paint over whatever renders below (seen in sandbox).
       narrateList.getElement().getStyle().set("overflowY", "auto");
       content.add(narrateList);
+    } else if (!toNarrate.isEmpty()) {
+      // No provider: say what actually happens instead of promising narration (ATW-ktta).
+      Paragraph noProviderNote =
+          new Paragraph(
+              "No AI narration provider is configured. "
+                  + toNarrate.size()
+                  + " segment(s) will be adjudicated with their booked descriptions.");
+      noProviderNote.addClassNames(LumoUtility.TextColor.SECONDARY);
+      content.add(noProviderNote);
     }
     if (!missingWinnerWarnings.isEmpty()) {
       Paragraph warningIntro =

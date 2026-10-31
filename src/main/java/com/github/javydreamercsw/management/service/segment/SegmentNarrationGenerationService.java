@@ -72,6 +72,16 @@ public class SegmentNarrationGenerationService {
       String narration, String summary, Npc referee, int refereeAwareness) {}
 
   /**
+   * Whether the narration pass would actually have a provider to call. Backs the Adjudicate
+   * pre-flight: the dialog says up front when segments will be adjudicated with their booked
+   * descriptions because no AI provider is configured.
+   */
+  public boolean isNarrationProviderAvailable() {
+    SegmentNarrationService service = narrationServiceFactory.getBestAvailableService();
+    return service != null && service.isAvailable();
+  }
+
+  /**
    * Generates narration for the segment (if a provider is available), persists it with {@code
    * narrationGenerated} set, fills a blank summary from the fresh narration, and returns what was
    * produced so the caller can apply the same values to its own (possibly stale) entity instance.

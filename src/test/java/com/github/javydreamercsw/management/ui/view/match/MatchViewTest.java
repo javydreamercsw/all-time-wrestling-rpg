@@ -53,6 +53,7 @@ import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
@@ -296,6 +297,62 @@ class MatchViewTest extends AbstractViewTest {
 
     assertEquals(1, segment.getWinners().size());
     assertEquals(wrestler1, segment.getWinners().get(0));
+  }
+
+  @Test
+  void bookedDraw_disablesResultEntry() {
+    // 2.13.0 (ATW-ktta): a booked DRAW/NO_CONTEST is authoritative — the result radio,
+    // winners combo, and save button must all be disabled so nobody re-enters a result.
+    Segment segment = new Segment();
+    segment.setId(1L);
+    segment.declareResult(SegmentResult.DRAW);
+    Show show = new Show();
+    show.setName("Test Show");
+    segment.setShow(show);
+    SegmentType segmentType = new SegmentType();
+    segmentType.setName("Test Match");
+    segment.setSegmentType(segmentType);
+
+    Universe universe = new Universe();
+    universe.setId(1L);
+    universe.setName("Default");
+
+    Wrestler wrestler1 = new Wrestler();
+    wrestler1.setName("Test Wrestler 1");
+    wrestler1.setId(1L);
+    wrestler1
+        .getWrestlerStates()
+        .add(WrestlerState.builder().wrestler(wrestler1).universe(universe).build());
+
+    SegmentParticipant participant1 = new SegmentParticipant();
+    participant1.setSegment(segment);
+    participant1.setWrestler(wrestler1);
+    participant1.setIsWinner(false);
+    segment.getParticipants().add(participant1);
+
+    when(securityUtils.isBooker()).thenReturn(true);
+    when(segmentService.findByIdWithDetails(1L)).thenReturn(Optional.of(segment));
+    lenient().when(wrestlerService.findById(1L)).thenReturn(Optional.of(wrestler1));
+    lenient()
+        .when(wrestlerService.getOrCreateState(anyLong(), eq(1L)))
+        .thenReturn(wrestler1.getState(1L).orElseThrow());
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "1"));
+
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    RadioButtonGroup<SegmentResult> resultRadio =
+        _get(RadioButtonGroup.class, spec -> spec.withId("match-result-radio"));
+    assertTrue(
+        resultRadio.getValue() == SegmentResult.DRAW, "result radio must show the booked DRAW");
+    assertFalse(resultRadio.isEnabled(), "booked result radio must be disabled");
+    MultiSelectComboBox<Wrestler> winnersComboBox =
+        _get(MultiSelectComboBox.class, spec -> spec.withId("winners-combobox"));
+    assertFalse(winnersComboBox.isEnabled(), "winners combo must be disabled for booked DRAW");
+    Button saveButton = _get(Button.class, spec -> spec.withId("save-winners-button"));
+    assertFalse(saveButton.isEnabled(), "save button must be disabled for booked DRAW");
   }
 
   @Test

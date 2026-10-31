@@ -96,6 +96,7 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerStateHistor
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.ViewContext;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
+import com.github.javydreamercsw.management.ui.view.segment.NarrationDialog;
 import com.github.mvysny.kaributesting.v10.LocatorJ;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
@@ -399,7 +400,8 @@ class ShowDetailViewTest extends AbstractViewTest {
         .thenReturn(
             new ShowService.AdjudicationPreFlight(
                 List.of("Match 1 — Wrestler A vs Wrestler B (no winner)"),
-                List.of("Match 1 — Wrestler A vs Wrestler B")));
+                List.of("Match 1 — Wrestler A vs Wrestler B"),
+                true));
     Mockito.when(segmentRepository.findByShow(any(Show.class))).thenReturn(List.of());
 
     ShowDetailView view = buildView(mock(SecurityUtils.class));
@@ -459,7 +461,7 @@ class ShowDetailViewTest extends AbstractViewTest {
     Mockito.when(showService.getAdjudicationPreFlight(51L))
         .thenReturn(
             new ShowService.AdjudicationPreFlight(
-                List.of("Match 1 — no winner"), List.of("Match 1")));
+                List.of("Match 1 — no winner"), List.of("Match 1"), true));
     Mockito.when(segmentRepository.findByShow(any(Show.class))).thenReturn(List.of());
 
     ShowDetailView view = buildView(mock(SecurityUtils.class));
@@ -474,6 +476,119 @@ class ShowDetailViewTest extends AbstractViewTest {
     // the absence of any adjudication call before a confirm event (the E2E covers the
     // full browser cancel/confirm interaction).
     Mockito.verify(showController, Mockito.never()).adjudicateShow(Mockito.anyLong());
+  }
+
+  @Test
+  void confirmDialog_noNarrationProvider_showsSkipNoteAndPlainConfirm() {
+    // ATW-ktta: with no AI provider configured the dialog must not promise narration —
+    // it says segments use their booked descriptions, and proceeding is a normal path
+    // (plain "Adjudicate", not "Adjudicate Anyway").
+    ShowType showType = new ShowType();
+    showType.setName("Test");
+    Show show = new Show();
+    show.setId(52L);
+    show.setName("No Provider Show");
+    show.setType(showType);
+
+    Mockito.when(showService.getShowById(52L)).thenReturn(Optional.of(show));
+    Mockito.when(showService.getAdjudicationPreFlight(52L))
+        .thenReturn(
+            new ShowService.AdjudicationPreFlight(
+                List.of(), List.of("Match 1 — Wrestler A vs Wrestler B"), false));
+    Mockito.when(segmentRepository.findByShow(any(Show.class))).thenReturn(List.of());
+
+    ShowDetailView view = buildView(mock(SecurityUtils.class));
+    ReflectionTestUtils.setField(view, "currentShow", show);
+
+    ReflectionTestUtils.invokeMethod(view, "confirmThenAdjudicate", show);
+
+    ConfirmDialog dialog = LocatorJ._get(ConfirmDialog.class);
+    assertThat(dialog.getElement().getProperty("confirmText")).isEqualTo("Adjudicate");
+    StringBuilder dialogText = new StringBuilder();
+    collectComponentText(dialog, dialogText);
+    String text = dialogText.toString();
+    assertThat(text).contains("No AI narration provider is configured");
+    assertThat(text).contains("booked descriptions");
+    assertThat(text).doesNotContain("AI narration will be generated");
+    assertThat(text).doesNotContain("Adjudicate Anyway");
+  }
+
+  @Test
+  void narrateButton_opensNarrationDialog_withFactoryWired() {
+    // ATW-ktta: the Narrate action must open NarrationDialog through the async
+    // PreloadedData.load path with the factory injected — a regression here used to
+    // surface only as a silent "Failed to open narration dialog" at runtime.
+    when(securityUtils.isViewer()).thenReturn(false);
+    ShowType showType = new ShowType();
+    showType.setName("Test");
+    Show show = new Show();
+    show.setId(53L);
+    show.setName("Narrate Flow Show");
+    show.setType(showType);
+
+    SegmentType singlesType = new SegmentType();
+    singlesType.setName("Singles");
+    singlesType.setCode(WellKnownSegmentType.ONE_ON_ONE.getCode());
+
+    Segment segment = new Segment();
+    segment.setId(60L);
+    segment.setShow(show);
+    segment.setSegmentType(singlesType);
+    segment.setSegmentDate(Instant.parse("2026-09-03T00:00:00Z"));
+    segment.setNarration("Existing narration");
+
+    Mockito.when(showService.getShowById(any())).thenReturn(Optional.of(show));
+    Mockito.when(segmentRepository.findByShowOrderBySegmentOrderAsc(any(Show.class)))
+        .thenReturn(List.of(segment));
+    Mockito.when(segmentRepository.findByShow(any(Show.class))).thenReturn(List.of(segment));
+    Mockito.when(segmentService.findByIdWithDetails(60L)).thenReturn(Optional.of(segment));
+    Mockito.when(feudScriptService.findBeatForSegment(Mockito.any(Segment.class)))
+        .thenReturn(Optional.empty());
+    Mockito.when(tournamentMatchRepository.findBySegmentId(Mockito.anyLong()))
+        .thenReturn(Optional.empty());
+    // PreloadedData.load NPC pools — empty is fine, the dialog just renders empty selects.
+    Mockito.when(npcService.findAllByTypeUnfiltered(Mockito.anyString())).thenReturn(List.of());
+    Mockito.when(npcService.findAllUnfiltered()).thenReturn(List.of());
+    Mockito.when(wrestlerStatsService.findAllAsDTO(Mockito.anyLong())).thenReturn(List.of());
+    Mockito.when(wrestlerStatsService.findAllBySegment(Mockito.any(), Mockito.anyLong()))
+        .thenReturn(List.of());
+
+    ShowDetailView view = buildView(securityUtils);
+    BeforeEvent event = Mockito.mock(BeforeEvent.class);
+    Mockito.when(event.getLocation()).thenReturn(new Location(""));
+    view.setParameter(event, 53L);
+
+    // The Narrate button lives inside a grid component renderer that Karibu does not
+    // materialize — drive the click handler's target directly (same pattern as the
+    // generateSummary test below).
+    ReflectionTestUtils.invokeMethod(view, "openNarrationDialog", segment);
+
+    // The load path is async (runAsAdminAsync -> ui.access): under full-suite load the
+    // dialog attach lags the calling thread, so wait for it instead of asserting cold.
+    NarrationDialog dialog = awaitDialog(NarrationDialog.class);
+    assertThat(dialog).isNotNull();
+    assertThat(dialog.isOpened()).isTrue();
+  }
+
+  private static <T extends Component> T awaitDialog(Class<T> type) {
+    long deadline = System.currentTimeMillis() + 5000;
+    while (System.currentTimeMillis() < deadline) {
+      try {
+        T found = LocatorJ._get(type);
+        if (found != null) {
+          return found;
+        }
+      } catch (AssertionError expectedWhilePending) {
+        // Dialog not attached yet — keep polling until the deadline.
+      }
+      try {
+        Thread.sleep(50);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        break;
+      }
+    }
+    return LocatorJ._get(type); // One final lookup so the failure shows the tree.
   }
 
   @Test

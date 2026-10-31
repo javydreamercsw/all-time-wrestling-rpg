@@ -254,6 +254,26 @@ class SegmentNarrationGenerationServiceTest {
   }
 
   @Test
+  void narrationProviderAvailableMirrorsFactoryAvailability() {
+    // 2.13.0 pre-flight: the view asks the generation service (which owns the factory)
+    // whether narration will actually run, so the dialog can say so up front.
+    when(narrationServiceFactory.getBestAvailableService()).thenReturn(narrationService);
+    assertTrue(service.isNarrationProviderAvailable());
+
+    when(narrationServiceFactory.getBestAvailableService()).thenReturn(null);
+    assertFalse(service.isNarrationProviderAvailable());
+  }
+
+  @Test
+  void narrationProviderAvailableFalseWhenProviderNotUsable() {
+    // A factory that returns a service whose isAvailable() is false must count as unavailable.
+    when(narrationService.isAvailable()).thenReturn(false);
+    when(narrationServiceFactory.getBestAvailableService()).thenReturn(narrationService);
+
+    assertFalse(service.isNarrationProviderAvailable());
+  }
+
+  @Test
   void providerFailurePropagatesToShowService() {
     when(narrationService.narrateSegment(
             any(SegmentNarrationService.SegmentNarrationContext.class)))

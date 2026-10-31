@@ -749,6 +749,22 @@ class ShowServiceTest {
   }
 
   @Test
+  void preFlight_reportsNarrationProviderAvailability() {
+    // 2.13.0: the dialog must say up front when narration will be skipped because no
+    // AI provider is configured, instead of listing "(AI narration will be generated)".
+    when(showRepository.findById(1L)).thenReturn(Optional.of(show));
+    when(segmentRepository.findByShow(show)).thenReturn(Arrays.asList(pendingSegment));
+    when(segmentNarrationGenerationService.isNarrationProviderAvailable()).thenReturn(false);
+
+    ShowService.AdjudicationPreFlight unavailable = showService.getAdjudicationPreFlight(1L);
+    Assertions.assertFalse(unavailable.narrationProviderAvailable());
+
+    when(segmentNarrationGenerationService.isNarrationProviderAvailable()).thenReturn(true);
+    ShowService.AdjudicationPreFlight available = showService.getAdjudicationPreFlight(1L);
+    Assertions.assertTrue(available.narrationProviderAvailable());
+  }
+
+  @Test
   void adjudicateShow_adjudicatesPendingSegmentsOnly() {
     when(showRepository.findById(1L)).thenReturn(Optional.of(show));
     when(segmentRepository.findByShow(show))

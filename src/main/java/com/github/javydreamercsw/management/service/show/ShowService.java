@@ -564,7 +564,10 @@ public class ShowService {
                 .formatted(segment.getSegmentOrder(), describeSegment(segment)));
       }
     }
-    return new AdjudicationPreFlight(missingWinnerWarnings, toNarrate);
+    return new AdjudicationPreFlight(
+        missingWinnerWarnings,
+        toNarrate,
+        segmentNarrationGenerationService.isNarrationProviderAvailable());
   }
 
   private String describeSegment(@NonNull final Segment segment) {
@@ -573,8 +576,15 @@ public class ShowService {
     return names.isEmpty() ? "Unnamed segment" : names;
   }
 
-  /** Pre-adjudication summary shown in the ShowDetailView confirm dialog. */
-  public record AdjudicationPreFlight(List<String> missingWinnerWarnings, List<String> toNarrate) {}
+  /**
+   * Pre-adjudication summary shown in the ShowDetailView confirm dialog. {@code
+   * narrationProviderAvailable} lets the dialog say up front when narration will be skipped (no AI
+   * provider configured) instead of promising it in the to-narrate list.
+   */
+  public record AdjudicationPreFlight(
+      List<String> missingWinnerWarnings,
+      List<String> toNarrate,
+      boolean narrationProviderAvailable) {}
 
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")

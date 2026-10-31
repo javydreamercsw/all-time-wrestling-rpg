@@ -193,6 +193,21 @@ class ShowAdjudicationNarrationIT extends ManagementIntegrationTest {
   }
 
   @Test
+  @DisplayName("Pre-flight reports provider availability from the real Mock provider bean")
+  void preFlight_narrationProviderAvailable_trueWithTestProfileMock() {
+    // ATW-ktta: the test profile wires MockSegmentNarrationService (@Primary), so the
+    // pre-flight flag must come back true end-to-end (ShowService ->
+    // SegmentNarrationGenerationService -> factory -> provider bean).
+    showPlanningService.approveSegments(
+        show, List.of(singles(wrestlerA.getName(), wrestlerB.getName())));
+
+    ShowService.AdjudicationPreFlight preFlight =
+        showService.getAdjudicationPreFlight(show.getId());
+
+    assertThat(preFlight.narrationProviderAvailable()).isTrue();
+  }
+
+  @Test
   @DisplayName("adjudicateShow throws for a missing show")
   void adjudicateShow_missingShow_throws() {
     assertThatThrownBy(() -> showService.adjudicateShow(999_999L))

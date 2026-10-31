@@ -891,6 +891,10 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     saveWinnersButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SUCCESS);
     saveWinnersButton.setWidthFull();
     saveWinnersButton.setId("save-winners-button");
+    if (segment.getResult() != null && segment.getResult() != SegmentResult.WINNERS) {
+      // Booked draw/no-contest is authoritative — nothing left to submit (ATW-ktta pin).
+      saveWinnersButton.setEnabled(false);
+    }
 
     winnersCard.add(resultRadio, winnersComboBox);
 
