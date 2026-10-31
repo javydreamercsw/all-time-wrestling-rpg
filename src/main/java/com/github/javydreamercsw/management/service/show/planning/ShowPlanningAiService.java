@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.show.planning;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.title.BriefcaseCashInMode;
 import com.github.javydreamercsw.management.service.HolidayService;
@@ -591,6 +592,19 @@ public class ShowPlanningAiService {
     return names;
   }
 
+  /** Parses the AI's optional declared-result value; anything unknown defaults to WINNERS. */
+  private SegmentResult parseDeclaredResult(final String declaredResult) {
+    if (declaredResult == null || declaredResult.isBlank()) {
+      return SegmentResult.WINNERS;
+    }
+    try {
+      return SegmentResult.valueOf(declaredResult.trim().toUpperCase());
+    } catch (IllegalArgumentException e) {
+      log.warn("AI proposed unknown result '{}', defaulting to WINNERS", declaredResult);
+      return SegmentResult.WINNERS;
+    }
+  }
+
   private ProposedShow planShowWithAi(@NonNull final ShowPlanningContextDTO context) {
     if (narrationServiceFactory.getBestAvailableService() == null) {
       log.warn("No AI service available for show planning.");
@@ -637,6 +651,7 @@ public class ShowPlanningAiService {
                     segment.setSummary(dto.getOutcome());
                     segment.setNotes(dto.getNotes());
                     segment.setRivalryId(dto.getRivalryId());
+                    segment.setResult(parseDeclaredResult(dto.getResult()));
                     if (dto.getRules() != null && !dto.getRules().isEmpty()) {
                       segment.setRules(dto.getRules());
                     }

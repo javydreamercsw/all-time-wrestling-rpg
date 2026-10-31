@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpSource;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
@@ -324,12 +325,17 @@ public class SegmentAdjudicationService {
   @Transactional
   private void adjudicateMatchInternal(@NonNull final Segment segment, final double multiplier) {
     // Process match fulfillment first so that a player-reported winner is reflected
-    // in the winners/losers lists used by every downstream method.
+    // in the winners/losers lists used by every downstream method. A segment with a
+    // booked non-WINNERS result (draw/no-contest) is authoritative — player-reported
+    // winners are ignored for those (owner decision: players cannot enter results
+    // on booked draws/no-contests).
     matchFulfillmentRepository
         .findBySegment(segment)
         .ifPresent(
             fulfillment -> {
-              if (fulfillment.getReportedWinner() != null && segment.getWinners().isEmpty()) {
+              if (fulfillment.getReportedWinner() != null
+                  && segment.getResult() == SegmentResult.WINNERS
+                  && segment.getWinners().isEmpty()) {
                 segment.setWinners(List.of(fulfillment.getReportedWinner()));
               }
               fulfillment.setStatus(MatchFulfillment.FulfillmentStatus.FINALIZED);
@@ -408,10 +414,17 @@ public class SegmentAdjudicationService {
       List<LeagueRoster> toSave = new ArrayList<>();
       List<Wrestler> wrestlersToSave = new ArrayList<>();
       if (winners.isEmpty()) {
+        SegmentResult result = segment.getResult();
         for (Wrestler w : segment.getWrestlers()) {
           LeagueRoster roster = rosterByWrestlerId.get(w.getId());
           if (roster != null) {
-            roster.setDraws(roster.getDraws() + 1);
+            if (result == SegmentResult.NO_CONTEST) {
+              // A booked no-contest is not a draw: it lands on its own counter.
+              roster.setNoContests(roster.getNoContests() + 1);
+            } else {
+              // Declared draws and legacy empty-winner segments both count as draws.
+              roster.setDraws(roster.getDraws() + 1);
+            }
             toSave.add(roster);
           }
         }

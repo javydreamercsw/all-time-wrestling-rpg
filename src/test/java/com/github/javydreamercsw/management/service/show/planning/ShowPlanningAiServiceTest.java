@@ -24,6 +24,7 @@ import ch.qos.logback.classic.Logger;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.title.BriefcaseCashInMode;
@@ -1786,5 +1787,74 @@ class ShowPlanningAiServiceTest {
             .toList();
     assertEquals(1, briefcaseRows.size());
     assertEquals(BriefcaseCashInMode.PLANNED, briefcaseRows.get(0).getBriefcaseMode());
+  }
+
+  @Test
+  void planShow_mapsDeclaredResultFromAiResponse() {
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setShowName("Test Show");
+    showTemplate.setExpectedMatches(2);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 12, 25).atStartOfDay(ZoneId.of("UTC")).toInstant());
+
+    String aiResponseJson =
+        """
+        [
+          {
+            "type": "One on One",
+            "description": "Champion defends but the challenger survives",
+            "outcome": "Double count-out",
+            "result": "DRAW"
+          },
+          {
+            "type": "One on One",
+            "description": "Brawl breaks out before the bell",
+            "outcome": "Referee calls it off",
+            "result": "NO_CONTEST"
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    assertEquals(SegmentResult.DRAW, proposedShow.getSegments().get(0).getResult());
+    assertEquals(SegmentResult.NO_CONTEST, proposedShow.getSegments().get(1).getResult());
+  }
+
+  @Test
+  void planShow_unknownOrMissingResultDefaultsToWinners() {
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setShowName("Test Show");
+    showTemplate.setExpectedMatches(2);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 12, 25).atStartOfDay(ZoneId.of("UTC")).toInstant());
+
+    String aiResponseJson =
+        """
+        [
+          {
+            "type": "One on One",
+            "description": "No result field at all",
+            "outcome": "Someone wins"
+          },
+          {
+            "type": "One on One",
+            "description": "Garbage result value",
+            "outcome": "Someone wins",
+            "result": "SOMETHING_ELSE"
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    assertEquals(SegmentResult.WINNERS, proposedShow.getSegments().get(0).getResult());
+    assertEquals(SegmentResult.WINNERS, proposedShow.getSegments().get(1).getResult());
   }
 }

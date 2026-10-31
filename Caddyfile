@@ -9,6 +9,11 @@
 
 {
     local_certs
+    # Phones scanning QR codes connect by IP literal, which never carries TLS
+    # SNI (RFC 6066). Without default_sni, Caddy rejects those handshakes even
+    # though a matching IP-SAN certificate exists in storage. The :localhost
+    # fallback keeps the config valid when LAN_IP is not exported.
+    default_sni {$LAN_IP:localhost}
 }
 
 https://localhost:443 {

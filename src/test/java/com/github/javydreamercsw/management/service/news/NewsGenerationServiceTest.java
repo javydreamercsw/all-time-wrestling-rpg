@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -37,6 +38,7 @@ import com.github.javydreamercsw.management.domain.npc.NpcRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
@@ -247,6 +249,52 @@ class NewsGenerationServiceTest {
             eq(NewsCategory.BREAKING),
             eq(false),
             eq(5));
+  }
+
+  @Test
+  void testFallbackNews_bookedDraw_headlinesTheDraw() {
+    // 2.13.0: a booked draw must not render as " Victorious at ..." (empty winners)
+    // — the fallback news describes the draw instead.
+    Segment segment = new Segment();
+    segment.setShow(new Show());
+    segment.getShow().setName("Night of Champions");
+    segment.setSegmentType(new SegmentType());
+    segment.getSegmentType().setName("Iron Match");
+    segment.declareResult(SegmentResult.DRAW);
+
+    when(aiService.generateText(anyString())).thenThrow(new RuntimeException("AI Down"));
+
+    newsGenerationService.generateNewsForSegment(segment);
+
+    verify(newsService)
+        .createNewsItem(
+            eq("Showdown Ends in a Draw at Night of Champions"),
+            contains("ended in a draw"),
+            eq(NewsCategory.BREAKING),
+            eq(false),
+            eq(3));
+  }
+
+  @Test
+  void testFallbackNews_bookedNoContest_headlinesTheNoContest() {
+    Segment segment = new Segment();
+    segment.setShow(new Show());
+    segment.getShow().setName("Fallout");
+    segment.setSegmentType(new SegmentType());
+    segment.getSegmentType().setName("Street Fight");
+    segment.declareResult(SegmentResult.NO_CONTEST);
+
+    when(aiService.generateText(anyString())).thenThrow(new RuntimeException("AI Down"));
+
+    newsGenerationService.generateNewsForSegment(segment);
+
+    verify(newsService)
+        .createNewsItem(
+            eq("Match Ends in No-Contest at Fallout"),
+            contains("no-contest"),
+            eq(NewsCategory.BREAKING),
+            eq(false),
+            eq(3));
   }
 
   @Test

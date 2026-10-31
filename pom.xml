@@ -35,7 +35,7 @@
     <jacoco.it.destFile>${project.build.directory}/jacoco-it.exec</jacoco.it.destFile>
     <jacoco.unit.coverage.minimum>0.85</jacoco.unit.coverage.minimum>
     <jacoco.ut.destFile>${project.build.directory}/jacoco.exec</jacoco.ut.destFile>
-    <jacoco.version>0.8.15</jacoco.version>
+    <jacoco.version>0.8.16</jacoco.version>
     <java.version>${maven.compiler.release}</java.version>
     <jib.to.tags>${project.version}</jib.to.tags>
 
@@ -43,7 +43,7 @@
     <maven.compiler.release>25</maven.compiler.release>
     <maven.compiler.source>25</maven.compiler.source>
     <maven.compiler.target>25</maven.compiler.target>
-    <selenium.version>4.51.0</selenium.version>
+    <selenium.version>4.52.0</selenium.version>
     <skipTests>false</skipTests>
     <!-- Surefire forked-JVM parallelism for unit tests (ATW-5jhs). "1C" = one fork
          per core. Each fork runs its classes sequentially, so test isolation is
