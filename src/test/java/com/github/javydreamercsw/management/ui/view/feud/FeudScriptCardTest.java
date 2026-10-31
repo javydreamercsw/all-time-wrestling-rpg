@@ -56,6 +56,7 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.function.ValueProvider;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -405,8 +406,8 @@ class FeudScriptCardTest extends AbstractViewTest {
     // The Winner column's renderer holds the value provider in its 'provider' field
     // (ColumnPathRenderer) — evaluate it directly against the three row shapes.
     @SuppressWarnings("unchecked")
-    com.vaadin.flow.function.ValueProvider<Segment, String> provider =
-        (com.vaadin.flow.function.ValueProvider<Segment, String>)
+    ValueProvider<Segment, String> provider =
+        (ValueProvider<Segment, String>)
             ReflectionTestUtils.getField(winnerColumn.getRenderer(), "provider");
     assertEquals("Draw", provider.apply(drawSegment));
     assertEquals("No Contest", provider.apply(noContest));
