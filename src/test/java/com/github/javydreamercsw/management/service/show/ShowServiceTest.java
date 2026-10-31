@@ -765,6 +765,27 @@ class ShowServiceTest {
   }
 
   @Test
+  void preFlight_segmentWithoutWrestlers_describedAsUnnamed() {
+    // 2.13.0 (coverage gap): a segment with no participants describes as "Unnamed segment"
+    // in both pre-flight lists instead of an empty name.
+    when(showRepository.findById(1L)).thenReturn(Optional.of(show));
+    when(segmentRepository.findByShow(show)).thenReturn(Arrays.asList(pendingSegment));
+
+    ShowService.AdjudicationPreFlight preFlight = showService.getAdjudicationPreFlight(1L);
+
+    Assertions.assertEquals(1, preFlight.missingWinnerWarnings().size());
+    Assertions.assertTrue(
+        preFlight.missingWinnerWarnings().get(0).contains("Unnamed segment"),
+        "winnerless warning must describe the segment as unnamed, got: "
+            + preFlight.missingWinnerWarnings().get(0));
+    Assertions.assertEquals(1, preFlight.toNarrate().size());
+    Assertions.assertTrue(
+        preFlight.toNarrate().get(0).contains("Unnamed segment"),
+        "to-narrate entry must describe the segment as unnamed, got: "
+            + preFlight.toNarrate().get(0));
+  }
+
+  @Test
   void adjudicateShow_adjudicatesPendingSegmentsOnly() {
     when(showRepository.findById(1L)).thenReturn(Optional.of(show));
     when(segmentRepository.findByShow(show))

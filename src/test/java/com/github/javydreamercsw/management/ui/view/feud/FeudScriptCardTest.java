@@ -35,6 +35,9 @@ import com.github.javydreamercsw.management.domain.feud.FeudScriptStatus;
 import com.github.javydreamercsw.management.domain.feud.FeudScriptWinnerControl;
 import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
+import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.feud.FeudBeatAssistantService;
 import com.github.javydreamercsw.management.service.feud.FeudScriptService;
@@ -53,6 +56,7 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.textfield.TextField;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -61,6 +65,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.springframework.test.util.ReflectionTestUtils;
 
 /** Unit tests for the story-arc card shared by the rivalry detail and story-arcs list views. */
 class FeudScriptCardTest extends AbstractViewTest {
@@ -356,6 +361,59 @@ class FeudScriptCardTest extends AbstractViewTest {
 
     Grid<?> grid = _get(card, Grid.class);
     assertEquals(1, grid.getListDataView().getItemCount());
+  }
+
+  @Test
+  @DisplayName("Complete-beat match grid labels booked draws and no-contests")
+  void completeBeatDialog_winnerColumn_showsDrawAndNoContest() {
+    // 2.13.0: the link-a-match grid's Winner column shows "Draw"/"No Contest"
+    // for booked non-WINNERS results instead of an empty dash.
+    Show show = new Show();
+    show.setName("Draw Night");
+    Segment drawSegment = new Segment();
+    drawSegment.setId(11L);
+    drawSegment.setSegmentDate(Instant.parse("2026-09-03T00:00:00Z"));
+    drawSegment.setShow(show);
+    drawSegment.declareResult(SegmentResult.DRAW);
+
+    Segment noContest = new Segment();
+    noContest.setId(12L);
+    noContest.setSegmentDate(Instant.parse("2026-09-03T00:00:00Z"));
+    noContest.setShow(show);
+    noContest.declareResult(SegmentResult.NO_CONTEST);
+
+    Mockito.when(feudScriptService.findLinkableSegmentsForBeat(Mockito.any()))
+        .thenReturn(List.of(drawSegment, noContest));
+
+    FeudScriptCard card = newCard(() -> {});
+    FeudScriptBeat pending = beat(1, "Singles Match");
+    script.getBeats().add(pending);
+
+    // Karibu does not materialize the complete-beat dialog's grid until driven —
+    // open it through the private handler (same pattern as the other dialog tests).
+    ReflectionTestUtils.invokeMethod(card, "confirmCompleteBeat", pending);
+
+    Dialog dialog = _get(Dialog.class);
+    Grid<?> matchGrid = _get(dialog, Grid.class);
+    assertEquals(2, matchGrid.getListDataView().getItemCount());
+
+    var winnerColumn =
+        matchGrid.getColumns().stream()
+            .filter(c -> "Winner".equals(c.getHeaderText()))
+            .findFirst()
+            .orElseThrow();
+    // The Winner column's renderer holds the value provider in its 'provider' field
+    // (ColumnPathRenderer) — evaluate it directly against the three row shapes.
+    @SuppressWarnings("unchecked")
+    com.vaadin.flow.function.ValueProvider<Segment, String> provider =
+        (com.vaadin.flow.function.ValueProvider<Segment, String>)
+            ReflectionTestUtils.getField(winnerColumn.getRenderer(), "provider");
+    assertEquals("Draw", provider.apply(drawSegment));
+    assertEquals("No Contest", provider.apply(noContest));
+    // A winnerless WINNERS segment still renders the dash.
+    Segment undecided = new Segment();
+    undecided.setResult(SegmentResult.WINNERS);
+    assertEquals("—", provider.apply(undecided));
   }
 
   /**

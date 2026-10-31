@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.segment;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -42,6 +43,7 @@ import com.github.javydreamercsw.management.domain.show.segment.SegmentRepositor
 import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.npc.NpcService;
@@ -210,6 +212,82 @@ class SegmentNarrationGenerationServiceTest {
     var captor = ArgumentCaptor.forClass(SegmentNarrationService.SegmentNarrationContext.class);
     verify(narrationService).narrateSegment(captor.capture());
     assertTrue(captor.getValue().getDeterminedOutcome().toLowerCase().contains("draw"));
+  }
+
+  @Test
+  void bookedNoContestInformsNarrationContext() {
+    // 2.13.0 (coverage gap): NO_CONTEST must feed its own outcome text, not the draw one.
+    segment.declareResult(SegmentResult.NO_CONTEST);
+
+    service.generateForSegment(10L);
+
+    var captor = ArgumentCaptor.forClass(SegmentNarrationService.SegmentNarrationContext.class);
+    verify(narrationService).narrateSegment(captor.capture());
+    String outcome = captor.getValue().getDeterminedOutcome().toLowerCase();
+    assertTrue(outcome.contains("no-contest"), "outcome must say no-contest, got: " + outcome);
+  }
+
+  @Test
+  void titleSegmentsIncludeChampionshipContext() {
+    // 2.13.0 (coverage gap): a title segment names the championship and flags titleMatch.
+    Title title = new Title();
+    title.setName("World Heavyweight Championship");
+    segment.getTitles().add(title);
+
+    service.generateForSegment(10L);
+
+    var captor = ArgumentCaptor.forClass(SegmentNarrationService.SegmentNarrationContext.class);
+    verify(narrationService).narrateSegment(captor.capture());
+    var context = captor.getValue();
+    assertEquals("World Heavyweight Championship", context.getSegmentChampionship());
+    assertTrue(context.isTitleMatch(), "title segment must flag titleMatch");
+  }
+
+  @Test
+  void enrichSegment_skipsRefereeAssignmentWhenOneIsBooked() {
+    // 2.13.0 (coverage gap): an existing referee is never replaced.
+    Npc booked = new Npc();
+    booked.setId(5L);
+    booked.setName("Already Booked");
+    segment.setReferee(booked);
+    segment.setShow(show);
+    Npc referee = new Npc();
+    referee.setName("Earl Hebner");
+    when(npcService.findAllByType("Referee")).thenReturn(List.of(referee));
+    when(npcService.pickUnusedReferee(anyList(), anyList())).thenReturn(referee);
+
+    service.generateForSegment(10L);
+
+    assertSame(booked, segment.getReferee(), "booked referee must not be replaced");
+  }
+
+  @Test
+  void enrichSegment_refereePoolEmpty_leavesSegmentWithoutReferee() {
+    // 2.13.0 (coverage gap): no referees configured — segment proceeds without one.
+    segment.setShow(show);
+    when(npcService.findAllByType("Referee")).thenReturn(List.of());
+
+    service.generateForSegment(10L);
+
+    assertNull(segment.getReferee());
+  }
+
+  @Test
+  void buildContext_titleNamesJoinWithAnd() {
+    // 2.13.0 (coverage gap): two titles on one segment render "A and B".
+    Title t1 = new Title();
+    t1.setName("Intercontinental Title");
+    Title t2 = new Title();
+    t2.setName("World Title");
+    segment.getTitles().add(t1);
+    segment.getTitles().add(t2);
+
+    service.generateForSegment(10L);
+
+    var captor = ArgumentCaptor.forClass(SegmentNarrationService.SegmentNarrationContext.class);
+    verify(narrationService).narrateSegment(captor.capture());
+    assertEquals(
+        "Intercontinental Title and World Title", captor.getValue().getSegmentChampionship());
   }
 
   @Test
