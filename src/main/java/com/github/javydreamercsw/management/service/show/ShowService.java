@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
@@ -46,6 +47,7 @@ import com.github.javydreamercsw.management.service.gm.GmModeService;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.news.NewsGenerationService;
+import com.github.javydreamercsw.management.service.segment.SegmentNarrationGenerationService;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService.NpcRecoveryResult;
@@ -61,6 +63,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -101,6 +104,7 @@ public class ShowService {
   private final GmModeService gmModeService;
   private final ShowQualityService showQualityService;
   private final TournamentService tournamentService;
+  private final SegmentNarrationGenerationService segmentNarrationGenerationService;
 
   ShowService(
       final CampaignRepository campaignRepository,
@@ -124,7 +128,8 @@ public class ShowService {
       final ArenaRepository arenaRepository,
       final GmModeService gmModeService,
       final ShowQualityService showQualityService,
-      final TournamentService tournamentService) {
+      final TournamentService tournamentService,
+      final SegmentNarrationGenerationService segmentNarrationGenerationService) {
     this.campaignRepository = campaignRepository;
     this.showRepository = showRepository;
     this.showTypeRepository = showTypeRepository;
@@ -147,6 +152,7 @@ public class ShowService {
     this.gmModeService = gmModeService;
     this.showQualityService = showQualityService;
     this.tournamentService = tournamentService;
+    this.segmentNarrationGenerationService = segmentNarrationGenerationService;
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -532,6 +538,56 @@ public class ShowService {
 
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  public AdjudicationPreFlight getAdjudicationPreFlight(@NonNull final Long showId) {
+    Show show =
+        showRepository
+            .findById(showId)
+            .orElseThrow(() -> new IllegalArgumentException("Show not found: " + showId));
+
+    List<String> missingWinnerWarnings = new ArrayList<>();
+    List<String> toNarrate = new ArrayList<>();
+    for (Segment segment : segmentRepository.findByShow(show)) {
+      if (segment.getAdjudicationStatus() != AdjudicationStatus.PENDING) {
+        continue;
+      }
+      if (!segment.isNarrationGenerated()) {
+        toNarrate.add(
+            "Segment %d: %s (AI narration will be generated)"
+                .formatted(segment.getSegmentOrder(), describeSegment(segment)));
+      }
+      boolean isPromo = WellKnownSegmentType.PROMO.matches(segment.getSegmentType());
+      if (!isPromo
+          && segment.getResult() == SegmentResult.WINNERS
+          && segment.getWinners().isEmpty()) {
+        missingWinnerWarnings.add(
+            "Segment %d: %s — no winner selected"
+                .formatted(segment.getSegmentOrder(), describeSegment(segment)));
+      }
+    }
+    return new AdjudicationPreFlight(
+        missingWinnerWarnings,
+        toNarrate,
+        segmentNarrationGenerationService.isNarrationProviderAvailable());
+  }
+
+  private String describeSegment(@NonNull final Segment segment) {
+    String names =
+        segment.getWrestlers().stream().map(Wrestler::getName).collect(Collectors.joining(" vs "));
+    return names.isEmpty() ? "Unnamed segment" : names;
+  }
+
+  /**
+   * Pre-adjudication summary shown in the ShowDetailView confirm dialog. {@code
+   * narrationProviderAvailable} lets the dialog say up front when narration will be skipped (no AI
+   * provider configured) instead of promising it in the to-narrate list.
+   */
+  public record AdjudicationPreFlight(
+      List<String> missingWinnerWarnings,
+      List<String> toNarrate,
+      boolean narrationProviderAvailable) {}
+
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @CacheEvict(
       value = {CacheConfig.SHOWS_CACHE, CacheConfig.CALENDAR_CACHE},
       allEntries = true)
@@ -542,6 +598,46 @@ public class ShowService {
             .orElseThrow(() -> new IllegalArgumentException("Show not found: " + showId));
 
     Set<Long> participatingWrestlerIds = new HashSet<>();
+
+    // Narration phase (2.13.0): generate full narrations for pending segments still
+    // carrying only the AI-planning brief description. Each segment commits in its own
+    // transaction (REQUIRES_NEW) before adjudication starts, so news generation below
+    // works from real narrations. AI failure never blocks the show: warn and continue.
+    List<Segment> pendingSegments =
+        segmentRepository.findByShow(show).stream()
+            .filter(segment -> segment.getAdjudicationStatus() == AdjudicationStatus.PENDING)
+            .toList();
+    for (Segment pending : pendingSegments) {
+      if (pending.isNarrationGenerated()) {
+        continue;
+      }
+      try {
+        SegmentNarrationGenerationService.GeneratedNarration generated =
+            segmentNarrationGenerationService.generateForSegment(pending.getId());
+        if (generated != null) {
+          // The generation committed in its own transaction (REQUIRES_NEW); this outer
+          // persistence context still holds the pre-generation copy — and on MySQL its
+          // REPEATABLE READ snapshot would make even a re-read return that stale row.
+          // Apply the returned values to the managed instance instead, so the
+          // adjudication loop below persists the fresh narration, not the stale one.
+          pending.setNarration(generated.narration());
+          pending.setNarrationGenerated(true);
+          if (generated.summary() != null) {
+            pending.setSummary(generated.summary());
+          }
+          if (generated.referee() != null) {
+            pending.setReferee(generated.referee());
+            pending.setRefereeAwarenessLevel(generated.refereeAwareness());
+          }
+        }
+      } catch (Exception e) {
+        log.warn(
+            "Narration generation failed for segment {} — proceeding with the existing"
+                + " description: {}",
+            pending.getId(),
+            e.getMessage());
+      }
+    }
 
     segmentRepository.findByShow(show).stream()
         .filter(segment -> segment.getAdjudicationStatus() == AdjudicationStatus.PENDING)

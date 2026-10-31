@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.ui.view.league;
 
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.management.domain.league.MatchFulfillment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
 import com.vaadin.flow.component.button.Button;
@@ -46,6 +47,21 @@ public class MatchReportDialog extends Dialog {
     VerticalLayout layout = new VerticalLayout();
     layout.add(new H3(fulfillment.getSegment().getShow().getName()));
     layout.add(new Span("Match: " + fulfillment.getSegment().getSegmentType().getName()));
+
+    // A booked draw/no-contest is the booker's call — there is no result to report.
+    if (fulfillment.getSegment().getResult() != null
+        && fulfillment.getSegment().getResult() != SegmentResult.WINNERS) {
+      layout.add(
+          new Span(
+              "This match was booked as a "
+                  + (fulfillment.getSegment().getResult() == SegmentResult.DRAW
+                      ? "draw"
+                      : "no-contest")
+                  + " — there is no result to report."));
+      getFooter().add(new Button("Close", e -> close()));
+      add(layout);
+      return;
+    }
 
     List<Wrestler> participants = fulfillment.getSegment().getWrestlers();
     ComboBox<Wrestler> winnerSelect = new ComboBox<>();

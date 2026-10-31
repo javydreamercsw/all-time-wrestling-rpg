@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -33,13 +34,16 @@ import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
+import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
@@ -57,6 +61,7 @@ import com.github.javydreamercsw.management.service.gm.GmModeService;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.news.NewsGenerationService;
+import com.github.javydreamercsw.management.service.segment.SegmentNarrationGenerationService;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.math.BigDecimal;
@@ -104,6 +109,7 @@ class ShowServiceTest {
   @Mock private Clock clock;
   @Mock private ShowQualityService showQualityService;
   @Mock private TournamentService tournamentService;
+  @Mock private SegmentNarrationGenerationService segmentNarrationGenerationService;
 
   private ShowService showService;
 
@@ -141,7 +147,8 @@ class ShowServiceTest {
             arenaRepository,
             gmModeService,
             showQualityService,
-            tournamentService);
+            tournamentService,
+            segmentNarrationGenerationService);
 
     // Default recovery outcome for the post-show healing loop
     when(wrestlerService.performNpcRecovery(anyLong(), anyLong(), any()))
@@ -702,6 +709,62 @@ class ShowServiceTest {
   // ---------------------------------------------------------------------------
 
   @Test
+  void preFlight_listsMissingWinnerSegmentsAndToNarrate() {
+    pendingSegment.addParticipant(wrestler1);
+    pendingSegment.addParticipant(wrestler2);
+    when(showRepository.findById(1L)).thenReturn(Optional.of(show));
+    // pendingSegment is a non-promo match with no winners → warning; also unnarrated → to-narrate.
+    when(segmentRepository.findByShow(show)).thenReturn(Arrays.asList(pendingSegment));
+
+    ShowService.AdjudicationPreFlight preFlight = showService.getAdjudicationPreFlight(1L);
+
+    Assertions.assertEquals(1, preFlight.missingWinnerWarnings().size());
+    Assertions.assertTrue(preFlight.missingWinnerWarnings().get(0).contains("Wrestler A"));
+    Assertions.assertEquals(1, preFlight.toNarrate().size());
+  }
+
+  @Test
+  void preFlight_bookedDrawIsNotAWarning() {
+    pendingSegment.declareResult(SegmentResult.DRAW);
+    when(showRepository.findById(1L)).thenReturn(Optional.of(show));
+    when(segmentRepository.findByShow(show)).thenReturn(Arrays.asList(pendingSegment));
+
+    ShowService.AdjudicationPreFlight preFlight = showService.getAdjudicationPreFlight(1L);
+
+    Assertions.assertEquals(0, preFlight.missingWinnerWarnings().size());
+  }
+
+  @Test
+  void preFlight_promoWithoutWinnersIsNotAWarning() {
+    SegmentType promoType = new SegmentType();
+    promoType.setName("Promo");
+    promoType.setCode(WellKnownSegmentType.PROMO.getCode());
+    pendingSegment.setSegmentType(promoType);
+    when(showRepository.findById(1L)).thenReturn(Optional.of(show));
+    when(segmentRepository.findByShow(show)).thenReturn(Arrays.asList(pendingSegment));
+
+    ShowService.AdjudicationPreFlight preFlight = showService.getAdjudicationPreFlight(1L);
+
+    Assertions.assertEquals(0, preFlight.missingWinnerWarnings().size());
+  }
+
+  @Test
+  void preFlight_reportsNarrationProviderAvailability() {
+    // 2.13.0: the dialog must say up front when narration will be skipped because no
+    // AI provider is configured, instead of listing "(AI narration will be generated)".
+    when(showRepository.findById(1L)).thenReturn(Optional.of(show));
+    when(segmentRepository.findByShow(show)).thenReturn(Arrays.asList(pendingSegment));
+    when(segmentNarrationGenerationService.isNarrationProviderAvailable()).thenReturn(false);
+
+    ShowService.AdjudicationPreFlight unavailable = showService.getAdjudicationPreFlight(1L);
+    Assertions.assertFalse(unavailable.narrationProviderAvailable());
+
+    when(segmentNarrationGenerationService.isNarrationProviderAvailable()).thenReturn(true);
+    ShowService.AdjudicationPreFlight available = showService.getAdjudicationPreFlight(1L);
+    Assertions.assertTrue(available.narrationProviderAvailable());
+  }
+
+  @Test
   void adjudicateShow_adjudicatesPendingSegmentsOnly() {
     when(showRepository.findById(1L)).thenReturn(Optional.of(show));
     when(segmentRepository.findByShow(show))
@@ -724,6 +787,91 @@ class ShowServiceTest {
     assertThatThrownBy(() -> showService.adjudicateShow(999L))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Show not found: 999");
+  }
+
+  @Test
+  void adjudicateShow_generatesNarrationForPendingUnnarratedSegmentsFirst() {
+    when(showRepository.findById(1L)).thenReturn(Optional.of(show));
+    when(segmentRepository.findByShow(show))
+        .thenReturn(Arrays.asList(pendingSegment, adjudicatedSegment));
+    when(wrestlerRepository.findAll()).thenReturn(Collections.emptyList());
+
+    showService.adjudicateShow(1L);
+
+    // Narration generation happens for the pending, not-yet-narrated segment.
+    verify(segmentNarrationGenerationService).generateForSegment(10L);
+    // Already-adjudicated segments are never re-narrated.
+    verify(segmentNarrationGenerationService, never()).generateForSegment(11L);
+    // Narration runs before adjudication: the adjudication loop still processed the segment.
+    verify(segmentAdjudicationService, times(1)).adjudicateMatch(pendingSegment);
+  }
+
+  @Test
+  void adjudicateShow_appliesGeneratedNarrationToManagedSegment() {
+    // 2.13.0 review fix: the generation commits in a REQUIRES_NEW transaction the outer
+    // (MySQL REPEATABLE READ) snapshot cannot see — the returned state must be applied
+    // to the managed entity or the adjudication loop persists the stale copy.
+    when(showRepository.findById(1L)).thenReturn(Optional.of(show));
+    when(segmentRepository.findByShow(show)).thenReturn(Arrays.asList(pendingSegment));
+    when(wrestlerRepository.findAll()).thenReturn(Collections.emptyList());
+    when(segmentNarrationGenerationService.generateForSegment(10L))
+        .thenReturn(
+            new SegmentNarrationGenerationService.GeneratedNarration(
+                "Fresh AI narration", "Fresh summary", null, 0));
+
+    showService.adjudicateShow(1L);
+
+    Assertions.assertEquals("Fresh AI narration", pendingSegment.getNarration());
+    Assertions.assertEquals("Fresh summary", pendingSegment.getSummary());
+    Assertions.assertEquals(AdjudicationStatus.ADJUDICATED, pendingSegment.getAdjudicationStatus());
+  }
+
+  @Test
+  void adjudicateShow_appliesGeneratedRefereeToManagedSegment() {
+    Npc referee = new Npc();
+    referee.setId(77L);
+    referee.setName("Earl Hebner");
+    when(showRepository.findById(1L)).thenReturn(Optional.of(show));
+    when(segmentRepository.findByShow(show)).thenReturn(Arrays.asList(pendingSegment));
+    when(wrestlerRepository.findAll()).thenReturn(Collections.emptyList());
+    when(segmentNarrationGenerationService.generateForSegment(10L))
+        .thenReturn(
+            new SegmentNarrationGenerationService.GeneratedNarration(
+                "Fresh AI narration", null, referee, 3));
+
+    showService.adjudicateShow(1L);
+
+    Assertions.assertSame(referee, pendingSegment.getReferee());
+    Assertions.assertEquals(3, pendingSegment.getRefereeAwarenessLevel());
+  }
+
+  @Test
+  void adjudicateShow_narrationFailureDoesNotBlockAdjudication() {
+    when(showRepository.findById(1L)).thenReturn(Optional.of(show));
+    when(segmentRepository.findByShow(show))
+        .thenReturn(Arrays.asList(pendingSegment, adjudicatedSegment));
+    when(wrestlerRepository.findAll()).thenReturn(Collections.emptyList());
+    doThrow(new RuntimeException("AI provider down"))
+        .when(segmentNarrationGenerationService)
+        .generateForSegment(10L);
+
+    showService.adjudicateShow(1L);
+
+    // The AI failure is contained: adjudication proceeded for every pending segment.
+    verify(segmentAdjudicationService, times(1)).adjudicateMatch(pendingSegment);
+    Assertions.assertEquals(AdjudicationStatus.ADJUDICATED, pendingSegment.getAdjudicationStatus());
+  }
+
+  @Test
+  void adjudicateShow_skipsNarrationWhenAlreadyGenerated() {
+    pendingSegment.setNarrationGenerated(true);
+    when(showRepository.findById(1L)).thenReturn(Optional.of(show));
+    when(segmentRepository.findByShow(show)).thenReturn(Arrays.asList(pendingSegment));
+    when(wrestlerRepository.findAll()).thenReturn(Collections.emptyList());
+
+    showService.adjudicateShow(1L);
+
+    verify(segmentNarrationGenerationService, never()).generateForSegment(anyLong());
   }
 
   @Test

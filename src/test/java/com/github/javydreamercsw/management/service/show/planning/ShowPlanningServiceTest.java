@@ -43,6 +43,7 @@ import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
@@ -2126,5 +2127,52 @@ class ShowPlanningServiceTest {
 
     verify(briefcaseCashInAdvisorService, never()).proposalsFor(any());
     verify(titleOpportunityService, never()).recordDecline(anyLong());
+  }
+
+  @Test
+  void approveSegments_bookedDrawClearsWinnersAndPersistsResult() {
+    ProposedSegment proposed = new ProposedSegment();
+    proposed.setType("Singles Match");
+    proposed.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+    proposed.setWinners(List.of("Wrestler A")); // AI named a winner too — must be cleared
+    proposed.setResult(SegmentResult.DRAW);
+
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+
+    SegmentType segmentType = new SegmentType();
+    segmentType.setName("Singles Match");
+    when(segmentTypeService.findByName("Singles Match")).thenReturn(Optional.of(segmentType));
+
+    showPlanningService.approveSegments(show, List.of(proposed));
+
+    ArgumentCaptor<List<Segment>> segmentsCaptor = ArgumentCaptor.forClass(List.class);
+    verify(segmentRepository).saveAll(segmentsCaptor.capture());
+    Segment captured = segmentsCaptor.getValue().get(0);
+
+    assertEquals(SegmentResult.DRAW, captured.getResult());
+    assertTrue(captured.getWinners().isEmpty(), "a booked draw must not carry winners");
+  }
+
+  @Test
+  void approveSegments_tournamentRowWithNonWinnersResultForcedToWinners() {
+    ProposedSegment proposed = new ProposedSegment();
+    proposed.setType("Singles Match");
+    proposed.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+    proposed.setWinners(List.of("Wrestler A"));
+    proposed.setResult(SegmentResult.NO_CONTEST);
+    proposed.setSource(ProposedSegment.SOURCE_TOURNAMENT);
+
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+
+    SegmentType segmentType = new SegmentType();
+    segmentType.setName("Singles Match");
+    when(segmentTypeService.findByName("Singles Match")).thenReturn(Optional.of(segmentType));
+
+    showPlanningService.approveSegments(show, List.of(proposed));
+
+    // Tournament rows are consumed by the show-attached tournament booking block, not
+    // saved directly — the guard is observable on the proposed row itself: a non-WINNERS
+    // result is forced back to WINNERS so the bracket always resolves.
+    assertEquals(SegmentResult.WINNERS, proposed.getResult(), "tournament matches must resolve");
   }
 }

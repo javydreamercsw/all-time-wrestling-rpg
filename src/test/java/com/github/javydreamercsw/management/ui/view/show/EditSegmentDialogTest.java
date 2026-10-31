@@ -29,6 +29,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
@@ -444,5 +445,120 @@ class EditSegmentDialogTest {
         segment.getTeamIds(),
         "teamIds must be null after save so approveSegments uses the user-edited teams, not stale"
             + " AI team IDs");
+  }
+
+  @Test
+  void selectingDrawDisablesWinnersAndSavesDeclaredResult() {
+    EditSegmentDialog dialog =
+        new EditSegmentDialog(
+            segment,
+            wrestlerService,
+            titleService,
+            segmentTypeService,
+            segmentRuleService,
+            npcService,
+            expansionService,
+            null,
+            1L,
+            onSave);
+    dialog.open();
+    dialog.getSegmentTypeCombo().setValue(matchType);
+
+    // Seed a winner, then declare a draw — the combo must clear and disable.
+    Wrestler wrestler1 = wrestlerService.findAllFiltered(null, null, 1L).get(0);
+    dialog.getWinnersCombo().setValue(Set.of(wrestler1));
+    dialog.getResultRadio().setValue(SegmentResult.DRAW);
+    assertFalse(dialog.getWinnersCombo().isEnabled());
+
+    dialog.save();
+
+    assertEquals(SegmentResult.DRAW, segment.getResult());
+    assertTrue(
+        segment.getWinners() == null || segment.getWinners().isEmpty(),
+        "a booked draw must not carry winners");
+    verify(onSave).run();
+  }
+
+  @Test
+  void selectingWinnersKeepsWinnersEnabled() {
+    EditSegmentDialog dialog =
+        new EditSegmentDialog(
+            segment,
+            wrestlerService,
+            titleService,
+            segmentTypeService,
+            segmentRuleService,
+            npcService,
+            expansionService,
+            null,
+            1L,
+            onSave);
+    dialog.open();
+    dialog.getSegmentTypeCombo().setValue(matchType);
+
+    assertTrue(dialog.getWinnersCombo().isEnabled());
+    dialog.getResultRadio().setValue(SegmentResult.WINNERS);
+    assertTrue(dialog.getWinnersCombo().isEnabled());
+  }
+
+  @Test
+  void tournamentBoundSegment_locksResultAtWinners() {
+    // Review fix: a tournament-bound segment edited directly in the booking dialog must not
+    // be bookable as a draw/no-contest — the bracket could never resolve. The AI path is
+    // already guarded in ShowPlanningService.approveSegments; this closes the direct-edit gap.
+    segment.setSource(ProposedSegment.SOURCE_TOURNAMENT);
+
+    EditSegmentDialog dialog =
+        new EditSegmentDialog(
+            segment,
+            wrestlerService,
+            titleService,
+            segmentTypeService,
+            segmentRuleService,
+            npcService,
+            expansionService,
+            null,
+            1L,
+            onSave);
+    dialog.open();
+    dialog.getSegmentTypeCombo().setValue(matchType);
+
+    assertFalse(
+        dialog.getResultRadio().isEnabled(),
+        "tournament-bound segment must lock the outcome selector at Winners");
+    assertEquals(
+        SegmentResult.WINNERS,
+        dialog.getResultRadio().getValue(),
+        "tournament-bound segment must load with Winners selected");
+    assertTrue(
+        dialog.getWinnersCombo().isEnabled(),
+        "winners combo stays enabled for tournament segments");
+
+    // Save still works and declares WINNERS.
+    dialog.save();
+    assertEquals(SegmentResult.WINNERS, segment.getResult());
+    verify(onSave).run();
+  }
+
+  @Test
+  void nonTournamentSegment_keepsResultRadioEnabled() {
+    EditSegmentDialog dialog =
+        new EditSegmentDialog(
+            segment,
+            wrestlerService,
+            titleService,
+            segmentTypeService,
+            segmentRuleService,
+            npcService,
+            expansionService,
+            null,
+            1L,
+            onSave);
+    dialog.open();
+    dialog.getSegmentTypeCombo().setValue(matchType);
+
+    assertTrue(
+        dialog.getResultRadio().isEnabled(),
+        "non-tournament segments keep the outcome selector enabled");
   }
 }

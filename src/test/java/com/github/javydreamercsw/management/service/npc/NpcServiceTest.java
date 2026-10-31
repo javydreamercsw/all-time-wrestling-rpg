@@ -78,6 +78,36 @@ class NpcServiceTest {
   }
 
   @Test
+  void pickUnusedReferee_skipsRefereeAlreadyAssignedOnShow() {
+    Npc bookedRef = new Npc();
+    bookedRef.setId(7L);
+    bookedRef.setName("Booked Ref");
+    Npc freeRef = new Npc();
+    freeRef.setId(8L);
+    freeRef.setName("Free Ref");
+
+    Npc picked = npcService.pickUnusedReferee(List.of(bookedRef, freeRef), List.of(bookedRef));
+
+    assertEquals(freeRef, picked);
+  }
+
+  @Test
+  void pickUnusedReferee_fallsBackToFullPoolWhenAllBooked() {
+    Npc onlyRef = new Npc();
+    onlyRef.setId(7L);
+    onlyRef.setName("Only Ref");
+
+    Npc picked = npcService.pickUnusedReferee(List.of(onlyRef), List.of(onlyRef));
+
+    assertEquals(onlyRef, picked);
+  }
+
+  @Test
+  void pickUnusedReferee_emptyPoolReturnsNull() {
+    assertNull(npcService.pickUnusedReferee(List.of(), List.of()));
+  }
+
+  @Test
   void testFindAllByType() {
     List<Npc> npcs = new ArrayList<>();
     npcs.add(npc);
