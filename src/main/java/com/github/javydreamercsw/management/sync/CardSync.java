@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -150,13 +151,13 @@ public class CardSync implements DataSyncContributor {
     }
   }
 
-  private static Card fromDto(CardDTO dto, CardSet set) {
+  private static Card fromDto(@NonNull CardDTO dto, @NonNull CardSet set) {
     Card card = new Card();
     applyDto(card, dto, set);
     return card;
   }
 
-  private static void applyDto(Card card, CardDTO dto, CardSet set) {
+  private static void applyDto(@NonNull Card card, @NonNull CardDTO dto, @NonNull CardSet set) {
     card.setName(dto.getName());
     card.setDamage(dto.getDamage());
     card.setFinisher(dto.isFinisher());
