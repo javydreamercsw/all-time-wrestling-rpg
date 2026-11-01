@@ -53,11 +53,39 @@ public class CardSetSync implements DataSyncContributor {
   @Override
   public void sync() {
     if (skipIfNotEmpty && cardSetService.count() > 0) {
+      topUpMissingCardSets();
       return;
     }
+    loadCardSets(true);
+  }
+
+  /**
+   * Skip-gate branch: the table is non-empty and the {@code skip-if-not-empty} flag protects
+   * existing rows from seed-driven updates. Still insert seed entries that don't exist yet, so
+   * catalogs added in later releases reach flag-protected installs. Existing rows are never
+   * re-saved.
+   */
+  private void topUpMissingCardSets() {
+    List<CardSet> missing = loadCardSets(false);
+    if (!missing.isEmpty()) {
+      log.info("Card set top-up: inserting {} missing seed card set(s).", missing.size());
+      cardSetService.saveAll(missing);
+    }
+  }
+
+  /**
+   * Loads card sets from {@code sets.json}.
+   *
+   * @param updateExisting when true, updates existing rows to match the seed file (full sync); when
+   *     false, only entries missing from the database are returned and existing rows are left
+   *     untouched.
+   * @return Card sets that were inserted or need saving.
+   */
+  private List<CardSet> loadCardSets(boolean updateExisting) {
     ClassPathResource resource = new ClassPathResource("sets.json");
     if (!resource.exists()) {
-      return;
+      log.warn("Card sets file not found: {}", resource.getPath());
+      return List.of();
     }
     log.debug("Loading card sets from file: {}", resource.getPath());
     try (var is = resource.getInputStream()) {
@@ -66,17 +94,23 @@ public class CardSetSync implements DataSyncContributor {
       for (CardSet c : setsFromFile) {
         Optional<CardSet> existingOpt = cardSetService.findBySetCode(c.getCode());
         if (existingOpt.isPresent()) {
-          CardSet existing = existingOpt.get();
-          existing.setName(c.getName());
-          toSave.add(existing);
+          if (updateExisting) {
+            CardSet existing = existingOpt.get();
+            existing.setName(c.getName());
+            toSave.add(existing);
+          }
         } else {
           toSave.add(c);
         }
       }
-      cardSetService.saveAll(toSave);
+      if (!toSave.isEmpty() && updateExisting) {
+        cardSetService.saveAll(toSave);
+      }
       log.debug("Card sets loading completed - {} sets processed", setsFromFile.size());
+      return toSave;
     } catch (IOException e) {
       log.error("Error loading card sets from file", e);
+      return List.of();
     }
   }
 }
