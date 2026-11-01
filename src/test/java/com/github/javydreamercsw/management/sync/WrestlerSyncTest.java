@@ -231,13 +231,10 @@ class WrestlerSyncTest {
     skipSync.sync();
 
     @SuppressWarnings("unchecked")
-    ArgumentCaptor<List<Wrestler>> captor =
-        ArgumentCaptor.forClass(List.class);
+    ArgumentCaptor<List<Wrestler>> captor = ArgumentCaptor.forClass(List.class);
     verify(wrestlerRepository, atLeastOnce()).saveAll(captor.capture());
     List<Wrestler> saved =
-        captor.getAllValues().stream()
-            .flatMap(List::stream)
-            .collect(Collectors.toList());
+        captor.getAllValues().stream().flatMap(List::stream).collect(Collectors.toList());
     long seededCount =
         Arrays.stream(
                 new PathMatchingResourcePatternResolver()

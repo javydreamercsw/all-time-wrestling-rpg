@@ -80,9 +80,7 @@ class CardSyncTest {
     ArgumentCaptor<List<Card>> captor = ArgumentCaptor.forClass(List.class);
     verify(cardService, atLeastOnce()).saveAll(captor.capture());
     List<Card> saved =
-        captor.getAllValues().stream()
-            .flatMap(List::stream)
-            .collect(Collectors.toList());
+        captor.getAllValues().stream().flatMap(List::stream).collect(Collectors.toList());
     assertFalse(saved.stream().anyMatch(c -> c == existing), "existing card must not be re-saved");
     assertFalse(
         saved.stream().anyMatch(c -> "ATW".equals(c.getSet().getCode()) && c.getNumber() == 60));

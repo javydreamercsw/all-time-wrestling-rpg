@@ -114,9 +114,7 @@ class DeckSyncTest {
     ArgumentCaptor<List<Deck>> captor = ArgumentCaptor.forClass(List.class);
     verify(deckService, atLeastOnce()).saveAll(captor.capture());
     List<Deck> saved =
-        captor.getAllValues().stream()
-            .flatMap(List::stream)
-            .collect(Collectors.toList());
+        captor.getAllValues().stream().flatMap(List::stream).collect(Collectors.toList());
     assertFalse(saved.isEmpty(), "Eddie's new deck must be saved");
   }
 
