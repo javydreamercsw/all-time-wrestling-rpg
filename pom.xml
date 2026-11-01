@@ -43,7 +43,7 @@
     <maven.compiler.release>25</maven.compiler.release>
     <maven.compiler.source>25</maven.compiler.source>
     <maven.compiler.target>25</maven.compiler.target>
-    <selenium.version>4.51.0</selenium.version>
+    <selenium.version>4.52.0</selenium.version>
     <skipTests>false</skipTests>
     <!-- Surefire forked-JVM parallelism for unit tests (ATW-5jhs). "1C" = one fork
          per core. Each fork runs its classes sequentially, so test isolation is
