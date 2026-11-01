@@ -16,8 +16,11 @@
 */
 package com.github.javydreamercsw.management.sync;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
@@ -35,10 +38,15 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateReposit
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -116,11 +124,52 @@ class WrestlerSyncTest {
             resourcePatternResolver,
             new ObjectMapper());
     when(wrestlerRepository.count()).thenReturn(10L);
+    when(wrestlerRepository.findAllWithAlignments()).thenReturn(List.of());
+    when(wrestlerService.getOrCreateState(any(), any())).thenReturn(new WrestlerState());
 
     skipSync.sync();
 
-    verify(wrestlerRepository, never()).saveAll(any());
-    verify(wrestlerRepository, never()).flush();
+    // Empty-but-flagged install: the top-up seeds everything missing (all seed files' wrestlers
+    // are absent). The gate's guarantee is about existing rows, so assert insertions happened.
+    verify(wrestlerRepository, atLeastOnce()).saveAll(any());
+  }
+
+  @Test
+  void sync_topUpNeverResavesExistingWrestlerWhenSkipFlagSet() {
+    Wrestler existing = new Wrestler();
+    existing.setId(1L);
+    existing.setName("Rob Van Dam");
+    existing.setDescription("user-modified description");
+    when(wrestlerRepository.count()).thenReturn(1L);
+    when(wrestlerRepository.findAllWithAlignments()).thenReturn(List.of(existing));
+    when(wrestlerRepository.findAll()).thenReturn(List.of(existing));
+    when(wrestlerService.getOrCreateState(any(), any())).thenReturn(new WrestlerState());
+
+    WrestlerSync skipSync =
+        new WrestlerSync(
+            true,
+            wrestlerRepository,
+            wrestlerAbilityRepository,
+            wrestlerService,
+            universeRepository,
+            wrestlerStateRepository,
+            npcService,
+            tierRecalculationService,
+            resourcePatternResolver,
+            new ObjectMapper());
+
+    skipSync.sync();
+
+    // Rob Van Dam is seeded but already exists: under the skip gate his row must never be
+    // re-saved (data-protection guarantee) and user modifications must survive.
+    verify(wrestlerRepository, never())
+        .saveAll(
+            argThat(
+                list ->
+                    list != null
+                        && StreamSupport.stream(list.spliterator(), false)
+                            .anyMatch(w -> w == existing)));
+    assertEquals("user-modified description", existing.getDescription());
   }
 
   @Test
@@ -129,8 +178,10 @@ class WrestlerSyncTest {
     existing.setId(1L);
     existing.setName("Rob Van Dam");
     when(wrestlerRepository.count()).thenReturn(1L);
+    when(wrestlerRepository.findAllWithAlignments()).thenReturn(List.of(existing));
     when(wrestlerRepository.findAll()).thenReturn(List.of(existing));
     when(wrestlerAbilityRepository.findByWrestler(existing)).thenReturn(List.of());
+    when(wrestlerService.getOrCreateState(any(), any())).thenReturn(new WrestlerState());
 
     WrestlerSync skipSync =
         new WrestlerSync(
@@ -148,6 +199,61 @@ class WrestlerSyncTest {
     skipSync.sync();
 
     verify(wrestlerAbilityRepository, atLeastOnce()).save(any());
+  }
+
+  @Test
+  void sync_topUpInsertsMissingWrestlersWhenSkipFlagSet() throws Exception {
+    // Simulates a flag-protected install that predates recent expansions: one seeded wrestler
+    // exists (Rob Van Dam), every other seeded wrestler is missing. Top-up must insert exactly
+    // the missing rows and never the existing one. The expected count is derived from the same
+    // resources the sync reads so the assertion holds regardless of classpath contents.
+    when(wrestlerRepository.count()).thenReturn(45L);
+    Wrestler existing = new Wrestler();
+    existing.setId(1L);
+    existing.setName("Rob Van Dam");
+    when(wrestlerRepository.findAllWithAlignments()).thenReturn(List.of(existing));
+    when(wrestlerRepository.findAll()).thenReturn(List.of(existing));
+    when(wrestlerService.getOrCreateState(any(), any())).thenReturn(new WrestlerState());
+
+    WrestlerSync skipSync =
+        new WrestlerSync(
+            true,
+            wrestlerRepository,
+            wrestlerAbilityRepository,
+            wrestlerService,
+            universeRepository,
+            wrestlerStateRepository,
+            npcService,
+            tierRecalculationService,
+            resourcePatternResolver,
+            new ObjectMapper());
+
+    skipSync.sync();
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Wrestler>> captor = ArgumentCaptor.forClass(List.class);
+    verify(wrestlerRepository, atLeastOnce()).saveAll(captor.capture());
+    List<Wrestler> saved =
+        captor.getAllValues().stream().flatMap(List::stream).collect(Collectors.toList());
+    long seededCount =
+        Arrays.stream(
+                new PathMatchingResourcePatternResolver()
+                    .getResources("classpath*:wrestlers/*.json"))
+            .filter(Resource::exists)
+            .mapToLong(
+                r -> {
+                  try (var is = r.getInputStream()) {
+                    return new ObjectMapper().readValue(is, List.class).size();
+                  } catch (IOException e) {
+                    return 0L;
+                  }
+                })
+            .sum();
+    assertEquals(
+        seededCount - 1,
+        saved.size(),
+        "every seeded wrestler except the existing one must be inserted");
+    assertFalse(saved.stream().anyMatch(w -> "Rob Van Dam".equals(w.getName())));
   }
 
   @Test
