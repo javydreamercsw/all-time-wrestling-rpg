@@ -76,11 +76,39 @@ public class DeckSync implements DataSyncContributor {
   @Override
   public void sync() {
     if (skipIfNotEmpty && deckService.count() > 0) {
+      topUpMissingDecks();
       return;
     }
+    loadDecks(true);
+  }
+
+  /**
+   * Skip-gate branch: decks exist and the {@code skip-if-not-empty} flag protects them from
+   * seed-driven updates. Still create decks for wrestlers that have none, so wrestlers added in
+   * later releases get their seeded deck on flag-protected installs. Existing decks are never
+   * modified.
+   */
+  private void topUpMissingDecks() {
+    List<Deck> missing = loadDecks(false);
+    if (!missing.isEmpty()) {
+      log.info("Deck top-up: creating {} missing wrestler deck(s).", missing.size());
+      deckService.saveAll(missing);
+    }
+  }
+
+  /**
+   * Loads decks from {@code decks.json}.
+   *
+   * @param updateExisting when true, updates existing decks to match the seed file (full sync);
+   *     when false, only wrestlers without any deck get one built from the seed and existing decks
+   *     are left untouched.
+   * @return Decks that were created or need saving.
+   */
+  private List<Deck> loadDecks(boolean updateExisting) {
     ClassPathResource resource = new ClassPathResource("decks.json");
     if (!resource.exists()) {
-      return;
+      log.warn("Decks file not found: {}", resource.getPath());
+      return List.of();
     }
     log.debug("Loading decks from file: {}", resource.getPath());
     try (var is = resource.getInputStream()) {
@@ -99,7 +127,15 @@ public class DeckSync implements DataSyncContributor {
         }
 
         List<Deck> byWrestler = deckService.findByWrestlerWithCards(wrestler);
-        Deck deck = byWrestler.isEmpty() ? deckService.createDeck(wrestler) : byWrestler.getFirst();
+        Deck deck;
+        if (byWrestler.isEmpty()) {
+          deck = deckService.createDeck(wrestler);
+        } else if (!updateExisting) {
+          // Top-up mode: never modify an existing deck.
+          continue;
+        } else {
+          deck = byWrestler.getFirst();
+        }
 
         deck.getCards()
             .forEach(
@@ -170,7 +206,7 @@ public class DeckSync implements DataSyncContributor {
           }
         }
 
-        if (!cardsToRemove.isEmpty()) {
+        if (updateExisting && !cardsToRemove.isEmpty()) {
           deck.getCards().removeAll(cardsToRemove);
           changed = true;
         }
@@ -179,13 +215,17 @@ public class DeckSync implements DataSyncContributor {
           decksToSave.add(deck);
         }
       }
-      deckService.saveAll(decksToSave);
+      if (updateExisting && !decksToSave.isEmpty()) {
+        deckService.saveAll(decksToSave);
+      }
       log.debug(
           "Deck loading completed - {} decks processed, {} updated",
           decksFromFile.size(),
           decksToSave.size());
+      return decksToSave;
     } catch (IOException e) {
       log.error("Error loading decks from file", e);
+      return List.of();
     }
   }
 }
