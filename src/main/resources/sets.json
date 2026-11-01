@@ -95,15 +95,18 @@
   "name": "PYT",
   "set_code": "PYT"
 }, {
-  "name": "AUS",
+  "name": "Princess Aussie",
   "set_code": "AUS"
 }, {
-  "name": "TYV",
+  "name": "Taya Valkerie",
   "set_code": "TYV"
 }, {
-  "name": "BST",
+  "name": "Beast",
   "set_code": "BST"
 }, {
   "name": "Tormenta",
   "set_code": "TOR"
+}, {
+  "name": "Jeff Hardy",
+  "set_code": "JFH"
 } ]

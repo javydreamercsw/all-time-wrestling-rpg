@@ -17,7 +17,9 @@
 package com.github.javydreamercsw.management.config;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.StreamWriteConstraints;
+import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -36,7 +38,22 @@ public class JacksonConfig {
   @Bean
   @Primary
   public ObjectMapper objectMapper() {
-    ObjectMapper mapper = new ObjectMapper();
+    // Configure stream constraints to handle deep nesting
+    StreamWriteConstraints constraints =
+        StreamWriteConstraints.builder()
+            .maxNestingDepth(2000) // Increase from default 1000
+            .build();
+
+    // Tolerate comments and trailing commas in hand-maintained seed files (e.g. card sets with
+    // placeholder comments for not-yet-spoiled card numbers)
+    JsonFactory factory =
+        JsonFactory.builder()
+            .streamWriteConstraints(constraints)
+            .enable(JsonReadFeature.ALLOW_JAVA_COMMENTS)
+            .enable(JsonReadFeature.ALLOW_TRAILING_COMMA)
+            .build();
+
+    ObjectMapper mapper = new ObjectMapper(factory);
 
     // Configure time handling
     mapper.registerModule(new JavaTimeModule());
@@ -46,13 +63,6 @@ public class JacksonConfig {
     mapper.setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL);
     mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
     mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
-    // Configure stream constraints to handle deep nesting
-    StreamWriteConstraints constraints =
-        StreamWriteConstraints.builder()
-            .maxNestingDepth(2000) // Increase from default 1000
-            .build();
-    mapper.getFactory().setStreamWriteConstraints(constraints);
 
     return mapper;
   }
