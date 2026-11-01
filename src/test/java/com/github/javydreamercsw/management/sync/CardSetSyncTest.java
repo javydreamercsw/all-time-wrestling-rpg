@@ -27,11 +27,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.service.card.CardSetService;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -50,9 +52,9 @@ class CardSetSyncTest {
     CardSet existing = new CardSet();
     existing.setCode("ATW");
     existing.setName("All Time Wrestling");
-    when(cardSetService.findBySetCode("ATW")).thenReturn(java.util.Optional.of(existing));
+    when(cardSetService.findBySetCode("ATW")).thenReturn(Optional.of(existing));
     when(cardSetService.findBySetCode(argThat(code -> !"ATW".equals(code))))
-        .thenReturn(java.util.Optional.empty());
+        .thenReturn(Optional.empty());
 
     skipSync.sync();
 
@@ -72,13 +74,13 @@ class CardSetSyncTest {
     CardSet existing = new CardSet();
     existing.setCode("ATW");
     existing.setName("stale name");
-    when(cardSetService.findBySetCode("ATW")).thenReturn(java.util.Optional.of(existing));
+    when(cardSetService.findBySetCode("ATW")).thenReturn(Optional.of(existing));
 
     skipSync.sync();
 
     // ATW is seeded but already exists: under the skip gate its row must never be re-saved and
     // the stale name must survive.
-    verify(cardSetService, org.mockito.Mockito.never())
+    verify(cardSetService, Mockito.never())
         .saveAll(argThat(list -> list != null && list.stream().anyMatch(cs -> cs == existing)));
     assertEquals("stale name", existing.getName());
   }
@@ -90,7 +92,7 @@ class CardSetSyncTest {
     CardSet existing = new CardSet();
     existing.setCode("ATW");
     existing.setName("stale name");
-    when(cardSetService.findBySetCode("ATW")).thenReturn(java.util.Optional.of(existing));
+    when(cardSetService.findBySetCode("ATW")).thenReturn(Optional.of(existing));
 
     fullSync.sync();
 

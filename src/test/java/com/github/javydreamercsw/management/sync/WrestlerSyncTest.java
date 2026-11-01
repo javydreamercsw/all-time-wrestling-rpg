@@ -38,10 +38,15 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateReposit
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -162,7 +167,7 @@ class WrestlerSyncTest {
             argThat(
                 list ->
                     list != null
-                        && java.util.stream.StreamSupport.stream(list.spliterator(), false)
+                        && StreamSupport.stream(list.spliterator(), false)
                             .anyMatch(w -> w == existing)));
     assertEquals("user-modified description", existing.getDescription());
   }
@@ -226,23 +231,23 @@ class WrestlerSyncTest {
     skipSync.sync();
 
     @SuppressWarnings("unchecked")
-    org.mockito.ArgumentCaptor<List<Wrestler>> captor =
-        org.mockito.ArgumentCaptor.forClass(List.class);
+    ArgumentCaptor<List<Wrestler>> captor =
+        ArgumentCaptor.forClass(List.class);
     verify(wrestlerRepository, atLeastOnce()).saveAll(captor.capture());
     List<Wrestler> saved =
         captor.getAllValues().stream()
             .flatMap(List::stream)
-            .collect(java.util.stream.Collectors.toList());
+            .collect(Collectors.toList());
     long seededCount =
-        java.util.Arrays.stream(
+        Arrays.stream(
                 new PathMatchingResourcePatternResolver()
                     .getResources("classpath*:wrestlers/*.json"))
             .filter(Resource::exists)
             .mapToLong(
                 r -> {
                   try (var is = r.getInputStream()) {
-                    return new ObjectMapper().readValue(is, java.util.List.class).size();
-                  } catch (java.io.IOException e) {
+                    return new ObjectMapper().readValue(is, List.class).size();
+                  } catch (IOException e) {
                     return 0L;
                   }
                 })

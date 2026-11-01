@@ -31,6 +31,7 @@ import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -81,7 +82,7 @@ class CardSyncTest {
     List<Card> saved =
         captor.getAllValues().stream()
             .flatMap(List::stream)
-            .collect(java.util.stream.Collectors.toList());
+            .collect(Collectors.toList());
     assertFalse(saved.stream().anyMatch(c -> c == existing), "existing card must not be re-saved");
     assertFalse(
         saved.stream().anyMatch(c -> "ATW".equals(c.getSet().getCode()) && c.getNumber() == 60));

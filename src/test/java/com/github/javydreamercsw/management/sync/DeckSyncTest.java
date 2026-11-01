@@ -35,6 +35,7 @@ import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.deck.DeckService;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -115,7 +116,7 @@ class DeckSyncTest {
     List<Deck> saved =
         captor.getAllValues().stream()
             .flatMap(List::stream)
-            .collect(java.util.stream.Collectors.toList());
+            .collect(Collectors.toList());
     assertFalse(saved.isEmpty(), "Eddie's new deck must be saved");
   }
 
