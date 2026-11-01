@@ -104,7 +104,7 @@ public class CardSync implements DataSyncContributor {
                   Collectors.toMap(
                       c -> c.getSet().getCode() + "#" + c.getNumber(), c -> c, (a, b) -> a));
 
-      List<Card> toSave = new ArrayList<>();
+      List<Card> allMissing = new ArrayList<>();
       for (Resource resource : resources) {
         if (!resource.exists()) {
           continue;
@@ -112,6 +112,7 @@ public class CardSync implements DataSyncContributor {
         log.debug("Loading cards from file: {}", resource.getFilename());
         try (var is = resource.getInputStream()) {
           List<CardDTO> cardsFromFile = objectMapper.readValue(is, new TypeReference<>() {});
+          List<Card> fileToSave = new ArrayList<>();
           for (CardDTO dto : cardsFromFile) {
             CardSet set = setCache.get(dto.getSet());
             if (set == null) {
@@ -130,21 +131,27 @@ public class CardSync implements DataSyncContributor {
             final String key = dto.getSet() + "#" + dto.getNumber();
             Card card = existing.get(key);
             if (card == null) {
-              toSave.add(fromDto(dto, set));
+              Card newCard = fromDto(dto, set);
+              fileToSave.add(newCard);
+              allMissing.add(newCard);
             } else if (updateExisting) {
               applyDto(card, dto, set);
-              toSave.add(card);
+              fileToSave.add(card);
             }
           }
-          if (updateExisting) {
-            cardService.saveAll(toSave);
-            log.debug("Saved/Updated {} cards from {}", toSave.size(), resource.getFilename());
+          if (updateExisting && !fileToSave.isEmpty()) {
+            cardService.saveAll(fileToSave);
           }
+          log.debug(
+              "Processed {} cards from {} ({} new)",
+              cardsFromFile.size(),
+              resource.getFilename(),
+              fileToSave.size());
         } catch (IOException e) {
           log.error("Error loading cards from file: {}", resource.getFilename(), e);
         }
       }
-      return toSave;
+      return allMissing;
     } catch (IOException e) {
       log.error("Error resolving card resources", e);
       return List.of();
