@@ -13,20 +13,6 @@
   "number": 1,
   "set": "JFH"
 }, {
-  "name": "Double Leg Drop",
-  "type": "Strike",
-  "damage": 1,
-  "stamina": 1,
-  "target": 2,
-  "momentum": 1,
-  "signature": false,
-  "finisher": false,
-  "taunt": false,
-  "recover": false,
-  "pin": false,
-  "number": 2,
-  "set": "JFH"
-}, {
   "name": "Hardyac Arrest",
   "type": "Strike",
   "damage": 2,
@@ -127,12 +113,12 @@
 }
 // Pending spoilers - uncomment and fill in when cards are revealed:
 // , {
-//   "name": "JFH 9 name",
-//   "type": "Aerial",
-//   "damage": 0,
-//   "stamina": 0,
-//   "target": 0,
-//   "momentum": 0,
+//   "name": "Double Leg Drop",
+//   "type": "Strike",
+//   "damage": 1,
+//   "stamina": 1,
+//   "target": 2,
+//   "momentum": 1,
 //   "signature": false,
 //   "finisher": false,
 //   "taunt": false,
