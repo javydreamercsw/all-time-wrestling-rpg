@@ -66,8 +66,34 @@ public class CardSync implements DataSyncContributor {
   @Override
   public void sync() {
     if (skipIfNotEmpty && cardService.count() > 0) {
+      topUpMissingCards();
       return;
     }
+    loadCards(true);
+  }
+
+  /**
+   * Skip-gate branch: the table is non-empty and the {@code skip-if-not-empty} flag protects
+   * existing rows from seed-driven updates. Still insert seed entries that don't exist yet, so card
+   * sets added in later releases reach flag-protected installs. Existing rows are never re-saved.
+   */
+  private void topUpMissingCards() {
+    List<Card> missing = loadCards(false);
+    if (!missing.isEmpty()) {
+      log.info("Card top-up: inserting {} missing seed card(s).", missing.size());
+      cardService.saveAll(missing);
+    }
+  }
+
+  /**
+   * Loads cards from {@code classpath*:cards/*.json}.
+   *
+   * @param updateExisting when true, updates existing rows to match the seed file (full sync); when
+   *     false, only entries missing from the database are returned and existing rows are left
+   *     untouched.
+   * @return Cards that were inserted or need saving.
+   */
+  private List<Card> loadCards(boolean updateExisting) {
     try {
       Resource[] resources = resourcePatternResolver.getResources("classpath*:cards/*.json");
       Map<String, CardSet> setCache = new HashMap<>();
@@ -77,6 +103,7 @@ public class CardSync implements DataSyncContributor {
                   Collectors.toMap(
                       c -> c.getSet().getCode() + "#" + c.getNumber(), c -> c, (a, b) -> a));
 
+      List<Card> toSave = new ArrayList<>();
       for (Resource resource : resources) {
         if (!resource.exists()) {
           continue;
@@ -84,7 +111,6 @@ public class CardSync implements DataSyncContributor {
         log.debug("Loading cards from file: {}", resource.getFilename());
         try (var is = resource.getInputStream()) {
           List<CardDTO> cardsFromFile = objectMapper.readValue(is, new TypeReference<>() {});
-          List<Card> toSave = new ArrayList<>();
           for (CardDTO dto : cardsFromFile) {
             CardSet set = setCache.get(dto.getSet());
             if (set == null) {
@@ -101,30 +127,48 @@ public class CardSync implements DataSyncContributor {
             }
 
             final String key = dto.getSet() + "#" + dto.getNumber();
-            Card card = existing.getOrDefault(key, new Card());
-            card.setName(dto.getName());
-            card.setDamage(dto.getDamage());
-            card.setFinisher(dto.isFinisher());
-            card.setSignature(dto.isSignature());
-            card.setStamina(dto.getStamina());
-            card.setMomentum(dto.getMomentum());
-            card.setTarget(dto.getTarget());
-            card.setNumber(dto.getNumber());
-            card.setSet(set);
-            card.setType(dto.getType());
-            card.setTaunt(dto.isTaunt());
-            card.setPin(dto.isPin());
-            card.setRecover(dto.isRecover());
-            toSave.add(card);
+            Card card = existing.get(key);
+            if (card == null) {
+              toSave.add(fromDto(dto, set));
+            } else if (updateExisting) {
+              applyDto(card, dto, set);
+              toSave.add(card);
+            }
           }
-          cardService.saveAll(toSave);
-          log.debug("Saved/Updated {} cards from {}", toSave.size(), resource.getFilename());
+          if (updateExisting) {
+            cardService.saveAll(toSave);
+            log.debug("Saved/Updated {} cards from {}", toSave.size(), resource.getFilename());
+          }
         } catch (IOException e) {
           log.error("Error loading cards from file: {}", resource.getFilename(), e);
         }
       }
+      return toSave;
     } catch (IOException e) {
       log.error("Error resolving card resources", e);
+      return List.of();
     }
+  }
+
+  private static Card fromDto(CardDTO dto, CardSet set) {
+    Card card = new Card();
+    applyDto(card, dto, set);
+    return card;
+  }
+
+  private static void applyDto(Card card, CardDTO dto, CardSet set) {
+    card.setName(dto.getName());
+    card.setDamage(dto.getDamage());
+    card.setFinisher(dto.isFinisher());
+    card.setSignature(dto.isSignature());
+    card.setStamina(dto.getStamina());
+    card.setMomentum(dto.getMomentum());
+    card.setTarget(dto.getTarget());
+    card.setNumber(dto.getNumber());
+    card.setSet(set);
+    card.setType(dto.getType());
+    card.setTaunt(dto.isTaunt());
+    card.setPin(dto.isPin());
+    card.setRecover(dto.isRecover());
   }
 }

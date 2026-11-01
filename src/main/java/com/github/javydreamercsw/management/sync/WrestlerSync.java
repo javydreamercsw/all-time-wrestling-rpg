@@ -100,10 +100,33 @@ public class WrestlerSync implements DataSyncContributor {
   @Override
   public void sync() {
     if (skipIfNotEmpty && wrestlerRepository.count() > 0) {
-      syncAbilitiesForExistingWrestlers();
-      wrestlerService.evictWrestlerCache();
+      topUpMissingWrestlers();
       return;
     }
+    loadWrestlers(true);
+    wrestlerService.evictWrestlerCache();
+  }
+
+  /**
+   * Skip-gate branch: wrestlers exist and the {@code skip-if-not-empty} flag protects existing rows
+   * from seed-driven updates. Still insert seed wrestlers that don't exist yet, so expansions added
+   * in later releases reach flag-protected installs. Existing rows are never re-saved; abilities of
+   * existing wrestlers keep syncing (pre-existing skip-branch behavior).
+   */
+  private void topUpMissingWrestlers() {
+    loadWrestlers(false);
+    syncAbilitiesForExistingWrestlers();
+    wrestlerService.evictWrestlerCache();
+  }
+
+  /**
+   * Loads wrestlers from {@code classpath*:wrestlers/*.json}.
+   *
+   * @param updateExisting when true, updates existing rows to match the seed file (full sync); when
+   *     false, only wrestlers missing from the database are created and existing rows are left
+   *     untouched.
+   */
+  private void loadWrestlers(boolean updateExisting) {
     try {
       Resource[] resources = resourcePatternResolver.getResources("classpath*:wrestlers/*.json");
       Universe universe =
@@ -135,6 +158,10 @@ public class WrestlerSync implements DataSyncContributor {
             Wrestler wrestlerToSave;
 
             if (existing != null) {
+              if (!updateExisting) {
+                // Top-up mode: never re-save an existing wrestler.
+                continue;
+              }
               boolean changed = false;
               if (!Objects.equals(existing.getDeckSize(), w.getDeckSize())) {
                 existing.setDeckSize(w.getDeckSize());
@@ -311,6 +338,8 @@ public class WrestlerSync implements DataSyncContributor {
 
           List<WrestlerAbilityDTO> universalAbilities = loadUniversalAbilities();
           for (Wrestler wrestler : allWrestlers) {
+            // In top-up mode allWrestlers holds only newly inserted wrestlers (existing ones
+            // were skipped above), so state/ability seeding below only ever touches new rows.
             WrestlerImportDTO w = dtoMap.get(wrestler.getName());
             WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), leagueId);
             boolean stateChanged = state.getId() == null;
@@ -358,7 +387,6 @@ public class WrestlerSync implements DataSyncContributor {
     } catch (IOException e) {
       log.error("Error resolving wrestler resources", e);
     }
-    wrestlerService.evictWrestlerCache();
   }
 
   private void syncAbilitiesForExistingWrestlers() {
