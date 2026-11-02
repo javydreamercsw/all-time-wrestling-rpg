@@ -27,7 +27,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -35,6 +38,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerAbilityRepos
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
+import com.github.javydreamercsw.management.dto.WrestlerImportDTO;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -86,7 +90,7 @@ class WrestlerSyncTest {
 
     sync =
         new WrestlerSync(
-            false,
+            "false",
             wrestlerRepository,
             wrestlerAbilityRepository,
             wrestlerService,
@@ -113,7 +117,7 @@ class WrestlerSyncTest {
   void sync_skipsWhenNotEmptyFlagSet() {
     WrestlerSync skipSync =
         new WrestlerSync(
-            true,
+            "true",
             wrestlerRepository,
             wrestlerAbilityRepository,
             wrestlerService,
@@ -147,7 +151,7 @@ class WrestlerSyncTest {
 
     WrestlerSync skipSync =
         new WrestlerSync(
-            true,
+            "true",
             wrestlerRepository,
             wrestlerAbilityRepository,
             wrestlerService,
@@ -185,7 +189,7 @@ class WrestlerSyncTest {
 
     WrestlerSync skipSync =
         new WrestlerSync(
-            true,
+            "true",
             wrestlerRepository,
             wrestlerAbilityRepository,
             wrestlerService,
@@ -217,7 +221,7 @@ class WrestlerSyncTest {
 
     WrestlerSync skipSync =
         new WrestlerSync(
-            true,
+            "true",
             wrestlerRepository,
             wrestlerAbilityRepository,
             wrestlerService,
@@ -283,5 +287,177 @@ class WrestlerSyncTest {
     sync.sync();
 
     verify(wrestlerService).evictWrestlerCache();
+  }
+
+  // ── Verify mode (seed_fingerprint-gated reconciliation) ────────────────────
+
+  private static final SeedSyncSupport VERIFY_SUPPORT = new SeedSyncSupport("verify");
+
+  /** Reads Rob Van Dam's seed DTO from the real classpath seed files. */
+  private WrestlerImportDTO rvdSeedDto() throws IOException {
+    PathMatchingResourcePatternResolver real = new PathMatchingResourcePatternResolver();
+    for (Resource r : real.getResources("classpath*:wrestlers/*.json")) {
+      try (var is = r.getInputStream()) {
+        for (WrestlerImportDTO dto :
+            new ObjectMapper().readValue(is, new TypeReference<List<WrestlerImportDTO>>() {})) {
+          if ("Rob Van Dam".equals(dto.getName())) {
+            return dto;
+          }
+        }
+      }
+    }
+    throw new IllegalStateException("Rob Van Dam not found in seed files");
+  }
+
+  /** Builds an in-memory Wrestler mirroring the seed payload, with seed-owned fields set. */
+  private Wrestler seededRvd(WrestlerImportDTO dto) {
+    Wrestler w = new Wrestler();
+    w.setId(1L);
+    w.setName(dto.getName());
+    w.setDeckSize(dto.getDeckSize());
+    w.setStartingHealth(dto.getStartingHealth());
+    w.setLowHealth(dto.getLowHealth());
+    w.setStartingStamina(dto.getStartingStamina());
+    w.setLowStamina(dto.getLowStamina());
+    w.setDescription(dto.getDescription());
+    w.setGender(dto.getGender());
+    w.setHeritageTag(dto.getHeritageTag());
+    w.setExpansionCode(dto.getExpansionCode());
+    w.setDrive(dto.getDrive());
+    w.setResilience(dto.getResilience());
+    w.setCharisma(dto.getCharisma());
+    w.setBrawl(dto.getBrawl());
+    if (dto.getAlignment() != null) {
+      w.setAlignment(
+          WrestlerAlignment.builder()
+              .wrestler(w)
+              .alignmentType(AlignmentType.valueOf(dto.getAlignment().toUpperCase()))
+              .level(0)
+              .build());
+    }
+    return w;
+  }
+
+  private WrestlerSync verifySync() {
+    return new WrestlerSync(
+        "verify",
+        wrestlerRepository,
+        wrestlerAbilityRepository,
+        wrestlerService,
+        universeRepository,
+        wrestlerStateRepository,
+        npcService,
+        tierRecalculationService,
+        resourcePatternResolver,
+        new ObjectMapper());
+  }
+
+  private void stubOneExisting(Wrestler existing) {
+    when(wrestlerRepository.count()).thenReturn(1L);
+    when(wrestlerRepository.findAllWithAlignments()).thenReturn(List.of(existing));
+    when(wrestlerRepository.findAll()).thenReturn(List.of(existing));
+    when(wrestlerService.getOrCreateState(any(), any())).thenReturn(new WrestlerState());
+  }
+
+  @Test
+  void verifyMode_reconcilesSeedOwnedFieldsOfCleanRow() throws Exception {
+    WrestlerImportDTO dto = rvdSeedDto();
+    Wrestler existing = seededRvd(dto);
+    existing.setSeedFingerprint(VERIFY_SUPPORT.fingerprint(WrestlerSeedFields.canonical(existing)));
+    existing.setDescription("stale description from an older release");
+    stubOneExisting(existing);
+
+    verifySync().sync();
+
+    assertEquals(
+        dto.getDescription(),
+        existing.getDescription(),
+        "clean-fingerprint row's stale seed-owned field must be reconciled to the seed value");
+    assertEquals(
+        VERIFY_SUPPORT.fingerprint(WrestlerSeedFields.canonical(existing)),
+        existing.getSeedFingerprint(),
+        "fingerprint must be re-stamped after reconcile");
+  }
+
+  @Test
+  void verifyMode_preservesUserEditedRow() throws Exception {
+    WrestlerImportDTO dto = rvdSeedDto();
+    Wrestler existing = seededRvd(dto);
+    existing.setSeedFingerprint("0000000000000000000000000000000000000000000000000000000000000000");
+    existing.setDescription("deliberately hand-tuned");
+    stubOneExisting(existing);
+
+    verifySync().sync();
+
+    assertEquals(
+        "deliberately hand-tuned",
+        existing.getDescription(),
+        "stale-fingerprint (user-edited) row must be preserved with a WARN, never overwritten");
+  }
+
+  @Test
+  void verifyMode_adoptsLegacyRowWhenFieldsMatchSeed() throws Exception {
+    WrestlerImportDTO dto = rvdSeedDto();
+    Wrestler existing = seededRvd(dto); // null fingerprint, fields match seed
+    stubOneExisting(existing);
+
+    verifySync().sync();
+
+    assertEquals(
+        VERIFY_SUPPORT.fingerprint(WrestlerSeedFields.canonical(existing)),
+        existing.getSeedFingerprint(),
+        "legacy row matching the seed must be adopted (fingerprint stamped)");
+  }
+
+  @Test
+  void verifyMode_treatsLegacyMismatchedRowAsEdited() throws Exception {
+    WrestlerImportDTO dto = rvdSeedDto();
+    Wrestler existing = seededRvd(dto);
+    existing.setDescription("hand-tuned long before fingerprints existed"); // null fingerprint
+    stubOneExisting(existing);
+
+    verifySync().sync();
+
+    assertEquals(
+        "hand-tuned long before fingerprints existed",
+        existing.getDescription(),
+        "legacy row whose seed-owned fields differ must be treated as user-edited and preserved");
+  }
+
+  @Test
+  void verifyMode_doesNotTouchGameplayFields() throws Exception {
+    WrestlerImportDTO dto = rvdSeedDto();
+    Wrestler existing = seededRvd(dto);
+    existing.setSeedFingerprint(VERIFY_SUPPORT.fingerprint(WrestlerSeedFields.canonical(existing)));
+    stubOneExisting(existing);
+    WrestlerState state = new WrestlerState();
+    state.setId(1L);
+    state.setFans(999_999L);
+    state.setBumps(Integer.MAX_VALUE);
+    when(wrestlerService.getOrCreateState(any(), any())).thenReturn(state);
+
+    verifySync().sync();
+
+    verify(wrestlerStateRepository, never()).save(any());
+  }
+
+  @Test
+  void verifyMode_ignoresUserCreatedWrestlers() {
+    // User-created wrestler: no seed entry shares his name, so reconcile must not consider him.
+    Wrestler custom = new Wrestler();
+    custom.setId(2L);
+    custom.setName("Custom Guy");
+    custom.setDescription("a wrestler the user invented");
+    when(wrestlerRepository.count()).thenReturn(1L);
+    when(wrestlerRepository.findAllWithAlignments()).thenReturn(List.of(custom));
+    when(wrestlerRepository.findAll()).thenReturn(List.of(custom));
+    when(wrestlerService.getOrCreateState(any(), any())).thenReturn(new WrestlerState());
+
+    verifySync().sync();
+
+    assertEquals(
+        "a wrestler the user invented",
+        custom.getDescription(),
+        "user-created wrestler must never be touched by verify mode");
   }
 }
