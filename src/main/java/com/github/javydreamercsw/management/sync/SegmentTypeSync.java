@@ -22,7 +22,11 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.dto.SegmentTypeDTO;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,24 +39,27 @@ import org.springframework.stereotype.Component;
 @Order(50)
 public class SegmentTypeSync implements DataSyncContributor {
 
-  private final boolean skipIfNotEmpty;
+  private final SeedSyncSupport syncSupport;
   private final SegmentTypeService segmentTypeService;
   private final ObjectMapper objectMapper;
 
   @Autowired
   public SegmentTypeSync(
-      @Value("${data.initializer.skip-if-not-empty:false}") final boolean skipIfNotEmpty,
+      @Value("${data.initializer.skip-if-not-empty:false}") final String skipIfNotEmptyRaw,
       final SegmentTypeService segmentTypeService,
       final ObjectMapper objectMapper) {
-    this.skipIfNotEmpty = skipIfNotEmpty;
+    this.syncSupport = new SeedSyncSupport(skipIfNotEmptyRaw);
     this.segmentTypeService = segmentTypeService;
     this.objectMapper = objectMapper;
   }
 
   @Override
   public void sync() {
-    if (skipIfNotEmpty && segmentTypeService.count() > 0) {
+    if (syncSupport.mode() != SeedSyncMode.FULL && segmentTypeService.count() > 0) {
       topUpMissingSegmentTypes();
+      if (syncSupport.isVerify()) {
+        reconcileVerifiedSegmentTypes();
+      }
       return;
     }
     loadSegmentTypes(true);
@@ -114,5 +121,117 @@ public class SegmentTypeSync implements DataSyncContributor {
       log.error("Error loading segment types from file", e);
       return List.of();
     }
+  }
+
+  /**
+   * Canonical seed-owned field values for a segment type row, in fingerprint order: description,
+   * expansionCode, guideHash, code, eventOnly. Mirrors the seed write set of {@code
+   * createOrUpdateSegmentType}; {@code active} is admin-managed and excluded.
+   */
+  private String segmentTypeFingerprint(SegmentType st) {
+    return syncSupport.fingerprint(
+        st.getDescription(),
+        st.getExpansionCode(),
+        st.getGuideHash(),
+        st.getCode(),
+        st.isEventOnly());
+  }
+
+  /** Guide hash the seed write would compute for a DTO (mirrors the service's private method). */
+  private String seedGuideHash(SegmentTypeDTO dto) {
+    if (dto.getGuide() == null) {
+      return null;
+    }
+    try {
+      String json = objectMapper.writeValueAsString(dto.getGuide());
+      java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+      byte[] hash = digest.digest(json.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+      return java.util.HexFormat.of().formatHex(hash);
+    } catch (com.fasterxml.jackson.core.JsonProcessingException
+        | java.security.NoSuchAlgorithmException e) {
+      log.warn("Failed to compute seed guide hash for segment type", e);
+      return null;
+    }
+  }
+
+  /**
+   * Verify mode: reconcile seed-owned fields of existing segment types. The stored fingerprint is
+   * the hash of the row's seed-owned fields as the last seed write left them; re-hashing the row's
+   * current fields detects hand edits. A row that still hashes to its stamp is clean and adopts
+   * seed changes; a row whose fields drifted is user-edited — warned and preserved. Segment types
+   * with no seed entry are never considered.
+   */
+  private void reconcileVerifiedSegmentTypes() {
+    long start = System.currentTimeMillis();
+    List<SegmentTypeDTO> dtos = parseSeedFile();
+    if (dtos.isEmpty()) {
+      return;
+    }
+    Map<String, SegmentType> existingByName =
+        segmentTypeService.findAll().stream()
+            .collect(Collectors.toMap(SegmentType::getName, st -> st, (a, b) -> a));
+    int reconciled = 0;
+    int preserved = 0;
+    List<SegmentType> toSave = new ArrayList<>();
+    for (SegmentTypeDTO dto : dtos) {
+      SegmentType st = existingByName.get(dto.getName());
+      if (st == null) {
+        continue; // user-created rows have no seed match and are never touched
+      }
+      String current = segmentTypeFingerprint(st);
+      String seedHash = seedGuideHash(dto);
+      if (SeedSyncSupport.isBlankFingerprint(st.getSeedFingerprint())) {
+        // Legacy row: adopt only if its seed-owned fields already equal the seed.
+        if (Objects.equals(st.getDescription(), dto.getDescription())
+            && Objects.equals(
+                st.getExpansionCode(),
+                dto.getExpansionCode() != null ? dto.getExpansionCode() : "BASE_GAME")
+            && Objects.equals(st.getGuideHash(), seedHash)
+            && Objects.equals(st.getCode(), dto.getCode())
+            && st.isEventOnly() == Boolean.TRUE.equals(dto.getEventOnly())) {
+          st.setSeedFingerprint(current);
+          toSave.add(st);
+          reconciled++;
+        } else {
+          log.warn(
+              "Seed verify: segment type '{}' has hand-edited seed-owned fields (legacy row, "
+                  + "no fingerprint); preserving user values.",
+              st.getName());
+          preserved++;
+        }
+      } else if (current.equals(st.getSeedFingerprint())) {
+        if (Objects.equals(st.getDescription(), dto.getDescription())
+            && Objects.equals(
+                st.getExpansionCode(),
+                dto.getExpansionCode() != null ? dto.getExpansionCode() : "BASE_GAME")
+            && Objects.equals(st.getGuideHash(), seedHash)
+            && Objects.equals(st.getCode(), dto.getCode())
+            && st.isEventOnly() == Boolean.TRUE.equals(dto.getEventOnly())) {
+          continue; // already in sync
+        }
+        // Clean row: refresh through the same service path the seed write uses.
+        segmentTypeService.createOrUpdateSegmentType(
+            dto.getName(),
+            dto.getDescription(),
+            dto.getExpansionCode() != null ? dto.getExpansionCode() : "BASE_GAME",
+            dto.getGuide(),
+            dto.getCode(),
+            dto.getEventOnly());
+        reconciled++;
+      } else {
+        log.warn(
+            "Seed verify: segment type '{}' was modified after seeding (fingerprint mismatch); "
+                + "preserving user values.",
+            st.getName());
+        preserved++;
+      }
+    }
+    if (!toSave.isEmpty()) {
+      toSave.forEach(segmentTypeService::createSegmentType);
+    }
+    log.info(
+        "{} ({} ms)",
+        syncSupport.reconcileLog("segment type", reconciled, preserved),
+        System.currentTimeMillis() - start);
   }
 }

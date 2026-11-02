@@ -50,7 +50,7 @@ class SegmentTypeSyncTest {
 
   @BeforeEach
   void setUp() {
-    sync = new SegmentTypeSync(false, segmentTypeService, new ObjectMapper());
+    sync = new SegmentTypeSync("false", segmentTypeService, new ObjectMapper());
   }
 
   @Test
@@ -100,7 +100,7 @@ class SegmentTypeSyncTest {
 
   @Test
   void sync_skipsWhenNotEmptyAndSkipFlagSet() {
-    SegmentTypeSync skipSync = new SegmentTypeSync(true, segmentTypeService, new ObjectMapper());
+    SegmentTypeSync skipSync = new SegmentTypeSync("true", segmentTypeService, new ObjectMapper());
     when(segmentTypeService.count()).thenReturn(5L);
     when(segmentTypeService.findAll())
         .thenReturn(
@@ -127,7 +127,7 @@ class SegmentTypeSyncTest {
 
   @Test
   void sync_topUpInsertsNothingWhenCatalogComplete() {
-    SegmentTypeSync skipSync = new SegmentTypeSync(true, segmentTypeService, new ObjectMapper());
+    SegmentTypeSync skipSync = new SegmentTypeSync("true", segmentTypeService, new ObjectMapper());
     when(segmentTypeService.count()).thenReturn(7L);
     when(segmentTypeService.findAll())
         .thenReturn(
@@ -151,5 +151,81 @@ class SegmentTypeSyncTest {
     SegmentType st = new SegmentType();
     st.setName(name);
     return st;
+  }
+
+  private static final SeedSyncSupport VERIFY_SUPPORT = new SeedSyncSupport("verify");
+
+  private static String segmentTypeFingerprint(SegmentType st) {
+    return VERIFY_SUPPORT.fingerprint(
+        st.getDescription(),
+        st.getExpansionCode(),
+        st.getGuideHash(),
+        st.getCode(),
+        st.isEventOnly());
+  }
+
+  @Test
+  void verifyMode_reconcilesCleanRowAndPreservesEditedRow() {
+    SegmentTypeSync verifySync =
+        new SegmentTypeSync("verify", segmentTypeService, new ObjectMapper());
+    when(segmentTypeService.count()).thenReturn(2L);
+
+    // Clean: "Promo" as an older release's seed write left it (guide-less), description since
+    // fixed in the seed file.
+    SegmentType clean = segmentType("Promo");
+    clean.setDescription("stale description from an older release");
+    clean.setGuideHash(null);
+    clean.setSeedFingerprint(segmentTypeFingerprint(clean));
+
+    // Edited: stamped at seed write, then hand-tuned.
+    SegmentType edited = segmentType("Trios");
+    edited.setDescription("user-tuned description");
+    edited.setGuideHash(null);
+    edited.setSeedFingerprint(segmentTypeFingerprint(edited));
+    edited.setDescription("user-tuned description (changed after stamping)");
+
+    when(segmentTypeService.findAll()).thenReturn(List.of(clean, edited));
+    when(segmentTypeService.createOrUpdateSegmentType(
+            anyString(), anyString(), anyString(), any(), anyString(), any()))
+        .thenAnswer(inv -> segmentType(inv.getArgument(0)));
+
+    verifySync.sync();
+
+    verify(segmentTypeService)
+        .createOrUpdateSegmentType(
+            eq("Promo"),
+            eq("Non-wrestling segment for storyline development and character work"),
+            any(),
+            any(),
+            any(),
+            any());
+    verify(segmentTypeService, Mockito.never())
+        .createOrUpdateSegmentType(eq("Trios"), any(), any(), any(), any(), any());
+    assertEquals(
+        "user-tuned description (changed after stamping)",
+        edited.getDescription(),
+        "edited segment type must be preserved");
+  }
+
+  @Test
+  void verifyMode_adoptsLegacyRowWhenFieldsMatchSeed() {
+    SegmentTypeSync verifySync =
+        new SegmentTypeSync("verify", segmentTypeService, new ObjectMapper());
+    when(segmentTypeService.count()).thenReturn(1L);
+
+    // Legacy: no stamp; fields equal what the seed write would produce for a guide-less entry.
+    SegmentType legacy = segmentType("Promo");
+    legacy.setDescription("Non-wrestling segment for storyline development and character work");
+    legacy.setExpansionCode("BASE_GAME");
+    legacy.setGuideHash(null);
+    legacy.setCode("promo");
+    when(segmentTypeService.findAll()).thenReturn(List.of(legacy));
+
+    verifySync.sync();
+
+    assertEquals(
+        segmentTypeFingerprint(legacy),
+        legacy.getSeedFingerprint(),
+        "legacy row matching the seed must be adopted (fingerprint stamped, no-op refresh)");
   }
 }

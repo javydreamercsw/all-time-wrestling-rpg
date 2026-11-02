@@ -40,24 +40,27 @@ import org.springframework.stereotype.Component;
 @Order(90)
 public class NpcSync implements DataSyncContributor {
 
-  private final boolean skipIfNotEmpty;
+  private final SeedSyncSupport syncSupport;
   private final NpcService npcService;
   private final ObjectMapper objectMapper;
 
   @Autowired
   public NpcSync(
-      @Value("${data.initializer.skip-if-not-empty:false}") final boolean skipIfNotEmpty,
+      @Value("${data.initializer.skip-if-not-empty:false}") final String skipIfNotEmptyRaw,
       final NpcService npcService,
       final ObjectMapper objectMapper) {
-    this.skipIfNotEmpty = skipIfNotEmpty;
+    this.syncSupport = new SeedSyncSupport(skipIfNotEmptyRaw);
     this.npcService = npcService;
     this.objectMapper = objectMapper;
   }
 
   @Override
   public void sync() {
-    if (skipIfNotEmpty && npcService.count() > 0) {
+    if (syncSupport.mode() != SeedSyncMode.FULL && npcService.count() > 0) {
       topUpMissingNpcs();
+      if (syncSupport.isVerify()) {
+        reconcileVerifiedNpcs();
+      }
       return;
     }
     loadNpcs(true);
@@ -101,7 +104,9 @@ public class NpcSync implements DataSyncContributor {
       for (NpcDTO dto : dtos) {
         Npc npc = existingNpcs.get(dto.getName());
         if (npc == null) {
-          toSave.add(fromDto(dto));
+          Npc newNpc = fromDto(dto);
+          newNpc.setSeedFingerprint(npcFingerprint(newNpc, dto.getAwareness()));
+          toSave.add(newNpc);
         } else if (updateExisting) {
           boolean changed = false;
           if (!Objects.equals(npc.getDescription(), dto.getDescription())) {
@@ -144,6 +149,135 @@ public class NpcSync implements DataSyncContributor {
     } catch (IOException e) {
       log.error("Error loading npcs from file", e);
       return List.of();
+    }
+  }
+
+  /**
+   * Canonical seed-owned field values for an NPC, in fingerprint order: description, type,
+   * expansionCode, alignment, awareness. Mirrors the seed write set (NpcDTO fields).
+   */
+  private String npcFingerprint(Npc npc, Integer seedAwareness) {
+    Integer awareness;
+    if (seedAwareness != null) {
+      awareness = Math.max(0, Math.min(100, seedAwareness));
+    } else {
+      Object attr = npc.getAttributes().get(NpcService.ATTRIBUTE_AWARENESS);
+      awareness = attr instanceof Number number ? number.intValue() : null;
+    }
+    return syncSupport.fingerprint(
+        npc.getDescription(),
+        npc.getNpcType(),
+        npc.getExpansionCode(),
+        npc.getAlignment() == null ? null : npc.getAlignment().name(),
+        awareness == null ? null : awareness.toString());
+  }
+
+  /**
+   * Verify mode: reconcile seed-owned fields of existing NPCs. The stored fingerprint is the hash
+   * of the row's seed-owned fields as the last seed write left them; re-hashing the row's current
+   * fields detects hand edits. A row that still hashes to its stamp is clean and adopts seed
+   * changes; a row whose fields drifted is user-edited — warned and preserved. NPCs with no seed
+   * entry are never considered.
+   */
+  private void reconcileVerifiedNpcs() {
+    long start = System.currentTimeMillis();
+    ClassPathResource resource = new ClassPathResource("npcs.json");
+    if (!resource.exists()) {
+      return;
+    }
+    try (var is = resource.getInputStream()) {
+      List<NpcDTO> dtos = objectMapper.readValue(is, new TypeReference<>() {});
+      Map<String, Npc> existingNpcs =
+          npcService.findAllUnfiltered().stream()
+              .collect(Collectors.toMap(Npc::getName, n -> n, (a, b) -> a));
+      int reconciled = 0;
+      int preserved = 0;
+      List<Npc> toSave = new ArrayList<>();
+      for (NpcDTO dto : dtos) {
+        Npc npc = existingNpcs.get(dto.getName());
+        if (npc == null) {
+          continue; // user-created rows have no seed match and are never touched
+        }
+        String current = npcFingerprint(npc, null);
+        if (SeedSyncSupport.isBlankFingerprint(npc.getSeedFingerprint())) {
+          // Legacy row: adopt only if its seed-owned fields already equal the seed.
+          if (npcMatchesSeed(npc, dto)) {
+            npc.setSeedFingerprint(current);
+            toSave.add(npc);
+            reconciled++;
+          } else {
+            log.warn(
+                "Seed verify: NPC '{}' has hand-edited seed-owned fields (legacy row, no "
+                    + "fingerprint); preserving user values.",
+                npc.getName());
+            preserved++;
+          }
+        } else if (current.equals(npc.getSeedFingerprint())) {
+          if (npcMatchesSeed(npc, dto)) {
+            continue; // already in sync
+          }
+          applySeedFields(npc, dto);
+          npc.setSeedFingerprint(npcFingerprint(npc, dto.getAwareness()));
+          toSave.add(npc);
+          reconciled++;
+        } else {
+          log.warn(
+              "Seed verify: NPC '{}' was modified after seeding (fingerprint mismatch); "
+                  + "preserving user values.",
+              npc.getName());
+          preserved++;
+        }
+      }
+      if (!toSave.isEmpty()) {
+        npcService.saveAll(toSave);
+      }
+      log.info(
+          "{} ({} ms)",
+          syncSupport.reconcileLog("npc", reconciled, preserved),
+          System.currentTimeMillis() - start);
+    } catch (IOException e) {
+      log.error("Error during NPC verify reconcile", e);
+    }
+  }
+
+  private boolean npcMatchesSeed(Npc npc, NpcDTO dto) {
+    AlignmentType seedAlignment = null;
+    if (dto.getAlignment() != null) {
+      try {
+        seedAlignment = AlignmentType.valueOf(dto.getAlignment().toUpperCase());
+      } catch (IllegalArgumentException e) {
+        log.warn("Invalid alignment '{}' for npc '{}'", dto.getAlignment(), dto.getName());
+      }
+    }
+    Integer seedAwareness = dto.getAwareness();
+    Object attr = npc.getAttributes().get(NpcService.ATTRIBUTE_AWARENESS);
+    Integer npcAwareness = attr instanceof Number number ? number.intValue() : null;
+    // When the seed omits alignment, the seed write leaves the entity default (NEUTRAL).
+    AlignmentType effectiveSeedAlignment =
+        seedAlignment != null ? seedAlignment : AlignmentType.NEUTRAL;
+    return Objects.equals(npc.getDescription(), dto.getDescription())
+        && Objects.equals(npc.getNpcType(), dto.getType())
+        && Objects.equals(npc.getExpansionCode(), dto.getExpansionCode())
+        && Objects.equals(npc.getAlignment(), effectiveSeedAlignment)
+        && Objects.equals(
+            npcAwareness, seedAwareness == null ? null : Math.max(0, Math.min(100, seedAwareness)));
+  }
+
+  private void applySeedFields(Npc npc, NpcDTO dto) {
+    npc.setDescription(dto.getDescription());
+    npc.setNpcType(dto.getType());
+    if (dto.getExpansionCode() != null) {
+      npc.setExpansionCode(dto.getExpansionCode());
+    }
+    if (dto.getAlignment() != null) {
+      try {
+        npc.setAlignment(AlignmentType.valueOf(dto.getAlignment().toUpperCase()));
+      } catch (IllegalArgumentException e) {
+        log.warn("Invalid alignment '{}' for npc '{}'", dto.getAlignment(), dto.getName());
+      }
+    }
+    if (dto.getAwareness() != null) {
+      npcService.setAwareness(npc, dto.getAwareness());
     }
   }
 
