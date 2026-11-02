@@ -56,9 +56,8 @@ public class RingsideActionSync implements DataSyncContributor {
 
   @Override
   public void sync() {
-    if (syncSupport.mode() != SeedSyncMode.FULL && ringsideActionDataService.countTypes() > 0) {
-      syncTypes();
-    }
+    // Types always flow through their own skip gate inside syncTypes() (FULL re-syncs them).
+    syncTypes();
     if (syncSupport.mode() != SeedSyncMode.FULL && ringsideActionDataService.countActions() > 0) {
       topUpMissingActions();
       if (syncSupport.isVerify()) {
