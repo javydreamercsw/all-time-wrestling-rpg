@@ -184,6 +184,22 @@ public class CardSync implements DataSyncContributor {
         dto.isPin());
   }
 
+  /** Fingerprint over a card row's current seed-owned fields, in the same canonical order. */
+  private String cardFingerprint(Card card) {
+    return syncSupport.fingerprint(
+        card.getName(),
+        card.getDamage(),
+        card.getStamina(),
+        card.getTarget(),
+        card.getMomentum(),
+        card.getType(),
+        card.getSignature(),
+        card.getFinisher(),
+        card.getTaunt(),
+        card.getRecover(),
+        card.getPin());
+  }
+
   private static void applyDto(@NonNull Card card, @NonNull CardDTO dto, @NonNull CardSet set) {
     card.setName(dto.getName());
     card.setDamage(dto.getDamage());
@@ -201,10 +217,11 @@ public class CardSync implements DataSyncContributor {
   }
 
   /**
-   * Verify mode: reconcile seed-owned fields of existing cards keyed by set#number.
-   * Fingerprint-clean rows are refreshed; edited rows are warned and preserved; legacy rows
-   * matching the seed are adopted. Cards in user-created sets have no seed match and are never
-   * touched.
+   * Verify mode: reconcile seed-owned fields of existing cards keyed by set#number. The stored
+   * fingerprint is the hash of the row's seed-owned fields as the last seed write left them;
+   * re-hashing the row's current fields detects hand edits. A row that still hashes to its stored
+   * fingerprint is clean and adopts seed changes; a row whose fields drifted is user-edited —
+   * warned and preserved. Cards in user-created sets have no seed match and are never touched.
    */
   private void reconcileVerifiedCards() {
     long start = System.currentTimeMillis();
@@ -240,10 +257,10 @@ public class CardSync implements DataSyncContributor {
             if (card == null) {
               continue; // user-created rows have no seed match and are never touched
             }
-            String incoming = cardFingerprint(dto);
+            String current = cardFingerprint(card);
             if (SeedSyncSupport.isBlankFingerprint(card.getSeedFingerprint())) {
               if (matchesSeed(card, dto, set)) {
-                card.setSeedFingerprint(incoming);
+                card.setSeedFingerprint(current);
                 toSave.add(card);
                 reconciled++;
               } else {
@@ -254,12 +271,12 @@ public class CardSync implements DataSyncContributor {
                     dto.getNumber());
                 preserved++;
               }
-            } else if (incoming.equals(card.getSeedFingerprint())) {
+            } else if (current.equals(card.getSeedFingerprint())) {
               if (matchesSeed(card, dto, set)) {
                 continue; // already in sync
               }
               applyDto(card, dto, set);
-              card.setSeedFingerprint(incoming);
+              card.setSeedFingerprint(cardFingerprint(card));
               toSave.add(card);
               reconciled++;
             } else {

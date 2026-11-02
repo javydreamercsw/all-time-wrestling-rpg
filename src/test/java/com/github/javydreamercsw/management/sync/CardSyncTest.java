@@ -125,7 +125,8 @@ class CardSyncTest {
     when(cardService.count()).thenReturn(2L);
     when(cardSetService.findBySetCode("ATW")).thenReturn(Optional.of(atw));
 
-    // Clean: ATW #60 Shoulder Tackle fingerprinted as-shipped, name gone stale.
+    // Clean: ATW #60 Shoulder Tackle as an older release's seed write left it (its fields,
+    // including the since-fixed name, hash to the stored fingerprint).
     Card clean = new Card();
     clean.setId(1L);
     clean.setName("stale name");
@@ -142,16 +143,26 @@ class CardSyncTest {
     clean.setRecover(false);
     clean.setPin(false);
     clean.setSeedFingerprint(
-        support.fingerprint(
-            "Shoulder Tackle", 1, 1, 2, 1, "Strike", false, false, false, false, false));
+        support.fingerprint("stale name", 1, 1, 2, 1, "Strike", false, false, false, false, false));
 
-    // Edited: ATW #59 fingerprint zeroed, name hand-tuned.
+    // Edited: ATW #59 stamped at seed write, then hand-tuned (fields no longer hash to the stamp).
     Card edited = new Card();
     edited.setId(2L);
     edited.setName("hand-tuned");
     edited.setNumber(59);
     edited.setSet(atw);
-    edited.setSeedFingerprint("0000000000000000000000000000000000000000000000000000000000000000");
+    edited.setDamage(0);
+    edited.setStamina(0);
+    edited.setTarget(0);
+    edited.setMomentum(0);
+    edited.setType("Special");
+    edited.setSignature(false);
+    edited.setFinisher(false);
+    edited.setTaunt(false);
+    edited.setRecover(false);
+    edited.setPin(false);
+    edited.setSeedFingerprint(
+        support.fingerprint("seed name", 9, 9, 9, 9, "Old", true, true, false, false, false));
     when(cardService.findAll()).thenReturn(List.of(clean, edited));
 
     CardSync verifySync =

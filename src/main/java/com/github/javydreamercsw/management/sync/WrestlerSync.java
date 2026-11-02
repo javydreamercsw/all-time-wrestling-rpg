@@ -321,7 +321,7 @@ public class WrestlerSync implements DataSyncContributor {
               }
 
               wrestlerToSave = newWrestler;
-              stampSeedFingerprint(newWrestler, w);
+              stampSeedFingerprint(newWrestler);
               toSaveBulk.add(wrestlerToSave);
             }
 
@@ -429,33 +429,16 @@ public class WrestlerSync implements DataSyncContributor {
     }
   }
 
-  /** Stamps the seed fingerprint onto a newly inserted wrestler from its seed DTO. */
-  private void stampSeedFingerprint(Wrestler wrestler, WrestlerImportDTO w) {
-    wrestler.setSeedFingerprint(
-        syncSupport.fingerprint(
-            w.getDeckSize(),
-            w.getStartingHealth(),
-            w.getLowHealth(),
-            w.getStartingStamina(),
-            w.getLowStamina(),
-            w.getDescription(),
-            w.getGender(),
-            w.getImageUrl(),
-            w.getHeritageTag(),
-            w.getExpansionCode(),
-            w.getDrive(),
-            w.getResilience(),
-            w.getCharisma(),
-            w.getBrawl(),
-            w.getAlignment() == null
-                ? null
-                : AlignmentType.valueOf(w.getAlignment().toUpperCase())));
+  /** Stamps the seed fingerprint onto a newly inserted wrestler from its own field values. */
+  private void stampSeedFingerprint(Wrestler wrestler) {
+    wrestler.setSeedFingerprint(syncSupport.fingerprint(WrestlerSeedFields.canonical(wrestler)));
   }
 
   /**
-   * Verify mode: reconcile seed-owned fields of existing wrestlers. A row whose stored fingerprint
-   * matches the current seed payload is seed-owned and refreshed; a row whose fingerprint differs
-   * (or a legacy null-fingerprint row whose fields differ) is user-edited — warned and preserved.
+   * Verify mode: reconcile seed-owned fields of existing wrestlers. The stored fingerprint is the
+   * hash of the row's seed-owned fields as the last seed write left them; re-hashing the row's
+   * current fields detects hand edits. A row that still hashes to its stored fingerprint is clean
+   * and adopts seed changes; a row whose fields drifted is user-edited — warned and preserved.
    * User-created wrestlers (no seed match) are never considered.
    */
   private void reconcileVerifiedWrestlers() {
@@ -480,29 +463,11 @@ public class WrestlerSync implements DataSyncContributor {
             if (wrestler == null) {
               continue; // user-created rows have no seed match and are never touched
             }
-            String incoming =
-                syncSupport.fingerprint(
-                    w.getDeckSize(),
-                    w.getStartingHealth(),
-                    w.getLowHealth(),
-                    w.getStartingStamina(),
-                    w.getLowStamina(),
-                    w.getDescription(),
-                    w.getGender(),
-                    w.getImageUrl(),
-                    w.getHeritageTag(),
-                    w.getExpansionCode(),
-                    w.getDrive(),
-                    w.getResilience(),
-                    w.getCharisma(),
-                    w.getBrawl(),
-                    w.getAlignment() == null
-                        ? null
-                        : AlignmentType.valueOf(w.getAlignment().toUpperCase()));
+            String current = syncSupport.fingerprint(WrestlerSeedFields.canonical(wrestler));
             if (SeedSyncSupport.isBlankFingerprint(wrestler.getSeedFingerprint())) {
               // Legacy row: adopt only if its seed-owned fields already equal the seed.
               if (matchesSeed(wrestler, w)) {
-                wrestler.setSeedFingerprint(incoming);
+                wrestler.setSeedFingerprint(current);
                 toSave.add(wrestler);
                 reconciled++;
               } else {
@@ -512,12 +477,13 @@ public class WrestlerSync implements DataSyncContributor {
                     LogSanitizer.sanitize(wrestler.getName()));
                 preserved++;
               }
-            } else if (incoming.equals(wrestler.getSeedFingerprint())) {
+            } else if (current.equals(wrestler.getSeedFingerprint())) {
               if (matchesSeed(wrestler, w)) {
                 continue; // already in sync
               }
               applySeedFields(wrestler, w);
-              wrestler.setSeedFingerprint(incoming);
+              wrestler.setSeedFingerprint(
+                  syncSupport.fingerprint(WrestlerSeedFields.canonical(wrestler)));
               toSave.add(wrestler);
               reconciled++;
             } else {

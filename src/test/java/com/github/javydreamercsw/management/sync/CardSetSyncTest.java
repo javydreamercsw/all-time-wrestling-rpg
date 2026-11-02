@@ -106,17 +106,19 @@ class CardSetSyncTest {
     CardSetSync verifySync = new CardSetSync("verify", cardSetService, new ObjectMapper());
     when(cardSetService.count()).thenReturn(2L);
 
-    // ATW: fingerprint matches current seed (name "All Time Wrestling") but row name is stale.
+    // ATW: stamped as an older release's seed write left it — the row's own (then-current) name
+    // hashes to the stamp; the name has since gone stale only because the seed moved on.
     CardSet clean = new CardSet();
     clean.setCode("ATW");
     clean.setName("stale set name");
-    clean.setSeedFingerprint(support.fingerprint("All Time Wrestling")); // per seed file ATW entry
+    clean.setSeedFingerprint(support.fingerprint("stale set name"));
 
-    // JFH-equivalent edited row: fingerprint does not match anything current.
+    // Edited row: stamped at seed write, then hand-renamed (its current name no longer hashes
+    // to the stamp).
     CardSet edited = new CardSet();
     edited.setCode("RVD");
     edited.setName("user-renamed set");
-    edited.setSeedFingerprint("0000000000000000000000000000000000000000000000000000000000000000");
+    edited.setSeedFingerprint(support.fingerprint("Rob Van Dam"));
 
     when(cardSetService.findBySetCode("ATW")).thenReturn(Optional.of(clean));
     when(cardSetService.findBySetCode("RVD")).thenReturn(Optional.of(edited));

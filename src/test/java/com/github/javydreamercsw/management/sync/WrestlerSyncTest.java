@@ -363,8 +363,10 @@ class WrestlerSyncTest {
   void verifyMode_reconcilesSeedOwnedFieldsOfCleanRow() throws Exception {
     WrestlerImportDTO dto = rvdSeedDto();
     Wrestler existing = seededRvd(dto);
-    existing.setSeedFingerprint(VERIFY_SUPPORT.fingerprint(WrestlerSeedFields.canonical(existing)));
+    // The row is exactly what an older release's seed write left behind: its fields (including the
+    // since-fixed description) hash to the stored fingerprint.
     existing.setDescription("stale description from an older release");
+    existing.setSeedFingerprint(VERIFY_SUPPORT.fingerprint(WrestlerSeedFields.canonical(existing)));
     stubOneExisting(existing);
 
     verifySync().sync();
@@ -383,7 +385,8 @@ class WrestlerSyncTest {
   void verifyMode_preservesUserEditedRow() throws Exception {
     WrestlerImportDTO dto = rvdSeedDto();
     Wrestler existing = seededRvd(dto);
-    existing.setSeedFingerprint("0000000000000000000000000000000000000000000000000000000000000000");
+    existing.setSeedFingerprint(VERIFY_SUPPORT.fingerprint(WrestlerSeedFields.canonical(existing)));
+    // Edited after seeding: the row's fields no longer hash to the stored fingerprint.
     existing.setDescription("deliberately hand-tuned");
     stubOneExisting(existing);
 

@@ -119,9 +119,11 @@ public class CardSetSync implements DataSyncContributor {
   }
 
   /**
-   * Verify mode: reconcile seed-owned fields (name) of existing card sets. Fingerprint-clean rows
-   * are refreshed; edited rows are warned and preserved; legacy rows matching the seed are adopted.
-   * User-created sets (CUSTOM etc.) have no seed match and are never touched.
+   * Verify mode: reconcile seed-owned fields (name) of existing card sets. The stored fingerprint
+   * is the hash of the row's name as the last seed write left it; re-hashing the row's current name
+   * detects hand edits. A row that still hashes to its stored fingerprint is clean and adopts seed
+   * changes; a row whose name drifted is user-edited — warned and preserved. User-created sets
+   * (CUSTOM etc.) have no seed match and are never touched.
    */
   private void reconcileVerifiedCardSets() {
     long start = System.currentTimeMillis();
@@ -140,10 +142,10 @@ public class CardSetSync implements DataSyncContributor {
           continue; // user-created rows have no seed match and are never touched
         }
         CardSet existing = existingOpt.get();
-        String incoming = syncSupport.fingerprint(c.getName());
+        String current = syncSupport.fingerprint(existing.getName());
         if (SeedSyncSupport.isBlankFingerprint(existing.getSeedFingerprint())) {
           if (c.getName().equals(existing.getName())) {
-            existing.setSeedFingerprint(incoming);
+            existing.setSeedFingerprint(current);
             toSave.add(existing);
             reconciled++;
           } else {
@@ -153,12 +155,12 @@ public class CardSetSync implements DataSyncContributor {
                 existing.getCode());
             preserved++;
           }
-        } else if (incoming.equals(existing.getSeedFingerprint())) {
+        } else if (current.equals(existing.getSeedFingerprint())) {
           if (c.getName().equals(existing.getName())) {
             continue; // already in sync
           }
           existing.setName(c.getName());
-          existing.setSeedFingerprint(incoming);
+          existing.setSeedFingerprint(current);
           toSave.add(existing);
           reconciled++;
         } else {
