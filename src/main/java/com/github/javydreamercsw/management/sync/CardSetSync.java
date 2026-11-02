@@ -36,24 +36,27 @@ import org.springframework.stereotype.Component;
 @Order(70)
 public class CardSetSync implements DataSyncContributor {
 
-  private final boolean skipIfNotEmpty;
+  private final SeedSyncSupport syncSupport;
   private final CardSetService cardSetService;
   private final ObjectMapper objectMapper;
 
   @Autowired
   public CardSetSync(
-      @Value("${data.initializer.skip-if-not-empty:false}") final boolean skipIfNotEmpty,
+      @Value("${data.initializer.skip-if-not-empty:false}") final String skipIfNotEmptyRaw,
       final CardSetService cardSetService,
       final ObjectMapper objectMapper) {
-    this.skipIfNotEmpty = skipIfNotEmpty;
+    this.syncSupport = new SeedSyncSupport(skipIfNotEmptyRaw);
     this.cardSetService = cardSetService;
     this.objectMapper = objectMapper;
   }
 
   @Override
   public void sync() {
-    if (skipIfNotEmpty && cardSetService.count() > 0) {
+    if (syncSupport.mode() != SeedSyncMode.FULL && cardSetService.count() > 0) {
       topUpMissingCardSets();
+      if (syncSupport.isVerify()) {
+        reconcileVerifiedCardSets();
+      }
       return;
     }
     loadCardSets(true);
@@ -100,6 +103,7 @@ public class CardSetSync implements DataSyncContributor {
             toSave.add(existing);
           }
         } else {
+          c.setSeedFingerprint(syncSupport.fingerprint(c.getName()));
           toSave.add(c);
         }
       }
@@ -111,6 +115,69 @@ public class CardSetSync implements DataSyncContributor {
     } catch (IOException e) {
       log.error("Error loading card sets from file", e);
       return List.of();
+    }
+  }
+
+  /**
+   * Verify mode: reconcile seed-owned fields (name) of existing card sets. Fingerprint-clean rows
+   * are refreshed; edited rows are warned and preserved; legacy rows matching the seed are adopted.
+   * User-created sets (CUSTOM etc.) have no seed match and are never touched.
+   */
+  private void reconcileVerifiedCardSets() {
+    long start = System.currentTimeMillis();
+    ClassPathResource resource = new ClassPathResource("sets.json");
+    if (!resource.exists()) {
+      return;
+    }
+    try (var is = resource.getInputStream()) {
+      List<CardSet> setsFromFile = objectMapper.readValue(is, new TypeReference<>() {});
+      int reconciled = 0;
+      int preserved = 0;
+      List<CardSet> toSave = new ArrayList<>();
+      for (CardSet c : setsFromFile) {
+        Optional<CardSet> existingOpt = cardSetService.findBySetCode(c.getCode());
+        if (existingOpt.isEmpty()) {
+          continue; // user-created rows have no seed match and are never touched
+        }
+        CardSet existing = existingOpt.get();
+        String incoming = syncSupport.fingerprint(c.getName());
+        if (SeedSyncSupport.isBlankFingerprint(existing.getSeedFingerprint())) {
+          if (c.getName().equals(existing.getName())) {
+            existing.setSeedFingerprint(incoming);
+            toSave.add(existing);
+            reconciled++;
+          } else {
+            log.warn(
+                "Seed verify: card set '{}' has hand-edited seed-owned fields "
+                    + "(legacy row, no fingerprint); preserving user values.",
+                existing.getCode());
+            preserved++;
+          }
+        } else if (incoming.equals(existing.getSeedFingerprint())) {
+          if (c.getName().equals(existing.getName())) {
+            continue; // already in sync
+          }
+          existing.setName(c.getName());
+          existing.setSeedFingerprint(incoming);
+          toSave.add(existing);
+          reconciled++;
+        } else {
+          log.warn(
+              "Seed verify: card set '{}' was modified after seeding (fingerprint mismatch); "
+                  + "preserving user values.",
+              existing.getCode());
+          preserved++;
+        }
+      }
+      if (!toSave.isEmpty()) {
+        cardSetService.saveAll(toSave);
+      }
+      log.info(
+          "{} ({} ms)",
+          syncSupport.reconcileLog("card set", reconciled, preserved),
+          System.currentTimeMillis() - start);
+    } catch (IOException e) {
+      log.error("Error during card set verify reconcile", e);
     }
   }
 }

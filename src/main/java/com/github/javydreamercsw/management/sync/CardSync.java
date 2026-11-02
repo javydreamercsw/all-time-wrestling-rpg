@@ -44,7 +44,7 @@ import org.springframework.stereotype.Component;
 @Order(80)
 public class CardSync implements DataSyncContributor {
 
-  private final boolean skipIfNotEmpty;
+  private final SeedSyncSupport syncSupport;
   private final CardService cardService;
   private final CardSetService cardSetService;
   private final ResourcePatternResolver resourcePatternResolver;
@@ -52,12 +52,12 @@ public class CardSync implements DataSyncContributor {
 
   @Autowired
   public CardSync(
-      @Value("${data.initializer.skip-if-not-empty:false}") final boolean skipIfNotEmpty,
+      @Value("${data.initializer.skip-if-not-empty:false}") final String skipIfNotEmptyRaw,
       final CardService cardService,
       final CardSetService cardSetService,
       final ResourcePatternResolver resourcePatternResolver,
       final ObjectMapper objectMapper) {
-    this.skipIfNotEmpty = skipIfNotEmpty;
+    this.syncSupport = new SeedSyncSupport(skipIfNotEmptyRaw);
     this.cardService = cardService;
     this.cardSetService = cardSetService;
     this.resourcePatternResolver = resourcePatternResolver;
@@ -66,8 +66,11 @@ public class CardSync implements DataSyncContributor {
 
   @Override
   public void sync() {
-    if (skipIfNotEmpty && cardService.count() > 0) {
+    if (syncSupport.mode() != SeedSyncMode.FULL && cardService.count() > 0) {
       topUpMissingCards();
+      if (syncSupport.isVerify()) {
+        reconcileVerifiedCards();
+      }
       return;
     }
     loadCards(true);
@@ -132,6 +135,7 @@ public class CardSync implements DataSyncContributor {
             Card card = existing.get(key);
             if (card == null) {
               Card newCard = fromDto(dto, set);
+              newCard.setSeedFingerprint(cardFingerprint(dto));
               fileToSave.add(newCard);
               allMissing.add(newCard);
             } else if (updateExisting) {
@@ -164,6 +168,22 @@ public class CardSync implements DataSyncContributor {
     return card;
   }
 
+  /** Fingerprint over a card's seed-owned fields in canonical order. */
+  private String cardFingerprint(CardDTO dto) {
+    return syncSupport.fingerprint(
+        dto.getName(),
+        dto.getDamage(),
+        dto.getStamina(),
+        dto.getTarget(),
+        dto.getMomentum(),
+        dto.getType(),
+        dto.isSignature(),
+        dto.isFinisher(),
+        dto.isTaunt(),
+        dto.isRecover(),
+        dto.isPin());
+  }
+
   private static void applyDto(@NonNull Card card, @NonNull CardDTO dto, @NonNull CardSet set) {
     card.setName(dto.getName());
     card.setDamage(dto.getDamage());
@@ -178,5 +198,107 @@ public class CardSync implements DataSyncContributor {
     card.setTaunt(dto.isTaunt());
     card.setPin(dto.isPin());
     card.setRecover(dto.isRecover());
+  }
+
+  /**
+   * Verify mode: reconcile seed-owned fields of existing cards keyed by set#number.
+   * Fingerprint-clean rows are refreshed; edited rows are warned and preserved; legacy rows
+   * matching the seed are adopted. Cards in user-created sets have no seed match and are never
+   * touched.
+   */
+  private void reconcileVerifiedCards() {
+    long start = System.currentTimeMillis();
+    try {
+      Resource[] resources = resourcePatternResolver.getResources("classpath*:cards/*.json");
+      Map<String, Card> existing =
+          cardService.findAll().stream()
+              .collect(
+                  Collectors.toMap(
+                      c -> c.getSet().getCode() + "#" + c.getNumber(), c -> c, (a, b) -> a));
+      Map<String, CardSet> setCache = new HashMap<>();
+      int reconciled = 0;
+      int preserved = 0;
+      List<Card> toSave = new ArrayList<>();
+      for (Resource resource : resources) {
+        if (!resource.exists()) {
+          continue;
+        }
+        try (var is = resource.getInputStream()) {
+          List<CardDTO> cardsFromFile = objectMapper.readValue(is, new TypeReference<>() {});
+          for (CardDTO dto : cardsFromFile) {
+            CardSet set = setCache.get(dto.getSet());
+            if (set == null) {
+              Optional<CardSet> setOpt = cardSetService.findBySetCode(dto.getSet());
+              if (setOpt.isEmpty()) {
+                continue;
+              }
+              set = setOpt.get();
+              setCache.put(dto.getSet(), set);
+            }
+            String key = dto.getSet() + "#" + dto.getNumber();
+            Card card = existing.get(key);
+            if (card == null) {
+              continue; // user-created rows have no seed match and are never touched
+            }
+            String incoming = cardFingerprint(dto);
+            if (SeedSyncSupport.isBlankFingerprint(card.getSeedFingerprint())) {
+              if (matchesSeed(card, dto, set)) {
+                card.setSeedFingerprint(incoming);
+                toSave.add(card);
+                reconciled++;
+              } else {
+                log.warn(
+                    "Seed verify: card {}#{} has hand-edited seed-owned fields "
+                        + "(legacy row, no fingerprint); preserving user values.",
+                    dto.getSet(),
+                    dto.getNumber());
+                preserved++;
+              }
+            } else if (incoming.equals(card.getSeedFingerprint())) {
+              if (matchesSeed(card, dto, set)) {
+                continue; // already in sync
+              }
+              applyDto(card, dto, set);
+              card.setSeedFingerprint(incoming);
+              toSave.add(card);
+              reconciled++;
+            } else {
+              log.warn(
+                  "Seed verify: card {}#{} was modified after seeding (fingerprint mismatch); "
+                      + "preserving user values.",
+                  dto.getSet(),
+                  dto.getNumber());
+              preserved++;
+            }
+          }
+        } catch (IOException e) {
+          log.error("Error loading cards from file: {}", resource.getFilename(), e);
+        }
+      }
+      if (!toSave.isEmpty()) {
+        cardService.saveAll(toSave);
+      }
+      log.info(
+          "{} ({} ms)",
+          syncSupport.reconcileLog("card", reconciled, preserved),
+          System.currentTimeMillis() - start);
+    } catch (IOException e) {
+      log.error("Error resolving card resources for verify reconcile", e);
+    }
+  }
+
+  private boolean matchesSeed(Card card, CardDTO dto, CardSet set) {
+    return java.util.Objects.equals(card.getName(), dto.getName())
+        && java.util.Objects.equals(card.getDamage(), dto.getDamage())
+        && java.util.Objects.equals(card.getStamina(), dto.getStamina())
+        && java.util.Objects.equals(card.getTarget(), dto.getTarget())
+        && java.util.Objects.equals(card.getMomentum(), dto.getMomentum())
+        && java.util.Objects.equals(card.getType(), dto.getType())
+        && card.getSignature() == dto.isSignature()
+        && card.getFinisher() == dto.isFinisher()
+        && card.getTaunt() == dto.isTaunt()
+        && card.getRecover() == dto.isRecover()
+        && card.getPin() == dto.isPin()
+        && card.getSet().getId().equals(set.getId());
   }
 }

@@ -73,7 +73,7 @@ class CardSyncTest {
 
     CardSync skipSync =
         new CardSync(
-            true, cardService, cardSetService, resourcePatternResolver, new ObjectMapper());
+            "true", cardService, cardSetService, resourcePatternResolver, new ObjectMapper());
     skipSync.sync();
 
     @SuppressWarnings("unchecked")
@@ -106,10 +106,63 @@ class CardSyncTest {
 
     CardSync fullSync =
         new CardSync(
-            false, cardService, cardSetService, resourcePatternResolver, new ObjectMapper());
+            "false", cardService, cardSetService, resourcePatternResolver, new ObjectMapper());
     fullSync.sync();
 
     verify(cardService, atLeastOnce()).saveAll(argThat(list -> list.contains(existing)));
     assertEquals("Shoulder Tackle", existing.getName(), "name refreshed from seed in full mode");
+  }
+
+  @Test
+  void verifyMode_reconcilesCleanRowAndPreservesEditedRow() throws Exception {
+    SeedSyncSupport support = new SeedSyncSupport("verify");
+    PathMatchingResourcePatternResolver real = new PathMatchingResourcePatternResolver();
+    Resource[] resources = real.getResources("classpath*:cards/*.json");
+    when(resourcePatternResolver.getResources(any())).thenReturn(resources);
+
+    CardSet atw = new CardSet();
+    atw.setCode("ATW");
+    when(cardService.count()).thenReturn(2L);
+    when(cardSetService.findBySetCode("ATW")).thenReturn(Optional.of(atw));
+
+    // Clean: ATW #60 Shoulder Tackle fingerprinted as-shipped, name gone stale.
+    Card clean = new Card();
+    clean.setId(1L);
+    clean.setName("stale name");
+    clean.setNumber(60);
+    clean.setSet(atw);
+    clean.setDamage(1);
+    clean.setStamina(1);
+    clean.setTarget(2);
+    clean.setMomentum(1);
+    clean.setType("Strike");
+    clean.setSignature(false);
+    clean.setFinisher(false);
+    clean.setTaunt(false);
+    clean.setRecover(false);
+    clean.setPin(false);
+    clean.setSeedFingerprint(
+        support.fingerprint(
+            "Shoulder Tackle", 1, 1, 2, 1, "Strike", false, false, false, false, false));
+
+    // Edited: ATW #59 fingerprint zeroed, name hand-tuned.
+    Card edited = new Card();
+    edited.setId(2L);
+    edited.setName("hand-tuned");
+    edited.setNumber(59);
+    edited.setSet(atw);
+    edited.setSeedFingerprint("0000000000000000000000000000000000000000000000000000000000000000");
+    when(cardService.findAll()).thenReturn(List.of(clean, edited));
+
+    CardSync verifySync =
+        new CardSync(
+            "verify", cardService, cardSetService, resourcePatternResolver, new ObjectMapper());
+    verifySync.sync();
+
+    assertEquals(
+        "Shoulder Tackle",
+        clean.getName(),
+        "clean-fingerprint card must be reconciled to the seed name");
+    assertEquals("hand-tuned", edited.getName(), "edited card must be preserved");
   }
 }

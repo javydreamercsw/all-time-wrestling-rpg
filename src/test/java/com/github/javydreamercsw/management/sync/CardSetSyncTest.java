@@ -46,7 +46,7 @@ class CardSetSyncTest {
     // Simulates a flag-protected install where one seeded set (ATW) exists and every other
     // seeded set is missing. Top-up must insert exactly the missing sets and never re-save an
     // existing row.
-    CardSetSync skipSync = new CardSetSync(true, cardSetService, new ObjectMapper());
+    CardSetSync skipSync = new CardSetSync("true", cardSetService, new ObjectMapper());
     when(cardSetService.count()).thenReturn(1L);
 
     CardSet existing = new CardSet();
@@ -69,7 +69,7 @@ class CardSetSyncTest {
 
   @Test
   void sync_topUpLeavesExistingCardSetUntouchedWhenSkipFlagSet() {
-    CardSetSync skipSync = new CardSetSync(true, cardSetService, new ObjectMapper());
+    CardSetSync skipSync = new CardSetSync("true", cardSetService, new ObjectMapper());
     when(cardSetService.count()).thenReturn(1L);
     CardSet existing = new CardSet();
     existing.setCode("ATW");
@@ -88,7 +88,7 @@ class CardSetSyncTest {
   @Test
   void sync_fullModeUpdatesExistingCardSet() {
     // Without the skip flag, existing rows are updated to match the seed (original behavior).
-    CardSetSync fullSync = new CardSetSync(false, cardSetService, new ObjectMapper());
+    CardSetSync fullSync = new CardSetSync("false", cardSetService, new ObjectMapper());
     CardSet existing = new CardSet();
     existing.setCode("ATW");
     existing.setName("stale name");
@@ -98,5 +98,57 @@ class CardSetSyncTest {
 
     verify(cardSetService, atLeastOnce()).saveAll(argThat(list -> list.contains(existing)));
     assertFalse("stale name".equals(existing.getName()), "name must be refreshed from seed");
+  }
+
+  @Test
+  void verifyMode_reconcilesCleanRowAndPreservesEditedRow() {
+    SeedSyncSupport support = new SeedSyncSupport("verify");
+    CardSetSync verifySync = new CardSetSync("verify", cardSetService, new ObjectMapper());
+    when(cardSetService.count()).thenReturn(2L);
+
+    // ATW: fingerprint matches current seed (name "All Time Wrestling") but row name is stale.
+    CardSet clean = new CardSet();
+    clean.setCode("ATW");
+    clean.setName("stale set name");
+    clean.setSeedFingerprint(support.fingerprint("All Time Wrestling")); // per seed file ATW entry
+
+    // JFH-equivalent edited row: fingerprint does not match anything current.
+    CardSet edited = new CardSet();
+    edited.setCode("RVD");
+    edited.setName("user-renamed set");
+    edited.setSeedFingerprint("0000000000000000000000000000000000000000000000000000000000000000");
+
+    when(cardSetService.findBySetCode("ATW")).thenReturn(Optional.of(clean));
+    when(cardSetService.findBySetCode("RVD")).thenReturn(Optional.of(edited));
+    when(cardSetService.findBySetCode(argThat(code -> !"ATW".equals(code) && !"RVD".equals(code))))
+        .thenReturn(Optional.empty());
+
+    verifySync.sync();
+
+    assertEquals(
+        "All Time Wrestling",
+        clean.getName(),
+        "clean-fingerprint set must be reconciled to the seed name");
+    assertEquals("user-renamed set", edited.getName(), "edited set must be preserved");
+  }
+
+  @Test
+  void verifyMode_adoptsLegacyRowWhenFieldsMatchSeed() {
+    SeedSyncSupport support = new SeedSyncSupport("verify");
+    CardSetSync verifySync = new CardSetSync("verify", cardSetService, new ObjectMapper());
+    when(cardSetService.count()).thenReturn(1L);
+    CardSet legacy = new CardSet();
+    legacy.setCode("ATW");
+    legacy.setName("All Time Wrestling"); // matches seed, null fingerprint
+    when(cardSetService.findBySetCode("ATW")).thenReturn(Optional.of(legacy));
+    when(cardSetService.findBySetCode(argThat(code -> !"ATW".equals(code))))
+        .thenReturn(Optional.empty());
+
+    verifySync.sync();
+
+    assertEquals(
+        support.fingerprint("All Time Wrestling"),
+        legacy.getSeedFingerprint(),
+        "legacy row matching the seed must be adopted (fingerprint stamped)");
   }
 }
