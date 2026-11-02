@@ -78,13 +78,18 @@ public class SegmentTypeSync implements DataSyncContributor {
     for (SegmentTypeDTO dto : dtos) {
       if (!existingNames.contains(dto.getName())) {
         log.info("Segment type top-up: inserting missing seed entry '{}'.", dto.getName());
-        segmentTypeService.createOrUpdateSegmentType(
-            dto.getName(),
-            dto.getDescription(),
-            dto.getExpansionCode() != null ? dto.getExpansionCode() : "BASE_GAME",
-            dto.getGuide(),
-            dto.getCode(),
-            dto.getEventOnly());
+        SegmentType created =
+            segmentTypeService.createOrUpdateSegmentType(
+                dto.getName(),
+                dto.getDescription(),
+                dto.getExpansionCode() != null ? dto.getExpansionCode() : "BASE_GAME",
+                dto.getGuide(),
+                dto.getCode(),
+                dto.getEventOnly());
+        if (created != null) {
+          created.setSeedFingerprint(segmentTypeFingerprint(created));
+          segmentTypeService.saveSegmentType(created);
+        }
       }
     }
   }
@@ -209,14 +214,18 @@ public class SegmentTypeSync implements DataSyncContributor {
             && st.isEventOnly() == Boolean.TRUE.equals(dto.getEventOnly())) {
           continue; // already in sync
         }
-        // Clean row: refresh through the same service path the seed write uses.
-        segmentTypeService.createOrUpdateSegmentType(
-            dto.getName(),
-            dto.getDescription(),
-            dto.getExpansionCode() != null ? dto.getExpansionCode() : "BASE_GAME",
-            dto.getGuide(),
-            dto.getCode(),
-            dto.getEventOnly());
+        // Clean row: refresh through the same service path the seed write uses, then persist
+        // the stamp — the service save leaves it unset and the returned row is detached.
+        SegmentType refreshed =
+            segmentTypeService.createOrUpdateSegmentType(
+                dto.getName(),
+                dto.getDescription(),
+                dto.getExpansionCode() != null ? dto.getExpansionCode() : "BASE_GAME",
+                dto.getGuide(),
+                dto.getCode(),
+                dto.getEventOnly());
+        refreshed.setSeedFingerprint(segmentTypeFingerprint(refreshed));
+        segmentTypeService.saveSegmentType(refreshed);
         reconciled++;
       } else {
         log.warn(

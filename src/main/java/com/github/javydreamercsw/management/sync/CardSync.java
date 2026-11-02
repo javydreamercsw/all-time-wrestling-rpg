@@ -140,6 +140,7 @@ public class CardSync implements DataSyncContributor {
               allMissing.add(newCard);
             } else if (updateExisting) {
               applyDto(card, dto, set);
+              card.setSeedFingerprint(cardFingerprint(card));
               fileToSave.add(card);
             }
           }

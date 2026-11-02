@@ -185,4 +185,78 @@ class SegmentRuleSyncTest {
             anyBoolean());
     assertEquals(null, custom.getSeedFingerprint(), "user-created rule must remain unstamped");
   }
+
+  @Test
+  void verifyMode_stampsPersistThroughTheService() {
+    // Regression: the stamp was previously applied to the detached instance returned by
+    // createOrUpdateRule and never saved — verify twice to prove the stamp reaches the repo.
+    SegmentRuleSync verifySync =
+        new SegmentRuleSync("verify", segmentRuleService, new ObjectMapper());
+    SegmentRule clean = rule("Normal", "stale description");
+    clean.setSeedFingerprint(ruleFingerprint(clean));
+    when(segmentRuleService.findAllForAdmin()).thenReturn(List.of(clean));
+
+    List<SegmentRule> persisted = new java.util.ArrayList<>();
+    when(segmentRuleService.createOrUpdateRule(
+            anyString(),
+            anyString(),
+            anyBoolean(),
+            anyBoolean(),
+            any(),
+            anyString(),
+            any(),
+            anyBoolean()))
+        .thenAnswer(
+            inv -> {
+              SegmentRule sr = rule(inv.getArgument(0), inv.getArgument(1));
+              return sr;
+            });
+    when(segmentRuleService.saveRule(any()))
+        .thenAnswer(
+            inv -> {
+              persisted.add(inv.getArgument(0));
+              return inv.getArgument(0);
+            });
+
+    verifySync.sync();
+
+    assertEquals(1, persisted.size(), "the stamped rule must be persisted through the service");
+    assertNotNull(
+        persisted.getFirst().getSeedFingerprint(), "the persisted row must carry the fingerprint");
+  }
+
+  @Test
+  void fullMode_stampsPersistThroughTheService() {
+    SegmentRuleSync sync = new SegmentRuleSync("false", segmentRuleService, new ObjectMapper());
+    SegmentRule existing = rule("Normal", "stale description");
+    when(segmentRuleService.findAllForAdmin()).thenReturn(List.of(existing));
+    List<SegmentRule> persisted = new java.util.ArrayList<>();
+    when(segmentRuleService.createOrUpdateRule(
+            anyString(),
+            anyString(),
+            anyBoolean(),
+            anyBoolean(),
+            any(),
+            anyString(),
+            any(),
+            anyBoolean()))
+        .thenAnswer(
+            inv -> {
+              SegmentRule sr = rule(inv.getArgument(0), inv.getArgument(1));
+              return sr;
+            });
+    when(segmentRuleService.saveRule(any()))
+        .thenAnswer(
+            inv -> {
+              persisted.add(inv.getArgument(0));
+              return inv.getArgument(0);
+            });
+
+    sync.sync();
+
+    assertEquals(20, persisted.size(), "every reconciled rule must be re-persisted with its stamp");
+    for (SegmentRule sr : persisted) {
+      assertNotNull(sr.getSeedFingerprint(), "persisted rule must carry a fingerprint");
+    }
+  }
 }

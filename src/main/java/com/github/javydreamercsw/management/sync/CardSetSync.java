@@ -100,6 +100,7 @@ public class CardSetSync implements DataSyncContributor {
           if (updateExisting) {
             CardSet existing = existingOpt.get();
             existing.setName(c.getName());
+            existing.setSeedFingerprint(syncSupport.fingerprint(existing.getName()));
             toSave.add(existing);
           }
         } else {
@@ -160,7 +161,8 @@ public class CardSetSync implements DataSyncContributor {
             continue; // already in sync
           }
           existing.setName(c.getName());
-          existing.setSeedFingerprint(current);
+          // Stamp the NEW name's hash — the pre-rename hash would poison the next pass.
+          existing.setSeedFingerprint(syncSupport.fingerprint(existing.getName()));
           toSave.add(existing);
           reconciled++;
         } else {

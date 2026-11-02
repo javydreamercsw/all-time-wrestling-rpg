@@ -137,6 +137,7 @@ public class NpcSync implements DataSyncContributor {
             npcService.setAwareness(npc, dto.getAwareness());
           }
           if (changed) {
+            npc.setSeedFingerprint(npcFingerprint(npc, dto.getAwareness()));
             toSave.add(npc);
           }
         }

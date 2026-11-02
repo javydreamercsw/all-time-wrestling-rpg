@@ -78,6 +78,7 @@ public class SegmentRuleSync implements DataSyncContributor {
                   dto.getGuide(),
                   dto.isAllowsRefereeStopage());
           stampFingerprint(saved, dto);
+          segmentRuleService.saveRule(saved);
         }
         log.debug("Segment rule loading completed - {} rules loaded", dtos.size());
       } catch (IOException e) {
@@ -179,6 +180,7 @@ public class SegmentRuleSync implements DataSyncContributor {
                   dto.getGuide(),
                   dto.isAllowsRefereeStopage());
           stampFingerprint(saved, dto);
+          segmentRuleService.saveRule(saved);
           reconciled++;
         } else {
           log.warn(
@@ -202,6 +204,7 @@ public class SegmentRuleSync implements DataSyncContributor {
                 dto.getGuide(),
                 dto.isAllowsRefereeStopage());
         stampFingerprint(saved, dto);
+        segmentRuleService.saveRule(saved);
         reconciled++;
       } else {
         log.warn(

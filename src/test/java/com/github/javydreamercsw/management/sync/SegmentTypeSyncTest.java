@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.sync;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -145,6 +146,47 @@ class SegmentTypeSyncTest {
     verify(segmentTypeService, Mockito.never())
         .createOrUpdateSegmentType(
             anyString(), anyString(), anyString(), any(), anyString(), anyBoolean());
+  }
+
+  @Test
+  void verifyMode_reconciledRowIsRestampedAndPersisted() {
+    // Regression: the clean-row refresh previously saved through the service without persisting
+    // a re-stamp — the DB kept the old fingerprint and the next pass froze the row.
+    SegmentTypeSync verifySync =
+        new SegmentTypeSync("verify", segmentTypeService, new ObjectMapper());
+    when(segmentTypeService.count()).thenReturn(1L);
+
+    SegmentType clean = segmentType("Promo");
+    clean.setDescription("stale description from an older release");
+    clean.setGuideHash(null);
+    clean.setSeedFingerprint(segmentTypeFingerprint(clean));
+    when(segmentTypeService.findAll()).thenReturn(List.of(clean));
+    when(segmentTypeService.createOrUpdateSegmentType(
+            anyString(), anyString(), anyString(), any(), anyString(), any()))
+        .thenAnswer(
+            inv -> {
+              SegmentType st = segmentType(inv.getArgument(0));
+              st.setDescription(inv.getArgument(1));
+              return st;
+            });
+    List<SegmentType> persisted = new java.util.ArrayList<>();
+    when(segmentTypeService.saveSegmentType(any()))
+        .thenAnswer(
+            inv -> {
+              persisted.add(inv.getArgument(0));
+              return inv.getArgument(0);
+            });
+
+    verifySync.sync();
+
+    // Top-up inserts 6 missing types first; the reconcile's refresh of Promo is the last persist.
+    org.junit.jupiter.api.Assertions.assertFalse(persisted.isEmpty(), "a refresh must persist");
+    SegmentType last = persisted.getLast();
+    assertNotNull(last.getSeedFingerprint(), "persisted row must carry a fingerprint");
+    assertEquals(
+        "Non-wrestling segment for storyline development and character work",
+        last.getDescription(),
+        "the persisted row is the refreshed Promo");
   }
 
   private static SegmentType segmentType(String name) {

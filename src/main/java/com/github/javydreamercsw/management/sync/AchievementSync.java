@@ -125,6 +125,7 @@ public class AchievementSync implements DataSyncContributor {
           }
           Achievement existing = existingOpt.get();
           existing.copyContentFrom(a);
+          existing.setSeedFingerprint(achievementFingerprint(existing));
           toSave.add(existing);
         } else {
           a.setSeedFingerprint(achievementFingerprint(a));

@@ -217,7 +217,7 @@ public class DeckSync implements DataSyncContributor {
         }
 
         // Newly created decks are seed-written by definition: stamp their composition.
-        if (newDecks.contains(deck)) {
+        if (newDecks.contains(deck) || changed) {
           stampCompositionFingerprint(deck);
         }
 

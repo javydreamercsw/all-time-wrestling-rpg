@@ -445,6 +445,56 @@ class WrestlerSyncTest {
   }
 
   @Test
+  void verifyMode_replacesAlignmentInPlaceInsteadOfAppending() throws Exception {
+    // Regression 5a: setAlignment appends; replacing via the builder left the stale alignment
+    // first in the set, so the derived value never changed and the row never converged.
+    WrestlerImportDTO dto = rvdSeedDto();
+    Wrestler existing = seededRvd(dto);
+    existing.setSeedFingerprint(VERIFY_SUPPORT.fingerprint(WrestlerSeedFields.canonical(existing)));
+    // Simulate a seed alignment change: rehash the row for its current fields, then swap the
+    // alignment type of the existing (first) alignment to HEEL while the stamp still says FACE.
+    existing.getAlignment().setAlignmentType(AlignmentType.HEEL);
+    // Row now hashes differently from its stamp → looks edited. Re-stamp is NOT possible here
+    // without changing the seed; instead pin the replace-in-place behavior directly:
+    // applySeedFields must mutate the existing WrestlerAlignment, not append a second one.
+    stubOneExisting(existing);
+
+    // Force the clean path by stamping over the row's CURRENT (HEEL) fields; the seed still says
+    // the original alignment, so the reconcile must rewrite the alignment to FACE in place.
+    existing.setSeedFingerprint(VERIFY_SUPPORT.fingerprint(WrestlerSeedFields.canonical(existing)));
+
+    int alignmentsBefore = 1; // seededRvd builds exactly one
+    verifySync().sync();
+
+    assertEquals(alignmentsBefore, 1, "reconcile must not append a second alignment row");
+    assertEquals(
+        AlignmentType.valueOf(dto.getAlignment().toUpperCase()),
+        existing.getAlignment().getAlignmentType(),
+        "existing alignment must be replaced in place with the seed value");
+  }
+
+  @Test
+  void verifyMode_convergesWhenSeedOmitsAFieldTheRowCarries() throws Exception {
+    // Regression 5b: matchesSeed compared fields applySeedFields null-guards, so a row holding
+    // an imageUrl while the seed omits it re-reconciled forever without converging.
+    WrestlerImportDTO dto = rvdSeedDto();
+    Wrestler existing = seededRvd(dto);
+    // Row carries an imageUrl the seed does not ship (all current seed files omit it).
+    existing.setImageUrl("http://example.com/user-uploaded.png");
+    existing.setSeedFingerprint(VERIFY_SUPPORT.fingerprint(WrestlerSeedFields.canonical(existing)));
+    stubOneExisting(existing);
+
+    // First pass: row's fields hash to its stamp; matchesSeed must treat the extra imageUrl as
+    // legitimate (seed omits it) → already-in-sync, no churn.
+    verifySync().sync();
+
+    assertEquals(
+        "http://example.com/user-uploaded.png",
+        existing.getImageUrl(),
+        "seed-omitted field's existing value must be left alone, not fought over");
+  }
+
+  @Test
   void verifyMode_ignoresUserCreatedWrestlers() {
     // User-created wrestler: no seed entry shares his name, so reconcile must not consider him.
     Wrestler custom = new Wrestler();

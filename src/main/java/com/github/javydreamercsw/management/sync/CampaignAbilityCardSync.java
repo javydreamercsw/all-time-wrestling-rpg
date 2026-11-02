@@ -110,6 +110,7 @@ public class CampaignAbilityCardSync implements DataSyncContributor {
         for (CampaignAbilityCardDTO dto : dtos) {
           CampaignAbilityCard card = applyDto(dto);
           card.setSeedFingerprint(cardFingerprint(card));
+          campaignAbilityCardService.save(card);
           log.debug("Loaded campaign ability card: {}", dto.getName());
         }
         log.debug("Campaign ability card loading completed - {} cards loaded", dtos.size());

@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.sync;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
@@ -152,5 +153,38 @@ class CardSetSyncTest {
         support.fingerprint("All Time Wrestling"),
         legacy.getSeedFingerprint(),
         "legacy row matching the seed must be adopted (fingerprint stamped)");
+  }
+
+  @Test
+  void verifyMode_reconciledRenameRestampsWithTheNewName() {
+    // Regression: the reconcile previously stamped hash(oldName) after renaming, poisoning the
+    // next pass. The persisted row must carry the NEW name's hash.
+    SeedSyncSupport support = new SeedSyncSupport("verify");
+    CardSetSync verifySync = new CardSetSync("verify", cardSetService, new ObjectMapper());
+    when(cardSetService.count()).thenReturn(1L);
+
+    CardSet clean = new CardSet();
+    clean.setCode("ATW");
+    clean.setName("stale set name");
+    clean.setSeedFingerprint(support.fingerprint("stale set name"));
+
+    when(cardSetService.findBySetCode("ATW")).thenReturn(Optional.of(clean));
+    List<CardSet> lastBatch = new java.util.ArrayList<>();
+    when(cardSetService.saveAll(any()))
+        .thenAnswer(
+            inv -> {
+              // Reconcile runs after top-up; capture only the reconcile's batch.
+              lastBatch.clear();
+              lastBatch.addAll(inv.getArgument(0));
+              return inv.getArgument(0);
+            });
+
+    verifySync.sync();
+
+    assertEquals(1, lastBatch.size(), "the reconcile must persist exactly the reconciled set");
+    assertEquals(
+        support.fingerprint("All Time Wrestling"),
+        lastBatch.getFirst().getSeedFingerprint(),
+        "persisted stamp must hash the NEW name, not the pre-rename one");
   }
 }

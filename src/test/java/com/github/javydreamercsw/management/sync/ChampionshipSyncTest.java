@@ -59,6 +59,8 @@ class ChampionshipSyncTest {
 
   private String titleFingerprint(Title title) {
     return VERIFY_SUPPORT.fingerprint(
+        title.getDescription(),
+        title.getTier() == null ? null : title.getTier().name(),
         title.getChampionshipType() == null ? null : title.getChampionshipType().name(),
         title.getEffectScript(),
         title.getGender() == null ? null : title.getGender().name(),
@@ -152,6 +154,12 @@ class ChampionshipSyncTest {
         "user effect script (changed after stamping)",
         edited.getEffectScript(),
         "edited title must be preserved");
+    // Finding 6: description/tier are seed-owned (spec) — the clean row adopts the seed's
+    // description even though the FULL update path never writes it.
+    assertEquals(
+        "The top title in All Time Wrestling.",
+        clean.getDescription(),
+        "clean row must adopt the seed description");
     assertEquals(
         "gainInitiative()",
         clean.getEffectScript(),
@@ -175,6 +183,8 @@ class ChampionshipSyncTest {
     // gainInitiative() effect, BASE_GAME, null imageUrl, includeInRankings defaulting true).
     Title legacy = new Title();
     legacy.setName("ATW World");
+    legacy.setDescription("The top title in All Time Wrestling.");
+    legacy.setTier(com.github.javydreamercsw.base.domain.wrestler.WrestlerTier.MAIN_EVENTER);
     legacy.setChampionshipType(
         com.github.javydreamercsw.management.domain.title.ChampionshipType.SINGLE);
     legacy.setEffectScript("gainInitiative()");

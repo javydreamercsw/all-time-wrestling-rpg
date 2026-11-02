@@ -192,6 +192,8 @@ public class ChampionshipSync implements DataSyncContributor {
   /** Canonical seed-owned field values for a title row, in fingerprint order. */
   private String titleFingerprint(Title title) {
     return syncSupport.fingerprint(
+        title.getDescription(),
+        title.getTier() == null ? null : title.getTier().name(),
         title.getChampionshipType() == null ? null : title.getChampionshipType().name(),
         title.getEffectScript(),
         title.getGender() == null ? null : title.getGender().name(),
@@ -270,7 +272,9 @@ public class ChampionshipSync implements DataSyncContributor {
   }
 
   private boolean titleMatchesSeed(Title title, TitleDTO dto) {
-    return Objects.equals(
+    return Objects.equals(title.getDescription(), dto.getDescription())
+        && Objects.equals(title.getTier(), dto.getTier())
+        && Objects.equals(
             title.getChampionshipType(),
             dto.getChampionshipType() != null ? dto.getChampionshipType() : null)
         && Objects.equals(title.getEffectScript(), dto.getEffectScript())
@@ -285,6 +289,10 @@ public class ChampionshipSync implements DataSyncContributor {
   }
 
   private void applySeedFields(Title title, TitleDTO dto) {
+    title.setDescription(dto.getDescription());
+    if (dto.getTier() != null) {
+      title.setTier(dto.getTier());
+    }
     title.setChampionshipType(dto.getChampionshipType());
     title.setEffectScript(dto.getEffectScript());
     title.setGender(dto.getGender());

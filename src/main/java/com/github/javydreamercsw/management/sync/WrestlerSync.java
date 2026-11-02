@@ -511,6 +511,9 @@ public class WrestlerSync implements DataSyncContributor {
   }
 
   private boolean matchesSeed(Wrestler wrestler, WrestlerImportDTO w) {
+    // Null-guarded fields mirror applySeedFields: the seed write leaves an existing value
+    // untouched when the seed omits the field, so the row may legitimately carry a value the
+    // current seed no longer ships.
     return Objects.equals(wrestler.getDeckSize(), w.getDeckSize())
         && Objects.equals(wrestler.getStartingHealth(), w.getStartingHealth())
         && Objects.equals(wrestler.getLowHealth(), w.getLowHealth())
@@ -518,13 +521,16 @@ public class WrestlerSync implements DataSyncContributor {
         && Objects.equals(wrestler.getLowStamina(), w.getLowStamina())
         && Objects.equals(wrestler.getDescription(), w.getDescription())
         && Objects.equals(wrestler.getGender(), w.getGender())
-        && Objects.equals(wrestler.getImageUrl(), w.getImageUrl())
-        && Objects.equals(wrestler.getHeritageTag(), w.getHeritageTag())
-        && Objects.equals(wrestler.getExpansionCode(), w.getExpansionCode())
-        && Objects.equals(wrestler.getDrive(), w.getDrive())
-        && Objects.equals(wrestler.getResilience(), w.getResilience())
-        && Objects.equals(wrestler.getCharisma(), w.getCharisma())
-        && Objects.equals(wrestler.getBrawl(), w.getBrawl())
+        && (w.getImageUrl() == null || Objects.equals(wrestler.getImageUrl(), w.getImageUrl()))
+        && (w.getHeritageTag() == null
+            || Objects.equals(wrestler.getHeritageTag(), w.getHeritageTag()))
+        && (w.getExpansionCode() == null
+            || Objects.equals(wrestler.getExpansionCode(), w.getExpansionCode()))
+        && (w.getDrive() == null || Objects.equals(wrestler.getDrive(), w.getDrive()))
+        && (w.getResilience() == null
+            || Objects.equals(wrestler.getResilience(), w.getResilience()))
+        && (w.getCharisma() == null || Objects.equals(wrestler.getCharisma(), w.getCharisma()))
+        && (w.getBrawl() == null || Objects.equals(wrestler.getBrawl(), w.getBrawl()))
         && Objects.equals(
             wrestler.getAlignment() == null ? null : wrestler.getAlignment().getAlignmentType(),
             w.getAlignment() == null
@@ -561,13 +567,21 @@ public class WrestlerSync implements DataSyncContributor {
     }
     if (w.getAlignment() != null) {
       try {
-        wrestler.setAlignment(
-            WrestlerAlignment.builder()
-                .wrestler(wrestler)
-                .universe(universeRepository.findAll().stream().findFirst().orElse(null))
-                .alignmentType(AlignmentType.valueOf(w.getAlignment().toUpperCase()))
-                .level(0)
-                .build());
+        AlignmentType seedType = AlignmentType.valueOf(w.getAlignment().toUpperCase());
+        WrestlerAlignment current = wrestler.getAlignment();
+        if (current != null) {
+          // Replace in place — setAlignment appends, which would leave the stale alignment
+          // first in the set and the derived getter never reflecting the seed change.
+          current.setAlignmentType(seedType);
+        } else {
+          wrestler.setAlignment(
+              WrestlerAlignment.builder()
+                  .wrestler(wrestler)
+                  .universe(universeRepository.findAll().stream().findFirst().orElse(null))
+                  .alignmentType(seedType)
+                  .level(0)
+                  .build());
+        }
       } catch (IllegalArgumentException e) {
         log.warn(
             "Invalid alignment '{}' for wrestler '{}'",
