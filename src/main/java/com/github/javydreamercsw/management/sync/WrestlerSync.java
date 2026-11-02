@@ -446,7 +446,7 @@ public class WrestlerSync implements DataSyncContributor {
     try {
       Resource[] resources = resourcePatternResolver.getResources("classpath*:wrestlers/*.json");
       Map<String, Wrestler> wrestlersByName =
-          wrestlerRepository.findAll().stream()
+          wrestlerRepository.findAllWithAlignments().stream()
               .collect(Collectors.toMap(Wrestler::getName, wr -> wr, (a, b) -> a));
       int reconciled = 0;
       int preserved = 0;
