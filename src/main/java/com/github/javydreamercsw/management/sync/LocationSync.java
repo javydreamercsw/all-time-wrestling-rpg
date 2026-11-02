@@ -37,23 +37,23 @@ import org.springframework.stereotype.Component;
 @Order(100)
 public class LocationSync implements DataSyncContributor {
 
-  private final boolean skipIfNotEmpty;
+  private final SeedSyncSupport syncSupport;
   private final LocationRepository locationRepository;
   private final ObjectMapper objectMapper;
 
   @Autowired
   public LocationSync(
-      @Value("${data.initializer.skip-if-not-empty:false}") final boolean skipIfNotEmpty,
+      @Value("${data.initializer.skip-if-not-empty:false}") final String skipIfNotEmptyRaw,
       final LocationRepository locationRepository,
       final ObjectMapper objectMapper) {
-    this.skipIfNotEmpty = skipIfNotEmpty;
+    this.syncSupport = new SeedSyncSupport(skipIfNotEmptyRaw);
     this.locationRepository = locationRepository;
     this.objectMapper = objectMapper;
   }
 
   @Override
   public void sync() {
-    if (skipIfNotEmpty && locationRepository.count() > 0) {
+    if (syncSupport.mode() != SeedSyncMode.FULL && locationRepository.count() > 0) {
       return;
     }
     ClassPathResource resource = new ClassPathResource("locations.json");

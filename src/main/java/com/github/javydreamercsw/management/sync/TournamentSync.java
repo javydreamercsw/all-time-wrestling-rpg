@@ -41,23 +41,23 @@ import org.springframework.stereotype.Component;
 @Order(55)
 public class TournamentSync implements DataSyncContributor {
 
-  private final boolean skipIfNotEmpty;
+  private final SeedSyncSupport syncSupport;
   private final TournamentService tournamentService;
   private final ObjectMapper objectMapper;
 
   @Autowired
   public TournamentSync(
-      @Value("${data.initializer.skip-if-not-empty:false}") final boolean skipIfNotEmpty,
+      @Value("${data.initializer.skip-if-not-empty:false}") final String skipIfNotEmptyRaw,
       final TournamentService tournamentService,
       final ObjectMapper objectMapper) {
-    this.skipIfNotEmpty = skipIfNotEmpty;
+    this.syncSupport = new SeedSyncSupport(skipIfNotEmptyRaw);
     this.tournamentService = tournamentService;
     this.objectMapper = objectMapper;
   }
 
   @Override
   public void sync() {
-    if (skipIfNotEmpty && tournamentService.count() > 0) {
+    if (syncSupport.mode() != SeedSyncMode.FULL && tournamentService.count() > 0) {
       return;
     }
     ClassPathResource resource = new ClassPathResource("tournaments.json");

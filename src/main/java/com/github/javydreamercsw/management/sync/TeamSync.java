@@ -52,7 +52,7 @@ import org.springframework.stereotype.Component;
 @Order(170)
 public class TeamSync implements DataSyncContributor {
 
-  private final boolean skipIfNotEmpty;
+  private final SeedSyncSupport syncSupport;
   private final TeamService teamService;
   private final TeamRepository teamRepository;
   private final WrestlerRepository wrestlerRepository;
@@ -63,7 +63,7 @@ public class TeamSync implements DataSyncContributor {
 
   @Autowired
   public TeamSync(
-      @Value("${data.initializer.skip-if-not-empty:false}") final boolean skipIfNotEmpty,
+      @Value("${data.initializer.skip-if-not-empty:false}") final String skipIfNotEmptyRaw,
       final TeamService teamService,
       final TeamRepository teamRepository,
       final WrestlerRepository wrestlerRepository,
@@ -71,7 +71,7 @@ public class TeamSync implements DataSyncContributor {
       final ObjectMapper objectMapper,
       final UniverseRepository universeRepository,
       final WrestlerStateRepository wrestlerStateRepository) {
-    this.skipIfNotEmpty = skipIfNotEmpty;
+    this.syncSupport = new SeedSyncSupport(skipIfNotEmptyRaw);
     this.teamService = teamService;
     this.teamRepository = teamRepository;
     this.wrestlerRepository = wrestlerRepository;
@@ -83,7 +83,7 @@ public class TeamSync implements DataSyncContributor {
 
   @Override
   public void sync() {
-    if (skipIfNotEmpty && teamService.count() > 0) {
+    if (syncSupport.mode() != SeedSyncMode.FULL && teamService.count() > 0) {
       return;
     }
     ClassPathResource resource = new ClassPathResource("teams.json");

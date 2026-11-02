@@ -39,7 +39,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-import org.springframework.test.util.ReflectionTestUtils;
 
 /** Unit tests for the tournaments.json seed sync (ATW-vg16). */
 @ExtendWith(MockitoExtension.class)
@@ -63,8 +62,7 @@ class TournamentSyncTest {
               t.setName(inv.getArgument(1));
               return t;
             });
-    sync = new TournamentSync(false, tournamentService, new ObjectMapper());
-    ReflectionTestUtils.setField(sync, "skipIfNotEmpty", false);
+    sync = new TournamentSync("false", tournamentService, new ObjectMapper());
   }
 
   @Test
@@ -79,17 +77,7 @@ class TournamentSyncTest {
   @Test
   @DisplayName("skip-if-not-empty skips the catalog when tournaments already exist")
   void sync_skipWhenNotEmpty() {
-    TournamentSync gated =
-        new TournamentSync(true, tournamentService, new ObjectMapper()) {
-          @Override
-          public void sync() {
-            // Re-implement the gate to test the branch without Spring property wiring:
-            if (tournamentService.count() > 0) {
-              return;
-            }
-            super.sync();
-          }
-        };
+    TournamentSync gated = new TournamentSync("true", tournamentService, new ObjectMapper());
     when(tournamentService.count()).thenReturn(3L);
 
     gated.sync();
