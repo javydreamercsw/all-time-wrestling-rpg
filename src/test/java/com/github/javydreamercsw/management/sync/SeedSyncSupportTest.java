@@ -17,6 +17,9 @@
 package com.github.javydreamercsw.management.sync;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
@@ -42,5 +45,31 @@ class SeedSyncSupportTest {
   @Test
   void unknownTruthyResolvesToProtect() {
     assertEquals(SeedSyncMode.PROTECT, new SeedSyncSupport("yes").mode());
+  }
+
+  @Test
+  void fingerprintIsDeterministicHex() {
+    String a = support.fingerprint("x", 1, true);
+    assertEquals(a, support.fingerprint("x", 1, true));
+    assertEquals(64, a.length());
+  }
+
+  @Test
+  void fingerprintDistinguishesValues() {
+    assertNotEquals(support.fingerprint("a", 1), support.fingerprint("a", 2));
+  }
+
+  @Test
+  void blankOrNullMeansLegacy() {
+    assertTrue(SeedSyncSupport.isBlankFingerprint(null));
+    assertTrue(SeedSyncSupport.isBlankFingerprint("  "));
+    assertFalse(SeedSyncSupport.isBlankFingerprint("ab12"));
+  }
+
+  @Test
+  void fingerprintSerializesNullAsLiteralText() {
+    // Spec: null serializes as the literal text "null" — so it hashes identically to the
+    // four-character string.
+    assertEquals(support.fingerprint("a", (Object) null), support.fingerprint("a", "null"));
   }
 }
