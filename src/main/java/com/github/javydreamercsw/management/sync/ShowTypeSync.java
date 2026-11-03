@@ -34,23 +34,23 @@ import org.springframework.stereotype.Component;
 @Order(40)
 public class ShowTypeSync implements DataSyncContributor {
 
-  private final boolean skipIfNotEmpty;
+  private final SeedSyncSupport syncSupport;
   private final ShowTypeService showTypeService;
   private final ObjectMapper objectMapper;
 
   @Autowired
   public ShowTypeSync(
-      @Value("${data.initializer.skip-if-not-empty:false}") final boolean skipIfNotEmpty,
+      @Value("${data.initializer.skip-if-not-empty:false}") final String skipIfNotEmptyRaw,
       final ShowTypeService showTypeService,
       final ObjectMapper objectMapper) {
-    this.skipIfNotEmpty = skipIfNotEmpty;
+    this.syncSupport = new SeedSyncSupport(skipIfNotEmptyRaw);
     this.showTypeService = showTypeService;
     this.objectMapper = objectMapper;
   }
 
   @Override
   public void sync() {
-    if (skipIfNotEmpty && showTypeService.count() > 0) {
+    if (syncSupport.mode() != SeedSyncMode.FULL && showTypeService.count() > 0) {
       return;
     }
     ClassPathResource resource = new ClassPathResource("show_types.json");

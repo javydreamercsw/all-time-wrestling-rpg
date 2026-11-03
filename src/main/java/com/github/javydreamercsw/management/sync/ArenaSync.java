@@ -42,18 +42,18 @@ import org.springframework.stereotype.Component;
 @Order(110)
 public class ArenaSync implements DataSyncContributor {
 
-  private final boolean skipIfNotEmpty;
+  private final SeedSyncSupport syncSupport;
   private final ArenaRepository arenaRepository;
   private final LocationRepository locationRepository;
   private final ObjectMapper objectMapper;
 
   @Autowired
   public ArenaSync(
-      @Value("${data.initializer.skip-if-not-empty:false}") final boolean skipIfNotEmpty,
+      @Value("${data.initializer.skip-if-not-empty:false}") final String skipIfNotEmptyRaw,
       final ArenaRepository arenaRepository,
       final LocationRepository locationRepository,
       final ObjectMapper objectMapper) {
-    this.skipIfNotEmpty = skipIfNotEmpty;
+    this.syncSupport = new SeedSyncSupport(skipIfNotEmptyRaw);
     this.arenaRepository = arenaRepository;
     this.locationRepository = locationRepository;
     this.objectMapper = objectMapper;
@@ -61,7 +61,7 @@ public class ArenaSync implements DataSyncContributor {
 
   @Override
   public void sync() {
-    if (skipIfNotEmpty && arenaRepository.count() > 0) {
+    if (syncSupport.mode() != SeedSyncMode.FULL && arenaRepository.count() > 0) {
       return;
     }
     ClassPathResource resource = new ClassPathResource("arenas.json");

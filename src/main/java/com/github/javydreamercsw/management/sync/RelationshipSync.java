@@ -39,18 +39,18 @@ import org.springframework.stereotype.Component;
 @Order(130)
 public class RelationshipSync implements DataSyncContributor {
 
-  private final boolean skipIfNotEmpty;
+  private final SeedSyncSupport syncSupport;
   private final WrestlerRepository wrestlerRepository;
   private final WrestlerRelationshipService relationshipService;
   private final ObjectMapper objectMapper;
 
   @Autowired
   public RelationshipSync(
-      @Value("${data.initializer.skip-if-not-empty:false}") final boolean skipIfNotEmpty,
+      @Value("${data.initializer.skip-if-not-empty:false}") final String skipIfNotEmptyRaw,
       final WrestlerRepository wrestlerRepository,
       final WrestlerRelationshipService relationshipService,
       final ObjectMapper objectMapper) {
-    this.skipIfNotEmpty = skipIfNotEmpty;
+    this.syncSupport = new SeedSyncSupport(skipIfNotEmptyRaw);
     this.wrestlerRepository = wrestlerRepository;
     this.relationshipService = relationshipService;
     this.objectMapper = objectMapper;
@@ -58,7 +58,7 @@ public class RelationshipSync implements DataSyncContributor {
 
   @Override
   public void sync() {
-    if (skipIfNotEmpty && relationshipService.count() > 0) {
+    if (syncSupport.mode() != SeedSyncMode.FULL && relationshipService.count() > 0) {
       return;
     }
     ClassPathResource resource = new ClassPathResource("relationships.json");

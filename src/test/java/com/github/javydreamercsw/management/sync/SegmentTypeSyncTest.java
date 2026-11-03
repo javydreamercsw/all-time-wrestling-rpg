@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.sync;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -30,7 +31,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.dto.SegmentTypeDTO;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
+import java.util.ArrayList;
 import java.util.List;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,7 +53,7 @@ class SegmentTypeSyncTest {
 
   @BeforeEach
   void setUp() {
-    sync = new SegmentTypeSync(false, segmentTypeService, new ObjectMapper());
+    sync = new SegmentTypeSync("false", segmentTypeService, new ObjectMapper());
   }
 
   @Test
@@ -100,7 +103,7 @@ class SegmentTypeSyncTest {
 
   @Test
   void sync_skipsWhenNotEmptyAndSkipFlagSet() {
-    SegmentTypeSync skipSync = new SegmentTypeSync(true, segmentTypeService, new ObjectMapper());
+    SegmentTypeSync skipSync = new SegmentTypeSync("true", segmentTypeService, new ObjectMapper());
     when(segmentTypeService.count()).thenReturn(5L);
     when(segmentTypeService.findAll())
         .thenReturn(
@@ -127,7 +130,7 @@ class SegmentTypeSyncTest {
 
   @Test
   void sync_topUpInsertsNothingWhenCatalogComplete() {
-    SegmentTypeSync skipSync = new SegmentTypeSync(true, segmentTypeService, new ObjectMapper());
+    SegmentTypeSync skipSync = new SegmentTypeSync("true", segmentTypeService, new ObjectMapper());
     when(segmentTypeService.count()).thenReturn(7L);
     when(segmentTypeService.findAll())
         .thenReturn(
@@ -147,9 +150,126 @@ class SegmentTypeSyncTest {
             anyString(), anyString(), anyString(), any(), anyString(), anyBoolean());
   }
 
+  @Test
+  void verifyMode_reconciledRowIsRestampedAndPersisted() {
+    // Regression: the clean-row refresh previously saved through the service without persisting
+    // a re-stamp — the DB kept the old fingerprint and the next pass froze the row.
+    SegmentTypeSync verifySync =
+        new SegmentTypeSync("verify", segmentTypeService, new ObjectMapper());
+    when(segmentTypeService.count()).thenReturn(1L);
+
+    SegmentType clean = segmentType("Promo");
+    clean.setDescription("stale description from an older release");
+    clean.setGuideHash(null);
+    clean.setSeedFingerprint(segmentTypeFingerprint(clean));
+    when(segmentTypeService.findAll()).thenReturn(List.of(clean));
+    when(segmentTypeService.createOrUpdateSegmentType(
+            anyString(), anyString(), anyString(), any(), anyString(), any()))
+        .thenAnswer(
+            inv -> {
+              SegmentType st = segmentType(inv.getArgument(0));
+              st.setDescription(inv.getArgument(1));
+              return st;
+            });
+    List<SegmentType> persisted = new ArrayList<>();
+    when(segmentTypeService.saveSegmentType(any()))
+        .thenAnswer(
+            inv -> {
+              persisted.add(inv.getArgument(0));
+              return inv.getArgument(0);
+            });
+
+    verifySync.sync();
+
+    // Top-up inserts 6 missing types first; the reconcile's refresh of Promo is the last persist.
+    Assertions.assertFalse(persisted.isEmpty(), "a refresh must persist");
+    SegmentType last = persisted.getLast();
+    assertNotNull(last.getSeedFingerprint(), "persisted row must carry a fingerprint");
+    assertEquals(
+        "Non-wrestling segment for storyline development and character work",
+        last.getDescription(),
+        "the persisted row is the refreshed Promo");
+  }
+
   private static SegmentType segmentType(String name) {
     SegmentType st = new SegmentType();
     st.setName(name);
     return st;
+  }
+
+  private static final SeedSyncSupport VERIFY_SUPPORT = new SeedSyncSupport("verify");
+
+  private static String segmentTypeFingerprint(SegmentType st) {
+    return VERIFY_SUPPORT.fingerprint(
+        st.getDescription(),
+        st.getExpansionCode(),
+        st.getGuideHash(),
+        st.getCode(),
+        st.isEventOnly());
+  }
+
+  @Test
+  void verifyMode_reconcilesCleanRowAndPreservesEditedRow() {
+    SegmentTypeSync verifySync =
+        new SegmentTypeSync("verify", segmentTypeService, new ObjectMapper());
+    when(segmentTypeService.count()).thenReturn(2L);
+
+    // Clean: "Promo" as an older release's seed write left it (guide-less), description since
+    // fixed in the seed file.
+    SegmentType clean = segmentType("Promo");
+    clean.setDescription("stale description from an older release");
+    clean.setGuideHash(null);
+    clean.setSeedFingerprint(segmentTypeFingerprint(clean));
+
+    // Edited: stamped at seed write, then hand-tuned.
+    SegmentType edited = segmentType("Trios");
+    edited.setDescription("user-tuned description");
+    edited.setGuideHash(null);
+    edited.setSeedFingerprint(segmentTypeFingerprint(edited));
+    edited.setDescription("user-tuned description (changed after stamping)");
+
+    when(segmentTypeService.findAll()).thenReturn(List.of(clean, edited));
+    when(segmentTypeService.createOrUpdateSegmentType(
+            anyString(), anyString(), anyString(), any(), anyString(), any()))
+        .thenAnswer(inv -> segmentType(inv.getArgument(0)));
+
+    verifySync.sync();
+
+    verify(segmentTypeService)
+        .createOrUpdateSegmentType(
+            eq("Promo"),
+            eq("Non-wrestling segment for storyline development and character work"),
+            any(),
+            any(),
+            any(),
+            any());
+    verify(segmentTypeService, Mockito.never())
+        .createOrUpdateSegmentType(eq("Trios"), any(), any(), any(), any(), any());
+    assertEquals(
+        "user-tuned description (changed after stamping)",
+        edited.getDescription(),
+        "edited segment type must be preserved");
+  }
+
+  @Test
+  void verifyMode_adoptsLegacyRowWhenFieldsMatchSeed() {
+    SegmentTypeSync verifySync =
+        new SegmentTypeSync("verify", segmentTypeService, new ObjectMapper());
+    when(segmentTypeService.count()).thenReturn(1L);
+
+    // Legacy: no stamp; fields equal what the seed write would produce for a guide-less entry.
+    SegmentType legacy = segmentType("Promo");
+    legacy.setDescription("Non-wrestling segment for storyline development and character work");
+    legacy.setExpansionCode("BASE_GAME");
+    legacy.setGuideHash(null);
+    legacy.setCode("promo");
+    when(segmentTypeService.findAll()).thenReturn(List.of(legacy));
+
+    verifySync.sync();
+
+    assertEquals(
+        segmentTypeFingerprint(legacy),
+        legacy.getSeedFingerprint(),
+        "legacy row matching the seed must be adopted (fingerprint stamped, no-op refresh)");
   }
 }

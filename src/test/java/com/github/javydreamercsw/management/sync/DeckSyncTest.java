@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.card.CardSetRepository;
 import com.github.javydreamercsw.management.domain.deck.Deck;
+import com.github.javydreamercsw.management.domain.deck.DeckCard;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.card.CardService;
@@ -86,7 +87,7 @@ class DeckSyncTest {
     // must build exactly his deck from decks.json.
     skipSync =
         new DeckSync(
-            true,
+            "true",
             deckService,
             wrestlerRepository,
             cardSetRepository,
@@ -122,7 +123,7 @@ class DeckSyncTest {
   void sync_topUpNeverModifiesExistingDeckWhenSkipFlagSet() {
     skipSync =
         new DeckSync(
-            true,
+            "true",
             deckService,
             wrestlerRepository,
             cardSetRepository,
@@ -148,7 +149,7 @@ class DeckSyncTest {
   void sync_fullModeReconcilesExistingDeck() {
     fullSync =
         new DeckSync(
-            false,
+            "false",
             deckService,
             wrestlerRepository,
             cardSetRepository,
@@ -174,5 +175,149 @@ class DeckSyncTest {
     verify(deckService, atLeastOnce()).saveAll(any());
     assertFalse(existingDeck.getCards().isEmpty());
     assertEquals(1, existingDeck.getCards().size());
+  }
+
+  private DeckSync verifySync;
+
+  private Deck seededEddieDeck(CardSet set, Card card1) {
+    Deck deck = new Deck();
+    deck.setWrestler(jeffHardy());
+    DeckCard dc = new DeckCard();
+    dc.setDeck(deck);
+    dc.setCard(card1);
+    dc.setSet(set);
+    dc.setAmount(1);
+    deck.getCards().add(dc);
+    return deck;
+  }
+
+  @Test
+  void verifyMode_reconcilesCleanDeckToSeedComposition() {
+    verifySync =
+        new DeckSync(
+            "verify",
+            deckService,
+            wrestlerRepository,
+            cardSetRepository,
+            cardService,
+            new ObjectMapper());
+    when(deckService.count()).thenReturn(1L);
+
+    Wrestler eddie = jeffHardy();
+    when(wrestlerRepository.findAll()).thenReturn(List.of(eddie));
+
+    CardSet set = eddieSet();
+    Card card1 = eddieCard(1);
+    Card card2 = eddieCard(2);
+    when(cardSetRepository.findAll()).thenReturn(List.of(set));
+    when(cardService.findByNumberAndSet(1, "EDDIE")).thenReturn(Optional.of(card1));
+    when(cardService.findByNumberAndSet(2, "EDDIE")).thenReturn(Optional.of(card2));
+
+    // Clean: the deck holds only EDDIE #1 — exactly what an older release's seed write left,
+    // with the stamp hashing that composition.
+    Deck deck = seededEddieDeck(set, card1);
+    deck.setSeedFingerprint(deckCompositionFingerprint(deck));
+    when(deckService.findByWrestlerWithCards(eddie)).thenReturn(List.of(deck));
+
+    verifySync.sync();
+
+    // Seed lists EDDIE #1 and #2 (plus ATW cards not stubbed here): the clean deck gains #2.
+    assertEquals(
+        2, deck.getCards().size(), "clean-fingerprint deck must adopt the seed's new card entries");
+    verify(deckService, atLeastOnce()).saveAll(any());
+  }
+
+  @Test
+  void verifyMode_preservesUserEditedComposition() {
+    verifySync =
+        new DeckSync(
+            "verify",
+            deckService,
+            wrestlerRepository,
+            cardSetRepository,
+            cardService,
+            new ObjectMapper());
+    when(deckService.count()).thenReturn(1L);
+
+    Wrestler eddie = jeffHardy();
+    when(wrestlerRepository.findAll()).thenReturn(List.of(eddie));
+
+    CardSet set = eddieSet();
+    Card card1 = eddieCard(1);
+    Card card2 = eddieCard(2);
+    when(cardSetRepository.findAll()).thenReturn(List.of(set));
+    when(cardService.findByNumberAndSet(1, "EDDIE")).thenReturn(Optional.of(card1));
+    when(cardService.findByNumberAndSet(2, "EDDIE")).thenReturn(Optional.of(card2));
+
+    // Edited: stamped at seed write (over EDDIE #1 alone), then the user added EDDIE #2 —
+    // the composition no longer hashes to the stamp.
+    Deck deck = seededEddieDeck(set, card1);
+    deck.setSeedFingerprint(deckCompositionFingerprint(deck));
+    DeckCard userAddition = new DeckCard();
+    userAddition.setDeck(deck);
+    userAddition.setCard(card2);
+    userAddition.setSet(set);
+    userAddition.setAmount(1);
+    deck.getCards().add(userAddition);
+
+    when(deckService.findByWrestlerWithCards(eddie)).thenReturn(List.of(deck));
+
+    verifySync.sync();
+
+    assertEquals(
+        2, deck.getCards().size(), "user-edited composition must be preserved, not re-synced");
+    verify(deckService, never()).saveAll(any());
+  }
+
+  @Test
+  void verifyMode_adoptsLegacyDeckWhenCompositionMatchesSeed() {
+    verifySync =
+        new DeckSync(
+            "verify",
+            deckService,
+            wrestlerRepository,
+            cardSetRepository,
+            cardService,
+            new ObjectMapper());
+    when(deckService.count()).thenReturn(1L);
+
+    Wrestler eddie = jeffHardy();
+    when(wrestlerRepository.findAll()).thenReturn(List.of(eddie));
+
+    CardSet set = eddieSet();
+    Card card1 = eddieCard(1);
+    Card card2 = eddieCard(2);
+    when(cardSetRepository.findAll()).thenReturn(List.of(set));
+    when(cardService.findByNumberAndSet(1, "EDDIE")).thenReturn(Optional.of(card1));
+    when(cardService.findByNumberAndSet(2, "EDDIE")).thenReturn(Optional.of(card2));
+
+    // Legacy: no stamp, but the deck's composition equals the seed's resolvable entries
+    // (EDDIE #1 and #2, the only cards stubbed into the catalog).
+    Deck deck = seededEddieDeck(set, card1);
+    DeckCard seededTwo = new DeckCard();
+    seededTwo.setDeck(deck);
+    seededTwo.setCard(card2);
+    seededTwo.setSet(set);
+    seededTwo.setAmount(1);
+    deck.getCards().add(seededTwo);
+    when(deckService.findByWrestlerWithCards(eddie)).thenReturn(List.of(deck));
+
+    verifySync.sync();
+
+    assertEquals(
+        deckCompositionFingerprint(deck),
+        deck.getSeedFingerprint(),
+        "legacy deck whose composition matches the seed must be adopted (stamped)");
+    verify(deckService, atLeastOnce()).saveAll(any());
+  }
+
+  private String deckCompositionFingerprint(Deck deck) {
+    String entries =
+        deck.getCards().stream()
+            .map(
+                dc -> dc.getSet().getCode() + "#" + dc.getCard().getNumber() + "x" + dc.getAmount())
+            .sorted()
+            .collect(Collectors.joining("\n"));
+    return new SeedSyncSupport("verify").fingerprint((Object[]) entries.split("\n"));
   }
 }

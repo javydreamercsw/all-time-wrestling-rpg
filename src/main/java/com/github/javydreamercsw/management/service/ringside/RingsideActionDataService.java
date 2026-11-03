@@ -102,6 +102,12 @@ public class RingsideActionDataService {
     return ringsideActionTypeRepository.save(type);
   }
 
+  /** Persists a ringside action row, e.g. after the seed sync stamps its fingerprint. */
+  @Transactional
+  public RingsideAction saveAction(RingsideAction action) {
+    return ringsideActionRepository.save(action);
+  }
+
   @Transactional
   public RingsideAction createOrUpdateAction(
       @NonNull final String name,
