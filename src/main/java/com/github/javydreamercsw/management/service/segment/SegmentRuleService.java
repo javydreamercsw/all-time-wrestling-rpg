@@ -288,6 +288,13 @@ public class SegmentRuleService {
             });
   }
 
+  /** Persists a segment rule row, e.g. after the seed sync stamps its fingerprint. */
+  @Transactional
+  @CacheEvict(value = CacheConfig.SEGMENT_RULES_CACHE, allEntries = true)
+  public SegmentRule saveRule(SegmentRule rule) {
+    return segmentRuleRepository.save(rule);
+  }
+
   /**
    * Expansion-filtered lookup using caller-supplied codes. Use this from async contexts where the
    * thread-local universe context is unavailable (e.g. PreloadedData.load).

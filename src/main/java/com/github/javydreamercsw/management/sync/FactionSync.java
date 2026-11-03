@@ -43,7 +43,7 @@ import org.springframework.stereotype.Component;
 @Order(160)
 public class FactionSync implements DataSyncContributor {
 
-  private final boolean skipIfNotEmpty;
+  private final SeedSyncSupport syncSupport;
   private final FactionService factionService;
   private final WrestlerRepository wrestlerRepository;
   private final NpcService npcService;
@@ -52,13 +52,13 @@ public class FactionSync implements DataSyncContributor {
 
   @Autowired
   public FactionSync(
-      @Value("${data.initializer.skip-if-not-empty:false}") final boolean skipIfNotEmpty,
+      @Value("${data.initializer.skip-if-not-empty:false}") final String skipIfNotEmptyRaw,
       final FactionService factionService,
       final WrestlerRepository wrestlerRepository,
       final NpcService npcService,
       final UniverseRepository universeRepository,
       final ObjectMapper objectMapper) {
-    this.skipIfNotEmpty = skipIfNotEmpty;
+    this.syncSupport = new SeedSyncSupport(skipIfNotEmptyRaw);
     this.factionService = factionService;
     this.wrestlerRepository = wrestlerRepository;
     this.npcService = npcService;
@@ -68,7 +68,7 @@ public class FactionSync implements DataSyncContributor {
 
   @Override
   public void sync() {
-    if (skipIfNotEmpty && factionService.count() > 0) {
+    if (syncSupport.mode() != SeedSyncMode.FULL && factionService.count() > 0) {
       return;
     }
     ClassPathResource resource = new ClassPathResource("factions.json");

@@ -52,7 +52,7 @@ class AchievementSyncTest {
   void setUp() {
     // Constructed directly: @InjectMocks cannot resolve the @Value boolean
     // constructor parameter against mocks.
-    achievementSync = new AchievementSync(false, achievementRepository, new ObjectMapper());
+    achievementSync = new AchievementSync("false", achievementRepository, new ObjectMapper());
   }
 
   @Test
@@ -101,12 +101,34 @@ class AchievementSyncTest {
 
   @Test
   void sync_skipsWhenNotEmptyAndSkipIfNotEmptyEnabled() {
-    AchievementSync strict = new AchievementSync(true, achievementRepository, new ObjectMapper());
+    AchievementSync strict = new AchievementSync("true", achievementRepository, new ObjectMapper());
     when(achievementRepository.count()).thenReturn(5L);
+    // Top-up still runs under the gate; every seeded key already exists, so nothing inserts.
+    when(achievementRepository.findAll())
+        .thenReturn(loadSeedKeys().stream().map(k -> achievement(k)).toList());
+    when(achievementRepository.findByKey(anyString()))
+        .thenAnswer(inv -> Optional.of(achievement(inv.getArgument(0))));
 
     strict.sync();
 
     verify(achievementRepository, Mockito.never()).saveAll(any());
+  }
+
+  private List<String> loadSeedKeys() throws IllegalStateException {
+    try (InputStream is = getClass().getResourceAsStream("/achievements.json")) {
+      return new ObjectMapper()
+          .readValue(is, new TypeReference<List<Achievement>>() {}).stream()
+              .map(Achievement::getKey)
+              .toList();
+    } catch (IOException e) {
+      throw new IllegalStateException("achievements.json failed to parse", e);
+    }
+  }
+
+  private Achievement achievement(String key) {
+    Achievement a = new Achievement();
+    a.setKey(key);
+    return a;
   }
 
   @Test
@@ -114,7 +136,7 @@ class AchievementSyncTest {
     // achievements.json missing from the classpath: log a warning and carry on
     // to the challenge scan instead of throwing.
     AchievementSync missingFile =
-        new AchievementSync(false, achievementRepository, new ObjectMapper()) {
+        new AchievementSync("false", achievementRepository, new ObjectMapper()) {
           // syncClasspathFile logs and returns when the resource doesn't exist;
           // exercising that path with a fresh instance still runs the challenge scan.
         };
@@ -160,7 +182,7 @@ class AchievementSyncTest {
             throw new IOException("boom");
           }
         };
-    AchievementSync broken = new AchievementSync(false, achievementRepository, brokenMapper);
+    AchievementSync broken = new AchievementSync("false", achievementRepository, brokenMapper);
     when(achievementRepository.count()).thenReturn(0L);
     when(achievementRepository.findByKey(anyString())).thenReturn(Optional.empty());
     when(achievementRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -176,7 +198,7 @@ class AchievementSyncTest {
     // A resolver explosion inside the challenge scan is caught and logged;
     // the catalog file was already synced before the scan runs.
     AchievementSync scanning =
-        new AchievementSync(false, achievementRepository, new ObjectMapper());
+        new AchievementSync("false", achievementRepository, new ObjectMapper());
     when(achievementRepository.count()).thenReturn(0L);
     when(achievementRepository.findByKey(anyString())).thenReturn(Optional.empty());
     when(achievementRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -184,5 +206,100 @@ class AchievementSyncTest {
     Assertions.assertDoesNotThrow(scanning::sync);
     // The catalog achievements.json exists on the test classpath and syncs.
     verify(achievementRepository, Mockito.atLeastOnce()).saveAll(any());
+  }
+
+  private static final SeedSyncSupport VERIFY_SUPPORT = new SeedSyncSupport("verify");
+
+  private String achievementFingerprint(Achievement a) {
+    return VERIFY_SUPPORT.fingerprint(
+        a.getName(),
+        a.getDescription(),
+        a.getXpValue(),
+        a.getCategory() == null ? null : a.getCategory().name(),
+        a.getUnlockCondition());
+  }
+
+  private Achievement seedFirstWrestler() throws IOException {
+    // Reads the real FIRST_WRESTLER row from achievements.json.
+    try (InputStream is = getClass().getResourceAsStream("/achievements.json")) {
+      for (Achievement a :
+          new ObjectMapper().readValue(is, new TypeReference<List<Achievement>>() {})) {
+        if ("FIRST_WRESTLER".equals(a.getKey())) {
+          return a;
+        }
+      }
+    }
+    throw new IllegalStateException("FIRST_WRESTLER not found in achievements.json");
+  }
+
+  @Test
+  void verifyMode_reconcilesCleanRowAndPreservesEditedRow() throws IOException {
+    AchievementSync verifySync =
+        new AchievementSync("verify", achievementRepository, new ObjectMapper());
+    when(achievementRepository.count()).thenReturn(2L);
+    when(achievementRepository.findAll()).thenReturn(List.of());
+    when(achievementRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    Achievement seed = seedFirstWrestler();
+
+    // Clean: as an older release's seed write left it — description since fixed in the seed.
+    Achievement clean = new Achievement();
+    clean.setKey("FIRST_WRESTLER");
+    clean.setName(seed.getName());
+    clean.setDescription("stale description from an older release");
+    clean.setXpValue(seed.getXpValue());
+    clean.setCategory(seed.getCategory());
+    clean.setUnlockCondition(seed.getUnlockCondition());
+    clean.setSeedFingerprint(achievementFingerprint(clean));
+
+    // Edited: stamped at seed write, then hand-tuned.
+    Achievement edited = new Achievement();
+    edited.setKey("CHALLENGE_FIRST_HARD");
+    edited.setName("hand-tuned name");
+    edited.setDescription("hand-tuned");
+    edited.setXpValue(999);
+    edited.setCategory(seed.getCategory());
+    edited.setSeedFingerprint(achievementFingerprint(edited));
+    edited.setName("hand-tuned name (changed after stamping)");
+
+    when(achievementRepository.findByKey("FIRST_WRESTLER")).thenReturn(Optional.of(clean));
+    when(achievementRepository.findByKey("CHALLENGE_FIRST_HARD")).thenReturn(Optional.of(edited));
+
+    verifySync.sync();
+
+    Assertions.assertEquals(
+        seed.getDescription(),
+        clean.getDescription(),
+        "clean-fingerprint achievement must adopt the seed description");
+    Assertions.assertEquals(
+        "hand-tuned name (changed after stamping)",
+        edited.getName(),
+        "edited achievement must be preserved");
+  }
+
+  @Test
+  void verifyMode_adoptsLegacyRowWhenFieldsMatchSeed() throws IOException {
+    AchievementSync verifySync =
+        new AchievementSync("verify", achievementRepository, new ObjectMapper());
+    when(achievementRepository.count()).thenReturn(1L);
+    when(achievementRepository.findAll()).thenReturn(List.of());
+    when(achievementRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    Achievement seed = seedFirstWrestler();
+    Achievement legacy = new Achievement();
+    legacy.setKey("FIRST_WRESTLER");
+    legacy.setName(seed.getName());
+    legacy.setDescription(seed.getDescription());
+    legacy.setXpValue(seed.getXpValue());
+    legacy.setCategory(seed.getCategory());
+    legacy.setUnlockCondition(seed.getUnlockCondition());
+    when(achievementRepository.findByKey("FIRST_WRESTLER")).thenReturn(Optional.of(legacy));
+
+    verifySync.sync();
+
+    Assertions.assertEquals(
+        achievementFingerprint(legacy),
+        legacy.getSeedFingerprint(),
+        "legacy achievement matching the seed must be adopted (fingerprint stamped)");
   }
 }
