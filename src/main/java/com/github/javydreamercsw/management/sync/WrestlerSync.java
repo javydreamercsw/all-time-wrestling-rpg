@@ -62,7 +62,7 @@ import org.springframework.stereotype.Component;
 @Order(120)
 public class WrestlerSync implements DataSyncContributor {
 
-  private final boolean skipIfNotEmpty;
+  private final SeedSyncSupport syncSupport;
   private final WrestlerRepository wrestlerRepository;
   private final WrestlerAbilityRepository wrestlerAbilityRepository;
   private final WrestlerService wrestlerService;
@@ -75,7 +75,7 @@ public class WrestlerSync implements DataSyncContributor {
 
   @Autowired
   public WrestlerSync(
-      @Value("${data.initializer.skip-if-not-empty:false}") final boolean skipIfNotEmpty,
+      @Value("${data.initializer.skip-if-not-empty:false}") final String skipIfNotEmptyRaw,
       final WrestlerRepository wrestlerRepository,
       final WrestlerAbilityRepository wrestlerAbilityRepository,
       final WrestlerService wrestlerService,
@@ -85,7 +85,7 @@ public class WrestlerSync implements DataSyncContributor {
       final TierRecalculationService tierRecalculationService,
       final ResourcePatternResolver resourcePatternResolver,
       final ObjectMapper objectMapper) {
-    this.skipIfNotEmpty = skipIfNotEmpty;
+    this.syncSupport = new SeedSyncSupport(skipIfNotEmptyRaw);
     this.wrestlerRepository = wrestlerRepository;
     this.wrestlerAbilityRepository = wrestlerAbilityRepository;
     this.wrestlerService = wrestlerService;
@@ -99,8 +99,11 @@ public class WrestlerSync implements DataSyncContributor {
 
   @Override
   public void sync() {
-    if (skipIfNotEmpty && wrestlerRepository.count() > 0) {
+    if (syncSupport.mode() != SeedSyncMode.FULL && wrestlerRepository.count() > 0) {
       topUpMissingWrestlers();
+      if (syncSupport.isVerify()) {
+        reconcileVerifiedWrestlers();
+      }
       return;
     }
     loadWrestlers(true);
@@ -318,6 +321,7 @@ public class WrestlerSync implements DataSyncContributor {
               }
 
               wrestlerToSave = newWrestler;
+              stampSeedFingerprint(newWrestler);
               toSaveBulk.add(wrestlerToSave);
             }
 
@@ -422,6 +426,168 @@ public class WrestlerSync implements DataSyncContributor {
       log.debug("Synchronized wrestler abilities for existing wrestlers");
     } catch (IOException e) {
       log.error("Error synchronizing wrestler abilities for existing wrestlers", e);
+    }
+  }
+
+  /** Stamps the seed fingerprint onto a newly inserted wrestler from its own field values. */
+  private void stampSeedFingerprint(Wrestler wrestler) {
+    wrestler.setSeedFingerprint(syncSupport.fingerprint(WrestlerSeedFields.canonical(wrestler)));
+  }
+
+  /**
+   * Verify mode: reconcile seed-owned fields of existing wrestlers. The stored fingerprint is the
+   * hash of the row's seed-owned fields as the last seed write left them; re-hashing the row's
+   * current fields detects hand edits. A row that still hashes to its stored fingerprint is clean
+   * and adopts seed changes; a row whose fields drifted is user-edited — warned and preserved.
+   * User-created wrestlers (no seed match) are never considered.
+   */
+  private void reconcileVerifiedWrestlers() {
+    long start = System.currentTimeMillis();
+    try {
+      Resource[] resources = resourcePatternResolver.getResources("classpath*:wrestlers/*.json");
+      Map<String, Wrestler> wrestlersByName =
+          wrestlerRepository.findAllWithAlignments().stream()
+              .collect(Collectors.toMap(Wrestler::getName, wr -> wr, (a, b) -> a));
+      int reconciled = 0;
+      int preserved = 0;
+      List<Wrestler> toSave = new ArrayList<>();
+      for (Resource resource : resources) {
+        if (!resource.exists()) {
+          continue;
+        }
+        try (var is = resource.getInputStream()) {
+          List<WrestlerImportDTO> wrestlersFromFile =
+              objectMapper.readValue(is, new TypeReference<>() {});
+          for (WrestlerImportDTO w : wrestlersFromFile) {
+            Wrestler wrestler = wrestlersByName.get(w.getName());
+            if (wrestler == null) {
+              continue; // user-created rows have no seed match and are never touched
+            }
+            String current = syncSupport.fingerprint(WrestlerSeedFields.canonical(wrestler));
+            if (SeedSyncSupport.isBlankFingerprint(wrestler.getSeedFingerprint())) {
+              // Legacy row: adopt only if its seed-owned fields already equal the seed.
+              if (matchesSeed(wrestler, w)) {
+                wrestler.setSeedFingerprint(current);
+                toSave.add(wrestler);
+                reconciled++;
+              } else {
+                log.warn(
+                    "Seed verify: wrestler '{}' has hand-edited seed-owned fields "
+                        + "(legacy row, no fingerprint); preserving user values.",
+                    LogSanitizer.sanitize(wrestler.getName()));
+                preserved++;
+              }
+            } else if (current.equals(wrestler.getSeedFingerprint())) {
+              if (matchesSeed(wrestler, w)) {
+                continue; // already in sync
+              }
+              applySeedFields(wrestler, w);
+              wrestler.setSeedFingerprint(
+                  syncSupport.fingerprint(WrestlerSeedFields.canonical(wrestler)));
+              toSave.add(wrestler);
+              reconciled++;
+            } else {
+              log.warn(
+                  "Seed verify: wrestler '{}' was modified after seeding (fingerprint mismatch); "
+                      + "preserving user values.",
+                  LogSanitizer.sanitize(wrestler.getName()));
+              preserved++;
+            }
+          }
+        } catch (IOException e) {
+          log.error("Error during wrestler verify reconcile", e);
+        }
+      }
+      if (!toSave.isEmpty()) {
+        wrestlerRepository.saveAll(toSave);
+      }
+      log.info(
+          "{} ({} ms)",
+          syncSupport.reconcileLog("wrestler", reconciled, preserved),
+          System.currentTimeMillis() - start);
+    } catch (IOException e) {
+      log.error("Error resolving wrestler resources for verify reconcile", e);
+    }
+  }
+
+  private boolean matchesSeed(Wrestler wrestler, WrestlerImportDTO w) {
+    // Null-guarded fields mirror applySeedFields: the seed write leaves an existing value
+    // untouched when the seed omits the field, so the row may legitimately carry a value the
+    // current seed no longer ships.
+    return Objects.equals(wrestler.getDeckSize(), w.getDeckSize())
+        && Objects.equals(wrestler.getStartingHealth(), w.getStartingHealth())
+        && Objects.equals(wrestler.getLowHealth(), w.getLowHealth())
+        && Objects.equals(wrestler.getStartingStamina(), w.getStartingStamina())
+        && Objects.equals(wrestler.getLowStamina(), w.getLowStamina())
+        && Objects.equals(wrestler.getDescription(), w.getDescription())
+        && Objects.equals(wrestler.getGender(), w.getGender())
+        && (w.getImageUrl() == null || Objects.equals(wrestler.getImageUrl(), w.getImageUrl()))
+        && (w.getHeritageTag() == null
+            || Objects.equals(wrestler.getHeritageTag(), w.getHeritageTag()))
+        && (w.getExpansionCode() == null
+            || Objects.equals(wrestler.getExpansionCode(), w.getExpansionCode()))
+        && (w.getDrive() == null || Objects.equals(wrestler.getDrive(), w.getDrive()))
+        && (w.getResilience() == null
+            || Objects.equals(wrestler.getResilience(), w.getResilience()))
+        && (w.getCharisma() == null || Objects.equals(wrestler.getCharisma(), w.getCharisma()))
+        && (w.getBrawl() == null || Objects.equals(wrestler.getBrawl(), w.getBrawl()))
+        && Objects.equals(
+            wrestler.getAlignment() == null ? null : wrestler.getAlignment().getAlignmentType(),
+            w.getAlignment() == null
+                ? null
+                : AlignmentType.valueOf(w.getAlignment().toUpperCase()));
+  }
+
+  private void applySeedFields(Wrestler wrestler, WrestlerImportDTO w) {
+    wrestler.setDeckSize(w.getDeckSize());
+    wrestler.setStartingHealth(w.getStartingHealth());
+    wrestler.setLowHealth(w.getLowHealth());
+    wrestler.setStartingStamina(w.getStartingStamina());
+    wrestler.setLowStamina(w.getLowStamina());
+    wrestler.setDescription(w.getDescription());
+    wrestler.setGender(w.getGender());
+    if (w.getImageUrl() != null) {
+      wrestler.setImageUrl(w.getImageUrl());
+    }
+    if (w.getHeritageTag() != null) {
+      wrestler.setHeritageTag(w.getHeritageTag());
+    }
+    wrestler.setExpansionCode(w.getExpansionCode());
+    if (w.getDrive() != null) {
+      wrestler.setDrive(w.getDrive());
+    }
+    if (w.getResilience() != null) {
+      wrestler.setResilience(w.getResilience());
+    }
+    if (w.getCharisma() != null) {
+      wrestler.setCharisma(w.getCharisma());
+    }
+    if (w.getBrawl() != null) {
+      wrestler.setBrawl(w.getBrawl());
+    }
+    if (w.getAlignment() != null) {
+      try {
+        AlignmentType seedType = AlignmentType.valueOf(w.getAlignment().toUpperCase());
+        WrestlerAlignment current = wrestler.getAlignment();
+        if (current != null) {
+          // Replace in place — setAlignment appends, which would leave the stale alignment
+          // first in the set and the derived getter never reflecting the seed change.
+          current.setAlignmentType(seedType);
+        } else {
+          wrestler.setAlignment(
+              WrestlerAlignment.builder()
+                  .wrestler(wrestler)
+                  .universe(universeRepository.findAll().stream().findFirst().orElse(null))
+                  .alignmentType(seedType)
+                  .level(0)
+                  .build());
+        }
+      } catch (IllegalArgumentException e) {
+        log.warn(
+            "Invalid alignment '{}' for wrestler '{}'",
+            LogSanitizer.sanitize(w.getAlignment()),
+            LogSanitizer.sanitize(wrestler.getName()));
+      }
     }
   }
 

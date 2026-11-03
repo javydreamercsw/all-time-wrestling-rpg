@@ -49,7 +49,7 @@ class NpcSyncTest {
 
   @BeforeEach
   void setUp() {
-    sync = new NpcSync(false, npcService, new ObjectMapper());
+    sync = new NpcSync("false", npcService, new ObjectMapper());
   }
 
   @Test
@@ -64,7 +64,7 @@ class NpcSyncTest {
   @Test
   void sync_skipsWhenNotEmptyFlagSet() {
     // Skip gate with a complete catalog: every seeded NPC exists → top-up inserts nothing.
-    NpcSync skipSync = new NpcSync(true, npcService, new ObjectMapper());
+    NpcSync skipSync = new NpcSync("true", npcService, new ObjectMapper());
     when(npcService.count()).thenReturn(15L);
     when(npcService.findAllUnfiltered())
         .thenReturn(
@@ -132,7 +132,7 @@ class NpcSyncTest {
     // Simulates a prod install with the skip flag set: 4 pre-2.12.0 referees exist, the 6 new
     // ones (and the rest of the seed catalog) are missing. Top-up must insert exactly the 11
     // missing seed NPCs and never re-save an existing row.
-    NpcSync skipSync = new NpcSync(true, npcService, new ObjectMapper());
+    NpcSync skipSync = new NpcSync("true", npcService, new ObjectMapper());
     when(npcService.count()).thenReturn(4L);
     List<String> existingNames =
         List.of("Samuel Winters", "Rezan the Resolved", "Rigo Del Sarto", "Anika Stroud");
@@ -165,7 +165,7 @@ class NpcSyncTest {
 
   @Test
   void sync_topUpLeavesExistingNpcUntouchedWhenSkipFlagSet() {
-    NpcSync skipSync = new NpcSync(true, npcService, new ObjectMapper());
+    NpcSync skipSync = new NpcSync("true", npcService, new ObjectMapper());
     when(npcService.count()).thenReturn(1L);
     Npc existing = new Npc();
     existing.setName("Charles");
@@ -178,5 +178,77 @@ class NpcSyncTest {
     // re-saved (data-protection guarantee) and his stale description must survive.
     verify(npcService, never()).saveAll(argThat(list -> list.contains(existing)));
     assertEquals("stale description", existing.getDescription());
+  }
+
+  private static final SeedSyncSupport VERIFY_SUPPORT = new SeedSyncSupport("verify");
+
+  private Npc npcCanonicalHashed(Npc npc) {
+    npc.setSeedFingerprint(npcFingerprint(npc));
+    return npc;
+  }
+
+  private String npcFingerprint(Npc npc) {
+    Object awareness = npc.getAttributes().get(NpcService.ATTRIBUTE_AWARENESS);
+    return VERIFY_SUPPORT.fingerprint(
+        npc.getDescription(),
+        npc.getNpcType(),
+        npc.getExpansionCode(),
+        npc.getAlignment() == null ? null : npc.getAlignment().name(),
+        awareness == null ? null : awareness.toString());
+  }
+
+  @Test
+  void verifyMode_reconcilesCleanNpcAndPreservesEditedNpc() {
+    NpcSync verifySync = new NpcSync("verify", npcService, new ObjectMapper());
+    when(npcService.count()).thenReturn(2L);
+
+    // Clean: Charles as an older release's seed write left him, description since fixed in the
+    // seed file ("The mysterious owner of ATW.").
+    Npc clean = new Npc();
+    clean.setName("Charles");
+    clean.setDescription("stale description from an older release");
+    npcCanonicalHashed(clean);
+
+    // Edited: stamped at seed write, then hand-tuned.
+    Npc edited = new Npc();
+    edited.setName("MVP");
+    edited.setDescription("user-tuned description");
+    npcCanonicalHashed(edited);
+    edited.setDescription("user-tuned description (changed after stamping)");
+
+    when(npcService.findAllUnfiltered()).thenReturn(List.of(clean, edited));
+
+    verifySync.sync();
+
+    assertEquals(
+        "The mysterious owner of ATW.",
+        clean.getDescription(),
+        "clean-fingerprint NPC must adopt the seed description");
+    assertEquals(
+        "user-tuned description (changed after stamping)",
+        edited.getDescription(),
+        "edited NPC must be preserved");
+  }
+
+  @Test
+  void verifyMode_adoptsLegacyNpcWhenFieldsMatchSeed() {
+    NpcSync verifySync = new NpcSync("verify", npcService, new ObjectMapper());
+    when(npcService.count()).thenReturn(1L);
+
+    // Legacy: no stamp, but fields equal the seed (per npcs.json: description "The mysterious
+    // owner of ATW.", type "Owner", expansion BASE_GAME, NEUTRAL alignment, no awareness).
+    Npc legacy = new Npc();
+    legacy.setName("Charles");
+    legacy.setDescription("The mysterious owner of ATW.");
+    legacy.setNpcType("Owner");
+    legacy.setExpansionCode("BASE_GAME");
+    when(npcService.findAllUnfiltered()).thenReturn(List.of(legacy));
+
+    verifySync.sync();
+
+    assertEquals(
+        npcFingerprint(legacy),
+        legacy.getSeedFingerprint(),
+        "legacy NPC matching the seed must be adopted (fingerprint stamped)");
   }
 }
