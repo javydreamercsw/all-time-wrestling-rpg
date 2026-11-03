@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.NonNull;
@@ -306,12 +307,12 @@ public class CardSync implements DataSyncContributor {
   }
 
   private boolean matchesSeed(Card card, CardDTO dto, CardSet set) {
-    return java.util.Objects.equals(card.getName(), dto.getName())
-        && java.util.Objects.equals(card.getDamage(), dto.getDamage())
-        && java.util.Objects.equals(card.getStamina(), dto.getStamina())
-        && java.util.Objects.equals(card.getTarget(), dto.getTarget())
-        && java.util.Objects.equals(card.getMomentum(), dto.getMomentum())
-        && java.util.Objects.equals(card.getType(), dto.getType())
+    return Objects.equals(card.getName(), dto.getName())
+        && Objects.equals(card.getDamage(), dto.getDamage())
+        && Objects.equals(card.getStamina(), dto.getStamina())
+        && Objects.equals(card.getTarget(), dto.getTarget())
+        && Objects.equals(card.getMomentum(), dto.getMomentum())
+        && Objects.equals(card.getType(), dto.getType())
         && card.getSignature() == dto.isSignature()
         && card.getFinisher() == dto.isFinisher()
         && card.getTaunt() == dto.isTaunt()

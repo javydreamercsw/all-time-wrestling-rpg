@@ -16,13 +16,18 @@
 */
 package com.github.javydreamercsw.management.sync;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.dto.SegmentTypeDTO;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -149,11 +154,10 @@ public class SegmentTypeSync implements DataSyncContributor {
     }
     try {
       String json = objectMapper.writeValueAsString(dto.getGuide());
-      java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
-      byte[] hash = digest.digest(json.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-      return java.util.HexFormat.of().formatHex(hash);
-    } catch (com.fasterxml.jackson.core.JsonProcessingException
-        | java.security.NoSuchAlgorithmException e) {
+      MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      byte[] hash = digest.digest(json.getBytes(StandardCharsets.UTF_8));
+      return HexFormat.of().formatHex(hash);
+    } catch (JsonProcessingException | NoSuchAlgorithmException e) {
       log.warn("Failed to compute seed guide hash for segment type", e);
       return null;
     }

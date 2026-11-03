@@ -24,11 +24,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
-import com.github.javydreamercsw.management.dto.TitleDTO;
 import com.github.javydreamercsw.management.service.title.TitleReignRepairService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import java.util.List;
@@ -36,6 +38,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -67,14 +70,6 @@ class ChampionshipSyncTest {
         title.getImageUrl(),
         title.getExpansionCode(),
         title.getIncludeInRankings());
-  }
-
-  private TitleDTO unusedDto() {
-    // Real values from championships.json (ATW Championship).
-    TitleDTO dto = new TitleDTO();
-    dto.setName("ATW World");
-    dto.setDescription("The top prize of All Time Wrestling");
-    return dto;
   }
 
   @Test
@@ -149,7 +144,7 @@ class ChampionshipSyncTest {
 
     verifySync.sync();
 
-    verify(titleService, org.mockito.Mockito.atLeastOnce()).saveAll(any());
+    verify(titleService, Mockito.atLeastOnce()).saveAll(any());
     assertEquals(
         "user effect script (changed after stamping)",
         edited.getEffectScript(),
@@ -184,11 +179,10 @@ class ChampionshipSyncTest {
     Title legacy = new Title();
     legacy.setName("ATW World");
     legacy.setDescription("The top title in All Time Wrestling.");
-    legacy.setTier(com.github.javydreamercsw.base.domain.wrestler.WrestlerTier.MAIN_EVENTER);
-    legacy.setChampionshipType(
-        com.github.javydreamercsw.management.domain.title.ChampionshipType.SINGLE);
+    legacy.setTier(WrestlerTier.MAIN_EVENTER);
+    legacy.setChampionshipType(ChampionshipType.SINGLE);
     legacy.setEffectScript("gainInitiative()");
-    legacy.setGender(com.github.javydreamercsw.base.domain.wrestler.Gender.MALE);
+    legacy.setGender(Gender.MALE);
     legacy.setExpansionCode("BASE_GAME");
     legacy.setIncludeInRankings(true);
     when(titleService.findByName("ATW World")).thenReturn(Optional.of(legacy));
@@ -202,7 +196,7 @@ class ChampionshipSyncTest {
 
     verifySync.sync();
 
-    verify(titleService, org.mockito.Mockito.atLeastOnce()).saveAll(any());
+    verify(titleService, Mockito.atLeastOnce()).saveAll(any());
     assertEquals(
         titleFingerprint(legacy),
         legacy.getSeedFingerprint(),

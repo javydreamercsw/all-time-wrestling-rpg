@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -74,7 +75,7 @@ class SegmentRuleSyncTest {
     SegmentRuleSync sync = new SegmentRuleSync("false", segmentRuleService, new ObjectMapper());
     SegmentRule existing = rule("Normal", "stale description");
     when(segmentRuleService.findAllForAdmin()).thenReturn(List.of(existing));
-    List<SegmentRule> saved = new java.util.ArrayList<>();
+    List<SegmentRule> saved = new ArrayList<>();
     when(segmentRuleService.createOrUpdateRule(
             anyString(),
             anyString(),
@@ -196,7 +197,7 @@ class SegmentRuleSyncTest {
     clean.setSeedFingerprint(ruleFingerprint(clean));
     when(segmentRuleService.findAllForAdmin()).thenReturn(List.of(clean));
 
-    List<SegmentRule> persisted = new java.util.ArrayList<>();
+    List<SegmentRule> persisted = new ArrayList<>();
     when(segmentRuleService.createOrUpdateRule(
             anyString(),
             anyString(),
@@ -230,7 +231,7 @@ class SegmentRuleSyncTest {
     SegmentRuleSync sync = new SegmentRuleSync("false", segmentRuleService, new ObjectMapper());
     SegmentRule existing = rule("Normal", "stale description");
     when(segmentRuleService.findAllForAdmin()).thenReturn(List.of(existing));
-    List<SegmentRule> persisted = new java.util.ArrayList<>();
+    List<SegmentRule> persisted = new ArrayList<>();
     when(segmentRuleService.createOrUpdateRule(
             anyString(),
             anyString(),

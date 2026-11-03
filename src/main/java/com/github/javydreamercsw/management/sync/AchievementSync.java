@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.config.CacheConfig;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -262,10 +263,10 @@ public class AchievementSync implements DataSyncContributor {
   }
 
   private boolean achievementMatchesSeed(Achievement existing, Achievement seed) {
-    return java.util.Objects.equals(existing.getName(), seed.getName())
-        && java.util.Objects.equals(existing.getDescription(), seed.getDescription())
-        && java.util.Objects.equals(existing.getXpValue(), seed.getXpValue())
+    return Objects.equals(existing.getName(), seed.getName())
+        && Objects.equals(existing.getDescription(), seed.getDescription())
+        && Objects.equals(existing.getXpValue(), seed.getXpValue())
         && existing.getCategory() == seed.getCategory()
-        && java.util.Objects.equals(existing.getUnlockCondition(), seed.getUnlockCondition());
+        && Objects.equals(existing.getUnlockCondition(), seed.getUnlockCondition());
   }
 }

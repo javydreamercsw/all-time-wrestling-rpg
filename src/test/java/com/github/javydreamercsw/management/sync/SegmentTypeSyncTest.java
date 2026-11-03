@@ -31,7 +31,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.dto.SegmentTypeDTO;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
+import java.util.ArrayList;
 import java.util.List;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -169,7 +171,7 @@ class SegmentTypeSyncTest {
               st.setDescription(inv.getArgument(1));
               return st;
             });
-    List<SegmentType> persisted = new java.util.ArrayList<>();
+    List<SegmentType> persisted = new ArrayList<>();
     when(segmentTypeService.saveSegmentType(any()))
         .thenAnswer(
             inv -> {
@@ -180,7 +182,7 @@ class SegmentTypeSyncTest {
     verifySync.sync();
 
     // Top-up inserts 6 missing types first; the reconcile's refresh of Promo is the last persist.
-    org.junit.jupiter.api.Assertions.assertFalse(persisted.isEmpty(), "a refresh must persist");
+    Assertions.assertFalse(persisted.isEmpty(), "a refresh must persist");
     SegmentType last = persisted.getLast();
     assertNotNull(last.getSeedFingerprint(), "persisted row must carry a fingerprint");
     assertEquals(

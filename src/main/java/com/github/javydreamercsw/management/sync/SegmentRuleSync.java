@@ -16,12 +16,17 @@
 */
 package com.github.javydreamercsw.management.sync;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.dto.SegmentRuleDTO;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -77,8 +82,11 @@ public class SegmentRuleSync implements DataSyncContributor {
                   dto.getExpansionCode() != null ? dto.getExpansionCode() : "BASE_GAME",
                   dto.getGuide(),
                   dto.isAllowsRefereeStopage());
+          String before = saved.getSeedFingerprint();
           stampFingerprint(saved, dto);
-          segmentRuleService.saveRule(saved);
+          if (!Objects.equals(before, saved.getSeedFingerprint())) {
+            segmentRuleService.saveRule(saved);
+          }
         }
         log.debug("Segment rule loading completed - {} rules loaded", dtos.size());
       } catch (IOException e) {
@@ -124,11 +132,10 @@ public class SegmentRuleSync implements DataSyncContributor {
     }
     try {
       String json = objectMapper.writeValueAsString(dto.getGuide());
-      java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
-      byte[] hash = digest.digest(json.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-      return java.util.HexFormat.of().formatHex(hash);
-    } catch (com.fasterxml.jackson.core.JsonProcessingException
-        | java.security.NoSuchAlgorithmException e) {
+      MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      byte[] hash = digest.digest(json.getBytes(StandardCharsets.UTF_8));
+      return HexFormat.of().formatHex(hash);
+    } catch (JsonProcessingException | NoSuchAlgorithmException e) {
       log.warn("Failed to compute seed guide hash for segment rule", e);
       return null;
     }
@@ -179,8 +186,11 @@ public class SegmentRuleSync implements DataSyncContributor {
                   dto.getExpansionCode() != null ? dto.getExpansionCode() : "BASE_GAME",
                   dto.getGuide(),
                   dto.isAllowsRefereeStopage());
+          String before = saved.getSeedFingerprint();
           stampFingerprint(saved, dto);
-          segmentRuleService.saveRule(saved);
+          if (!Objects.equals(before, saved.getSeedFingerprint())) {
+            segmentRuleService.saveRule(saved);
+          }
           reconciled++;
         } else {
           log.warn(
@@ -203,8 +213,11 @@ public class SegmentRuleSync implements DataSyncContributor {
                 dto.getExpansionCode() != null ? dto.getExpansionCode() : "BASE_GAME",
                 dto.getGuide(),
                 dto.isAllowsRefereeStopage());
+        String before = saved.getSeedFingerprint();
         stampFingerprint(saved, dto);
-        segmentRuleService.saveRule(saved);
+        if (!Objects.equals(before, saved.getSeedFingerprint())) {
+          segmentRuleService.saveRule(saved);
+        }
         reconciled++;
       } else {
         log.warn(

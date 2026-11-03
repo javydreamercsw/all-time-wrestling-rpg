@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -345,7 +346,7 @@ public class DeckSync implements DataSyncContributor {
    * in the catalog) are ignored, mirroring the seed write path.
    */
   private boolean seedCompositionEquals(Set<DeckCard> deckCards, DeckDTO deckDTO) {
-    Map<String, Integer> seedAmounts = new java.util.LinkedHashMap<>();
+    Map<String, Integer> seedAmounts = new LinkedHashMap<>();
     for (DeckCardDTO cardDTO : deckDTO.getCards()) {
       Card card =
           cardService.findByNumberAndSet(cardDTO.getNumber(), cardDTO.getSet()).orElse(null);
@@ -355,7 +356,7 @@ public class DeckSync implements DataSyncContributor {
       String key = card.getSet().getCode() + "#" + card.getNumber();
       seedAmounts.merge(key, cardDTO.getAmount(), Integer::sum);
     }
-    Map<String, Integer> deckAmounts = new java.util.LinkedHashMap<>();
+    Map<String, Integer> deckAmounts = new LinkedHashMap<>();
     for (DeckCard dc : deckCards) {
       if (dc.getSet() == null || dc.getCard() == null) {
         continue;

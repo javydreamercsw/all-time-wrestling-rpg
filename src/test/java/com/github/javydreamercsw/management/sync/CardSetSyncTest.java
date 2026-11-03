@@ -27,6 +27,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.service.card.CardSetService;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -169,7 +170,7 @@ class CardSetSyncTest {
     clean.setSeedFingerprint(support.fingerprint("stale set name"));
 
     when(cardSetService.findBySetCode("ATW")).thenReturn(Optional.of(clean));
-    List<CardSet> lastBatch = new java.util.ArrayList<>();
+    List<CardSet> lastBatch = new ArrayList<>();
     when(cardSetService.saveAll(any()))
         .thenAnswer(
             inv -> {

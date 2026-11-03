@@ -32,6 +32,7 @@ import com.github.javydreamercsw.management.service.ringside.RingsideActionDataS
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -90,7 +91,7 @@ class RingsideActionSyncTest {
     // Top-up: pre-existing rows are never re-saved via the service; only missing ones insert.
     verify(ringsideActionDataService, never())
         .createOrUpdateAction(
-            org.mockito.ArgumentMatchers.eq("Encouraging Call"),
+            ArgumentMatchers.eq("Encouraging Call"),
             anyString(),
             any(),
             anyInt(),
@@ -183,6 +184,6 @@ class RingsideActionSyncTest {
   }
 
   private static String eqName(String name) {
-    return org.mockito.ArgumentMatchers.eq(name);
+    return ArgumentMatchers.eq(name);
   }
 }
