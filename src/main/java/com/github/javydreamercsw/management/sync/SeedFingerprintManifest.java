@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -45,6 +46,9 @@ import org.springframework.core.io.Resource;
  * <p>Loading is lenient: a missing or malformed manifest never breaks startup — {@link #load} logs
  * a WARN and returns an empty manifest, and verify-mode syncs simply fall back to the legacy
  * reconcile path (slow but correct).
+ *
+ * <p>Domain and entry maps preserve the manifest's document (insertion) order, so iteration over
+ * {@link #domains()} is deterministic across loads.
  */
 @Slf4j
 public final class SeedFingerprintManifest {
@@ -57,8 +61,9 @@ public final class SeedFingerprintManifest {
   private final Map<String, Map<String, String>> domains;
 
   private SeedFingerprintManifest(Map<String, Map<String, String>> domains) {
-    // Defensive copy with stable iteration order.
-    this.domains = Map.copyOf(new LinkedHashMap<>(domains));
+    // Defensive copy over a LinkedHashMap to preserve the manifest's document order
+    // (Map.copyOf would discard insertion order).
+    this.domains = Collections.unmodifiableMap(new LinkedHashMap<>(domains));
   }
 
   /**
@@ -104,13 +109,17 @@ public final class SeedFingerprintManifest {
    * @return the parsed manifest, or an empty manifest on any failure — never throws
    */
   public static SeedFingerprintManifest load(ObjectMapper mapper, Resource resource) {
-    if (resource == null || !resource.exists()) {
-      log.warn(
-          "Seed fingerprint manifest resource missing ({}); returning an empty manifest.",
-          resource == null ? "null" : resource.getDescription());
+    if (resource == null) {
+      log.warn("Seed fingerprint manifest resource is null; returning an empty manifest.");
       return EMPTY;
     }
     try (InputStream in = resource.getInputStream()) {
+      if (!resource.exists()) {
+        log.warn(
+            "Seed fingerprint manifest resource missing ({}); returning an empty manifest.",
+            resource.getDescription());
+        return EMPTY;
+      }
       return parse(mapper.readTree(in));
     } catch (IOException e) {
       log.warn(
@@ -120,7 +129,8 @@ public final class SeedFingerprintManifest {
       return EMPTY;
     } catch (RuntimeException e) {
       log.warn(
-          "Failed to parse seed fingerprint manifest from {}; returning an empty manifest.",
+          "Failed to read or parse seed fingerprint manifest from {}; returning an empty"
+              + " manifest.",
           resource.getDescription(),
           e);
       return EMPTY;
@@ -139,10 +149,12 @@ public final class SeedFingerprintManifest {
 
   private static SeedFingerprintManifest parse(JsonNode root) {
     if (root == null || !root.isObject()) {
+      log.warn("Seed fingerprint manifest root is not a JSON object; returning an empty manifest.");
       return EMPTY;
     }
     JsonNode domainsNode = root.path("domains");
     if (!domainsNode.isObject()) {
+      log.warn("Seed fingerprint manifest has no 'domains' object; returning an empty manifest.");
       return EMPTY;
     }
     Map<String, Map<String, String>> parsed = new LinkedHashMap<>();
@@ -174,7 +186,7 @@ public final class SeedFingerprintManifest {
                               keyEntry.getKey());
                         }
                       });
-              parsed.put(domainKey, Map.copyOf(entries));
+              parsed.put(domainKey, Collections.unmodifiableMap(entries));
             });
     return new SeedFingerprintManifest(parsed);
   }

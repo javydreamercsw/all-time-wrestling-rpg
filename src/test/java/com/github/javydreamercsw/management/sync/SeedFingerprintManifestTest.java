@@ -25,8 +25,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.config.JacksonConfig;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
 
@@ -104,6 +106,60 @@ class SeedFingerprintManifestTest {
         assertDoesNotThrow(() -> SeedFingerprintManifest.load(mapper));
     assertNotNull(manifest);
     assertNotNull(manifest.domains());
+  }
+
+  @Test
+  void domainsPreserveDocumentOrder() {
+    // Insertion order, deliberately non-alphabetical: the generator (Task 5) iterates domains()
+    // to produce deterministic diffs, so document order must survive parsing end-to-end.
+    SeedFingerprintManifest manifest = load(documentOrderJson());
+    assertEquals(
+        List.of("wrestler", "card_set", "achievement", "npc"),
+        List.copyOf(manifest.domains().keySet()));
+    // Entry order inside a domain must preserve document order too.
+    assertEquals(
+        List.of("Jeff Hardy", "Bianca Belair"),
+        List.copyOf(manifest.domain("wrestler").orElseThrow().keySet()));
+  }
+
+  @Test
+  void wrongShapeRootLogsWarningAndReturnsEmpty() {
+    ch.qos.logback.classic.Logger logger =
+        (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(SeedFingerprintManifest.class);
+    var appender =
+        new ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>();
+    appender.start();
+    logger.addAppender(appender);
+    try {
+      SeedFingerprintManifest manifest = load("{\"generatedAt\": \"2026-11-05T17:00:00Z\"}");
+      assertTrue(manifest.domains().isEmpty());
+      assertTrue(
+          appender.list.stream()
+              .anyMatch(
+                  event ->
+                      event.getLevel().toString().equals("WARN")
+                          && event.getFormattedMessage().contains("domains")));
+    } finally {
+      logger.detachAppender(appender);
+    }
+  }
+
+  private String documentOrderJson() {
+    return """
+    {
+      "generatedAt": "2026-11-05T17:00:00Z",
+      "domains": {
+        "wrestler": {
+          "Jeff Hardy": "%s",
+          "Bianca Belair": "%s"
+        },
+        "card_set": { "BASE_GAME": "%s" },
+        "achievement": { "first_show": "%s" },
+        "npc": { "Ringside Medic": "%s" }
+      }
+    }
+    """
+        .formatted(FINGERPRINT_A, FINGERPRINT_B, FINGERPRINT_B, FINGERPRINT_A, FINGERPRINT_A);
   }
 
   private SeedFingerprintManifest load(String json) {
