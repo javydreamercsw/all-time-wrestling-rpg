@@ -31,6 +31,7 @@ import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCard;
 import com.github.javydreamercsw.management.service.campaign.CampaignAbilityCardService;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatchers;
@@ -69,7 +70,11 @@ class CampaignAbilityCardSyncTest {
   @Test
   void sync_topUpInsertsOnlyMissingCardsWhenSkipFlagSet() {
     CampaignAbilityCardSync sync =
-        new CampaignAbilityCardSync("true", campaignAbilityCardService, new ObjectMapper());
+        new CampaignAbilityCardSync(
+            "true",
+            campaignAbilityCardService,
+            new ObjectMapper(),
+            SeedFingerprintManifest.of(Map.of()));
     when(campaignAbilityCardService.count()).thenReturn(1L);
     CampaignAbilityCard existing = card("Poke Eye");
     when(campaignAbilityCardService.findAll()).thenReturn(List.of(existing));
@@ -113,7 +118,11 @@ class CampaignAbilityCardSyncTest {
   @Test
   void verifyMode_reconcilesCleanRowAndPreservesEditedRow() {
     CampaignAbilityCardSync verifySync =
-        new CampaignAbilityCardSync("verify", campaignAbilityCardService, new ObjectMapper());
+        new CampaignAbilityCardSync(
+            "verify",
+            campaignAbilityCardService,
+            new ObjectMapper(),
+            SeedFingerprintManifest.of(Map.of()));
     when(campaignAbilityCardService.count()).thenReturn(2L);
 
     // Clean: as an older release's seed write left it — description since fixed in the seed.
@@ -188,7 +197,11 @@ class CampaignAbilityCardSyncTest {
   @Test
   void verifyMode_adoptsLegacyRowWhenFieldsMatchSeed() {
     CampaignAbilityCardSync verifySync =
-        new CampaignAbilityCardSync("verify", campaignAbilityCardService, new ObjectMapper());
+        new CampaignAbilityCardSync(
+            "verify",
+            campaignAbilityCardService,
+            new ObjectMapper(),
+            SeedFingerprintManifest.of(Map.of()));
     when(campaignAbilityCardService.count()).thenReturn(1L);
 
     // Legacy: no stamp; fields match the seed's Poke Eye entry.
@@ -224,5 +237,56 @@ class CampaignAbilityCardSyncTest {
         legacy.getSeedFingerprint(),
         "legacy card matching the seed must be adopted (fingerprint stamped)");
     verify(campaignAbilityCardService).save(legacy);
+  }
+
+  @Test
+  void fastPath_skipsReconcileWhenManifestMatchesStoredRows() {
+    // Clean: stamped over its own (then-current) fields; the seed's description has since changed.
+    CampaignAbilityCard clean = card("Poke Eye");
+    clean.setDescription("stale description");
+    clean.setOneTimeUse(false);
+    clean.setTiming(AbilityTiming.DEFENSE);
+    clean.setEffectScript("gainInitiative()");
+    clean.setSeedFingerprint(cardFingerprint(clean));
+
+    CampaignAbilityCardSync fastSync =
+        new CampaignAbilityCardSync(
+            "verify",
+            campaignAbilityCardService,
+            new ObjectMapper(),
+            SeedFingerprintManifest.of(
+                Map.of(
+                    "campaign_ability_card",
+                    Map.of("Poke Eye|HEEL|1", clean.getSeedFingerprint()))));
+    when(campaignAbilityCardService.count()).thenReturn(1L);
+    when(campaignAbilityCardService.findAll()).thenReturn(List.of(clean));
+    // Top-up runs before the gate and inserts the other 13 seed cards through the service.
+    when(campaignAbilityCardService.createOrUpdateCard(
+            anyString(),
+            any(),
+            any(),
+            anyInt(),
+            ArgumentMatchers.anyBoolean(),
+            any(),
+            any(),
+            any(),
+            ArgumentMatchers.anyBoolean(),
+            any()))
+        .thenAnswer(
+            inv -> {
+              CampaignAbilityCard c = card(inv.getArgument(0));
+              c.setDescription(inv.getArgument(1));
+              c.setEffectScript(inv.getArgument(6));
+              return c;
+            });
+
+    fastSync.sync();
+
+    // The stale description proves reconcile never ran (it would have adopted the seed's
+    // "Gain Initiative.").
+    assertEquals(
+        "stale description",
+        clean.getDescription(),
+        "fast path must skip reconcile; the stale seed-owned field survives");
   }
 }

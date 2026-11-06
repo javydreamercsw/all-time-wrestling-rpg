@@ -33,6 +33,7 @@ import com.github.javydreamercsw.management.dto.SegmentTypeDTO;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,7 +54,9 @@ class SegmentTypeSyncTest {
 
   @BeforeEach
   void setUp() {
-    sync = new SegmentTypeSync("false", segmentTypeService, new ObjectMapper());
+    sync =
+        new SegmentTypeSync(
+            "false", segmentTypeService, new ObjectMapper(), SeedFingerprintManifest.of(Map.of()));
   }
 
   @Test
@@ -103,7 +106,9 @@ class SegmentTypeSyncTest {
 
   @Test
   void sync_skipsWhenNotEmptyAndSkipFlagSet() {
-    SegmentTypeSync skipSync = new SegmentTypeSync("true", segmentTypeService, new ObjectMapper());
+    SegmentTypeSync skipSync =
+        new SegmentTypeSync(
+            "true", segmentTypeService, new ObjectMapper(), SeedFingerprintManifest.of(Map.of()));
     when(segmentTypeService.count()).thenReturn(5L);
     when(segmentTypeService.findAll())
         .thenReturn(
@@ -130,7 +135,9 @@ class SegmentTypeSyncTest {
 
   @Test
   void sync_topUpInsertsNothingWhenCatalogComplete() {
-    SegmentTypeSync skipSync = new SegmentTypeSync("true", segmentTypeService, new ObjectMapper());
+    SegmentTypeSync skipSync =
+        new SegmentTypeSync(
+            "true", segmentTypeService, new ObjectMapper(), SeedFingerprintManifest.of(Map.of()));
     when(segmentTypeService.count()).thenReturn(7L);
     when(segmentTypeService.findAll())
         .thenReturn(
@@ -155,7 +162,8 @@ class SegmentTypeSyncTest {
     // Regression: the clean-row refresh previously saved through the service without persisting
     // a re-stamp — the DB kept the old fingerprint and the next pass froze the row.
     SegmentTypeSync verifySync =
-        new SegmentTypeSync("verify", segmentTypeService, new ObjectMapper());
+        new SegmentTypeSync(
+            "verify", segmentTypeService, new ObjectMapper(), SeedFingerprintManifest.of(Map.of()));
     when(segmentTypeService.count()).thenReturn(1L);
 
     SegmentType clean = segmentType("Promo");
@@ -211,7 +219,8 @@ class SegmentTypeSyncTest {
   @Test
   void verifyMode_reconcilesCleanRowAndPreservesEditedRow() {
     SegmentTypeSync verifySync =
-        new SegmentTypeSync("verify", segmentTypeService, new ObjectMapper());
+        new SegmentTypeSync(
+            "verify", segmentTypeService, new ObjectMapper(), SeedFingerprintManifest.of(Map.of()));
     when(segmentTypeService.count()).thenReturn(2L);
 
     // Clean: "Promo" as an older release's seed write left it (guide-less), description since
@@ -254,7 +263,8 @@ class SegmentTypeSyncTest {
   @Test
   void verifyMode_adoptsLegacyRowWhenFieldsMatchSeed() {
     SegmentTypeSync verifySync =
-        new SegmentTypeSync("verify", segmentTypeService, new ObjectMapper());
+        new SegmentTypeSync(
+            "verify", segmentTypeService, new ObjectMapper(), SeedFingerprintManifest.of(Map.of()));
     when(segmentTypeService.count()).thenReturn(1L);
 
     // Legacy: no stamp; fields equal what the seed write would produce for a guide-less entry.
@@ -271,5 +281,34 @@ class SegmentTypeSyncTest {
         segmentTypeFingerprint(legacy),
         legacy.getSeedFingerprint(),
         "legacy row matching the seed must be adopted (fingerprint stamped, no-op refresh)");
+  }
+
+  @Test
+  void fastPath_skipsReconcileWhenManifestMatchesStoredRows() {
+    // Clean: "Promo" as an older release's seed write left it (guide-less), description since
+    // fixed in the seed file. The manifest matches the stored stamp, so reconcile must be skipped.
+    SegmentType clean = segmentType("Promo");
+    clean.setDescription("stale description from an older release");
+    clean.setGuideHash(null);
+    clean.setSeedFingerprint(segmentTypeFingerprint(clean));
+
+    SegmentTypeSync fastSync =
+        new SegmentTypeSync(
+            "verify",
+            segmentTypeService,
+            new ObjectMapper(),
+            SeedFingerprintManifest.of(
+                Map.of("segment_type", Map.of("Promo", clean.getSeedFingerprint()))));
+    when(segmentTypeService.count()).thenReturn(1L);
+    when(segmentTypeService.findAll()).thenReturn(List.of(clean));
+
+    fastSync.sync();
+
+    // The stale description proves reconcile never ran (it would have adopted the seed's
+    // "Non-wrestling segment for storyline development and character work").
+    assertEquals(
+        "stale description from an older release",
+        clean.getDescription(),
+        "fast path must skip reconcile; the stale seed-owned field survives");
   }
 }

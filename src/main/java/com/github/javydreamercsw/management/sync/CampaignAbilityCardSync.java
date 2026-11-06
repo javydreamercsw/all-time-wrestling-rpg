@@ -22,6 +22,7 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCard;
 import com.github.javydreamercsw.management.dto.CampaignAbilityCardDTO;
 import com.github.javydreamercsw.management.service.campaign.CampaignAbilityCardService;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -39,6 +40,7 @@ import org.springframework.stereotype.Component;
 public class CampaignAbilityCardSync implements DataSyncContributor {
 
   private final SeedSyncSupport syncSupport;
+  private final SeedFingerprintManifest seedManifest;
   private final CampaignAbilityCardService campaignAbilityCardService;
   private final ObjectMapper objectMapper;
 
@@ -46,8 +48,10 @@ public class CampaignAbilityCardSync implements DataSyncContributor {
   public CampaignAbilityCardSync(
       @Value("${data.initializer.skip-if-not-empty:false}") final String skipIfNotEmptyRaw,
       final CampaignAbilityCardService campaignAbilityCardService,
-      final ObjectMapper objectMapper) {
+      final ObjectMapper objectMapper,
+      final SeedFingerprintManifest seedManifest) {
     this.syncSupport = new SeedSyncSupport(skipIfNotEmptyRaw);
+    this.seedManifest = seedManifest;
     this.campaignAbilityCardService = campaignAbilityCardService;
     this.objectMapper = objectMapper;
   }
@@ -57,6 +61,9 @@ public class CampaignAbilityCardSync implements DataSyncContributor {
     if (syncSupport.mode() != SeedSyncMode.FULL && campaignAbilityCardService.count() > 0) {
       topUpMissingCards();
       if (syncSupport.isVerify()) {
+        if (fastPathApplies()) {
+          return;
+        }
         reconcileVerifiedCards();
       }
       return;
@@ -142,7 +149,7 @@ public class CampaignAbilityCardSync implements DataSyncContributor {
    * (name, alignmentType, level) is excluded; the rest mirrors {@code createOrUpdateCard}'s write
    * set.
    */
-  private String cardFingerprint(CampaignAbilityCard card) {
+  String cardFingerprint(CampaignAbilityCard card) {
     return syncSupport.fingerprint(
         card.getDescription(),
         card.isOneTimeUse(),
@@ -151,6 +158,28 @@ public class CampaignAbilityCardSync implements DataSyncContributor {
         card.getSecondaryEffectScript(),
         card.isSecondaryOneTimeUse(),
         card.getSecondaryTiming() == null ? null : card.getSecondaryTiming().name());
+  }
+
+  /**
+   * Verify-mode fast path: when every manifest entry matches a DB row on both the stored and the
+   * recomputed fingerprint, the database is provably in its seed state and reconcile can be skipped
+   * entirely.
+   */
+  private boolean fastPathApplies() {
+    Map<String, String> stored = new HashMap<>();
+    Map<String, String> recomputed = new HashMap<>();
+    for (CampaignAbilityCard c : campaignAbilityCardService.findAll()) {
+      String key = c.getName() + "|" + c.getAlignmentType() + "|" + c.getLevel();
+      stored.put(key, c.getSeedFingerprint());
+      recomputed.put(key, cardFingerprint(c));
+    }
+    boolean applies =
+        SeedFastPathChecker.fastPathApplies(
+            seedManifest, "campaign_ability_card", stored, recomputed);
+    if (applies) {
+      log.info("Seed manifest: campaign_ability_card domain matches manifest; reconcile skipped");
+    }
+    return applies;
   }
 
   /**

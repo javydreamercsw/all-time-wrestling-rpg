@@ -45,6 +45,7 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.junit.jupiter.api.BeforeEach;
@@ -99,7 +100,8 @@ class WrestlerSyncTest {
             npcService,
             tierRecalculationService,
             resourcePatternResolver,
-            new ObjectMapper());
+            new ObjectMapper(),
+            SeedFingerprintManifest.of(Map.of()));
   }
 
   @Test
@@ -126,7 +128,8 @@ class WrestlerSyncTest {
             npcService,
             tierRecalculationService,
             resourcePatternResolver,
-            new ObjectMapper());
+            new ObjectMapper(),
+            SeedFingerprintManifest.of(Map.of()));
     when(wrestlerRepository.count()).thenReturn(10L);
     when(wrestlerRepository.findAllWithAlignments()).thenReturn(List.of());
     when(wrestlerService.getOrCreateState(any(), any())).thenReturn(new WrestlerState());
@@ -160,7 +163,8 @@ class WrestlerSyncTest {
             npcService,
             tierRecalculationService,
             resourcePatternResolver,
-            new ObjectMapper());
+            new ObjectMapper(),
+            SeedFingerprintManifest.of(Map.of()));
 
     skipSync.sync();
 
@@ -198,7 +202,8 @@ class WrestlerSyncTest {
             npcService,
             tierRecalculationService,
             resourcePatternResolver,
-            new ObjectMapper());
+            new ObjectMapper(),
+            SeedFingerprintManifest.of(Map.of()));
 
     skipSync.sync();
 
@@ -230,7 +235,8 @@ class WrestlerSyncTest {
             npcService,
             tierRecalculationService,
             resourcePatternResolver,
-            new ObjectMapper());
+            new ObjectMapper(),
+            SeedFingerprintManifest.of(Map.of()));
 
     skipSync.sync();
 
@@ -349,7 +355,8 @@ class WrestlerSyncTest {
         npcService,
         tierRecalculationService,
         resourcePatternResolver,
-        new ObjectMapper());
+        new ObjectMapper(),
+        SeedFingerprintManifest.of(Map.of()));
   }
 
   private void stubOneExisting(Wrestler existing) {
@@ -512,5 +519,44 @@ class WrestlerSyncTest {
         "a wrestler the user invented",
         custom.getDescription(),
         "user-created wrestler must never be touched by verify mode");
+  }
+
+  // ── Fast path (manifest matches the DB exactly) ─────────────────────────────
+
+  @Test
+  void fastPath_skipsLoadAndReconcileButStillSyncsAbilities() throws Exception {
+    // The manifest carries exactly the fingerprint the DB row stores (and its fields still hash
+    // to it): the wrestler fast path must skip loadWrestlers(false) + reconcile, but ability
+    // sync is gameplay-adjacent and must still run.
+    WrestlerImportDTO dto = rvdSeedDto();
+    Wrestler existing = seededRvd(dto);
+    existing.setSeedFingerprint(VERIFY_SUPPORT.fingerprint(WrestlerSeedFields.canonical(existing)));
+    stubOneExisting(existing);
+
+    WrestlerSync fastSync =
+        new WrestlerSync(
+            "verify",
+            wrestlerRepository,
+            wrestlerAbilityRepository,
+            wrestlerService,
+            universeRepository,
+            wrestlerStateRepository,
+            npcService,
+            tierRecalculationService,
+            resourcePatternResolver,
+            new ObjectMapper(),
+            SeedFingerprintManifest.of(
+                Map.of("wrestler", Map.of("Rob Van Dam", existing.getSeedFingerprint()))));
+
+    fastSync.sync();
+
+    // loadWrestlers(false) + reconcileVerifiedWrestlers are both skipped: no wrestler row is
+    // ever re-saved and no state row is touched.
+    verify(wrestlerRepository, never()).saveAll(any());
+    verify(wrestlerStateRepository, never()).save(any());
+    // Ability sync still ran for the existing wrestler.
+    verify(wrestlerAbilityRepository, atLeastOnce()).save(any());
+    // Cache eviction matches what topUpMissingWrestlers does today.
+    verify(wrestlerService).evictWrestlerCache();
   }
 }

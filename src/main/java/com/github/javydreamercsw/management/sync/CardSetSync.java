@@ -22,7 +22,9 @@ import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.service.card.CardSetService;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +39,7 @@ import org.springframework.stereotype.Component;
 public class CardSetSync implements DataSyncContributor {
 
   private final SeedSyncSupport syncSupport;
+  private final SeedFingerprintManifest seedManifest;
   private final CardSetService cardSetService;
   private final ObjectMapper objectMapper;
 
@@ -44,8 +47,10 @@ public class CardSetSync implements DataSyncContributor {
   public CardSetSync(
       @Value("${data.initializer.skip-if-not-empty:false}") final String skipIfNotEmptyRaw,
       final CardSetService cardSetService,
-      final ObjectMapper objectMapper) {
+      final ObjectMapper objectMapper,
+      final SeedFingerprintManifest seedManifest) {
     this.syncSupport = new SeedSyncSupport(skipIfNotEmptyRaw);
+    this.seedManifest = seedManifest;
     this.cardSetService = cardSetService;
     this.objectMapper = objectMapper;
   }
@@ -55,6 +60,9 @@ public class CardSetSync implements DataSyncContributor {
     if (syncSupport.mode() != SeedSyncMode.FULL && cardSetService.count() > 0) {
       topUpMissingCardSets();
       if (syncSupport.isVerify()) {
+        if (fastPathApplies()) {
+          return;
+        }
         reconcileVerifiedCardSets();
       }
       return;
@@ -117,6 +125,26 @@ public class CardSetSync implements DataSyncContributor {
       log.error("Error loading card sets from file", e);
       return List.of();
     }
+  }
+
+  /**
+   * Verify-mode fast path: when every manifest entry matches a DB row on both the stored and the
+   * recomputed fingerprint, the database is provably in its seed state and reconcile can be skipped
+   * entirely.
+   */
+  private boolean fastPathApplies() {
+    Map<String, String> stored = new HashMap<>();
+    Map<String, String> recomputed = new HashMap<>();
+    for (CardSet c : cardSetService.findAll()) {
+      stored.put(c.getCode(), c.getSeedFingerprint());
+      recomputed.put(c.getCode(), syncSupport.fingerprint(c.getName()));
+    }
+    boolean applies =
+        SeedFastPathChecker.fastPathApplies(seedManifest, "card_set", stored, recomputed);
+    if (applies) {
+      log.info("Seed manifest: card_set domain matches manifest; reconcile skipped");
+    }
+    return applies;
   }
 
   /**
