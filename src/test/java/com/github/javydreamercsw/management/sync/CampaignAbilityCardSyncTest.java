@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -282,8 +283,22 @@ class CampaignAbilityCardSyncTest {
 
     fastSync.sync();
 
-    // The stale description proves reconcile never ran (it would have adopted the seed's
-    // "Gain Initiative.").
+    // The gate must fire: the clean row's seed-owned fields deliberately differ from the current
+    // seed (the description moved on after seeding), so a deleted gate would make reconcile
+    // rewrite it through createOrUpdateCard("Poke Eye", ...). Verify that reconcile-only write
+    // never happens.
+    verify(campaignAbilityCardService, never())
+        .createOrUpdateCard(
+            eq("Poke Eye"),
+            any(),
+            any(),
+            anyInt(),
+            ArgumentMatchers.anyBoolean(),
+            any(),
+            any(),
+            any(),
+            ArgumentMatchers.anyBoolean(),
+            any());
     assertEquals(
         "stale description",
         clean.getDescription(),

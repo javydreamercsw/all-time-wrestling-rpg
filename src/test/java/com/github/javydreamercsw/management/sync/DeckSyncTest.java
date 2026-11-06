@@ -362,8 +362,9 @@ class DeckSyncTest {
     // to it); RVD has no deck yet, so top-up must still create his.
     Deck deck = seededEddieDeck(set, card1);
     deck.setSeedFingerprint(deckCompositionFingerprint(deck));
-    // findAll() is the fast-path batch loader; findByWrestlerWithCards feeds top-up/reconcile.
-    when(deckService.findAll()).thenReturn(List.of(deck));
+    // findAllWithCards() is the join-fetched fast-path batch loader; findByWrestlerWithCards
+    // feeds top-up/reconcile.
+    when(deckService.findAllWithCards()).thenReturn(List.of(deck));
     when(deckService.findByWrestlerWithCards(eddie)).thenReturn(List.of(deck));
     when(deckService.findByWrestlerWithCards(rvd)).thenReturn(List.of());
     Deck rvdNewDeck = new Deck();

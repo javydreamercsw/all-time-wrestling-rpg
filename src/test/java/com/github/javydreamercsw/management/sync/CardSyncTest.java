@@ -206,10 +206,13 @@ class CardSyncTest {
     when(cardService.count()).thenReturn(1L);
     when(cardSetService.findBySetCode("ATW")).thenReturn(Optional.of(atw));
 
-    // ATW #5 "Forearm" stamped exactly as the manifest says; its fields still hash to the stamp.
+    // ATW #5 stamped exactly as the manifest says — but under a name the current seed no longer
+    // ships ("ATW-era Forearm"): the seed moved on after seeding. Stored and recomputed both
+    // equal the manifest (the row is internally consistent), so the gate must fire; a deleted
+    // gate would make reconcile rewrite the name to the seed's "Forearm" and save it.
     Card clean = new Card();
     clean.setId(1L);
-    clean.setName("Forearm");
+    clean.setName("ATW-era Forearm");
     clean.setNumber(5);
     clean.setSet(atw);
     clean.setDamage(1);
@@ -223,7 +226,8 @@ class CardSyncTest {
     clean.setRecover(false);
     clean.setPin(false);
     clean.setSeedFingerprint(
-        support.fingerprint("Forearm", 1, 1, 2, 1, "Strike", false, false, false, false, false));
+        support.fingerprint(
+            "ATW-era Forearm", 1, 1, 2, 1, "Strike", false, false, false, false, false));
     when(cardService.findAll()).thenReturn(List.of(clean));
 
     CardSync fastSync =
@@ -237,11 +241,12 @@ class CardSyncTest {
                 Map.of("card", Map.of("ATW#5", clean.getSeedFingerprint()))));
     fastSync.sync();
 
-    // Top-up may save genuinely missing cards, but reconcile must never touch the clean card:
-    // its name proves reconcile skipped (the seed agrees anyway here; the never() check on
-    // saveAll of the clean card is covered by the manifest being satisfied).
+    // The gate must fire: reconcile (which would applyDto the seed name and saveAll the row)
+    // is skipped entirely.
     verify(cardService, never()).saveAll(argThat(list -> list != null && list.contains(clean)));
     assertEquals(
-        "Forearm", clean.getName(), "fast path must skip reconcile; the row is never touched");
+        "ATW-era Forearm",
+        clean.getName(),
+        "fast path must skip reconcile; the seed-era name survives untouched");
   }
 }

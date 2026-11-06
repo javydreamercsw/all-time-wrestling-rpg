@@ -268,13 +268,15 @@ public class DeckSync implements DataSyncContributor {
   /**
    * Verify-mode fast path: when every manifest entry matches a DB row on both the stored and the
    * recomputed fingerprint, the database is provably in its seed state and reconcile can be skipped
-   * entirely. Decks load through {@code findByWrestlerWithCards} (the composition needs the cards);
-   * the DB key is the owning wrestler's name, matching the reconcile's lookup.
+   * entirely. Decks load through the join-fetched {@code findAllWithCards()} (the recomputed
+   * fingerprint reads every {@link DeckCard}, and {@link Deck#cards} is LAZY — a plain {@code
+   * findAll()} would hand back detached rows and crash on first access); the DB key is the owning
+   * wrestler's name, matching the reconcile's lookup.
    */
   private boolean fastPathApplies() {
     Map<String, String> stored = new HashMap<>();
     Map<String, String> recomputed = new HashMap<>();
-    for (Deck deck : deckService.findAll()) {
+    for (Deck deck : deckService.findAllWithCards()) {
       if (deck.getWrestler() == null) {
         continue;
       }

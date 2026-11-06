@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -228,8 +229,13 @@ class RingsideActionSyncTest {
 
     fastSync.sync();
 
-    // The stale description proves reconcile never ran (it would have adopted the seed's
-    // motivational-shout copy).
+    // The gate must fire: the row's seed-owned fields deliberately differ from the current seed
+    // (impact/risk moved on after seeding), so a deleted gate would make reconcile rewrite it
+    // through createOrUpdateAction("Encouraging Call", ...) and persist via saveAction. Top-up
+    // never calls the service for existing names, so that call is reconcile-only.
+    verify(ringsideActionDataService, never())
+        .createOrUpdateAction(
+            eq("Encouraging Call"), anyString(), any(), anyInt(), anyInt(), any(), any());
     assertEquals(
         "stale description",
         clean.getDescription(),

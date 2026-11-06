@@ -353,16 +353,26 @@ class AchievementSyncTest {
                 Map.of("achievement", Map.of("FIRST_WRESTLER", clean.getSeedFingerprint()))));
     when(achievementRepository.count()).thenReturn(1L);
     when(achievementRepository.findAll()).thenReturn(List.of(clean));
+    // Reconcile resolves rows through findByKey; stub it so a deleted gate would produce an
+    // observable reconcile write (the clean row's seed-owned fields differ from the current seed,
+    // yet its stored fingerprint matches the manifest — the seed moved on after seeding).
+    when(achievementRepository.findByKey("FIRST_WRESTLER")).thenReturn(Optional.of(clean));
+    when(achievementRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
 
     fastSync.sync();
 
-    // Top-up runs (never re-saves existing rows) but reconcile must be skipped: the stale
-    // description proves reconcile never ran on the clean-stamped row.
+    // The gate must fire: reconcile (which would copyContentFrom the seed and re-save the row
+    // because the seed description changed since seeding) is skipped entirely. Top-up still
+    // saves genuinely missing entries, so assert on the clean row itself: only reconcile would
+    // ever put it in a save batch (top-up never re-saves existing rows).
+    ArgumentCaptor<List<Achievement>> captor = ArgumentCaptor.forClass(List.class);
+    Mockito.verify(achievementRepository, Mockito.atLeastOnce()).saveAll(captor.capture());
+    Assertions.assertTrue(
+        captor.getAllValues().stream().flatMap(List::stream).noneMatch(a -> a == clean),
+        "reconcile must be skipped: the manifest-matched row is never re-saved");
     Assertions.assertEquals(
         "stale description from an older release",
         clean.getDescription(),
         "fast path must skip reconcile; the stale seed-owned field survives");
-    Assertions.assertNotEquals(
-        seed.getDescription(), clean.getDescription(), "reconcile must not adopt the seed value");
   }
 }
