@@ -2057,5 +2057,38 @@
         </plugins>
       </build>
     </profile>
+    <!--
+      generate-seed-manifest: runs the seed-fingerprint manifest generator on the test
+      classpath. Invoked by scripts/generate-seed-fingerprints.sh; do not bind to a lifecycle
+      phase — regeneration is an explicit, manual act. The script stages the manifest in
+      target/ and moves it to src/main/resources/seed-fingerprints.json after a clean exit.
+    -->
+    <profile>
+      <id>generate-seed-manifest</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <version>3.6.4</version>
+            <executions>
+              <execution>
+                <id>generate-seed-fingerprints</id>
+                <goals>
+                  <goal>java</goal>
+                </goals>
+                <configuration>
+                  <mainClass>com.github.javydreamercsw.management.sync.GenerateSeedFingerprintManifest</mainClass>
+                  <classpathScope>test</classpathScope>
+                  <arguments>
+                    <argument>${project.build.directory}/seed-fingerprints.json</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 </project>
