@@ -615,7 +615,7 @@ class WrestlerSyncTest {
         "hand edit must survive the fallback reconcile");
     // The edited row itself is never re-saved: top-up skips existing rows and reconcile's
     // edited branch preserves. (A blanket never().saveAll(any()) would be wrong here — top-up
-    // legitimately inserts the ~175 seed wrestlers the mock DB lacks.)
+    // legitimately inserts the 35 seed wrestlers the mock DB lacks.)
     @SuppressWarnings("unchecked")
     ArgumentCaptor<List<Wrestler>> captor = ArgumentCaptor.forClass(List.class);
     verify(wrestlerRepository, atLeastOnce()).saveAll(captor.capture());
@@ -662,7 +662,7 @@ class WrestlerSyncTest {
 
     // Fast path fired: reconcile never ran (the user-invented row's description survives, though
     // reconcile would also preserve it — the discriminating observable is the missing top-up:
-    // with ~175 seed wrestlers absent from the mock DB, top-up would insert them all).
+    // with 35 seed wrestlers absent from the mock DB, top-up would insert them all).
     verify(wrestlerRepository, never()).saveAll(any());
     verify(wrestlerStateRepository, never()).save(any());
     assertEquals(
