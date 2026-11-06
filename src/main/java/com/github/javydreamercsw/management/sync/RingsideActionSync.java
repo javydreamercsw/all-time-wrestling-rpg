@@ -24,7 +24,6 @@ import com.github.javydreamercsw.management.dto.RingsideActionTypeDTO;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionDataService;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -42,7 +41,6 @@ import org.springframework.stereotype.Component;
 public class RingsideActionSync implements DataSyncContributor {
 
   private final SeedSyncSupport syncSupport;
-  private final SeedFingerprintManifest seedManifest;
   private final RingsideActionDataService ringsideActionDataService;
   private final ObjectMapper objectMapper;
 
@@ -50,10 +48,8 @@ public class RingsideActionSync implements DataSyncContributor {
   public RingsideActionSync(
       @Value("${data.initializer.skip-if-not-empty:false}") final String skipIfNotEmptyRaw,
       final RingsideActionDataService ringsideActionDataService,
-      final ObjectMapper objectMapper,
-      final SeedFingerprintManifest seedManifest) {
+      final ObjectMapper objectMapper) {
     this.syncSupport = new SeedSyncSupport(skipIfNotEmptyRaw);
-    this.seedManifest = seedManifest;
     this.ringsideActionDataService = ringsideActionDataService;
     this.objectMapper = objectMapper;
   }
@@ -65,9 +61,6 @@ public class RingsideActionSync implements DataSyncContributor {
     if (syncSupport.mode() != SeedSyncMode.FULL && ringsideActionDataService.countActions() > 0) {
       topUpMissingActions();
       if (syncSupport.isVerify()) {
-        if (fastPathApplies()) {
-          return;
-        }
         reconcileVerifiedActions();
       }
       return;
@@ -175,7 +168,7 @@ public class RingsideActionSync implements DataSyncContributor {
    * description, impact, risk, alignment, expansionCode. Mirrors the write set of {@code
    * createOrUpdateAction} minus the name key.
    */
-  String actionFingerprint(RingsideAction action) {
+  private String actionFingerprint(RingsideAction action) {
     return syncSupport.fingerprint(
         action.getType() == null ? null : action.getType().getName(),
         action.getDescription(),
@@ -183,26 +176,6 @@ public class RingsideActionSync implements DataSyncContributor {
         action.getRisk(),
         action.getAlignment() == null ? null : action.getAlignment().name(),
         action.getExpansionCode());
-  }
-
-  /**
-   * Verify-mode fast path: when every manifest entry matches a DB row on both the stored and the
-   * recomputed fingerprint, the database is provably in its seed state and reconcile can be skipped
-   * entirely.
-   */
-  private boolean fastPathApplies() {
-    Map<String, String> stored = new HashMap<>();
-    Map<String, String> recomputed = new HashMap<>();
-    for (RingsideAction a : ringsideActionDataService.findAllActionsUnfiltered()) {
-      stored.put(a.getName(), a.getSeedFingerprint());
-      recomputed.put(a.getName(), actionFingerprint(a));
-    }
-    boolean applies =
-        SeedFastPathChecker.fastPathApplies(seedManifest, "ringside_action", stored, recomputed);
-    if (applies) {
-      log.info("Seed manifest: ringside_action domain matches manifest; reconcile skipped");
-    }
-    return applies;
   }
 
   /**

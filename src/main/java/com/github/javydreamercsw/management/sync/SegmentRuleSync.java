@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +44,6 @@ import org.springframework.stereotype.Component;
 public class SegmentRuleSync implements DataSyncContributor {
 
   private final SeedSyncSupport syncSupport;
-  private final SeedFingerprintManifest seedManifest;
   private final SegmentRuleService segmentRuleService;
   private final ObjectMapper objectMapper;
 
@@ -53,10 +51,8 @@ public class SegmentRuleSync implements DataSyncContributor {
   public SegmentRuleSync(
       @Value("${data.initializer.skip-if-not-empty:false}") final String skipIfNotEmptyRaw,
       final SegmentRuleService segmentRuleService,
-      final ObjectMapper objectMapper,
-      final SeedFingerprintManifest seedManifest) {
+      final ObjectMapper objectMapper) {
     this.syncSupport = new SeedSyncSupport(skipIfNotEmptyRaw);
-    this.seedManifest = seedManifest;
     this.segmentRuleService = segmentRuleService;
     this.objectMapper = objectMapper;
   }
@@ -65,12 +61,6 @@ public class SegmentRuleSync implements DataSyncContributor {
   public void sync() {
     ClassPathResource resource = new ClassPathResource("segment_rules.json");
     if (resource.exists()) {
-      // The fast-path check runs BEFORE the parse: when the DB is provably in its seed state,
-      // reading segment_rules.json is wasted work. The exists-check stays above for parity with
-      // the resource-exists guard.
-      if (syncSupport.isVerify() && fastPathApplies()) {
-        return;
-      }
       log.debug("Loading segment rules from file: {}", resource.getPath());
       try (var is = resource.getInputStream()) {
         List<SegmentRuleDTO> dtos = objectMapper.readValue(is, new TypeReference<>() {});
@@ -111,7 +101,7 @@ public class SegmentRuleSync implements DataSyncContributor {
    * Canonical seed-owned field values for a segment rule row, in fingerprint order — the {@code
    * createOrUpdateRule} write set. {@code active} is admin-managed and excluded.
    */
-  String ruleFingerprint(SegmentRule sr) {
+  private String ruleFingerprint(SegmentRule sr) {
     return syncSupport.fingerprint(
         sr.getDescription(),
         sr.getRequiresHighHeat(),
@@ -120,26 +110,6 @@ public class SegmentRuleSync implements DataSyncContributor {
         sr.getBumpAddition() == null ? null : sr.getBumpAddition().name(),
         sr.getExpansionCode(),
         sr.getGuideHash());
-  }
-
-  /**
-   * Verify-mode fast path: when every manifest entry matches a DB row on both the stored and the
-   * recomputed fingerprint, the database is provably in its seed state and reconcile can be skipped
-   * entirely.
-   */
-  private boolean fastPathApplies() {
-    Map<String, String> stored = new HashMap<>();
-    Map<String, String> recomputed = new HashMap<>();
-    for (SegmentRule sr : segmentRuleService.findAllForAdmin()) {
-      stored.put(sr.getName(), sr.getSeedFingerprint());
-      recomputed.put(sr.getName(), ruleFingerprint(sr));
-    }
-    boolean applies =
-        SeedFastPathChecker.fastPathApplies(seedManifest, "segment_rule", stored, recomputed);
-    if (applies) {
-      log.info("Seed manifest: segment_rule domain matches manifest; reconcile skipped");
-    }
-    return applies;
   }
 
   /** Re-stamps a saved rule from the DTO's guide hash (the service leaves the stamp unset). */

@@ -28,7 +28,6 @@ import com.github.javydreamercsw.base.domain.account.AchievementRepository;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,12 +52,7 @@ class AchievementSyncTest {
   void setUp() {
     // Constructed directly: @InjectMocks cannot resolve the @Value boolean
     // constructor parameter against mocks.
-    achievementSync =
-        new AchievementSync(
-            "false",
-            achievementRepository,
-            new ObjectMapper(),
-            SeedFingerprintManifest.of(Map.of()));
+    achievementSync = new AchievementSync("false", achievementRepository, new ObjectMapper());
   }
 
   @Test
@@ -107,12 +101,7 @@ class AchievementSyncTest {
 
   @Test
   void sync_skipsWhenNotEmptyAndSkipIfNotEmptyEnabled() {
-    AchievementSync strict =
-        new AchievementSync(
-            "true",
-            achievementRepository,
-            new ObjectMapper(),
-            SeedFingerprintManifest.of(Map.of()));
+    AchievementSync strict = new AchievementSync("true", achievementRepository, new ObjectMapper());
     when(achievementRepository.count()).thenReturn(5L);
     // Top-up still runs under the gate; every seeded key already exists, so nothing inserts.
     when(achievementRepository.findAll())
@@ -147,11 +136,7 @@ class AchievementSyncTest {
     // achievements.json missing from the classpath: log a warning and carry on
     // to the challenge scan instead of throwing.
     AchievementSync missingFile =
-        new AchievementSync(
-            "false",
-            achievementRepository,
-            new ObjectMapper(),
-            SeedFingerprintManifest.of(Map.of())) {
+        new AchievementSync("false", achievementRepository, new ObjectMapper()) {
           // syncClasspathFile logs and returns when the resource doesn't exist;
           // exercising that path with a fresh instance still runs the challenge scan.
         };
@@ -197,9 +182,7 @@ class AchievementSyncTest {
             throw new IOException("boom");
           }
         };
-    AchievementSync broken =
-        new AchievementSync(
-            "false", achievementRepository, brokenMapper, SeedFingerprintManifest.of(Map.of()));
+    AchievementSync broken = new AchievementSync("false", achievementRepository, brokenMapper);
     when(achievementRepository.count()).thenReturn(0L);
     when(achievementRepository.findByKey(anyString())).thenReturn(Optional.empty());
     when(achievementRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -215,11 +198,7 @@ class AchievementSyncTest {
     // A resolver explosion inside the challenge scan is caught and logged;
     // the catalog file was already synced before the scan runs.
     AchievementSync scanning =
-        new AchievementSync(
-            "false",
-            achievementRepository,
-            new ObjectMapper(),
-            SeedFingerprintManifest.of(Map.of()));
+        new AchievementSync("false", achievementRepository, new ObjectMapper());
     when(achievementRepository.count()).thenReturn(0L);
     when(achievementRepository.findByKey(anyString())).thenReturn(Optional.empty());
     when(achievementRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -256,11 +235,7 @@ class AchievementSyncTest {
   @Test
   void verifyMode_reconcilesCleanRowAndPreservesEditedRow() throws IOException {
     AchievementSync verifySync =
-        new AchievementSync(
-            "verify",
-            achievementRepository,
-            new ObjectMapper(),
-            SeedFingerprintManifest.of(Map.of()));
+        new AchievementSync("verify", achievementRepository, new ObjectMapper());
     when(achievementRepository.count()).thenReturn(2L);
     when(achievementRepository.findAll()).thenReturn(List.of());
     when(achievementRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -305,11 +280,7 @@ class AchievementSyncTest {
   @Test
   void verifyMode_adoptsLegacyRowWhenFieldsMatchSeed() throws IOException {
     AchievementSync verifySync =
-        new AchievementSync(
-            "verify",
-            achievementRepository,
-            new ObjectMapper(),
-            SeedFingerprintManifest.of(Map.of()));
+        new AchievementSync("verify", achievementRepository, new ObjectMapper());
     when(achievementRepository.count()).thenReturn(1L);
     when(achievementRepository.findAll()).thenReturn(List.of());
     when(achievementRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -330,49 +301,5 @@ class AchievementSyncTest {
         achievementFingerprint(legacy),
         legacy.getSeedFingerprint(),
         "legacy achievement matching the seed must be adopted (fingerprint stamped)");
-  }
-
-  @Test
-  void fastPath_skipsReconcileWhenManifestMatchesStoredRows() throws IOException {
-    Achievement seed = seedFirstWrestler();
-    Achievement clean = new Achievement();
-    clean.setKey("FIRST_WRESTLER");
-    clean.setName(seed.getName());
-    clean.setDescription("stale description from an older release");
-    clean.setXpValue(seed.getXpValue());
-    clean.setCategory(seed.getCategory());
-    clean.setUnlockCondition(seed.getUnlockCondition());
-    clean.setSeedFingerprint(achievementFingerprint(clean));
-
-    AchievementSync fastSync =
-        new AchievementSync(
-            "verify",
-            achievementRepository,
-            new ObjectMapper(),
-            SeedFingerprintManifest.of(
-                Map.of("achievement", Map.of("FIRST_WRESTLER", clean.getSeedFingerprint()))));
-    when(achievementRepository.count()).thenReturn(1L);
-    when(achievementRepository.findAll()).thenReturn(List.of(clean));
-    // Reconcile resolves rows through findByKey; stub it so a deleted gate would produce an
-    // observable reconcile write (the clean row's seed-owned fields differ from the current seed,
-    // yet its stored fingerprint matches the manifest — the seed moved on after seeding).
-    when(achievementRepository.findByKey("FIRST_WRESTLER")).thenReturn(Optional.of(clean));
-    when(achievementRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
-
-    fastSync.sync();
-
-    // The gate must fire: reconcile (which would copyContentFrom the seed and re-save the row
-    // because the seed description changed since seeding) is skipped entirely. Top-up still
-    // saves genuinely missing entries, so assert on the clean row itself: only reconcile would
-    // ever put it in a save batch (top-up never re-saves existing rows).
-    ArgumentCaptor<List<Achievement>> captor = ArgumentCaptor.forClass(List.class);
-    Mockito.verify(achievementRepository, Mockito.atLeastOnce()).saveAll(captor.capture());
-    Assertions.assertTrue(
-        captor.getAllValues().stream().flatMap(List::stream).noneMatch(a -> a == clean),
-        "reconcile must be skipped: the manifest-matched row is never re-saved");
-    Assertions.assertEquals(
-        "stale description from an older release",
-        clean.getDescription(),
-        "fast path must skip reconcile; the stale seed-owned field survives");
   }
 }

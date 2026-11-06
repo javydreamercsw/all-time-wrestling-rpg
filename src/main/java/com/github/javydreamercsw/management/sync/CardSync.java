@@ -46,7 +46,6 @@ import org.springframework.stereotype.Component;
 public class CardSync implements DataSyncContributor {
 
   private final SeedSyncSupport syncSupport;
-  private final SeedFingerprintManifest seedManifest;
   private final CardService cardService;
   private final CardSetService cardSetService;
   private final ResourcePatternResolver resourcePatternResolver;
@@ -58,10 +57,8 @@ public class CardSync implements DataSyncContributor {
       final CardService cardService,
       final CardSetService cardSetService,
       final ResourcePatternResolver resourcePatternResolver,
-      final ObjectMapper objectMapper,
-      final SeedFingerprintManifest seedManifest) {
+      final ObjectMapper objectMapper) {
     this.syncSupport = new SeedSyncSupport(skipIfNotEmptyRaw);
-    this.seedManifest = seedManifest;
     this.cardService = cardService;
     this.cardSetService = cardSetService;
     this.resourcePatternResolver = resourcePatternResolver;
@@ -73,9 +70,6 @@ public class CardSync implements DataSyncContributor {
     if (syncSupport.mode() != SeedSyncMode.FULL && cardService.count() > 0) {
       topUpMissingCards();
       if (syncSupport.isVerify()) {
-        if (fastPathApplies()) {
-          return;
-        }
         reconcileVerifiedCards();
       }
       return;
@@ -193,7 +187,7 @@ public class CardSync implements DataSyncContributor {
   }
 
   /** Fingerprint over a card row's current seed-owned fields, in the same canonical order. */
-  String cardFingerprint(Card card) {
+  private String cardFingerprint(Card card) {
     return syncSupport.fingerprint(
         card.getName(),
         card.getDamage(),
@@ -206,26 +200,6 @@ public class CardSync implements DataSyncContributor {
         card.getTaunt(),
         card.getRecover(),
         card.getPin());
-  }
-
-  /**
-   * Verify-mode fast path: when every manifest entry matches a DB row on both the stored and the
-   * recomputed fingerprint, the database is provably in its seed state and reconcile can be skipped
-   * entirely.
-   */
-  private boolean fastPathApplies() {
-    Map<String, String> stored = new HashMap<>();
-    Map<String, String> recomputed = new HashMap<>();
-    for (Card c : cardService.findAll()) {
-      String key = c.getSet().getCode() + "#" + c.getNumber();
-      stored.put(key, c.getSeedFingerprint());
-      recomputed.put(key, cardFingerprint(c));
-    }
-    boolean applies = SeedFastPathChecker.fastPathApplies(seedManifest, "card", stored, recomputed);
-    if (applies) {
-      log.info("Seed manifest: card domain matches manifest; reconcile skipped");
-    }
-    return applies;
   }
 
   private static void applyDto(@NonNull Card card, @NonNull CardDTO dto, @NonNull CardSet set) {
