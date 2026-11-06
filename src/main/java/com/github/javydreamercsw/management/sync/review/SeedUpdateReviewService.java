@@ -20,6 +20,7 @@ import com.github.javydreamercsw.management.domain.seedreview.SeedUpdateDecision
 import com.github.javydreamercsw.management.domain.seedreview.SeedUpdateDecisionRepository;
 import com.github.javydreamercsw.management.migration.DataMigrationHistory;
 import com.github.javydreamercsw.management.migration.DataMigrationHistoryRepository;
+import com.github.javydreamercsw.management.migration.DataMigrationRunner;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,9 +68,6 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 public class SeedUpdateReviewService {
-
-  /** Version recorded when {@link BuildProperties} is unavailable, mirroring the runner. */
-  static final String UNKNOWN_VERSION = "unknown";
 
   private final SeedUpdateDecisionRepository decisionRepository;
   private final DataMigrationHistoryRepository historyRepository;
@@ -217,13 +215,17 @@ public class SeedUpdateReviewService {
   /**
    * Refreshes the incoming-seed snapshot on an existing PENDING decision: {@code new_value} and
    * {@code new_fingerprint} move to the latest detected values (so Apply writes current-release
-   * values); {@code current_value} and the original detection metadata stay as first captured.
+   * values); {@code current_value} and {@code entity_display_name} deliberately stay as first
+   * captured — they are first-detection audit records (the review UI shows the state at the moment
+   * the collision was found), and the Apply write path reads live entity state, so re-park
+   * staleness there never affects what gets written.
    */
   private void refreshIncomingSnapshot(
       SeedUpdateDecision existing, String newValue, String newFingerprint) {
     existing.setNewValue(newValue);
     existing.setNewFingerprint(newFingerprint);
     decisionRepository.save(existing);
+    gate.refresh(); // a re-park means an undecided decision exists — the gate must end up raised
     log.debug(
         "Refreshed incoming snapshot on existing PENDING decision {}.{} [{}]",
         existing.getDomainKey(),
@@ -236,6 +238,8 @@ public class SeedUpdateReviewService {
    *     DataMigrationRunner.resolveAppVersion()} reads
    */
   private String resolveAppVersion() {
-    return buildProperties.map(BuildProperties::getVersion).orElse(UNKNOWN_VERSION);
+    return buildProperties
+        .map(BuildProperties::getVersion)
+        .orElse(DataMigrationRunner.UNKNOWN_VERSION);
   }
 }

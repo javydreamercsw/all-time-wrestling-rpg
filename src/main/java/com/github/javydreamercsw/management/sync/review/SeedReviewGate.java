@@ -40,6 +40,11 @@ public class SeedReviewGate {
 
   public SeedReviewGate(SeedUpdateDecisionRepository decisionRepository) {
     this.decisionRepository = decisionRepository;
+    // Boot initialization: the snapshot must be correct from the first request after ANY boot —
+    // including a restart with undecided decisions left over from a previous boot. Nothing else
+    // is guaranteed to call refresh() before the interceptors read the gate (park* only fires
+    // when detection actually parks something), so the bean seeds its own snapshot on creation.
+    refresh();
   }
 
   /**

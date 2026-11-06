@@ -58,6 +58,9 @@ class SeedUpdateReviewServiceTest extends AbstractJpaTest {
 
   private BuildProperties buildProperties;
 
+  /** Gate of the most recently created service, for cross-path state assertions. */
+  private SeedReviewGate gate;
+
   @BeforeEach
   void resetReviewState() {
     // Deterministic starting point: no recorded migrations (fresh-install shape) and no parked
@@ -67,24 +70,21 @@ class SeedUpdateReviewServiceTest extends AbstractJpaTest {
     decisionRepository.deleteAllInBatch();
     historyRepository.deleteAllInBatch();
     entityManager.clear();
+    gate = null;
     buildProperties = mock(BuildProperties.class);
     when(buildProperties.getVersion()).thenReturn(CURRENT_VERSION);
   }
 
   private SeedUpdateReviewService service() {
+    gate = new SeedReviewGate(decisionRepository);
     return new SeedUpdateReviewService(
-        decisionRepository,
-        historyRepository,
-        Optional.of(buildProperties),
-        new SeedReviewGate(decisionRepository));
+        decisionRepository, historyRepository, Optional.of(buildProperties), gate);
   }
 
   private SeedUpdateReviewService serviceWithoutBuildInfo() {
+    gate = new SeedReviewGate(decisionRepository);
     return new SeedUpdateReviewService(
-        decisionRepository,
-        historyRepository,
-        Optional.empty(),
-        new SeedReviewGate(decisionRepository));
+        decisionRepository, historyRepository, Optional.empty(), gate);
   }
 
   /** Simulates one row recorded by a previous boot's data-migration run. */
@@ -226,12 +226,70 @@ class SeedUpdateReviewServiceTest extends AbstractJpaTest {
         "wrestler", "wrestler:bret-hart", "Bret Hart", "catchphrase", "mine", "new", "fp-1");
     service.parkFieldConflict("npc", "npc:samael", "Samael", "motive", "mine", "new", "fp-2");
     service.parkRemoval("deck", "deck:legend", "Legend Deck", "fp-3");
-    SeedUpdateDecision applied = decisionRepository.findAll().get(2);
-    applied.setStatus(SeedUpdateDecision.STATUS_APPLIED_REMOVE);
-    decisionRepository.save(applied);
+    // Flip the removal row to a terminal status via its known coordinate, not an index into
+    // findAll() (which would rely on IDENTITY insert order).
+    SeedUpdateDecision removal =
+        decisionRepository
+            .findByDomainKeyAndEntityKeyAndFieldNameAndStatus(
+                "deck", "deck:legend", null, SeedUpdateDecision.STATUS_PENDING)
+            .orElseThrow();
+    removal.setStatus(SeedUpdateDecision.STATUS_APPLIED_REMOVE);
+    decisionRepository.save(removal);
 
     assertEquals(2, decisionRepository.countByStatus(SeedUpdateDecision.STATUS_PENDING));
     assertEquals(2, service.pendingCount());
+  }
+
+  @Test
+  void gateStartsUpOnBootWithPendingDecisions() {
+    // Simulates a restart with undecided decisions left over from a previous boot: the rows are
+    // already in the database when the gate bean is created. The gate must be correct from the
+    // first request after any boot — it seeds its own snapshot on construction; nothing else is
+    // guaranteed to call refresh() before the interceptors read it.
+    service()
+        .parkFieldConflict(
+            "wrestler", "wrestler:bret-hart", "Bret Hart", "catchphrase", "mine", "new", "fp-1");
+    SeedUpdateReviewService freshBoot = service();
+
+    assertTrue(freshBoot.gate().isUp());
+    assertEquals(1, freshBoot.gate().pendingCount());
+  }
+
+  @Test
+  void duplicateParkRefreshAlsoRaisesGate() {
+    // Gate created while no PENDING row exists: snapshot 0, gate down.
+    SeedUpdateReviewService service = service();
+    assertFalse(gate.isUp());
+
+    // A PENDING row appears in the database without the service's insert path (e.g. left by a
+    // previous boot). The gate's snapshot is now stale: still down.
+    SeedUpdateDecision external = new SeedUpdateDecision();
+    external.setDomainKey("wrestler");
+    external.setEntityKey("wrestler:bret-hart");
+    external.setEntityDisplayName("Bret Hart");
+    external.setFieldName("catchphrase");
+    external.setDecisionType(SeedUpdateDecision.DECISION_TYPE_FIELD_CONFLICT);
+    external.setCurrentValue("mine");
+    external.setNewValue("new");
+    external.setNewFingerprint("fp-external");
+    external.setStatus(SeedUpdateDecision.STATUS_PENDING);
+    external.setAppVersion(CURRENT_VERSION);
+    decisionRepository.save(external);
+    assertFalse(gate.isUp());
+
+    // Re-parking the same coordinate goes through the refresh path (row exists, no insert) —
+    // and that path must raise the gate too: an undecided decision exists.
+    service.parkFieldConflict(
+        "wrestler",
+        "wrestler:bret-hart",
+        "Bret Hart",
+        "catchphrase",
+        "The Excellence of Execution",
+        "The Best There Is, The Best There Was",
+        "fp-2");
+
+    assertTrue(gate.isUp());
+    assertEquals(1, gate.pendingCount());
   }
 
   @Test
@@ -253,7 +311,11 @@ class SeedUpdateReviewServiceTest extends AbstractJpaTest {
     assertTrue(service.gate().isUp());
 
     // An administrator applies the decision (Task 9's flow): the pending row becomes terminal.
-    SeedUpdateDecision row = decisionRepository.findAll().get(0);
+    SeedUpdateDecision row =
+        decisionRepository
+            .findByDomainKeyAndEntityKeyAndFieldNameAndStatus(
+                "npc", "npc:samael", null, SeedUpdateDecision.STATUS_PENDING)
+            .orElseThrow();
     row.setStatus(SeedUpdateDecision.STATUS_APPLIED_KEEP_AS_CUSTOM);
     decisionRepository.save(row);
 
