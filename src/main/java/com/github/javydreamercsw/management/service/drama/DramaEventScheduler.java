@@ -22,6 +22,7 @@ import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.dto.GameDateChangedEvent;
+import com.github.javydreamercsw.management.sync.review.SeedReviewGate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Random;
@@ -52,6 +53,7 @@ public class DramaEventScheduler {
   private final DramaEventService dramaEventService;
   private final WrestlerRepository wrestlerRepository;
   private final UniverseRepository universeRepository;
+  private final SeedReviewGate seedReviewGate;
   private final Random random = new Random();
 
   @Value("${drama.events.scheduler.threshold.days:7}")
@@ -60,10 +62,12 @@ public class DramaEventScheduler {
   public DramaEventScheduler(
       final DramaEventService dramaEventService,
       final WrestlerRepository wrestlerRepository,
-      final UniverseRepository universeRepository) {
+      final UniverseRepository universeRepository,
+      final SeedReviewGate seedReviewGate) {
     this.dramaEventService = dramaEventService;
     this.wrestlerRepository = wrestlerRepository;
     this.universeRepository = universeRepository;
+    this.seedReviewGate = seedReviewGate;
   }
 
   /**
@@ -153,6 +157,15 @@ public class DramaEventScheduler {
    */
   @Scheduled(fixedRate = 1_800_000) // Every 30 minutes (1,800,000 milliseconds)
   public void processUnprocessedEvents() {
+    // Seed-update review gate: scheduled gameplay writes stay frozen while seed collisions
+    // are undecided.
+    if (seedReviewGate.isUp()) {
+      log.info(
+          "Drama event processing skipped: seed-update review gate is up ({} pending"
+              + " decision(s)).",
+          seedReviewGate.pendingCount());
+      return;
+    }
     GeneralSecurityUtils.runAsAdmin(
         () -> {
           try {

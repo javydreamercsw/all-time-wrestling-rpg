@@ -22,6 +22,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSe
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.event.dto.GameDateChangedEvent;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.sync.review.SeedReviewGate;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -130,6 +131,7 @@ public class GameSettingService {
   private final GameSettingRepository repository;
   private final ApplicationEventPublisher eventPublisher;
   private final UniverseContextService universeContextService;
+  private final SeedReviewGate seedReviewGate;
 
   // ── Internal resolution ───────────────────────────────────────────────────
 
@@ -288,6 +290,16 @@ public class GameSettingService {
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @Transactional
   public void saveCurrentGameDate(final LocalDate date) {
+    // Seed-update review gate: kayfabe time must not move while seed collisions are undecided —
+    // the post-show auto-advance in ShowService flows through here too.
+    if (seedReviewGate.isUp()) {
+      log.info(
+          "Game date advance to {} refused: seed-update review gate is up ({} pending decision(s))"
+              + " — resolve them in the seed review screen first.",
+          date,
+          seedReviewGate.pendingCount());
+      return;
+    }
     LocalDate oldDate = getCurrentGameDate();
     saveInternal(CURRENT_GAME_DATE_KEY, date.format(DateTimeFormatter.ISO_LOCAL_DATE));
     if (!date.equals(oldDate)) {

@@ -166,7 +166,7 @@ class SeedReviewRestGuardTest {
   @Test
   void filterRegistrationCoversRestSurfaceWithDocumentedOrder() {
     FilterRegistrationBean<SeedReviewRestGuard> registration =
-        new SeedReviewConfig().seedReviewRestGuard(gate);
+        new SeedReviewConfig(mock(SeedUpdateReviewService.class)).seedReviewRestGuard(gate);
     assertEquals(SeedReviewRestGuard.class, registration.getFilter().getClass());
     // Boot 4's DynamicRegistrationBean has setName() but no getName() accessor; the label is
     // cosmetic, so only the behavioral parts of the registration are pinned here.

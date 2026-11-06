@@ -21,6 +21,7 @@ import com.github.javydreamercsw.management.domain.seedreview.SeedUpdateDecision
 import com.github.javydreamercsw.management.migration.DataMigrationHistory;
 import com.github.javydreamercsw.management.migration.DataMigrationHistoryRepository;
 import com.github.javydreamercsw.management.migration.DataMigrationRunner;
+import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -210,6 +211,44 @@ public class SeedUpdateReviewService {
    */
   public SeedReviewGate gate() {
     return gate;
+  }
+
+  /**
+   * Operator escape hatch (invoked by {@code SeedReviewConfig.forceResolveIfConfigured()} from
+   * {@code DataInitializer.performInit()} when {@code seed.review.force-resolve=keep-all}):
+   * force-decides every PENDING decision as keep-mine and lowers the gate, logged WARN.
+   *
+   * <p><b>This is an operator escape, not a real apply.</b> Keep-mine semantics are a no-op on
+   * entity data — nothing in the database changes — and unlike the review UI's apply flow (PR 3),
+   * this hatch deliberately does NOT re-stamp the rows' seed fingerprints. The force-decided rows
+   * therefore re-collide on the next upgrade boot (fail-safe direction: the operator is asked
+   * again, no seed value is ever silently adopted).
+   *
+   * <p>Only PENDING rows are touched: rows already in an {@code APPLIED_*} state keep the outcome
+   * the administrator chose, including their snapshots.
+   */
+  public void forceResolvePendingAsKeepMine() {
+    List<SeedUpdateDecision> pending =
+        decisionRepository.findByStatusOrderByIdAsc(SeedUpdateDecision.STATUS_PENDING);
+    if (pending.isEmpty()) {
+      log.info("seed.review.force-resolve=keep-all — no pending seed decisions to force-resolve.");
+      return;
+    }
+    log.warn(
+        "FORCING {} pending seed decision(s) to keep-mine (seed.review.force-resolve=keep-all)."
+            + " This is an operator escape: values are NOT applied and seed fingerprints are NOT"
+            + " re-stamped, so these collisions will re-appear on the next upgrade.",
+        pending.size());
+    for (SeedUpdateDecision decision : pending) {
+      decision.setStatus(SeedUpdateDecision.STATUS_APPLIED_KEEP);
+      decisionRepository.save(decision);
+      log.warn(
+          "Force-resolved seed decision {}.{} [{}] as keep-mine",
+          decision.getDomainKey(),
+          decision.getEntityKey(),
+          decision.getFieldName());
+    }
+    gate.refresh(); // lower the gate — no undecided decisions remain
   }
 
   /**

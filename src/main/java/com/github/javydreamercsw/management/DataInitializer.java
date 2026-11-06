@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.Initializable;
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.management.migration.DataMigrationRunner;
 import com.github.javydreamercsw.management.sync.DataSyncContributor;
+import com.github.javydreamercsw.management.sync.review.SeedReviewConfig;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,15 +34,18 @@ public class DataInitializer implements Initializable {
   private final boolean enabled;
   private final List<DataSyncContributor> contributors;
   private final DataMigrationRunner dataMigrationRunner;
+  private final SeedReviewConfig seedReviewConfig;
 
   @Autowired
   public DataInitializer(
       @Value("${data.initializer.enabled:true}") final boolean enabled,
       final List<DataSyncContributor> contributors,
-      final DataMigrationRunner dataMigrationRunner) {
+      final DataMigrationRunner dataMigrationRunner,
+      final SeedReviewConfig seedReviewConfig) {
     this.enabled = enabled;
     this.contributors = contributors;
     this.dataMigrationRunner = dataMigrationRunner;
+    this.seedReviewConfig = seedReviewConfig;
   }
 
   public void init() {
@@ -54,6 +58,9 @@ public class DataInitializer implements Initializable {
   private void performInit() {
     contributors.forEach(DataSyncContributor::sync);
     dataMigrationRunner.runMigrations();
+    // Operator escape hatch (seed-update review gate): runs last so detection/parking from THIS
+    // boot's syncs and migrations is already parked before any force-resolve decides the rows.
+    seedReviewConfig.forceResolveIfConfigured();
     log.debug("Data initialization complete.");
   }
 }

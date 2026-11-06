@@ -246,6 +246,18 @@ Each pass logs one summary line per entity: `verify(<entity>): reconciled N, pre
 
 **Field ownership.** Seed-owned field lists per entity live in the sync classes (`WrestlerSeedFields.canonical`, `cardFingerprint`, `compositionFingerprint`, `npcFingerprint`, `titleFingerprint`, `actionFingerprint`, `achievementFingerprint`, `cardFingerprint`, `ruleFingerprint`) — the fingerprint contract. Gameplay/UI state (fans, bumps, tier, fans' state, current champions, deck edits by players, active flags) is deliberately excluded: verify must never revert it.
 
+#### Seed review gate escape hatch (`seed.review.force-resolve=keep-all`)
+
+When an upgrade boot detects seed-data collisions the app freezes gameplay until an administrator resolves them in the seed review screen: the in-game date cannot be advanced, the REST surface rejects mutations, and scheduled gameplay writers (rivalry decay/retention, weekly tier recalculation, drama event processing) skip their runs.
+
+For unattended/headless environments where no admin can reach the review screen at boot time, setting `seed.review.force-resolve=keep-all` (JVM property or environment property, read at the end of `DataInitializer.performInit()`) force-decides **every pending decision as keep-mine** and lowers the gate so the boot completes. This is an operator escape, not a real apply:
+
+- Keep-mine changes nothing in the database — the current values stay.
+- Unlike the review UI's apply flow, the escape hatch does **not** re-stamp the rows' seed fingerprints, so **those collisions re-appear on the next upgrade boot** (fail-safe: you are asked again, no seed value is ever silently adopted).
+- Only PENDING rows are touched; decisions an administrator already made keep their outcome.
+
+Any other value is ignored with a warning. Use it only when you understand the parked collisions and accept answering them again on the next upgrade.
+
 When adding a new catalog that references seeded content, give it a higher `@Order` than every catalog it resolves from. Unknown references are skipped with a warning — a missing name must never fail the whole startup sync. See the [Content Management Guide](CONTENT_GUIDE.md#tournaments) for the JSON field reference.
 
 **Upsert safety (`TournamentService.createOrUpdateTournament`):** the update path touches only editable metadata (name, format while no entries exist, entrant hint, rules pool) and **never** lifecycle state — status, entries, rounds, payoff. Re-running the sync cannot resurrect a consumed or completed tournament.

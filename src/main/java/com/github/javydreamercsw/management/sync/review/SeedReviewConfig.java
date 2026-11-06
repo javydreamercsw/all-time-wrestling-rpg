@@ -19,19 +19,65 @@ package com.github.javydreamercsw.management.sync.review;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.DispatcherType;
 import java.util.EnumSet;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 
 /**
- * Wires the committed seed-provenance manifest and the REST mutation guard into the seed-update
- * review feature. Loading is lenient: when the manifest resource is absent or malformed (e.g.
- * before the generation task has ever run), the bean is an empty manifest and seed-review detection
- * simply degrades — startup never breaks.
+ * Wires the committed seed-provenance manifest, the REST mutation guard, and the force-resolve
+ * escape hatch into the seed-update review feature. Loading is lenient: when the manifest resource
+ * is absent or malformed (e.g. before the generation task has ever run), the bean is an empty
+ * manifest and seed-review detection simply degrades — startup never breaks.
  */
 @Configuration
+@Slf4j
 public class SeedReviewConfig {
+
+  /**
+   * The only accepted {@code seed.review.force-resolve} value — force-decide everything as
+   * keep-mine.
+   */
+  public static final String FORCE_RESOLVE_KEEP_ALL = "keep-all";
+
+  /**
+   * Operator escape hatch: {@code seed.review.force-resolve=keep-all}. Empty by default — the hatch
+   * never engages unless the property is set explicitly. Read into a field here so {@link
+   * #forceResolveIfConfigured()} stays callable without reflection-property plumbing.
+   */
+  @Value("${seed.review.force-resolve:}")
+  private String forceResolve;
+
+  private final SeedUpdateReviewService reviewService;
+
+  public SeedReviewConfig(SeedUpdateReviewService reviewService) {
+    this.reviewService = reviewService;
+  }
+
+  /**
+   * Operator escape hatch for the seed-review gate: when {@code seed.review.force-resolve=keep-all}
+   * is set at boot and PENDING decisions exist, delegates to {@code
+   * SeedUpdateReviewService.forceResolvePendingAsKeepMine()} — every pending row is force-decided
+   * as keep-mine and the gate lowers, logged WARN.
+   *
+   * <p><b>This is an operator escape, not a real apply.</b> Keep-mine means nothing changes in the
+   * database — but unlike PR 3's applier, this hatch does NOT re-stamp the seed fingerprints of the
+   * decided rows. The rows re-collide on the next upgrade boot (fail-safe direction: the operator
+   * is asked again, nothing is silently adopted).
+   */
+  public void forceResolveIfConfigured() {
+    if (FORCE_RESOLVE_KEEP_ALL.equals(forceResolve)) {
+      reviewService.forceResolvePendingAsKeepMine();
+    } else if (forceResolve != null && !forceResolve.isBlank()) {
+      log.warn(
+          "Unsupported seed.review.force-resolve value '{}' — only '{}' is recognized."
+              + " Pending seed decisions are left untouched.",
+          forceResolve,
+          FORCE_RESOLVE_KEEP_ALL);
+    }
+  }
 
   @Bean
   public SeedProvenanceManifest seedProvenanceManifest(ObjectMapper objectMapper) {

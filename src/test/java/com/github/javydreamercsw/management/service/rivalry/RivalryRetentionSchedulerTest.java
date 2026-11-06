@@ -23,6 +23,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.sync.review.SeedReviewGate;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -35,6 +36,7 @@ class RivalryRetentionSchedulerTest {
 
   @Mock private RivalryService rivalryService;
   @Mock private GameSettingService gameSettingService;
+  @Mock private SeedReviewGate seedReviewGate;
 
   @InjectMocks private RivalryRetentionScheduler scheduler;
 
