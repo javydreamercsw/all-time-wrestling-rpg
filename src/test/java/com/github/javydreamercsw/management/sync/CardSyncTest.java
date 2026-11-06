@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -31,7 +30,6 @@ import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
@@ -75,12 +73,7 @@ class CardSyncTest {
 
     CardSync skipSync =
         new CardSync(
-            "true",
-            cardService,
-            cardSetService,
-            resourcePatternResolver,
-            new ObjectMapper(),
-            SeedFingerprintManifest.of(Map.of()));
+            "true", cardService, cardSetService, resourcePatternResolver, new ObjectMapper());
     skipSync.sync();
 
     @SuppressWarnings("unchecked")
@@ -113,12 +106,7 @@ class CardSyncTest {
 
     CardSync fullSync =
         new CardSync(
-            "false",
-            cardService,
-            cardSetService,
-            resourcePatternResolver,
-            new ObjectMapper(),
-            SeedFingerprintManifest.of(Map.of()));
+            "false", cardService, cardSetService, resourcePatternResolver, new ObjectMapper());
     fullSync.sync();
 
     verify(cardService, atLeastOnce()).saveAll(argThat(list -> list.contains(existing)));
@@ -179,12 +167,7 @@ class CardSyncTest {
 
     CardSync verifySync =
         new CardSync(
-            "verify",
-            cardService,
-            cardSetService,
-            resourcePatternResolver,
-            new ObjectMapper(),
-            SeedFingerprintManifest.of(Map.of()));
+            "verify", cardService, cardSetService, resourcePatternResolver, new ObjectMapper());
     verifySync.sync();
 
     assertEquals(
@@ -192,61 +175,5 @@ class CardSyncTest {
         clean.getName(),
         "clean-fingerprint card must be reconciled to the seed name");
     assertEquals("hand-tuned", edited.getName(), "edited card must be preserved");
-  }
-
-  @Test
-  void fastPath_skipsReconcileWhenManifestMatchesStoredRows() throws Exception {
-    SeedSyncSupport support = new SeedSyncSupport("verify");
-    PathMatchingResourcePatternResolver real = new PathMatchingResourcePatternResolver();
-    Resource[] resources = real.getResources("classpath*:cards/*.json");
-    when(resourcePatternResolver.getResources(any())).thenReturn(resources);
-
-    CardSet atw = new CardSet();
-    atw.setCode("ATW");
-    when(cardService.count()).thenReturn(1L);
-    when(cardSetService.findBySetCode("ATW")).thenReturn(Optional.of(atw));
-
-    // ATW #5 stamped exactly as the manifest says — but under a name the current seed no longer
-    // ships ("ATW-era Forearm"): the seed moved on after seeding. Stored and recomputed both
-    // equal the manifest (the row is internally consistent), so the gate must fire; a deleted
-    // gate would make reconcile rewrite the name to the seed's "Forearm" and save it.
-    Card clean = new Card();
-    clean.setId(1L);
-    clean.setName("ATW-era Forearm");
-    clean.setNumber(5);
-    clean.setSet(atw);
-    clean.setDamage(1);
-    clean.setStamina(1);
-    clean.setTarget(2);
-    clean.setMomentum(1);
-    clean.setType("Strike");
-    clean.setSignature(false);
-    clean.setFinisher(false);
-    clean.setTaunt(false);
-    clean.setRecover(false);
-    clean.setPin(false);
-    clean.setSeedFingerprint(
-        support.fingerprint(
-            "ATW-era Forearm", 1, 1, 2, 1, "Strike", false, false, false, false, false));
-    when(cardService.findAll()).thenReturn(List.of(clean));
-
-    CardSync fastSync =
-        new CardSync(
-            "verify",
-            cardService,
-            cardSetService,
-            resourcePatternResolver,
-            new ObjectMapper(),
-            SeedFingerprintManifest.of(
-                Map.of("card", Map.of("ATW#5", clean.getSeedFingerprint()))));
-    fastSync.sync();
-
-    // The gate must fire: reconcile (which would applyDto the seed name and saveAll the row)
-    // is skipped entirely.
-    verify(cardService, never()).saveAll(argThat(list -> list != null && list.contains(clean)));
-    assertEquals(
-        "ATW-era Forearm",
-        clean.getName(),
-        "fast path must skip reconcile; the seed-era name survives untouched");
   }
 }

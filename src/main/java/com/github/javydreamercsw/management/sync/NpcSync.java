@@ -24,7 +24,6 @@ import com.github.javydreamercsw.management.dto.NpcDTO;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -42,7 +41,6 @@ import org.springframework.stereotype.Component;
 public class NpcSync implements DataSyncContributor {
 
   private final SeedSyncSupport syncSupport;
-  private final SeedFingerprintManifest seedManifest;
   private final NpcService npcService;
   private final ObjectMapper objectMapper;
 
@@ -50,10 +48,8 @@ public class NpcSync implements DataSyncContributor {
   public NpcSync(
       @Value("${data.initializer.skip-if-not-empty:false}") final String skipIfNotEmptyRaw,
       final NpcService npcService,
-      final ObjectMapper objectMapper,
-      final SeedFingerprintManifest seedManifest) {
+      final ObjectMapper objectMapper) {
     this.syncSupport = new SeedSyncSupport(skipIfNotEmptyRaw);
-    this.seedManifest = seedManifest;
     this.npcService = npcService;
     this.objectMapper = objectMapper;
   }
@@ -63,9 +59,6 @@ public class NpcSync implements DataSyncContributor {
     if (syncSupport.mode() != SeedSyncMode.FULL && npcService.count() > 0) {
       topUpMissingNpcs();
       if (syncSupport.isVerify()) {
-        if (fastPathApplies()) {
-          return;
-        }
         reconcileVerifiedNpcs();
       }
       return;
@@ -164,7 +157,7 @@ public class NpcSync implements DataSyncContributor {
    * Canonical seed-owned field values for an NPC, in fingerprint order: description, type,
    * expansionCode, alignment, awareness. Mirrors the seed write set (NpcDTO fields).
    */
-  String npcFingerprint(Npc npc, Integer seedAwareness) {
+  private String npcFingerprint(Npc npc, Integer seedAwareness) {
     Integer awareness;
     if (seedAwareness != null) {
       awareness = Math.max(0, Math.min(100, seedAwareness));
@@ -178,25 +171,6 @@ public class NpcSync implements DataSyncContributor {
         npc.getExpansionCode(),
         npc.getAlignment() == null ? null : npc.getAlignment().name(),
         awareness == null ? null : awareness.toString());
-  }
-
-  /**
-   * Verify-mode fast path: when every manifest entry matches a DB row on both the stored and the
-   * recomputed fingerprint, the database is provably in its seed state and reconcile can be skipped
-   * entirely.
-   */
-  private boolean fastPathApplies() {
-    Map<String, String> stored = new HashMap<>();
-    Map<String, String> recomputed = new HashMap<>();
-    for (Npc n : npcService.findAllUnfiltered()) {
-      stored.put(n.getName(), n.getSeedFingerprint());
-      recomputed.put(n.getName(), npcFingerprint(n, null));
-    }
-    boolean applies = SeedFastPathChecker.fastPathApplies(seedManifest, "npc", stored, recomputed);
-    if (applies) {
-      log.info("Seed manifest: npc domain matches manifest; reconcile skipped");
-    }
-    return applies;
   }
 
   /**

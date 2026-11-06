@@ -63,7 +63,6 @@ import org.springframework.stereotype.Component;
 public class WrestlerSync implements DataSyncContributor {
 
   private final SeedSyncSupport syncSupport;
-  private final SeedFingerprintManifest seedManifest;
   private final WrestlerRepository wrestlerRepository;
   private final WrestlerAbilityRepository wrestlerAbilityRepository;
   private final WrestlerService wrestlerService;
@@ -85,10 +84,8 @@ public class WrestlerSync implements DataSyncContributor {
       final NpcService npcService,
       final TierRecalculationService tierRecalculationService,
       final ResourcePatternResolver resourcePatternResolver,
-      final ObjectMapper objectMapper,
-      final SeedFingerprintManifest seedManifest) {
+      final ObjectMapper objectMapper) {
     this.syncSupport = new SeedSyncSupport(skipIfNotEmptyRaw);
-    this.seedManifest = seedManifest;
     this.wrestlerRepository = wrestlerRepository;
     this.wrestlerAbilityRepository = wrestlerAbilityRepository;
     this.wrestlerService = wrestlerService;
@@ -103,13 +100,6 @@ public class WrestlerSync implements DataSyncContributor {
   @Override
   public void sync() {
     if (syncSupport.mode() != SeedSyncMode.FULL && wrestlerRepository.count() > 0) {
-      if (syncSupport.isVerify() && fastPathApplies()) {
-        // Carve-out: the fast path skips loadWrestlers(false) + reconcile, but ability sync is
-        // gameplay-adjacent and must still run — then evict the cache exactly as top-up does.
-        syncAbilitiesForExistingWrestlers();
-        wrestlerService.evictWrestlerCache();
-        return;
-      }
       topUpMissingWrestlers();
       if (syncSupport.isVerify()) {
         reconcileVerifiedWrestlers();
@@ -442,32 +432,6 @@ public class WrestlerSync implements DataSyncContributor {
   /** Stamps the seed fingerprint onto a newly inserted wrestler from its own field values. */
   private void stampSeedFingerprint(Wrestler wrestler) {
     wrestler.setSeedFingerprint(syncSupport.fingerprint(WrestlerSeedFields.canonical(wrestler)));
-  }
-
-  /**
-   * Verify-mode fast path: when every manifest entry matches a DB row on both the stored and the
-   * recomputed fingerprint, the database is provably in its seed state and reconcile can be skipped
-   * entirely. Loads via {@code findAllWithAlignments} (the canonical hash reads the alignment); the
-   * DB key is the wrestler's name, matching the reconcile's lookup.
-   */
-  private boolean fastPathApplies() {
-    Map<String, String> stored = new HashMap<>();
-    Map<String, String> recomputed = new HashMap<>();
-    for (Wrestler w : wrestlerRepository.findAllWithAlignments()) {
-      stored.put(w.getName(), w.getSeedFingerprint());
-      recomputed.put(w.getName(), wrestlerFingerprint(w));
-    }
-    boolean applies =
-        SeedFastPathChecker.fastPathApplies(seedManifest, "wrestler", stored, recomputed);
-    if (applies) {
-      log.info("Seed manifest: wrestler domain matches manifest; reconcile skipped");
-    }
-    return applies;
-  }
-
-  /** Canonical seed-owned fingerprint of a wrestler row (the {@link WrestlerSeedFields} set). */
-  String wrestlerFingerprint(Wrestler wrestler) {
-    return syncSupport.fingerprint(WrestlerSeedFields.canonical(wrestler));
   }
 
   /**

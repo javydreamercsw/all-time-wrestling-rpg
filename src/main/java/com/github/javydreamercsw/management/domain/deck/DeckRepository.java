@@ -34,7 +34,4 @@ public interface DeckRepository extends JpaRepository<Deck, Long>, JpaSpecificat
 
   @Query("SELECT d FROM Deck d LEFT JOIN FETCH d.cards WHERE d.wrestler = :wrestler")
   List<Deck> findByWrestlerWithCards(@Param("wrestler") Wrestler wrestler);
-
-  @Query("SELECT d FROM Deck d LEFT JOIN FETCH d.cards")
-  List<Deck> findAllWithCards();
 }

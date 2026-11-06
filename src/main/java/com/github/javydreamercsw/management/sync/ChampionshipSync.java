@@ -27,7 +27,6 @@ import com.github.javydreamercsw.management.service.title.TitleReignRepairServic
 import com.github.javydreamercsw.management.service.title.TitleService;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +46,6 @@ import org.springframework.stereotype.Component;
 public class ChampionshipSync implements DataSyncContributor {
 
   private final SeedSyncSupport syncSupport;
-  private final SeedFingerprintManifest seedManifest;
   private final TitleService titleService;
   private final WrestlerRepository wrestlerRepository;
   private final UniverseRepository universeRepository;
@@ -61,10 +59,8 @@ public class ChampionshipSync implements DataSyncContributor {
       final WrestlerRepository wrestlerRepository,
       final UniverseRepository universeRepository,
       final TitleReignRepairService titleReignRepairService,
-      final ObjectMapper objectMapper,
-      final SeedFingerprintManifest seedManifest) {
+      final ObjectMapper objectMapper) {
     this.syncSupport = new SeedSyncSupport(skipIfNotEmptyRaw);
-    this.seedManifest = seedManifest;
     this.titleService = titleService;
     this.wrestlerRepository = wrestlerRepository;
     this.universeRepository = universeRepository;
@@ -77,9 +73,6 @@ public class ChampionshipSync implements DataSyncContributor {
     if (syncSupport.mode() != SeedSyncMode.FULL && titleService.count() > 0) {
       topUpMissingTitles();
       if (syncSupport.isVerify()) {
-        if (fastPathApplies()) {
-          return;
-        }
         reconcileVerifiedTitles();
       }
       return;
@@ -196,29 +189,8 @@ public class ChampionshipSync implements DataSyncContributor {
     }
   }
 
-  /**
-   * Verify-mode fast path: when every manifest entry matches a DB row on both the stored and the
-   * recomputed fingerprint, the database is provably in its seed state and reconcile can be skipped
-   * entirely. Uses the unfiltered title batch loader so expansion toggles can never hide a seeded
-   * row from the three-way check.
-   */
-  private boolean fastPathApplies() {
-    Map<String, String> stored = new HashMap<>();
-    Map<String, String> recomputed = new HashMap<>();
-    for (Title t : titleService.findAllUnfiltered()) {
-      stored.put(t.getName(), t.getSeedFingerprint());
-      recomputed.put(t.getName(), titleFingerprint(t));
-    }
-    boolean applies =
-        SeedFastPathChecker.fastPathApplies(seedManifest, "championship", stored, recomputed);
-    if (applies) {
-      log.info("Seed manifest: championship domain matches manifest; reconcile skipped");
-    }
-    return applies;
-  }
-
   /** Canonical seed-owned field values for a title row, in fingerprint order. */
-  String titleFingerprint(Title title) {
+  private String titleFingerprint(Title title) {
     return syncSupport.fingerprint(
         title.getDescription(),
         title.getTier() == null ? null : title.getTier().name(),

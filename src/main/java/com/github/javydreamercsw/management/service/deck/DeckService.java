@@ -123,14 +123,4 @@ public class DeckService {
   public List<Deck> findByWrestlerWithCards(final Wrestler wrestler) {
     return deckRepository.findByWrestlerWithCards(wrestler);
   }
-
-  /**
-   * Returns all decks with their cards join-fetched. Unlike {@link #findAll()}, this never yields
-   * detached rows with uninitialized {@code cards} proxies — used by DeckSync's seed fast path,
-   * which recomputes composition fingerprints (a read of every card) outside a transaction.
-   */
-  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-  public List<Deck> findAllWithCards() {
-    return deckRepository.findAllWithCards();
-  }
 }

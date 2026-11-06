@@ -32,7 +32,6 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -73,9 +72,7 @@ class SegmentRuleSyncTest {
 
   @Test
   void sync_fullModeReconcilesAndStampsFingerprint() {
-    SegmentRuleSync sync =
-        new SegmentRuleSync(
-            "false", segmentRuleService, new ObjectMapper(), SeedFingerprintManifest.of(Map.of()));
+    SegmentRuleSync sync = new SegmentRuleSync("false", segmentRuleService, new ObjectMapper());
     SegmentRule existing = rule("Normal", "stale description");
     when(segmentRuleService.findAllForAdmin()).thenReturn(List.of(existing));
     List<SegmentRule> saved = new ArrayList<>();
@@ -116,8 +113,7 @@ class SegmentRuleSyncTest {
   @Test
   void verifyMode_reconcilesCleanRowAndPreservesEditedRow() {
     SegmentRuleSync verifySync =
-        new SegmentRuleSync(
-            "verify", segmentRuleService, new ObjectMapper(), SeedFingerprintManifest.of(Map.of()));
+        new SegmentRuleSync("verify", segmentRuleService, new ObjectMapper());
     // Clean: stamped over its own (then-current) fields; the seed's description has since changed.
     SegmentRule clean = rule("Normal", "stale description");
     clean.setSeedFingerprint(ruleFingerprint(clean));
@@ -170,8 +166,7 @@ class SegmentRuleSyncTest {
   @Test
   void verifyMode_ignoresUserCreatedRule() {
     SegmentRuleSync verifySync =
-        new SegmentRuleSync(
-            "verify", segmentRuleService, new ObjectMapper(), SeedFingerprintManifest.of(Map.of()));
+        new SegmentRuleSync("verify", segmentRuleService, new ObjectMapper());
     // User-created rule: no seed entry shares its name, so it must never be written or stamped.
     SegmentRule custom = rule("Legacy Rule", "A custom rule the user created long ago");
     custom.setExpansionCode("CUSTOM");
@@ -197,8 +192,7 @@ class SegmentRuleSyncTest {
     // Regression: the stamp was previously applied to the detached instance returned by
     // createOrUpdateRule and never saved — verify twice to prove the stamp reaches the repo.
     SegmentRuleSync verifySync =
-        new SegmentRuleSync(
-            "verify", segmentRuleService, new ObjectMapper(), SeedFingerprintManifest.of(Map.of()));
+        new SegmentRuleSync("verify", segmentRuleService, new ObjectMapper());
     SegmentRule clean = rule("Normal", "stale description");
     clean.setSeedFingerprint(ruleFingerprint(clean));
     when(segmentRuleService.findAllForAdmin()).thenReturn(List.of(clean));
@@ -234,9 +228,7 @@ class SegmentRuleSyncTest {
 
   @Test
   void fullMode_stampsPersistThroughTheService() {
-    SegmentRuleSync sync =
-        new SegmentRuleSync(
-            "false", segmentRuleService, new ObjectMapper(), SeedFingerprintManifest.of(Map.of()));
+    SegmentRuleSync sync = new SegmentRuleSync("false", segmentRuleService, new ObjectMapper());
     SegmentRule existing = rule("Normal", "stale description");
     when(segmentRuleService.findAllForAdmin()).thenReturn(List.of(existing));
     List<SegmentRule> persisted = new ArrayList<>();
@@ -267,39 +259,5 @@ class SegmentRuleSyncTest {
     for (SegmentRule sr : persisted) {
       assertNotNull(sr.getSeedFingerprint(), "persisted rule must carry a fingerprint");
     }
-  }
-
-  @Test
-  void fastPath_skipsReconcileWhenManifestMatchesStoredRows() {
-    // Clean: stamped over its own (then-current) fields; the seed's description has since changed.
-    SegmentRule clean = rule("Normal", "stale description");
-    clean.setSeedFingerprint(ruleFingerprint(clean));
-
-    SegmentRuleSync fastSync =
-        new SegmentRuleSync(
-            "verify",
-            segmentRuleService,
-            new ObjectMapper(),
-            SeedFingerprintManifest.of(
-                Map.of("segment_rule", Map.of("Normal", clean.getSeedFingerprint()))));
-    when(segmentRuleService.findAllForAdmin()).thenReturn(List.of(clean));
-
-    fastSync.sync();
-
-    verify(segmentRuleService, never())
-        .createOrUpdateRule(
-            anyString(),
-            anyString(),
-            anyBoolean(),
-            anyBoolean(),
-            any(),
-            anyString(),
-            any(),
-            anyBoolean());
-    verify(segmentRuleService, never()).saveRule(any());
-    assertEquals(
-        "stale description",
-        clean.getDescription(),
-        "fast path must skip reconcile; the stale seed-owned field survives");
   }
 }

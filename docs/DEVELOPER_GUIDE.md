@@ -244,8 +244,6 @@ In-scope entities with verify: Wrestler, CardSet, Card, Deck (composition only),
 
 Each pass logs one summary line per entity: `verify(<entity>): reconciled N, preserved M edited (<elapsed> ms)`.
 
-**Manifest fast path.** Verify consults the committed `seed-fingerprints.json` manifest at startup: when every fingerprint in a domain's manifest entry still matches the database (each row's stored stamp equals the recomputed hash), the domain skips seed parsing and reconcile entirely, logging `Seed manifest: <domain> matches manifest; reconcile skipped` instead of the summary line. A stale manifest — seed JSON edited without regenerating — simply degrades to the reconcile behavior above, one domain at a time. Regenerate the manifest with `bash scripts/generate-seed-fingerprints.sh` after editing seed catalogs; CI runs `SeedFingerprintManifestEnforcementTest`, which fails the build when the committed manifest no longer matches the seed files.
-
 **Field ownership.** Seed-owned field lists per entity live in the sync classes (`WrestlerSeedFields.canonical`, `cardFingerprint`, `compositionFingerprint`, `npcFingerprint`, `titleFingerprint`, `actionFingerprint`, `achievementFingerprint`, `cardFingerprint`, `ruleFingerprint`) — the fingerprint contract. Gameplay/UI state (fans, bumps, tier, fans' state, current champions, deck edits by players, active flags) is deliberately excluded: verify must never revert it.
 
 When adding a new catalog that references seeded content, give it a higher `@Order` than every catalog it resolves from. Unknown references are skipped with a warning — a missing name must never fail the whole startup sync. See the [Content Management Guide](CONTENT_GUIDE.md#tournaments) for the JSON field reference.

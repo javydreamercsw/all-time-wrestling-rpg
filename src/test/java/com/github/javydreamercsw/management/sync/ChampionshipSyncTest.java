@@ -34,7 +34,6 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.title.TitleReignRepairService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -82,8 +81,7 @@ class ChampionshipSyncTest {
             wrestlerRepository,
             universeRepository,
             titleReignRepairService,
-            new ObjectMapper(),
-            SeedFingerprintManifest.of(Map.of()));
+            new ObjectMapper());
     when(titleService.count()).thenReturn(1L);
     stubUniverse();
 
@@ -113,8 +111,7 @@ class ChampionshipSyncTest {
             wrestlerRepository,
             universeRepository,
             titleReignRepairService,
-            new ObjectMapper(),
-            SeedFingerprintManifest.of(Map.of()));
+            new ObjectMapper());
     when(titleService.count()).thenReturn(2L);
     stubUniverse();
 
@@ -173,8 +170,7 @@ class ChampionshipSyncTest {
             wrestlerRepository,
             universeRepository,
             titleReignRepairService,
-            new ObjectMapper(),
-            SeedFingerprintManifest.of(Map.of()));
+            new ObjectMapper());
     when(titleService.count()).thenReturn(1L);
     stubUniverse();
 
@@ -205,48 +201,5 @@ class ChampionshipSyncTest {
         titleFingerprint(legacy),
         legacy.getSeedFingerprint(),
         "legacy title must be adopted (fingerprint stamped)");
-  }
-
-  @Test
-  void fastPath_skipsReconcileWhenManifestMatchesStoredRows() {
-    // Clean: stamped over its own (then-current) fields; the seed's effect script has since
-    // changed. The manifest matches the stored stamp, so reconcile must be skipped.
-    Title clean = new Title();
-    clean.setName("ATW World");
-    clean.setEffectScript("stale effect script");
-    clean.setExpansionCode("BASE_GAME");
-    clean.setIncludeInRankings(true);
-    clean.setSeedFingerprint(titleFingerprint(clean));
-
-    ChampionshipSync fastSync =
-        new ChampionshipSync(
-            "verify",
-            titleService,
-            wrestlerRepository,
-            universeRepository,
-            titleReignRepairService,
-            new ObjectMapper(),
-            SeedFingerprintManifest.of(
-                Map.of("championship", Map.of("ATW World", clean.getSeedFingerprint()))));
-    when(titleService.count()).thenReturn(1L);
-    stubUniverse();
-    when(titleService.findAllUnfiltered()).thenReturn(List.of(clean));
-    when(titleService.findByName("ATW World")).thenReturn(Optional.of(clean));
-    when(titleService.createTitle(anyString(), anyString(), any(), any(), any(), any()))
-        .thenAnswer(
-            inv -> {
-              Title t = new Title();
-              t.setName(inv.getArgument(0));
-              return t;
-            });
-
-    fastSync.sync();
-
-    // The stale effect script proves reconcile never ran (it would have adopted the seed's
-    // "gainInitiative()").
-    assertEquals(
-        "stale effect script",
-        clean.getEffectScript(),
-        "fast path must skip reconcile; the stale seed-owned field survives");
   }
 }
