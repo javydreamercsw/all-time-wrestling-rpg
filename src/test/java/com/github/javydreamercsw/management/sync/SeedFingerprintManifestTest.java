@@ -22,6 +22,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.config.JacksonConfig;
 import java.nio.charset.StandardCharsets;
@@ -124,10 +127,8 @@ class SeedFingerprintManifestTest {
 
   @Test
   void wrongShapeRootLogsWarningAndReturnsEmpty() {
-    ch.qos.logback.classic.Logger logger =
-        (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(SeedFingerprintManifest.class);
-    var appender =
-        new ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>();
+    Logger logger = (Logger) LoggerFactory.getLogger(SeedFingerprintManifest.class);
+    var appender = new ListAppender<ILoggingEvent>();
     appender.start();
     logger.addAppender(appender);
     try {

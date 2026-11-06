@@ -28,6 +28,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -590,8 +591,7 @@ class WrestlerSyncTest {
             SeedFingerprintManifest.of(
                 Map.of("wrestler", Map.of("Rob Van Dam", existing.getSeedFingerprint()))));
 
-    ch.qos.logback.classic.Logger logger =
-        (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(WrestlerSync.class);
+    Logger logger = (Logger) LoggerFactory.getLogger(WrestlerSync.class);
     ListAppender<ILoggingEvent> appender = new ListAppender<>();
     appender.start();
     logger.addAppender(appender);
