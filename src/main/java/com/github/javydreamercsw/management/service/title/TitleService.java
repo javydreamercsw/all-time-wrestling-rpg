@@ -204,6 +204,7 @@ public class TitleService {
    * championship fingerprint extraction must see every seeded row regardless of the expansion
    * toggle.
    */
+  @PreAuthorize("isAuthenticated()")
   public List<Title> findAllUnfiltered() {
     return (List<Title>) titleRepository.findAll();
   }

@@ -60,6 +60,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -99,9 +100,12 @@ import org.springframework.web.context.support.GenericWebApplicationContext;
  * production reconciliation.
  *
  * <p>Classpath pollution guard: the generator runs on the test classpath, so before syncing it
- * resolves every domain's seed resources with the same patterns the syncs use and fails unless all
- * of them resolve outside {@code test-classes} — a stray test fixture would otherwise be seeded
- * into the manifest and later poison seed-review detection.
+ * resolves every domain's seed resources with the same patterns the syncs use and verifies each one
+ * is the faithful build copy of a committed {@code src/main/resources} file. Test-classpath
+ * fixtures are rejected outright, and so are stale build-output leftovers — {@code mvn
+ * test-compile} does not purge {@code target/classes} resources, so a seed file from another branch
+ * can survive there without any committed counterpart and would otherwise be seeded into the
+ * manifest and poison seed-review detection.
  */
 @Slf4j
 public final class GenerateSeedProvenanceManifest {
@@ -241,7 +245,7 @@ public final class GenerateSeedProvenanceManifest {
       log.error("Seed provenance generation aborted: could not resolve seed resources", e);
       return 1;
     }
-    String violation = findTestClasspathViolation(domainResources);
+    String violation = findSeedResourceViolation(domainResources);
     if (violation != null) {
       log.error("Seed provenance generation aborted: {}", violation);
       System.err.println("Seed provenance generation aborted: " + violation);
@@ -324,14 +328,39 @@ public final class GenerateSeedProvenanceManifest {
   }
 
   /**
-   * Pure guard over resolved resources: reports the first resource whose URL carries the test
-   * classpath marker, or {@code null} when every resource resolves outside the test classpath.
+   * Pure guard over resolved resources: reports the first resource that is not the faithful build
+   * copy of a committed {@code src/main/resources} file, or {@code null} when every resource is
+   * clean. Two checks, in order:
+   *
+   * <ol>
+   *   <li>Test-classpath rejection — a URL containing {@code test-classes} is a test fixture, not
+   *       seed data.
+   *   <li>Stale build-output detection — a URL under {@code target/classes} whose counterpart in
+   *       {@code src/main/resources} is missing or has different bytes is a leftover from another
+   *       branch ({@code mvn test-compile} does not purge {@code target/classes} resources);
+   *       seeding it would record fingerprints for data that exists in no committed source.
+   * </ol>
    *
    * @param domainResources domain key → resolved seed resources
-   * @return a violation message naming the domain and the offending {@code test-classes} URL, or
-   *     {@code null} when clean
+   * @return a violation message naming the domain, the offending URL, and the reason, or {@code
+   *     null} when clean
    */
-  static String findTestClasspathViolation(Map<String, List<Resource>> domainResources) {
+  static String findSeedResourceViolation(Map<String, List<Resource>> domainResources) {
+    return findSeedResourceViolation(
+        domainResources, Path.of(System.getProperty("user.dir")).toAbsolutePath().normalize());
+  }
+
+  /**
+   * Guard core with the project directory injected, so tests can stand in a fake {@code
+   * target/classes} + {@code src/main/resources} layout.
+   *
+   * @param domainResources domain key → resolved seed resources
+   * @param projectDir the project root ({@code user.dir} in production)
+   * @return a violation message, or {@code null} when clean
+   */
+  static String findSeedResourceViolation(
+      Map<String, List<Resource>> domainResources, Path projectDir) {
+    Path targetClasses = projectDir.resolve("target").resolve("classes");
     for (Map.Entry<String, List<Resource>> domainEntry : domainResources.entrySet()) {
       for (Resource resource : domainEntry.getValue()) {
         if (!resource.exists()) {
@@ -343,11 +372,74 @@ public final class GenerateSeedProvenanceManifest {
             return "seed resource for domain '%s' resolves into the test classpath: %s -> %s"
                 .formatted(domainEntry.getKey(), resource.getDescription(), url);
           }
+          String stale =
+              findStaleBuildOutputViolation(
+                  domainEntry.getKey(), resource, url, targetClasses, projectDir);
+          if (stale != null) {
+            return stale;
+          }
         } catch (IOException e) {
           return "could not resolve URL of seed resource for domain '%s': %s"
               .formatted(domainEntry.getKey(), resource.getDescription());
         }
       }
+    }
+    return null;
+  }
+
+  /**
+   * Stale build-output half of {@link #findSeedResourceViolation}: when the resource resolves from
+   * the {@code target/classes} build-output directory, its bytes must match a committed {@code
+   * src/main/resources} counterpart exactly — a missing or diverged counterpart means the file is a
+   * leftover no committed source can explain.
+   *
+   * @param domain the domain key the resource was resolved for
+   * @param resource the resolved seed resource
+   * @param url the resource's resolved URL
+   * @return a violation message, or {@code null} when the resource is not from {@code
+   *     target/classes} or byte-matches its committed counterpart
+   */
+  private static String findStaleBuildOutputViolation(
+      String domain, Resource resource, String url, Path targetClasses, Path projectDir)
+      throws IOException {
+    if (!url.contains("target/classes")) {
+      return null;
+    }
+    Path resourcePath;
+    try {
+      resourcePath = Path.of(resource.getURI());
+    } catch (UnsupportedOperationException e) {
+      // Not a filesystem resource (e.g. a jar entry): nothing to compare on disk.
+      return null;
+    }
+    // target/classes/<relative> must exist, byte-identical, at src/main/resources/<relative>.
+    Path mainResources = projectDir.resolve("src").resolve("main").resolve("resources");
+    Path relative;
+    try {
+      relative = targetClasses.relativize(resourcePath.toAbsolutePath().normalize()).normalize();
+    } catch (IllegalArgumentException e) {
+      // Not actually under the project's target/classes (different absolute root): no
+      // counterpart to compare against, which is itself a violation.
+      return ("seed resource for domain '%s' resolves from a target/classes outside this"
+              + " project's build output: %s -> %s")
+          .formatted(domain, resource.getDescription(), url);
+    }
+    if (relative.startsWith("..") || relative.toString().isBlank()) {
+      return ("seed resource for domain '%s' resolves from target/classes outside the"
+              + " build-output root: %s -> %s")
+          .formatted(domain, resource.getDescription(), url);
+    }
+    Path counterpart = mainResources.resolve(relative);
+    if (!Files.exists(counterpart)) {
+      return ("seed resource for domain '%s' is a stale build-output leftover with no committed"
+              + " src/main/resources counterpart (delete it or regenerate from a clean"
+              + " target/): %s -> %s")
+          .formatted(domain, resource.getDescription(), url);
+    }
+    if (!Arrays.equals(Files.readAllBytes(counterpart), Files.readAllBytes(resourcePath))) {
+      return ("seed resource for domain '%s' differs from its committed src/main/resources"
+              + " counterpart (stale build output — run a clean build): %s -> %s")
+          .formatted(domain, resource.getDescription(), url);
     }
     return null;
   }
