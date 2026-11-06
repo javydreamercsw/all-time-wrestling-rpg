@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.sync;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -27,6 +28,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
@@ -57,6 +60,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
@@ -557,6 +561,116 @@ class WrestlerSyncTest {
     // Ability sync still ran for the existing wrestler.
     verify(wrestlerAbilityRepository, atLeastOnce()).save(any());
     // Cache eviction matches what topUpMissingWrestlers does today.
+    verify(wrestlerService).evictWrestlerCache();
+  }
+
+  @Test
+  void fastPath_fallsBack_whenRowHandEdited() throws Exception {
+    // Three-way check, recomputed leg: the row's stored stamp matches the manifest, but its
+    // current fields hash differently (hand-edited after seeding) — the fast path cannot prove
+    // safety and must fall back to reconcile, which warns and preserves the edit.
+    WrestlerImportDTO dto = rvdSeedDto();
+    Wrestler existing = seededRvd(dto);
+    existing.setSeedFingerprint(VERIFY_SUPPORT.fingerprint(WrestlerSeedFields.canonical(existing)));
+    existing.setDescription("hand-tuned after seeding");
+    stubOneExisting(existing);
+
+    WrestlerSync editedSync =
+        new WrestlerSync(
+            "verify",
+            wrestlerRepository,
+            wrestlerAbilityRepository,
+            wrestlerService,
+            universeRepository,
+            wrestlerStateRepository,
+            npcService,
+            tierRecalculationService,
+            resourcePatternResolver,
+            new ObjectMapper(),
+            SeedFingerprintManifest.of(
+                Map.of("wrestler", Map.of("Rob Van Dam", existing.getSeedFingerprint()))));
+
+    ch.qos.logback.classic.Logger logger =
+        (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(WrestlerSync.class);
+    ListAppender<ILoggingEvent> appender = new ListAppender<>();
+    appender.start();
+    logger.addAppender(appender);
+    try {
+      editedSync.sync();
+    } finally {
+      logger.detachAppender(appender);
+    }
+
+    assertTrue(
+        appender.list.stream()
+            .anyMatch(
+                event ->
+                    event.getLevel().toString().equals("WARN")
+                        && event.getFormattedMessage().contains("Rob Van Dam")
+                        && event.getFormattedMessage().contains("modified after seeding")),
+        "hand-edited row must be warned (modified after seeding) — reconcile must have run");
+    assertEquals(
+        "hand-tuned after seeding",
+        existing.getDescription(),
+        "hand edit must survive the fallback reconcile");
+    // The edited row itself is never re-saved: top-up skips existing rows and reconcile's
+    // edited branch preserves. (A blanket never().saveAll(any()) would be wrong here — top-up
+    // legitimately inserts the ~175 seed wrestlers the mock DB lacks.)
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Wrestler>> captor = ArgumentCaptor.forClass(List.class);
+    verify(wrestlerRepository, atLeastOnce()).saveAll(captor.capture());
+    assertFalse(
+        captor.getAllValues().stream().flatMap(List::stream).anyMatch(w -> w == existing),
+        "the hand-edited row must never land in a save batch (warn-and-preserve)");
+  }
+
+  @Test
+  void fastPath_ignoresExtraDbRows() throws Exception {
+    // Extra-rows leg of the three-way contract: the manifest covers the seed rows and they all
+    // match on stored+recomputed, but the DB also holds a player-created wrestler with no manifest
+    // entry (created via the UI, so his seed fingerprint is null — the checker iterates manifest
+    // entries only and ignores extra DB rows entirely). The fast path must still fire: reconcile
+    // skipped, ability sync still runs.
+    WrestlerImportDTO dto = rvdSeedDto();
+    Wrestler existing = seededRvd(dto);
+    existing.setSeedFingerprint(VERIFY_SUPPORT.fingerprint(WrestlerSeedFields.canonical(existing)));
+    Wrestler custom = new Wrestler();
+    custom.setId(2L);
+    custom.setName("Custom Guy");
+    custom.setDescription("a wrestler the user invented");
+    when(wrestlerRepository.count()).thenReturn(2L);
+    when(wrestlerRepository.findAllWithAlignments()).thenReturn(List.of(existing, custom));
+    when(wrestlerRepository.findAll()).thenReturn(List.of(existing, custom));
+    when(wrestlerService.getOrCreateState(any(), any())).thenReturn(new WrestlerState());
+
+    WrestlerSync fastSync =
+        new WrestlerSync(
+            "verify",
+            wrestlerRepository,
+            wrestlerAbilityRepository,
+            wrestlerService,
+            universeRepository,
+            wrestlerStateRepository,
+            npcService,
+            tierRecalculationService,
+            resourcePatternResolver,
+            new ObjectMapper(),
+            SeedFingerprintManifest.of(
+                Map.of("wrestler", Map.of("Rob Van Dam", existing.getSeedFingerprint()))));
+
+    fastSync.sync();
+
+    // Fast path fired: reconcile never ran (the user-invented row's description survives, though
+    // reconcile would also preserve it — the discriminating observable is the missing top-up:
+    // with ~175 seed wrestlers absent from the mock DB, top-up would insert them all).
+    verify(wrestlerRepository, never()).saveAll(any());
+    verify(wrestlerStateRepository, never()).save(any());
+    assertEquals(
+        "a wrestler the user invented",
+        custom.getDescription(),
+        "user-created wrestler must never be touched by the fast path either");
+    // Ability sync carve-out still ran for the manifest-covered existing wrestler.
+    verify(wrestlerAbilityRepository, atLeastOnce()).save(any());
     verify(wrestlerService).evictWrestlerCache();
   }
 }
