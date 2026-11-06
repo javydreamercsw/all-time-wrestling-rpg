@@ -252,8 +252,12 @@ public class DeckSync implements DataSyncContributor {
         .collect(Collectors.joining("\n"));
   }
 
-  /** Fingerprint over a deck row's current composition, in canonical form. */
-  private String compositionFingerprint(Deck deck) {
+  /**
+   * Fingerprint over a deck row's current composition, in canonical form. Public for the
+   * seed-provenance manifest generator, which re-hashes fresh seed rows through the owning sync's
+   * own method.
+   */
+  public String compositionFingerprint(Deck deck) {
     return syncSupport.fingerprint(composition(deck));
   }
 

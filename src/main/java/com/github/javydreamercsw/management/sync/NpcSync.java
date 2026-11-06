@@ -155,9 +155,11 @@ public class NpcSync implements DataSyncContributor {
 
   /**
    * Canonical seed-owned field values for an NPC, in fingerprint order: description, type,
-   * expansionCode, alignment, awareness. Mirrors the seed write set (NpcDTO fields).
+   * expansionCode, alignment, awareness. Mirrors the seed write set (NpcDTO fields). Public for the
+   * seed-provenance manifest generator, which re-hashes fresh seed rows through the owning sync's
+   * own method.
    */
-  private String npcFingerprint(Npc npc, Integer seedAwareness) {
+  public String npcFingerprint(Npc npc, Integer seedAwareness) {
     Integer awareness;
     if (seedAwareness != null) {
       awareness = Math.max(0, Math.min(100, seedAwareness));

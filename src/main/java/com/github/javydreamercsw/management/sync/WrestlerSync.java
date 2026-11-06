@@ -431,7 +431,16 @@ public class WrestlerSync implements DataSyncContributor {
 
   /** Stamps the seed fingerprint onto a newly inserted wrestler from its own field values. */
   private void stampSeedFingerprint(Wrestler wrestler) {
-    wrestler.setSeedFingerprint(syncSupport.fingerprint(WrestlerSeedFields.canonical(wrestler)));
+    wrestler.setSeedFingerprint(wrestlerFingerprint(wrestler));
+  }
+
+  /**
+   * Canonical seed-owned field values for a wrestler row, in fingerprint order — the composite
+   * {@link WrestlerSeedFields#canonical(Wrestler)} set. Public for the seed-provenance manifest
+   * generator, which re-hashes fresh seed rows through the owning sync's own method.
+   */
+  public String wrestlerFingerprint(Wrestler wrestler) {
+    return syncSupport.fingerprint(WrestlerSeedFields.canonical(wrestler));
   }
 
   /**
