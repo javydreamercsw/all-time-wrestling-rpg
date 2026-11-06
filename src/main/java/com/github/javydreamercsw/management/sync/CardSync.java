@@ -186,8 +186,12 @@ public class CardSync implements DataSyncContributor {
         dto.isPin());
   }
 
-  /** Fingerprint over a card row's current seed-owned fields, in the same canonical order. */
-  private String cardFingerprint(Card card) {
+  /**
+   * Fingerprint over a card row's current seed-owned fields, in the same canonical order. Public
+   * for the seed-provenance manifest generator, which re-hashes fresh seed rows through the owning
+   * sync's own method.
+   */
+  public String cardFingerprint(Card card) {
     return syncSupport.fingerprint(
         card.getName(),
         card.getDamage(),

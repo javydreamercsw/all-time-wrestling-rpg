@@ -189,8 +189,12 @@ public class ChampionshipSync implements DataSyncContributor {
     }
   }
 
-  /** Canonical seed-owned field values for a title row, in fingerprint order. */
-  private String titleFingerprint(Title title) {
+  /**
+   * Canonical seed-owned field values for a title row, in fingerprint order. Public for the
+   * seed-provenance manifest generator, which re-hashes fresh seed rows through the owning sync's
+   * own method.
+   */
+  public String titleFingerprint(Title title) {
     return syncSupport.fingerprint(
         title.getDescription(),
         title.getTier() == null ? null : title.getTier().name(),

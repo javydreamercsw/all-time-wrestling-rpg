@@ -140,9 +140,10 @@ public class CampaignAbilityCardSync implements DataSyncContributor {
   /**
    * Canonical seed-owned field values for an ability card row, in fingerprint order. The lookup key
    * (name, alignmentType, level) is excluded; the rest mirrors {@code createOrUpdateCard}'s write
-   * set.
+   * set. Public for the seed-provenance manifest generator, which re-hashes fresh seed rows through
+   * the owning sync's own method.
    */
-  private String cardFingerprint(CampaignAbilityCard card) {
+  public String cardFingerprint(CampaignAbilityCard card) {
     return syncSupport.fingerprint(
         card.getDescription(),
         card.isOneTimeUse(),

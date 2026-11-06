@@ -200,6 +200,15 @@ public class TitleService {
   }
 
   /**
+   * Returns all titles without any filtering. Used by the seed-provenance manifest generator — the
+   * championship fingerprint extraction must see every seeded row regardless of the expansion
+   * toggle.
+   */
+  public List<Title> findAllUnfiltered() {
+    return (List<Title>) titleRepository.findAll();
+  }
+
+  /**
    * Returns all titles stamped with the given expansion code, including inactive ones. Unlike
    * {@link #findAll()}, this ignores the expansion toggle — used by the card export view so the
    * user's custom content prints regardless of the CUSTOM expansion toggle.

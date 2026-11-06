@@ -160,8 +160,12 @@ public class AchievementSync implements DataSyncContributor {
     }
   }
 
-  /** Canonical seed-owned field values for an achievement row — the {@code copyContentFrom} set. */
-  private String achievementFingerprint(Achievement a) {
+  /**
+   * Canonical seed-owned field values for an achievement row — the {@code copyContentFrom} set.
+   * Public for the seed-provenance manifest generator, which re-hashes fresh seed rows through the
+   * owning sync's own method.
+   */
+  public String achievementFingerprint(Achievement a) {
     return syncSupport.fingerprint(
         a.getName(),
         a.getDescription(),
