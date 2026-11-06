@@ -17,14 +17,18 @@
 package com.github.javydreamercsw.management.sync.review;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.DispatcherType;
+import java.util.EnumSet;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
 
 /**
- * Wires the committed seed-provenance manifest into the seed-update review feature. Loading is
- * lenient: when the manifest resource is absent or malformed (e.g. before the generation task has
- * ever run), the bean is an empty manifest and seed-review detection simply degrades — startup
- * never breaks.
+ * Wires the committed seed-provenance manifest and the REST mutation guard into the seed-update
+ * review feature. Loading is lenient: when the manifest resource is absent or malformed (e.g.
+ * before the generation task has ever run), the bean is an empty manifest and seed-review detection
+ * simply degrades — startup never breaks.
  */
 @Configuration
 public class SeedReviewConfig {
@@ -32,5 +36,25 @@ public class SeedReviewConfig {
   @Bean
   public SeedProvenanceManifest seedProvenanceManifest(ObjectMapper objectMapper) {
     return SeedProvenanceManifest.load(objectMapper);
+  }
+
+  /**
+   * Registers the REST mutation guard on the app's REST surface ({@code /api/*} — every REST
+   * controller in this codebase maps there) at {@link Ordered#LOWEST_PRECEDENCE}, i.e. after the
+   * Spring Security filter chain. This project declares {@code spring-security-*} directly instead
+   * of Boot's {@code spring-boot-security} module, so security's chain has no named order constant
+   * to reference; lowest precedence guarantees the guard runs downstream of it either way. URL
+   * patterns (rather than a request matcher) keep Vaadin's own endpoints — guarded by Task 7's
+   * navigation freeze — outside this filter entirely.
+   */
+  @Bean
+  public FilterRegistrationBean<SeedReviewRestGuard> seedReviewRestGuard(SeedReviewGate gate) {
+    FilterRegistrationBean<SeedReviewRestGuard> registration =
+        new FilterRegistrationBean<>(new SeedReviewRestGuard(gate));
+    registration.setName("seedReviewRestGuard");
+    registration.addUrlPatterns("/api/*");
+    registration.setDispatcherTypes(EnumSet.of(DispatcherType.REQUEST));
+    registration.setOrder(Ordered.LOWEST_PRECEDENCE);
+    return registration;
   }
 }
