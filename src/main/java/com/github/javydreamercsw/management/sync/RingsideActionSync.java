@@ -166,9 +166,10 @@ public class RingsideActionSync implements DataSyncContributor {
   /**
    * Canonical seed-owned field values for a ringside action row, in fingerprint order: type name,
    * description, impact, risk, alignment, expansionCode. Mirrors the write set of {@code
-   * createOrUpdateAction} minus the name key.
+   * createOrUpdateAction} minus the name key. Public for the seed-provenance manifest generator,
+   * which re-hashes fresh seed rows through the owning sync's own method.
    */
-  private String actionFingerprint(RingsideAction action) {
+  public String actionFingerprint(RingsideAction action) {
     return syncSupport.fingerprint(
         action.getType() == null ? null : action.getType().getName(),
         action.getDescription(),

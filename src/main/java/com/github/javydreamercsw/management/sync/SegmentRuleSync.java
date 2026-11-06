@@ -99,9 +99,11 @@ public class SegmentRuleSync implements DataSyncContributor {
 
   /**
    * Canonical seed-owned field values for a segment rule row, in fingerprint order — the {@code
-   * createOrUpdateRule} write set. {@code active} is admin-managed and excluded.
+   * createOrUpdateRule} write set. {@code active} is admin-managed and excluded. Public for the
+   * seed-provenance manifest generator, which re-hashes fresh seed rows through the owning sync's
+   * own method.
    */
-  private String ruleFingerprint(SegmentRule sr) {
+  public String ruleFingerprint(SegmentRule sr) {
     return syncSupport.fingerprint(
         sr.getDescription(),
         sr.getRequiresHighHeat(),

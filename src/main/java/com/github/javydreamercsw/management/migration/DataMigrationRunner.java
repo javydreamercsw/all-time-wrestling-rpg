@@ -41,7 +41,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class DataMigrationRunner {
 
-  static final String UNKNOWN_VERSION = "unknown";
+  /** Version recorded when {@link BuildProperties} is unavailable. */
+  public static final String UNKNOWN_VERSION = "unknown";
 
   private final List<DataMigration> migrations;
   private final DataMigrationHistoryRepository historyRepository;
