@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.dto.GameDateChangedEvent;
+import com.github.javydreamercsw.management.sync.review.SeedReviewGate;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
@@ -46,7 +47,7 @@ class DramaEventSchedulerTest {
   @Mock private DramaEventService dramaEventService;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private UniverseRepository universeRepository;
-  @Mock private com.github.javydreamercsw.management.sync.review.SeedReviewGate seedReviewGate;
+  @Mock private SeedReviewGate seedReviewGate;
 
   private DramaEventScheduler scheduler;
 

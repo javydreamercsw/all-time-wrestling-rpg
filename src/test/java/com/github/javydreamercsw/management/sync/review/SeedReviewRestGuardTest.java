@@ -30,6 +30,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import jakarta.servlet.DispatcherType;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -151,7 +153,47 @@ class SeedReviewRestGuardTest {
     mockMvc
         .perform(post(PROBE_PATH))
         .andExpect(status().isServiceUnavailable())
-        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON));
+        .andExpect(content().string(EXPECTED_ERROR_BODY))
+        .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE));
+  }
+
+  /**
+   * Regression pin for the encoded-path bypass: the servlet container maps handlers on the DECODED
+   * path while {@link jakarta.servlet.http.HttpServletRequest#getRequestURI()} is raw, so {@code
+   * POST /%61pi/...} reaches the {@code /api/...} handler even though the raw URI does not start
+   * with {@code /api/}. The guard must decide on the decoded lookup path. MockMvc's URL builder
+   * re-encodes templates, so the raw URI is set directly via a post-processor — the same
+   * raw-URI/decoded-mapping split a real container produces.
+   */
+  @Test
+  void encodedPathsAreDecodedBeforeMatching() throws Exception {
+    when(gate.isUp()).thenReturn(true);
+    mockMvc = mockMvcWithGuard(new SeedReviewRestGuard(gate));
+    mockMvc
+        .perform(
+            post("/api/probe")
+                .with(
+                    request -> {
+                      // Container view of POST /atw-rpg/%61pi/probe: raw URI undecoded, decoded
+                      // servletPath (DispatcherServlet on '/') carrying the actual route.
+                      request.setRequestURI("/%61pi/probe");
+                      request.setServletPath("/api/probe");
+                      request.setPathInfo(null);
+                      return request;
+                    }))
+        .andExpect(status().isServiceUnavailable())
+        .andExpect(content().string(EXPECTED_ERROR_BODY));
+  }
+
+  /** The app runs under context path /atw-rpg (application.properties); guard must strip it. */
+  @Test
+  void contextPathIsStrippedBeforeMatching() throws Exception {
+    when(gate.isUp()).thenReturn(true);
+    mockMvc = mockMvcWithGuard(new SeedReviewRestGuard(gate));
+    mockMvc
+        .perform(post("/atw-rpg/api/probe").contextPath("/atw-rpg"))
+        .andExpect(status().isServiceUnavailable())
+        .andExpect(content().string(EXPECTED_ERROR_BODY));
   }
 
   @Test
@@ -173,6 +215,10 @@ class SeedReviewRestGuardTest {
     assertTrue(
         registration.getUrlPatterns().contains("/api/*"), "All REST controllers map under /api/**");
     assertEquals(Ordered.LOWEST_PRECEDENCE, registration.getOrder());
+    assertEquals(
+        EnumSet.of(DispatcherType.REQUEST),
+        registration.determineDispatcherTypes(),
+        "Guard only intercepts original requests, not forwards/errors/async dispatches");
   }
 
   /** Minimal REST surface the guard is exercised against. */

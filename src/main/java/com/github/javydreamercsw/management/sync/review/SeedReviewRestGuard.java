@@ -28,6 +28,7 @@ import java.util.Set;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.util.AntPathMatcher;
+import org.springframework.web.util.UrlPathHelper;
 
 /**
  * REST-layer half of the seed-update review gate (Task 6): freezes the app's JSON REST surface
@@ -63,6 +64,14 @@ public class SeedReviewRestGuard implements Filter {
 
   private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
 
+  /**
+   * Same path resolution the Spring handler mappings use: decodes the (raw, container-undecoded)
+   * request URI and strips the context path. Matching on this lookup path closes the encoded-path
+   * bypass — {@code POST /%61pi/...} maps to the {@code /api/...} handler on the container, and
+   * only a decoded comparison sees that.
+   */
+  private static final UrlPathHelper PATH_HELPER = new UrlPathHelper();
+
   private final SeedReviewGate gate;
 
   private final Set<String> exemptPaths;
@@ -87,7 +96,7 @@ public class SeedReviewRestGuard implements Filter {
       return;
     }
 
-    String path = relativePath(httpRequest);
+    String path = PATH_HELPER.getPathWithinApplication(httpRequest);
     if (!path.startsWith(REST_PREFIX) || isExempt(path)) {
       chain.doFilter(request, response);
       return;
@@ -101,20 +110,6 @@ public class SeedReviewRestGuard implements Filter {
     httpResponse.setStatus(HttpStatus.SERVICE_UNAVAILABLE.value());
     httpResponse.setContentType(MediaType.APPLICATION_JSON_VALUE);
     httpResponse.getWriter().write(ERROR_BODY);
-  }
-
-  /**
-   * Path relative to the context root. {@link HttpServletRequest#getRequestURI()} includes the
-   * context path ({@code /atw-rpg} in this app), and exemption patterns and the REST prefix are
-   * context-independent, so strip it first.
-   */
-  private String relativePath(HttpServletRequest request) {
-    String uri = request.getRequestURI();
-    String contextPath = request.getContextPath();
-    if (contextPath != null && !contextPath.isEmpty() && uri.startsWith(contextPath)) {
-      return uri.substring(contextPath.length());
-    }
-    return uri;
   }
 
   private boolean isExempt(String path) {

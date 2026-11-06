@@ -86,12 +86,18 @@ public class SeedReviewConfig {
 
   /**
    * Registers the REST mutation guard on the app's REST surface ({@code /api/*} — every REST
-   * controller in this codebase maps there) at {@link Ordered#LOWEST_PRECEDENCE}, i.e. after the
-   * Spring Security filter chain. This project declares {@code spring-security-*} directly instead
-   * of Boot's {@code spring-boot-security} module, so security's chain has no named order constant
-   * to reference; lowest precedence guarantees the guard runs downstream of it either way. URL
-   * patterns (rather than a request matcher) keep Vaadin's own endpoints — guarded by Task 7's
-   * navigation freeze — outside this filter entirely.
+   * controller in this codebase maps there) at {@link Ordered#LOWEST_PRECEDENCE}. Order note: this
+   * project declares {@code spring-security-*} directly instead of Boot's {@code
+   * spring-boot-security} module, so the security chain ({@code springSecurityFilterChain}) is a
+   * plain {@code Filter} bean that Boot auto-registers at the same default order — {@link
+   * Ordered#LOWEST_PRECEDENCE}. The tie resolves guard-first (explicit registrations sort before
+   * adapted beans), which is acceptable here because {@code /api/**} is {@code permitAll} in {@code
+   * SecurityConfig}: there is nothing to authenticate before guarding. The only visible effect is
+   * that during a freeze an unauthenticated probe of {@code /api/admin/**} gets the guard's 503
+   * instead of the auth failure it would otherwise see. Deliberately NOT adding
+   * DelegatingFilterProxy ordering machinery to force a strict after-security position — that would
+   * be overkill for a permitAll surface. URL patterns (rather than a request matcher) keep Vaadin's
+   * own endpoints — guarded by Task 7's navigation freeze — outside this filter entirely.
    */
   @Bean
   public FilterRegistrationBean<SeedReviewRestGuard> seedReviewRestGuard(SeedReviewGate gate) {

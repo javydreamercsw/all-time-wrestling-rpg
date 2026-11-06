@@ -36,6 +36,7 @@ import com.github.javydreamercsw.management.service.rivalry.RivalryDecayService;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -109,7 +110,7 @@ class SeedReviewAutomationHoldTest extends AbstractJpaTest {
     GameSettingService gameSettingService =
         new GameSettingService(gameSettingRepository, eventPublisher, universeContextService, gate);
 
-    gameSettingService.saveCurrentGameDate(java.time.LocalDate.now().plusDays(1));
+    gameSettingService.saveCurrentGameDate(LocalDate.now().plusDays(1));
 
     // The advance must be refused before any persistence or event happens.
     verifyNoInteractions(gameSettingRepository);
