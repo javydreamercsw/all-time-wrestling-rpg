@@ -27,16 +27,17 @@ import java.util.Objects;
  * <h2>The three-way per-field contract</h2>
  *
  * Every seed-owned field of an entity is observed as a {@link FieldObservation}: the value the
- * previous release's seed wrote ({@code storedSeedValue}, {@code null} when the row carries no
- * stored stamp — pre-provenance), the value the row holds now ({@code currentValue}), and the value
- * the incoming release's seed declares ({@code newSeedValue}). {@link #disposition(boolean,
- * FieldObservation)} maps one observation onto one of four outcomes:
+ * previous release's seed wrote for that field ({@code storedSeedValue}), the value the row holds
+ * now ({@code currentValue}), and the value the incoming release's seed declares ({@code
+ * newSeedValue}). {@link #disposition(boolean, FieldObservation)} maps one observation onto one of
+ * four outcomes:
  *
  * <ul>
- *   <li><b>Unstamped row</b> (no stored stamp) — there is no recorded baseline, so the decision is
- *       a direct content compare: {@code currentValue == newSeedValue} is {@link
- *       FieldDisposition#NO_OP} (the caller stamps the row silently); any other value is a
- *       first-upgrade collision and parks ({@link FieldDisposition#PARK_DECISION}).
+ *   <li><b>Unstamped row</b> ({@code rowHasStoredStamp == false}) — there is no recorded baseline,
+ *       so {@code storedSeedValue} is ignored and the decision is a direct content compare: {@code
+ *       currentValue == newSeedValue} is {@link FieldDisposition#NO_OP} (the caller stamps the row
+ *       silently); any other value is a first-upgrade collision and parks ({@link
+ *       FieldDisposition#PARK_DECISION}).
  *   <li><b>Stamped row, untouched field</b> ({@code storedSeedValue == currentValue}): the seed
  *       changed it ({@code storedSeedValue != newSeedValue}) → {@link
  *       FieldDisposition#SILENT_UPDATE} (tier 1 — the caller applies the new value and re-stamps);
@@ -46,6 +47,18 @@ import java.util.Objects;
  *       (tier 2); the seed still declares the stored value → the edit is respected, {@link
  *       FieldDisposition#PRESERVE_EDIT} (tier 3).
  * </ul>
+ *
+ * <h2>Stamp and stored-value semantics</h2>
+ *
+ * {@code rowHasStoredStamp} is a <b>row-level</b> property: it reflects the row's {@code
+ * seed_fingerprint} stamp (blank means legacy, pre-provenance — see {@link
+ * com.github.javydreamercsw.management.sync.SeedSyncSupport#isBlankFingerprint}), not any per-field
+ * property of the observations. When it is {@code true}, {@code storedSeedValue} must carry the
+ * previous release's per-field seed value; {@code null} is legitimate for a single field (the
+ * previous seed omitted that field), but passing {@code null} for <b>every</b> field of a stamped
+ * row parks all of them ({@code null != currentValue} and {@code null != newSeedValue} read as an
+ * administrator edit plus a seed change) — fail-safe, but wrong. When it is {@code false}, {@code
+ * storedSeedValue} is ignored entirely.
  *
  * <p>{@link #classify(boolean, List)} returns only the {@link FieldDisposition#PARK_DECISION}
  * fields as {@link FieldCollision}s carrying the {@code (currentValue, newSeedValue)} pair the
@@ -82,8 +95,10 @@ public final class SeedCollisionDetector {
    * One seed-owned field of one entity, observed at detection time.
    *
    * @param fieldName the seed-owned field's name
-   * @param storedSeedValue what the previous release's seed wrote; {@code null} when the row is
-   *     unstamped (pre-provenance)
+   * @param storedSeedValue what the previous release's seed wrote for this field; {@code null} is
+   *     legitimate when the previous seed omitted the field, and the value is ignored altogether
+   *     when the row is unstamped ({@code rowHasStoredStamp == false}) — it is never a marker for
+   *     "unstamped", which is a row-level property (see the class doc)
    * @param currentValue what the row holds now
    * @param newSeedValue what the incoming release's seed declares
    */

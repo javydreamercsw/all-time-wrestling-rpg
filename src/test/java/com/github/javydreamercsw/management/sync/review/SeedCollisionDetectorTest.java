@@ -143,6 +143,44 @@ class SeedCollisionDetectorTest {
   }
 
   @Test
+  void stampedRowWithNullStoredValuesParksEverythingFailSafe() {
+    // Misuse guard for the stamped-row contract: a stamped row must carry the previous release's
+    // per-field seed values. Passing null for every stored value is wrong — null reads as both an
+    // administrator edit (stored != current) and a seed change (stored != new) — so EVERY field
+    // with content parks, fail-safe but noisy: nothing is ever silently updated, everything is
+    // re-offered for review instead.
+    List<FieldObservation> observations =
+        List.of(
+            observation("finisher", null, "Legend Driver", "Face Cruncher"),
+            observation("alignment", null, "Face", "Face"));
+
+    assertEquals(
+        FieldDisposition.PARK_DECISION,
+        SeedCollisionDetector.disposition(true, observations.get(0)));
+    assertEquals(
+        FieldDisposition.PARK_DECISION,
+        SeedCollisionDetector.disposition(true, observations.get(1)));
+    assertEquals(
+        List.of(
+            new FieldCollision("finisher", "Legend Driver", "Face Cruncher"),
+            new FieldCollision("alignment", "Face", "Face")),
+        SeedCollisionDetector.classify(true, observations));
+  }
+
+  @Test
+  void stampedRowNullStoredMatchingValuesIsNoOp() {
+    // Corner of the stamped-row contract: the previous seed omitted the field (null stored) and
+    // the field is absent from the row and from the incoming seed too (current == new == null) —
+    // nothing differs anywhere, so the classifier no-ops. Note the contrast with a NON-null
+    // matching (current, new) pair under null stored: that parks (see
+    // stampedRowWithNullStoredValuesParksEverythingFailSafe) because null stored matches neither.
+    FieldObservation o = observation("nickname", null, null, null);
+
+    assertEquals(FieldDisposition.NO_OP, SeedCollisionDetector.disposition(true, o));
+    assertTrue(SeedCollisionDetector.classify(true, List.of(o)).isEmpty());
+  }
+
+  @Test
   void removalDetectedWhenSeedDropsEntity() {
     // Removal detection is the caller's two-step computation: first confirm from the provenance
     // manifest (or the row's own stamp) that the entity key was previously seed-owned, then check

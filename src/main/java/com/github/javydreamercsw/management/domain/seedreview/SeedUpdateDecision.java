@@ -76,7 +76,11 @@ public class SeedUpdateDecision extends AbstractEntity<Long> {
   @Column(name = "id")
   private Long id;
 
-  /** Seed domain the colliding entity belongs to (e.g. "wrestler", "npc", "title"). */
+  /**
+   * Seed domain the colliding entity belongs to (e.g. "wrestler", "npc", "championship"). Domain
+   * keys must match {@link
+   * com.github.javydreamercsw.management.sync.review.SeedDomains#STAMPING_DOMAINS}.
+   */
   @Column(name = "domain_key", nullable = false, length = 64)
   private String domainKey;
 
