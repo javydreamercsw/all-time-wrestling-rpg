@@ -23,7 +23,9 @@ import com.github.javydreamercsw.base.domain.account.AchievementRepository;
 import com.github.javydreamercsw.management.config.CacheConfig;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +47,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AchievementSync implements DataSyncContributor {
 
   private final SeedSyncSupport syncSupport;
+  private final SeedFingerprintManifest seedManifest;
   private final AchievementRepository achievementRepository;
   private final ObjectMapper objectMapper;
 
@@ -52,8 +55,10 @@ public class AchievementSync implements DataSyncContributor {
   public AchievementSync(
       @Value("${data.initializer.skip-if-not-empty:false}") final String skipIfNotEmptyRaw,
       final AchievementRepository achievementRepository,
-      final ObjectMapper objectMapper) {
+      final ObjectMapper objectMapper,
+      final SeedFingerprintManifest seedManifest) {
     this.syncSupport = new SeedSyncSupport(skipIfNotEmptyRaw);
+    this.seedManifest = seedManifest;
     this.achievementRepository = achievementRepository;
     this.objectMapper = objectMapper;
   }
@@ -65,6 +70,9 @@ public class AchievementSync implements DataSyncContributor {
     if (syncSupport.mode() != SeedSyncMode.FULL && achievementRepository.count() > 0) {
       topUpMissingAchievements();
       if (syncSupport.isVerify()) {
+        if (fastPathApplies()) {
+          return;
+        }
         reconcileVerifiedAchievements();
       }
       return;
@@ -160,8 +168,29 @@ public class AchievementSync implements DataSyncContributor {
     }
   }
 
+  /**
+   * Verify-mode fast path: when every manifest entry matches a DB row on both the stored and the
+   * recomputed fingerprint, the database is provably in its seed state and reconcile can be skipped
+   * entirely.
+   */
+  private boolean fastPathApplies() {
+    Map<String, String> stored = new HashMap<>();
+    Map<String, String> recomputed = new HashMap<>();
+    for (Achievement a : achievementRepository.findAll()) {
+      String key = a.getKey();
+      stored.put(key, a.getSeedFingerprint());
+      recomputed.put(key, achievementFingerprint(a));
+    }
+    boolean applies =
+        SeedFastPathChecker.fastPathApplies(seedManifest, "achievement", stored, recomputed);
+    if (applies) {
+      log.info("Seed manifest: achievement domain matches manifest; reconcile skipped");
+    }
+    return applies;
+  }
+
   /** Canonical seed-owned field values for an achievement row — the {@code copyContentFrom} set. */
-  private String achievementFingerprint(Achievement a) {
+  String achievementFingerprint(Achievement a) {
     return syncSupport.fingerprint(
         a.getName(),
         a.getDescription(),

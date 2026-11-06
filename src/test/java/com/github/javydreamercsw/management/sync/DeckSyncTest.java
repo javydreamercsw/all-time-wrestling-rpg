@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.sync;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
@@ -35,6 +36,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.deck.DeckService;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
@@ -92,7 +94,8 @@ class DeckSyncTest {
             wrestlerRepository,
             cardSetRepository,
             cardService,
-            new ObjectMapper());
+            new ObjectMapper(),
+            SeedFingerprintManifest.of(Map.of()));
     when(deckService.count()).thenReturn(35L);
 
     Wrestler jeff = jeffHardy();
@@ -128,7 +131,8 @@ class DeckSyncTest {
             wrestlerRepository,
             cardSetRepository,
             cardService,
-            new ObjectMapper());
+            new ObjectMapper(),
+            SeedFingerprintManifest.of(Map.of()));
     when(deckService.count()).thenReturn(1L);
 
     Wrestler jeff = jeffHardy();
@@ -154,7 +158,8 @@ class DeckSyncTest {
             wrestlerRepository,
             cardSetRepository,
             cardService,
-            new ObjectMapper());
+            new ObjectMapper(),
+            SeedFingerprintManifest.of(Map.of()));
     when(deckService.count()).thenReturn(1L);
 
     Wrestler jeff = jeffHardy();
@@ -200,7 +205,8 @@ class DeckSyncTest {
             wrestlerRepository,
             cardSetRepository,
             cardService,
-            new ObjectMapper());
+            new ObjectMapper(),
+            SeedFingerprintManifest.of(Map.of()));
     when(deckService.count()).thenReturn(1L);
 
     Wrestler eddie = jeffHardy();
@@ -236,7 +242,8 @@ class DeckSyncTest {
             wrestlerRepository,
             cardSetRepository,
             cardService,
-            new ObjectMapper());
+            new ObjectMapper(),
+            SeedFingerprintManifest.of(Map.of()));
     when(deckService.count()).thenReturn(1L);
 
     Wrestler eddie = jeffHardy();
@@ -278,7 +285,8 @@ class DeckSyncTest {
             wrestlerRepository,
             cardSetRepository,
             cardService,
-            new ObjectMapper());
+            new ObjectMapper(),
+            SeedFingerprintManifest.of(Map.of()));
     when(deckService.count()).thenReturn(1L);
 
     Wrestler eddie = jeffHardy();
@@ -319,5 +327,74 @@ class DeckSyncTest {
             .sorted()
             .collect(Collectors.joining("\n"));
     return new SeedSyncSupport("verify").fingerprint((Object[]) entries.split("\n"));
+  }
+
+  @Test
+  void fastPath_topUpStillRunsButReconcileIsSkipped() {
+    // The manifest carries exactly the fingerprint the DB deck stores (and its composition still
+    // hashes to it): the deck fast path must skip reconcileVerifiedDecks but still run the
+    // top-up, which creates decks for wrestlers without one.
+    when(deckService.count()).thenReturn(2L);
+
+    Wrestler eddie = jeffHardy();
+    Wrestler rvd = new Wrestler();
+    rvd.setId(7L);
+    rvd.setName("Rob Van Dam");
+    when(wrestlerRepository.findAll()).thenReturn(List.of(eddie, rvd));
+
+    CardSet set = eddieSet();
+    Card card1 = eddieCard(1);
+    Card card2 = eddieCard(2);
+    CardSet rvdSet = new CardSet();
+    rvdSet.setId(2L);
+    rvdSet.setCode("RVD");
+    Card rvdCard5 = new Card();
+    rvdCard5.setId(5L);
+    rvdCard5.setName("Five-Star");
+    rvdCard5.setNumber(5);
+    rvdCard5.setSet(rvdSet);
+    when(cardSetRepository.findAll()).thenReturn(List.of(set, rvdSet));
+    when(cardService.findByNumberAndSet(1, "EDDIE")).thenReturn(Optional.of(card1));
+    when(cardService.findByNumberAndSet(2, "EDDIE")).thenReturn(Optional.of(card2));
+    when(cardService.findByNumberAndSet(5, "RVD")).thenReturn(Optional.of(rvdCard5));
+
+    // Eddie's deck is clean and stamped exactly as the manifest says (composition still hashes
+    // to it); RVD has no deck yet, so top-up must still create his.
+    Deck deck = seededEddieDeck(set, card1);
+    deck.setSeedFingerprint(deckCompositionFingerprint(deck));
+    // findAllWithCards() is the join-fetched fast-path batch loader; findByWrestlerWithCards
+    // feeds top-up/reconcile.
+    when(deckService.findAllWithCards()).thenReturn(List.of(deck));
+    when(deckService.findByWrestlerWithCards(eddie)).thenReturn(List.of(deck));
+    when(deckService.findByWrestlerWithCards(rvd)).thenReturn(List.of());
+    Deck rvdNewDeck = new Deck();
+    rvdNewDeck.setWrestler(rvd);
+    when(deckService.createDeck(rvd)).thenReturn(rvdNewDeck);
+    when(deckService.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    DeckSync sync =
+        new DeckSync(
+            "verify",
+            deckService,
+            wrestlerRepository,
+            cardSetRepository,
+            cardService,
+            new ObjectMapper(),
+            SeedFingerprintManifest.of(
+                Map.of("deck", Map.of("Eddie Guerrero", deck.getSeedFingerprint()))));
+
+    sync.sync();
+
+    // Top-up still ran: RVD's missing deck was created and saved.
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Deck>> captor = ArgumentCaptor.forClass(List.class);
+    verify(deckService, atLeastOnce()).saveAll(captor.capture());
+    List<Deck> saved =
+        captor.getAllValues().stream().flatMap(List::stream).collect(Collectors.toList());
+    assertTrue(
+        saved.stream().anyMatch(d -> d == rvdNewDeck),
+        "top-up must still create the missing deck for RVD");
+    // Reconcile never re-saves the already-correct deck.
+    assertFalse(saved.stream().anyMatch(d -> d == deck), "reconcile must be skipped");
   }
 }

@@ -31,6 +31,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,7 +50,8 @@ class NpcSyncTest {
 
   @BeforeEach
   void setUp() {
-    sync = new NpcSync("false", npcService, new ObjectMapper());
+    sync =
+        new NpcSync("false", npcService, new ObjectMapper(), SeedFingerprintManifest.of(Map.of()));
   }
 
   @Test
@@ -64,7 +66,8 @@ class NpcSyncTest {
   @Test
   void sync_skipsWhenNotEmptyFlagSet() {
     // Skip gate with a complete catalog: every seeded NPC exists → top-up inserts nothing.
-    NpcSync skipSync = new NpcSync("true", npcService, new ObjectMapper());
+    NpcSync skipSync =
+        new NpcSync("true", npcService, new ObjectMapper(), SeedFingerprintManifest.of(Map.of()));
     when(npcService.count()).thenReturn(15L);
     when(npcService.findAllUnfiltered())
         .thenReturn(
@@ -132,7 +135,8 @@ class NpcSyncTest {
     // Simulates a prod install with the skip flag set: 4 pre-2.12.0 referees exist, the 6 new
     // ones (and the rest of the seed catalog) are missing. Top-up must insert exactly the 11
     // missing seed NPCs and never re-save an existing row.
-    NpcSync skipSync = new NpcSync("true", npcService, new ObjectMapper());
+    NpcSync skipSync =
+        new NpcSync("true", npcService, new ObjectMapper(), SeedFingerprintManifest.of(Map.of()));
     when(npcService.count()).thenReturn(4L);
     List<String> existingNames =
         List.of("Samuel Winters", "Rezan the Resolved", "Rigo Del Sarto", "Anika Stroud");
@@ -165,7 +169,8 @@ class NpcSyncTest {
 
   @Test
   void sync_topUpLeavesExistingNpcUntouchedWhenSkipFlagSet() {
-    NpcSync skipSync = new NpcSync("true", npcService, new ObjectMapper());
+    NpcSync skipSync =
+        new NpcSync("true", npcService, new ObjectMapper(), SeedFingerprintManifest.of(Map.of()));
     when(npcService.count()).thenReturn(1L);
     Npc existing = new Npc();
     existing.setName("Charles");
@@ -199,7 +204,8 @@ class NpcSyncTest {
 
   @Test
   void verifyMode_reconcilesCleanNpcAndPreservesEditedNpc() {
-    NpcSync verifySync = new NpcSync("verify", npcService, new ObjectMapper());
+    NpcSync verifySync =
+        new NpcSync("verify", npcService, new ObjectMapper(), SeedFingerprintManifest.of(Map.of()));
     when(npcService.count()).thenReturn(2L);
 
     // Clean: Charles as an older release's seed write left him, description since fixed in the
@@ -232,7 +238,8 @@ class NpcSyncTest {
 
   @Test
   void verifyMode_adoptsLegacyNpcWhenFieldsMatchSeed() {
-    NpcSync verifySync = new NpcSync("verify", npcService, new ObjectMapper());
+    NpcSync verifySync =
+        new NpcSync("verify", npcService, new ObjectMapper(), SeedFingerprintManifest.of(Map.of()));
     when(npcService.count()).thenReturn(1L);
 
     // Legacy: no stamp, but fields equal the seed (per npcs.json: description "The mysterious
@@ -250,5 +257,34 @@ class NpcSyncTest {
         npcFingerprint(legacy),
         legacy.getSeedFingerprint(),
         "legacy NPC matching the seed must be adopted (fingerprint stamped)");
+  }
+
+  @Test
+  void fastPath_skipsReconcileWhenManifestMatchesStoredRows() {
+    // Clean: Charles as an older release's seed write left him, description since fixed in the
+    // seed file. The manifest matches his stored stamp, so reconcile must be skipped.
+    Npc clean = new Npc();
+    clean.setName("Charles");
+    clean.setDescription("stale description from an older release");
+    npcCanonicalHashed(clean);
+
+    NpcSync fastSync =
+        new NpcSync(
+            "verify",
+            npcService,
+            new ObjectMapper(),
+            SeedFingerprintManifest.of(
+                Map.of("npc", Map.of("Charles", clean.getSeedFingerprint()))));
+    when(npcService.count()).thenReturn(1L);
+    when(npcService.findAllUnfiltered()).thenReturn(List.of(clean));
+
+    fastSync.sync();
+
+    // The stale description proves reconcile never ran (it would have adopted the seed's
+    // "The mysterious owner of ATW.").
+    assertEquals(
+        "stale description from an older release",
+        clean.getDescription(),
+        "fast path must skip reconcile; the stale seed-owned field survives");
   }
 }

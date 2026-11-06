@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.service.card.CardSetService;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
@@ -48,7 +49,9 @@ class CardSetSyncTest {
     // Simulates a flag-protected install where one seeded set (ATW) exists and every other
     // seeded set is missing. Top-up must insert exactly the missing sets and never re-save an
     // existing row.
-    CardSetSync skipSync = new CardSetSync("true", cardSetService, new ObjectMapper());
+    CardSetSync skipSync =
+        new CardSetSync(
+            "true", cardSetService, new ObjectMapper(), SeedFingerprintManifest.of(Map.of()));
     when(cardSetService.count()).thenReturn(1L);
 
     CardSet existing = new CardSet();
@@ -71,7 +74,9 @@ class CardSetSyncTest {
 
   @Test
   void sync_topUpLeavesExistingCardSetUntouchedWhenSkipFlagSet() {
-    CardSetSync skipSync = new CardSetSync("true", cardSetService, new ObjectMapper());
+    CardSetSync skipSync =
+        new CardSetSync(
+            "true", cardSetService, new ObjectMapper(), SeedFingerprintManifest.of(Map.of()));
     when(cardSetService.count()).thenReturn(1L);
     CardSet existing = new CardSet();
     existing.setCode("ATW");
@@ -90,7 +95,9 @@ class CardSetSyncTest {
   @Test
   void sync_fullModeUpdatesExistingCardSet() {
     // Without the skip flag, existing rows are updated to match the seed (original behavior).
-    CardSetSync fullSync = new CardSetSync("false", cardSetService, new ObjectMapper());
+    CardSetSync fullSync =
+        new CardSetSync(
+            "false", cardSetService, new ObjectMapper(), SeedFingerprintManifest.of(Map.of()));
     CardSet existing = new CardSet();
     existing.setCode("ATW");
     existing.setName("stale name");
@@ -105,7 +112,9 @@ class CardSetSyncTest {
   @Test
   void verifyMode_reconcilesCleanRowAndPreservesEditedRow() {
     SeedSyncSupport support = new SeedSyncSupport("verify");
-    CardSetSync verifySync = new CardSetSync("verify", cardSetService, new ObjectMapper());
+    CardSetSync verifySync =
+        new CardSetSync(
+            "verify", cardSetService, new ObjectMapper(), SeedFingerprintManifest.of(Map.of()));
     when(cardSetService.count()).thenReturn(2L);
 
     // ATW: stamped as an older release's seed write left it — the row's own (then-current) name
@@ -139,7 +148,9 @@ class CardSetSyncTest {
   @Test
   void verifyMode_adoptsLegacyRowWhenFieldsMatchSeed() {
     SeedSyncSupport support = new SeedSyncSupport("verify");
-    CardSetSync verifySync = new CardSetSync("verify", cardSetService, new ObjectMapper());
+    CardSetSync verifySync =
+        new CardSetSync(
+            "verify", cardSetService, new ObjectMapper(), SeedFingerprintManifest.of(Map.of()));
     when(cardSetService.count()).thenReturn(1L);
     CardSet legacy = new CardSet();
     legacy.setCode("ATW");
@@ -161,7 +172,9 @@ class CardSetSyncTest {
     // Regression: the reconcile previously stamped hash(oldName) after renaming, poisoning the
     // next pass. The persisted row must carry the NEW name's hash.
     SeedSyncSupport support = new SeedSyncSupport("verify");
-    CardSetSync verifySync = new CardSetSync("verify", cardSetService, new ObjectMapper());
+    CardSetSync verifySync =
+        new CardSetSync(
+            "verify", cardSetService, new ObjectMapper(), SeedFingerprintManifest.of(Map.of()));
     when(cardSetService.count()).thenReturn(1L);
 
     CardSet clean = new CardSet();
@@ -187,5 +200,38 @@ class CardSetSyncTest {
         support.fingerprint("All Time Wrestling"),
         lastBatch.getFirst().getSeedFingerprint(),
         "persisted stamp must hash the NEW name, not the pre-rename one");
+  }
+
+  @Test
+  void fastPath_skipsReconcileWhenManifestMatchesStoredRows() {
+    SeedSyncSupport support = new SeedSyncSupport("verify");
+    // ATW stamped exactly as the manifest says; its (stale) name still hashes to the stamp, so
+    // reconcile must be skipped and the stale name survives untouched.
+    CardSet clean = new CardSet();
+    clean.setCode("ATW");
+    clean.setName("stale set name");
+    clean.setSeedFingerprint(support.fingerprint("stale set name"));
+
+    CardSetSync fastSync =
+        new CardSetSync(
+            "verify",
+            cardSetService,
+            new ObjectMapper(),
+            SeedFingerprintManifest.of(
+                Map.of("card_set", Map.of("ATW", support.fingerprint("stale set name")))));
+    when(cardSetService.count()).thenReturn(1L);
+    when(cardSetService.findAll()).thenReturn(List.of(clean));
+    when(cardSetService.findBySetCode("ATW")).thenReturn(Optional.of(clean));
+    when(cardSetService.findBySetCode(argThat(code -> !"ATW".equals(code))))
+        .thenReturn(Optional.empty());
+
+    fastSync.sync();
+
+    // The stale name proves reconcile never ran (it would have adopted the seed's
+    // "All Time Wrestling").
+    assertEquals(
+        "stale set name",
+        clean.getName(),
+        "fast path must skip reconcile; the stale seed-owned name survives");
   }
 }

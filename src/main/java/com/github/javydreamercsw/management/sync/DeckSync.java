@@ -52,6 +52,7 @@ import org.springframework.stereotype.Component;
 public class DeckSync implements DataSyncContributor {
 
   private final SeedSyncSupport syncSupport;
+  private final SeedFingerprintManifest seedManifest;
   private final DeckService deckService;
   private final WrestlerRepository wrestlerRepository;
   private final CardSetRepository cardSetRepository;
@@ -65,8 +66,10 @@ public class DeckSync implements DataSyncContributor {
       final WrestlerRepository wrestlerRepository,
       final CardSetRepository cardSetRepository,
       final CardService cardService,
-      final ObjectMapper objectMapper) {
+      final ObjectMapper objectMapper,
+      final SeedFingerprintManifest seedManifest) {
     this.syncSupport = new SeedSyncSupport(skipIfNotEmptyRaw);
+    this.seedManifest = seedManifest;
     this.deckService = deckService;
     this.wrestlerRepository = wrestlerRepository;
     this.cardSetRepository = cardSetRepository;
@@ -77,8 +80,13 @@ public class DeckSync implements DataSyncContributor {
   @Override
   public void sync() {
     if (syncSupport.mode() != SeedSyncMode.FULL && deckService.count() > 0) {
+      // Top-up runs BEFORE the fast-path gate: creating decks for wrestlers without one is not a
+      // reconcile decision and must happen on every skip-gate pass.
       topUpMissingDecks();
       if (syncSupport.isVerify()) {
+        if (fastPathApplies()) {
+          return;
+        }
         reconcileVerifiedDecks();
       }
       return;
@@ -253,8 +261,34 @@ public class DeckSync implements DataSyncContributor {
   }
 
   /** Fingerprint over a deck row's current composition, in canonical form. */
-  private String compositionFingerprint(Deck deck) {
+  String compositionFingerprint(Deck deck) {
     return syncSupport.fingerprint(composition(deck));
+  }
+
+  /**
+   * Verify-mode fast path: when every manifest entry matches a DB row on both the stored and the
+   * recomputed fingerprint, the database is provably in its seed state and reconcile can be skipped
+   * entirely. Decks load through the join-fetched {@code findAllWithCards()} (the recomputed
+   * fingerprint reads every {@link DeckCard}, and {@link Deck#cards} is LAZY — a plain {@code
+   * findAll()} would hand back detached rows and crash on first access); the DB key is the owning
+   * wrestler's name, matching the reconcile's lookup.
+   */
+  private boolean fastPathApplies() {
+    Map<String, String> stored = new HashMap<>();
+    Map<String, String> recomputed = new HashMap<>();
+    for (Deck deck : deckService.findAllWithCards()) {
+      if (deck.getWrestler() == null) {
+        continue;
+      }
+      String key = deck.getWrestler().getName();
+      stored.put(key, deck.getSeedFingerprint());
+      recomputed.put(key, compositionFingerprint(deck));
+    }
+    boolean applies = SeedFastPathChecker.fastPathApplies(seedManifest, "deck", stored, recomputed);
+    if (applies) {
+      log.info("Seed manifest: deck domain matches manifest; reconcile skipped");
+    }
+    return applies;
   }
 
   /** Stamps a deck with the fingerprint of its current composition. */

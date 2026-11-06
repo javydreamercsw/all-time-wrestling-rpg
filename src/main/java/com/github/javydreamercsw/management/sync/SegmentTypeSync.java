@@ -27,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +46,7 @@ import org.springframework.stereotype.Component;
 public class SegmentTypeSync implements DataSyncContributor {
 
   private final SeedSyncSupport syncSupport;
+  private final SeedFingerprintManifest seedManifest;
   private final SegmentTypeService segmentTypeService;
   private final ObjectMapper objectMapper;
 
@@ -52,8 +54,10 @@ public class SegmentTypeSync implements DataSyncContributor {
   public SegmentTypeSync(
       @Value("${data.initializer.skip-if-not-empty:false}") final String skipIfNotEmptyRaw,
       final SegmentTypeService segmentTypeService,
-      final ObjectMapper objectMapper) {
+      final ObjectMapper objectMapper,
+      final SeedFingerprintManifest seedManifest) {
     this.syncSupport = new SeedSyncSupport(skipIfNotEmptyRaw);
+    this.seedManifest = seedManifest;
     this.segmentTypeService = segmentTypeService;
     this.objectMapper = objectMapper;
   }
@@ -63,6 +67,9 @@ public class SegmentTypeSync implements DataSyncContributor {
     if (syncSupport.mode() != SeedSyncMode.FULL && segmentTypeService.count() > 0) {
       topUpMissingSegmentTypes();
       if (syncSupport.isVerify()) {
+        if (fastPathApplies()) {
+          return;
+        }
         reconcileVerifiedSegmentTypes();
       }
       return;
@@ -110,6 +117,13 @@ public class SegmentTypeSync implements DataSyncContributor {
               dto.getGuide(),
               dto.getCode(),
               dto.getEventOnly());
+      if (segmentType != null
+          && SeedSyncSupport.isBlankFingerprint(segmentType.getSeedFingerprint())) {
+        // The service save leaves the stamp unset (same as the top-up branch): stamp the freshly
+        // seeded row so verify mode's stored-side check can match it against the manifest.
+        segmentType.setSeedFingerprint(segmentTypeFingerprint(segmentType));
+        segmentTypeService.saveSegmentType(segmentType);
+      }
       log.debug(
           "Loaded segment type: {} (Players: {})",
           segmentType.getName(),
@@ -138,13 +152,33 @@ public class SegmentTypeSync implements DataSyncContributor {
    * expansionCode, guideHash, code, eventOnly. Mirrors the seed write set of {@code
    * createOrUpdateSegmentType}; {@code active} is admin-managed and excluded.
    */
-  private String segmentTypeFingerprint(SegmentType st) {
+  String segmentTypeFingerprint(SegmentType st) {
     return syncSupport.fingerprint(
         st.getDescription(),
         st.getExpansionCode(),
         st.getGuideHash(),
         st.getCode(),
         st.isEventOnly());
+  }
+
+  /**
+   * Verify-mode fast path: when every manifest entry matches a DB row on both the stored and the
+   * recomputed fingerprint, the database is provably in its seed state and reconcile can be skipped
+   * entirely.
+   */
+  private boolean fastPathApplies() {
+    Map<String, String> stored = new HashMap<>();
+    Map<String, String> recomputed = new HashMap<>();
+    for (SegmentType st : segmentTypeService.findAll()) {
+      stored.put(st.getName(), st.getSeedFingerprint());
+      recomputed.put(st.getName(), segmentTypeFingerprint(st));
+    }
+    boolean applies =
+        SeedFastPathChecker.fastPathApplies(seedManifest, "segment_type", stored, recomputed);
+    if (applies) {
+      log.info("Seed manifest: segment_type domain matches manifest; reconcile skipped");
+    }
+    return applies;
   }
 
   /** Guide hash the seed write would compute for a DTO (mirrors the service's private method). */

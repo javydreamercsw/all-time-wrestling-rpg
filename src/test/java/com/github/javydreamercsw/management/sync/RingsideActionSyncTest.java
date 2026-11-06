@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -30,6 +31,7 @@ import com.github.javydreamercsw.management.domain.show.segment.RingsideAction;
 import com.github.javydreamercsw.management.domain.show.segment.RingsideActionType;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionDataService;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatchers;
@@ -70,7 +72,11 @@ class RingsideActionSyncTest {
   @Test
   void sync_topUpInsertsOnlyMissingActionsWhenSkipFlagSet() {
     RingsideActionSync sync =
-        new RingsideActionSync("true", ringsideActionDataService, new ObjectMapper());
+        new RingsideActionSync(
+            "true",
+            ringsideActionDataService,
+            new ObjectMapper(),
+            SeedFingerprintManifest.of(Map.of()));
     when(ringsideActionDataService.countTypes()).thenReturn(3L);
     when(ringsideActionDataService.countActions()).thenReturn(1L);
     RingsideAction existing = action("Encouraging Call", "Legal Support");
@@ -103,7 +109,11 @@ class RingsideActionSyncTest {
   @Test
   void verifyMode_reconcilesCleanRowAndPreservesEditedRow() {
     RingsideActionSync verifySync =
-        new RingsideActionSync("verify", ringsideActionDataService, new ObjectMapper());
+        new RingsideActionSync(
+            "verify",
+            ringsideActionDataService,
+            new ObjectMapper(),
+            SeedFingerprintManifest.of(Map.of()));
     when(ringsideActionDataService.countTypes()).thenReturn(3L);
     when(ringsideActionDataService.countActions()).thenReturn(2L);
 
@@ -151,7 +161,11 @@ class RingsideActionSyncTest {
   @Test
   void verifyMode_adoptsLegacyRowWhenFieldsMatchSeed() {
     RingsideActionSync verifySync =
-        new RingsideActionSync("verify", ringsideActionDataService, new ObjectMapper());
+        new RingsideActionSync(
+            "verify",
+            ringsideActionDataService,
+            new ObjectMapper(),
+            SeedFingerprintManifest.of(Map.of()));
     when(ringsideActionDataService.countTypes()).thenReturn(3L);
     when(ringsideActionDataService.countActions()).thenReturn(1L);
 
@@ -181,6 +195,51 @@ class RingsideActionSyncTest {
         legacy.getSeedFingerprint(),
         "legacy action matching the seed must be adopted (fingerprint stamped)");
     verify(ringsideActionDataService).saveAction(legacy);
+  }
+
+  @Test
+  void fastPath_skipsReconcileWhenManifestMatchesStoredRows() {
+    // Clean: stamped over its own (then-current) fields; the seed's description has since changed.
+    RingsideAction clean = action("Encouraging Call", "Legal Support");
+    clean.setDescription("stale description");
+    clean.setImpact(1);
+    clean.setRisk(1);
+    clean.setSeedFingerprint(actionFingerprint(clean));
+
+    RingsideActionSync fastSync =
+        new RingsideActionSync(
+            "verify",
+            ringsideActionDataService,
+            new ObjectMapper(),
+            SeedFingerprintManifest.of(
+                Map.of("ringside_action", Map.of("Encouraging Call", clean.getSeedFingerprint()))));
+    when(ringsideActionDataService.countTypes()).thenReturn(3L);
+    when(ringsideActionDataService.countActions()).thenReturn(1L);
+    when(ringsideActionDataService.findAllActionsUnfiltered()).thenReturn(List.of(clean));
+    when(ringsideActionDataService.createOrUpdateAction(
+            anyString(), anyString(), any(), anyInt(), anyInt(), any(), any()))
+        .thenAnswer(
+            inv -> {
+              RingsideAction a = action(inv.getArgument(0), inv.getArgument(1));
+              a.setDescription(inv.getArgument(2));
+              a.setImpact(inv.getArgument(3));
+              a.setRisk(inv.getArgument(4));
+              return a;
+            });
+
+    fastSync.sync();
+
+    // The gate must fire: the row's seed-owned fields deliberately differ from the current seed
+    // (impact/risk moved on after seeding), so a deleted gate would make reconcile rewrite it
+    // through createOrUpdateAction("Encouraging Call", ...) and persist via saveAction. Top-up
+    // never calls the service for existing names, so that call is reconcile-only.
+    verify(ringsideActionDataService, never())
+        .createOrUpdateAction(
+            eq("Encouraging Call"), anyString(), any(), anyInt(), anyInt(), any(), any());
+    assertEquals(
+        "stale description",
+        clean.getDescription(),
+        "fast path must skip reconcile; the stale seed-owned field survives");
   }
 
   private static String eqName(String name) {
