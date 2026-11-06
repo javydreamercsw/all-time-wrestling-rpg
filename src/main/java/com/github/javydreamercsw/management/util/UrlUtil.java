@@ -54,6 +54,9 @@ public final class UrlUtil {
    * been seen yet the method falls back to a best-effort LAN IP guess.
    */
   public static String getNetworkUrl() {
+    // QR_BASE_URL override, e.g. https://192.168.4.51/atw-rpg. Must include the
+    // servlet context path (the WAR deploys as atw-rpg.war) — view code appends
+    // routes like /match/{id} directly to this value.
     String override = System.getenv("QR_BASE_URL");
     if (override != null && !override.isBlank()) {
       return override;

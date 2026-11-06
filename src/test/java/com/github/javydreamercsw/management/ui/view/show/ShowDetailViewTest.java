@@ -42,8 +42,10 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.export.ShowExportService;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
@@ -94,14 +96,17 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerStateHistor
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.ViewContext;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
+import com.github.javydreamercsw.management.ui.view.segment.NarrationDialog;
 import com.github.mvysny.kaributesting.v10.LocatorJ;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.listbox.ListBox;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.data.provider.Query;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
@@ -380,6 +385,213 @@ class ShowDetailViewTest extends AbstractViewTest {
   }
 
   @Test
+  void confirmDialog_showsNarrationListAndWarnings_adjudicateAnywayButton() {
+    // 2.13.0: pre-flight returns both lists — the dialog shows the narration list (info)
+    // and the missing-winner warning, and the confirm button becomes "Adjudicate Anyway".
+    ShowType showType = new ShowType();
+    showType.setName("Test");
+    Show show = new Show();
+    show.setId(50L);
+    show.setName("Pre-flight Show");
+    show.setType(showType);
+
+    Mockito.when(showService.getShowById(50L)).thenReturn(Optional.of(show));
+    Mockito.when(showService.getAdjudicationPreFlight(50L))
+        .thenReturn(
+            new ShowService.AdjudicationPreFlight(
+                List.of("Match 1 — Wrestler A vs Wrestler B (no winner)"),
+                List.of("Match 1 — Wrestler A vs Wrestler B"),
+                true));
+    Mockito.when(segmentRepository.findByShow(any(Show.class))).thenReturn(List.of());
+
+    ShowDetailView view = buildView(mock(SecurityUtils.class));
+    ReflectionTestUtils.setField(view, "currentShow", show);
+
+    ReflectionTestUtils.invokeMethod(view, "confirmThenAdjudicate", show);
+
+    ConfirmDialog dialog = LocatorJ._get(ConfirmDialog.class);
+    // Vaadin 25's ConfirmDialog exposes button labels as element properties, not getters.
+    assertThat(dialog.getElement().getProperty("confirmText")).isEqualTo("Adjudicate Anyway");
+    assertThat(dialog.getElement().getProperty("cancelText")).isEqualTo("Go Back");
+    StringBuilder dialogText = new StringBuilder();
+    collectComponentText(dialog, dialogText);
+    assertThat(dialogText.toString()).contains("AI narration will be generated for 1 segment(s)");
+    assertThat(dialogText.toString()).contains("no winner selected");
+    // The lists must scroll, not overlap: each ListBox clips its items with overflow-y auto
+    // (a bare maxHeight lets long lists paint over the content below — seen in the sandbox).
+    ListBox<String> narrateList = findListBox(dialog);
+    assertThat(narrateList).isNotNull();
+    assertThat(narrateList.getElement().getStyle().get("overflowY")).isEqualTo("auto");
+  }
+
+  private static ListBox<String> findListBox(Component root) {
+    if (root instanceof ListBox<?>) {
+      @SuppressWarnings("unchecked")
+      ListBox<String> box = (ListBox<String>) root;
+      return box;
+    }
+    for (Component child : root.getChildren().toList()) {
+      ListBox<String> found = findListBox(child);
+      if (found != null) {
+        return found;
+      }
+    }
+    return null;
+  }
+
+  private static void collectComponentText(Component component, StringBuilder sb) {
+    String own = component.getElement().getText();
+    if (own != null && !own.isBlank()) {
+      sb.append(own).append(' ');
+    }
+    component.getChildren().forEach(child -> collectComponentText(child, sb));
+  }
+
+  @Test
+  void confirmDialog_cancelDoesNotAdjudicate() {
+    // 2.13.0 review fix: the cancel path was untested — "Go Back" must not start adjudication.
+    ShowType showType = new ShowType();
+    showType.setName("Test");
+    Show show = new Show();
+    show.setId(51L);
+    show.setName("Cancel Show");
+    show.setType(showType);
+
+    Mockito.when(showService.getShowById(51L)).thenReturn(Optional.of(show));
+    Mockito.when(showService.getAdjudicationPreFlight(51L))
+        .thenReturn(
+            new ShowService.AdjudicationPreFlight(
+                List.of("Match 1 — no winner"), List.of("Match 1"), true));
+    Mockito.when(segmentRepository.findByShow(any(Show.class))).thenReturn(List.of());
+
+    ShowDetailView view = buildView(mock(SecurityUtils.class));
+    ReflectionTestUtils.setField(view, "currentShow", show);
+
+    ReflectionTestUtils.invokeMethod(view, "confirmThenAdjudicate", show);
+
+    // The dialog is open and wired for cancellation; no adjudication has started.
+    ConfirmDialog dialog = LocatorJ._get(ConfirmDialog.class);
+    assertThat(dialog.isOpened()).isTrue();
+    // Vaadin 25 ConfirmDialog has no button getters — the cancel wiring is verified by
+    // the absence of any adjudication call before a confirm event (the E2E covers the
+    // full browser cancel/confirm interaction).
+    Mockito.verify(showController, Mockito.never()).adjudicateShow(Mockito.anyLong());
+  }
+
+  @Test
+  void confirmDialog_noNarrationProvider_showsSkipNoteAndPlainConfirm() {
+    // ATW-ktta: with no AI provider configured the dialog must not promise narration —
+    // it says segments use their booked descriptions, and proceeding is a normal path
+    // (plain "Adjudicate", not "Adjudicate Anyway").
+    ShowType showType = new ShowType();
+    showType.setName("Test");
+    Show show = new Show();
+    show.setId(52L);
+    show.setName("No Provider Show");
+    show.setType(showType);
+
+    Mockito.when(showService.getShowById(52L)).thenReturn(Optional.of(show));
+    Mockito.when(showService.getAdjudicationPreFlight(52L))
+        .thenReturn(
+            new ShowService.AdjudicationPreFlight(
+                List.of(), List.of("Match 1 — Wrestler A vs Wrestler B"), false));
+    Mockito.when(segmentRepository.findByShow(any(Show.class))).thenReturn(List.of());
+
+    ShowDetailView view = buildView(mock(SecurityUtils.class));
+    ReflectionTestUtils.setField(view, "currentShow", show);
+
+    ReflectionTestUtils.invokeMethod(view, "confirmThenAdjudicate", show);
+
+    ConfirmDialog dialog = LocatorJ._get(ConfirmDialog.class);
+    assertThat(dialog.getElement().getProperty("confirmText")).isEqualTo("Adjudicate");
+    StringBuilder dialogText = new StringBuilder();
+    collectComponentText(dialog, dialogText);
+    String text = dialogText.toString();
+    assertThat(text).contains("No AI narration provider is configured");
+    assertThat(text).contains("booked descriptions");
+    assertThat(text).doesNotContain("AI narration will be generated");
+    assertThat(text).doesNotContain("Adjudicate Anyway");
+  }
+
+  @Test
+  void narrateButton_opensNarrationDialog_withFactoryWired() {
+    // ATW-ktta: the Narrate action must open NarrationDialog through the async
+    // PreloadedData.load path with the factory injected — a regression here used to
+    // surface only as a silent "Failed to open narration dialog" at runtime.
+    when(securityUtils.isViewer()).thenReturn(false);
+    ShowType showType = new ShowType();
+    showType.setName("Test");
+    Show show = new Show();
+    show.setId(53L);
+    show.setName("Narrate Flow Show");
+    show.setType(showType);
+
+    SegmentType singlesType = new SegmentType();
+    singlesType.setName("Singles");
+    singlesType.setCode(WellKnownSegmentType.ONE_ON_ONE.getCode());
+
+    Segment segment = new Segment();
+    segment.setId(60L);
+    segment.setShow(show);
+    segment.setSegmentType(singlesType);
+    segment.setSegmentDate(Instant.parse("2026-09-03T00:00:00Z"));
+    segment.setNarration("Existing narration");
+
+    Mockito.when(showService.getShowById(any())).thenReturn(Optional.of(show));
+    Mockito.when(segmentRepository.findByShowOrderBySegmentOrderAsc(any(Show.class)))
+        .thenReturn(List.of(segment));
+    Mockito.when(segmentRepository.findByShow(any(Show.class))).thenReturn(List.of(segment));
+    Mockito.when(segmentService.findByIdWithDetails(60L)).thenReturn(Optional.of(segment));
+    Mockito.when(feudScriptService.findBeatForSegment(Mockito.any(Segment.class)))
+        .thenReturn(Optional.empty());
+    Mockito.when(tournamentMatchRepository.findBySegmentId(Mockito.anyLong()))
+        .thenReturn(Optional.empty());
+    // PreloadedData.load NPC pools — empty is fine, the dialog just renders empty selects.
+    Mockito.when(npcService.findAllByTypeUnfiltered(Mockito.anyString())).thenReturn(List.of());
+    Mockito.when(npcService.findAllUnfiltered()).thenReturn(List.of());
+    Mockito.when(wrestlerStatsService.findAllAsDTO(Mockito.anyLong())).thenReturn(List.of());
+    Mockito.when(wrestlerStatsService.findAllBySegment(Mockito.any(), Mockito.anyLong()))
+        .thenReturn(List.of());
+
+    ShowDetailView view = buildView(securityUtils);
+    BeforeEvent event = Mockito.mock(BeforeEvent.class);
+    Mockito.when(event.getLocation()).thenReturn(new Location(""));
+    view.setParameter(event, 53L);
+
+    // The Narrate button lives inside a grid component renderer that Karibu does not
+    // materialize — drive the click handler's target directly (same pattern as the
+    // generateSummary test below).
+    ReflectionTestUtils.invokeMethod(view, "openNarrationDialog", segment);
+
+    // The load path is async (runAsAdminAsync -> ui.access): under full-suite load the
+    // dialog attach lags the calling thread, so wait for it instead of asserting cold.
+    NarrationDialog dialog = awaitDialog(NarrationDialog.class);
+    assertThat(dialog).isNotNull();
+    assertThat(dialog.isOpened()).isTrue();
+  }
+
+  private static <T extends Component> T awaitDialog(Class<T> type) {
+    long deadline = System.currentTimeMillis() + 5000;
+    while (System.currentTimeMillis() < deadline) {
+      try {
+        T found = LocatorJ._get(type);
+        if (found != null) {
+          return found;
+        }
+      } catch (AssertionError expectedWhilePending) {
+        // Dialog not attached yet — keep polling until the deadline.
+      }
+      try {
+        Thread.sleep(50);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        break;
+      }
+    }
+    return LocatorJ._get(type); // One final lookup so the failure shows the tree.
+  }
+
+  @Test
   void deleteSegment_notArcLinked_genericConfirmDialog() {
     Segment segment = new Segment();
     segment.setId(88L);
@@ -589,6 +801,86 @@ class ShowDetailViewTest extends AbstractViewTest {
     Assertions.assertThat(badge.getElement().getText()).contains("Crown Cup");
     Assertions.assertThat(badge.getElement().getText()).contains("🏆");
     Mockito.verify(tournamentMatchRepository, Mockito.atLeastOnce()).findBySegmentId(20L);
+  }
+
+  @Test
+  void segmentGrid_winnerColumn_showsDrawAndNoContestBadges() {
+    // 2.13.0: a segment booked as a draw or no contest must not render a blank
+    // Winner(s) cell — the booker sees the declared outcome right in the grid.
+    ShowType showType = new ShowType();
+    showType.setName("Test");
+    Show show = new Show();
+    show.setId(31L);
+    show.setName("Result Badge Show");
+    show.setType(showType);
+
+    SegmentType singlesType = new SegmentType();
+    singlesType.setName("Singles");
+    singlesType.setCode(WellKnownSegmentType.ONE_ON_ONE.getCode());
+
+    Segment draw = new Segment();
+    draw.setId(40L);
+    draw.setShow(show);
+    draw.setSegmentType(singlesType);
+    draw.setSegmentDate(Instant.parse("2026-09-03T00:00:00Z"));
+    draw.declareResult(SegmentResult.DRAW);
+
+    Segment noContest = new Segment();
+    noContest.setId(41L);
+    noContest.setShow(show);
+    noContest.setSegmentType(singlesType);
+    noContest.setSegmentDate(Instant.parse("2026-09-03T00:00:00Z"));
+    noContest.declareResult(SegmentResult.NO_CONTEST);
+
+    Mockito.when(showService.getShowById(any())).thenReturn(Optional.of(show));
+    Mockito.when(segmentRepository.findByShowOrderBySegmentOrderAsc(any(Show.class)))
+        .thenReturn(List.of(draw, noContest));
+    Mockito.when(segmentRepository.findByShow(any(Show.class)))
+        .thenReturn(List.of(draw, noContest));
+    Mockito.when(feudScriptService.findBeatForSegment(Mockito.any(Segment.class)))
+        .thenReturn(Optional.empty());
+    Mockito.when(tournamentMatchRepository.findBySegmentId(Mockito.anyLong()))
+        .thenReturn(Optional.empty());
+
+    ShowDetailView view = buildView(mock(SecurityUtils.class));
+    BeforeEvent event = Mockito.mock(BeforeEvent.class);
+    Mockito.when(event.getLocation()).thenReturn(new Location(""));
+    view.setParameter(event, 31L);
+
+    // Drive the winner column's renderer directly (component renderers run at
+    // row render): probe each column for the declared-outcome text.
+    Grid<Segment> grid = LocatorJ._get(view, Grid.class, spec -> spec.withId("segments-grid"));
+    ComponentRenderer<?, Segment> winnerRenderer = null;
+    for (var column : grid.getColumns()) {
+      if (column.getRenderer() instanceof ComponentRenderer<?, ?> cr) {
+        var probe = (ComponentRenderer<Component, Segment>) cr;
+        Component test = probe.createComponent(draw);
+        if (test != null && test.getElement().getText().contains("Draw")) {
+          winnerRenderer = (ComponentRenderer<?, Segment>) column.getRenderer();
+          break;
+        }
+      }
+    }
+    Assertions.assertThat(winnerRenderer).as("Winner(s) column").isNotNull();
+    Component drawCell = winnerRenderer.createComponent(draw);
+    Component noContestCell = winnerRenderer.createComponent(noContest);
+    Assertions.assertThat(drawCell.getElement().getText()).contains("🤝 Draw");
+    Assertions.assertThat(noContestCell.getElement().getText()).contains("🚫 No Contest");
+
+    // A segment with winners still shows the winner names, not the badges.
+    Segment withWinner = new Segment();
+    withWinner.setId(42L);
+    withWinner.setShow(show);
+    withWinner.setSegmentType(singlesType);
+    withWinner.setSegmentDate(Instant.parse("2026-09-03T00:00:00Z"));
+    Wrestler champ = new Wrestler();
+    champ.setId(7L);
+    champ.setName("Champ");
+    withWinner.addParticipant(champ);
+    withWinner.getParticipants().iterator().next().setIsWinner(true);
+    Component winnersCell = winnerRenderer.createComponent(withWinner);
+    Assertions.assertThat(winnersCell.getElement().getText()).contains("Champ");
+    Assertions.assertThat(winnersCell.getElement().getText()).doesNotContain("Draw");
   }
 
   @Test

@@ -34,7 +34,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
@@ -250,6 +252,37 @@ public class NpcService {
       return ((Number) val).intValue();
     }
     return 50;
+  }
+
+  /**
+   * Picks a referee for a segment from the candidate pool, preferring officials not already
+   * assigned to another segment of the same show so one official doesn't work two matches on one
+   * card. Falls back to the full pool when every active referee is already booked elsewhere.
+   *
+   * @param referees the candidate referee pool
+   * @param assignedReferees referees already assigned to sibling segments of the same show (from
+   *     the caller — keeps this method free of segment-repository dependencies)
+   * @return a referee from the pool, or null when the pool is empty
+   */
+  public Npc pickUnusedReferee(
+      @NonNull final List<Npc> referees, @NonNull final List<Npc> assignedReferees) {
+    if (referees.isEmpty()) {
+      return null;
+    }
+    Set<Long> usedIds =
+        assignedReferees.stream()
+            .filter(r -> r != null && r.getId() != null)
+            .map(Npc::getId)
+            .collect(Collectors.toSet());
+    List<Npc> available =
+        referees.stream()
+            .filter(r -> r.getId() == null || !usedIds.contains(r.getId()))
+            .collect(Collectors.toList());
+    if (available.isEmpty()) {
+      // Every active referee is already working this show — reuse the full pool.
+      available = referees;
+    }
+    return available.get(ThreadLocalRandom.current().nextInt(available.size()));
   }
 
   /**

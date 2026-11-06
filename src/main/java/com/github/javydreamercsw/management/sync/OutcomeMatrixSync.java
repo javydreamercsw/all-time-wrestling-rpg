@@ -40,18 +40,18 @@ import org.springframework.stereotype.Component;
 @Order(250)
 public class OutcomeMatrixSync implements DataSyncContributor {
 
-  private final boolean skipIfNotEmpty;
+  private final SeedSyncSupport syncSupport;
   private final OutcomeMatrixService outcomeMatrixService;
   private final ResourcePatternResolver resourcePatternResolver;
   private final ObjectMapper objectMapper;
 
   @Autowired
   public OutcomeMatrixSync(
-      @Value("${data.initializer.skip-if-not-empty:false}") final boolean skipIfNotEmpty,
+      @Value("${data.initializer.skip-if-not-empty:false}") final String skipIfNotEmptyRaw,
       final OutcomeMatrixService outcomeMatrixService,
       final ResourcePatternResolver resourcePatternResolver,
       final ObjectMapper objectMapper) {
-    this.skipIfNotEmpty = skipIfNotEmpty;
+    this.syncSupport = new SeedSyncSupport(skipIfNotEmptyRaw);
     this.outcomeMatrixService = outcomeMatrixService;
     this.resourcePatternResolver = resourcePatternResolver;
     this.objectMapper = objectMapper;
@@ -59,7 +59,7 @@ public class OutcomeMatrixSync implements DataSyncContributor {
 
   @Override
   public void sync() {
-    if (skipIfNotEmpty && outcomeMatrixService.count() > 0) {
+    if (syncSupport.mode() != SeedSyncMode.FULL && outcomeMatrixService.count() > 0) {
       return;
     }
     try {

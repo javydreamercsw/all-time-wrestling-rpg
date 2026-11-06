@@ -212,7 +212,7 @@ All `Tournament` associations (`entries`, `rounds`, rounds' `matches`, matches' 
 
 ### Seed Catalogs & Sync Order
 
-Content catalogs are seeded at startup by `DataSyncContributor` beans (`management.sync`), each gated on its table being empty (skip-if-not-empty). The **order matters** because later catalogs resolve references from earlier ones by name/code:
+Content catalogs are seeded at startup by `DataSyncContributor` beans (`management.sync`). The **order matters** because later catalogs resolve references from earlier ones by name/code:
 
 | @Order |    Contributor     |                              Seeds                               |
 |--------|--------------------|------------------------------------------------------------------|
@@ -220,6 +220,31 @@ Content catalogs are seeded at startup by `DataSyncContributor` beans (`manageme
 | 40     | `SegmentTypeSync`  | `segment_types.json`                                             |
 | 55     | `TournamentSync`   | `tournaments.json` (rules pool resolved by name)                 |
 | 60     | `ShowTemplateSync` | `show_templates.json` (assignment targets resolved by name/code) |
+
+#### Seed sync modes (`data.initializer.skip-if-not-empty`)
+
+Every sync contributor routes through the same mode resolver (`SeedSyncSupport`). The flag accepts three values:
+
+|  Value   |  Mode   |                                                                      Behavior                                                                       |
+|----------|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
+| `false`  | FULL    | Unconditional seed sync: existing rows are updated to match the seed files (release-line installs and tests).                                       |
+| `true`   | PROTECT | Skip-gate: existing rows are never re-saved; only seed entries missing from the database are inserted (top-up). Legacy default for installed bases. |
+| `verify` | VERIFY  | Top-up **plus** fingerprint-gated reconcile (see below).                                                                                            |
+
+Any other truthy value logs a one-time warning and behaves as PROTECT.
+
+**How VERIFY reconciles.** Each in-scope row carries a `seed_fingerprint` column — a SHA-256 over the row's *seed-owned* fields in a fixed per-entity order, stamped whenever a seed write (insert or reconcile) touches the row. On startup, verify re-hashes each seed-matching row's current fields and compares:
+
+- **Clean** (current fields still hash to the stored stamp): the row is seed-owned, so it adopts the new seed values and is re-stamped. Seed fixes shipped in a release reach verify installs on the next startup.
+- **Drifted** (fields changed after the stamp): the row is treated as user-edited — logged with a WARN and preserved, never overwritten.
+- **No stamp** (pre-fingerprint-era rows): adopted if the fields already equal the seed, otherwise treated as user-edited and preserved.
+- **No seed match** (user-created wrestlers, CUSTOM card sets, custom segment rules, …): never considered, never touched.
+
+In-scope entities with verify: Wrestler, CardSet, Card, Deck (composition only), Npc, SegmentType, Title (current holders/reigns are never seed-owned), RingsideAction, Achievement, CampaignAbilityCard, SegmentRule. SegmentRule is the one entity where VERIFY tightens a previously unconditional reconcile — user-customized rules are now preserved instead of clobbered. All remaining syncs treat `verify` as PROTECT.
+
+Each pass logs one summary line per entity: `verify(<entity>): reconciled N, preserved M edited (<elapsed> ms)`.
+
+**Field ownership.** Seed-owned field lists per entity live in the sync classes (`WrestlerSeedFields.canonical`, `cardFingerprint`, `compositionFingerprint`, `npcFingerprint`, `titleFingerprint`, `actionFingerprint`, `achievementFingerprint`, `cardFingerprint`, `ruleFingerprint`) — the fingerprint contract. Gameplay/UI state (fans, bumps, tier, fans' state, current champions, deck edits by players, active flags) is deliberately excluded: verify must never revert it.
 
 When adding a new catalog that references seeded content, give it a higher `@Order` than every catalog it resolves from. Unknown references are skipped with a warning — a missing name must never fail the whole startup sync. See the [Content Management Guide](CONTENT_GUIDE.md#tournaments) for the JSON field reference.
 

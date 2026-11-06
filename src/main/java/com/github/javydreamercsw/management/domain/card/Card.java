@@ -78,6 +78,13 @@ public class Card extends AbstractEntity<Long> {
   @Column(name = "pin", nullable = false)
   private Boolean pin = false;
 
+  /**
+   * Seed verify mode: SHA-256 over the seed-owned field values as shipped by the seed payload. NULL
+   * means a pre-fingerprint-era (legacy) or user-created row.
+   */
+  @Column(name = "seed_fingerprint", length = 64)
+  private String seedFingerprint;
+
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
 }

@@ -547,6 +547,12 @@ public class ShowPlanningPromptBuilder {
     prompt.append("  \"description\": \"string\",\n");
     prompt.append("  \"outcome\": \"string\",\n");
     prompt.append(
+        "  \"result\": \"WINNERS\" | \"DRAW\" | \"NO_CONTEST\", // Optional declared result,"
+            + " defaults to WINNERS. Use DRAW or NO_CONTEST only for a deliberate storyline"
+            + " finish with no winner (a double count-out, an interference that ends the"
+            + " match). NEVER set DRAW or NO_CONTEST on a tournament match — brackets must"
+            + " resolve.\n");
+    prompt.append(
         "  \"notes\": \"string\", // Optional instructions/feedback for future AI narration\n");
     prompt.append(
         "  \"teams\": [[\"string\"]], // List of teams by name; each inner array is one team."

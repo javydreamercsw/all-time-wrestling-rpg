@@ -34,23 +34,23 @@ import org.springframework.stereotype.Component;
 @Order(220)
 public class CommentaryTeamSync implements DataSyncContributor {
 
-  private final boolean skipIfNotEmpty;
+  private final SeedSyncSupport syncSupport;
   private final CommentaryService commentaryService;
   private final ObjectMapper objectMapper;
 
   @Autowired
   public CommentaryTeamSync(
-      @Value("${data.initializer.skip-if-not-empty:false}") final boolean skipIfNotEmpty,
+      @Value("${data.initializer.skip-if-not-empty:false}") final String skipIfNotEmptyRaw,
       final CommentaryService commentaryService,
       final ObjectMapper objectMapper) {
-    this.skipIfNotEmpty = skipIfNotEmpty;
+    this.syncSupport = new SeedSyncSupport(skipIfNotEmptyRaw);
     this.commentaryService = commentaryService;
     this.objectMapper = objectMapper;
   }
 
   @Override
   public void sync() {
-    if (skipIfNotEmpty && commentaryService.countTeams() > 0) {
+    if (syncSupport.mode() != SeedSyncMode.FULL && commentaryService.countTeams() > 0) {
       return;
     }
     ClassPathResource resource = new ClassPathResource("commentary_teams.json");

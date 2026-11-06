@@ -27,6 +27,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
@@ -310,7 +311,19 @@ class EditSegmentDialogKaribuTest extends AbstractViewTest {
       Map<Integer, List<Wrestler>> teams, String typeName, boolean intergenderAllowed) {
     EditSegmentDialog.SegmentDialogData initial =
         new EditSegmentDialog.SegmentDialogData(
-            typeName, teams, new ArrayList<>(), Set.of(), null, "", "", "", false, false, Set.of());
+            typeName,
+            teams,
+            new ArrayList<>(),
+            Set.of(),
+            null,
+            "",
+            "",
+            "",
+            false,
+            false,
+            Set.of(),
+            SegmentResult.WINNERS,
+            false);
 
     EditSegmentDialog dialog =
         new EditSegmentDialog(

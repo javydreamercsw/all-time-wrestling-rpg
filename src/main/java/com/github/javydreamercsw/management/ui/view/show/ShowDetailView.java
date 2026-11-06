@@ -36,6 +36,7 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.export.ShowExportService;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
@@ -89,6 +90,7 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
@@ -104,6 +106,7 @@ import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.listbox.ListBox;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
@@ -699,7 +702,7 @@ public class ShowDetailView extends Main
     adjudicateButton = new Button("Adjudicate Fans", new Icon(VaadinIcon.GROUP));
     adjudicateButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     adjudicateButton.setId("adjudicate-show-btn");
-    adjudicateButton.addClickListener(e -> adjudicateShow(show));
+    adjudicateButton.addClickListener(e -> confirmThenAdjudicate(show));
 
     boolean hasPendingSegments =
         segmentRepository.findByShow(show).stream()
@@ -970,6 +973,23 @@ public class ShowDetailView extends Main
           .set("color", "var(--lumo-success-text-color)")
           .set("margin-top", "var(--lumo-space-xs)");
       card.add(winners);
+    } else if (segment.getResult() == SegmentResult.DRAW) {
+      Span draw = new Span("🤝 Draw");
+      draw.addClassNames(LumoUtility.FontWeight.SEMIBOLD);
+      draw.getStyle()
+          .set("display", "block")
+          .set("color", "var(--lumo-tertiary-text-color)")
+          .set("margin-top", "var(--lumo-space-xs)");
+      card.add(draw);
+    } else if (segment.getResult() == SegmentResult.NO_CONTEST) {
+      Span noContest = new Span("🚫 No Contest");
+      noContest.addClassNames(LumoUtility.FontWeight.SEMIBOLD);
+      noContest
+          .getStyle()
+          .set("display", "block")
+          .set("color", "var(--lumo-error-text-color)")
+          .set("margin-top", "var(--lumo-space-xs)");
+      card.add(noContest);
     }
 
     // League status
@@ -1178,12 +1198,22 @@ public class ShowDetailView extends Main
         .setSortable(false)
         .setFlexGrow(4);
 
-    // Winner column
-    grid.addColumn(
+    // Winner column — shows the declared outcome (draw / no contest) when booked
+    grid.addComponentColumn(
             segment -> {
+              Span cell = new Span();
               List<String> winnerNames =
                   segment.getWinners().stream().map(Wrestler::getName).toList();
-              return String.join(", ", winnerNames);
+              if (!winnerNames.isEmpty()) {
+                cell.setText(String.join(", ", winnerNames));
+              } else if (segment.getResult() == SegmentResult.DRAW) {
+                cell.setText("🤝 Draw");
+                cell.getStyle().set("color", "var(--lumo-tertiary-text-color)");
+              } else if (segment.getResult() == SegmentResult.NO_CONTEST) {
+                cell.setText("🚫 No Contest");
+                cell.getStyle().set("color", "var(--lumo-error-text-color)");
+              }
+              return (Component) cell;
             })
         .setHeader("Winner(s)")
         .setSortable(false)
@@ -1413,48 +1443,7 @@ public class ShowDetailView extends Main
     narrateButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     narrateButton.setTooltipText("Generate AI Narration");
     narrateButton.setId("generate-narration-button-" + segment.getId());
-    narrateButton.addClickListener(
-        e -> {
-          final UI ui = UI.getCurrent();
-          GeneralSecurityUtils.runAsAdminAsync(
-                  () ->
-                      NarrationDialog.PreloadedData.load(
-                          segmentService,
-                          npcService,
-                          wrestlerStatsService,
-                          universeContextService,
-                          segment))
-              .thenAccept(
-                  preloaded ->
-                      ui.access(
-                          () ->
-                              new NarrationDialog(
-                                      preloaded,
-                                      wrestlerService,
-                                      showService,
-                                      segmentService,
-                                      updatedSegment -> refreshSegmentsGrid(),
-                                      rivalryService,
-                                      segmentNarrationController,
-                                      segmentNarrationServiceFactory,
-                                      ringsideActionService,
-                                      relationshipService,
-                                      universeContextService,
-                                      notificationService,
-                                      wrestlerStatsService,
-                                      dramaEventService,
-                                      titleOpportunityService,
-                                      trophyReignService,
-                                      viewContext)
-                                  .open()))
-              .exceptionally(
-                  ex -> {
-                    log.error("Error loading narration dialog data", ex);
-                    ui.access(
-                        () -> notificationService.showError("Failed to open narration dialog."));
-                    return null;
-                  });
-        });
+    narrateButton.addClickListener(e -> openNarrationDialog(segment));
 
     Button editButton = new Button("Edit", new Icon(VaadinIcon.EDIT));
     editButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
@@ -1493,6 +1482,48 @@ public class ShowDetailView extends Main
 
     return new VerticalLayout(
         summaryButton, narrateButton, editButton, deleteButton, qrButton, infoButton);
+  }
+
+  /** Opens the narration dialog with preloaded context (extracted for testability). */
+  private void openNarrationDialog(@NonNull Segment segment) {
+    final UI ui = UI.getCurrent();
+    GeneralSecurityUtils.runAsAdminAsync(
+            () ->
+                NarrationDialog.PreloadedData.load(
+                    segmentService,
+                    npcService,
+                    wrestlerStatsService,
+                    universeContextService,
+                    segment))
+        .thenAccept(
+            preloaded ->
+                ui.access(
+                    () ->
+                        new NarrationDialog(
+                                preloaded,
+                                wrestlerService,
+                                showService,
+                                segmentService,
+                                updatedSegment -> refreshSegmentsGrid(),
+                                rivalryService,
+                                segmentNarrationController,
+                                segmentNarrationServiceFactory,
+                                ringsideActionService,
+                                relationshipService,
+                                universeContextService,
+                                notificationService,
+                                wrestlerStatsService,
+                                dramaEventService,
+                                titleOpportunityService,
+                                trophyReignService,
+                                viewContext)
+                            .open()))
+        .exceptionally(
+            ex -> {
+              log.error("Error loading narration dialog data", ex);
+              ui.access(() -> notificationService.showError("Failed to open narration dialog."));
+              return null;
+            });
   }
 
   private void generateSummary(@NonNull Segment segment) {
@@ -1990,8 +2021,14 @@ public class ShowDetailView extends Main
                       Segment seg = (Segment) result[0];
                       EditSegmentDialog.PreloadedData preloaded =
                           (EditSegmentDialog.PreloadedData) result[1];
+                      // Tournament-bound segments stay resolvable: non-admin bookers can't
+                      // book a draw/no-contest on them from the edit dialog. Admins may
+                      // always edit (owner decision).
+                      boolean tournamentBound =
+                          tournamentMatchRepository.findBySegmentId(seg.getId()).isPresent()
+                              && !securityUtils.isAdmin();
                       EditSegmentDialog.SegmentDialogData initial =
-                          EditSegmentDialog.SegmentDialogData.from(seg);
+                          EditSegmentDialog.SegmentDialogData.from(seg, tournamentBound);
 
                       EditSegmentDialog[] dialogHolder = new EditSegmentDialog[1];
                       dialogHolder[0] =
@@ -2058,7 +2095,13 @@ public class ShowDetailView extends Main
                                 seg.syncSegmentRules(new ArrayList<>(saveData.rules()));
                                 seg.setAdjudicationStatus(AdjudicationStatus.PENDING);
                                 seg.setSegmentType(saveData.segmentType());
-                                if (saveData.winners() != null) {
+                                // Declared result first: DRAW/NO_CONTEST clear any winner flags.
+                                seg.declareResult(
+                                    saveData.result() != null
+                                        ? saveData.result()
+                                        : SegmentResult.WINNERS);
+                                if (saveData.winners() != null
+                                    && seg.getResult() == SegmentResult.WINNERS) {
                                   seg.setWinners(new ArrayList<>(saveData.winners()));
                                 }
                                 // Async DB write
@@ -2257,6 +2300,82 @@ public class ShowDetailView extends Main
       notificationService.showError("Error saving segment: " + e.getMessage());
       return false;
     }
+  }
+
+  /**
+   * Pre-flight for adjudication: asks the service what would happen, shows one confirm dialog with
+   * the to-narrate list (info) and the missing-winner list (warning), and only then starts the
+   * async adjudication. A pre-flight failure never blocks — adjudication proceeds directly.
+   */
+  private void confirmThenAdjudicate(@NonNull final Show show) {
+    List<String> missingWinnerWarnings;
+    List<String> toNarrate;
+    boolean narrationProviderAvailable;
+    try {
+      ShowService.AdjudicationPreFlight preFlight =
+          GeneralSecurityUtils.runAsAdminAsync(
+                  () -> showService.getAdjudicationPreFlight(show.getId()))
+              .join();
+      missingWinnerWarnings = preFlight.missingWinnerWarnings();
+      toNarrate = preFlight.toNarrate();
+      narrationProviderAvailable = preFlight.narrationProviderAvailable();
+    } catch (Exception e) {
+      log.warn("Adjudication pre-flight failed — adjudicating without the advisory", e);
+      adjudicateShow(show);
+      return;
+    }
+    if (missingWinnerWarnings.isEmpty() && toNarrate.isEmpty()) {
+      adjudicateShow(show);
+      return;
+    }
+    ConfirmDialog dialog = new ConfirmDialog();
+    dialog.setHeader("Adjudicate Show");
+    // Plain Div flow (not VerticalLayout): ConfirmDialog's content slot is a fixed-height
+    // flex area — a VerticalLayout child collapses and its items overlap each other.
+    Div content = new Div();
+    if (!toNarrate.isEmpty() && narrationProviderAvailable) {
+      Paragraph narrateIntro =
+          new Paragraph(
+              "AI narration will be generated for "
+                  + toNarrate.size()
+                  + " segment(s) before adjudication:");
+      narrateIntro.addClassNames(LumoUtility.TextColor.SECONDARY);
+      content.add(narrateIntro);
+      ListBox<String> narrateList = new ListBox<>();
+      narrateList.setItems(toNarrate);
+      narrateList.setMaxHeight("320px");
+      // ListBox doesn't scroll by itself inside ConfirmDialog's fixed-height content area —
+      // without overflow the tail items paint over whatever renders below (seen in sandbox).
+      narrateList.getElement().getStyle().set("overflowY", "auto");
+      content.add(narrateList);
+    } else if (!toNarrate.isEmpty()) {
+      // No provider: say what actually happens instead of promising narration (ATW-ktta).
+      Paragraph noProviderNote =
+          new Paragraph(
+              "No AI narration provider is configured. "
+                  + toNarrate.size()
+                  + " segment(s) will be adjudicated with their booked descriptions.");
+      noProviderNote.addClassNames(LumoUtility.TextColor.SECONDARY);
+      content.add(noProviderNote);
+    }
+    if (!missingWinnerWarnings.isEmpty()) {
+      Paragraph warningIntro =
+          new Paragraph("These segments have no winner selected — they will be recorded as draws:");
+      warningIntro.addClassNames(LumoUtility.TextColor.ERROR);
+      content.add(warningIntro);
+      ListBox<String> warningList = new ListBox<>();
+      warningList.setItems(missingWinnerWarnings);
+      warningList.setMaxHeight("320px");
+      warningList.getElement().getStyle().set("overflowY", "auto");
+      content.add(warningList);
+    }
+    dialog.add(content);
+    dialog.setCancelable(true);
+    dialog.setCancelText("Go Back");
+    dialog.setConfirmText(missingWinnerWarnings.isEmpty() ? "Adjudicate" : "Adjudicate Anyway");
+    dialog.setConfirmButtonTheme(missingWinnerWarnings.isEmpty() ? "primary" : "primary error");
+    dialog.addConfirmListener(e -> adjudicateShow(show));
+    dialog.open();
   }
 
   private void adjudicateShow(@NonNull final Show show) {

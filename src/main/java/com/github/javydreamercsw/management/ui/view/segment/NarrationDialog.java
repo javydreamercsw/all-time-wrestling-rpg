@@ -807,6 +807,9 @@ public class NarrationDialog extends Dialog {
   private void saveNarration() {
     try {
       segment.setNarration(narrationDisplay.getText());
+      // Any save here — AI-generated or hand-typed — marks the narration final so the
+      // adjudication flow never regenerates over it.
+      segment.setNarrationGenerated(true);
       segment.setNotes(feedbackArea.getValue());
       if (refereeField.getValue() != null) {
         segment.setReferee(refereeField.getValue());
