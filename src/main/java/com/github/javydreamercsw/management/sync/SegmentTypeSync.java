@@ -117,6 +117,13 @@ public class SegmentTypeSync implements DataSyncContributor {
               dto.getGuide(),
               dto.getCode(),
               dto.getEventOnly());
+      if (segmentType != null
+          && SeedSyncSupport.isBlankFingerprint(segmentType.getSeedFingerprint())) {
+        // The service save leaves the stamp unset (same as the top-up branch): stamp the freshly
+        // seeded row so verify mode's stored-side check can match it against the manifest.
+        segmentType.setSeedFingerprint(segmentTypeFingerprint(segmentType));
+        segmentTypeService.saveSegmentType(segmentType);
+      }
       log.debug(
           "Loaded segment type: {} (Players: {})",
           segmentType.getName(),
