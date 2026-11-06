@@ -159,7 +159,7 @@ public final class GenerateSeedFingerprintManifest {
    * @param outputFile manifest destination
    * @return the process exit code (see class javadoc)
    */
-  static int run(Path outputFile) {
+  public static int run(Path outputFile) {
     if (System.getProperty("spring.profiles.active") == null) {
       System.setProperty("spring.profiles.active", "test");
     }
