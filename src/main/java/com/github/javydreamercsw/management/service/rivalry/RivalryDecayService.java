@@ -21,6 +21,7 @@ import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.service.GameClock;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.sync.review.SeedReviewGate;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -41,11 +42,21 @@ public class RivalryDecayService {
   private final RivalryRepository rivalryRepository;
   private final GameSettingService gameSettingService;
   private final GameClock gameClock;
+  private final SeedReviewGate seedReviewGate;
 
   /** Runs nightly to apply heat decay and auto-close stale rivalries. */
   @Scheduled(cron = "0 0 3 * * *")
   @Transactional
   public void runDailyMaintenance() {
+    // Seed-update review gate: scheduled gameplay writes stay frozen while seed collisions
+    // are undecided.
+    if (seedReviewGate.isUp()) {
+      log.info(
+          "Rivalry daily maintenance skipped: seed-update review gate is up ({} pending"
+              + " decision(s)).",
+          seedReviewGate.pendingCount());
+      return;
+    }
     elevateToSystem();
     try {
       applyHeatDecay();

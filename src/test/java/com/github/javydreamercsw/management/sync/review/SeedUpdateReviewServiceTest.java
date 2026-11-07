@@ -20,12 +20,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.AbstractJpaTest;
 import com.github.javydreamercsw.management.domain.seedreview.SeedUpdateDecision;
 import com.github.javydreamercsw.management.domain.seedreview.SeedUpdateDecisionRepository;
+import com.github.javydreamercsw.management.event.SeedUpdateReviewPendingEvent;
 import com.github.javydreamercsw.management.migration.DataMigrationHistory;
 import com.github.javydreamercsw.management.migration.DataMigrationHistoryRepository;
 import jakarta.persistence.EntityManager;
@@ -34,8 +38,11 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.info.BuildProperties;
+import org.springframework.context.ApplicationEventPublisher;
 
 /**
  * Contract tests for the seed-update review service (seed-update review feature, Task 4).
@@ -57,6 +64,7 @@ class SeedUpdateReviewServiceTest extends AbstractJpaTest {
   @Autowired private EntityManager entityManager;
 
   private BuildProperties buildProperties;
+  private ApplicationEventPublisher eventPublisher;
 
   /** Gate of the most recently created service, for cross-path state assertions. */
   private SeedReviewGate gate;
@@ -73,18 +81,19 @@ class SeedUpdateReviewServiceTest extends AbstractJpaTest {
     gate = null;
     buildProperties = mock(BuildProperties.class);
     when(buildProperties.getVersion()).thenReturn(CURRENT_VERSION);
+    eventPublisher = mock(ApplicationEventPublisher.class);
   }
 
   private SeedUpdateReviewService service() {
     gate = new SeedReviewGate(decisionRepository);
     return new SeedUpdateReviewService(
-        decisionRepository, historyRepository, Optional.of(buildProperties), gate);
+        decisionRepository, historyRepository, Optional.of(buildProperties), gate, eventPublisher);
   }
 
   private SeedUpdateReviewService serviceWithoutBuildInfo() {
     gate = new SeedReviewGate(decisionRepository);
     return new SeedUpdateReviewService(
-        decisionRepository, historyRepository, Optional.empty(), gate);
+        decisionRepository, historyRepository, Optional.empty(), gate, eventPublisher);
   }
 
   /** Simulates one row recorded by a previous boot's data-migration run. */
@@ -343,5 +352,64 @@ class SeedUpdateReviewServiceTest extends AbstractJpaTest {
             "npc", "npc:samael", null, SeedUpdateDecision.STATUS_PENDING);
     assertTrue(removal.isPresent());
     assertEquals("unknown", removal.get().getAppVersion());
+  }
+
+  // ── Batched pending notification (Task 11) ─────────────────────────────────
+
+  @Test
+  void notifyPendingPublishesOnceAfterParking() {
+    SeedUpdateReviewService service = service();
+    service.parkFieldConflict(
+        "wrestler", "wrestler:bret-hart", "Bret Hart", "catchphrase", "mine", "new", "fp-1");
+    service.parkRemoval("npc", "npc:samael", "Samael", "fp-2");
+
+    service.notifyPending();
+
+    // One batched event (never per row) carrying the pending count and the boot's version.
+    ArgumentCaptor<SeedUpdateReviewPendingEvent> event =
+        ArgumentCaptor.forClass(SeedUpdateReviewPendingEvent.class);
+    verify(eventPublisher).publishEvent(event.capture());
+    assertEquals(2, event.getValue().getPendingCount());
+    assertEquals(CURRENT_VERSION, event.getValue().getAppVersion());
+  }
+
+  @Test
+  void notifyPendingWithoutParkingPublishesNothing() {
+    service().notifyPending();
+
+    verifyNoInteractions(eventPublisher);
+  }
+
+  @Test
+  void notifyPendingIsInertAfterFirstPublish() {
+    SeedUpdateReviewService service = service();
+    service.parkRemoval("npc", "npc:samael", "Samael", "fp-1");
+
+    service.notifyPending();
+    service.notifyPending();
+
+    // The flag is consumed on the first publish — a repeated invocation must not re-notify.
+    verify(eventPublisher, Mockito.times(1)).publishEvent(any(SeedUpdateReviewPendingEvent.class));
+  }
+
+  @Test
+  void reParkRefreshDoesNotArmNotification() {
+    SeedUpdateReviewService service = service();
+
+    // First boot: a fresh park arms the flag, and notifyPending() consumes it.
+    service.parkFieldConflict(
+        "wrestler", "wrestler:bret-hart", "Bret Hart", "catchphrase", "mine", "new", "fp-1");
+    service.notifyPending();
+    verify(eventPublisher).publishEvent(any(SeedUpdateReviewPendingEvent.class));
+
+    // A later same-version boot re-parks the (still unresolved) coordinate: that path only
+    // refreshes the incoming snapshot and must NOT re-arm the notification — otherwise every
+    // restart would duplicate the inbox item while the decision stays pending.
+    service.parkFieldConflict(
+        "wrestler", "wrestler:bret-hart", "Bret Hart", "catchphrase", "mine", "newer", "fp-2");
+    assertEquals(1, decisionRepository.count(), "Re-park must stay on the same decision row");
+
+    service.notifyPending();
+    verify(eventPublisher, Mockito.times(1)).publishEvent(any(SeedUpdateReviewPendingEvent.class));
   }
 }

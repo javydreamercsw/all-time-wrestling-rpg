@@ -22,7 +22,6 @@ import com.vaadin.flow.server.VaadinSession;
 import java.io.Serializable;
 import java.util.Optional;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -30,16 +29,24 @@ import org.springframework.stereotype.Service;
  * Service to manage the current universe context for the user session. This is a singleton service
  * that uses VaadinSession attributes for session-specific storage and a ThreadLocal fallback for
  * non-web environments (like some integration tests).
+ *
+ * <p>The ThreadLocal fallback is JVM-global static state, so each new instance (one per Spring
+ * context) clears it on construction — otherwise a second context in the same JVM (test suites)
+ * inherits the previous context's universe id on its boot thread.
  */
 @Service
 @Slf4j
-@RequiredArgsConstructor
 public class UniverseContextService implements Serializable {
 
   private final UniverseRepository universeRepository;
   private static final String UNIVERSE_ID_SESSION_KEY = "currentUniverseId";
   private static final ThreadLocal<Long> threadLocalUniverseId =
       ThreadLocal.withInitial(() -> null);
+
+  public UniverseContextService(@NonNull final UniverseRepository universeRepository) {
+    this.universeRepository = universeRepository;
+    threadLocalUniverseId.remove();
+  }
 
   /**
    * Get the current universe.

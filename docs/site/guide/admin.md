@@ -193,3 +193,11 @@ Group and toggle themed content sets. Enable or disable entire collections of wr
 ![Expansion Management](/screenshots/admin-expansion-management.png)
 
 ---
+
+## Seed Update Review
+
+After a version upgrade, seed-data changes that would overwrite your customizations are parked here instead of applied silently. Decisions group by domain and entity: field rows show the current value vs. the incoming one with a Keep mine / Use new choice per field, and removed-from-source entities show a Keep as custom / Remove choice. 'Approve Everything' shortcuts the field conflicts (removals always need a per-entity decision), and 'Apply decisions & unlock the app' writes the whole batch and lifts the review freeze.
+
+![Seed Update Review](/screenshots/admin-seed-review-tree.png)
+
+---
