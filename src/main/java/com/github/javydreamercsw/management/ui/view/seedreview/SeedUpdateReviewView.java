@@ -87,6 +87,7 @@ public class SeedUpdateReviewView extends VerticalLayout {
 
   private static final String APPLY_BUTTON_ID = "apply-button";
   private static final String APPROVE_EVERYTHING_BUTTON_ID = "approve-everything-button";
+  private static final String TREE_ID = "seed-review-tree";
 
   private final transient SeedUpdateDecisionService decisionService;
   private final transient NotificationService notificationService;
@@ -113,6 +114,8 @@ public class SeedUpdateReviewView extends VerticalLayout {
     setSizeFull();
     setPadding(true);
     setSpacing(true);
+    // This layout IS the review tree's root container — the id anchors the docs E2E tests.
+    setId(TREE_ID);
 
     buildTree();
   }

@@ -191,6 +191,9 @@ class SeedUpdateReviewViewTest extends AbstractViewTest {
   void treeGroupsByDomainThenEntity() {
     view = viewWith(baseFixture());
 
+    // The root container carries the id the docs E2E tests anchor on.
+    assertEquals("seed-review-tree", view.getId().orElse(null));
+
     // 2 domain Details + 4 entity Details.
     assertEquals(6, _find(view, Details.class).size());
 
