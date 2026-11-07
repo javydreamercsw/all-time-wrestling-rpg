@@ -772,6 +772,37 @@ class SeedAppliersTest extends AbstractJpaTest {
   }
 
   @Test
+  void cardSetApplierResolvesRenamedRowThroughEntityKey() {
+    // Tier-2 NAME-collision shape (the domain's only seed-owned field IS the name): the admin
+    // renamed the row, so the display name detection parked — the NEW seed name — can never match
+    // the row by name. Resolution must go through the decision's entity key, exactly as
+    // hasDependents remints it.
+    CardSet cs = cardSet("REN1", "Admin Renamed Set");
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "card_set",
+            "card_set:ren1",
+            "Seed Renamed Set", // the NEW seed name — the row's current name differs
+            "name",
+            "Admin Renamed Set",
+            "Seed Renamed Set",
+            "fp-ren");
+
+    service(cardSetApplier).apply(Map.of(decision.getId(), SeedFieldDecision.USE_NEW));
+
+    flushAndClear();
+    CardSet reloaded = cardSetRepository.findById(cs.getId()).orElseThrow();
+    assertEquals(
+        "Seed Renamed Set",
+        reloaded.getName(),
+        "USE_NEW must reach the admin-renamed row through the entity key, not the seed name");
+    assertEquals(
+        "fp-ren", reloaded.getSeedFingerprint(), "USE_NEW must stamp the detection fingerprint");
+  }
+
+  @Test
   void cardSetApplierRemoveRefusedWhenCardsExist() {
     // A card references the set: the pre-dispatch hasDependents check must refuse the removal
     // BEFORE any dispatch. Fresh fixture set (no seed catalog overlap — the boot seeds ATW etc.).
@@ -857,6 +888,64 @@ class SeedAppliersTest extends AbstractJpaTest {
     assertTrue(
         deckRepository.findById(deck.getId()).isPresent(),
         "the deck must survive the refused removal");
+  }
+
+  @Test
+  void deckApplierUseNewRebuildsCompositionAndStamps() {
+    // The apply path no detection test reaches: USE_NEW parses the decision's captured canonical
+    // composition, clears the old DeckCards (orphanRemoval), rebuilds from the card catalog, and
+    // stamps the row — asserted against the reloaded deck.
+    Wrestler holder = wrestlerRepository.save(Wrestler.builder().name("Deck Holder").build());
+    Deck deck = new Deck();
+    deck.setWrestler(holder);
+    deck.setCreationDate(Instant.now());
+    deck = deckRepository.save(deck);
+    // OLD composition: TST1#56 x2 + TST1#57 x1 — both entries must be gone after the apply.
+    Card oldCardA = card("TST1", 56, "Old Card A");
+    Card oldCardB = card("TST1", 57, "Old Card B");
+    for (Card old : List.of(oldCardA, oldCardB)) {
+      DeckCard dc = new DeckCard();
+      dc.setDeck(deck);
+      dc.setCard(old);
+      dc.setSet(old.getSet());
+      dc.setAmount(old == oldCardA ? 2 : 1);
+      deck.getCards().add(dc);
+      deckCardRepository.save(dc);
+    }
+    // NEW seed composition: TST1#58 x3 + TST1#59 x1.
+    Card newCardA = card("TST1", 58, "New Card A");
+    Card newCardB = card("TST1", 59, "New Card B");
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "deck",
+            "deck:deck-holder",
+            "Deck Holder",
+            "composition",
+            "TST1#56x2\nTST1#57x1",
+            "TST1#58x3\nTST1#59x1",
+            "fp-deck-new");
+
+    service(deckApplier).apply(Map.of(decision.getId(), SeedFieldDecision.USE_NEW));
+
+    flushAndClear();
+    Deck reloaded = deckRepository.findById(deck.getId()).orElseThrow();
+    Map<String, Integer> composition = new java.util.HashMap<>();
+    reloaded
+        .getCards()
+        .forEach(
+            dc ->
+                composition.put(
+                    dc.getSet().getCode() + "#" + dc.getCard().getNumber(), dc.getAmount()));
+    assertEquals(
+        Map.of("TST1#58", 3, "TST1#59", 1),
+        composition,
+        "USE_NEW must rebuild the deck to exactly the decision's new seed composition");
+    assertEquals(
+        "fp-deck-new",
+        reloaded.getSeedFingerprint(),
+        "USE_NEW must stamp the detection fingerprint");
   }
 
   // ── NpcSeedApplier ──────────────────────────────────────────────────────────

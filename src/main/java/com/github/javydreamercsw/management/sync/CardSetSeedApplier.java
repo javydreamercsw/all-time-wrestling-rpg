@@ -21,15 +21,17 @@ import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.card.CardSetRepository;
 import com.github.javydreamercsw.management.domain.seedreview.SeedUpdateDecision;
 import com.github.javydreamercsw.management.sync.review.SeedDomainApplier;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
  * Applies administrator seed-update decisions to card set rows (seed-update review feature). The
- * entity is resolved through the decision row's {@code entity_display_name} — the exact seed name
- * captured at detection time (set names are unique; slugs would be lossy: "Oda Tsurugi" downcases
- * to "Oda Tsurugi" harmlessly but "Sgt. Slaughter" re-spaces to "Sgt. Slaughter" only by luck — the
- * display name is used verbatim, no slug reversal).
+ * entity is resolved through the decision row's {@code entity_key}, reminted exactly the way
+ * detection minted it ({@code card_set:CODE} via {@link CardSetSync#entityKeyFor}) — a tier-2 NAME
+ * collision parks the NEW seed name as the display name, which the admin-renamed row can never
+ * match by name; the {@code entity_display_name} stays the exact seed name for the review UI and is
+ * never slug-reversed.
  *
  * <p>Stamp obligations: {@code USE_NEW} and {@code KEEP_MINE} both stamp the decision's {@code
  * new_fingerprint} on the row — keep-mine stamps while keeping the admin's value, so a later seed
@@ -55,8 +57,7 @@ public class CardSetSeedApplier implements SeedDomainApplier {
 
   @Override
   public void applyKeep(SeedUpdateDecision decision) {
-    cardSetRepository
-        .findByName(decision.getEntityDisplayName())
+    findCardSet(decision)
         .ifPresentOrElse(
             cardSet -> stamp(cardSet, decision),
             () ->
@@ -68,8 +69,7 @@ public class CardSetSeedApplier implements SeedDomainApplier {
 
   @Override
   public void applyNew(SeedUpdateDecision decision) {
-    cardSetRepository
-        .findByName(decision.getEntityDisplayName())
+    findCardSet(decision)
         .ifPresentOrElse(
             cardSet -> {
               applyFieldValue(cardSet, decision);
@@ -85,8 +85,7 @@ public class CardSetSeedApplier implements SeedDomainApplier {
   @Override
   public void applyKeepAsCustom(SeedUpdateDecision decision) {
     // Keep the value, mark it no longer seed-owned: clear the row's stamp.
-    cardSetRepository
-        .findByName(decision.getEntityDisplayName())
+    findCardSet(decision)
         .ifPresentOrElse(
             cardSet -> {
               cardSet.setSeedFingerprint(null);
@@ -104,8 +103,7 @@ public class CardSetSeedApplier implements SeedDomainApplier {
     // Dependents were verified in the apply service's pre-dispatch phase (cards referencing the
     // set). The fail-safe direction re-checks at delete time: a set with cards is kept as custom
     // data rather than blowing the FK mid-apply.
-    cardSetRepository
-        .findByName(decision.getEntityDisplayName())
+    findCardSet(decision)
         .ifPresentOrElse(
             cardSet -> {
               if (cardRepository.findBySet(cardSet).isEmpty()) {
@@ -130,11 +128,23 @@ public class CardSetSeedApplier implements SeedDomainApplier {
     // The SPI passes the entity key only; a slug round-trip is ambiguous (existing hyphens in a
     // set code are indistinguishable from slug-converted spaces), so match the key exactly the
     // way detection minted it.
-    return cardSetRepository.findAll().stream()
-        .filter(cs -> entityKey.equals(CardSetSync.entityKeyFor(cs.getCode())))
-        .findFirst()
+    return findCardSetByKey(entityKey)
         .map(cardSet -> !cardRepository.findBySet(cardSet).isEmpty())
         .orElse(false);
+  }
+
+  /**
+   * Resolves the decision's card set by reminting its entity key — the set code is the unique
+   * identity, immune to the admin rename a tier-2 NAME collision parks around (see class doc).
+   */
+  private Optional<CardSet> findCardSet(SeedUpdateDecision decision) {
+    return findCardSetByKey(decision.getEntityKey());
+  }
+
+  private Optional<CardSet> findCardSetByKey(String entityKey) {
+    return cardSetRepository.findAll().stream()
+        .filter(cs -> entityKey.equals(CardSetSync.entityKeyFor(cs.getCode())))
+        .findFirst();
   }
 
   /** Writes the decision's incoming seed value to the matching seed-owned field. */
