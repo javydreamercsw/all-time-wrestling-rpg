@@ -39,9 +39,9 @@ import org.springframework.context.annotation.Import;
  *
  * <p>{@link SeedReviewVideoAppliers} is {@code @Import}-ed (a nested {@link TestConfiguration} is
  * NOT auto-detected because the E2E base pins {@code @SpringBootTest(classes = Application.class)})
- * and registers no-op appliers for the seeded domains — real per-domain appliers land in the wiring
- * PR; the video demonstrates the decision/apply/unlock flow, which is the part a static screenshot
- * cannot convey.
+ * and registers no-op appliers for the domains the wiring PR has not covered yet (the wrestler
+ * domain uses the REAL applier that shipped there); the video demonstrates the
+ * decision/apply/unlock flow, which is the part a static screenshot cannot convey.
  */
 @Tag("video")
 @Import(SeedUpdateReviewVideoDocsE2ETest.SeedReviewVideoAppliers.class)
@@ -53,11 +53,10 @@ class SeedUpdateReviewVideoDocsE2ETest extends AbstractDocsE2ETest {
   @TestConfiguration
   static class SeedReviewVideoAppliers {
 
-    /** No-op applier: the video exercises decisions and the gate, not entity writes. */
-    @Bean
-    SeedDomainApplier wrestlerApplier() {
-      return new NoopApplier("wrestler");
-    }
+    // No wrestler no-op here: the wiring PR registered the REAL WrestlerSeedApplier — a second
+    // "wrestler" domain bean would collide at context startup (domain keys are unique). The real
+    // applier is harmless in this throwaway DB: the video's wrestler decisions stamp or write
+    // Bret Hart's row, which the scenario never asserts on.
 
     @Bean
     SeedDomainApplier npcApplier() {
