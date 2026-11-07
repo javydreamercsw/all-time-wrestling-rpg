@@ -23,6 +23,7 @@ import com.github.javydreamercsw.base.domain.account.Achievement;
 import com.github.javydreamercsw.base.domain.account.AchievementRepository;
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCard;
+import com.github.javydreamercsw.management.domain.campaign.StatusCard;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.deck.Deck;
@@ -30,10 +31,14 @@ import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.segment.RingsideAction;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
+import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.CampaignAbilityCardService;
+import com.github.javydreamercsw.management.service.campaign.StatusCardService;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
 import com.github.javydreamercsw.management.service.deck.DeckService;
@@ -41,7 +46,10 @@ import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionDataService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
+import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
+import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.sync.AchievementSync;
 import com.github.javydreamercsw.management.sync.CampaignAbilityCardSync;
 import com.github.javydreamercsw.management.sync.CardSync;
@@ -53,6 +61,10 @@ import com.github.javydreamercsw.management.sync.RingsideActionSync;
 import com.github.javydreamercsw.management.sync.SeedSyncSupport;
 import com.github.javydreamercsw.management.sync.SegmentRuleSync;
 import com.github.javydreamercsw.management.sync.SegmentTypeSync;
+import com.github.javydreamercsw.management.sync.ShowTemplateSync;
+import com.github.javydreamercsw.management.sync.ShowTypeSync;
+import com.github.javydreamercsw.management.sync.StatusCardSync;
+import com.github.javydreamercsw.management.sync.TournamentSync;
 import com.github.javydreamercsw.management.sync.WrestlerSync;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -139,6 +151,10 @@ public final class GenerateSeedProvenanceManifest {
               "ringside_action", List.of("ringside_action_types.json", "ringside_actions.json")),
           Map.entry("segment_rule", List.of("segment_rules.json")),
           Map.entry("segment_type", List.of("segment_types.json")),
+          Map.entry("show_template", List.of("show_templates.json")),
+          Map.entry("show_type", List.of("show_types.json")),
+          Map.entry("status_card", List.of("status_cards.json")),
+          Map.entry("tournament", List.of("tournaments.json")),
           Map.entry(
               "wrestler",
               List.of(
@@ -490,6 +506,18 @@ public final class GenerateSeedProvenanceManifest {
     if (context.getBean(SegmentTypeService.class).count() > 0) {
       return "segment_type";
     }
+    if (context.getBean(ShowTemplateService.class).count() > 0) {
+      return "show_template";
+    }
+    if (context.getBean(ShowTypeService.class).count() > 0) {
+      return "show_type";
+    }
+    if (context.getBean(StatusCardService.class).findAll().size() > 0) {
+      return "status_card";
+    }
+    if (context.getBean(TournamentService.class).count() > 0) {
+      return "tournament";
+    }
     if (context.getBean(WrestlerRepository.class).count() > 0) {
       return "wrestler";
     }
@@ -619,6 +647,46 @@ public final class GenerateSeedProvenanceManifest {
       segmentTypes.put(st.getName(), typeSync.segmentTypeFingerprint(st));
     }
     domains.put("segment_type", segmentTypes);
+
+    ShowTemplateSync templateSync = context.getBean(ShowTemplateSync.class);
+    Map<String, String> showTemplates = new TreeMap<>();
+    for (ShowTemplate t : context.getBean(ShowTemplateService.class).findAllForAdmin()) {
+      if (SeedSyncSupport.isBlankFingerprint(t.getSeedFingerprint())) {
+        continue;
+      }
+      showTemplates.put(t.getName(), templateSync.templateFingerprint(t));
+    }
+    domains.put("show_template", showTemplates);
+
+    ShowTypeSync showTypeSync = context.getBean(ShowTypeSync.class);
+    Map<String, String> showTypes = new TreeMap<>();
+    for (ShowType st : context.getBean(ShowTypeService.class).findAllForAdmin()) {
+      if (SeedSyncSupport.isBlankFingerprint(st.getSeedFingerprint())) {
+        continue;
+      }
+      showTypes.put(st.getName(), showTypeSync.showTypeFingerprint(st));
+    }
+    domains.put("show_type", showTypes);
+
+    StatusCardSync statusCardSync = context.getBean(StatusCardSync.class);
+    Map<String, String> statusCards = new TreeMap<>();
+    for (StatusCard card : context.getBean(StatusCardService.class).findAll()) {
+      if (SeedSyncSupport.isBlankFingerprint(card.getSeedFingerprint())) {
+        continue;
+      }
+      statusCards.put(card.getKey(), statusCardSync.statusCardFingerprint(card));
+    }
+    domains.put("status_card", statusCards);
+
+    TournamentSync tournamentSync = context.getBean(TournamentSync.class);
+    Map<String, String> tournaments = new TreeMap<>();
+    for (Tournament t : tournamentSync.repositoryForManifest().findAllWithRules()) {
+      if (t.getCode() == null || SeedSyncSupport.isBlankFingerprint(t.getSeedFingerprint())) {
+        continue; // booker-created rows (no code) are never catalog state
+      }
+      tournaments.put(t.getCode(), tournamentSync.tournamentFingerprint(t));
+    }
+    domains.put("tournament", tournaments);
 
     WrestlerSync wrestlerSync = context.getBean(WrestlerSync.class);
     Map<String, String> wrestlers = new TreeMap<>();

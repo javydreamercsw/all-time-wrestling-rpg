@@ -96,6 +96,12 @@ class SeedAppliersTest extends AbstractJpaTest {
   @Autowired private NpcSeedApplier npcApplier;
   @Autowired private AchievementSeedApplier achievementApplier;
   @Autowired private RingsideActionSeedApplier ringsideActionApplier;
+  @Autowired private SegmentTypeSeedApplier segmentTypeApplier;
+  @Autowired private ShowTypeSeedApplier showTypeApplier;
+  @Autowired private ShowTemplateSeedApplier showTemplateApplier;
+  @Autowired private StatusCardSeedApplier statusCardApplier;
+  @Autowired private TournamentSeedApplier tournamentApplier;
+  @Autowired private CampaignAbilityCardSeedApplier campaignAbilityCardApplier;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private DeckRepository deckRepository;
   @Autowired private DeckCardRepository deckCardRepository;
@@ -110,6 +116,36 @@ class SeedAppliersTest extends AbstractJpaTest {
   @Autowired private NpcRepository npcRepository;
   @Autowired private AchievementRepository achievementRepository;
   @Autowired private AccountAchievementRepository accountAchievementRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository
+      segmentTypeRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository
+      showTypeRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository
+      showTemplateRepository;
+
+  @Autowired private com.github.javydreamercsw.management.domain.show.ShowRepository showRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.StatusCardRepository
+      statusCardRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.WrestlerStatusRepository
+      wrestlerStatusRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.tournament.TournamentRepository
+      tournamentRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCardRepository
+      campaignAbilityCardRepository;
 
   @Autowired
   private com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository
@@ -1190,5 +1226,539 @@ class SeedAppliersTest extends AbstractJpaTest {
     assertFalse(
         ringsideActionRepository.findById(doomed.getId()).isPresent(),
         "REMOVE must delete the row resolved by display name");
+  }
+
+  // ── SegmentTypeSeedApplier ──────────────────────────────────────────────────
+
+  private com.github.javydreamercsw.management.domain.show.segment.type.SegmentType segmentType(
+      String name) {
+    return segmentTypeRepository
+        .findByName(name)
+        .orElseGet(
+            () -> {
+              com.github.javydreamercsw.management.domain.show.segment.type.SegmentType st =
+                  new com.github.javydreamercsw.management.domain.show.segment.type.SegmentType();
+              st.setName(name);
+              return segmentTypeRepository.save(st);
+            });
+  }
+
+  private com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
+      segmentTypeFixture(String name, String description) {
+    return segmentTypeRepository
+        .findByName(name)
+        .orElseGet(
+            () -> {
+              com.github.javydreamercsw.management.domain.show.segment.type.SegmentType st =
+                  new com.github.javydreamercsw.management.domain.show.segment.type.SegmentType();
+              st.setName(name);
+              st.setDescription(description);
+              return segmentTypeRepository.save(st);
+            });
+  }
+
+  @Test
+  void segmentTypeApplierAppliesUseNewThroughEntityKey() {
+    // Resolution pins to the decision's reminted entity key: the row's name slugs to exactly the
+    // key detection minted, while the display name (the UI-facing string, which may drift from the
+    // row name across a seed rename) never takes part in resolution.
+    var row = segmentTypeFixture("Entity Key Type", "old description");
+    row.setSeedFingerprint("fp-old");
+    segmentTypeRepository.save(row);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "segment_type",
+            SegmentTypeSync.entityKeyFor("Entity Key Type"),
+            "Seed Name Type", // drifted display name — resolution must ignore it
+            "description",
+            "old description",
+            "fresh seed description",
+            "fp-st");
+
+    service(segmentTypeApplier).apply(Map.of(decision.getId(), SeedFieldDecision.USE_NEW));
+
+    flushAndClear();
+    var reloaded = segmentTypeRepository.findById(row.getId()).orElseThrow();
+    assertEquals(
+        "fresh seed description",
+        reloaded.getDescription(),
+        "USE_NEW must reach the row through the reminted entity key, not the display name");
+    assertEquals("fp-st", reloaded.getSeedFingerprint(), "USE_NEW must stamp the row");
+  }
+
+  @Test
+  void segmentTypeApplierKeepMineStampsWithoutChangingValue() {
+    var st = segmentTypeFixture("Keep Mine Type", "admin's description");
+    String adminValue = st.getDescription();
+    st.setSeedFingerprint("fp-old");
+    segmentTypeRepository.save(st);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "segment_type",
+            SegmentTypeSync.entityKeyFor("Keep Mine Type"),
+            "Keep Mine Type",
+            "description",
+            adminValue,
+            "seed description",
+            "fp-keep");
+    service(segmentTypeApplier).apply(Map.of(decision.getId(), SeedFieldDecision.KEEP_MINE));
+
+    flushAndClear();
+    var reloaded = segmentTypeRepository.findById(st.getId()).orElseThrow();
+    assertEquals(adminValue, reloaded.getDescription(), "KEEP_MINE must keep the admin's value");
+    assertEquals(
+        "fp-keep",
+        reloaded.getSeedFingerprint(),
+        "KEEP_MINE must stamp the detection fingerprint (re-collision on the next seed change)");
+  }
+
+  @Test
+  void segmentTypeApplierRemoveRefusedWhenBooked() {
+    // A booked segment uses the type: the pre-dispatch hasDependents check must refuse the
+    // removal BEFORE any dispatch. (The boot seeds the Promo type and its show types/templates;
+    // no segment books a fresh fixture type, so the removal of an unbooked row is safe.)
+    var free = segmentTypeFixture("Removable Type", "unused");
+    var booked = segmentTypeFixture("Booked Type", "used");
+    // A template assignment row references the booked type (ShowTemplateSegmentAssignment FK).
+    com.github.javydreamercsw.management.domain.show.template.ShowTemplate template =
+        showTemplateFixture();
+    com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment row =
+        new com.github.javydreamercsw.management.domain.show.template
+            .ShowTemplateSegmentAssignment();
+    row.setTemplate(template);
+    row.setSegmentType(booked);
+    template.getSegmentAssignments().add(row);
+    showTemplateRepository.save(template);
+    flushAndClear();
+
+    SeedUpdateDecision blocked =
+        parkRemoval(
+            "segment_type",
+            SegmentTypeSync.entityKeyFor("Booked Type"),
+            "Booked Type",
+            "fp-rem-blocked");
+    SeedUpdateDecision freeDecision =
+        parkRemoval(
+            "segment_type",
+            SegmentTypeSync.entityKeyFor("Removable Type"),
+            "Removable Type",
+            "fp-rem-free");
+    IllegalStateException exception =
+        assertThrows(
+            IllegalStateException.class,
+            () ->
+                service(segmentTypeApplier)
+                    .apply(
+                        Map.of(
+                            blocked.getId(),
+                            SeedFieldDecision.REMOVE,
+                            freeDecision.getId(),
+                            SeedFieldDecision.REMOVE)));
+    assertTrue(
+        exception.getMessage().contains("references it"),
+        "removal of a referenced type must be refused by the pre-dispatch check");
+    flushAndClear();
+    assertTrue(
+        segmentTypeRepository.findById(booked.getId()).isPresent(),
+        "the referenced type must survive the refused removal");
+  }
+
+  // ── ShowTypeSeedApplier ─────────────────────────────────────────────────────
+
+  private com.github.javydreamercsw.management.domain.show.type.ShowType showTypeFixture(
+      String name) {
+    return showTypeRepository
+        .findByName(name)
+        .orElseGet(
+            () -> {
+              com.github.javydreamercsw.management.domain.show.type.ShowType st =
+                  new com.github.javydreamercsw.management.domain.show.type.ShowType();
+              st.setName(name);
+              st.setDescription("original");
+              st.setCategory(
+                  com.github.javydreamercsw.management.domain.show.type.ShowCategory.OTHER);
+              return showTypeRepository.save(st);
+            });
+  }
+
+  @Test
+  void showTypeApplierAppliesUseNewAndStamps() {
+    var st = showTypeFixture("Weekly");
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "show_type",
+            ShowTypeSync.entityKeyFor("Weekly"),
+            "Weekly",
+            "description",
+            "old",
+            "Weekly Event, refreshed",
+            "fp-showtype");
+    service(showTypeApplier).apply(Map.of(decision.getId(), SeedFieldDecision.USE_NEW));
+
+    flushAndClear();
+    var reloaded = showTypeRepository.findById(st.getId()).orElseThrow();
+    assertEquals(
+        "Weekly Event, refreshed", reloaded.getDescription(), "USE_NEW must reach the row");
+    assertEquals("fp-showtype", reloaded.getSeedFingerprint(), "USE_NEW must stamp the row");
+  }
+
+  @Test
+  void showTypeApplierRemoveRefusedWhenShowsExist() {
+    var referenced = showTypeFixture("Referenced Type");
+    var show = new com.github.javydreamercsw.management.domain.show.Show();
+    show.setName("Seed Applier Show");
+    show.setDescription("a show");
+    show.setType(referenced);
+    show.setCreationDate(Instant.now());
+    showRepository.save(show);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        parkRemoval(
+            "show_type", ShowTypeSync.entityKeyFor("Referenced Type"), "Referenced Type", "fp");
+    IllegalStateException exception =
+        assertThrows(
+            IllegalStateException.class,
+            () ->
+                service(showTypeApplier).apply(Map.of(decision.getId(), SeedFieldDecision.REMOVE)));
+    assertTrue(
+        exception.getMessage().contains("references it"),
+        "removal of a show-booked type must be refused by the pre-dispatch check");
+    flushAndClear();
+    assertTrue(
+        showTypeRepository.findById(referenced.getId()).isPresent(),
+        "the referenced type must survive the refused removal");
+  }
+
+  // ── ShowTemplateSeedApplier ─────────────────────────────────────────────────
+
+  private com.github.javydreamercsw.management.domain.show.template.ShowTemplate
+      showTemplateFixture() {
+    com.github.javydreamercsw.management.domain.show.template.ShowTemplate t =
+        new com.github.javydreamercsw.management.domain.show.template.ShowTemplate();
+    t.setName("Applier Fixture Template");
+    t.setShowType(showTypeFixture("Weekly"));
+    return showTemplateRepository.save(t);
+  }
+
+  @Test
+  void showTemplateApplierAppliesUseNewThroughEntityKey() {
+    // Resolution pins to the decision's reminted entity key: the row's name slugs to exactly the
+    // key detection minted, while the display name never takes part in resolution.
+    var template = showTemplateFixture();
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "show_template",
+            ShowTemplateSync.entityKeyFor("Applier Fixture Template"),
+            "Applier Fixture Template",
+            "description",
+            "old",
+            "fresh template description",
+            "fp-template");
+    service(showTemplateApplier).apply(Map.of(decision.getId(), SeedFieldDecision.USE_NEW));
+
+    flushAndClear();
+    var reloaded = showTemplateRepository.findById(template.getId()).orElseThrow();
+    assertEquals(
+        "fresh template description",
+        reloaded.getDescription(),
+        "USE_NEW must reach the row resolved through the reminted entity key");
+    assertEquals("fp-template", reloaded.getSeedFingerprint(), "USE_NEW must stamp the row");
+  }
+
+  @Test
+  void showTemplateApplierRemoveRefusedWhenShowsExist() {
+    var template = showTemplateFixture();
+    var show = new com.github.javydreamercsw.management.domain.show.Show();
+    show.setName("Template Show");
+    show.setDescription("a show");
+    show.setType(template.getShowType());
+    show.setTemplate(template);
+    show.setCreationDate(Instant.now());
+    showRepository.save(show);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        parkRemoval(
+            "show_template",
+            ShowTemplateSync.entityKeyFor("Applier Fixture Template"),
+            "Applier Fixture Template",
+            "fp");
+    IllegalStateException exception =
+        assertThrows(
+            IllegalStateException.class,
+            () ->
+                service(showTemplateApplier)
+                    .apply(Map.of(decision.getId(), SeedFieldDecision.REMOVE)));
+    assertTrue(
+        exception.getMessage().contains("references it"),
+        "removal of a template with shows must be refused by the pre-dispatch check");
+    flushAndClear();
+    assertTrue(
+        showTemplateRepository.findById(template.getId()).isPresent(),
+        "the referenced template must survive the refused removal");
+  }
+
+  // ── StatusCardSeedApplier ───────────────────────────────────────────────────
+
+  private com.github.javydreamercsw.management.domain.campaign.StatusCard statusCardFixture(
+      String key) {
+    return statusCardRepository
+        .findByKey(key)
+        .orElseGet(
+            () -> {
+              com.github.javydreamercsw.management.domain.campaign.StatusCard card =
+                  new com.github.javydreamercsw.management.domain.campaign.StatusCard();
+              card.setKey(key);
+              card.setLevel1Name("Level One");
+              card.setDescription("original");
+              card.setPositive(true);
+              return statusCardRepository.save(card);
+            });
+  }
+
+  @Test
+  void statusCardApplierAppliesUseNewThroughEntityKey() {
+    var card = statusCardFixture("status_applier_test");
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "status_card",
+            StatusCardSync.entityKeyFor("status_applier_test"),
+            "status_applier_test",
+            "level1Effect",
+            "old",
+            "vpBonus: 2",
+            "fp-sc");
+    service(statusCardApplier).apply(Map.of(decision.getId(), SeedFieldDecision.USE_NEW));
+
+    flushAndClear();
+    var reloaded = statusCardRepository.findById(card.getId()).orElseThrow();
+    assertEquals(
+        "vpBonus: 2", reloaded.getLevel1Effect(), "USE_NEW must reach the row resolved by key");
+    assertEquals("fp-sc", reloaded.getSeedFingerprint(), "USE_NEW must stamp the row");
+  }
+
+  @Test
+  void statusCardApplierRemoveRefusedWhenWrestlerStatusesExist() {
+    var card = statusCardFixture("status_applier_dependent");
+    Wrestler holder = wrestlerRepository.save(Wrestler.builder().name("Status Holder").build());
+    com.github.javydreamercsw.management.domain.campaign.WrestlerStatus status =
+        com.github.javydreamercsw.management.domain.campaign.WrestlerStatus.builder()
+            .wrestler(holder)
+            .statusCard(card)
+            .build();
+    wrestlerStatusRepository.save(status);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        parkRemoval(
+            "status_card",
+            StatusCardSync.entityKeyFor("status_applier_dependent"),
+            "status_applier_dependent",
+            "fp");
+    IllegalStateException exception =
+        assertThrows(
+            IllegalStateException.class,
+            () ->
+                service(statusCardApplier)
+                    .apply(Map.of(decision.getId(), SeedFieldDecision.REMOVE)));
+    assertTrue(
+        exception.getMessage().contains("references it"),
+        "removal of an applied status card must be refused by the pre-dispatch check");
+    flushAndClear();
+    assertTrue(
+        statusCardRepository.findById(card.getId()).isPresent(),
+        "the applied card must survive the refused removal");
+  }
+
+  // ── TournamentSeedApplier ───────────────────────────────────────────────────
+
+  private com.github.javydreamercsw.management.domain.tournament.Tournament tournamentFixture(
+      String code) {
+    return tournamentRepository
+        .findByCodeWithRules(code)
+        .orElseGet(
+            () -> {
+              com.github.javydreamercsw.management.domain.tournament.Tournament t =
+                  new com.github.javydreamercsw.management.domain.tournament.Tournament();
+              t.setCode(code);
+              t.setName("Fixture " + code);
+              t.setFormatId("SINGLE_ELIMINATION");
+              return tournamentRepository.save(t);
+            });
+  }
+
+  @Test
+  void tournamentApplierAppliesUseNewThroughEntityKey() {
+    var tournament = tournamentFixture("applier_fixture");
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "tournament",
+            TournamentSync.entityKeyFor("applier_fixture"),
+            "Fixture applier_fixture", // the seed name — the row's current name may differ
+            "name",
+            "Fixture applier_fixture",
+            "Renamed By Seed",
+            "fp-t");
+    service(tournamentApplier).apply(Map.of(decision.getId(), SeedFieldDecision.USE_NEW));
+
+    flushAndClear();
+    var reloaded = tournamentRepository.findById(tournament.getId()).orElseThrow();
+    assertEquals(
+        "Renamed By Seed",
+        reloaded.getName(),
+        "USE_NEW must reach the row resolved through the code-key, not the seed name");
+    assertEquals("fp-t", reloaded.getSeedFingerprint(), "USE_NEW must stamp the row");
+  }
+
+  @Test
+  void tournamentApplierKeepMineStampsWithoutChangingValue() {
+    var tournament = tournamentFixture("applier_keep");
+    tournament.setDefaultEntrantCount(4);
+    tournamentRepository.save(tournament);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "tournament",
+            TournamentSync.entityKeyFor("applier_keep"),
+            "Fixture applier_keep",
+            "defaultEntrantCount",
+            "4",
+            "8",
+            "fp-keep");
+    service(tournamentApplier).apply(Map.of(decision.getId(), SeedFieldDecision.KEEP_MINE));
+
+    flushAndClear();
+    var reloaded = tournamentRepository.findById(tournament.getId()).orElseThrow();
+    assertEquals(4, reloaded.getDefaultEntrantCount(), "KEEP_MINE must keep the admin's value");
+    assertEquals("fp-keep", reloaded.getSeedFingerprint(), "KEEP_MINE must stamp the row");
+  }
+
+  @Test
+  void tournamentApplierUseNewRebuildsRulesPoolAndStamps() {
+    // The rules-pool apply path: USE_NEW resolves the decision's newline-joined rule names back
+    // to entities through the rule catalog and replaces the row's pool.
+    var tournament = tournamentFixture("applier_rules");
+    SegmentRule cage = segmentRule("Cage");
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "tournament",
+            TournamentSync.entityKeyFor("applier_rules"),
+            "Fixture applier_rules",
+            "allowedRules",
+            "No DQ",
+            "Cage",
+            "fp-rules");
+    service(tournamentApplier).apply(Map.of(decision.getId(), SeedFieldDecision.USE_NEW));
+
+    flushAndClear();
+    var reloaded = tournamentRepository.findByCodeWithRules("applier_rules").orElseThrow();
+    assertEquals(
+        List.of(cage.getId()),
+        reloaded.getAllowedRules().stream().map(SegmentRule::getId).toList(),
+        "USE_NEW must rebuild the rules pool from the decision's captured names");
+    assertEquals("fp-rules", reloaded.getSeedFingerprint(), "USE_NEW must stamp the row");
+  }
+
+  // ── CampaignAbilityCardSeedApplier ──────────────────────────────────────────
+
+  private com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCard abilityCard(
+      String name, int level) {
+    return campaignAbilityCardRepository
+        .findByNameAndAlignmentTypeAndLevel(
+            name, com.github.javydreamercsw.management.domain.campaign.AlignmentType.HEEL, level)
+        .orElseGet(
+            () -> {
+              com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCard c =
+                  new com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCard();
+              c.setName(name);
+              c.setAlignmentType(
+                  com.github.javydreamercsw.management.domain.campaign.AlignmentType.HEEL);
+              c.setLevel(level);
+              return campaignAbilityCardRepository.save(c);
+            });
+  }
+
+  @Test
+  void campaignAbilityCardApplierAppliesUseNewThroughCompositeKey() {
+    // Two same-named cards at different levels: resolution must go through the composite
+    // name|alignment|level key remint, not the display name.
+    var level1 = abilityCard("Ambiguous Card", 1);
+    var level2 = abilityCard("Ambiguous Card", 2);
+    level2.setDescription("level-two row");
+    campaignAbilityCardRepository.save(level2);
+    flushAndClear();
+
+    SeedUpdateDecision d1 =
+        park(
+            "campaign_ability_card",
+            CampaignAbilityCardSync.entityKeyFor("Ambiguous Card|HEEL|1"),
+            "Ambiguous Card",
+            "description",
+            "old",
+            "level-one updated",
+            "fp-c1");
+    SeedUpdateDecision d2 =
+        park(
+            "campaign_ability_card",
+            CampaignAbilityCardSync.entityKeyFor("Ambiguous Card|HEEL|2"),
+            "Ambiguous Card",
+            "description",
+            "level-two row",
+            "level-two updated",
+            "fp-c2");
+
+    service(campaignAbilityCardApplier)
+        .apply(
+            Map.of(d1.getId(), SeedFieldDecision.USE_NEW, d2.getId(), SeedFieldDecision.USE_NEW));
+
+    flushAndClear();
+    assertEquals(
+        "level-one updated",
+        campaignAbilityCardRepository.findById(level1.getId()).orElseThrow().getDescription(),
+        "USE_NEW must reach the level-1 row through its composite key");
+    assertEquals(
+        "level-two updated",
+        campaignAbilityCardRepository.findById(level2.getId()).orElseThrow().getDescription(),
+        "USE_NEW must reach the level-2 row through its composite key");
+  }
+
+  @Test
+  void campaignAbilityCardApplierKeepMineStamps() {
+    var card = abilityCard("Keep Card", 1);
+    String adminScript = card.getEffectScript();
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "campaign_ability_card",
+            CampaignAbilityCardSync.entityKeyFor("Keep Card|HEEL|1"),
+            "Keep Card",
+            "effectScript",
+            adminScript,
+            "seedScript()",
+            "fp-keep");
+    service(campaignAbilityCardApplier)
+        .apply(Map.of(decision.getId(), SeedFieldDecision.KEEP_MINE));
+
+    flushAndClear();
+    var reloaded = campaignAbilityCardRepository.findById(card.getId()).orElseThrow();
+    assertEquals(adminScript, reloaded.getEffectScript(), "KEEP_MINE must keep the admin's value");
+    assertEquals("fp-keep", reloaded.getSeedFingerprint(), "KEEP_MINE must stamp the row");
   }
 }

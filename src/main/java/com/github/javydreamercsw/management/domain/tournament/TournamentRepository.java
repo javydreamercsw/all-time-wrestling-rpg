@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.domain.tournament;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 public interface TournamentRepository extends JpaRepository<Tournament, Long> {
 
@@ -41,6 +42,22 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long> {
 
   /** Catalog lookup by the stable seed code (tournaments.json / WellKnownTournament). */
   Optional<Tournament> findByCode(String code);
+
+  /**
+   * Catalog lookup with the allowed-rules collection eagerly fetched — the seed-review detection
+   * pass and the applier read the rules outside a service transaction, where the LAZY
+   * {@code @ManyToMany} proxy would throw.
+   */
+  @Query("SELECT t FROM Tournament t LEFT JOIN FETCH t.allowedRules WHERE t.code = :code")
+  Optional<Tournament> findByCodeWithRules(
+      @org.springframework.data.repository.query.Param("code") String code);
+
+  /**
+   * All tournaments with the allowed-rules collection eagerly fetched (same eager-read need as
+   * {@link #findByCodeWithRules(String)}, for the fingerprint extraction over every catalog row).
+   */
+  @Query("SELECT DISTINCT t FROM Tournament t LEFT JOIN FETCH t.allowedRules")
+  List<Tournament> findAllWithRules();
 
   /** The successor edition of a recurring chain (ATW-o4ad) — the idempotency guard. */
   Optional<Tournament> findByParentId(Long parentId);

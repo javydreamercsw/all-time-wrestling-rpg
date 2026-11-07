@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-11-06T19:28:35Z",
+  "generatedAt" : "2026-11-07T21:52:37Z",
   "domains" : {
     "achievement" : {
       "ABILENE_BLESS_YOUR_HEART" : "9288b567c2091fd69215816044e405d85ce777337a348e6396f2e8b3028c3abb",
@@ -757,6 +757,25 @@
       "Promo" : "deb84731d2bcd4871daaa0a8de64d447d1890b81ed6c963754e85db85c60ddd9",
       "Tag Team" : "b2a363290f803bf16f920ba02e772da65b149d446d135e994461a7c42f459687",
       "Trios" : "f739c0be4d6e9e9dc9635c3d6df85f93a78d33c0664921b0f9176924cf03e821"
+    },
+    "show_template" : {
+      "All Time Rumble" : "bdde8105c252f1331275d1afafe4d1cd6de85866404af0d60006ce86d03d679d",
+      "Continuum" : "94f60bd7ab0d846a2be17b6bc15439cdf1b632e584f16767ac37143c9e489f26",
+      "Timeless" : "042d82432f83063adfc265a98e7049087907f682fca65526b19f76327c480a6c",
+      "Valentine's Day Massacre" : "4e43c9d7b665732f9b5ee84ee17e86da9942358f772d89d0c79b6eee353dbb9d"
+    },
+    "show_type" : {
+      "Premium Live Event (PLE)" : "aaf0766c3363c4b111dd50b2ba5a717c319d4ad6149e443c1debf2be90212335",
+      "Weekly" : "ce937680f51d9dd591eca998dbc5ff36f72c8555be859ab8bc5f435d0b7546cc"
+    },
+    "status_card" : {
+      "status_draw" : "6b06cccf5d099e834a51eb62ebd3f90249d79d621077e859a65402ec6673efee",
+      "status_lost_confidence" : "f13a63c1f1dff238bd75665df833fe55724e304fd53cd1fb3600ec25602f9ce5",
+      "status_respected" : "433a9cfd4cd89bab8ee403a658567128c4e1616018517480f6aae4b7a70e83d9",
+      "status_superstar" : "6b50aa01cb395d0f4608a6e57280d70644e881bce74e2d20e55f9f97e3dfc7c9"
+    },
+    "tournament" : {
+      "deadly_combat" : "002dd985b71cc885471f2612302bdeb72f5718615f2b4e9399f909bbf2cbd8a1"
     },
     "wrestler" : {
       "Abilene Maverick" : "3ec596be7e8aa8fceb4aa44410d4dd27797e89ede06e64cafb25d9b6aa78e29d",

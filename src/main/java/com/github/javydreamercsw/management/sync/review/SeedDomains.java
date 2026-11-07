@@ -38,7 +38,7 @@ public final class SeedDomains {
   /**
    * Every domain the committed manifest must cover, in manifest document order: achievement,
    * campaign_ability_card, card, card_set, championship, deck, npc, ringside_action, segment_rule,
-   * segment_type, wrestler.
+   * segment_type, show_template, show_type, status_card, tournament, wrestler.
    */
   public static final Set<String> STAMPING_DOMAINS =
       Collections.unmodifiableSet(
@@ -54,6 +54,10 @@ public final class SeedDomains {
                   "ringside_action",
                   "segment_rule",
                   "segment_type",
+                  "show_template",
+                  "show_type",
+                  "status_card",
+                  "tournament",
                   "wrestler")));
 
   private SeedDomains() {}
