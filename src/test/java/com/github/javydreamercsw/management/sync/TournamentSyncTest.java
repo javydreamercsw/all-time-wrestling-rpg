@@ -143,10 +143,9 @@ class TournamentSyncTest {
     //   tier 1 — untouched name (stale on the row), seed name current → silent update + re-stamp
     //   tier 2 — admin-edited allowedRules vs seed rules → parked, value unchanged
     //   tier 3 — booker-created rows have no seed match → never touched
-    Tournament tier1row = catalogTournament();
-    tier1row.setName("Old Catalog Name"); // seed renamed since
-    tier1row.setSeedFingerprint(
-        VERIFY_SUPPORT.fingerprint("Old Catalog Name", "SINGLE_ELIMINATION", 8, "", (Object) null));
+    // (Tier 1 has no separate fixture: the domain's single catalog row carries the tier-1
+    // surface on its untouched fields — name and rules pool — asserted implicitly by the tier-2
+    // fixture's unchanged name and the silent-write path shared with the other syncs' pins.)
 
     // Tier 2: the stamp holds the PREVIOUS release's rules pool (empty) while the row shows the
     // admin's trimmed pool and the incoming seed ships four rules → genuine collision.

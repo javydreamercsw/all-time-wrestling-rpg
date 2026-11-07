@@ -69,7 +69,10 @@ public class StatusCardSync implements DataSyncContributor {
 
   @Override
   public void sync() {
-    if (syncSupport.mode() != SeedSyncMode.FULL && statusCardService.findAll().size() > 0) {
+    // Non-FULL boots skip the file import once any card exists: the seed write-set would clobber
+    // admin edits on real cards (the version-change detection pass owns seed drift instead).
+    // FULL mode (first boot / empty table) applies the seed everywhere.
+    if (syncSupport.mode() != SeedSyncMode.FULL && statusCardRepository.count() > 0) {
       return;
     }
     ClassPathResource resource = new ClassPathResource("status_cards.json");

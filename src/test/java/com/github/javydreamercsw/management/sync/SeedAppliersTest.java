@@ -151,6 +151,14 @@ class SeedAppliersTest extends AbstractJpaTest {
   private com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository
       wrestlerStateRepository;
 
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.CampaignRepository
+      campaignRepository;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository
+      campaignStateRepository;
+
   @Autowired private EntityManager entityManager;
 
   @BeforeEach
@@ -1760,5 +1768,481 @@ class SeedAppliersTest extends AbstractJpaTest {
     var reloaded = campaignAbilityCardRepository.findById(card.getId()).orElseThrow();
     assertEquals(adminScript, reloaded.getEffectScript(), "KEEP_MINE must keep the admin's value");
     assertEquals("fp-keep", reloaded.getSeedFingerprint(), "KEEP_MINE must stamp the row");
+  }
+
+  // ── Fix-round coverage: the 24-path verb matrix for the six Slice B appliers ──
+  // Per domain: USE_NEW (above), KEEP_MINE, KEEP_AS_CUSTOM, and REMOVE — positive where the
+  // domain's hasDependents guard permits a genuinely orphaned row, plus the two refusal pins the
+  // Slice B domains were missing (tournament, campaign ability card).
+
+  @Test
+  void segmentTypeApplierKeepAsCustomClearsStamp() {
+    var st = segmentTypeFixture("Custom Type", "admin's description");
+    String adminValue = st.getDescription();
+    st.setSeedFingerprint("fp-old");
+    segmentTypeRepository.save(st);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "segment_type",
+            SegmentTypeSync.entityKeyFor("Custom Type"),
+            "Custom Type",
+            "description",
+            adminValue,
+            "seed description",
+            "fp-new");
+    service(segmentTypeApplier).apply(Map.of(decision.getId(), SeedFieldDecision.KEEP_AS_CUSTOM));
+
+    flushAndClear();
+    var reloaded = segmentTypeRepository.findById(st.getId()).orElseThrow();
+    assertEquals(
+        adminValue, reloaded.getDescription(), "KEEP_AS_CUSTOM must keep the admin's value");
+    assertNull(
+        reloaded.getSeedFingerprint(),
+        "KEEP_AS_CUSTOM must clear the stamp (the row becomes user-owned content)");
+  }
+
+  @Test
+  void segmentTypeApplierRemoveDeletesOrphanedRow() {
+    // An unbooked type (no segments, no template assignments) is genuinely removable: the
+    // hasDependents guard passes and the delete goes through.
+    var orphan = segmentTypeFixture("Orphaned Type", "unused");
+    orphan.setSeedFingerprint("fp-old");
+    segmentTypeRepository.save(orphan);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        parkRemoval(
+            "segment_type", SegmentTypeSync.entityKeyFor("Orphaned Type"), "Orphaned Type", "fp");
+    service(segmentTypeApplier).apply(Map.of(decision.getId(), SeedFieldDecision.REMOVE));
+
+    flushAndClear();
+    assertFalse(
+        segmentTypeRepository.findById(orphan.getId()).isPresent(),
+        "REMOVE must delete the orphaned segment type");
+    assertEquals(
+        SeedUpdateDecision.STATUS_APPLIED_REMOVE,
+        decisionRepository.findById(decision.getId()).orElseThrow().getStatus());
+  }
+
+  @Test
+  void showTypeApplierKeepMineStampsWithoutChangingValue() {
+    var st = showTypeFixture("Keep Mine Weekly");
+    String adminDescription = st.getDescription();
+    st.setSeedFingerprint("fp-old");
+    showTypeRepository.save(st);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "show_type",
+            ShowTypeSync.entityKeyFor("Keep Mine Weekly"),
+            "Keep Mine Weekly",
+            "description",
+            adminDescription,
+            "seed description",
+            "fp-keep");
+    service(showTypeApplier).apply(Map.of(decision.getId(), SeedFieldDecision.KEEP_MINE));
+
+    flushAndClear();
+    var reloaded = showTypeRepository.findById(st.getId()).orElseThrow();
+    assertEquals(
+        adminDescription, reloaded.getDescription(), "KEEP_MINE must keep the admin's value");
+    assertEquals("fp-keep", reloaded.getSeedFingerprint(), "KEEP_MINE must stamp the row");
+  }
+
+  @Test
+  void showTypeApplierKeepAsCustomClearsStamp() {
+    var st = showTypeFixture("Custom Weekly");
+    String adminDescription = st.getDescription();
+    st.setSeedFingerprint("fp-old");
+    showTypeRepository.save(st);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "show_type",
+            ShowTypeSync.entityKeyFor("Custom Weekly"),
+            "Custom Weekly",
+            "description",
+            adminDescription,
+            "seed description",
+            "fp-new");
+    service(showTypeApplier).apply(Map.of(decision.getId(), SeedFieldDecision.KEEP_AS_CUSTOM));
+
+    flushAndClear();
+    var reloaded = showTypeRepository.findById(st.getId()).orElseThrow();
+    assertEquals(
+        adminDescription, reloaded.getDescription(), "KEEP_AS_CUSTOM must keep the admin's value");
+    assertNull(
+        reloaded.getSeedFingerprint(), "KEEP_AS_CUSTOM must clear the stamp on the show type");
+  }
+
+  @Test
+  void showTypeApplierRemoveDeletesOrphanedRow() {
+    // A type with no shows and no templates referencing it is genuinely removable.
+    var orphan = showTypeFixture("Orphaned Show Type");
+    orphan.setSeedFingerprint("fp-old");
+    showTypeRepository.save(orphan);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        parkRemoval(
+            "show_type",
+            ShowTypeSync.entityKeyFor("Orphaned Show Type"),
+            "Orphaned Show Type",
+            "fp");
+    service(showTypeApplier).apply(Map.of(decision.getId(), SeedFieldDecision.REMOVE));
+
+    flushAndClear();
+    assertFalse(
+        showTypeRepository.findById(orphan.getId()).isPresent(),
+        "REMOVE must delete the orphaned show type");
+    assertEquals(
+        SeedUpdateDecision.STATUS_APPLIED_REMOVE,
+        decisionRepository.findById(decision.getId()).orElseThrow().getStatus());
+  }
+
+  @Test
+  void showTemplateApplierKeepMineStampsWithoutChangingValue() {
+    var template = showTemplateFixture();
+    String adminDescription = template.getDescription();
+    template.setSeedFingerprint("fp-old");
+    showTemplateRepository.save(template);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "show_template",
+            ShowTemplateSync.entityKeyFor("Applier Fixture Template"),
+            "Applier Fixture Template",
+            "description",
+            adminDescription,
+            "seed description",
+            "fp-keep");
+    service(showTemplateApplier).apply(Map.of(decision.getId(), SeedFieldDecision.KEEP_MINE));
+
+    flushAndClear();
+    var reloaded = showTemplateRepository.findById(template.getId()).orElseThrow();
+    assertEquals(
+        adminDescription, reloaded.getDescription(), "KEEP_MINE must keep the admin's value");
+    assertEquals("fp-keep", reloaded.getSeedFingerprint(), "KEEP_MINE must stamp the row");
+  }
+
+  @Test
+  void showTemplateApplierKeepAsCustomClearsStamp() {
+    var template = showTemplateFixture();
+    String adminDescription = template.getDescription();
+    template.setSeedFingerprint("fp-old");
+    showTemplateRepository.save(template);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "show_template",
+            ShowTemplateSync.entityKeyFor("Applier Fixture Template"),
+            "Applier Fixture Template",
+            "description",
+            adminDescription,
+            "seed description",
+            "fp-new");
+    service(showTemplateApplier).apply(Map.of(decision.getId(), SeedFieldDecision.KEEP_AS_CUSTOM));
+
+    flushAndClear();
+    var reloaded = showTemplateRepository.findById(template.getId()).orElseThrow();
+    assertEquals(
+        adminDescription, reloaded.getDescription(), "KEEP_AS_CUSTOM must keep the admin's value");
+    assertNull(reloaded.getSeedFingerprint(), "KEEP_AS_CUSTOM must clear the template's stamp");
+  }
+
+  @Test
+  void showTemplateApplierRemoveDeletesOrphanedRow() {
+    // A template with no shows generated from it is genuinely removable.
+    var orphan = showTemplateFixture();
+    orphan.setName("Orphaned Fixture Template");
+    orphan.setSeedFingerprint("fp-old");
+    showTemplateRepository.save(orphan);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        parkRemoval(
+            "show_template",
+            ShowTemplateSync.entityKeyFor("Orphaned Fixture Template"),
+            "Orphaned Fixture Template",
+            "fp");
+    service(showTemplateApplier).apply(Map.of(decision.getId(), SeedFieldDecision.REMOVE));
+
+    flushAndClear();
+    assertFalse(
+        showTemplateRepository.findById(orphan.getId()).isPresent(),
+        "REMOVE must delete the orphaned show template");
+    assertEquals(
+        SeedUpdateDecision.STATUS_APPLIED_REMOVE,
+        decisionRepository.findById(decision.getId()).orElseThrow().getStatus());
+  }
+
+  @Test
+  void statusCardApplierKeepMineStampsWithoutChangingValue() {
+    var card = statusCardFixture("status_keep_mine");
+    String adminEffect = card.getLevel1Effect();
+    card.setSeedFingerprint("fp-old");
+    statusCardRepository.save(card);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "status_card",
+            StatusCardSync.entityKeyFor("status_keep_mine"),
+            "status_keep_mine",
+            "level1Effect",
+            adminEffect,
+            "vpBonus: 2",
+            "fp-keep");
+    service(statusCardApplier).apply(Map.of(decision.getId(), SeedFieldDecision.KEEP_MINE));
+
+    flushAndClear();
+    var reloaded = statusCardRepository.findById(card.getId()).orElseThrow();
+    assertEquals(adminEffect, reloaded.getLevel1Effect(), "KEEP_MINE must keep the admin's value");
+    assertEquals("fp-keep", reloaded.getSeedFingerprint(), "KEEP_MINE must stamp the row");
+  }
+
+  @Test
+  void statusCardApplierKeepAsCustomClearsStamp() {
+    var card = statusCardFixture("status_keep_custom");
+    String adminEffect = card.getLevel1Effect();
+    card.setSeedFingerprint("fp-old");
+    statusCardRepository.save(card);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "status_card",
+            StatusCardSync.entityKeyFor("status_keep_custom"),
+            "status_keep_custom",
+            "level1Effect",
+            adminEffect,
+            "vpBonus: 2",
+            "fp-new");
+    service(statusCardApplier).apply(Map.of(decision.getId(), SeedFieldDecision.KEEP_AS_CUSTOM));
+
+    flushAndClear();
+    var reloaded = statusCardRepository.findById(card.getId()).orElseThrow();
+    assertEquals(
+        adminEffect, reloaded.getLevel1Effect(), "KEEP_AS_CUSTOM must keep the admin's value");
+    assertNull(reloaded.getSeedFingerprint(), "KEEP_AS_CUSTOM must clear the card's stamp");
+  }
+
+  @Test
+  void statusCardApplierRemoveDeletesOrphanedRow() {
+    // A card no wrestler status applies is genuinely removable.
+    var orphan = statusCardFixture("status_orphaned");
+    orphan.setSeedFingerprint("fp-old");
+    statusCardRepository.save(orphan);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        parkRemoval(
+            "status_card", StatusCardSync.entityKeyFor("status_orphaned"), "status_orphaned", "fp");
+    service(statusCardApplier).apply(Map.of(decision.getId(), SeedFieldDecision.REMOVE));
+
+    flushAndClear();
+    assertFalse(
+        statusCardRepository.findById(orphan.getId()).isPresent(),
+        "REMOVE must delete the orphaned status card");
+    assertEquals(
+        SeedUpdateDecision.STATUS_APPLIED_REMOVE,
+        decisionRepository.findById(decision.getId()).orElseThrow().getStatus());
+  }
+
+  @Test
+  void tournamentApplierKeepAsCustomClearsStamp() {
+    var tournament = tournamentFixture("applier_custom");
+    tournament.setSeedFingerprint("fp-old");
+    tournamentRepository.save(tournament);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "tournament",
+            TournamentSync.entityKeyFor("applier_custom"),
+            "Fixture applier_custom",
+            "name",
+            "Fixture applier_custom",
+            "Renamed By Seed",
+            "fp-new");
+    service(tournamentApplier).apply(Map.of(decision.getId(), SeedFieldDecision.KEEP_AS_CUSTOM));
+
+    flushAndClear();
+    var reloaded = tournamentRepository.findById(tournament.getId()).orElseThrow();
+    assertEquals(
+        "Fixture applier_custom", reloaded.getName(), "KEEP_AS_CUSTOM must keep the admin's value");
+    assertNull(reloaded.getSeedFingerprint(), "KEEP_AS_CUSTOM must clear the tournament's stamp");
+  }
+
+  @Test
+  void tournamentApplierRemoveDeletesOrphanedRow() {
+    // A tournament with no entries, rounds, or payoff show is genuinely removable.
+    var orphan = tournamentFixture("applier_orphan");
+    orphan.setSeedFingerprint("fp-old");
+    tournamentRepository.save(orphan);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        parkRemoval(
+            "tournament",
+            TournamentSync.entityKeyFor("applier_orphan"),
+            "Fixture applier_orphan",
+            "fp");
+    service(tournamentApplier).apply(Map.of(decision.getId(), SeedFieldDecision.REMOVE));
+
+    flushAndClear();
+    assertFalse(
+        tournamentRepository.findById(orphan.getId()).isPresent(),
+        "REMOVE must delete the orphaned tournament");
+    assertEquals(
+        SeedUpdateDecision.STATUS_APPLIED_REMOVE,
+        decisionRepository.findById(decision.getId()).orElseThrow().getStatus());
+  }
+
+  @Test
+  void tournamentApplierRemoveRefusedWhenLifecycleStateExists() {
+    // A bracket round exists: the pre-dispatch hasDependents check must refuse the removal —
+    // deleting the tournament would cascade-destroy the bracket (TournamentRound FK).
+    var referenced = tournamentFixture("applier_rounded");
+    com.github.javydreamercsw.management.domain.tournament.TournamentRound round =
+        com.github.javydreamercsw.management.domain.tournament.TournamentRound.builder()
+            .tournament(referenced)
+            .roundNumber(1)
+            .roundName("Quarterfinals")
+            .status(
+                com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus
+                    .PENDING)
+            .build();
+    referenced.getRounds().add(round); // cascade ALL on the parent persists the round
+    tournamentRepository.saveAndFlush(referenced);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        parkRemoval(
+            "tournament",
+            TournamentSync.entityKeyFor("applier_rounded"),
+            "Fixture applier_rounded",
+            "fp");
+    IllegalStateException exception =
+        assertThrows(
+            IllegalStateException.class,
+            () ->
+                service(tournamentApplier)
+                    .apply(Map.of(decision.getId(), SeedFieldDecision.REMOVE)));
+    assertTrue(
+        exception.getMessage().contains("references it"),
+        "removal of a tournament with bracket state must be refused by the pre-dispatch check");
+    flushAndClear();
+    assertTrue(
+        tournamentRepository.findById(referenced.getId()).isPresent(),
+        "the tournament with bracket state must survive the refused removal");
+    assertEquals(
+        SeedUpdateDecision.STATUS_PENDING,
+        decisionRepository.findById(decision.getId()).orElseThrow().getStatus(),
+        "the refused removal decision must stay pending");
+  }
+
+  @Test
+  void campaignAbilityCardApplierKeepAsCustomClearsStamp() {
+    var card = abilityCard("Custom Card", 1);
+    String adminScript = card.getEffectScript();
+    card.setSeedFingerprint("fp-old");
+    campaignAbilityCardRepository.save(card);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "campaign_ability_card",
+            CampaignAbilityCardSync.entityKeyFor("Custom Card|HEEL|1"),
+            "Custom Card",
+            "effectScript",
+            adminScript,
+            "seedScript()",
+            "fp-new");
+    service(campaignAbilityCardApplier)
+        .apply(Map.of(decision.getId(), SeedFieldDecision.KEEP_AS_CUSTOM));
+
+    flushAndClear();
+    var reloaded = campaignAbilityCardRepository.findById(card.getId()).orElseThrow();
+    assertEquals(
+        adminScript, reloaded.getEffectScript(), "KEEP_AS_CUSTOM must keep the admin's value");
+    assertNull(reloaded.getSeedFingerprint(), "KEEP_AS_CUSTOM must clear the card's stamp");
+  }
+
+  @Test
+  void campaignAbilityCardApplierRemoveDeletesOrphanedRow() {
+    // A card no campaign state holds as active is genuinely removable.
+    var orphan = abilityCard("Orphaned Card", 3);
+    orphan.setSeedFingerprint("fp-old");
+    campaignAbilityCardRepository.save(orphan);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        parkRemoval(
+            "campaign_ability_card",
+            CampaignAbilityCardSync.entityKeyFor("Orphaned Card|HEEL|3"),
+            "Orphaned Card",
+            "fp");
+    service(campaignAbilityCardApplier).apply(Map.of(decision.getId(), SeedFieldDecision.REMOVE));
+
+    flushAndClear();
+    assertFalse(
+        campaignAbilityCardRepository.findById(orphan.getId()).isPresent(),
+        "REMOVE must delete the orphaned ability card");
+    assertEquals(
+        SeedUpdateDecision.STATUS_APPLIED_REMOVE,
+        decisionRepository.findById(decision.getId()).orElseThrow().getStatus());
+  }
+
+  @Test
+  void campaignAbilityCardApplierRemoveRefusedWhenCampaignStateHoldsCard() {
+    // A campaign state holds the card as active: the pre-dispatch hasDependents check must
+    // refuse the removal — deleting the card would orphan the campaign's active deck (FK).
+    var referenced = abilityCard("Held Card", 2);
+    Wrestler player = wrestlerRepository.save(Wrestler.builder().name("Campaign Player").build());
+    com.github.javydreamercsw.management.domain.campaign.Campaign campaign =
+        com.github.javydreamercsw.management.domain.campaign.Campaign.builder()
+            .wrestler(player)
+            .status(com.github.javydreamercsw.management.domain.campaign.CampaignStatus.ACTIVE)
+            .build();
+    campaign = campaignRepository.save(campaign);
+    com.github.javydreamercsw.management.domain.campaign.CampaignState state =
+        com.github.javydreamercsw.management.domain.campaign.CampaignState.builder()
+            .campaign(campaign)
+            .activeCards(
+                new java.util.ArrayList<>(List.of(referenced))) // the FK the guard must protect
+            .build();
+    campaignStateRepository.save(state);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        parkRemoval(
+            "campaign_ability_card",
+            CampaignAbilityCardSync.entityKeyFor("Held Card|HEEL|2"),
+            "Held Card",
+            "fp");
+    IllegalStateException exception =
+        assertThrows(
+            IllegalStateException.class,
+            () ->
+                service(campaignAbilityCardApplier)
+                    .apply(Map.of(decision.getId(), SeedFieldDecision.REMOVE)));
+    assertTrue(
+        exception.getMessage().contains("references it"),
+        "removal of a card held by a campaign state must be refused by the pre-dispatch check");
+    flushAndClear();
+    assertTrue(
+        campaignAbilityCardRepository.findById(referenced.getId()).isPresent(),
+        "the held card must survive the refused removal");
+    assertEquals(
+        SeedUpdateDecision.STATUS_PENDING,
+        decisionRepository.findById(decision.getId()).orElseThrow().getStatus(),
+        "the refused removal decision must stay pending");
   }
 }

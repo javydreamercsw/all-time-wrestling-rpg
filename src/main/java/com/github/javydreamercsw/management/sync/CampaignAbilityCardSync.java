@@ -284,7 +284,7 @@ public class CampaignAbilityCardSync implements DataSyncContributor {
         }
         String newFingerprint =
             SeedReviewDetectionSupport.incomingFingerprint(
-                provenanceManifest, DOMAIN_KEY, seedKeyOf(dto), seedValueFingerprint(dto, card));
+                provenanceManifest, DOMAIN_KEY, seedKeyOf(dto), seedValueFingerprint(dto));
         boolean rowHasStoredStamp = SeedReviewDetectionSupport.hasStamp(card.getSeedFingerprint());
         List<SeedCollisionDetector.FieldObservation> observations = fieldObservations(card, dto);
         SeedReviewDetectionSupport.DetectionResult result =
@@ -382,7 +382,7 @@ public class CampaignAbilityCardSync implements DataSyncContributor {
   }
 
   /** Fingerprint the incoming seed values would produce, in the canonical field order. */
-  private String seedValueFingerprint(CampaignAbilityCardDTO dto, CampaignAbilityCard card) {
+  private String seedValueFingerprint(CampaignAbilityCardDTO dto) {
     return syncSupport.fingerprint(
         dto.getDescription(),
         dto.isOneTimeUse(),

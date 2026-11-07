@@ -241,7 +241,13 @@ public class ShowTemplateSync implements DataSyncContributor {
     }
     if (!toSave.isEmpty()) {
       for (ShowTemplate template : toSave) {
-        showTemplateService.save(template);
+        // Direct repository save (same choice as the FULL path's stamp write): the detection pass
+        // only needs the tier-1 field updates and the stamp persisted. The service's save() also
+        // runs snapshot propagation (syncFutureShowsWithTemplate) and re-merges the detached
+        // instance inside its own REQUIRES_NEW boundary — mechanics that abort the whole pass
+        // with a 0-row optimistic-lock update on a real upgrade boot (observed on the FULL path
+        // in test-context boots). No user-visible show exists to propagate at seed time.
+        showTemplateRepository.save(template);
       }
     }
     log.info(

@@ -251,9 +251,8 @@ public class TournamentSync implements DataSyncContributor {
   private List<String> resolveRuleNames(List<String> allowedRuleNames) {
     List<String> resolved = new ArrayList<>();
     for (String name : allowedRuleNames) {
-      segmentRuleRepository
-          .findByName(name)
-          .ifPresentOrElse(rule -> resolved.add(rule.getName()), () -> {});
+      // Unknown seed names are skipped (the service's seed tolerance) — ifPresent adds nothing.
+      segmentRuleRepository.findByName(name).ifPresent(rule -> resolved.add(rule.getName()));
     }
     return resolved;
   }
