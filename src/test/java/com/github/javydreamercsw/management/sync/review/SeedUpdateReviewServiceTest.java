@@ -39,6 +39,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.context.ApplicationEventPublisher;
@@ -388,8 +389,7 @@ class SeedUpdateReviewServiceTest extends AbstractJpaTest {
     service.notifyPending();
 
     // The flag is consumed on the first publish — a repeated invocation must not re-notify.
-    verify(eventPublisher, org.mockito.Mockito.times(1))
-        .publishEvent(any(SeedUpdateReviewPendingEvent.class));
+    verify(eventPublisher, Mockito.times(1)).publishEvent(any(SeedUpdateReviewPendingEvent.class));
   }
 
   @Test
@@ -410,7 +410,6 @@ class SeedUpdateReviewServiceTest extends AbstractJpaTest {
     assertEquals(1, decisionRepository.count(), "Re-park must stay on the same decision row");
 
     service.notifyPending();
-    verify(eventPublisher, org.mockito.Mockito.times(1))
-        .publishEvent(any(SeedUpdateReviewPendingEvent.class));
+    verify(eventPublisher, Mockito.times(1)).publishEvent(any(SeedUpdateReviewPendingEvent.class));
   }
 }

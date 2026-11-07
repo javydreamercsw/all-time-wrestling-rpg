@@ -37,6 +37,7 @@ import com.github.javydreamercsw.management.service.seedreview.SeedUpdateDecisio
 import com.github.javydreamercsw.management.sync.review.SeedFieldDecision;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
@@ -160,9 +161,7 @@ class SeedUpdateReviewViewTest extends AbstractViewTest {
     assertTrue(dialog.isOpened(), "Approve-everything must confirm first");
     try {
       var event = new ConfirmDialog.ConfirmEvent(dialog, true);
-      Method fireEvent =
-          Component.class.getDeclaredMethod(
-              "fireEvent", com.vaadin.flow.component.ComponentEvent.class);
+      Method fireEvent = Component.class.getDeclaredMethod("fireEvent", ComponentEvent.class);
       fireEvent.setAccessible(true);
       fireEvent.invoke(dialog, event);
     } catch (ReflectiveOperationException e) {
