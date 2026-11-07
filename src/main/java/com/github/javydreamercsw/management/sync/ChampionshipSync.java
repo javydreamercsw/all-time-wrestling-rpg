@@ -251,13 +251,16 @@ public class ChampionshipSync implements DataSyncContributor {
           // Tier-1 write set: ONLY the silent-update fields — a tier-3-preserved admin edit on
           // the same row must never be touched (per-field granularity, spec "Tier 2 granularity").
           applySilentSeedFields(title, dto, result.silentUpdateFields());
+          toSave.add(title);
         }
+        // Stamp-only rows must persist the re-stamp too: capture the change BEFORE setting it —
+        // comparing after the set reads the NEW value and the save is silently skipped forever
+        // (the row never converges).
         if (stamp != null && !stamp.equals(title.getSeedFingerprint())) {
           title.setSeedFingerprint(stamp);
-        }
-        if (!result.silentUpdateFields().isEmpty()
-            || (stamp != null && !stamp.equals(title.getSeedFingerprint()))) {
-          toSave.add(title);
+          if (!toSave.contains(title)) {
+            toSave.add(title);
+          }
         }
       }
       if (!toSave.isEmpty()) {
@@ -349,6 +352,14 @@ public class ChampionshipSync implements DataSyncContributor {
   }
 
   private static String entityKey(String name) {
+    return entityKeyFor(name);
+  }
+
+  /**
+   * The canonical entity key for a championship name — shared with {@code ChampionshipSeedApplier}
+   * so apply-side resolution derives keys exactly as detection minted them.
+   */
+  static String entityKeyFor(String name) {
     return "championship:" + name.toLowerCase().replace(' ', '-');
   }
 

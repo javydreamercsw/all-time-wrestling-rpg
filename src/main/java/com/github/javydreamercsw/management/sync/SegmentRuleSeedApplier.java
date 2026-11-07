@@ -27,8 +27,10 @@ import org.springframework.stereotype.Component;
 
 /**
  * Applies administrator seed-update decisions to segment rule rows (seed-update review feature).
- * Writes go through {@code SegmentRuleService.saveRule} (cache-evicting, admin-contextual); entity
- * keys are {@code segment_rule:<slug>}.
+ * The entity is resolved through the decision row's {@code entity_display_name} — the exact seed
+ * name captured at detection time (slugs are lossy: "No DQ" de-cases to "No Dq", "Free-For-All"
+ * re-hyphenates to "Free For All", and the repository lookups are case-sensitive). Writes go
+ * through {@code SegmentRuleService.saveRule} (cache-evicting, admin-contextual).
  *
  * <p>Stamp obligations: {@code USE_NEW} and {@code KEEP_MINE} both stamp the decision's {@code
  * new_fingerprint} on the row — keep-mine stamps while keeping the admin's value, so a later seed
@@ -86,17 +88,29 @@ public class SegmentRuleSeedApplier implements SeedDomainApplier {
 
   @Override
   public boolean hasDependents(String entityKey) {
-    return findRuleByKey(entityKey)
+    // The SPI passes the entity key only; a slug round-trip is ambiguous (existing hyphens in a
+    // seed name are indistinguishable from slug-converted spaces), so match the key exactly the
+    // way detection minted it.
+    return segmentRuleRepository.findAll().stream()
+        .filter(r -> entityKey.equals(SegmentRuleSync.entityKeyFor(r.getName())))
+        .findFirst()
         .map(rule -> !segmentRepository.findBySegmentRulesContaining(rule).isEmpty())
         .orElse(false);
   }
 
+  /** Resolves the decision's rule by its exact seed name (slugs are lossy — see class doc). */
   private Optional<SegmentRule> findRule(SeedUpdateDecision decision) {
-    return findRuleByKey(decision.getEntityKey());
+    return resolve(decision.getEntityDisplayName());
   }
 
-  private Optional<SegmentRule> findRuleByKey(String entityKey) {
-    return segmentRuleRepository.findByName(SegmentRuleSeedApplier.entityName(entityKey));
+  /**
+   * Matches a rule by its exact name, case-insensitively. The display name is used verbatim — no
+   * slug-derived re-spacing (which would corrupt names like "Free-For-All").
+   */
+  private Optional<SegmentRule> resolve(String name) {
+    return segmentRuleRepository.findAll().stream()
+        .filter(r -> r.getName().equalsIgnoreCase(name))
+        .findFirst();
   }
 
   /** Writes the decision's incoming seed value to the matching seed-owned field. */
@@ -127,21 +141,5 @@ public class SegmentRuleSeedApplier implements SeedDomainApplier {
   private void stamp(SegmentRule rule, SeedUpdateDecision decision) {
     rule.setSeedFingerprint(decision.getNewFingerprint());
     segmentRuleRepository.save(rule);
-  }
-
-  /** Reverses {@code SegmentRuleSync#entityKey}: {@code segment_rule:cage} → {@code Cage}. */
-  static String entityName(String entityKey) {
-    String slug = entityKey.substring(entityKey.indexOf(':') + 1);
-    StringBuilder name = new StringBuilder();
-    for (String word : slug.split("-")) {
-      if (word.isEmpty()) {
-        continue;
-      }
-      if (name.length() > 0) {
-        name.append(' ');
-      }
-      name.append(Character.toUpperCase(word.charAt(0)) + word.substring(1));
-    }
-    return name.toString();
   }
 }

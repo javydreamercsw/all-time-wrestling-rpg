@@ -319,6 +319,14 @@ public class WrestlerSync implements DataSyncContributor {
   }
 
   private static String entityKey(String name) {
+    return entityKeyFor(name);
+  }
+
+  /**
+   * The canonical entity key for a wrestler name — shared with {@code WrestlerSeedApplier} so
+   * apply-side resolution derives keys exactly as detection minted them.
+   */
+  static String entityKeyFor(String name) {
     return "wrestler:" + name.toLowerCase().replace(' ', '-');
   }
 

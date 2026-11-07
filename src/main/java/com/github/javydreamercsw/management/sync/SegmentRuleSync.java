@@ -245,6 +245,14 @@ public class SegmentRuleSync implements DataSyncContributor {
   }
 
   private static String entityKey(String name) {
+    return entityKeyFor(name);
+  }
+
+  /**
+   * The canonical entity key for a segment-rule name — shared with {@code SegmentRuleSeedApplier}
+   * so apply-side resolution derives keys exactly as detection minted them.
+   */
+  static String entityKeyFor(String name) {
     return "segment_rule:" + name.toLowerCase().replace(' ', '-');
   }
 

@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.sync;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -322,6 +323,59 @@ class ChampionshipSyncTest {
         java.util.Set.of("championship:atw-extreme|effectScript"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
+  }
+
+  @Test
+  void stampOnlyRowPersistsItsReStamp() {
+    // Finding-2 pin (fix round 1): a row whose fields are byte-identical to the incoming seed but
+    // whose stored stamp predates the manifest's fingerprint (e.g. an older release's hash formula)
+    // needs NO field writes and parks nothing — but it MUST still be re-stamped with the incoming
+    // fingerprint AND that stamp-only change must reach saveAll. The buggy code set the stamp and
+    // then compared against the just-set value, so the row was never added to the save list and the
+    // re-stamp was silently discarded on every boot.
+    // The manifest supplies the incoming fingerprint (a content-computed fingerprint could never
+    // differ from a clean row's stored stamp — hence a populated manifest here, EMPTY_MANIFEST in
+    // the other tests).
+    Title cleanButStale = new Title();
+    cleanButStale.setName("ATW World");
+    cleanButStale.setDescription("The top title in All Time Wrestling.");
+    cleanButStale.setTier(WrestlerTier.MAIN_EVENTER);
+    cleanButStale.setChampionshipType(ChampionshipType.SINGLE);
+    cleanButStale.setEffectScript("gainInitiative()");
+    cleanButStale.setGender(Gender.MALE);
+    cleanButStale.setExpansionCode("BASE_GAME");
+    cleanButStale.setIncludeInRankings(true);
+    // Clean row: the stored stamp hashes the CURRENT field values (step-1 provenance reconstruction
+    // must succeed), yet differs from the manifest's incoming fingerprint below.
+    cleanButStale.setSeedFingerprint(titleFingerprint(cleanButStale));
+
+    when(titleService.findByName("ATW World")).thenReturn(Optional.of(cleanButStale));
+
+    org.mockito.ArgumentCaptor<java.util.List<Title>> saved =
+        org.mockito.ArgumentCaptor.forClass(java.util.List.class);
+    ChampionshipSync detectionSync =
+        new ChampionshipSync(
+            "verify",
+            titleService,
+            wrestlerRepository,
+            universeRepository,
+            titleReignRepairService,
+            new ObjectMapper(),
+            seedReviewService,
+            SeedProvenanceManifest.of(
+                java.util.Map.of(
+                    "championship", java.util.Map.of("ATW World", "manifest-hash-v2"))));
+    detectionSync.detectVersionChangeCollisions();
+
+    verify(titleService).saveAll(saved.capture());
+    assertTrue(
+        saved.getValue().contains(cleanButStale),
+        "the stamp-only row must be in the save list — the re-stamp must not be discarded");
+    assertEquals(
+        "manifest-hash-v2",
+        cleanButStale.getSeedFingerprint(),
+        "a provenance-exact row with no collisions adopts the incoming manifest fingerprint");
+    org.mockito.Mockito.verifyNoInteractions(seedReviewService);
   }
 
   @Test

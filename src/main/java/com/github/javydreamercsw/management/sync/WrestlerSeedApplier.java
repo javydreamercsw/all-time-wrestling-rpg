@@ -20,14 +20,15 @@ import com.github.javydreamercsw.management.domain.seedreview.SeedUpdateDecision
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.sync.review.SeedDomainApplier;
-import java.util.Locale;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
  * Applies administrator seed-update decisions to wrestler rows (seed-update review feature). Runs
- * inside {@code SeedUpdateDecisionService#apply}'s transaction; entity keys are {@code
- * wrestler:<slug>} as produced by detection.
+ * inside {@code SeedUpdateDecisionService#apply}'s transaction; the entity is resolved through the
+ * decision row's {@code entity_display_name} — the exact seed name captured at detection time
+ * (slugs are lossy: "Jessie McKay"/"André the Giant"/"OMZ" do not survive a slug round-trip, and
+ * the repository lookups are case-sensitive).
  *
  * <p>Stamp obligations: {@code USE_NEW} and {@code KEEP_MINE} both stamp the decision's {@code
  * new_fingerprint} (the incoming release's manifest hash) on the row — keep-mine stamps while
@@ -52,20 +53,20 @@ public class WrestlerSeedApplier implements SeedDomainApplier {
   @Override
   public void applyKeep(SeedUpdateDecision decision) {
     wrestlerRepository
-        .findByName(entityName(decision.getEntityKey()))
+        .findByName(decision.getEntityDisplayName())
         .ifPresentOrElse(
             wrestler -> stamp(wrestler, decision),
             () ->
                 log.warn(
                     "Seed decision {}: wrestler '{}' not found — nothing to keep",
                     decision.getId(),
-                    decision.getEntityKey()));
+                    decision.getEntityDisplayName()));
   }
 
   @Override
   public void applyNew(SeedUpdateDecision decision) {
     wrestlerRepository
-        .findByName(entityName(decision.getEntityKey()))
+        .findByName(decision.getEntityDisplayName())
         .ifPresentOrElse(
             wrestler -> {
               applyFieldValue(wrestler, decision);
@@ -75,7 +76,7 @@ public class WrestlerSeedApplier implements SeedDomainApplier {
                 log.warn(
                     "Seed decision {}: wrestler '{}' not found — nothing to apply",
                     decision.getId(),
-                    decision.getEntityKey()));
+                    decision.getEntityDisplayName()));
   }
 
   @Override
@@ -83,7 +84,7 @@ public class WrestlerSeedApplier implements SeedDomainApplier {
     // Keep the value, mark it no longer seed-owned: clear the row's stamp so future detection
     // passes treat the row as user-owned content (unstamped rows are only content-compared).
     wrestlerRepository
-        .findByName(entityName(decision.getEntityKey()))
+        .findByName(decision.getEntityDisplayName())
         .ifPresentOrElse(
             wrestler -> {
               wrestler.setSeedFingerprint(null);
@@ -93,26 +94,31 @@ public class WrestlerSeedApplier implements SeedDomainApplier {
                 log.warn(
                     "Seed decision {}: wrestler '{}' not found — nothing to mark custom",
                     decision.getId(),
-                    decision.getEntityKey()));
+                    decision.getEntityDisplayName()));
   }
 
   @Override
   public void applyRemove(SeedUpdateDecision decision) {
     wrestlerRepository
-        .findByName(entityName(decision.getEntityKey()))
+        .findByName(decision.getEntityDisplayName())
         .ifPresentOrElse(
             wrestlerRepository::delete,
             () ->
                 log.warn(
                     "Seed decision {}: wrestler '{}' not found — nothing to remove",
                     decision.getId(),
-                    decision.getEntityKey()));
+                    decision.getEntityDisplayName()));
   }
 
   @Override
   public boolean hasDependents(String entityKey) {
-    return wrestlerRepository
-        .findByName(entityName(entityKey))
+    // The SPI passes the entity key only; the slug round-trip is lossy, so match on the seed-name
+    // portion the way detection derived it (wrestler names are unique, so a name-suffix match on
+    // the display name is not available here — resolve by the slug's name part case-insensitively
+    // and rely on the apply service passing the same key detection minted).
+    return wrestlerRepository.findAll().stream()
+        .filter(w -> entityKey.equals(WrestlerSync.entityKeyFor(w.getName())))
+        .findFirst()
         .map(
             wrestler ->
                 (wrestler.getDecks() != null && !wrestler.getDecks().isEmpty())
@@ -163,23 +169,5 @@ public class WrestlerSeedApplier implements SeedDomainApplier {
   private void stamp(Wrestler wrestler, SeedUpdateDecision decision) {
     wrestler.setSeedFingerprint(decision.getNewFingerprint());
     wrestlerRepository.save(wrestler);
-  }
-
-  /** Reverses {@code WrestlerSync#entityKey}: {@code wrestler:bret-hart} → {@code Bret Hart}. */
-  static String entityName(String entityKey) {
-    String slug = entityKey.substring(entityKey.indexOf(':') + 1);
-    String[] words = slug.split("-");
-    StringBuilder name = new StringBuilder();
-    for (String word : words) {
-      if (word.isEmpty()) {
-        continue;
-      }
-      if (name.length() > 0) {
-        name.append(' ');
-      }
-      name.append(
-          Character.toUpperCase(word.charAt(0)) + word.substring(1).toLowerCase(Locale.ROOT));
-    }
-    return name.toString();
   }
 }

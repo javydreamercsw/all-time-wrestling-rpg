@@ -27,8 +27,10 @@ import org.springframework.stereotype.Component;
 
 /**
  * Applies administrator seed-update decisions to championship (title) rows (seed-update review
- * feature). Entity keys are {@code championship:<slug>}; current champions are gameplay state and
- * are never touched by any decision.
+ * feature). The entity is resolved through the decision row's {@code entity_display_name} — the
+ * exact seed name captured at detection time (slugs are lossy: "ATW World" uppercases to "ATW
+ * WORLD" in a slug round-trip, and the repository lookups are case-sensitive). Current champions
+ * are gameplay state and are never touched by any decision.
  *
  * <p>Stamp obligations: {@code USE_NEW} and {@code KEEP_MINE} both stamp the decision's {@code
  * new_fingerprint} on the row — keep-mine stamps while keeping the admin's value, so a later seed
@@ -46,6 +48,8 @@ public class ChampionshipSeedApplier implements SeedDomainApplier {
   public interface TitleServiceBridge {
     Optional<Title> findByName(String name);
 
+    java.util.List<Title> findAllUnfiltered();
+
     Title save(Title title);
 
     boolean deleteTitle(Long id);
@@ -60,6 +64,11 @@ public class ChampionshipSeedApplier implements SeedDomainApplier {
           @Override
           public Optional<Title> findByName(String name) {
             return titleService.findByName(name);
+          }
+
+          @Override
+          public java.util.List<Title> findAllUnfiltered() {
+            return titleService.findAllUnfiltered();
           }
 
           @Override
@@ -84,14 +93,14 @@ public class ChampionshipSeedApplier implements SeedDomainApplier {
   @Override
   public void applyKeep(SeedUpdateDecision decision) {
     titleService
-        .findByName(entityName(decision.getEntityKey()))
+        .findByName(decision.getEntityDisplayName())
         .ifPresent(title -> stamp(title, decision));
   }
 
   @Override
   public void applyNew(SeedUpdateDecision decision) {
     titleService
-        .findByName(entityName(decision.getEntityKey()))
+        .findByName(decision.getEntityDisplayName())
         .ifPresent(
             title -> {
               applyFieldValue(title, decision);
@@ -103,7 +112,7 @@ public class ChampionshipSeedApplier implements SeedDomainApplier {
   public void applyKeepAsCustom(SeedUpdateDecision decision) {
     // Keep the value, mark it no longer seed-owned: clear the row's stamp.
     titleService
-        .findByName(entityName(decision.getEntityKey()))
+        .findByName(decision.getEntityDisplayName())
         .ifPresent(
             title -> {
               title.setSeedFingerprint(null);
@@ -117,7 +126,7 @@ public class ChampionshipSeedApplier implements SeedDomainApplier {
     // segments). deleteTitle only removes vacant, inactive titles — a title with gameplay state
     // left behind logs and stays (fail-safe direction: gameplay history is never destroyed).
     titleService
-        .findByName(entityName(decision.getEntityKey()))
+        .findByName(decision.getEntityDisplayName())
         .ifPresentOrElse(
             title -> {
               if (!titleService.deleteTitle(title.getId())) {
@@ -132,13 +141,17 @@ public class ChampionshipSeedApplier implements SeedDomainApplier {
                 log.warn(
                     "Seed decision {}: championship '{}' not found — nothing to remove",
                     decision.getId(),
-                    decision.getEntityKey()));
+                    decision.getEntityDisplayName()));
   }
 
   @Override
   public boolean hasDependents(String entityKey) {
-    return titleService
-        .findByName(entityName(entityKey))
+    // The SPI passes the entity key only; a slug round-trip is ambiguous (existing hyphens in a
+    // seed name are indistinguishable from slug-converted spaces), so match the key exactly the
+    // way detection minted it.
+    return titleService.findAllUnfiltered().stream()
+        .filter(t -> entityKey.equals(ChampionshipSync.entityKeyFor(t.getName())))
+        .findFirst()
         .map(
             title ->
                 !titleReignRepository.findByTitle(title).isEmpty()
@@ -182,24 +195,5 @@ public class ChampionshipSeedApplier implements SeedDomainApplier {
   private void stamp(Title title, SeedUpdateDecision decision) {
     title.setSeedFingerprint(decision.getNewFingerprint());
     titleService.save(title);
-  }
-
-  /**
-   * Reverses {@code ChampionshipSync#entityKey}: {@code championship:atw-world} → {@code ATW
-   * World}.
-   */
-  static String entityName(String entityKey) {
-    String slug = entityKey.substring(entityKey.indexOf(':') + 1);
-    StringBuilder name = new StringBuilder();
-    for (String word : slug.split("-")) {
-      if (word.isEmpty()) {
-        continue;
-      }
-      if (name.length() > 0) {
-        name.append(' ');
-      }
-      name.append(word.toUpperCase());
-    }
-    return name.toString();
   }
 }
