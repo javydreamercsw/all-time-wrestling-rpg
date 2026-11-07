@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.sync.review;
 
 import com.github.javydreamercsw.management.domain.seedreview.SeedUpdateDecision;
 import com.github.javydreamercsw.management.domain.seedreview.SeedUpdateDecisionRepository;
+import com.github.javydreamercsw.management.event.SeedUpdateReviewPendingEvent;
 import com.github.javydreamercsw.management.migration.DataMigrationHistory;
 import com.github.javydreamercsw.management.migration.DataMigrationHistoryRepository;
 import com.github.javydreamercsw.management.migration.DataMigrationRunner;
@@ -26,6 +27,7 @@ import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.info.BuildProperties;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 /**
@@ -65,6 +67,13 @@ import org.springframework.stereotype.Service;
  *
  * <p>There is intentionally no DB-level unique constraint behind this dedupe — H2 and MySQL lack
  * partial indexes — see {@code SeedUpdateDecision}'s class javadoc.
+ *
+ * <h2>Batched pending notification</h2>
+ *
+ * {@code park*} calls arm an internal flag; {@link #notifyPending()} publishes one {@link
+ * SeedUpdateReviewPendingEvent} for the whole phase when anything was parked (never per row), which
+ * the inbox listener turns into a single administrator notification. PR 4's detection loop calls
+ * {@code notifyPending()} once after parking completes.
  */
 @Slf4j
 @Service
@@ -74,17 +83,30 @@ public class SeedUpdateReviewService {
   private final DataMigrationHistoryRepository historyRepository;
   private final Optional<BuildProperties> buildProperties;
   private final SeedReviewGate gate;
+  private final ApplicationEventPublisher eventPublisher;
+
+  /**
+   * Set by the first fresh {@code park*} of this bean's lifetime and consumed by {@link
+   * #notifyPending()}: the once-per-boot batched inbox notification fires only when the detection
+   * phase actually parked something new — not on every boot, and never per row. A re-park (the
+   * snapshot-refresh path on an already-parked coordinate) deliberately does not arm the flag: an
+   * unresolved decision that survives restarts must not produce a duplicate inbox item on every
+   * same-version boot.
+   */
+  private boolean parkingHappened;
 
   @Autowired
   public SeedUpdateReviewService(
       final SeedUpdateDecisionRepository decisionRepository,
       final DataMigrationHistoryRepository historyRepository,
       final Optional<BuildProperties> buildProperties,
-      final SeedReviewGate gate) {
+      final SeedReviewGate gate,
+      final ApplicationEventPublisher eventPublisher) {
     this.decisionRepository = decisionRepository;
     this.historyRepository = historyRepository;
     this.buildProperties = buildProperties;
     this.gate = gate;
+    this.eventPublisher = eventPublisher;
   }
 
   /**
@@ -150,6 +172,7 @@ public class SeedUpdateReviewService {
     decision.setStatus(SeedUpdateDecision.STATUS_PENDING);
     decision.setAppVersion(resolveAppVersion());
     decisionRepository.save(decision);
+    parkingHappened = true;
     gate.refresh(); // raise the gate — an undecided decision now exists
     log.info(
         "Parked seed field conflict: {}.{} [{}] (version {})",
@@ -193,9 +216,35 @@ public class SeedUpdateReviewService {
     decision.setStatus(SeedUpdateDecision.STATUS_PENDING);
     decision.setAppVersion(resolveAppVersion());
     decisionRepository.save(decision);
+    parkingHappened = true;
     gate.refresh(); // raise the gate — an undecided decision now exists
     log.info(
         "Parked seed removal: {}.{} (version {})", domainKey, entityKey, decision.getAppVersion());
+  }
+
+  /**
+   * Closes the detection/parking phase of a boot: publishes exactly one {@link
+   * SeedUpdateReviewPendingEvent} when this boot's phase freshly parked at least one collision —
+   * the inbox listener turns it into a single batched administrator notification. A boot whose
+   * phase parked nothing publishes nothing, and a re-park (refreshing an already-parked
+   * coordinate's incoming snapshot) deliberately does not arm the notification either: unresolved
+   * decisions persist across restarts, so arming on re-park would duplicate the inbox item on every
+   * same-version restart.
+   *
+   * <p>The once-per-boot guarantee is structural: the caller invokes this exactly once, after the
+   * detection loop finishes (PR 4 wires it there). Repeated invocations are additionally inert for
+   * the same bean instance — the flag is consumed on first publish — and park* calls arm only their
+   * own service instance, so a restarted context starts with a clean flag.
+   */
+  public void notifyPending() {
+    if (!parkingHappened) {
+      log.debug("No seed collisions parked this phase — no pending-review notification.");
+      return;
+    }
+    parkingHappened = false;
+    int count = (int) pendingCount();
+    eventPublisher.publishEvent(new SeedUpdateReviewPendingEvent(this, count, resolveAppVersion()));
+    log.info("Published seed-update review pending event: {} decision(s) pending.", count);
   }
 
   /**
@@ -219,8 +268,8 @@ public class SeedUpdateReviewService {
    * force-decides every PENDING decision as keep-mine and lowers the gate, logged WARN.
    *
    * <p><b>This is an operator escape, not a real apply.</b> Keep-mine semantics are a no-op on
-   * entity data — nothing in the database changes — and unlike the review UI's apply flow (PR 3),
-   * this hatch deliberately does NOT re-stamp the rows' seed fingerprints. The force-decided rows
+   * entity data — nothing in the database changes — and unlike the review UI's apply flow, this
+   * hatch deliberately does NOT re-stamp the rows' seed fingerprints. The force-decided rows
    * therefore re-collide on the next upgrade boot (fail-safe direction: the operator is asked
    * again, no seed value is ever silently adopted).
    *

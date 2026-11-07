@@ -30,8 +30,8 @@ import com.vaadin.flow.router.Route;
 /**
  * Full-page screen the navigation freeze reroutes to while seed decisions are pending (seed-update
  * review feature, Task 7). Non-admins get the waiting panel; admins additionally get a "Review now"
- * button that jumps to the review screen ({@code seed-review}, PR 3 — expected to 404 until that PR
- * lands in the chain).
+ * button that jumps to the review screen ({@code seed-review}, served by {@code
+ * SeedUpdateReviewView}).
  */
 @Route(SeedReviewGateView.ROUTE)
 @PageTitle("Source Data Review | All Time Wrestling RPG")

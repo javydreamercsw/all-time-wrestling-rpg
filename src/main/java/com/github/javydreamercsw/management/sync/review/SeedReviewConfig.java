@@ -63,9 +63,9 @@ public class SeedReviewConfig {
    * as keep-mine and the gate lowers, logged WARN.
    *
    * <p><b>This is an operator escape, not a real apply.</b> Keep-mine means nothing changes in the
-   * database — but unlike PR 3's applier, this hatch does NOT re-stamp the seed fingerprints of the
-   * decided rows. The rows re-collide on the next upgrade boot (fail-safe direction: the operator
-   * is asked again, nothing is silently adopted).
+   * database — but unlike the review UI's apply flow, this hatch does NOT re-stamp the seed
+   * fingerprints of the decided rows. The rows re-collide on the next upgrade boot (fail-safe
+   * direction: the operator is asked again, nothing is silently adopted).
    */
   public void forceResolveIfConfigured() {
     if (FORCE_RESOLVE_KEEP_ALL.equals(forceResolve)) {

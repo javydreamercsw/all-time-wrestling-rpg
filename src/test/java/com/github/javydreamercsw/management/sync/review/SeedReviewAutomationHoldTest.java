@@ -78,7 +78,11 @@ class SeedReviewAutomationHoldTest extends AbstractJpaTest {
     gate = new SeedReviewGate(decisionRepository);
     reviewService =
         new SeedUpdateReviewService(
-            decisionRepository, historyRepository, Optional.of(buildProperties), gate);
+            decisionRepository,
+            historyRepository,
+            Optional.of(buildProperties),
+            gate,
+            mock(ApplicationEventPublisher.class));
     config = new SeedReviewConfig(reviewService);
   }
 
