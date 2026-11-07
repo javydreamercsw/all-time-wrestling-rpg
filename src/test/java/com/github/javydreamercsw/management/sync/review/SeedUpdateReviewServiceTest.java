@@ -391,4 +391,26 @@ class SeedUpdateReviewServiceTest extends AbstractJpaTest {
     verify(eventPublisher, org.mockito.Mockito.times(1))
         .publishEvent(any(SeedUpdateReviewPendingEvent.class));
   }
+
+  @Test
+  void reParkRefreshDoesNotArmNotification() {
+    SeedUpdateReviewService service = service();
+
+    // First boot: a fresh park arms the flag, and notifyPending() consumes it.
+    service.parkFieldConflict(
+        "wrestler", "wrestler:bret-hart", "Bret Hart", "catchphrase", "mine", "new", "fp-1");
+    service.notifyPending();
+    verify(eventPublisher).publishEvent(any(SeedUpdateReviewPendingEvent.class));
+
+    // A later same-version boot re-parks the (still unresolved) coordinate: that path only
+    // refreshes the incoming snapshot and must NOT re-arm the notification — otherwise every
+    // restart would duplicate the inbox item while the decision stays pending.
+    service.parkFieldConflict(
+        "wrestler", "wrestler:bret-hart", "Bret Hart", "catchphrase", "mine", "newer", "fp-2");
+    assertEquals(1, decisionRepository.count(), "Re-park must stay on the same decision row");
+
+    service.notifyPending();
+    verify(eventPublisher, org.mockito.Mockito.times(1))
+        .publishEvent(any(SeedUpdateReviewPendingEvent.class));
+  }
 }

@@ -86,9 +86,12 @@ public class SeedUpdateReviewService {
   private final ApplicationEventPublisher eventPublisher;
 
   /**
-   * Set by the first {@code park*} call of this bean's lifetime and consumed by {@link
+   * Set by the first fresh {@code park*} of this bean's lifetime and consumed by {@link
    * #notifyPending()}: the once-per-boot batched inbox notification fires only when the detection
-   * phase actually parked (or re-parked) something — not on every boot, and never per row.
+   * phase actually parked something new — not on every boot, and never per row. A re-park (the
+   * snapshot-refresh path on an already-parked coordinate) deliberately does not arm the flag: an
+   * unresolved decision that survives restarts must not produce a duplicate inbox item on every
+   * same-version boot.
    */
   private boolean parkingHappened;
 
@@ -221,9 +224,12 @@ public class SeedUpdateReviewService {
 
   /**
    * Closes the detection/parking phase of a boot: publishes exactly one {@link
-   * SeedUpdateReviewPendingEvent} when this boot's phase parked (or re-parked) at least one
-   * collision — the inbox listener turns it into a single batched administrator notification. A
-   * boot whose phase parked nothing publishes nothing.
+   * SeedUpdateReviewPendingEvent} when this boot's phase freshly parked at least one collision —
+   * the inbox listener turns it into a single batched administrator notification. A boot whose
+   * phase parked nothing publishes nothing, and a re-park (refreshing an already-parked
+   * coordinate's incoming snapshot) deliberately does not arm the notification either: unresolved
+   * decisions persist across restarts, so arming on re-park would duplicate the inbox item on every
+   * same-version restart.
    *
    * <p>The once-per-boot guarantee is structural: the caller invokes this exactly once, after the
    * detection loop finishes (PR 4 wires it there). Repeated invocations are additionally inert for

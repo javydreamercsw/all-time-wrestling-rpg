@@ -58,10 +58,12 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <h2>Authorization</h2>
  *
- * {@link #apply(Map)} and {@link #approveEverythingExceptRemovals()} are administrator mutations
- * ({@code @PreAuthorize("hasAuthority('ROLE_ADMIN')")}, same pattern as {@code GameSettingService})
- * — defense-in-depth behind the review view's {@code @RolesAllowed("ADMIN")} and the navigation
- * freeze, so the write path stays closed even if a future caller bypasses the UI.
+ * {@link #apply(Map)} and {@link #approveEverythingExceptRemovals()} carry
+ * {@code @PreAuthorize("hasAuthority('ROLE_ADMIN')")} as defense-in-depth behind the review view's
+ * {@code @RolesAllowed("ADMIN")} and the navigation freeze, so the write path stays closed even if
+ * a future caller bypasses the UI. The read methods ({@link #pendingGrouped()}, {@link
+ * #pendingCount()}) are unannotated: they have no REST surface and their only consumer is the
+ * already-{@code @RolesAllowed("ADMIN")} review view.
  */
 @Slf4j
 @Service

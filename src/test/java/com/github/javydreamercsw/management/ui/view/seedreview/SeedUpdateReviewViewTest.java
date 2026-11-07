@@ -50,7 +50,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -79,11 +78,6 @@ class SeedUpdateReviewViewTest extends AbstractViewTest {
   @Mock private NotificationService notificationService;
 
   private SeedUpdateReviewView view;
-
-  @BeforeEach
-  void resetView() {
-    view = null;
-  }
 
   // ── Fixtures ────────────────────────────────────────────────────────────────
 

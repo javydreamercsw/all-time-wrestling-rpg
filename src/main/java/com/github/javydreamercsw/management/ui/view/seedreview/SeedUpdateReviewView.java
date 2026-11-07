@@ -361,7 +361,7 @@ public class SeedUpdateReviewView extends VerticalLayout {
       decisionService.apply(Map.copyOf(choices));
     } catch (RuntimeException e) {
       log.warn("Seed decision apply failed", e);
-      notificationService.showError("Apply failed: " + e.getMessage());
+      notificationService.showError("Apply failed: " + String.valueOf(e.getMessage()));
       return;
     }
     if (decisionService.pendingCount() == 0) {

@@ -41,7 +41,11 @@ public interface SeedDomainApplier {
   /** Applies a {@code KEEP_MINE} decision: keep the database's current value. */
   void applyKeep(SeedUpdateDecision decision);
 
-  /** Applies a {@code USE_NEW} decision: overwrite the database value with the incoming one. */
+  /**
+   * Applies a {@code USE_NEW} decision: the applier writes the new seed value AND stamps the row's
+   * seed fingerprint with the decision's {@code new_fingerprint} (same stamp obligation as {@link
+   * #applyKeep}).
+   */
   void applyNew(SeedUpdateDecision decision);
 
   /** Applies a {@code KEEP_AS_CUSTOM} decision: keep the value and mark it no longer seed-owned. */
