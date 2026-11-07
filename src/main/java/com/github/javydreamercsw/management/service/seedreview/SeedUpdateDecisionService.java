@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,6 +55,13 @@ import org.springframework.transaction.annotation.Transactional;
  * {@link #pendingGrouped()} returns the pending rows ordered by id (id order = detection order =
  * domain grouping order). The review UI does its own domain/entity grouping on top of the ordered
  * list; this service's contract is just the stable, ordered pending queue.
+ *
+ * <h2>Authorization</h2>
+ *
+ * {@link #apply(Map)} and {@link #approveEverythingExceptRemovals()} are administrator mutations
+ * ({@code @PreAuthorize("hasAuthority('ROLE_ADMIN')")}, same pattern as {@code GameSettingService})
+ * — defense-in-depth behind the review view's {@code @RolesAllowed("ADMIN")} and the navigation
+ * freeze, so the write path stays closed even if a future caller bypasses the UI.
  */
 @Slf4j
 @Service
@@ -106,6 +114,7 @@ public class SeedUpdateDecisionService {
    * @throws IllegalStateException when a pending id is missing from the map (nothing applied), the
    *     decision's domain has no registered applier, or a removal has dependents
    */
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   @Transactional
   public void apply(Map<Long, SeedFieldDecision> decisions) {
     List<SeedUpdateDecision> pending = pendingGrouped();
@@ -139,6 +148,7 @@ public class SeedUpdateDecisionService {
    * @return pending-decision id to {@code USE_NEW} for every pending field conflict (removals
    *     excluded, so a subsequent {@link #apply(Map)} still refuses until they are decided)
    */
+  @PreAuthorize("hasAuthority('ROLE_ADMIN')")
   public Map<Long, SeedFieldDecision> approveEverythingExceptRemovals() {
     Map<Long, SeedFieldDecision> decisions =
         pendingGrouped().stream()
