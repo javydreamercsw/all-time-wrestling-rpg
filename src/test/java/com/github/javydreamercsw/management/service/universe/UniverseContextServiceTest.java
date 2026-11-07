@@ -135,6 +135,19 @@ class UniverseContextServiceTest {
   }
 
   @Test
+  void newContextConstruction_clearsLeakedThreadLocalUniverseId() {
+    // Simulates a second Spring context in the same JVM (E2E suites): a prior context's
+    // service set the ThreadLocal to its universe; the new context's constructor must clear
+    // it so the fresh context's boot-time resolution falls back to the DB lookup instead of
+    // binding a universe id that does not exist in the fresh database.
+    service.setCurrentUniverseId(2L);
+
+    UniverseContextService secondContextService = new UniverseContextService(universeRepository);
+
+    assertEquals(1L, secondContextService.getCurrentUniverseId());
+  }
+
+  @Test
   void setCurrentUniverse_withNullUniverse_doesNotChangeId() {
     service.setCurrentUniverseId(5L);
     service.setCurrentUniverse(null);
