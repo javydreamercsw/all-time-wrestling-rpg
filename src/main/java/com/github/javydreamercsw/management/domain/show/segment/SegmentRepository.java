@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.domain.show.segment;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.Instant;
@@ -104,6 +105,10 @@ public interface SegmentRepository
   /** Find segments involving a specific title. */
   @Query("SELECT s FROM Segment s JOIN s.titles t WHERE t = :title AND s.isTitleSegment = true")
   List<Segment> findByTitle(@Param("title") Title title);
+
+  /** Find segments whose rules include the given rule (seed-review removal dependent check). */
+  @Query("SELECT s FROM Segment s JOIN s.segmentRules r WHERE r = :rule")
+  List<Segment> findBySegmentRulesContaining(@Param("rule") SegmentRule rule);
 
   /**
    * Distinct shows that have at least one completed (non-promo-blind) segment — used by the

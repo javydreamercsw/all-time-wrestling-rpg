@@ -21,6 +21,7 @@ import com.github.javydreamercsw.management.domain.seedreview.SeedUpdateDecision
 import com.github.javydreamercsw.management.sync.review.SeedDomainApplier;
 import com.github.javydreamercsw.management.sync.review.SeedFieldDecision;
 import com.github.javydreamercsw.management.sync.review.SeedReviewGate;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -107,10 +108,14 @@ public class SeedUpdateDecisionService {
 
   /**
    * Applies an administrator's decisions to the parked seed collisions. All-or-nothing: every
-   * PENDING row must be covered by {@code decisions} or nothing is applied. Removal decisions are
-   * refused when the applier reports dependents — the decision stays PENDING so the administrator
-   * can choose again. After all rows are applied the review gate re-reads its snapshot (lowering
-   * the gate once no undecided decisions remain).
+   * PENDING row must be covered by {@code decisions} or nothing is applied, and every row must
+   * resolve to an applier (with removable removals) in the validation phase BEFORE any dispatch —
+   * so a batch containing an unresolvable row fails without writing anything, instead of failing
+   * mid-dispatch on top of earlier appliers' writes (rollback still covers the mid-dispatch case,
+   * but failing before any write is cheaper and keeps appliers side-effect-free on failure).
+   * Removal decisions are refused when the applier reports dependents — the decision stays PENDING
+   * so the administrator can choose again. After all rows are applied the review gate re-reads its
+   * snapshot (lowering the gate once no undecided decisions remain).
    *
    * @param decisions pending-decision id to chosen outcome; must cover every PENDING row
    * @throws IllegalStateException when a pending id is missing from the map (nothing applied), the
@@ -133,8 +138,34 @@ public class SeedUpdateDecisionService {
               + missing
               + ". Every pending decision must be decided before applying.");
     }
+    // Second validation pass: resolve every applier and pre-check removals BEFORE dispatching
+    // anything, so an unresolvable row never leaves earlier appliers' writes behind (the
+    // transaction would roll back, but pre-validation keeps appliers side-effect-free on
+    // refusal).
+    Map<SeedUpdateDecision, SeedDomainApplier> resolved = new LinkedHashMap<>();
     for (SeedUpdateDecision decision : pending) {
-      applyDecision(decision, decisions.get(decision.getId()));
+      SeedDomainApplier applier = appliersByDomain.get(decision.getDomainKey());
+      if (applier == null) {
+        throw new IllegalStateException(
+            "No SeedDomainApplier registered for seed domain '"
+                + decision.getDomainKey()
+                + "' (decision "
+                + decision.getId()
+                + ") — cannot apply the administrator's choice.");
+      }
+      SeedFieldDecision fieldDecision = decisions.get(decision.getId());
+      if (fieldDecision == SeedFieldDecision.REMOVE
+          && applier.hasDependents(decision.getEntityKey())) {
+        throw new IllegalStateException(
+            "Cannot remove '"
+                + decision.getEntityKey()
+                + "': other data still references it. Resolve or remove its dependents first, then "
+                + "re-apply (the decision stays pending).");
+      }
+      resolved.put(decision, applier);
+    }
+    for (Map.Entry<SeedUpdateDecision, SeedDomainApplier> entry : resolved.entrySet()) {
+      dispatch(entry.getValue(), entry.getKey(), decisions.get(entry.getKey().getId()));
     }
     // The appliers may have written entities and/or stamps; the gate must re-read its snapshot.
     gate.refresh();
@@ -168,27 +199,12 @@ public class SeedUpdateDecisionService {
   }
 
   /**
-   * Dispatches one decided row to its domain applier, moves the row to the matching terminal
-   * status, and saves it.
+   * Dispatches one pre-validated row to its domain applier, moves the row to the matching terminal
+   * status, and saves it. Validation (applier resolution, removal dependents) already happened in
+   * {@link #apply(Map)}'s pre-dispatch phase — this method never refuses.
    */
-  private void applyDecision(SeedUpdateDecision decision, SeedFieldDecision fieldDecision) {
-    SeedDomainApplier applier = appliersByDomain.get(decision.getDomainKey());
-    if (applier == null) {
-      throw new IllegalStateException(
-          "No SeedDomainApplier registered for seed domain '"
-              + decision.getDomainKey()
-              + "' (decision "
-              + decision.getId()
-              + ") — cannot apply the administrator's choice.");
-    }
-    if (fieldDecision == SeedFieldDecision.REMOVE
-        && applier.hasDependents(decision.getEntityKey())) {
-      throw new IllegalStateException(
-          "Cannot remove '"
-              + decision.getEntityKey()
-              + "': other data still references it. Resolve or remove its dependents first, then "
-              + "re-apply (the decision stays pending).");
-    }
+  private void dispatch(
+      SeedDomainApplier applier, SeedUpdateDecision decision, SeedFieldDecision fieldDecision) {
     switch (fieldDecision) {
       case KEEP_MINE -> applier.applyKeep(decision);
       case USE_NEW -> applier.applyNew(decision);

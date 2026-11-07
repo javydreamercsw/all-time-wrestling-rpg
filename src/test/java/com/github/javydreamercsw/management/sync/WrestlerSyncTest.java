@@ -42,6 +42,8 @@ import com.github.javydreamercsw.management.dto.WrestlerImportDTO;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
+import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -74,8 +76,11 @@ class WrestlerSyncTest {
   @Mock private NpcService npcService;
   @Mock private TierRecalculationService tierRecalculationService;
   @Mock private ResourcePatternResolver resourcePatternResolver;
+  @Mock private SeedUpdateReviewService seedReviewService;
 
   private WrestlerSync sync;
+
+  private static final SeedProvenanceManifest EMPTY_MANIFEST = SeedProvenanceManifest.empty();
 
   @BeforeEach
   void setUp() throws Exception {
@@ -99,7 +104,9 @@ class WrestlerSyncTest {
             npcService,
             tierRecalculationService,
             resourcePatternResolver,
-            new ObjectMapper());
+            new ObjectMapper(),
+            seedReviewService,
+            EMPTY_MANIFEST);
   }
 
   @Test
@@ -126,7 +133,9 @@ class WrestlerSyncTest {
             npcService,
             tierRecalculationService,
             resourcePatternResolver,
-            new ObjectMapper());
+            new ObjectMapper(),
+            seedReviewService,
+            EMPTY_MANIFEST);
     when(wrestlerRepository.count()).thenReturn(10L);
     when(wrestlerRepository.findAllWithAlignments()).thenReturn(List.of());
     when(wrestlerService.getOrCreateState(any(), any())).thenReturn(new WrestlerState());
@@ -160,7 +169,9 @@ class WrestlerSyncTest {
             npcService,
             tierRecalculationService,
             resourcePatternResolver,
-            new ObjectMapper());
+            new ObjectMapper(),
+            seedReviewService,
+            EMPTY_MANIFEST);
 
     skipSync.sync();
 
@@ -198,7 +209,9 @@ class WrestlerSyncTest {
             npcService,
             tierRecalculationService,
             resourcePatternResolver,
-            new ObjectMapper());
+            new ObjectMapper(),
+            seedReviewService,
+            EMPTY_MANIFEST);
 
     skipSync.sync();
 
@@ -230,7 +243,9 @@ class WrestlerSyncTest {
             npcService,
             tierRecalculationService,
             resourcePatternResolver,
-            new ObjectMapper());
+            new ObjectMapper(),
+            seedReviewService,
+            EMPTY_MANIFEST);
 
     skipSync.sync();
 
@@ -349,7 +364,9 @@ class WrestlerSyncTest {
         npcService,
         tierRecalculationService,
         resourcePatternResolver,
-        new ObjectMapper());
+        new ObjectMapper(),
+        seedReviewService,
+        EMPTY_MANIFEST);
   }
 
   private void stubOneExisting(Wrestler existing) {
@@ -512,5 +529,246 @@ class WrestlerSyncTest {
         "a wrestler the user invented",
         custom.getDescription(),
         "user-created wrestler must never be touched by verify mode");
+  }
+
+  // ── Version-change detection (seed-update review, PR 4 Step 1 three-tier pin) ──
+
+  @Test
+  void versionChangeBootsParkCollisions() throws Exception {
+    // THREE-TIER pin, end-to-end through the wired pipeline (Task 5's classifier contract,
+    // exercised via WrestlerSync.detectVersionChangeCollisions + a recording parking sink):
+    //   tier 1 — untouched field, seed changed → updated silently + re-stamped
+    //   tier 2 — admin-edited field, seed changed → parked as PENDING decision, DB value unchanged
+    //   tier 3 — seed unchanged → no-op whether or not the admin edited it (PRESERVE_EDIT, nothing
+    //            parked, nothing written)
+    //
+    // The seed resource is a fixture copy of BASE_GAME.json with Rob Van Dam's description AND
+    // Gail Kim's brawl changed (the version upgrade's seed delta). The DB rows are stamped as the
+    // PREVIOUS release's seed write left them, then the admin hand-edits:
+    //   Rob Van Dam: heritageTag hand-tuned (tier 3 — seed doesn't touch it; description is
+    //                tier 1: row untouched, seed changed)
+    //   Gail Kim:    brawl=7 by the admin (tier 2 — the seed ALSO changed brawl 2→9, so the row's
+    //                single brawl edit vs the stamp is a genuine collision)
+    WrestlerImportDTO rvdDto = rvdSeedDto();
+    WrestlerImportDTO gailDto = seedDtoFor("Gail Kim");
+
+    Wrestler rvd = seededRvd(rvdDto);
+    rvd.setDescription("stale description from an older release"); // old seed's description
+    rvd.setSeedFingerprint(VERIFY_SUPPORT.fingerprint(WrestlerSeedFields.canonical(rvd)));
+    rvd.setHeritageTag(
+        "hand-tuned heritage"); // admin edit AFTER the stamp → dirty row, single edit
+
+    Wrestler gail = seededFrom(gailDto);
+    gail.setSeedFingerprint(VERIFY_SUPPORT.fingerprint(WrestlerSeedFields.canonical(gail)));
+    gail.setBrawl(7); // admin edit AFTER the stamp
+
+    when(wrestlerRepository.count()).thenReturn(2L);
+    when(wrestlerRepository.findAllWithAlignments()).thenReturn(List.of(rvd, gail));
+    when(wrestlerRepository.findAll()).thenReturn(List.of(rvd, gail));
+
+    // Seed fixture: RVD's row with the description changed (a normal release's seed delta),
+    // served through the same resolver mock the sync already uses.
+    org.springframework.core.io.ByteArrayResource changedRvd;
+    {
+      com.fasterxml.jackson.databind.node.ArrayNode array =
+          new com.fasterxml.jackson.databind.ObjectMapper().createArrayNode();
+      com.fasterxml.jackson.databind.node.ObjectNode node = array.addObject();
+      node.put("name", rvdDto.getName());
+      node.put("deckSize", rvdDto.getDeckSize());
+      node.put("startingHealth", rvdDto.getStartingHealth());
+      node.put("lowHealth", rvdDto.getLowHealth());
+      node.put("startingStamina", rvdDto.getStartingStamina());
+      node.put("lowStamina", rvdDto.getLowStamina());
+      node.put("description", "seed description changed by the new release");
+      node.put("gender", rvdDto.getGender() == null ? null : rvdDto.getGender().name());
+      node.put("heritageTag", rvdDto.getHeritageTag());
+      node.put("expansion_code", rvdDto.getExpansionCode());
+      node.put("drive", rvdDto.getDrive());
+      node.put("resilience", rvdDto.getResilience());
+      node.put("charisma", rvdDto.getCharisma());
+      node.put("brawl", rvdDto.getBrawl());
+      node.put("alignment", rvdDto.getAlignment());
+      changedRvd =
+          new org.springframework.core.io.ByteArrayResource(
+              array.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
+    // Gail Kim's seed entry with the brawl bumped 2 → 9 (the release's second seed change).
+    org.springframework.core.io.ByteArrayResource changedGail;
+    {
+      com.fasterxml.jackson.databind.node.ArrayNode array =
+          new com.fasterxml.jackson.databind.ObjectMapper().createArrayNode();
+      com.fasterxml.jackson.databind.node.ObjectNode node = array.addObject();
+      node.put("name", gailDto.getName());
+      node.put("deckSize", gailDto.getDeckSize());
+      node.put("startingHealth", gailDto.getStartingHealth());
+      node.put("lowHealth", gailDto.getLowHealth());
+      node.put("startingStamina", gailDto.getStartingStamina());
+      node.put("lowStamina", gailDto.getLowStamina());
+      node.put("description", gailDto.getDescription());
+      node.put("gender", gailDto.getGender() == null ? null : gailDto.getGender().name());
+      node.put("heritageTag", gailDto.getHeritageTag());
+      // Filename-derived code: the sync stamps expansionCode from the seed file's name.
+      node.put("expansion_code", "GAIL_KIM");
+      node.put("drive", gailDto.getDrive());
+      node.put("resilience", gailDto.getResilience());
+      node.put("charisma", gailDto.getCharisma());
+      node.put("brawl", 9);
+      node.put("alignment", gailDto.getAlignment());
+      changedGail =
+          new org.springframework.core.io.ByteArrayResource(
+              array.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
+    Resource[] seedResources = {changedRvd, changedGail};
+    when(resourcePatternResolver.getResources(org.mockito.ArgumentMatchers.anyString()))
+        .thenReturn(seedResources);
+
+    java.util.Set<String> parkedCoordinates = new java.util.HashSet<>();
+    SeedUpdateReviewService parking = org.mockito.Mockito.mock(SeedUpdateReviewService.class);
+    org.mockito.Mockito.doAnswer(
+            inv -> {
+              // Distinct coordinates only: parkFieldConflict's refresh path fires per pass, the
+              // contract is at most one open decision per (entity, field).
+              parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
+              return null;
+            })
+        .when(parking)
+        .parkFieldConflict(
+            org.mockito.ArgumentMatchers.anyString(),
+            org.mockito.ArgumentMatchers.anyString(),
+            org.mockito.ArgumentMatchers.anyString(),
+            org.mockito.ArgumentMatchers.anyString(),
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.anyString());
+
+    WrestlerSync detectionSync =
+        new WrestlerSync(
+            "true",
+            wrestlerRepository,
+            wrestlerAbilityRepository,
+            wrestlerService,
+            universeRepository,
+            wrestlerStateRepository,
+            npcService,
+            tierRecalculationService,
+            resourcePatternResolver,
+            new ObjectMapper(),
+            parking,
+            EMPTY_MANIFEST);
+    detectionSync.detectVersionChangeCollisions();
+
+    // Tier 1: the untouched description updated silently to the NEW seed value.
+    assertEquals(
+        "seed description changed by the new release",
+        rvd.getDescription(),
+        "tier 1: untouched field with a changed seed value must update silently");
+    // Tier 3: the seed-unchanged heritage edit was preserved with no parking.
+    assertEquals(
+        "hand-tuned heritage",
+        rvd.getHeritageTag(),
+        "tier 3: admin edit on an unchanged seed field must be preserved silently");
+    // Tier 2: the admin-edited brawl kept its value; the row parked the brawl collision.
+    assertEquals(
+        7,
+        gail.getBrawl(),
+        "tier 2: admin-edited field must keep its value — only a PENDING decision is created");
+    org.mockito.Mockito.verify(parking)
+        .parkFieldConflict(
+            org.mockito.ArgumentMatchers.eq("wrestler"),
+            org.mockito.ArgumentMatchers.eq("wrestler:gail-kim"),
+            org.mockito.ArgumentMatchers.eq("Gail Kim"),
+            org.mockito.ArgumentMatchers.eq("brawl"),
+            org.mockito.ArgumentMatchers.eq("7"),
+            org.mockito.ArgumentMatchers.eq("9"),
+            org.mockito.ArgumentMatchers.anyString());
+    // Only Gail Kim's brawl parked; Rob Van Dam's tier-1/tier-3 fields never park.
+    assertEquals(
+        java.util.Set.of("wrestler:gail-kim|brawl"),
+        parkedCoordinates,
+        "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
+  }
+
+  /** Reads one named wrestler's seed DTO from the real classpath seed files. */
+  private WrestlerImportDTO seedDtoFor(String name) throws IOException {
+    PathMatchingResourcePatternResolver real = new PathMatchingResourcePatternResolver();
+    for (Resource r : real.getResources("classpath*:wrestlers/*.json")) {
+      try (var is = r.getInputStream()) {
+        for (WrestlerImportDTO dto :
+            new ObjectMapper().readValue(is, new TypeReference<List<WrestlerImportDTO>>() {})) {
+          if (name.equals(dto.getName())) {
+            return dto;
+          }
+        }
+      }
+    }
+    throw new IllegalStateException(name + " not found in seed files");
+  }
+
+  /** Builds an in-memory Wrestler mirroring any seed payload (same shape as {@link #seededRvd}). */
+  private Wrestler seededFrom(WrestlerImportDTO dto) {
+    Wrestler w = new Wrestler();
+    w.setId(2L);
+    w.setName(dto.getName());
+    w.setDeckSize(dto.getDeckSize());
+    w.setStartingHealth(dto.getStartingHealth());
+    w.setLowHealth(dto.getLowHealth());
+    w.setStartingStamina(dto.getStartingStamina());
+    w.setLowStamina(dto.getLowStamina());
+    w.setDescription(dto.getDescription());
+    w.setGender(dto.getGender());
+    w.setHeritageTag(dto.getHeritageTag());
+    w.setExpansionCode(dto.getExpansionCode());
+    w.setDrive(dto.getDrive());
+    w.setResilience(dto.getResilience());
+    w.setCharisma(dto.getCharisma());
+    w.setBrawl(dto.getBrawl());
+    if (dto.getAlignment() != null) {
+      w.setAlignment(
+          WrestlerAlignment.builder()
+              .wrestler(w)
+              .alignmentType(AlignmentType.valueOf(dto.getAlignment().toUpperCase()))
+              .level(0)
+              .build());
+    }
+    return w;
+  }
+
+  @Test
+  void normalBootBehaviorUnchanged() throws Exception {
+    // Tier 3 pin at the sync level: on a boot where detection does not run (the normal boot), the
+    // sync's own behavior is byte-identical to today — verify reconcile preserves the edited row
+    // and nothing parks. The detector path is not entered (shouldRunDetection gates it); this
+    // test pins that detectVersionChangeCollisions is inert when invoked on a FULL-mode sync and
+    // that the pre-existing verify behavior still holds with the new constructor dependencies.
+    WrestlerImportDTO dto = rvdSeedDto();
+    Wrestler existing = seededRvd(dto);
+    existing.setSeedFingerprint(VERIFY_SUPPORT.fingerprint(WrestlerSeedFields.canonical(existing)));
+    existing.setDescription("deliberately hand-tuned");
+    stubOneExisting(existing);
+
+    // FULL-mode detection is a no-op (FULL applies the seed everywhere, nothing to collide).
+    SeedUpdateReviewService parking = org.mockito.Mockito.mock(SeedUpdateReviewService.class);
+    WrestlerSync fullModeSync =
+        new WrestlerSync(
+            "false",
+            wrestlerRepository,
+            wrestlerAbilityRepository,
+            wrestlerService,
+            universeRepository,
+            wrestlerStateRepository,
+            npcService,
+            tierRecalculationService,
+            resourcePatternResolver,
+            new ObjectMapper(),
+            parking,
+            EMPTY_MANIFEST);
+    fullModeSync.detectVersionChangeCollisions();
+    org.mockito.Mockito.verifyNoInteractions(parking);
+    // Verify mode (the normal-boot path this class already pins) still preserves the edit.
+    verifySync().sync();
+    assertEquals(
+        "deliberately hand-tuned",
+        existing.getDescription(),
+        "normal-boot verify behavior is unchanged by the detection wiring");
   }
 }

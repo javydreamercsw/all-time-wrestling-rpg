@@ -39,6 +39,10 @@ import com.github.javydreamercsw.management.dto.WrestlerImportDTO;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.ranking.TierRecalculationService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import com.github.javydreamercsw.management.sync.review.SeedCollisionDetector;
+import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
+import com.github.javydreamercsw.management.sync.review.SeedReviewDetectionSupport;
+import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -62,6 +66,9 @@ import org.springframework.stereotype.Component;
 @Order(120)
 public class WrestlerSync implements DataSyncContributor {
 
+  /** Seed domain key (must match {@code SeedDomains.STAMPING_DOMAINS}). */
+  public static final String DOMAIN_KEY = "wrestler";
+
   private final SeedSyncSupport syncSupport;
   private final WrestlerRepository wrestlerRepository;
   private final WrestlerAbilityRepository wrestlerAbilityRepository;
@@ -72,6 +79,8 @@ public class WrestlerSync implements DataSyncContributor {
   private final TierRecalculationService tierRecalculationService;
   private final ResourcePatternResolver resourcePatternResolver;
   private final ObjectMapper objectMapper;
+  private final SeedUpdateReviewService seedReviewService;
+  private final SeedProvenanceManifest provenanceManifest;
 
   @Autowired
   public WrestlerSync(
@@ -84,7 +93,9 @@ public class WrestlerSync implements DataSyncContributor {
       final NpcService npcService,
       final TierRecalculationService tierRecalculationService,
       final ResourcePatternResolver resourcePatternResolver,
-      final ObjectMapper objectMapper) {
+      final ObjectMapper objectMapper,
+      final SeedUpdateReviewService seedReviewService,
+      final SeedProvenanceManifest provenanceManifest) {
     this.syncSupport = new SeedSyncSupport(skipIfNotEmptyRaw);
     this.wrestlerRepository = wrestlerRepository;
     this.wrestlerAbilityRepository = wrestlerAbilityRepository;
@@ -95,6 +106,8 @@ public class WrestlerSync implements DataSyncContributor {
     this.tierRecalculationService = tierRecalculationService;
     this.resourcePatternResolver = resourcePatternResolver;
     this.objectMapper = objectMapper;
+    this.seedReviewService = seedReviewService;
+    this.provenanceManifest = provenanceManifest;
   }
 
   @Override
@@ -108,6 +121,282 @@ public class WrestlerSync implements DataSyncContributor {
     }
     loadWrestlers(true);
     wrestlerService.evictWrestlerCache();
+  }
+
+  /**
+   * Version-change detection pass (seed-update review feature): on a boot where the app version
+   * changed (or undecided decisions exist), existing wrestlers are classified field-by-field
+   * through {@link SeedCollisionDetector} instead of being reconciled directly — tier-1 fields
+   * update silently and re-stamp, tier-2 fields park as PENDING decisions, tier-3 fields stay
+   * untouched. Runs only in PROTECT/VERIFY mode with existing rows (FULL mode's load already
+   * applies the seed everywhere; an empty DB has nothing to collide).
+   *
+   * <p>Callers invoke this once per boot after the domain passes and only when {@link
+   * SeedUpdateReviewService#shouldRunDetection()} is true; {@code markDetected()} is NOT called
+   * here (the orchestrator stamps the version after all domains finish).
+   */
+  void detectVersionChangeCollisions() {
+    if (syncSupport.mode() == SeedSyncMode.FULL || wrestlerRepository.count() == 0) {
+      return; // FULL mode applies the seed everywhere; an empty DB has nothing to collide
+    }
+    long start = System.currentTimeMillis();
+    try {
+      Resource[] resources = resourcePatternResolver.getResources("classpath*:wrestlers/*.json");
+      Map<String, Wrestler> wrestlersByName =
+          wrestlerRepository.findAllWithAlignments().stream()
+              .collect(Collectors.toMap(Wrestler::getName, wr -> wr, (a, b) -> a));
+      List<Wrestler> toSave = new ArrayList<>();
+      for (Resource resource : resources) {
+        if (!resource.exists()) {
+          continue;
+        }
+        try (var is = resource.getInputStream()) {
+          List<WrestlerImportDTO> wrestlersFromFile =
+              objectMapper.readValue(is, new TypeReference<>() {});
+          for (WrestlerImportDTO w : wrestlersFromFile) {
+            Wrestler wrestler = wrestlersByName.get(w.getName());
+            if (wrestler == null) {
+              continue; // user-created rows have no seed match; missing rows are top-up's job
+            }
+            String newFingerprint =
+                SeedReviewDetectionSupport.incomingFingerprint(
+                    provenanceManifest, DOMAIN_KEY, w.getName(), seedValueFingerprint(w, wrestler));
+            boolean rowHasStoredStamp =
+                SeedReviewDetectionSupport.hasStamp(wrestler.getSeedFingerprint());
+            List<SeedCollisionDetector.FieldObservation> observations =
+                fieldObservations(wrestler, w);
+            SeedReviewDetectionSupport.DetectionResult result =
+                SeedReviewDetectionSupport.detectRow(
+                    DOMAIN_KEY,
+                    entityKey(wrestler.getName()),
+                    wrestler.getName(),
+                    rowHasStoredStamp,
+                    wrestler.getSeedFingerprint(),
+                    observations,
+                    values -> syncSupport.fingerprint(values.toArray()),
+                    newFingerprint,
+                    seedReviewService);
+            String stamp =
+                SeedReviewDetectionSupport.stampForResolvedRow(
+                    result.provenanceExact(), newFingerprint);
+            if (!result.silentUpdateFields().isEmpty()) {
+              // Tier-1 write set: ONLY the silent-update fields — an admin edit the pass decided
+              // to preserve (tier 3) must never be touched (per-field granularity, spec "Tier 2
+              // granularity").
+              applySilentSeedFields(wrestler, w, result.silentUpdateFields());
+              toSave.add(wrestler);
+            }
+            if (stamp != null && !stamp.equals(wrestler.getSeedFingerprint())) {
+              wrestler.setSeedFingerprint(stamp);
+              if (!toSave.contains(wrestler)) {
+                toSave.add(wrestler);
+              }
+            }
+          }
+        } catch (IOException e) {
+          log.error("Error during wrestler seed-review detection", e);
+        }
+      }
+      if (!toSave.isEmpty()) {
+        wrestlerRepository.saveAll(toSave);
+      }
+      log.info(
+          "Seed review detection (wrestler) complete ({} ms).", System.currentTimeMillis() - start);
+    } catch (IOException e) {
+      log.error("Error resolving wrestler resources for seed-review detection", e);
+    }
+  }
+
+  /** The detection-time per-field observations for one wrestler row against its seed DTO. */
+  private List<SeedCollisionDetector.FieldObservation> fieldObservations(
+      Wrestler wrestler, WrestlerImportDTO w) {
+    List<SeedCollisionDetector.FieldObservation> obs = new ArrayList<>();
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "deckSize",
+            null,
+            wrestler.getDeckSize() == null ? null : wrestler.getDeckSize().toString(),
+            w.getDeckSize() == null ? null : w.getDeckSize().toString()));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "startingHealth",
+            null,
+            wrestler.getStartingHealth() == null ? null : wrestler.getStartingHealth().toString(),
+            w.getStartingHealth() == null ? null : w.getStartingHealth().toString()));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "lowHealth",
+            null,
+            wrestler.getLowHealth() == null ? null : wrestler.getLowHealth().toString(),
+            w.getLowHealth() == null ? null : w.getLowHealth().toString()));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "startingStamina",
+            null,
+            wrestler.getStartingStamina() == null ? null : wrestler.getStartingStamina().toString(),
+            w.getStartingStamina() == null ? null : w.getStartingStamina().toString()));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "lowStamina",
+            null,
+            wrestler.getLowStamina() == null ? null : wrestler.getLowStamina().toString(),
+            w.getLowStamina() == null ? null : w.getLowStamina().toString()));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "description", null, wrestler.getDescription(), w.getDescription()));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "gender",
+            null,
+            wrestler.getGender() == null ? null : wrestler.getGender().name(),
+            w.getGender() == null ? null : w.getGender().name()));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "imageUrl", null, wrestler.getImageUrl(), w.getImageUrl()));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "heritageTag", null, wrestler.getHeritageTag(), w.getHeritageTag()));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "expansionCode", null, wrestler.getExpansionCode(), w.getExpansionCode()));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "drive",
+            null,
+            wrestler.getDrive() == null ? null : wrestler.getDrive().toString(),
+            w.getDrive() == null ? null : w.getDrive().toString()));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "resilience",
+            null,
+            wrestler.getResilience() == null ? null : wrestler.getResilience().toString(),
+            w.getResilience() == null ? null : w.getResilience().toString()));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "charisma",
+            null,
+            wrestler.getCharisma() == null ? null : wrestler.getCharisma().toString(),
+            w.getCharisma() == null ? null : w.getCharisma().toString()));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "brawl",
+            null,
+            wrestler.getBrawl() == null ? null : wrestler.getBrawl().toString(),
+            w.getBrawl() == null ? null : w.getBrawl().toString()));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "alignment",
+            null,
+            wrestler.getAlignment() == null
+                ? null
+                : wrestler.getAlignment().getAlignmentType().name(),
+            w.getAlignment() == null
+                ? null
+                : AlignmentType.valueOf(w.getAlignment().toUpperCase()).name()));
+    return obs;
+  }
+
+  /** Fingerprint the incoming seed values would produce, in the canonical field order. */
+  private String seedValueFingerprint(WrestlerImportDTO w, Wrestler wrestler) {
+    return syncSupport.fingerprint(
+        w.getDeckSize(),
+        w.getStartingHealth(),
+        w.getLowHealth(),
+        w.getStartingStamina(),
+        w.getLowStamina(),
+        w.getDescription(),
+        w.getGender(),
+        w.getImageUrl(),
+        w.getHeritageTag(),
+        w.getExpansionCode() == null ? wrestler.getExpansionCode() : w.getExpansionCode(),
+        w.getDrive(),
+        w.getResilience(),
+        w.getCharisma(),
+        w.getBrawl(),
+        w.getAlignment() == null
+            ? (wrestler.getAlignment() == null ? null : wrestler.getAlignment().getAlignmentType())
+            : AlignmentType.valueOf(w.getAlignment().toUpperCase()));
+  }
+
+  private static String entityKey(String name) {
+    return "wrestler:" + name.toLowerCase().replace(' ', '-');
+  }
+
+  /**
+   * Writes ONLY the named silent-update fields from the seed DTO onto the row — the tier-1 write
+   * set of the version-change pass. Field names match {@link #fieldObservations} entries; the field
+   * write semantics mirror {@link #applySeedFields(Wrestler, WrestlerImportDTO)}.
+   */
+  private void applySilentSeedFields(
+      Wrestler wrestler, WrestlerImportDTO w, List<String> silentFields) {
+    for (String field : silentFields) {
+      switch (field) {
+        case "deckSize" -> wrestler.setDeckSize(w.getDeckSize());
+        case "startingHealth" -> wrestler.setStartingHealth(w.getStartingHealth());
+        case "lowHealth" -> wrestler.setLowHealth(w.getLowHealth());
+        case "startingStamina" -> wrestler.setStartingStamina(w.getStartingStamina());
+        case "lowStamina" -> wrestler.setLowStamina(w.getLowStamina());
+        case "description" -> wrestler.setDescription(w.getDescription());
+        case "gender" -> wrestler.setGender(w.getGender());
+        case "imageUrl" -> {
+          if (w.getImageUrl() != null) {
+            wrestler.setImageUrl(w.getImageUrl());
+          }
+        }
+        case "heritageTag" -> {
+          if (w.getHeritageTag() != null) {
+            wrestler.setHeritageTag(w.getHeritageTag());
+          }
+        }
+        case "expansionCode" -> wrestler.setExpansionCode(w.getExpansionCode());
+        case "drive" -> {
+          if (w.getDrive() != null) {
+            wrestler.setDrive(w.getDrive());
+          }
+        }
+        case "resilience" -> {
+          if (w.getResilience() != null) {
+            wrestler.setResilience(w.getResilience());
+          }
+        }
+        case "charisma" -> {
+          if (w.getCharisma() != null) {
+            wrestler.setCharisma(w.getCharisma());
+          }
+        }
+        case "brawl" -> {
+          if (w.getBrawl() != null) {
+            wrestler.setBrawl(w.getBrawl());
+          }
+        }
+        case "alignment" -> {
+          if (w.getAlignment() != null) {
+            try {
+              AlignmentType seedType = AlignmentType.valueOf(w.getAlignment().toUpperCase());
+              WrestlerAlignment current = wrestler.getAlignment();
+              if (current != null) {
+                current.setAlignmentType(seedType);
+              } else {
+                wrestler.setAlignment(
+                    WrestlerAlignment.builder()
+                        .wrestler(wrestler)
+                        .universe(universeRepository.findAll().stream().findFirst().orElse(null))
+                        .alignmentType(seedType)
+                        .level(0)
+                        .build());
+              }
+            } catch (IllegalArgumentException e) {
+              log.warn(
+                  "Invalid alignment '{}' for wrestler '{}'",
+                  LogSanitizer.sanitize(w.getAlignment()),
+                  LogSanitizer.sanitize(wrestler.getName()));
+            }
+          }
+        }
+        default ->
+            throw new IllegalStateException("Unknown silent-update wrestler field '" + field + "'");
+      }
+    }
   }
 
   /**

@@ -16,11 +16,11 @@
 */
 package com.github.javydreamercsw.management.sync.review;
 
+import com.github.javydreamercsw.management.domain.GameSetting;
+import com.github.javydreamercsw.management.domain.GameSettingRepository;
 import com.github.javydreamercsw.management.domain.seedreview.SeedUpdateDecision;
 import com.github.javydreamercsw.management.domain.seedreview.SeedUpdateDecisionRepository;
 import com.github.javydreamercsw.management.event.SeedUpdateReviewPendingEvent;
-import com.github.javydreamercsw.management.migration.DataMigrationHistory;
-import com.github.javydreamercsw.management.migration.DataMigrationHistoryRepository;
 import com.github.javydreamercsw.management.migration.DataMigrationRunner;
 import java.util.List;
 import java.util.Optional;
@@ -39,21 +39,27 @@ import org.springframework.stereotype.Service;
  * {@link #shouldRunDetection()} is true exactly when:
  *
  * <ul>
- *   <li><b>Version changed</b> — a previous app version is recorded in {@code
- *       data_migration_history} and differs from the current boot's version (resolved through the
- *       same {@link BuildProperties} source {@code DataMigrationRunner.resolveAppVersion()} reads).
- *       {@code DataInitializer.performInit()} runs the syncs <em>before</em> the migrations, so on
- *       an upgrade boot the sync phase still sees the previous boot's recorded version and the
- *       trigger fires exactly when the detector needs it.
+ *   <li><b>Version changed</b> — the last version this feature saw differs from the current boot's
+ *       version (resolved through the same {@link BuildProperties} source {@code
+ *       DataMigrationRunner.resolveAppVersion()} reads). The "last seen" version is the feature's
+ *       own durable stamp in {@code game_setting} ({@link #DETECTED_VERSION_KEY}, global): {@link
+ *       #shouldRunDetection()} compares against it, and the {@code markDetected} hook (called by PR
+ *       4's wiring once the version-change pass has finished for all domains) records the current
+ *       version. A {@code game_setting} stamp rather than a {@code data_migration_history} row
+ *       because the migration runner records nothing when a release ships no new migration — a
+ *       migration-history comparison goes stale in exactly that case and would re-run detection on
+ *       every boot (beads ATW-1pvd). {@code DataInitializer.performInit()} runs the syncs
+ *       <em>before</em> the migrations, so on an upgrade boot the sync phase still sees the
+ *       previous boot's stamped version and the trigger fires exactly when the detector needs it.
  *   <li><b>Pending decisions exist</b> — undecided rows keep detection alive across same-version
  *       restarts, so leftover collisions are re-offered until an administrator resolves them.
  * </ul>
  *
- * <p><b>Fresh installs never detect:</b> an empty {@code data_migration_history} means no previous
- * version exists; the comparison treats "no previous version + any current version" as NOT a
- * version change. A fresh database matches the incoming seed exactly, so there is nothing to
- * collide — treating absence as "changed" would raise the gate on every first boot. The
- * version-change trigger only fires when a previous version exists and differs.
+ * <p><b>Fresh installs never detect:</b> a missing stamp means no previous version exists; the
+ * comparison treats "no previous version + any current version" as NOT a version change. A fresh
+ * database matches the incoming seed exactly, so there is nothing to collide — treating absence as
+ * "changed" would raise the gate on every first boot. The version-change trigger only fires when a
+ * previous version exists and differs.
  *
  * <h2>Parking collisions</h2>
  *
@@ -79,15 +85,23 @@ import org.springframework.stereotype.Service;
 @Service
 public class SeedUpdateReviewService {
 
+  /**
+   * Global {@code game_setting} key holding the last app version this feature's detection saw — the
+   * ATW-1pvd root fix: per-boot stamp instead of comparing against the last {@code
+   * data_migration_history} row, which goes stale when a release ships no new migration.
+   */
+  public static final String DETECTED_VERSION_KEY = "seed_review_detected_version";
+
   private final SeedUpdateDecisionRepository decisionRepository;
-  private final DataMigrationHistoryRepository historyRepository;
   private final Optional<BuildProperties> buildProperties;
   private final SeedReviewGate gate;
   private final ApplicationEventPublisher eventPublisher;
+  private final GameSettingRepository gameSettingRepository;
 
   /**
    * Set by the first fresh {@code park*} of this bean's lifetime and consumed by {@link
-   * #notifyPending()}: the once-per-boot batched inbox notification fires only when the detection
+   * #notifyPending()} — only after the event publish succeeds, so a failed publish leaves the flag
+   * armed for a retry: the once-per-boot batched inbox notification fires only when the detection
    * phase actually parked something new — not on every boot, and never per row. A re-park (the
    * snapshot-refresh path on an already-parked coordinate) deliberately does not arm the flag: an
    * unresolved decision that survives restarts must not produce a duplicate inbox item on every
@@ -98,15 +112,15 @@ public class SeedUpdateReviewService {
   @Autowired
   public SeedUpdateReviewService(
       final SeedUpdateDecisionRepository decisionRepository,
-      final DataMigrationHistoryRepository historyRepository,
       final Optional<BuildProperties> buildProperties,
       final SeedReviewGate gate,
-      final ApplicationEventPublisher eventPublisher) {
+      final ApplicationEventPublisher eventPublisher,
+      final GameSettingRepository gameSettingRepository) {
     this.decisionRepository = decisionRepository;
-    this.historyRepository = historyRepository;
     this.buildProperties = buildProperties;
     this.gate = gate;
     this.eventPublisher = eventPublisher;
+    this.gameSettingRepository = gameSettingRepository;
   }
 
   /**
@@ -118,20 +132,62 @@ public class SeedUpdateReviewService {
       return true;
     }
     String current = resolveAppVersion();
-    Optional<DataMigrationHistory> lastRecorded =
-        historyRepository.findTopByOrderByExecutedAtDesc();
-    if (lastRecorded.isEmpty()) {
-      // Fresh install: no previous version to compare against — never treat that as a change.
-      log.debug("No data migration history recorded yet — not a version change.");
+    String previous = lastDetectedVersion();
+    if (previous == null) {
+      // Fresh install (or first boot after upgrading to this feature): no previous version to
+      // compare against — never treat that as a change.
+      log.debug("No detected-version stamp recorded yet — not a version change.");
       return false;
     }
-    String previous = lastRecorded.get().getAppVersion();
     boolean changed = !previous.equals(current);
     if (changed) {
       log.info(
           "App version changed ({} -> {}) — seed review detection will run.", previous, current);
     }
     return changed;
+  }
+
+  /**
+   * Records the current boot's version as "seen by this feature" (global {@code game_setting}
+   * stamp). PR 4's wiring calls this exactly once per boot, after the version-change detection pass
+   * has finished across every wired domain — regardless of whether the pass found anything — so the
+   * next boot compares against THIS boot's version even when the release shipped no new {@code
+   * DataMigration} (a migration-history comparison goes stale there and would re-run detection on
+   * every boot).
+   *
+   * <p>Deliberately called after the pass, not before: {@code DataInitializer.performInit()} runs
+   * the syncs before the migrations, so the stamp must not be written until the sync phase has read
+   * the previous value.
+   */
+  public void markDetected() {
+    String current = resolveAppVersion();
+    gameSettingRepository
+        .findGlobal(DETECTED_VERSION_KEY)
+        .ifPresentOrElse(
+            setting -> {
+              if (!current.equals(setting.getValue())) {
+                setting.setValue(current);
+                gameSettingRepository.save(setting);
+              }
+            },
+            () -> {
+              GameSetting setting = new GameSetting();
+              setting.setSettingKey(DETECTED_VERSION_KEY);
+              setting.setValue(current);
+              setting.setUniverseId(null); // global stamp — version detection is install-wide
+              gameSettingRepository.save(setting);
+            });
+    log.debug("Seed-review detected-version stamp set to {}.", current);
+  }
+
+  /**
+   * @return the last version recorded by {@link #markDetected()}, or {@code null} when none.
+   */
+  private String lastDetectedVersion() {
+    return gameSettingRepository
+        .findGlobal(DETECTED_VERSION_KEY)
+        .map(GameSetting::getValue)
+        .orElse(null);
   }
 
   /**
@@ -241,9 +297,12 @@ public class SeedUpdateReviewService {
       log.debug("No seed collisions parked this phase — no pending-review notification.");
       return;
     }
-    parkingHappened = false;
     int count = (int) pendingCount();
     eventPublisher.publishEvent(new SeedUpdateReviewPendingEvent(this, count, resolveAppVersion()));
+    // Consumed only AFTER a successful publish: a publish that throws (e.g. a listener failure)
+    // must leave the flag armed so a retry can still deliver the notification. (The once-per-boot
+    // guarantee still holds — the caller invokes this exactly once per phase; see class doc.)
+    parkingHappened = false;
     log.info("Published seed-update review pending event: {} decision(s) pending.", count);
   }
 

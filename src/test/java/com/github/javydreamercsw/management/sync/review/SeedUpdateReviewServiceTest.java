@@ -27,6 +27,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.management.AbstractJpaTest;
+import com.github.javydreamercsw.management.domain.GameSettingRepository;
 import com.github.javydreamercsw.management.domain.seedreview.SeedUpdateDecision;
 import com.github.javydreamercsw.management.domain.seedreview.SeedUpdateDecisionRepository;
 import com.github.javydreamercsw.management.event.SeedUpdateReviewPendingEvent;
@@ -61,6 +62,7 @@ class SeedUpdateReviewServiceTest extends AbstractJpaTest {
 
   @Autowired private SeedUpdateDecisionRepository decisionRepository;
   @Autowired private DataMigrationHistoryRepository historyRepository;
+  @Autowired private GameSettingRepository gameSettingRepository;
   @Autowired private EntityManager entityManager;
 
   private BuildProperties buildProperties;
@@ -77,6 +79,9 @@ class SeedUpdateReviewServiceTest extends AbstractJpaTest {
     // entity-manager delete would be discarded by the clear() below.
     decisionRepository.deleteAllInBatch();
     historyRepository.deleteAllInBatch();
+    gameSettingRepository
+        .findGlobal(SeedUpdateReviewService.DETECTED_VERSION_KEY)
+        .ifPresent(s -> gameSettingRepository.delete(s));
     entityManager.clear();
     gate = null;
     buildProperties = mock(BuildProperties.class);
@@ -87,13 +92,17 @@ class SeedUpdateReviewServiceTest extends AbstractJpaTest {
   private SeedUpdateReviewService service() {
     gate = new SeedReviewGate(decisionRepository);
     return new SeedUpdateReviewService(
-        decisionRepository, historyRepository, Optional.of(buildProperties), gate, eventPublisher);
+        decisionRepository,
+        Optional.of(buildProperties),
+        gate,
+        eventPublisher,
+        gameSettingRepository);
   }
 
   private SeedUpdateReviewService serviceWithoutBuildInfo() {
     gate = new SeedReviewGate(decisionRepository);
     return new SeedUpdateReviewService(
-        decisionRepository, historyRepository, Optional.empty(), gate, eventPublisher);
+        decisionRepository, Optional.empty(), gate, eventPublisher, gameSettingRepository);
   }
 
   /** Simulates one row recorded by a previous boot's data-migration run. */
@@ -132,16 +141,56 @@ class SeedUpdateReviewServiceTest extends AbstractJpaTest {
 
   @Test
   void sameVersionBootDoesNotReDetect() {
+    // The stamp, not the migration history, drives the comparison: a previous boot of the same
+    // version recorded "2.13.0" as seen, so a same-version restart must not re-detect — even
+    // though a DataMigration row exists (the stale ATW-1pvd trigger would have compared against
+    // migration rows that never change when a release ships no new migration).
     recordPreviousBoot(CURRENT_VERSION);
+    service().markDetected();
 
     assertFalse(service().shouldRunDetection());
   }
 
   @Test
   void versionChangeTriggersDetection() {
-    recordPreviousBoot("2.12.0");
+    service().markDetected(); // previous boot stamped 2.13.0
+    when(buildProperties.getVersion()).thenReturn("2.14.0");
 
     assertTrue(service().shouldRunDetection());
+  }
+
+  @Test
+  void versionChangeFiresWithoutNewMigration() {
+    // beads ATW-1pvd: a release that ships NO new DataMigration records no data_migration_history
+    // row, so the old trigger (last migration row's app_version) went stale and re-ran detection
+    // on every boot. The per-boot stamp must fire the version-change branch exactly once per
+    // actual version change — with zero new migration rows.
+    service().markDetected(); // boot 1: 2.13.0 stamped; migration history stays empty
+    when(buildProperties.getVersion()).thenReturn("2.14.0");
+    assertTrue(
+        service().shouldRunDetection(),
+        "version change with no new migration row must still trigger detection");
+    service().markDetected(); // boot 2 (2.14.0): stamp updates
+
+    // Same version again (restart): must NOT re-detect despite the migration history never
+    // having been updated.
+    assertFalse(
+        service().shouldRunDetection(),
+        "same-version boot after the stamp updated must not re-detect");
+    assertEquals(0, historyRepository.count(), "no migration row was ever recorded");
+  }
+
+  @Test
+  void markDetectedIsIdempotentPerVersion() {
+    service().markDetected();
+    service().markDetected();
+
+    assertFalse(service().shouldRunDetection());
+    assertEquals(
+        1,
+        gameSettingRepository.findGlobal(SeedUpdateReviewService.DETECTED_VERSION_KEY).stream()
+            .count(),
+        "stamp upserts in place — no duplicate game_setting rows");
   }
 
   @Test
