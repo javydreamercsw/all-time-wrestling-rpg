@@ -21,6 +21,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.domain.account.Achievement;
 import com.github.javydreamercsw.base.domain.account.AchievementRepository;
 import com.github.javydreamercsw.management.config.CacheConfig;
+import com.github.javydreamercsw.management.sync.review.SeedCollisionDetector;
+import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
+import com.github.javydreamercsw.management.sync.review.SeedReviewDetectionSupport;
+import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,18 +48,27 @@ import org.springframework.transaction.annotation.Transactional;
 @Order(230)
 public class AchievementSync implements DataSyncContributor {
 
+  /** Seed domain key (must match {@code SeedDomains.STAMPING_DOMAINS}). */
+  public static final String DOMAIN_KEY = "achievement";
+
   private final SeedSyncSupport syncSupport;
   private final AchievementRepository achievementRepository;
   private final ObjectMapper objectMapper;
+  private final SeedUpdateReviewService seedReviewService;
+  private final SeedProvenanceManifest provenanceManifest;
 
   @Autowired
   public AchievementSync(
       @Value("${data.initializer.skip-if-not-empty:false}") final String skipIfNotEmptyRaw,
       final AchievementRepository achievementRepository,
-      final ObjectMapper objectMapper) {
+      final ObjectMapper objectMapper,
+      final SeedUpdateReviewService seedReviewService,
+      final SeedProvenanceManifest provenanceManifest) {
     this.syncSupport = new SeedSyncSupport(skipIfNotEmptyRaw);
     this.achievementRepository = achievementRepository;
     this.objectMapper = objectMapper;
+    this.seedReviewService = seedReviewService;
+    this.provenanceManifest = provenanceManifest;
   }
 
   @Override
@@ -272,5 +285,144 @@ public class AchievementSync implements DataSyncContributor {
         && Objects.equals(existing.getXpValue(), seed.getXpValue())
         && existing.getCategory() == seed.getCategory()
         && Objects.equals(existing.getUnlockCondition(), seed.getUnlockCondition());
+  }
+
+  /**
+   * Version-change detection pass (seed-update review feature): classifies existing achievements
+   * field-by-field through {@link SeedCollisionDetector} instead of reconciling directly — tier-1
+   * fields update silently and re-stamp, tier-2 fields park as PENDING decisions, tier-3 fields
+   * stay untouched. Only meaningful in PROTECT/VERIFY mode with existing rows.
+   */
+  void detectVersionChangeCollisions() {
+    if (syncSupport.mode() == SeedSyncMode.FULL) {
+      return; // FULL mode applies the seed everywhere
+    }
+    long start = System.currentTimeMillis();
+    List<Achievement> seedRows = loadSeedAchievements();
+    if (seedRows.isEmpty()) {
+      return;
+    }
+    List<Achievement> toSave = new ArrayList<>();
+    for (Achievement seed : seedRows) {
+      Achievement existing = achievementRepository.findByKey(seed.getKey()).orElse(null);
+      if (existing == null) {
+        continue; // user-created rows have no seed match; missing rows are top-up's job
+      }
+      String newFingerprint =
+          SeedReviewDetectionSupport.incomingFingerprint(
+              provenanceManifest, DOMAIN_KEY, seed.getKey(), achievementFingerprint(seed));
+      boolean rowHasStoredStamp =
+          SeedReviewDetectionSupport.hasStamp(existing.getSeedFingerprint());
+      List<SeedCollisionDetector.FieldObservation> observations = fieldObservations(existing, seed);
+      SeedReviewDetectionSupport.DetectionResult result =
+          SeedReviewDetectionSupport.detectRow(
+              DOMAIN_KEY,
+              entityKey(seed.getKey()),
+              // The display name is the seed's stable identity for this domain — the achievement
+              // key. The human-readable name field is itself seed-owned content (a collision
+              // target), so it cannot serve as the resolution handle; the applier resolves
+              // findByKey with this exact value.
+              seed.getKey(),
+              rowHasStoredStamp,
+              existing.getSeedFingerprint(),
+              observations,
+              this::achievementValueListFingerprint,
+              newFingerprint,
+              seedReviewService);
+      String stamp =
+          SeedReviewDetectionSupport.stampForResolvedRow(result.provenanceExact(), newFingerprint);
+      if (!result.silentUpdateFields().isEmpty()) {
+        // Tier-1 write set: ONLY the silent-update fields — a tier-3-preserved admin edit on
+        // the same row must never be touched (per-field granularity, spec "Tier 2 granularity").
+        applySilentSeedFields(existing, seed, result.silentUpdateFields());
+        toSave.add(existing);
+      }
+      // Stamp-only rows must persist the re-stamp too: capture the change BEFORE setting it —
+      // comparing after the set reads the NEW value and the save is silently skipped forever
+      // (the row never converges).
+      if (stamp != null && !stamp.equals(existing.getSeedFingerprint())) {
+        existing.setSeedFingerprint(stamp);
+        if (!toSave.contains(existing)) {
+          toSave.add(existing);
+        }
+      }
+    }
+    if (!toSave.isEmpty()) {
+      achievementRepository.saveAll(toSave);
+    }
+    log.info(
+        "Seed review detection (achievement) complete ({} ms).",
+        System.currentTimeMillis() - start);
+  }
+
+  /** The detection-time per-field observations for one achievement row against its seed row. */
+  private List<SeedCollisionDetector.FieldObservation> fieldObservations(
+      Achievement existing, Achievement seed) {
+    List<SeedCollisionDetector.FieldObservation> obs = new ArrayList<>();
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "name", null, existing.getName(), seed.getName()));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "description", null, existing.getDescription(), seed.getDescription()));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "xpValue",
+            null,
+            existing.getXpValue() == null ? null : existing.getXpValue().toString(),
+            seed.getXpValue() == null ? null : seed.getXpValue().toString()));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "category",
+            null,
+            existing.getCategory() == null ? null : existing.getCategory().name(),
+            seed.getCategory() == null ? null : seed.getCategory().name()));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "unlockCondition", null, existing.getUnlockCondition(), seed.getUnlockCondition()));
+    return obs;
+  }
+
+  /**
+   * Re-hashes a field-value list (the {@link #fieldObservations} order) back into a row fingerprint
+   * — the hash-function half of the clean-row/single-edit provenance reconstruction. Serialization
+   * mirrors {@link #achievementFingerprint(Achievement)} exactly.
+   */
+  private String achievementValueListFingerprint(List<String> values) {
+    return syncSupport.fingerprint(
+        values.get(0), values.get(1), values.get(2), values.get(3), values.get(4));
+  }
+
+  private static String entityKey(String key) {
+    return entityKeyFor(key);
+  }
+
+  /**
+   * The canonical entity key for an achievement key — shared with {@code AchievementSeedApplier} so
+   * apply-side resolution derives keys exactly as detection minted them.
+   */
+  static String entityKeyFor(String key) {
+    return "achievement:" + key.toLowerCase().replace(' ', '-');
+  }
+
+  /**
+   * Writes ONLY the named silent-update fields from the seed row onto the row — the tier-1 write
+   * set of the version-change pass. Field names match {@link #fieldObservations} entries; the field
+   * write semantics mirror {@code copyContentFrom}.
+   */
+  private void applySilentSeedFields(
+      Achievement existing, Achievement seed, List<String> silentFields) {
+    for (String field : silentFields) {
+      switch (field) {
+        case "name" -> existing.setName(seed.getName());
+        case "description" -> existing.setDescription(seed.getDescription());
+        case "xpValue" -> existing.setXpValue(seed.getXpValue());
+        case "category" -> existing.setCategory(seed.getCategory());
+        case "unlockCondition" -> existing.setUnlockCondition(seed.getUnlockCondition());
+        default ->
+            throw new IllegalStateException(
+                "Unknown silent-update achievement field '" + field + "'");
+      }
+    }
   }
 }

@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.domain.show.segment;
 
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
+import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
@@ -109,6 +110,9 @@ public interface SegmentRepository
   /** Find segments whose rules include the given rule (seed-review removal dependent check). */
   @Query("SELECT s FROM Segment s JOIN s.segmentRules r WHERE r = :rule")
   List<Segment> findBySegmentRulesContaining(@Param("rule") SegmentRule rule);
+
+  /** Find segments officiated by the given NPC referee (seed-review removal dependent check). */
+  List<Segment> findByReferee(Npc referee);
 
   /**
    * Distinct shows that have at least one completed (non-promo-blind) segment — used by the

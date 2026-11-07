@@ -29,6 +29,10 @@ import com.github.javydreamercsw.management.dto.DeckCardDTO;
 import com.github.javydreamercsw.management.dto.DeckDTO;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.deck.DeckService;
+import com.github.javydreamercsw.management.sync.review.SeedCollisionDetector;
+import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
+import com.github.javydreamercsw.management.sync.review.SeedReviewDetectionSupport;
+import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -51,12 +55,17 @@ import org.springframework.stereotype.Component;
 @Order(150)
 public class DeckSync implements DataSyncContributor {
 
+  /** Seed domain key (must match {@code SeedDomains.STAMPING_DOMAINS}). */
+  public static final String DOMAIN_KEY = "deck";
+
   private final SeedSyncSupport syncSupport;
   private final DeckService deckService;
   private final WrestlerRepository wrestlerRepository;
   private final CardSetRepository cardSetRepository;
   private final CardService cardService;
   private final ObjectMapper objectMapper;
+  private final SeedUpdateReviewService seedReviewService;
+  private final SeedProvenanceManifest provenanceManifest;
 
   @Autowired
   public DeckSync(
@@ -65,13 +74,17 @@ public class DeckSync implements DataSyncContributor {
       final WrestlerRepository wrestlerRepository,
       final CardSetRepository cardSetRepository,
       final CardService cardService,
-      final ObjectMapper objectMapper) {
+      final ObjectMapper objectMapper,
+      final SeedUpdateReviewService seedReviewService,
+      final SeedProvenanceManifest provenanceManifest) {
     this.syncSupport = new SeedSyncSupport(skipIfNotEmptyRaw);
     this.deckService = deckService;
     this.wrestlerRepository = wrestlerRepository;
     this.cardSetRepository = cardSetRepository;
     this.cardService = cardService;
     this.objectMapper = objectMapper;
+    this.seedReviewService = seedReviewService;
+    this.provenanceManifest = provenanceManifest;
   }
 
   @Override
@@ -424,5 +437,153 @@ public class DeckSync implements DataSyncContributor {
     if (changed) {
       log.debug("Reconciled deck composition for {}", deckDTO.getWrestler());
     }
+  }
+
+  /**
+   * Version-change detection pass (seed-update review feature): classifies existing decks through
+   * {@link SeedCollisionDetector} instead of reconciling directly — tier-1 fields update silently
+   * and re-stamp, tier-2 fields park as PENDING decisions, tier-3 fields stay untouched. Only
+   * meaningful in PROTECT/VERIFY mode with existing rows. The domain's only seed-owned state is the
+   * card composition (single-blob row, Task 5's per-row parking contract): the one observed field
+   * is the sorted composition string.
+   */
+  void detectVersionChangeCollisions() {
+    if (syncSupport.mode() == SeedSyncMode.FULL) {
+      return; // FULL mode applies the seed everywhere
+    }
+    long start = System.currentTimeMillis();
+    ClassPathResource resource = new ClassPathResource("decks.json");
+    if (!resource.exists()) {
+      return;
+    }
+    try (var is = resource.getInputStream()) {
+      List<DeckDTO> decksFromFile = objectMapper.readValue(is, new TypeReference<>() {});
+      Map<String, Wrestler> wrestlers =
+          wrestlerRepository.findAll().stream()
+              .collect(Collectors.toMap(Wrestler::getName, w -> w, (a, b) -> a));
+      List<Deck> toSave = new ArrayList<>();
+      for (DeckDTO deckDTO : decksFromFile) {
+        Wrestler wrestler = wrestlers.get(deckDTO.getWrestler());
+        if (wrestler == null) {
+          continue; // user-created wrestlers have no seed match; missing decks are top-up's job
+        }
+        List<Deck> byWrestler = deckService.findByWrestlerWithCards(wrestler);
+        if (byWrestler.isEmpty()) {
+          continue; // no deck yet; top-up (which runs first) creates it
+        }
+        Deck deck = byWrestler.getFirst();
+        String newFingerprint =
+            SeedReviewDetectionSupport.incomingFingerprint(
+                provenanceManifest,
+                DOMAIN_KEY,
+                deckDTO.getWrestler(),
+                seedCompositionFingerprint(deckDTO));
+        boolean rowHasStoredStamp = SeedReviewDetectionSupport.hasStamp(deck.getSeedFingerprint());
+        List<SeedCollisionDetector.FieldObservation> observations =
+            fieldObservations(deck, deckDTO);
+        SeedReviewDetectionSupport.DetectionResult result =
+            SeedReviewDetectionSupport.detectRow(
+                DOMAIN_KEY,
+                entityKey(deckDTO.getWrestler()),
+                deckDTO.getWrestler(),
+                rowHasStoredStamp,
+                deck.getSeedFingerprint(),
+                observations,
+                this::deckValueListFingerprint,
+                newFingerprint,
+                seedReviewService);
+        String stamp =
+            SeedReviewDetectionSupport.stampForResolvedRow(
+                result.provenanceExact(), newFingerprint);
+        if (!result.silentUpdateFields().isEmpty()) {
+          // Tier-1 write set: ONLY the composition field, reconciled to the seed in place on the
+          // loaded deck (the service's save path is shared with verify mode's reconcile).
+          applySeedComposition(deck, deckDTO);
+          toSave.add(deck);
+        }
+        // Stamp-only rows must persist the re-stamp too: capture the change BEFORE setting it —
+        // comparing after the set reads the NEW value and the save is silently skipped forever
+        // (the row never converges).
+        if (stamp != null && !stamp.equals(deck.getSeedFingerprint())) {
+          deck.setSeedFingerprint(stamp);
+          if (!toSave.contains(deck)) {
+            toSave.add(deck);
+          }
+        }
+      }
+      if (!toSave.isEmpty()) {
+        deckService.saveAll(toSave);
+      }
+      log.info(
+          "Seed review detection (deck) complete ({} ms).", System.currentTimeMillis() - start);
+    } catch (IOException e) {
+      log.error("Error during deck seed-review detection", e);
+    }
+  }
+
+  /** The detection-time per-field observation for one deck row against its seed DTO. */
+  private List<SeedCollisionDetector.FieldObservation> fieldObservations(
+      Deck deck, DeckDTO deckDTO) {
+    List<SeedCollisionDetector.FieldObservation> obs = new ArrayList<>();
+    // The one seed-owned field: the deck's resolved seed composition. The DB side is the row's
+    // current composition in canonical form; the seed side is the seed's resolvable entries in the
+    // same canonical form (both render as the sorted "SET#number xN" multiset).
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "composition", null, canonicalComposition(deck.getCards()), seedComposition(deckDTO)));
+    return obs;
+  }
+
+  /** Canonical composition string for a set of deck cards (mirrors {@link #composition(Deck)}). */
+  private static String canonicalComposition(Set<DeckCard> deckCards) {
+    return deckCards.stream()
+        .filter(dc -> dc.getSet() != null && dc.getCard() != null)
+        .map(dc -> dc.getSet().getCode() + "#" + dc.getCard().getNumber() + "x" + dc.getAmount())
+        .sorted()
+        .collect(Collectors.joining("\n"));
+  }
+
+  /** The seed's resolvable composition entries, in the same canonical form as the DB side. */
+  private String seedComposition(DeckDTO deckDTO) {
+    Map<String, Integer> seedAmounts = new LinkedHashMap<>();
+    for (DeckCardDTO cardDTO : deckDTO.getCards()) {
+      Card card =
+          cardService.findByNumberAndSet(cardDTO.getNumber(), cardDTO.getSet()).orElse(null);
+      if (card == null) {
+        continue; // unresolvable entries are ignored, mirroring the seed write path
+      }
+      seedAmounts.merge(
+          card.getSet().getCode() + "#" + card.getNumber(), cardDTO.getAmount(), Integer::sum);
+    }
+    return seedAmounts.entrySet().stream()
+        .map(e -> e.getKey() + "x" + e.getValue())
+        .sorted()
+        .collect(Collectors.joining("\n"));
+  }
+
+  /** Fingerprint the incoming seed composition would produce, in canonical form. */
+  private String seedCompositionFingerprint(DeckDTO deckDTO) {
+    return syncSupport.fingerprint(seedComposition(deckDTO));
+  }
+
+  /**
+   * Re-hashes a field-value list (the {@link #fieldObservations} order) back into a row fingerprint
+   * — the hash-function half of the clean-row/single-edit provenance reconstruction. Serialization
+   * mirrors {@link #compositionFingerprint(Deck)} exactly.
+   */
+  private String deckValueListFingerprint(List<String> values) {
+    return syncSupport.fingerprint(values.getFirst());
+  }
+
+  private static String entityKey(String wrestlerName) {
+    return entityKeyFor(wrestlerName);
+  }
+
+  /**
+   * The canonical entity key for a deck's owning wrestler name — shared with {@code
+   * DeckSeedApplier} so apply-side resolution derives keys exactly as detection minted them.
+   */
+  static String entityKeyFor(String wrestlerName) {
+    return "deck:" + wrestlerName.toLowerCase().replace(' ', '-');
   }
 }
