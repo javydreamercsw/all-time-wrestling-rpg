@@ -91,6 +91,14 @@ public class WrestlerRelationship extends AbstractEntity<Long> {
   @Column(name = "notes", length = 1000)
   private String notes;
 
+  /**
+   * Per-row seed provenance stamp (seed-update review feature): the hash of the row's seed-owned
+   * fields as the last seed write left them. NULL = pre-fingerprint-era (legacy) or user-created
+   * row.
+   */
+  @Column(name = "seed_fingerprint", length = 64)
+  private String seedFingerprint;
+
   @PrePersist
   protected void onCreate() {
     if (creationDate == null) {

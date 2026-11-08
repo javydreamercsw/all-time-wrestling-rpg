@@ -23,15 +23,25 @@ import com.github.javydreamercsw.base.domain.account.Achievement;
 import com.github.javydreamercsw.base.domain.account.AchievementRepository;
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCard;
+import com.github.javydreamercsw.management.domain.campaign.CampaignUpgrade;
+import com.github.javydreamercsw.management.domain.campaign.CampaignUpgradeRepository;
 import com.github.javydreamercsw.management.domain.campaign.StatusCard;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardSet;
+import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
+import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.commentator.Commentator;
 import com.github.javydreamercsw.management.domain.commentator.CommentatorRepository;
 import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.npc.Npc;
+import com.github.javydreamercsw.management.domain.outcome.OutcomeMatrix;
+import com.github.javydreamercsw.management.domain.outcome.OutcomeMatrixEntry;
+import com.github.javydreamercsw.management.domain.outcome.OutcomeMatrixEntryRepository;
+import com.github.javydreamercsw.management.domain.outcome.OutcomeMatrixRepository;
+import com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship;
+import com.github.javydreamercsw.management.domain.relationship.WrestlerRelationshipRepository;
 import com.github.javydreamercsw.management.domain.show.segment.RingsideAction;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
@@ -54,6 +64,7 @@ import com.github.javydreamercsw.management.service.card.CardSetService;
 import com.github.javydreamercsw.management.service.deck.DeckService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
+import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionDataService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
@@ -65,14 +76,18 @@ import com.github.javydreamercsw.management.service.tournament.TournamentService
 import com.github.javydreamercsw.management.sync.AchievementSync;
 import com.github.javydreamercsw.management.sync.ArenaSync;
 import com.github.javydreamercsw.management.sync.CampaignAbilityCardSync;
+import com.github.javydreamercsw.management.sync.CampaignUpgradeSync;
 import com.github.javydreamercsw.management.sync.CardSync;
 import com.github.javydreamercsw.management.sync.ChampionshipSync;
+import com.github.javydreamercsw.management.sync.CommentaryTeamSync;
 import com.github.javydreamercsw.management.sync.CommentatorSync;
 import com.github.javydreamercsw.management.sync.DataSyncContributor;
 import com.github.javydreamercsw.management.sync.DeckSync;
 import com.github.javydreamercsw.management.sync.FactionSync;
 import com.github.javydreamercsw.management.sync.LocationSync;
 import com.github.javydreamercsw.management.sync.NpcSync;
+import com.github.javydreamercsw.management.sync.OutcomeMatrixSync;
+import com.github.javydreamercsw.management.sync.RelationshipSync;
 import com.github.javydreamercsw.management.sync.RingsideActionSync;
 import com.github.javydreamercsw.management.sync.SeedSyncSupport;
 import com.github.javydreamercsw.management.sync.SegmentRuleSync;
@@ -149,6 +164,22 @@ public final class GenerateSeedProvenanceManifest {
       Set.of("Faction Beatdown", "GM Office Confrontation", "Performance Review");
 
   /**
+   * Names + types of the rows {@code CampaignUpgradeService}'s {@code @PostConstruct} MERGEs into
+   * {@code campaign_upgrade} at bean creation (a full deleteAll + saveAll of the {@code
+   * campaign_upgrades.json} catalog) — boot bootstrap, not user data. The empty-DB precondition
+   * tolerates exactly these rows; any other pre-existing campaign_upgrade row aborts generation.
+   */
+  static final Map<String, String> SERVICE_BOOTSTRAP_UPGRADES =
+      Map.of(
+          "Iron Man", "STAMINA",
+          "Unbreakable", "HEALTH",
+          "Lethal Strike", "DAMAGE",
+          "Lethal Grapple", "DAMAGE",
+          "Lethal Throw", "DAMAGE",
+          "Lethal Aerial", "DAMAGE",
+          "Rope-a-dope", "DEFENSE");
+
+  /**
    * Seed resource patterns per manifest domain, mirroring the resolution style of the owning sync
    * (plain names resolve as {@link ClassPathResource}, {@code classpath*:} patterns through a
    * {@link PathMatchingResourcePatternResolver}).
@@ -160,14 +191,17 @@ public final class GenerateSeedProvenanceManifest {
               List.of("achievements.json", "classpath*:challenges/**/*achievements*.json")),
           Map.entry("arena", List.of("arenas.json")),
           Map.entry("campaign_ability_card", List.of("campaign_ability_cards.json")),
+          Map.entry("campaign_upgrade", List.of("campaign_upgrades.json")),
           Map.entry("card", List.of("classpath*:cards/*.json")),
           Map.entry("card_set", List.of("sets.json")),
           Map.entry("championship", List.of("championships.json")),
           Map.entry("commentator", List.of("commentators.json")),
+          Map.entry("commentary_team", List.of("commentary_teams.json")),
           Map.entry("deck", List.of("decks.json")),
           Map.entry("faction", List.of("factions.json")),
           Map.entry("location", List.of("locations.json")),
           Map.entry("npc", List.of("npcs.json")),
+          Map.entry("outcome_matrix", List.of("classpath*:outcome_matrices/*.json")),
           Map.entry(
               "ringside_action", List.of("ringside_action_types.json", "ringside_actions.json")),
           Map.entry("segment_rule", List.of("segment_rules.json")),
@@ -177,6 +211,7 @@ public final class GenerateSeedProvenanceManifest {
           Map.entry("status_card", List.of("status_cards.json")),
           Map.entry("team", List.of("teams.json")),
           Map.entry("tournament", List.of("tournaments.json")),
+          Map.entry("wrestler_relationship", List.of("relationships.json")),
           Map.entry(
               "wrestler",
               List.of(
@@ -499,6 +534,24 @@ public final class GenerateSeedProvenanceManifest {
     if (context.getBean(CampaignAbilityCardService.class).count() > 0) {
       return "campaign_ability_card";
     }
+    // campaign_upgrade tolerates pre-populated rows: CampaignUpgradeService's @PostConstruct
+    // loads campaign_upgrades.json at bean creation — BEFORE the sync phase — so the table is
+    // already boot-seeded when the precondition runs (same spirit as the V112 segment_rule
+    // bootstrap tolerance). The FULL sync's own load re-applies the seed content and the
+    // generator's re-hash then records the fresh stamps, so the manifest still reflects what the
+    // seed pipeline writes.
+    List<CampaignUpgrade> preExistingUpgrades =
+        context.getBean(CampaignUpgradeRepository.class).findAll();
+    boolean onlyServiceBootstrapUpgrades =
+        preExistingUpgrades.stream()
+            .allMatch(
+                u ->
+                    SERVICE_BOOTSTRAP_UPGRADES.containsKey(u.getName())
+                        && SERVICE_BOOTSTRAP_UPGRADES.get(u.getName()).equals(u.getType())
+                        && SeedSyncSupport.isBlankFingerprint(u.getSeedFingerprint()));
+    if (!onlyServiceBootstrapUpgrades) {
+      return "campaign_upgrade";
+    }
     if (context.getBean(CardService.class).count() > 0) {
       return "card";
     }
@@ -511,6 +564,9 @@ public final class GenerateSeedProvenanceManifest {
     if (context.getBean(CommentatorRepository.class).count() > 0) {
       return "commentator";
     }
+    if (context.getBean(CommentaryTeamRepository.class).count() > 0) {
+      return "commentary_team";
+    }
     if (context.getBean(DeckService.class).count() > 0) {
       return "deck";
     }
@@ -522,6 +578,9 @@ public final class GenerateSeedProvenanceManifest {
     }
     if (context.getBean(NpcService.class).count() > 0) {
       return "npc";
+    }
+    if (context.getBean(OutcomeMatrixRepository.class).count() > 0) {
+      return "outcome_matrix";
     }
     RingsideActionDataService ringsideActionDataService =
         context.getBean(RingsideActionDataService.class);
@@ -557,6 +616,9 @@ public final class GenerateSeedProvenanceManifest {
     }
     if (context.getBean(WrestlerRepository.class).count() > 0) {
       return "wrestler";
+    }
+    if (context.getBean(WrestlerRelationshipService.class).count() > 0) {
+      return "wrestler_relationship";
     }
     return null;
   }
@@ -612,6 +674,16 @@ public final class GenerateSeedProvenanceManifest {
     }
     domains.put("campaign_ability_card", abilityCards);
 
+    CampaignUpgradeSync upgradeSync = context.getBean(CampaignUpgradeSync.class);
+    Map<String, String> campaignUpgrades = new TreeMap<>();
+    for (CampaignUpgrade u : context.getBean(CampaignUpgradeRepository.class).findAll()) {
+      if (SeedSyncSupport.isBlankFingerprint(u.getSeedFingerprint())) {
+        continue;
+      }
+      campaignUpgrades.put(u.getName(), upgradeSync.upgradeFingerprint(u));
+    }
+    domains.put("campaign_upgrade", campaignUpgrades);
+
     CardSync cardSync = context.getBean(CardSync.class);
     Map<String, String> cards = new TreeMap<>();
     for (Card c : context.getBean(CardService.class).findAll()) {
@@ -651,6 +723,16 @@ public final class GenerateSeedProvenanceManifest {
       commentators.put(c.getNpc().getName(), commentatorSync.commentatorFingerprint(c));
     }
     domains.put("commentator", commentators);
+
+    CommentaryTeamSync commentaryTeamSync = context.getBean(CommentaryTeamSync.class);
+    Map<String, String> commentaryTeams = new TreeMap<>();
+    for (CommentaryTeam t : context.getBean(CommentaryTeamRepository.class).findAll()) {
+      if (SeedSyncSupport.isBlankFingerprint(t.getSeedFingerprint())) {
+        continue;
+      }
+      commentaryTeams.put(t.getName(), commentaryTeamSync.teamFingerprint(t));
+    }
+    domains.put("commentary_team", commentaryTeams);
 
     DeckSync deckSync = context.getBean(DeckSync.class);
     Map<String, String> decks = new TreeMap<>();
@@ -694,6 +776,25 @@ public final class GenerateSeedProvenanceManifest {
       npcs.put(n.getName(), npcSync.npcFingerprint(n, null));
     }
     domains.put("npc", npcs);
+
+    OutcomeMatrixSync outcomeMatrixSync = context.getBean(OutcomeMatrixSync.class);
+    Map<String, String> outcomeMatrices = new TreeMap<>();
+    for (OutcomeMatrix m : context.getBean(OutcomeMatrixRepository.class).findAll()) {
+      if (SeedSyncSupport.isBlankFingerprint(m.getSeedFingerprint())) {
+        continue;
+      }
+      outcomeMatrices.put(m.getName(), outcomeMatrixSync.matrixFingerprint(m));
+    }
+    for (OutcomeMatrixEntry e :
+        context.getBean(OutcomeMatrixEntryRepository.class).findAllWithMatrixAndRedirect()) {
+      if (SeedSyncSupport.isBlankFingerprint(e.getSeedFingerprint())) {
+        continue;
+      }
+      outcomeMatrices.put(
+          OutcomeMatrixSync.entrySeedKeyFor(e.getMatrix().getName(), e.getDiceRoll()),
+          outcomeMatrixSync.entryFingerprint(e));
+    }
+    domains.put("outcome_matrix", outcomeMatrices);
 
     RingsideActionSync ringsideSync = context.getBean(RingsideActionSync.class);
     Map<String, String> ringsideActions = new TreeMap<>();
@@ -785,6 +886,20 @@ public final class GenerateSeedProvenanceManifest {
       wrestlers.put(w.getName(), wrestlerSync.wrestlerFingerprint(w));
     }
     domains.put("wrestler", wrestlers);
+
+    RelationshipSync relationshipSync = context.getBean(RelationshipSync.class);
+    Map<String, String> relationships = new TreeMap<>();
+    for (WrestlerRelationship r :
+        context.getBean(WrestlerRelationshipRepository.class).findAllWithWrestlers()) {
+      if (SeedSyncSupport.isBlankFingerprint(r.getSeedFingerprint())) {
+        continue;
+      }
+      relationships.put(
+          RelationshipSync.relationshipSeedKeyFor(
+              r.getWrestler1().getName(), r.getWrestler2().getName(), r.getType()),
+          relationshipSync.relationshipFingerprint(r));
+    }
+    domains.put("wrestler_relationship", relationships);
 
     return domains;
   }

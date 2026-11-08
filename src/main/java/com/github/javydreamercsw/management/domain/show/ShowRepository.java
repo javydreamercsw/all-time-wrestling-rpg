@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.show;
 
+import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
 import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.universe.Universe;
@@ -50,6 +51,9 @@ public interface ShowRepository extends JpaRepository<Show, Long>, JpaSpecificat
 
   /** Whether any show is booked at the given arena (seed-review removal guard). */
   boolean existsByArena(Arena arena);
+
+  /** Whether any show fields the given commentary team (seed-review removal guard). */
+  boolean existsByCommentaryTeam(CommentaryTeam commentaryTeam);
 
   List<Show> findByUniverse(Universe universe);
 

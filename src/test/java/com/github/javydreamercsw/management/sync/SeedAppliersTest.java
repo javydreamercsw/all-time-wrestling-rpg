@@ -38,6 +38,7 @@ import com.github.javydreamercsw.management.domain.deck.DeckCardRepository;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.npc.NpcRepository;
+import com.github.javydreamercsw.management.domain.relationship.RelationshipType;
 import com.github.javydreamercsw.management.domain.seedreview.SeedUpdateDecision;
 import com.github.javydreamercsw.management.domain.seedreview.SeedUpdateDecisionRepository;
 import com.github.javydreamercsw.management.domain.show.segment.RingsideAction;
@@ -107,6 +108,10 @@ class SeedAppliersTest extends AbstractJpaTest {
   @Autowired private LocationSeedApplier locationApplier;
   @Autowired private TeamSeedApplier teamApplier;
   @Autowired private CommentatorSeedApplier commentatorApplier;
+  @Autowired private CommentaryTeamSeedApplier commentaryTeamApplier;
+  @Autowired private CampaignUpgradeSeedApplier campaignUpgradeApplier;
+  @Autowired private OutcomeMatrixSeedApplier outcomeMatrixApplier;
+  @Autowired private RelationshipSeedApplier relationshipApplier;
   @Autowired private WrestlerRepository wrestlerRepository;
   @Autowired private DeckRepository deckRepository;
   @Autowired private DeckCardRepository deckCardRepository;
@@ -194,6 +199,22 @@ class SeedAppliersTest extends AbstractJpaTest {
 
   @Autowired
   private com.github.javydreamercsw.management.domain.npc.NpcRepository npcRepositoryTest;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.outcome.OutcomeMatrixRepository
+      outcomeMatrixRepositoryTest;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.outcome.OutcomeMatrixEntryRepository
+      outcomeMatrixEntryRepositoryTest;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.relationship.WrestlerRelationshipRepository
+      wrestlerRelationshipRepositoryTest;
+
+  @Autowired
+  private com.github.javydreamercsw.management.domain.campaign.CampaignUpgradeRepository
+      campaignUpgradeRepositoryTest;
 
   @Autowired
   private com.github.javydreamercsw.management.domain.tournament.TrophyReignRepository
@@ -3065,5 +3086,711 @@ class SeedAppliersTest extends AbstractJpaTest {
         SeedUpdateDecision.STATUS_PENDING,
         decisionRepository.findById(decision.getId()).orElseThrow().getStatus(),
         "the refused removal decision must stay pending");
+  }
+
+  // ── Slice D: the 24-path verb matrix for commentary-team/campaign-upgrade/outcome-matrix/
+  // relationship ──. Same per-domain shape as the Slice C block: USE_NEW through the reminted
+  // entity key, KEEP_MINE (stamp without changing the value), KEEP_AS_CUSTOM (clear the stamp),
+  // and REMOVE — positive where the domain's real-FK guard permits a genuinely orphaned row, plus
+  // the refusal pins for every FK the entity model holds.
+
+  private com.github.javydreamercsw.management.domain.commentator.CommentaryTeam
+      commentaryTeamFixture(String name, List<String> memberNpcNames) {
+    return commentaryTeamRepositoryTest.findAll().stream()
+        .filter(t -> name.equals(t.getName()))
+        .findFirst()
+        .orElseGet(
+            () -> {
+              com.github.javydreamercsw.management.domain.commentator.CommentaryTeam t =
+                  new com.github.javydreamercsw.management.domain.commentator.CommentaryTeam();
+              t.setName(name);
+              for (String npcName : memberNpcNames) {
+                Npc npc =
+                    npcRepositoryTest
+                        .findByName(npcName)
+                        .orElseGet(
+                            () -> {
+                              Npc n = new Npc();
+                              n.setName(npcName);
+                              n.setDescription("commentator description");
+                              n.setNpcType("Commentator");
+                              return npcRepositoryTest.save(n);
+                            });
+                com.github.javydreamercsw.management.domain.commentator.Commentator c =
+                    new com.github.javydreamercsw.management.domain.commentator.Commentator();
+                c.setNpc(npc);
+                c.setStyle("Play-by-play");
+                t.getCommentators().add(commentatorRepositoryTest.save(c));
+              }
+              return commentaryTeamRepositoryTest.save(t);
+            });
+  }
+
+  @Test
+  void commentaryTeamApplierAppliesUseNewThroughEntityKey() {
+    // The membership apply path: USE_NEW resolves the decision's newline-joined member list back
+    // to commentator rows through the service (the drifted display name never takes part) — the
+    // new members must exist as commentator rows for the service to field them.
+    var team = commentaryTeamFixture("Applier Crew", List.of("Old Member"));
+    commentatorFixture("New Member One");
+    commentatorFixture("New Member Two");
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "commentary_team",
+            CommentaryTeamSync.entityKeyFor("Applier Crew"),
+            "Drifted Display Crew", // display name drifts — resolution must ignore it
+            "members",
+            "Old Member",
+            "New Member One\nNew Member Two",
+            "fp-team");
+    service(commentaryTeamApplier).apply(Map.of(decision.getId(), SeedFieldDecision.USE_NEW));
+
+    flushAndClear();
+    var reloaded = commentaryTeamRepositoryTest.findById(team.getId()).orElseThrow();
+    assertEquals(
+        List.of("New Member One", "New Member Two"),
+        reloaded.getCommentators().stream().map(c -> c.getNpc().getName()).sorted().toList(),
+        "USE_NEW must rebuild the membership from the decision's captured names");
+    assertEquals("fp-team", reloaded.getSeedFingerprint(), "USE_NEW must stamp the row");
+  }
+
+  @Test
+  void commentaryTeamApplierKeepMineStampsWithoutChangingMembership() {
+    var team = commentaryTeamFixture("Keep Mine Crew", List.of("Admin Member"));
+    List<String> before =
+        team.getCommentators().stream().map(c -> c.getNpc().getName()).sorted().toList();
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "commentary_team",
+            CommentaryTeamSync.entityKeyFor("Keep Mine Crew"),
+            "Keep Mine Crew",
+            "members",
+            "Admin Member",
+            "seed member",
+            "fp-keep");
+    service(commentaryTeamApplier).apply(Map.of(decision.getId(), SeedFieldDecision.KEEP_MINE));
+
+    flushAndClear();
+    var reloaded = commentaryTeamRepositoryTest.findById(team.getId()).orElseThrow();
+    assertEquals(
+        before,
+        reloaded.getCommentators().stream().map(c -> c.getNpc().getName()).sorted().toList(),
+        "KEEP_MINE must keep the admin's membership");
+    assertEquals("fp-keep", reloaded.getSeedFingerprint(), "KEEP_MINE must stamp the row");
+  }
+
+  @Test
+  void commentaryTeamApplierKeepAsCustomClearsStamp() {
+    var team = commentaryTeamFixture("Custom Crew", List.of("Custom Member"));
+    team.setSeedFingerprint("fp-old");
+    commentaryTeamRepositoryTest.save(team);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "commentary_team",
+            CommentaryTeamSync.entityKeyFor("Custom Crew"),
+            "Custom Crew",
+            "members",
+            "Custom Member",
+            "seed member",
+            "fp-new");
+    service(commentaryTeamApplier)
+        .apply(Map.of(decision.getId(), SeedFieldDecision.KEEP_AS_CUSTOM));
+
+    flushAndClear();
+    var reloaded = commentaryTeamRepositoryTest.findById(team.getId()).orElseThrow();
+    assertEquals(
+        List.of("Custom Member"),
+        reloaded.getCommentators().stream().map(c -> c.getNpc().getName()).sorted().toList(),
+        "KEEP_AS_CUSTOM must keep the admin's membership");
+    assertNull(reloaded.getSeedFingerprint(), "KEEP_AS_CUSTOM must clear the team's stamp");
+  }
+
+  @Test
+  void commentaryTeamApplierRemoveDeletesOrphanedRow() {
+    // A team no show or template fields is genuinely removable.
+    var orphan = commentaryTeamFixture("Orphaned Crew", List.of("Orphan Member"));
+    orphan.setSeedFingerprint("fp-old");
+    commentaryTeamRepositoryTest.save(orphan);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        parkRemoval(
+            "commentary_team",
+            CommentaryTeamSync.entityKeyFor("Orphaned Crew"),
+            "Orphaned Crew",
+            "fp");
+    service(commentaryTeamApplier).apply(Map.of(decision.getId(), SeedFieldDecision.REMOVE));
+
+    flushAndClear();
+    assertFalse(
+        commentaryTeamRepositoryTest.findById(orphan.getId()).isPresent(),
+        "REMOVE must delete the orphaned commentary team");
+    assertEquals(
+        SeedUpdateDecision.STATUS_APPLIED_REMOVE,
+        decisionRepository.findById(decision.getId()).orElseThrow().getStatus());
+  }
+
+  @Test
+  void commentaryTeamApplierRemoveRefusedWhenShowBooked() {
+    // A show fields the team: the pre-dispatch hasDependents check must refuse — deleting the
+    // team would orphan the show's commentary_team FK.
+    var referenced = commentaryTeamFixture("Booked Crew", List.of("Booked Member"));
+    var showType = showTypeFixture("Crew Show Type");
+    var show = new com.github.javydreamercsw.management.domain.show.Show();
+    show.setName("Crew Seed Applier Show");
+    show.setDescription("a show");
+    show.setType(showType);
+    show.setCommentaryTeam(referenced);
+    show.setCreationDate(Instant.now());
+    showRepository.save(show);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        parkRemoval(
+            "commentary_team", CommentaryTeamSync.entityKeyFor("Booked Crew"), "Booked Crew", "fp");
+    IllegalStateException exception =
+        assertThrows(
+            IllegalStateException.class,
+            () ->
+                service(commentaryTeamApplier)
+                    .apply(Map.of(decision.getId(), SeedFieldDecision.REMOVE)));
+    assertTrue(
+        exception.getMessage().contains("references it"),
+        "removal of a booked commentary team must be refused by the pre-dispatch check");
+    flushAndClear();
+    assertTrue(
+        commentaryTeamRepositoryTest.findById(referenced.getId()).isPresent(),
+        "the booked commentary team must survive the refused removal");
+    assertEquals(
+        SeedUpdateDecision.STATUS_PENDING,
+        decisionRepository.findById(decision.getId()).orElseThrow().getStatus(),
+        "the refused removal decision must stay pending");
+  }
+
+  private com.github.javydreamercsw.management.domain.campaign.CampaignUpgrade upgradeFixture(
+      String name, String description, String type) {
+    return campaignUpgradeRepositoryTest.findAll().stream()
+        .filter(u -> name.equals(u.getName()))
+        .findFirst()
+        .orElseGet(
+            () ->
+                campaignUpgradeRepositoryTest.save(
+                    com.github.javydreamercsw.management.domain.campaign.CampaignUpgrade.builder()
+                        .name(name)
+                        .description(description)
+                        .type(type)
+                        .build()));
+  }
+
+  @Test
+  void campaignUpgradeApplierAppliesUseNewThroughEntityKey() {
+    var upgrade = upgradeFixture("Applier Upgrade", "old description", "STAMINA");
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "campaign_upgrade",
+            CampaignUpgradeSync.entityKeyFor("Applier Upgrade"),
+            "Drifted Display Upgrade", // display name drifts — resolution must ignore it
+            "description",
+            "old description",
+            "fresh seed description",
+            "fp-upgrade");
+    service(campaignUpgradeApplier).apply(Map.of(decision.getId(), SeedFieldDecision.USE_NEW));
+
+    flushAndClear();
+    var reloaded = campaignUpgradeRepositoryTest.findById(upgrade.getId()).orElseThrow();
+    assertEquals(
+        "fresh seed description",
+        reloaded.getDescription(),
+        "USE_NEW must reach the row resolved through the reminted entity key");
+    assertEquals("fp-upgrade", reloaded.getSeedFingerprint(), "USE_NEW must stamp the row");
+  }
+
+  @Test
+  void campaignUpgradeApplierKeepMineStampsWithoutChangingValue() {
+    var upgrade = upgradeFixture("Keep Mine Upgrade", "admin's description", "HEALTH");
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "campaign_upgrade",
+            CampaignUpgradeSync.entityKeyFor("Keep Mine Upgrade"),
+            "Keep Mine Upgrade",
+            "description",
+            "admin's description",
+            "seed description",
+            "fp-keep");
+    service(campaignUpgradeApplier).apply(Map.of(decision.getId(), SeedFieldDecision.KEEP_MINE));
+
+    flushAndClear();
+    var reloaded = campaignUpgradeRepositoryTest.findById(upgrade.getId()).orElseThrow();
+    assertEquals(
+        "admin's description", reloaded.getDescription(), "KEEP_MINE must keep the admin's value");
+    assertEquals("fp-keep", reloaded.getSeedFingerprint(), "KEEP_MINE must stamp the row");
+  }
+
+  @Test
+  void campaignUpgradeApplierKeepAsCustomClearsStamp() {
+    var upgrade = upgradeFixture("Custom Upgrade", "admin lore", "DEFENSE");
+    upgrade.setSeedFingerprint("fp-old");
+    campaignUpgradeRepositoryTest.save(upgrade);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "campaign_upgrade",
+            CampaignUpgradeSync.entityKeyFor("Custom Upgrade"),
+            "Custom Upgrade",
+            "description",
+            "admin lore",
+            "seed description",
+            "fp-new");
+    service(campaignUpgradeApplier)
+        .apply(Map.of(decision.getId(), SeedFieldDecision.KEEP_AS_CUSTOM));
+
+    flushAndClear();
+    var reloaded = campaignUpgradeRepositoryTest.findById(upgrade.getId()).orElseThrow();
+    assertEquals(
+        "admin lore", reloaded.getDescription(), "KEEP_AS_CUSTOM must keep the admin's value");
+    assertNull(reloaded.getSeedFingerprint(), "KEEP_AS_CUSTOM must clear the upgrade's stamp");
+  }
+
+  @Test
+  void campaignUpgradeApplierRemoveDeletesOrphanedRow() {
+    // An upgrade no campaign state owns is genuinely removable.
+    var orphan = upgradeFixture("Orphaned Upgrade", "unused", "DAMAGE");
+    orphan.setSeedFingerprint("fp-old");
+    campaignUpgradeRepositoryTest.save(orphan);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        parkRemoval(
+            "campaign_upgrade",
+            CampaignUpgradeSync.entityKeyFor("Orphaned Upgrade"),
+            "Orphaned Upgrade",
+            "fp");
+    service(campaignUpgradeApplier).apply(Map.of(decision.getId(), SeedFieldDecision.REMOVE));
+
+    flushAndClear();
+    assertFalse(
+        campaignUpgradeRepositoryTest.findById(orphan.getId()).isPresent(),
+        "REMOVE must delete the orphaned campaign upgrade");
+    assertEquals(
+        SeedUpdateDecision.STATUS_APPLIED_REMOVE,
+        decisionRepository.findById(decision.getId()).orElseThrow().getStatus());
+  }
+
+  @Test
+  void campaignUpgradeApplierRemoveRefusedWhenCampaignStateOwnsIt() {
+    // A campaign state holds the upgrade as owned: the pre-dispatch hasDependents check must
+    // refuse — deleting the upgrade would orphan the campaign_state_upgrades join row.
+    var referenced = upgradeFixture("Owned Upgrade", "used", "STAMINA");
+    Wrestler player = wrestlerRepository.save(Wrestler.builder().name("Upgrade Player").build());
+    com.github.javydreamercsw.management.domain.campaign.Campaign campaign =
+        com.github.javydreamercsw.management.domain.campaign.Campaign.builder()
+            .wrestler(player)
+            .status(com.github.javydreamercsw.management.domain.campaign.CampaignStatus.ACTIVE)
+            .build();
+    campaign = campaignRepository.save(campaign);
+    com.github.javydreamercsw.management.domain.campaign.CampaignState state =
+        com.github.javydreamercsw.management.domain.campaign.CampaignState.builder()
+            .campaign(campaign)
+            .upgrades(new java.util.ArrayList<>(List.of(referenced))) // the FK the guard protects
+            .build();
+    campaignStateRepository.save(state);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        parkRemoval(
+            "campaign_upgrade",
+            CampaignUpgradeSync.entityKeyFor("Owned Upgrade"),
+            "Owned Upgrade",
+            "fp");
+    IllegalStateException exception =
+        assertThrows(
+            IllegalStateException.class,
+            () ->
+                service(campaignUpgradeApplier)
+                    .apply(Map.of(decision.getId(), SeedFieldDecision.REMOVE)));
+    assertTrue(
+        exception.getMessage().contains("references it"),
+        "removal of an owned upgrade must be refused by the pre-dispatch check");
+    flushAndClear();
+    assertTrue(
+        campaignUpgradeRepositoryTest.findById(referenced.getId()).isPresent(),
+        "the owned upgrade must survive the refused removal");
+    assertEquals(
+        SeedUpdateDecision.STATUS_PENDING,
+        decisionRepository.findById(decision.getId()).orElseThrow().getStatus(),
+        "the refused removal decision must stay pending");
+  }
+
+  private com.github.javydreamercsw.management.domain.outcome.OutcomeMatrix matrixFixture(
+      String name) {
+    return outcomeMatrixRepositoryTest
+        .findByNameIgnoreCase(name)
+        .orElseGet(
+            () -> {
+              com.github.javydreamercsw.management.domain.outcome.OutcomeMatrix m =
+                  new com.github.javydreamercsw.management.domain.outcome.OutcomeMatrix();
+              m.setName(name);
+              m.setDescription("original");
+              m.setCategory(
+                  com.github.javydreamercsw.management.domain.outcome.OutcomeMatrixCategory
+                      .MATCH_FLOW);
+              return outcomeMatrixRepositoryTest.save(m);
+            });
+  }
+
+  private com.github.javydreamercsw.management.domain.outcome.OutcomeMatrixEntry matrixEntryFixture(
+      com.github.javydreamercsw.management.domain.outcome.OutcomeMatrix matrix,
+      int roll,
+      String text) {
+    return outcomeMatrixEntryRepositoryTest
+        .findByMatrixAndDiceRoll(matrix, roll)
+        .orElseGet(
+            () -> {
+              com.github.javydreamercsw.management.domain.outcome.OutcomeMatrixEntry e =
+                  new com.github.javydreamercsw.management.domain.outcome.OutcomeMatrixEntry();
+              e.setMatrix(matrix);
+              e.setDiceRoll(roll);
+              e.setTemplateText(text);
+              return outcomeMatrixEntryRepositoryTest.save(e);
+            });
+  }
+
+  @Test
+  void outcomeMatrixApplierAppliesUseNewThroughEntityKey() {
+    // Both row families resolve through their reminted keys: the matrix header by its name slug,
+    // the entry by the owner slug plus the roll.
+    var matrix = matrixFixture("Applier Matrix");
+    matrix.setDescription("old description");
+    outcomeMatrixRepositoryTest.save(matrix);
+    var entry = matrixEntryFixture(matrix, 42, "old template");
+    flushAndClear();
+
+    SeedUpdateDecision matrixDecision =
+        park(
+            "outcome_matrix",
+            OutcomeMatrixSync.matrixEntityKeyFor("Applier Matrix"),
+            "Drifted Display Matrix", // display name drifts — resolution must ignore it
+            "description",
+            "old description",
+            "fresh matrix description",
+            "fp-matrix");
+    SeedUpdateDecision entryDecision =
+        park(
+            "outcome_matrix",
+            OutcomeMatrixSync.entryEntityKeyFor("Applier Matrix", 42),
+            "Applier Matrix (roll 42)",
+            "templateText",
+            "old template",
+            "fresh entry template",
+            "fp-entry");
+
+    service(outcomeMatrixApplier)
+        .apply(
+            Map.of(
+                matrixDecision.getId(),
+                SeedFieldDecision.USE_NEW,
+                entryDecision.getId(),
+                SeedFieldDecision.USE_NEW));
+
+    flushAndClear();
+    var reloadedMatrix = outcomeMatrixRepositoryTest.findById(matrix.getId()).orElseThrow();
+    assertEquals(
+        "fresh matrix description",
+        reloadedMatrix.getDescription(),
+        "USE_NEW must reach the matrix header through its reminted key");
+    assertEquals("fp-matrix", reloadedMatrix.getSeedFingerprint(), "USE_NEW must stamp the row");
+    var reloadedEntry = outcomeMatrixEntryRepositoryTest.findById(entry.getId()).orElseThrow();
+    assertEquals(
+        "fresh entry template",
+        reloadedEntry.getTemplateText(),
+        "USE_NEW must reach the entry row through its owner-slug+roll key");
+    assertEquals("fp-entry", reloadedEntry.getSeedFingerprint(), "USE_NEW must stamp the row");
+  }
+
+  @Test
+  void outcomeMatrixApplierKeepMineStampsWithoutChangingValue() {
+    var matrix = matrixFixture("Keep Mine Matrix");
+    String adminDescription = "admin's chart notes";
+    matrix.setDescription(adminDescription);
+    outcomeMatrixRepositoryTest.save(matrix);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "outcome_matrix",
+            OutcomeMatrixSync.matrixEntityKeyFor("Keep Mine Matrix"),
+            "Keep Mine Matrix",
+            "description",
+            adminDescription,
+            "seed description",
+            "fp-keep");
+    service(outcomeMatrixApplier).apply(Map.of(decision.getId(), SeedFieldDecision.KEEP_MINE));
+
+    flushAndClear();
+    var reloaded = outcomeMatrixRepositoryTest.findById(matrix.getId()).orElseThrow();
+    assertEquals(
+        adminDescription, reloaded.getDescription(), "KEEP_MINE must keep the admin's value");
+    assertEquals("fp-keep", reloaded.getSeedFingerprint(), "KEEP_MINE must stamp the row");
+  }
+
+  @Test
+  void outcomeMatrixApplierKeepAsCustomClearsStamp() {
+    var matrix = matrixFixture("Custom Matrix");
+    matrix.setDescription("admin notes");
+    matrix.setSeedFingerprint("fp-old");
+    outcomeMatrixRepositoryTest.save(matrix);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "outcome_matrix",
+            OutcomeMatrixSync.matrixEntityKeyFor("Custom Matrix"),
+            "Custom Matrix",
+            "description",
+            "admin notes",
+            "seed description",
+            "fp-new");
+    service(outcomeMatrixApplier).apply(Map.of(decision.getId(), SeedFieldDecision.KEEP_AS_CUSTOM));
+
+    flushAndClear();
+    var reloaded = outcomeMatrixRepositoryTest.findById(matrix.getId()).orElseThrow();
+    assertEquals(
+        "admin notes", reloaded.getDescription(), "KEEP_AS_CUSTOM must keep the admin's value");
+    assertNull(reloaded.getSeedFingerprint(), "KEEP_AS_CUSTOM must clear the matrix's stamp");
+  }
+
+  @Test
+  void outcomeMatrixApplierRemoveDeletesOrphanedEntry() {
+    // An entry row is leaf content (no FK points at an entry) — genuinely removable.
+    var matrix = matrixFixture("Removal Matrix");
+    var orphan = matrixEntryFixture(matrix, 7, "unused template");
+    orphan.setSeedFingerprint("fp-old");
+    outcomeMatrixEntryRepositoryTest.save(orphan);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        parkRemoval(
+            "outcome_matrix",
+            OutcomeMatrixSync.entryEntityKeyFor("Removal Matrix", 7),
+            "Removal Matrix (roll 7)",
+            "fp");
+    service(outcomeMatrixApplier).apply(Map.of(decision.getId(), SeedFieldDecision.REMOVE));
+
+    flushAndClear();
+    assertFalse(
+        outcomeMatrixEntryRepositoryTest.findById(orphan.getId()).isPresent(),
+        "REMOVE must delete the orphaned entry row");
+    assertEquals(
+        SeedUpdateDecision.STATUS_APPLIED_REMOVE,
+        decisionRepository.findById(decision.getId()).orElseThrow().getStatus());
+  }
+
+  @Test
+  void outcomeMatrixApplierRemoveDeletesUnredirectedMatrix() {
+    // A matrix no entry redirects to is genuinely removable (its own entries are its content —
+    // the cascade owns them, not a dependent).
+    var orphan = matrixFixture("Orphaned Matrix");
+    orphan.setSeedFingerprint("fp-old");
+    outcomeMatrixRepositoryTest.save(orphan);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        parkRemoval(
+            "outcome_matrix",
+            OutcomeMatrixSync.matrixEntityKeyFor("Orphaned Matrix"),
+            "Orphaned Matrix",
+            "fp");
+    service(outcomeMatrixApplier).apply(Map.of(decision.getId(), SeedFieldDecision.REMOVE));
+
+    flushAndClear();
+    assertFalse(
+        outcomeMatrixRepositoryTest.findById(orphan.getId()).isPresent(),
+        "REMOVE must delete the unredirected matrix");
+    assertEquals(
+        SeedUpdateDecision.STATUS_APPLIED_REMOVE,
+        decisionRepository.findById(decision.getId()).orElseThrow().getStatus());
+  }
+
+  @Test
+  void outcomeMatrixApplierRemoveRefusedWhenRedirectTargetsIt() {
+    // Another entry redirects to the matrix: the pre-dispatch hasDependents check must refuse —
+    // deleting the target would orphan the redirect FK.
+    var target = matrixFixture("Redirect Target Matrix");
+    var source = matrixFixture("Redirect Source Matrix");
+    var entry = matrixEntryFixture(source, 3, "redirect entry");
+    entry.setRedirectToMatrix(target);
+    outcomeMatrixEntryRepositoryTest.save(entry);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        parkRemoval(
+            "outcome_matrix",
+            OutcomeMatrixSync.matrixEntityKeyFor("Redirect Target Matrix"),
+            "Redirect Target Matrix",
+            "fp");
+    IllegalStateException exception =
+        assertThrows(
+            IllegalStateException.class,
+            () ->
+                service(outcomeMatrixApplier)
+                    .apply(Map.of(decision.getId(), SeedFieldDecision.REMOVE)));
+    assertTrue(
+        exception.getMessage().contains("references it"),
+        "removal of a redirect-target matrix must be refused by the pre-dispatch check");
+    flushAndClear();
+    assertTrue(
+        outcomeMatrixRepositoryTest.findById(target.getId()).isPresent(),
+        "the redirect target must survive the refused removal");
+    assertEquals(
+        SeedUpdateDecision.STATUS_PENDING,
+        decisionRepository.findById(decision.getId()).orElseThrow().getStatus(),
+        "the refused removal decision must stay pending");
+  }
+
+  private com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship
+      relationshipFixture(
+          Wrestler w1, Wrestler w2, RelationshipType type, int level, String notes) {
+    return wrestlerRelationshipRepositoryTest.findAllWithWrestlers().stream()
+        .filter(
+            r ->
+                r.getType() == type
+                    && ((r.getWrestler1().equals(w1) && r.getWrestler2().equals(w2))
+                        || (r.getWrestler1().equals(w2) && r.getWrestler2().equals(w1))))
+        .findFirst()
+        .orElseGet(
+            () -> {
+              com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship r =
+                  com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship
+                      .builder()
+                      .wrestler1(w1)
+                      .wrestler2(w2)
+                      .type(type)
+                      .level(level)
+                      .isStoryline(false)
+                      .build();
+              r.setNotes(notes);
+              return wrestlerRelationshipRepositoryTest.save(r);
+            });
+  }
+
+  @Test
+  void relationshipApplierAppliesUseNewThroughEntityKey() {
+    Wrestler w1 = wrestlerRepository.save(Wrestler.builder().name("Applier Partner").build());
+    Wrestler w2 = wrestlerRepository.save(Wrestler.builder().name("Applier Sweetheart").build());
+    var relationship = relationshipFixture(w1, w2, RelationshipType.SPOUSE, 50, "old note");
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "wrestler_relationship",
+            RelationshipSync.entityKeyFor(
+                "Applier Partner", "Applier Sweetheart", RelationshipType.SPOUSE),
+            "Drifted Display <SPOUSE> Pair", // display name drifts — resolution must ignore it
+            "notes",
+            "old note",
+            "fresh seed note",
+            "fp-rel");
+    service(relationshipApplier).apply(Map.of(decision.getId(), SeedFieldDecision.USE_NEW));
+
+    flushAndClear();
+    var reloaded = wrestlerRelationshipRepositoryTest.findById(relationship.getId()).orElseThrow();
+    assertEquals(
+        "fresh seed note",
+        reloaded.getNotes(),
+        "USE_NEW must reach the row resolved through the reminted entity key");
+    assertEquals("fp-rel", reloaded.getSeedFingerprint(), "USE_NEW must stamp the row");
+  }
+
+  @Test
+  void relationshipApplierKeepMineStampsWithoutChangingValue() {
+    Wrestler w1 = wrestlerRepository.save(Wrestler.builder().name("Keep Partner").build());
+    Wrestler w2 = wrestlerRepository.save(Wrestler.builder().name("Keep Sweetheart").build());
+    var relationship = relationshipFixture(w1, w2, RelationshipType.BEST_FRIEND, 77, "admin note");
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "wrestler_relationship",
+            RelationshipSync.entityKeyFor(
+                "Keep Partner", "Keep Sweetheart", RelationshipType.BEST_FRIEND),
+            "Keep Partner <BEST_FRIEND> Keep Sweetheart",
+            "level",
+            "77",
+            "50",
+            "fp-keep");
+    service(relationshipApplier).apply(Map.of(decision.getId(), SeedFieldDecision.KEEP_MINE));
+
+    flushAndClear();
+    var reloaded = wrestlerRelationshipRepositoryTest.findById(relationship.getId()).orElseThrow();
+    assertEquals(77, reloaded.getLevel(), "KEEP_MINE must keep the admin's level");
+    assertEquals("fp-keep", reloaded.getSeedFingerprint(), "KEEP_MINE must stamp the row");
+  }
+
+  @Test
+  void relationshipApplierKeepAsCustomClearsStamp() {
+    Wrestler w1 = wrestlerRepository.save(Wrestler.builder().name("Custom Partner").build());
+    Wrestler w2 = wrestlerRepository.save(Wrestler.builder().name("Custom Sweetheart").build());
+    var relationship = relationshipFixture(w1, w2, RelationshipType.MENTOR, 40, "admin note");
+    relationship.setSeedFingerprint("fp-old");
+    wrestlerRelationshipRepositoryTest.save(relationship);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "wrestler_relationship",
+            RelationshipSync.entityKeyFor(
+                "Custom Partner", "Custom Sweetheart", RelationshipType.MENTOR),
+            "Custom Partner <MENTOR> Custom Sweetheart",
+            "notes",
+            "admin note",
+            "seed note",
+            "fp-new");
+    service(relationshipApplier).apply(Map.of(decision.getId(), SeedFieldDecision.KEEP_AS_CUSTOM));
+
+    flushAndClear();
+    var reloaded = wrestlerRelationshipRepositoryTest.findById(relationship.getId()).orElseThrow();
+    assertEquals("admin note", reloaded.getNotes(), "KEEP_AS_CUSTOM must keep the admin's value");
+    assertNull(reloaded.getSeedFingerprint(), "KEEP_AS_CUSTOM must clear the relationship's stamp");
+  }
+
+  @Test
+  void relationshipApplierRemoveDeletesTheRow() {
+    // A relationship is its own gameplay edge — no FK points at it (verified against the entity
+    // model: Wrestler's inverse sides map the same rows, they do not reference them
+    // independently). The removal deletes the edge.
+    Wrestler w1 = wrestlerRepository.save(Wrestler.builder().name("Doomed Partner").build());
+    Wrestler w2 = wrestlerRepository.save(Wrestler.builder().name("Doomed Sweetheart").build());
+    var doomed = relationshipFixture(w1, w2, RelationshipType.ROMANCE, 60, "unused note");
+    doomed.setSeedFingerprint("fp-old");
+    wrestlerRelationshipRepositoryTest.save(doomed);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        parkRemoval(
+            "wrestler_relationship",
+            RelationshipSync.entityKeyFor(
+                "Doomed Partner", "Doomed Sweetheart", RelationshipType.ROMANCE),
+            "Doomed Partner <ROMANCE> Doomed Sweetheart",
+            "fp");
+    service(relationshipApplier).apply(Map.of(decision.getId(), SeedFieldDecision.REMOVE));
+
+    flushAndClear();
+    assertFalse(
+        wrestlerRelationshipRepositoryTest.findById(doomed.getId()).isPresent(),
+        "REMOVE must delete the relationship edge");
+    assertEquals(
+        SeedUpdateDecision.STATUS_APPLIED_REMOVE,
+        decisionRepository.findById(decision.getId()).orElseThrow().getStatus());
   }
 }

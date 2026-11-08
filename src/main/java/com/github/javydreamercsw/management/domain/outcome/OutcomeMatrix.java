@@ -63,4 +63,12 @@ public class OutcomeMatrix extends AbstractEntity<Long> {
       orphanRemoval = true,
       fetch = FetchType.LAZY)
   private List<OutcomeMatrixEntry> entries = new ArrayList<>();
+
+  /**
+   * Per-row seed provenance stamp (seed-update review feature): the hash of the row's seed-owned
+   * fields as the last seed write left them. NULL = pre-fingerprint-era (legacy) or user-created
+   * row.
+   */
+  @Column(name = "seed_fingerprint", length = 64)
+  private String seedFingerprint;
 }
