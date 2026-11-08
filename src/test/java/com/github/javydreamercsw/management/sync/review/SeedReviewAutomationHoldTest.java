@@ -62,6 +62,7 @@ class SeedReviewAutomationHoldTest extends AbstractJpaTest {
 
   @Autowired private SeedUpdateDecisionRepository decisionRepository;
   @Autowired private DataMigrationHistoryRepository historyRepository;
+  @Autowired private GameSettingRepository gameSettingRepository;
   @Autowired private EntityManager entityManager;
 
   private SeedReviewGate gate;
@@ -79,10 +80,10 @@ class SeedReviewAutomationHoldTest extends AbstractJpaTest {
     reviewService =
         new SeedUpdateReviewService(
             decisionRepository,
-            historyRepository,
             Optional.of(buildProperties),
             gate,
-            mock(ApplicationEventPublisher.class));
+            mock(ApplicationEventPublisher.class),
+            gameSettingRepository);
     config = new SeedReviewConfig(reviewService);
   }
 

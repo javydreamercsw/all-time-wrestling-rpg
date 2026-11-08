@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.deck;
 
+import com.github.javydreamercsw.management.domain.card.Card;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -25,4 +26,7 @@ public interface DeckCardRepository extends JpaRepository<DeckCard, Long> {
   Optional<DeckCard> findByDeckIdAndCardIdAndSetId(Long deckId, Long cardId, Long setId);
 
   List<DeckCard> findByDeck(Deck deck);
+
+  /** Deck entries holding a card (seed-review removal dependent check). */
+  List<DeckCard> findByCard(Card card);
 }

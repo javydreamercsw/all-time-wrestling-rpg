@@ -31,6 +31,7 @@ import com.github.javydreamercsw.management.dto.*;
 import com.github.javydreamercsw.management.migration.DataMigrationRunner;
 import com.github.javydreamercsw.management.sync.DataSyncContributor;
 import com.github.javydreamercsw.management.sync.review.SeedReviewConfig;
+import com.github.javydreamercsw.management.sync.review.SeedReviewDetectionOrchestrator;
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
@@ -52,6 +53,7 @@ class DataInitializerTest {
   @Mock private DataSyncContributor contributor;
   @Mock private DataMigrationRunner dataMigrationRunner;
   @Mock private SeedReviewConfig seedReviewConfig;
+  @Mock private SeedReviewDetectionOrchestrator seedReviewDetectionOrchestrator;
 
   private DataInitializer dataInitializer;
   private final ObjectMapper objectMapper = new ObjectMapper();
@@ -59,13 +61,23 @@ class DataInitializerTest {
   @BeforeEach
   void setUp() {
     dataInitializer =
-        new DataInitializer(true, List.of(contributor), dataMigrationRunner, seedReviewConfig);
+        new DataInitializer(
+            true,
+            List.of(contributor),
+            dataMigrationRunner,
+            seedReviewConfig,
+            seedReviewDetectionOrchestrator);
   }
 
   @Test
   void testInitialize_Disabled() {
     DataInitializer disabled =
-        new DataInitializer(false, List.of(contributor), dataMigrationRunner, seedReviewConfig);
+        new DataInitializer(
+            false,
+            List.of(contributor),
+            dataMigrationRunner,
+            seedReviewConfig,
+            seedReviewDetectionOrchestrator);
     disabled.init();
     verify(contributor, never()).sync();
     verify(dataMigrationRunner, never()).runMigrations();
@@ -92,6 +104,18 @@ class DataInitializerTest {
     InOrder inOrder = Mockito.inOrder(contributor, dataMigrationRunner, seedReviewConfig);
     inOrder.verify(contributor).sync();
     inOrder.verify(dataMigrationRunner).runMigrations();
+    inOrder.verify(seedReviewConfig).forceResolveIfConfigured();
+  }
+
+  @Test
+  void init_runsDetectionBetweenMigrationsAndForceResolve() {
+    dataInitializer.init();
+    InOrder inOrder =
+        Mockito.inOrder(
+            contributor, dataMigrationRunner, seedReviewDetectionOrchestrator, seedReviewConfig);
+    inOrder.verify(contributor).sync();
+    inOrder.verify(dataMigrationRunner).runMigrations();
+    inOrder.verify(seedReviewDetectionOrchestrator).detectIfVersionChanged();
     inOrder.verify(seedReviewConfig).forceResolveIfConfigured();
   }
 

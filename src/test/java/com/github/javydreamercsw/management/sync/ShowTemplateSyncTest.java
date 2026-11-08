@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.sync;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -29,25 +30,38 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
+import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.template.RecurrenceType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
+import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRepository;
 import com.github.javydreamercsw.management.dto.ShowTemplateDTO;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
+import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
+import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
 import java.io.IOException;
+import java.time.DayOfWeek;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -58,9 +72,33 @@ import org.mockito.quality.Strictness;
 class ShowTemplateSyncTest {
 
   @Mock private ShowTemplateService showTemplateService;
+  @Mock private ShowTemplateRepository showTemplateRepository;
+
+  @Mock private ShowTypeRepository showTypeRepository;
+
+  @Mock private CommentaryTeamRepository commentaryTeamRepository;
+
   @Mock private SegmentTypeService segmentTypeService;
   @Mock private SegmentRuleService segmentRuleService;
   @Mock private TournamentRepository tournamentRepository;
+
+  @Mock private SeedUpdateReviewService seedReviewService;
+
+  private static final SeedProvenanceManifest EMPTY_MANIFEST = SeedProvenanceManifest.empty();
+
+  private static final SeedSyncSupport VERIFY_SUPPORT = new SeedSyncSupport("verify");
+
+  /** Continuum's show_templates.json description, verbatim (the tier-1 fixture aligns to it). */
+  /** Timeless's show_templates.json description, verbatim (the tier-2 fixture aligns to it). */
+  static final String SEED_TIMELESS_DESCRIPTION =
+      "Classic prestige and grand rivalries. Timeless is your flagship show, focused on legacy,"
+          + " honor, and intergenerational conflict. This is where main-event feuds are born and"
+          + " wrestling tradition is sacred \u2014 even when it's broken.";
+
+  static final String SEED_CONTINUUM_DESCRIPTION =
+      "Innovation, rebellion, and raw momentum. Continuum is chaotic, experimental, and edgy."
+          + " It\u2019s the proving ground for newer wrestlers and the home of the Intertemporal"
+          + " and Extreme divisions. Think of it as the collision point of chaos and evolution.";
 
   private ShowTemplateSync sync;
 
@@ -92,16 +130,23 @@ class ShowTemplateSyncTest {
               return t;
             });
     lenient().when(segmentRuleService.findAll()).thenReturn(List.of());
+    lenient().when(showTemplateRepository.findByName(anyString())).thenReturn(Optional.empty());
   }
 
   /** Sync over a caller-supplied catalog instead of the classpath file. */
   private ShowTemplateSync syncOver(List<ShowTemplateDTO> dtos) {
     return new ShowTemplateSync(
+        "false",
         showTemplateService,
+        showTemplateRepository,
+        showTypeRepository,
+        commentaryTeamRepository,
         segmentTypeService,
         segmentRuleService,
         tournamentRepository,
-        new ObjectMapper()) {
+        new ObjectMapper(),
+        seedReviewService,
+        EMPTY_MANIFEST) {
       @Override
       protected List<ShowTemplateDTO> loadCatalog() {
         return dtos;
@@ -329,11 +374,17 @@ class ShowTemplateSyncTest {
   void sync_missingCatalogFile_warnsAndSkips() {
     ShowTemplateSync missing =
         new ShowTemplateSync(
+            "false",
             showTemplateService,
+            showTemplateRepository,
+            showTypeRepository,
+            commentaryTeamRepository,
             segmentTypeService,
             segmentRuleService,
             tournamentRepository,
-            new ObjectMapper()) {
+            new ObjectMapper(),
+            seedReviewService,
+            EMPTY_MANIFEST) {
           @Override
           protected List<ShowTemplateDTO> loadCatalog() throws IOException {
             throw new IOException("boom");
@@ -383,5 +434,321 @@ class ShowTemplateSyncTest {
           .containsExactly("Last Man Standing", "Cage", "No DQ");
       assertThat(massacre.getAssignments().get(0).getSegmentTypeName()).isEqualTo("One on One");
     }
+  }
+
+  // ── Version-change detection (seed-update review, PR 4 Step 4 three-tier pin) ──
+
+  @Test
+  @DisplayName("Detection parks admin-edited template fields; untouched fields update silently")
+  void versionChangeBootsParkCollisions() {
+    // THREE-TIER pin, end-to-end through the wired pipeline. The real show_templates.json is the
+    // incoming seed. "Continuum" is the tier-1 row (its description is stale vs the stamp — the
+    // seed's current description updates it silently); "Timeless" the tier-2 row (the row equals
+    // the seed everywhere except the admin's expectedMatches=9, and the stale stamp matches no
+    // single substitution → fail-safe parks exactly that field, value unchanged).
+    var weekly = new ShowType();
+    weekly.setName("Weekly");
+    var team = new CommentaryTeam();
+    team.setName("All-Time Broadcast Team");
+
+    ShowTemplate tier1row = new ShowTemplate();
+    tier1row.setName("Continuum");
+    tier1row.setShowType(weekly);
+    tier1row.setDescription("stale description from an older release"); // old seed's description
+    tier1row.setCommentaryTeam(team);
+    tier1row.setDurationDays(1);
+    tier1row.setRecurrenceType(RecurrenceType.WEEKLY);
+    tier1row.setDayOfWeek(DayOfWeek.MONDAY);
+    tier1row.setSeedFingerprint(
+        VERIFY_SUPPORT.fingerprint(
+            "stale description from an older release",
+            "Weekly",
+            "All-Time Broadcast Team",
+            null,
+            null,
+            1,
+            "WEEKLY",
+            "MONDAY",
+            null,
+            null,
+            null,
+            null,
+            ""));
+
+    ShowTemplate tier2row = new ShowTemplate();
+    tier2row.setName("Timeless");
+    tier2row.setShowType(weekly);
+    tier2row.setCommentaryTeam(team);
+    tier2row.setDescription(SEED_TIMELESS_DESCRIPTION); // matches the seed
+    tier2row.setDurationDays(1);
+    tier2row.setRecurrenceType(RecurrenceType.WEEKLY);
+    tier2row.setDayOfWeek(DayOfWeek.FRIDAY);
+    tier2row.setExpectedMatches(9); // not seed-owned for Timeless (no seed key) — PRESERVE_EDIT
+    tier2row.setDurationDays(2); // admin edit AFTER the stamp → the one parked field (seed says 1)
+    tier2row.setSeedFingerprint(
+        // Fabricated stale stamp: matches no single substitution of the incoming seed's values,
+        // so the row classifies fail-safe and parks exactly the admin-edited field.
+        VERIFY_SUPPORT.fingerprint(
+            "an older release's description",
+            "Weekly",
+            "All-Time Broadcast Team",
+            null,
+            null,
+            1,
+            "WEEKLY",
+            "FRIDAY",
+            null,
+            null,
+            null,
+            null,
+            ""));
+
+    when(showTemplateService.count()).thenReturn(2L);
+    when(showTemplateRepository.findByName("Continuum")).thenReturn(Optional.of(tier1row));
+    when(showTemplateRepository.findByName("Timeless")).thenReturn(Optional.of(tier2row));
+
+    Set<String> parkedCoordinates = new HashSet<>();
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    Mockito.doAnswer(
+            inv -> {
+              parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
+              return null;
+            })
+        .when(parking)
+        .parkFieldConflict(
+            anyString(), anyString(), anyString(), anyString(), any(), any(), anyString());
+
+    ShowTemplateSync detectionSync =
+        new ShowTemplateSync(
+            "true",
+            showTemplateService,
+            showTemplateRepository,
+            showTypeRepository,
+            commentaryTeamRepository,
+            segmentTypeService,
+            segmentRuleService,
+            tournamentRepository,
+            new ObjectMapper(),
+            parking,
+            EMPTY_MANIFEST);
+    detectionSync.detectVersionChangeCollisions();
+
+    // Tier 1: the untouched description updated silently to the NEW seed value.
+    Assertions.assertThat(tier1row.getDescription()).isEqualTo(SEED_CONTINUUM_DESCRIPTION);
+    // Tier 2: the admin's expectedMatches kept its value; the row parked the collision.
+    assertEquals(9, tier2row.getExpectedMatches(), "tier 2: admin edit must keep its value");
+    assertEquals(
+        Set.of(ShowTemplateSync.entityKeyFor("Timeless") + "|durationDays"),
+        parkedCoordinates,
+        "exactly the one tier-2 collision parked; tier-1 fields never park");
+  }
+
+  @Test
+  @DisplayName("Detection silent-arms cover the guarded reference and date arms")
+  void versionChange_silentArmsCoverReferenceAndDateFields() {
+    // Tier-1 arms the three-tier pin never reached, driven against the real show_templates.json:
+    // "Continuum" is stamped clean (hash of its current values) with drifted commentaryTeamName
+    // (a ghost name — the not-found warn arm keeps the reference), recurrenceType, dayOfWeek,
+    // durationDays, and expansion list; "Timeless" is clean and seed-unchanged except its
+    // expectedMatches (the seed ships null, so the row's 9 silently updates into null), which
+    // exercises the null expectedMatches arm plus the null month/genderConstraint NO_OP arms and
+    // the stamp-only save.
+    var ghostTeam = new CommentaryTeam();
+    ghostTeam.setName("Ghost Broadcast Team");
+    var weekly = new ShowType();
+    weekly.setName("Weekly");
+    ShowTemplate continuum = new ShowTemplate();
+    continuum.setName("Continuum");
+    continuum.setShowType(weekly);
+    continuum.setDescription(SEED_CONTINUUM_DESCRIPTION);
+    continuum.setCommentaryTeam(ghostTeam);
+    continuum.setDurationDays(3);
+    continuum.setRecurrenceType(RecurrenceType.MONTHLY);
+    continuum.setDayOfWeek(DayOfWeek.THURSDAY);
+    continuum.setExpectedMatches(5);
+    continuum.setRequiredExpansions(new HashSet<>(Set.of("OLD")));
+    continuum.setSeedFingerprint(
+        VERIFY_SUPPORT.fingerprint(
+            SEED_CONTINUUM_DESCRIPTION,
+            "Weekly",
+            "Ghost Broadcast Team",
+            5,
+            null,
+            3,
+            "MONTHLY",
+            "THURSDAY",
+            null,
+            null,
+            null,
+            null,
+            "OLD"));
+
+    ShowTemplate timeless = new ShowTemplate();
+    timeless.setName("Timeless");
+    timeless.setShowType(weekly);
+    timeless.setDescription(SEED_TIMELESS_DESCRIPTION);
+    timeless.setDurationDays(1);
+    timeless.setRecurrenceType(RecurrenceType.WEEKLY);
+    timeless.setDayOfWeek(DayOfWeek.FRIDAY);
+    timeless.setExpectedMatches(9); // the seed ships no value — it silently updates into null
+    timeless.setSeedFingerprint(
+        VERIFY_SUPPORT.fingerprint(
+            SEED_TIMELESS_DESCRIPTION,
+            "Weekly",
+            "All-Time Broadcast Team",
+            9,
+            null,
+            1,
+            "WEEKLY",
+            "FRIDAY",
+            null,
+            null,
+            null,
+            null,
+            ""));
+
+    when(showTemplateService.count()).thenReturn(2L);
+    when(showTemplateRepository.findByName("Continuum")).thenReturn(Optional.of(continuum));
+    when(showTemplateRepository.findByName("Timeless")).thenReturn(Optional.of(timeless));
+    when(commentaryTeamRepository.findAll()).thenReturn(List.of()); // ghost team unresolvable
+
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    ShowTemplateSync detectionSync =
+        new ShowTemplateSync(
+            "true",
+            showTemplateService,
+            showTemplateRepository,
+            showTypeRepository,
+            commentaryTeamRepository,
+            segmentTypeService,
+            segmentRuleService,
+            tournamentRepository,
+            new ObjectMapper(),
+            parking,
+            EMPTY_MANIFEST);
+    detectionSync.detectVersionChangeCollisions();
+
+    // Continuum: silent arms wrote the seed values; the ghost team reference is kept (warn arm).
+    Assertions.assertThat(continuum.getCommentaryTeam()).isEqualTo(ghostTeam);
+    Assertions.assertThat(continuum.getDurationDays()).isEqualTo(1);
+    Assertions.assertThat(continuum.getRecurrenceType()).isEqualTo(RecurrenceType.WEEKLY);
+    Assertions.assertThat(continuum.getDayOfWeek()).isEqualTo(DayOfWeek.MONDAY);
+    Assertions.assertThat(continuum.getRequiredExpansions()).isEmpty();
+    // Timeless: the seed drops expectedMatches (ships null), so the clean row's stale 9 is a
+    // SILENT_UPDATE into null — the null-write arm of the expectedMatches silent writer. The
+    // no-write NO_OP arms (month, genderConstraint) leave their nulls untouched.
+    Assertions.assertThat(timeless.getExpectedMatches()).isNull();
+    Assertions.assertThat(timeless.getMonth()).isNull();
+    Assertions.assertThat(timeless.getGenderConstraint()).isNull();
+    Mockito.verify(parking, Mockito.never())
+        .parkFieldConflict(
+            anyString(), anyString(), anyString(), anyString(), any(), any(), anyString());
+    verify(showTemplateRepository, Mockito.atLeastOnce()).save(continuum);
+    verify(showTemplateRepository, Mockito.atLeastOnce()).save(timeless);
+  }
+
+  @Test
+  @DisplayName("Detection silent-arms cover the null and unresolvable reference arms")
+  void versionChange_silentArmsCoverNullAndGhostArms() {
+    // A caller-supplied catalog drives the remaining silent arms in one pass: the ghost
+    // showTypeName (unresolvable reference — warn, keep), the null commentaryTeamName (clears
+    // the reference), and the null durationDays/recurrenceType/dayOfWeek fallbacks plus the
+    // dayOfMonth/weekOfMonth writes.
+    ShowTemplateDTO dto = new ShowTemplateDTO();
+    dto.setName("Catalog Edge Template");
+    dto.setDescription("seed description");
+    dto.setShowTypeName("Ghost Show Type");
+    dto.setCommentaryTeamName(null);
+    dto.setDurationDays(null);
+    dto.setRecurrenceType(null);
+    dto.setDayOfWeek(null);
+    dto.setDayOfMonth(3);
+    dto.setWeekOfMonth(1);
+
+    var weekly = new ShowType();
+    weekly.setName("Weekly");
+    var team = new CommentaryTeam();
+    team.setName("All-Time Broadcast Team");
+    ShowTemplate row = new ShowTemplate();
+    row.setName("Catalog Edge Template");
+    row.setShowType(weekly);
+    row.setCommentaryTeam(team);
+    row.setDescription("seed description");
+    row.setDurationDays(2);
+    row.setRecurrenceType(RecurrenceType.WEEKLY);
+    row.setDayOfWeek(DayOfWeek.TUESDAY);
+    row.setExpectedMatches(null);
+    row.setExpectedPromos(null);
+    row.setSeedFingerprint(
+        VERIFY_SUPPORT.fingerprint(
+            "seed description",
+            "Weekly",
+            "All-Time Broadcast Team",
+            null,
+            null,
+            2,
+            "WEEKLY",
+            "TUESDAY",
+            null,
+            null,
+            null,
+            null,
+            ""));
+
+    when(showTemplateService.count()).thenReturn(1L);
+    when(showTemplateRepository.findByName("Catalog Edge Template")).thenReturn(Optional.of(row));
+    when(commentaryTeamRepository.findAll()).thenReturn(List.of());
+
+    ShowTemplateSync detectionSync =
+        new ShowTemplateSync(
+            "true",
+            showTemplateService,
+            showTemplateRepository,
+            showTypeRepository,
+            commentaryTeamRepository,
+            segmentTypeService,
+            segmentRuleService,
+            tournamentRepository,
+            new ObjectMapper(),
+            Mockito.mock(SeedUpdateReviewService.class),
+            EMPTY_MANIFEST) {
+          @Override
+          protected List<ShowTemplateDTO> loadCatalog() {
+            return List.of(dto);
+          }
+        };
+    detectionSync.detectVersionChangeCollisions();
+
+    Assertions.assertThat(row.getShowType()).isEqualTo(weekly);
+    Assertions.assertThat(row.getCommentaryTeam()).isNull();
+    Assertions.assertThat(row.getDurationDays()).isEqualTo(1);
+    Assertions.assertThat(row.getRecurrenceType()).isEqualTo(RecurrenceType.NONE);
+    Assertions.assertThat(row.getDayOfWeek()).isNull();
+    Assertions.assertThat(row.getDayOfMonth()).isEqualTo(3);
+    Assertions.assertThat(row.getWeekOfMonth()).isEqualTo(1);
+  }
+
+  @Test
+  @DisplayName("FULL-mode detection is inert; non-seed rows never touched")
+  void normalBootBehaviorUnchanged() {
+    ShowTemplateSync fullSync =
+        new ShowTemplateSync(
+            "false",
+            showTemplateService,
+            showTemplateRepository,
+            showTypeRepository,
+            commentaryTeamRepository,
+            segmentTypeService,
+            segmentRuleService,
+            tournamentRepository,
+            new ObjectMapper(),
+            seedReviewService,
+            EMPTY_MANIFEST);
+    when(showTemplateService.count()).thenReturn(4L);
+
+    fullSync.detectVersionChangeCollisions(); // FULL mode → inert
+
+    Mockito.verifyNoInteractions(seedReviewService);
+    verify(showTemplateService, never()).save(any());
   }
 }

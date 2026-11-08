@@ -16,19 +16,27 @@
 */
 package com.github.javydreamercsw.management.sync;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.domain.account.Achievement;
+import com.github.javydreamercsw.base.domain.account.AchievementCategory;
 import com.github.javydreamercsw.base.domain.account.AchievementRepository;
+import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
+import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,6 +53,9 @@ import org.mockito.quality.Strictness;
 class AchievementSyncTest {
 
   @Mock private AchievementRepository achievementRepository;
+  @Mock private SeedUpdateReviewService seedReviewService;
+
+  private static final SeedProvenanceManifest EMPTY_MANIFEST = SeedProvenanceManifest.empty();
 
   private AchievementSync achievementSync;
 
@@ -52,7 +63,9 @@ class AchievementSyncTest {
   void setUp() {
     // Constructed directly: @InjectMocks cannot resolve the @Value boolean
     // constructor parameter against mocks.
-    achievementSync = new AchievementSync("false", achievementRepository, new ObjectMapper());
+    achievementSync =
+        new AchievementSync(
+            "false", achievementRepository, new ObjectMapper(), seedReviewService, EMPTY_MANIFEST);
   }
 
   @Test
@@ -101,7 +114,9 @@ class AchievementSyncTest {
 
   @Test
   void sync_skipsWhenNotEmptyAndSkipIfNotEmptyEnabled() {
-    AchievementSync strict = new AchievementSync("true", achievementRepository, new ObjectMapper());
+    AchievementSync strict =
+        new AchievementSync(
+            "true", achievementRepository, new ObjectMapper(), seedReviewService, EMPTY_MANIFEST);
     when(achievementRepository.count()).thenReturn(5L);
     // Top-up still runs under the gate; every seeded key already exists, so nothing inserts.
     when(achievementRepository.findAll())
@@ -136,7 +151,8 @@ class AchievementSyncTest {
     // achievements.json missing from the classpath: log a warning and carry on
     // to the challenge scan instead of throwing.
     AchievementSync missingFile =
-        new AchievementSync("false", achievementRepository, new ObjectMapper()) {
+        new AchievementSync(
+            "false", achievementRepository, new ObjectMapper(), seedReviewService, EMPTY_MANIFEST) {
           // syncClasspathFile logs and returns when the resource doesn't exist;
           // exercising that path with a fresh instance still runs the challenge scan.
         };
@@ -182,7 +198,9 @@ class AchievementSyncTest {
             throw new IOException("boom");
           }
         };
-    AchievementSync broken = new AchievementSync("false", achievementRepository, brokenMapper);
+    AchievementSync broken =
+        new AchievementSync(
+            "false", achievementRepository, brokenMapper, seedReviewService, EMPTY_MANIFEST);
     when(achievementRepository.count()).thenReturn(0L);
     when(achievementRepository.findByKey(anyString())).thenReturn(Optional.empty());
     when(achievementRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -198,7 +216,8 @@ class AchievementSyncTest {
     // A resolver explosion inside the challenge scan is caught and logged;
     // the catalog file was already synced before the scan runs.
     AchievementSync scanning =
-        new AchievementSync("false", achievementRepository, new ObjectMapper());
+        new AchievementSync(
+            "false", achievementRepository, new ObjectMapper(), seedReviewService, EMPTY_MANIFEST);
     when(achievementRepository.count()).thenReturn(0L);
     when(achievementRepository.findByKey(anyString())).thenReturn(Optional.empty());
     when(achievementRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -235,7 +254,8 @@ class AchievementSyncTest {
   @Test
   void verifyMode_reconcilesCleanRowAndPreservesEditedRow() throws IOException {
     AchievementSync verifySync =
-        new AchievementSync("verify", achievementRepository, new ObjectMapper());
+        new AchievementSync(
+            "verify", achievementRepository, new ObjectMapper(), seedReviewService, EMPTY_MANIFEST);
     when(achievementRepository.count()).thenReturn(2L);
     when(achievementRepository.findAll()).thenReturn(List.of());
     when(achievementRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -280,7 +300,8 @@ class AchievementSyncTest {
   @Test
   void verifyMode_adoptsLegacyRowWhenFieldsMatchSeed() throws IOException {
     AchievementSync verifySync =
-        new AchievementSync("verify", achievementRepository, new ObjectMapper());
+        new AchievementSync(
+            "verify", achievementRepository, new ObjectMapper(), seedReviewService, EMPTY_MANIFEST);
     when(achievementRepository.count()).thenReturn(1L);
     when(achievementRepository.findAll()).thenReturn(List.of());
     when(achievementRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -301,5 +322,236 @@ class AchievementSyncTest {
         achievementFingerprint(legacy),
         legacy.getSeedFingerprint(),
         "legacy achievement matching the seed must be adopted (fingerprint stamped)");
+  }
+
+  // ── Version-change detection (seed-update review, PR 4 Step 4 three-tier pin) ──
+
+  @Test
+  void versionChangeBootsParkCollisions() throws IOException {
+    // THREE-TIER pin, end-to-end through the wired pipeline:
+    //   tier 1 — untouched field (description), seed changed → updated silently + re-stamped
+    //   tier 2 — admin-edited field (xpValue), seed changed → parked as PENDING decision, DB
+    //            value unchanged
+    //   tier 3 — seed unchanged → no-op whether or not the admin edited it (name edit,
+    //            PRESERVE_EDIT — nothing parked, nothing written)
+    // The DB rows are stamped as the PREVIOUS release's seed write left them; the incoming seed
+    // (achievements.json, unchanged on disk) supplies the new values through the sync's normal
+    // resource path. FIRST_WRESTLER is the tier-1/tier-3 row, CHALLENGE_FIRST_HARD the tier-2 row.
+    Achievement seed = seedFirstWrestler();
+
+    Achievement tier1row = new Achievement();
+    tier1row.setKey("FIRST_WRESTLER");
+    tier1row.setName(seed.getName());
+    tier1row.setDescription("stale description from an older release"); // seed changed since
+    tier1row.setXpValue(seed.getXpValue());
+    tier1row.setCategory(seed.getCategory());
+    tier1row.setUnlockCondition(seed.getUnlockCondition());
+    tier1row.setSeedFingerprint(achievementFingerprint(tier1row));
+    tier1row.setName("admin-renamed achievement"); // tier 3: admin edit, seed unchanged
+
+    // CHALLENGE_FIRST_HARD's seed row: xpValue 150, category CHALLENGE. The stamp carries the
+    // PREVIOUS release's xp (100) while the row shows the admin's edit (500) and the incoming seed
+    // ships 150 → genuine tier-2 collision.
+    Achievement tier2row = new Achievement();
+    tier2row.setKey("CHALLENGE_FIRST_HARD");
+    tier2row.setName("Glutton for Punishment");
+    tier2row.setDescription("Completed your first HARD-difficulty challenge");
+    tier2row.setXpValue(100);
+    tier2row.setCategory(AchievementCategory.CHALLENGE);
+    tier2row.setSeedFingerprint(achievementFingerprint(tier2row));
+    tier2row.setXpValue(500); // tier 2: admin edit AFTER the stamp
+
+    when(achievementRepository.count()).thenReturn(2L);
+    when(achievementRepository.findAll()).thenReturn(List.of());
+    when(achievementRepository.findByKey("FIRST_WRESTLER")).thenReturn(Optional.of(tier1row));
+    when(achievementRepository.findByKey("CHALLENGE_FIRST_HARD")).thenReturn(Optional.of(tier2row));
+    when(achievementRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    Set<String> parkedCoordinates = new HashSet<>();
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    Mockito.doAnswer(
+            inv -> {
+              parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
+              return null;
+            })
+        .when(parking)
+        .parkFieldConflict(
+            anyString(), anyString(), anyString(), anyString(), any(), any(), anyString());
+
+    AchievementSync detectionSync =
+        new AchievementSync(
+            "true", achievementRepository, new ObjectMapper(), parking, EMPTY_MANIFEST);
+    detectionSync.detectVersionChangeCollisions();
+
+    // Tier 1: the untouched description updated silently to the seed value.
+    Assertions.assertEquals(
+        seed.getDescription(),
+        tier1row.getDescription(),
+        "tier 1: untouched field with a changed seed value must update silently");
+    // Tier 3: the seed-unchanged name edit preserved.
+    Assertions.assertEquals(
+        "admin-renamed achievement",
+        tier1row.getName(),
+        "tier 3: admin edit on an unchanged seed field must be preserved silently");
+    // Tier 2: the admin-edited xpValue kept its value; the row parked the xpValue collision.
+    Assertions.assertEquals(
+        500, tier2row.getXpValue(), "tier 2: admin-edited field must keep its value");
+    Mockito.verify(parking)
+        .parkFieldConflict(
+            eq("achievement"),
+            eq("achievement:challenge_first_hard"),
+            eq("CHALLENGE_FIRST_HARD"),
+            eq("xpValue"),
+            eq("500"),
+            eq("150"),
+            anyString());
+    assertEquals(
+        Set.of("achievement:challenge_first_hard|xpValue"),
+        parkedCoordinates,
+        "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
+  }
+
+  @Test
+  void versionChange_silentUpdatesCoverEveryWriteArm() throws IOException {
+    // Tier-1 write arms the three-tier pin never reached: the FIRST_WRESTLER row is stamped clean
+    // at older values and the real seed (achievements.json) supplies changed name, xpValue,
+    // category, and unlockCondition — each classified SILENT_UPDATE and written through its own
+    // applySilentSeedFields arm.
+    Achievement seed = seedFirstWrestler();
+    Achievement row = new Achievement();
+    row.setKey("FIRST_WRESTLER");
+    row.setName("Old Name");
+    row.setDescription(seed.getDescription());
+    row.setXpValue(1);
+    row.setCategory(AchievementCategory.FANS);
+    row.setUnlockCondition("old condition");
+    row.setSeedFingerprint(achievementFingerprint(row));
+
+    when(achievementRepository.count()).thenReturn(1L);
+    when(achievementRepository.findAll()).thenReturn(List.of());
+    when(achievementRepository.findByKey("FIRST_WRESTLER")).thenReturn(Optional.of(row));
+    when(achievementRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    AchievementSync detectionSync =
+        new AchievementSync(
+            "true", achievementRepository, new ObjectMapper(), parking, EMPTY_MANIFEST);
+    detectionSync.detectVersionChangeCollisions();
+
+    Assertions.assertEquals(seed.getName(), row.getName(), "name arm wrote the seed value");
+    Assertions.assertEquals(
+        seed.getXpValue(), row.getXpValue(), "xpValue arm wrote the seed value");
+    Assertions.assertEquals(
+        seed.getCategory(), row.getCategory(), "category arm wrote the seed value");
+    Assertions.assertEquals(
+        seed.getUnlockCondition(),
+        row.getUnlockCondition(),
+        "unlockCondition arm wrote the seed value");
+    Assertions.assertEquals(
+        achievementFingerprint(row),
+        row.getSeedFingerprint(),
+        "tier-1 row re-stamps with the incoming fingerprint");
+    Mockito.verify(parking, Mockito.never())
+        .parkFieldConflict(
+            anyString(), anyString(), anyString(), anyString(), any(), any(), anyString());
+  }
+
+  @Test
+  void versionChange_stampOnlyRowReStampsFromManifest() throws IOException {
+    // The stamp-only-save branch: a clean row whose seed is unchanged adopts the manifest hash
+    // through the silent-apply-free save path.
+    Achievement seed = seedFirstWrestler();
+    Achievement row = new Achievement();
+    row.setKey("FIRST_WRESTLER");
+    row.setName(seed.getName());
+    row.setDescription(seed.getDescription());
+    row.setXpValue(seed.getXpValue());
+    row.setCategory(seed.getCategory());
+    row.setUnlockCondition(seed.getUnlockCondition());
+    row.setSeedFingerprint(achievementFingerprint(row));
+
+    when(achievementRepository.count()).thenReturn(1L);
+    when(achievementRepository.findAll()).thenReturn(List.of());
+    when(achievementRepository.findByKey("FIRST_WRESTLER")).thenReturn(Optional.of(row));
+    when(achievementRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    SeedProvenanceManifest manifest =
+        SeedProvenanceManifest.of(
+            Map.of("achievement", Map.of("FIRST_WRESTLER", "manifest-hash-ach")));
+    AchievementSync detectionSync =
+        new AchievementSync(
+            "true",
+            achievementRepository,
+            new ObjectMapper(),
+            Mockito.mock(SeedUpdateReviewService.class),
+            manifest);
+    detectionSync.detectVersionChangeCollisions();
+
+    Assertions.assertEquals(
+        "manifest-hash-ach",
+        row.getSeedFingerprint(),
+        "a clean unchanged row must adopt the manifest hash (stamp-only save)");
+    ArgumentCaptor<List<Achievement>> captor = ArgumentCaptor.forClass(List.class);
+    verify(achievementRepository, Mockito.atLeastOnce()).saveAll(captor.capture());
+    Assertions.assertTrue(
+        captor.getAllValues().stream().flatMap(List::stream).anyMatch(a -> a == row),
+        "the stamp-only row must be persisted");
+  }
+
+  @Test
+  void versionChange_unstampedLegacyRowAdoptsContentCompare() throws IOException {
+    // The unstamped-row arm (no seed_fingerprint): the classifier ignores stored values and does
+    // a direct content compare — fields equal to the seed read NO_OP and the row adopts the
+    // incoming content hash; a differing field would park instead of silently updating.
+    Achievement seed = seedFirstWrestler();
+    Achievement legacy = new Achievement();
+    legacy.setKey("FIRST_WRESTLER");
+    legacy.setName(seed.getName());
+    legacy.setDescription(seed.getDescription());
+    legacy.setXpValue(seed.getXpValue());
+    legacy.setCategory(seed.getCategory());
+    legacy.setUnlockCondition(seed.getUnlockCondition());
+    // no stamp
+
+    when(achievementRepository.count()).thenReturn(1L);
+    when(achievementRepository.findAll()).thenReturn(List.of());
+    when(achievementRepository.findByKey("FIRST_WRESTLER")).thenReturn(Optional.of(legacy));
+    when(achievementRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    AchievementSync detectionSync =
+        new AchievementSync(
+            "true", achievementRepository, new ObjectMapper(), parking, EMPTY_MANIFEST);
+    detectionSync.detectVersionChangeCollisions();
+
+    Assertions.assertEquals(
+        achievementFingerprint(legacy),
+        legacy.getSeedFingerprint(),
+        "an unstamped row whose fields equal the seed adopts the content hash");
+    Mockito.verify(parking, Mockito.never())
+        .parkFieldConflict(
+            anyString(), anyString(), anyString(), anyString(), any(), any(), anyString());
+  }
+
+  @Test
+  void normalBootBehaviorUnchanged() {
+    // Normal boot pin: FULL-mode detection is inert, and the pre-existing verify behavior still
+    // holds with the new constructor dependencies.
+    Achievement existing = new Achievement();
+    existing.setKey("FIRST_WRESTLER");
+    existing.setDescription("admin-tuned");
+    when(achievementRepository.count()).thenReturn(1L);
+
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    AchievementSync fullModeSync =
+        new AchievementSync(
+            "false", achievementRepository, new ObjectMapper(), parking, EMPTY_MANIFEST);
+    fullModeSync.detectVersionChangeCollisions(); // FULL mode → inert
+
+    Mockito.verifyNoInteractions(parking);
+    Assertions.assertEquals(
+        "admin-tuned",
+        existing.getDescription(),
+        "FULL-mode detection must not touch rows (the FULL sync's own load does that)");
   }
 }

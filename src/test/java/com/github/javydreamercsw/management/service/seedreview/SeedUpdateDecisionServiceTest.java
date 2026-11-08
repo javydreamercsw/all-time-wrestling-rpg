@@ -34,6 +34,10 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * Contract tests for the decision apply service (seed-update review feature, Task 9).
@@ -48,6 +52,7 @@ class SeedUpdateDecisionServiceTest extends AbstractJpaTest {
 
   @Autowired private SeedUpdateDecisionRepository decisionRepository;
   @Autowired private EntityManager entityManager;
+  @Autowired private PlatformTransactionManager transactionManager;
 
   /** Gate of the most recently created service, for cross-path state assertions. */
   private SeedReviewGate gate;
@@ -470,5 +475,137 @@ class SeedUpdateDecisionServiceTest extends AbstractJpaTest {
       receivedDecisionIds.add(decision.getId());
       receivedDecisions.add(decision);
     }
+  }
+
+  // ── Atomicity (PR 4 carry ATW-1bvw item a): a real applier throwing mid-batch must persist
+  // zero decisions — the rollback is observable through the real repository. ──
+
+  /** Real applier that flips one row's status, then blows up on the second decision. */
+  private static final class ExplodingApplier implements SeedDomainApplier {
+
+    private final String domain;
+    private int dispatched;
+
+    private ExplodingApplier(String domain) {
+      this.domain = domain;
+    }
+
+    @Override
+    public String domainKey() {
+      return domain;
+    }
+
+    @Override
+    public void applyKeep(SeedUpdateDecision decision) {
+      dispatched++;
+      if (dispatched >= 2) {
+        throw new IllegalStateException("applier exploded mid-batch");
+      }
+    }
+
+    @Override
+    public void applyNew(SeedUpdateDecision decision) {
+      throw new UnsupportedOperationException("not exercised by this test");
+    }
+
+    @Override
+    public void applyKeepAsCustom(SeedUpdateDecision decision) {
+      throw new UnsupportedOperationException("not exercised by this test");
+    }
+
+    @Override
+    public void applyRemove(SeedUpdateDecision decision) {
+      throw new UnsupportedOperationException("not exercised by this test");
+    }
+
+    @Override
+    public boolean hasDependents(String entityKey) {
+      return false;
+    }
+  }
+
+  @Test
+  @Transactional(propagation = Propagation.NOT_SUPPORTED)
+  void applyRollsBackEverythingWhenApplierThrowsMidBatch() {
+    // Real (Spring-proxied) applier service, real repository, REAL transaction boundary: the
+    // base class's test transaction is suspended (NOT_SUPPORTED) so the PROXIED service's
+    // @Transactional opens its own transaction — the first KEEP_MINE dispatch succeeds, the
+    // second explodes, and the rollback must leave ZERO decisions terminal in the database.
+    ExplodingApplier applier = new ExplodingApplier("wrestler");
+    SeedUpdateDecisionService proxied =
+        new SeedUpdateDecisionService(
+            decisionRepository, List.of(applier), new SeedReviewGate(decisionRepository));
+    TransactionTemplate template = new TransactionTemplate(transactionManager);
+    SeedUpdateDecision first =
+        pendingFieldConflict(
+            "wrestler", "wrestler:bret-hart", "Bret Hart", "catchphrase", "mine", "new", "fp-1");
+    SeedUpdateDecision second =
+        pendingFieldConflict(
+            "wrestler",
+            "wrestler:shawn-michaels",
+            "Shawn Michaels",
+            "theme",
+            "mine",
+            "new",
+            "fp-2");
+
+    IllegalStateException exception =
+        assertThrows(
+            IllegalStateException.class,
+            () ->
+                template.executeWithoutResult(
+                    status ->
+                        proxied.apply(
+                            Map.of(
+                                first.getId(), SeedFieldDecision.KEEP_MINE,
+                                second.getId(), SeedFieldDecision.KEEP_MINE))));
+
+    assertTrue(exception.getMessage().contains("exploded mid-batch"));
+    // Rollback observable: re-read from the database — both rows must still be PENDING, exactly
+    // as before the failed batch (the mid-batch APPLIED_KEEP write rolled back with the rest).
+    assertEquals(
+        SeedUpdateDecision.STATUS_PENDING,
+        decisionRepository.findById(first.getId()).orElseThrow().getStatus());
+    assertEquals(
+        SeedUpdateDecision.STATUS_PENDING,
+        decisionRepository.findById(second.getId()).orElseThrow().getStatus());
+    assertEquals(2, decisionRepository.countByStatus(SeedUpdateDecision.STATUS_PENDING));
+  }
+
+  @Test
+  void applyRefusesBeforeDispatchWhenDomainHasNoApplier() {
+    // Hoisted validation (ATW-1bvw item b): with two pending rows — one resolvable, one in an
+    // unregistered domain — the apply must fail in the VALIDATION phase, before ANY dispatch.
+    // The resolvable row's applier must never be called (pre-hoist behavior dispatched rows in
+    // id order and failed mid-batch on the unresolvable one).
+    RecordingApplier wrestlerApplier = new RecordingApplier("wrestler");
+    SeedUpdateDecision resolvable =
+        pendingFieldConflict(
+            "wrestler", "wrestler:bret-hart", "Bret Hart", "catchphrase", "mine", "new", "fp-1");
+    pendingFieldConflict("ghost-domain", "ghost:entity", "Ghost", "field", "mine", "new", "fp-2");
+    SeedUpdateDecisionService service = service(wrestlerApplier);
+
+    assertThrows(
+        IllegalStateException.class,
+        () ->
+            service.apply(
+                Map.of(
+                    resolvable.getId(),
+                    SeedFieldDecision.USE_NEW,
+                    service.pendingGrouped().stream()
+                        .filter(d -> "ghost-domain".equals(d.getDomainKey()))
+                        .findFirst()
+                        .orElseThrow()
+                        .getId(),
+                    SeedFieldDecision.USE_NEW)));
+
+    assertTrue(
+        wrestlerApplier.calls.isEmpty(),
+        "validation must run before ANY dispatch — a resolvable row in a batch with an"
+            + " unresolvable one must not be applied");
+    flushAndClear();
+    assertEquals(
+        SeedUpdateDecision.STATUS_PENDING,
+        decisionRepository.findById(resolvable.getId()).orElseThrow().getStatus());
   }
 }
