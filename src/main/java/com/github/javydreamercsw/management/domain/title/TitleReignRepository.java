@@ -46,6 +46,9 @@ public interface TitleReignRepository extends JpaRepository<TitleReign, Long> {
 
   List<TitleReign> findByChampionsContaining(Wrestler wrestler);
 
+  /** Reigns held by the team (seed-review removal guard). */
+  List<TitleReign> findByTeam(com.github.javydreamercsw.management.domain.team.Team team);
+
   List<TitleReign> findByStartDateBetween(Instant startDate, Instant endDate);
 
   /**

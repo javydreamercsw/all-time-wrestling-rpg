@@ -69,4 +69,12 @@ public class Location extends AbstractEntity<Long> {
   @Column(name = "cultural_tag")
   @Builder.Default
   private Set<String> culturalTags = new HashSet<>();
+
+  /**
+   * Per-row seed provenance stamp (seed-update review feature): the hash of the row's seed-owned
+   * fields as the last seed write left them. NULL = pre-fingerprint-era (legacy) or user-created
+   * row.
+   */
+  @Column(name = "seed_fingerprint", length = 64)
+  private String seedFingerprint;
 }

@@ -36,6 +36,10 @@ public interface TrophyReignRepository extends JpaRepository<TrophyReign, Long> 
   /** Narration honors for a singles winner. */
   List<TrophyReign> findByWinnerWrestlerId(Long winnerWrestlerId);
 
+  /** Reigns won by the team (seed-review removal guard). */
+  List<TrophyReign> findByWinnerTeam(
+      com.github.javydreamercsw.management.domain.team.Team winnerTeam);
+
   /** Narration honors for a team winner (members expand in the service). */
   @Query(
       """

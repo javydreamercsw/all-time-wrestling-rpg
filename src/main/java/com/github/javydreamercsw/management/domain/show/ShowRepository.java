@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.domain.show;
 import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.world.Arena;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -46,6 +47,9 @@ public interface ShowRepository extends JpaRepository<Show, Long>, JpaSpecificat
 
   /** Whether any show was generated from the given template (seed-review removal guard). */
   boolean existsByTemplateId(Long templateId);
+
+  /** Whether any show is booked at the given arena (seed-review removal guard). */
+  boolean existsByArena(Arena arena);
 
   List<Show> findByUniverse(Universe universe);
 

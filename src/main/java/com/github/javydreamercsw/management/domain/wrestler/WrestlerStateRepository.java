@@ -45,6 +45,10 @@ public interface WrestlerStateRepository extends JpaRepository<WrestlerState, Lo
 
   List<WrestlerState> findByUniverseId(Long universeId);
 
+  /** Member states belonging to the faction (seed-review removal guard). */
+  List<WrestlerState> findByFaction(
+      com.github.javydreamercsw.management.domain.faction.Faction faction);
+
   @Query(
       "SELECT s FROM WrestlerState s LEFT JOIN FETCH s.wrestler LEFT JOIN FETCH s.manager"
           + " WHERE s.universe.id = :universeId")

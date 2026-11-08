@@ -29,4 +29,7 @@ public interface TournamentEntryRepository extends JpaRepository<TournamentEntry
   long countByTournamentId(Long tournamentId);
 
   boolean existsByTournamentIdAndWrestlerId(Long tournamentId, Long wrestlerId);
+
+  /** Bracket entries fielded by the team (seed-review removal guard). */
+  List<TournamentEntry> findByTeam(com.github.javydreamercsw.management.domain.team.Team team);
 }

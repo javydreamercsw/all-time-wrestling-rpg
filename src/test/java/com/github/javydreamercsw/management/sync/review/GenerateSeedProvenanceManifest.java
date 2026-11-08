@@ -26,15 +26,25 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCard;
 import com.github.javydreamercsw.management.domain.campaign.StatusCard;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardSet;
+import com.github.javydreamercsw.management.domain.commentator.Commentator;
+import com.github.javydreamercsw.management.domain.commentator.CommentatorRepository;
 import com.github.javydreamercsw.management.domain.deck.Deck;
+import com.github.javydreamercsw.management.domain.faction.Faction;
+import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.segment.RingsideAction;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.team.Team;
+import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
+import com.github.javydreamercsw.management.domain.world.Arena;
+import com.github.javydreamercsw.management.domain.world.ArenaRepository;
+import com.github.javydreamercsw.management.domain.world.Location;
+import com.github.javydreamercsw.management.domain.world.LocationRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.campaign.CampaignAbilityCardService;
@@ -42,20 +52,26 @@ import com.github.javydreamercsw.management.service.campaign.StatusCardService;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
 import com.github.javydreamercsw.management.service.deck.DeckService;
+import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.ringside.RingsideActionDataService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
+import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.sync.AchievementSync;
+import com.github.javydreamercsw.management.sync.ArenaSync;
 import com.github.javydreamercsw.management.sync.CampaignAbilityCardSync;
 import com.github.javydreamercsw.management.sync.CardSync;
 import com.github.javydreamercsw.management.sync.ChampionshipSync;
+import com.github.javydreamercsw.management.sync.CommentatorSync;
 import com.github.javydreamercsw.management.sync.DataSyncContributor;
 import com.github.javydreamercsw.management.sync.DeckSync;
+import com.github.javydreamercsw.management.sync.FactionSync;
+import com.github.javydreamercsw.management.sync.LocationSync;
 import com.github.javydreamercsw.management.sync.NpcSync;
 import com.github.javydreamercsw.management.sync.RingsideActionSync;
 import com.github.javydreamercsw.management.sync.SeedSyncSupport;
@@ -64,6 +80,7 @@ import com.github.javydreamercsw.management.sync.SegmentTypeSync;
 import com.github.javydreamercsw.management.sync.ShowTemplateSync;
 import com.github.javydreamercsw.management.sync.ShowTypeSync;
 import com.github.javydreamercsw.management.sync.StatusCardSync;
+import com.github.javydreamercsw.management.sync.TeamSync;
 import com.github.javydreamercsw.management.sync.TournamentSync;
 import com.github.javydreamercsw.management.sync.WrestlerSync;
 import java.io.IOException;
@@ -141,11 +158,15 @@ public final class GenerateSeedProvenanceManifest {
           Map.entry(
               "achievement",
               List.of("achievements.json", "classpath*:challenges/**/*achievements*.json")),
+          Map.entry("arena", List.of("arenas.json")),
           Map.entry("campaign_ability_card", List.of("campaign_ability_cards.json")),
           Map.entry("card", List.of("classpath*:cards/*.json")),
           Map.entry("card_set", List.of("sets.json")),
           Map.entry("championship", List.of("championships.json")),
+          Map.entry("commentator", List.of("commentators.json")),
           Map.entry("deck", List.of("decks.json")),
+          Map.entry("faction", List.of("factions.json")),
+          Map.entry("location", List.of("locations.json")),
           Map.entry("npc", List.of("npcs.json")),
           Map.entry(
               "ringside_action", List.of("ringside_action_types.json", "ringside_actions.json")),
@@ -154,6 +175,7 @@ public final class GenerateSeedProvenanceManifest {
           Map.entry("show_template", List.of("show_templates.json")),
           Map.entry("show_type", List.of("show_types.json")),
           Map.entry("status_card", List.of("status_cards.json")),
+          Map.entry("team", List.of("teams.json")),
           Map.entry("tournament", List.of("tournaments.json")),
           Map.entry(
               "wrestler",
@@ -471,6 +493,9 @@ public final class GenerateSeedProvenanceManifest {
     if (context.getBean(AchievementRepository.class).count() > 0) {
       return "achievement";
     }
+    if (context.getBean(ArenaRepository.class).count() > 0) {
+      return "arena";
+    }
     if (context.getBean(CampaignAbilityCardService.class).count() > 0) {
       return "campaign_ability_card";
     }
@@ -483,8 +508,17 @@ public final class GenerateSeedProvenanceManifest {
     if (context.getBean(TitleService.class).count() > 0) {
       return "championship";
     }
+    if (context.getBean(CommentatorRepository.class).count() > 0) {
+      return "commentator";
+    }
     if (context.getBean(DeckService.class).count() > 0) {
       return "deck";
+    }
+    if (context.getBean(FactionService.class).count() > 0) {
+      return "faction";
+    }
+    if (context.getBean(LocationRepository.class).count() > 0) {
+      return "location";
     }
     if (context.getBean(NpcService.class).count() > 0) {
       return "npc";
@@ -514,6 +548,9 @@ public final class GenerateSeedProvenanceManifest {
     }
     if (context.getBean(StatusCardService.class).findAll().size() > 0) {
       return "status_card";
+    }
+    if (context.getBean(TeamService.class).count() > 0) {
+      return "team";
     }
     if (context.getBean(TournamentService.class).count() > 0) {
       return "tournament";
@@ -552,6 +589,16 @@ public final class GenerateSeedProvenanceManifest {
       achievement.put(a.getKey(), achievementSync.achievementFingerprint(a));
     }
     domains.put("achievement", achievement);
+
+    ArenaSync arenaSync = context.getBean(ArenaSync.class);
+    Map<String, String> arenas = new TreeMap<>();
+    for (Arena a : context.getBean(ArenaRepository.class).findAllWithLocation()) {
+      if (SeedSyncSupport.isBlankFingerprint(a.getSeedFingerprint())) {
+        continue;
+      }
+      arenas.put(a.getName(), arenaSync.arenaFingerprint(a));
+    }
+    domains.put("arena", arenas);
 
     CampaignAbilityCardSync abilityCardSync = context.getBean(CampaignAbilityCardSync.class);
     Map<String, String> abilityCards = new TreeMap<>();
@@ -594,6 +641,17 @@ public final class GenerateSeedProvenanceManifest {
     }
     domains.put("championship", championships);
 
+    CommentatorSync commentatorSync = context.getBean(CommentatorSync.class);
+    CommentatorRepository commentatorRepository = context.getBean(CommentatorRepository.class);
+    Map<String, String> commentators = new TreeMap<>();
+    for (Commentator c : commentatorRepository.findAll()) {
+      if (c.getNpc() == null || SeedSyncSupport.isBlankFingerprint(c.getSeedFingerprint())) {
+        continue;
+      }
+      commentators.put(c.getNpc().getName(), commentatorSync.commentatorFingerprint(c));
+    }
+    domains.put("commentator", commentators);
+
     DeckSync deckSync = context.getBean(DeckSync.class);
     Map<String, String> decks = new TreeMap<>();
     for (Deck deck : context.getBean(DeckService.class).findAllWithCards()) {
@@ -606,6 +664,26 @@ public final class GenerateSeedProvenanceManifest {
       decks.put(deck.getWrestler().getName(), deckSync.compositionFingerprint(deck));
     }
     domains.put("deck", decks);
+
+    FactionSync factionSync = context.getBean(FactionSync.class);
+    Map<String, String> factions = new TreeMap<>();
+    for (Faction f : context.getBean(FactionRepository.class).findAllWithManager()) {
+      if (SeedSyncSupport.isBlankFingerprint(f.getSeedFingerprint())) {
+        continue;
+      }
+      factions.put(f.getName(), factionSync.factionFingerprint(f));
+    }
+    domains.put("faction", factions);
+
+    LocationSync locationSync = context.getBean(LocationSync.class);
+    Map<String, String> locations = new TreeMap<>();
+    for (Location l : context.getBean(LocationRepository.class).findAll()) {
+      if (SeedSyncSupport.isBlankFingerprint(l.getSeedFingerprint())) {
+        continue;
+      }
+      locations.put(l.getName(), locationSync.locationFingerprint(l));
+    }
+    domains.put("location", locations);
 
     NpcSync npcSync = context.getBean(NpcSync.class);
     Map<String, String> npcs = new TreeMap<>();
@@ -677,6 +755,16 @@ public final class GenerateSeedProvenanceManifest {
       statusCards.put(card.getKey(), statusCardSync.statusCardFingerprint(card));
     }
     domains.put("status_card", statusCards);
+
+    TeamSync teamSync = context.getBean(TeamSync.class);
+    Map<String, String> teams = new TreeMap<>();
+    for (Team t : context.getBean(TeamRepository.class).findAll()) {
+      if (SeedSyncSupport.isBlankFingerprint(t.getSeedFingerprint())) {
+        continue;
+      }
+      teams.put(t.getName(), teamSync.teamFingerprint(t));
+    }
+    domains.put("team", teams);
 
     TournamentSync tournamentSync = context.getBean(TournamentSync.class);
     Map<String, String> tournaments = new TreeMap<>();
