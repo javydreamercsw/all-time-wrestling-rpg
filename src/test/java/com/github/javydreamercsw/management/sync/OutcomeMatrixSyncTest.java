@@ -17,6 +17,8 @@
 package com.github.javydreamercsw.management.sync;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -36,6 +38,7 @@ import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
 import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -210,6 +213,101 @@ class OutcomeMatrixSyncTest {
         .updateMatrix(ArgumentMatchers.argThat(m -> m.getSeedFingerprint() != null));
     verify(outcomeMatrixService, Mockito.atLeastOnce())
         .updateEntry(ArgumentMatchers.argThat(e -> e.getSeedFingerprint() != null));
+  }
+
+  @Test
+  void versionChange_silentUpdatesCoverCategoryAndEntryArms() {
+    // Tier-1 arms the three-tier pin never reached, driven against the real feud_angle.json:
+    // the "Feud Angle" MATRIX header is stamped clean at a stale category (MATCH_FLOW vs the
+    // seed's FEUD_ANGLE) so the category SILENT_UPDATE arm fires; the roll-3 entry is stamped
+    // clean (hash of its current values) at drifted mechanical values so the delta, injuryCaused
+    // and null-redirect arms all fire in one pass; the roll-2 entry equals the seed exactly, so
+    // it takes the stamp-only save path through a manifest hash.
+    String roll2Text =
+        "{WRESTLER_1} leaves {WRESTLER_2} alone in the ring to be systematically destroyed by a"
+            + " rival stable, walking up the ramp with a smirk.";
+    String roll3Text =
+        "{WRESTLER_1} grabs a microphone and reveals they only teamed with {WRESTLER_2} to keep"
+            + " them away from the championship picture.";
+    OutcomeMatrix matrix =
+        matrix(
+            "Feud Angle",
+            "Storyline developments that drive ongoing rivalries and generate dramatic twists",
+            OutcomeMatrixCategory.MATCH_FLOW);
+    matrix.setSeedFingerprint(
+        VERIFY_SUPPORT.fingerprint(
+            "Storyline developments that drive ongoing rivalries and generate dramatic twists",
+            "MATCH_FLOW"));
+
+    OutcomeMatrixEntry stampOnly = entry(matrix, 2, roll2Text);
+    stampOnly.setHeatDelta(5);
+    stampOnly.setFanDelta(-300L);
+    stampOnly.setSeedFingerprint(
+        VERIFY_SUPPORT.fingerprint(roll2Text, "5", "-300", null, null, "false", null));
+
+    OutcomeMatrixEntry drift = entry(matrix, 3, roll3Text);
+    drift.setHeatDelta(9);
+    drift.setFanDelta(9L);
+    drift.setTvGradeDelta(9);
+    drift.setGrudgeGradeDelta(9);
+    drift.setInjuryCaused(true);
+    drift.setRedirectToMatrix(matrix);
+    drift.setSeedFingerprint(
+        VERIFY_SUPPORT.fingerprint(roll3Text, "9", "9", "9", "9", "true", "Feud Angle"));
+
+    when(outcomeMatrixService.count()).thenReturn(1L);
+    when(outcomeMatrixService.getByName("Feud Angle")).thenReturn(Optional.of(matrix));
+    when(entryRepository.findAllWithMatrixAndRedirect()).thenReturn(List.of(stampOnly, drift));
+    when(outcomeMatrixService.updateMatrix(any())).thenReturn(matrix);
+
+    SeedProvenanceManifest manifest =
+        SeedProvenanceManifest.of(
+            Map.of("outcome_matrix", Map.of("Feud Angle (roll 2)", "manifest-hash-roll2")));
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    OutcomeMatrixSync detectionSync =
+        new OutcomeMatrixSync(
+            "true",
+            outcomeMatrixService,
+            matrixRepository,
+            entryRepository,
+            new PathMatchingResourcePatternResolver(),
+            new ObjectMapper(),
+            parking,
+            manifest);
+    detectionSync.detectVersionChangeCollisions();
+
+    assertEquals(
+        OutcomeMatrixCategory.FEUD_ANGLE,
+        matrix.getCategory(),
+        "category SILENT_UPDATE arm wrote the seed value");
+    Mockito.verify(outcomeMatrixService, Mockito.atLeastOnce()).updateMatrix(matrix);
+    // Stamp-only row: everything equals the seed → no silent write, only the manifest re-stamp.
+    assertEquals(
+        "manifest-hash-roll2",
+        stampOnly.getSeedFingerprint(),
+        "a clean seed-unchanged row must adopt the manifest hash (stamp-only save)");
+    // Drifted entry: every mechanical arm wrote the seed value; the null redirect arm cleared.
+    assertEquals(4, drift.getHeatDelta(), "heatDelta arm wrote the seed value");
+    assertEquals(-250L, drift.getFanDelta(), "fanDelta arm wrote the seed value");
+    assertNull(drift.getTvGradeDelta(), "tvGradeDelta arm wrote the seed's null");
+    assertNull(drift.getGrudgeGradeDelta(), "grudgeGradeDelta arm wrote the seed's null");
+    assertFalse(drift.isInjuryCaused(), "injuryCaused arm wrote the seed value");
+    assertNull(drift.getRedirectToMatrix(), "null-redirect silent arm cleared the reference");
+    assertEquals(
+        VERIFY_SUPPORT.fingerprint(roll3Text, "4", "-250", null, null, "false", null),
+        drift.getSeedFingerprint(),
+        "the tier-1 entry re-stamps with the incoming content hash");
+    verify(entryRepository)
+        .saveAll(
+            Mockito.argThat(
+                l ->
+                    java.util.stream.StreamSupport.stream(l.spliterator(), false)
+                            .anyMatch(e -> e == drift)
+                        && java.util.stream.StreamSupport.stream(l.spliterator(), false)
+                            .anyMatch(e -> e == stampOnly)));
+    Mockito.verify(parking, Mockito.never())
+        .parkFieldConflict(
+            anyString(), anyString(), anyString(), anyString(), any(), any(), anyString());
   }
 
   @Test

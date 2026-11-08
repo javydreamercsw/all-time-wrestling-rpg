@@ -544,6 +544,191 @@ class ShowTemplateSyncTest {
   }
 
   @Test
+  @DisplayName("Detection silent-arms cover the guarded reference and date arms")
+  void versionChange_silentArmsCoverReferenceAndDateFields() {
+    // Tier-1 arms the three-tier pin never reached, driven against the real show_templates.json:
+    // "Continuum" is stamped clean (hash of its current values) with drifted commentaryTeamName
+    // (a ghost name — the not-found warn arm keeps the reference), recurrenceType, dayOfWeek,
+    // durationDays, and expansion list; "Timeless" is clean and seed-unchanged except its
+    // expectedMatches (the seed ships null, so the row's 9 silently updates into null), which
+    // exercises the null expectedMatches arm plus the null month/genderConstraint NO_OP arms and
+    // the stamp-only save.
+    var ghostTeam = new CommentaryTeam();
+    ghostTeam.setName("Ghost Broadcast Team");
+    var weekly = new ShowType();
+    weekly.setName("Weekly");
+    ShowTemplate continuum = new ShowTemplate();
+    continuum.setName("Continuum");
+    continuum.setShowType(weekly);
+    continuum.setDescription(SEED_CONTINUUM_DESCRIPTION);
+    continuum.setCommentaryTeam(ghostTeam);
+    continuum.setDurationDays(3);
+    continuum.setRecurrenceType(RecurrenceType.MONTHLY);
+    continuum.setDayOfWeek(DayOfWeek.THURSDAY);
+    continuum.setExpectedMatches(5);
+    continuum.setRequiredExpansions(new HashSet<>(Set.of("OLD")));
+    continuum.setSeedFingerprint(
+        VERIFY_SUPPORT.fingerprint(
+            SEED_CONTINUUM_DESCRIPTION,
+            "Weekly",
+            "Ghost Broadcast Team",
+            5,
+            null,
+            3,
+            "MONTHLY",
+            "THURSDAY",
+            null,
+            null,
+            null,
+            null,
+            "OLD"));
+
+    ShowTemplate timeless = new ShowTemplate();
+    timeless.setName("Timeless");
+    timeless.setShowType(weekly);
+    timeless.setDescription(SEED_TIMELESS_DESCRIPTION);
+    timeless.setDurationDays(1);
+    timeless.setRecurrenceType(RecurrenceType.WEEKLY);
+    timeless.setDayOfWeek(DayOfWeek.FRIDAY);
+    timeless.setExpectedMatches(9); // the seed ships no value — it silently updates into null
+    timeless.setSeedFingerprint(
+        VERIFY_SUPPORT.fingerprint(
+            SEED_TIMELESS_DESCRIPTION,
+            "Weekly",
+            "All-Time Broadcast Team",
+            9,
+            null,
+            1,
+            "WEEKLY",
+            "FRIDAY",
+            null,
+            null,
+            null,
+            null,
+            ""));
+
+    when(showTemplateService.count()).thenReturn(2L);
+    when(showTemplateRepository.findByName("Continuum")).thenReturn(Optional.of(continuum));
+    when(showTemplateRepository.findByName("Timeless")).thenReturn(Optional.of(timeless));
+    when(commentaryTeamRepository.findAll()).thenReturn(List.of()); // ghost team unresolvable
+
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    ShowTemplateSync detectionSync =
+        new ShowTemplateSync(
+            "true",
+            showTemplateService,
+            showTemplateRepository,
+            showTypeRepository,
+            commentaryTeamRepository,
+            segmentTypeService,
+            segmentRuleService,
+            tournamentRepository,
+            new ObjectMapper(),
+            parking,
+            EMPTY_MANIFEST);
+    detectionSync.detectVersionChangeCollisions();
+
+    // Continuum: silent arms wrote the seed values; the ghost team reference is kept (warn arm).
+    Assertions.assertThat(continuum.getCommentaryTeam()).isEqualTo(ghostTeam);
+    Assertions.assertThat(continuum.getDurationDays()).isEqualTo(1);
+    Assertions.assertThat(continuum.getRecurrenceType()).isEqualTo(RecurrenceType.WEEKLY);
+    Assertions.assertThat(continuum.getDayOfWeek()).isEqualTo(DayOfWeek.MONDAY);
+    Assertions.assertThat(continuum.getRequiredExpansions()).isEmpty();
+    // Timeless: the seed drops expectedMatches (ships null), so the clean row's stale 9 is a
+    // SILENT_UPDATE into null — the null-write arm of the expectedMatches silent writer. The
+    // no-write NO_OP arms (month, genderConstraint) leave their nulls untouched.
+    Assertions.assertThat(timeless.getExpectedMatches()).isNull();
+    Assertions.assertThat(timeless.getMonth()).isNull();
+    Assertions.assertThat(timeless.getGenderConstraint()).isNull();
+    Mockito.verify(parking, Mockito.never())
+        .parkFieldConflict(
+            anyString(), anyString(), anyString(), anyString(), any(), any(), anyString());
+    verify(showTemplateRepository, Mockito.atLeastOnce()).save(continuum);
+    verify(showTemplateRepository, Mockito.atLeastOnce()).save(timeless);
+  }
+
+  @Test
+  @DisplayName("Detection silent-arms cover the null and unresolvable reference arms")
+  void versionChange_silentArmsCoverNullAndGhostArms() {
+    // A caller-supplied catalog drives the remaining silent arms in one pass: the ghost
+    // showTypeName (unresolvable reference — warn, keep), the null commentaryTeamName (clears
+    // the reference), and the null durationDays/recurrenceType/dayOfWeek fallbacks plus the
+    // dayOfMonth/weekOfMonth writes.
+    ShowTemplateDTO dto = new ShowTemplateDTO();
+    dto.setName("Catalog Edge Template");
+    dto.setDescription("seed description");
+    dto.setShowTypeName("Ghost Show Type");
+    dto.setCommentaryTeamName(null);
+    dto.setDurationDays(null);
+    dto.setRecurrenceType(null);
+    dto.setDayOfWeek(null);
+    dto.setDayOfMonth(3);
+    dto.setWeekOfMonth(1);
+
+    var weekly = new ShowType();
+    weekly.setName("Weekly");
+    var team = new CommentaryTeam();
+    team.setName("All-Time Broadcast Team");
+    ShowTemplate row = new ShowTemplate();
+    row.setName("Catalog Edge Template");
+    row.setShowType(weekly);
+    row.setCommentaryTeam(team);
+    row.setDescription("seed description");
+    row.setDurationDays(2);
+    row.setRecurrenceType(RecurrenceType.WEEKLY);
+    row.setDayOfWeek(DayOfWeek.TUESDAY);
+    row.setExpectedMatches(null);
+    row.setExpectedPromos(null);
+    row.setSeedFingerprint(
+        VERIFY_SUPPORT.fingerprint(
+            "seed description",
+            "Weekly",
+            "All-Time Broadcast Team",
+            null,
+            null,
+            2,
+            "WEEKLY",
+            "TUESDAY",
+            null,
+            null,
+            null,
+            null,
+            ""));
+
+    when(showTemplateService.count()).thenReturn(1L);
+    when(showTemplateRepository.findByName("Catalog Edge Template")).thenReturn(Optional.of(row));
+    when(commentaryTeamRepository.findAll()).thenReturn(List.of());
+
+    ShowTemplateSync detectionSync =
+        new ShowTemplateSync(
+            "true",
+            showTemplateService,
+            showTemplateRepository,
+            showTypeRepository,
+            commentaryTeamRepository,
+            segmentTypeService,
+            segmentRuleService,
+            tournamentRepository,
+            new ObjectMapper(),
+            Mockito.mock(SeedUpdateReviewService.class),
+            EMPTY_MANIFEST) {
+          @Override
+          protected List<ShowTemplateDTO> loadCatalog() {
+            return List.of(dto);
+          }
+        };
+    detectionSync.detectVersionChangeCollisions();
+
+    Assertions.assertThat(row.getShowType()).isEqualTo(weekly);
+    Assertions.assertThat(row.getCommentaryTeam()).isNull();
+    Assertions.assertThat(row.getDurationDays()).isEqualTo(1);
+    Assertions.assertThat(row.getRecurrenceType()).isEqualTo(RecurrenceType.NONE);
+    Assertions.assertThat(row.getDayOfWeek()).isNull();
+    Assertions.assertThat(row.getDayOfMonth()).isEqualTo(3);
+    Assertions.assertThat(row.getWeekOfMonth()).isEqualTo(1);
+  }
+
+  @Test
   @DisplayName("FULL-mode detection is inert; non-seed rows never touched")
   void normalBootBehaviorUnchanged() {
     ShowTemplateSync fullSync =

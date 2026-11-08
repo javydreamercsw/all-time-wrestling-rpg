@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.sync;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -36,6 +37,7 @@ import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
 import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -219,6 +221,183 @@ class ArenaSyncTest {
 
     verifyNoInteractions(seedReviewService);
     verify(arenaRepository, never()).findAllWithLocation();
+  }
+
+  @Test
+  void versionChange_silentUpdatesCoverEveryWriteArm() {
+    // Tier-1 write arms the three-tier pin never reached, driven against the real arenas.json:
+    // "Madison Square Garden" drifted on location/capacity/alignmentBias/imageUrl/traits (each a
+    // SILENT_UPDATE against its clean stamp); "Tokyo Dome" carries a null capacity (the
+    // observation ternary's null side) and a location whose seed lookup resolves to nothing (the
+    // not-found warn arm — the reference is kept).
+    var ghostCity = location("Ghost City");
+    var tier1row =
+        arena(
+            "Madison Square Garden",
+            "The 'World's Most Famous Arena' and the spiritual home of sports entertainment. Every"
+                + " legend has walked these hallowed halls.",
+            ghostCity,
+            999,
+            Arena.AlignmentBias.HEEL_FAVORABLE,
+            Set.of("old-trait"));
+    tier1row.setImageUrl("http://example.com/old-msg.png");
+    tier1row.setSeedFingerprint(
+        VERIFY_SUPPORT.fingerprint(
+            "The 'World's Most Famous Arena' and the spiritual home of sports entertainment. Every"
+                + " legend has walked these hallowed halls.",
+            "Ghost City",
+            999,
+            "HEEL_FAVORABLE",
+            "http://example.com/old-msg.png",
+            "old-trait"));
+
+    var egg =
+        Arena.builder()
+            .name("Tokyo Dome")
+            .description(
+                "The massive 'Big Egg'. Host to the largest spectacles in Japanese wrestling"
+                    + " history, where the atmosphere is both respectful and electric.")
+            .location(location("Ghost City 2"))
+            .capacity(null)
+            .alignmentBias(Arena.AlignmentBias.FACE_FAVORABLE)
+            .build();
+    egg.setEnvironmentalTraits(Set.of("massive-scale", "respectful-silence"));
+    egg.setSeedFingerprint(
+        VERIFY_SUPPORT.fingerprint(
+            "The massive 'Big Egg'. Host to the largest spectacles in Japanese wrestling history,"
+                + " where the atmosphere is both respectful and electric.",
+            "Ghost City 2",
+            null,
+            "FACE_FAVORABLE",
+            null,
+            "massive-scale\nrespectful-silence"));
+
+    when(arenaRepository.count()).thenReturn(2L);
+    when(arenaRepository.findAllWithLocation()).thenReturn(List.of(tier1row, egg));
+    when(locationRepository.findByName(anyString()))
+        .thenAnswer(
+            inv ->
+                "New York City".equals(inv.getArgument(0))
+                    ? Optional.of(location("New York City"))
+                    : Optional.empty());
+
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    ArenaSync detectionSync =
+        new ArenaSync(
+            "true",
+            arenaRepository,
+            locationRepository,
+            new ObjectMapper(),
+            parking,
+            EMPTY_MANIFEST);
+    detectionSync.detectVersionChangeCollisions();
+
+    // MSG: every silent arm wrote the seed value.
+    assertEquals("New York City", tier1row.getLocation().getName(), "location arm resolved");
+    assertEquals(18500, tier1row.getCapacity(), "capacity arm wrote the seed value");
+    assertEquals(Arena.AlignmentBias.NEUTRAL, tier1row.getAlignmentBias(), "bias arm wrote");
+    assertNull(tier1row.getImageUrl(), "imageUrl arm writes unconditionally (no guard)");
+    assertEquals(
+        Set.of("historic-prestige", "intense-spotlight"),
+        tier1row.getEnvironmentalTraits(),
+        "traits arm wrote the seed set");
+    // Tokyo Dome: null capacity written through the guard; unresolvable location kept (warn arm).
+    assertEquals(45000, egg.getCapacity(), "null capacity written from the seed");
+    assertEquals("Ghost City 2", egg.getLocation().getName(), "unresolvable location kept");
+    Mockito.verify(parking, Mockito.never())
+        .parkFieldConflict(
+            anyString(), anyString(), anyString(), anyString(), any(), any(), anyString());
+  }
+
+  @Test
+  void versionChange_stampOnlyRowReStampsFromManifest() {
+    // The stamp-only-save branch: a clean row whose seed is unchanged adopts the manifest hash
+    // through the silent-apply-free save path.
+    var msg =
+        arena(
+            "Madison Square Garden",
+            "The 'World's Most Famous Arena' and the spiritual home of sports entertainment. Every"
+                + " legend has walked these hallowed halls.",
+            location("New York City"),
+            18500,
+            Arena.AlignmentBias.NEUTRAL,
+            Set.of("historic-prestige", "intense-spotlight"));
+    msg.setSeedFingerprint(
+        VERIFY_SUPPORT.fingerprint(
+            "The 'World's Most Famous Arena' and the spiritual home of sports entertainment. Every"
+                + " legend has walked these hallowed halls.",
+            "New York City",
+            18500,
+            "NEUTRAL",
+            null,
+            "historic-prestige\nintense-spotlight"));
+
+    when(arenaRepository.count()).thenReturn(1L);
+    when(arenaRepository.findAllWithLocation()).thenReturn(List.of(msg));
+    SeedProvenanceManifest manifest =
+        SeedProvenanceManifest.of(
+            Map.of("arena", Map.of("Madison Square Garden", "manifest-hash-msg")));
+
+    ArenaSync detectionSync =
+        new ArenaSync(
+            "true",
+            arenaRepository,
+            locationRepository,
+            new ObjectMapper(),
+            Mockito.mock(SeedUpdateReviewService.class),
+            manifest);
+    detectionSync.detectVersionChangeCollisions();
+
+    assertEquals(
+        "manifest-hash-msg",
+        msg.getSeedFingerprint(),
+        "a clean unchanged row must adopt the manifest hash (stamp-only save)");
+    ArgumentCaptor<List<Arena>> captor = ArgumentCaptor.forClass(List.class);
+    verify(arenaRepository).saveAll(captor.capture());
+    assertTrue(captor.getValue().contains(msg), "the stamp-only row must be persisted");
+  }
+
+  @Test
+  void versionChangeDetection_emptyTableIsInert() {
+    // Empty-DB guard arm: PROTECT mode with no rows returns before any lookup.
+    when(arenaRepository.count()).thenReturn(0L);
+    ArenaSync detectionSync =
+        new ArenaSync(
+            "true",
+            arenaRepository,
+            locationRepository,
+            new ObjectMapper(),
+            Mockito.mock(SeedUpdateReviewService.class),
+            EMPTY_MANIFEST);
+    detectionSync.detectVersionChangeCollisions();
+    verify(arenaRepository, never()).findAllWithLocation();
+  }
+
+  @Test
+  void versionChangeDetection_toleratesBrokenSeedResource() {
+    // A seed file that fails to deserialize is logged and skipped — the pass never propagates.
+    when(arenaRepository.count()).thenReturn(1L);
+    when(arenaRepository.findAllWithLocation()).thenReturn(List.of());
+    ObjectMapper brokenMapper =
+        new ObjectMapper() {
+          @Override
+          public <T> T readValue(
+              java.io.InputStream src, com.fasterxml.jackson.core.type.TypeReference<T> typeRef)
+              throws java.io.IOException {
+            throw new java.io.IOException("boom");
+          }
+        };
+    ArenaSync detectionSync =
+        new ArenaSync(
+            "true",
+            arenaRepository,
+            locationRepository,
+            brokenMapper,
+            Mockito.mock(SeedUpdateReviewService.class),
+            EMPTY_MANIFEST);
+    org.junit.jupiter.api.Assertions.assertDoesNotThrow(
+        detectionSync::detectVersionChangeCollisions);
+    verify(arenaRepository, never()).saveAll(any());
   }
 
   @Test

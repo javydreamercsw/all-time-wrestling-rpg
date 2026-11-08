@@ -36,6 +36,7 @@ import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
 import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
@@ -358,6 +359,89 @@ class NpcSyncTest {
         Set.of("npc:samuel-winters|awareness"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
+  }
+
+  @Test
+  void versionChange_silentUpdatesCoverGuardedArms() {
+    // Tier-1 write arms the three-tier pin never reached: the null-guarded expansionCode and
+    // awareness arms plus the stamp-only save. Rezan the Resolved seeds at expansion "CUSTOM"
+    // and awareness 100 (npcs.json); the row is stamped clean at expansion "OLD"/awareness 90,
+    // so the seed's values classify SILENT_UPDATE and write through the guards. MVP is the
+    // stamp-only row: clean, seed-unchanged, re-stamped from a manifest hash with nothing to
+    // apply and nothing to park.
+    Npc rezan = new Npc();
+    rezan.setName("Rezan the Resolved");
+    rezan.setDescription(
+        "An ageless Matchkeeper from the Chrono-Monastery of the Unseen Year. Pale-skinned and"
+            + " blindfolded with gold-plated runes, Rezan is an eternal arbiter summoned to"
+            + " stabilize high-stakes cross-era contests. He is unwavering, impossible to"
+            + " intimidate, and unaffected by distractions or chaos. When a match exceeds 12"
+            + " turns, he utters 'It is decided,' and the next pin counts regardless of kickout"
+            + " rolls.");
+    rezan.setNpcType("Referee");
+    rezan.setExpansionCode("OLD");
+    rezan.getAttributes().put(NpcService.ATTRIBUTE_AWARENESS, 90);
+    npcCanonicalHashed(rezan);
+
+    Npc stampOnly = new Npc();
+    stampOnly.setName("MVP");
+    stampOnly.setDescription("");
+    stampOnly.setNpcType("Manager");
+    stampOnly.setExpansionCode("HURT_BUSINESS");
+    npcCanonicalHashed(stampOnly);
+
+    when(npcService.count()).thenReturn(2L);
+    when(npcService.findAllUnfiltered()).thenReturn(List.of(rezan, stampOnly));
+
+    SeedProvenanceManifest manifest =
+        SeedProvenanceManifest.of(Map.of("npc", Map.of("MVP", "manifest-hash-mvp")));
+    Set<String> parkedCoordinates = new HashSet<>();
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    Mockito.doAnswer(
+            inv -> {
+              parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
+              return null;
+            })
+        .when(parking)
+        .parkFieldConflict(
+            anyString(), anyString(), anyString(), anyString(), any(), any(), anyString());
+
+    NpcSync detectionSync = new NpcSync("true", npcService, new ObjectMapper(), parking, manifest);
+    detectionSync.detectVersionChangeCollisions();
+
+    assertEquals(
+        "CUSTOM", rezan.getExpansionCode(), "guarded expansionCode arm wrote the seed value");
+    Mockito.verify(npcService).setAwareness(rezan, 100);
+    Mockito.verify(npcService).saveAll(Mockito.argThat(list -> list.contains(rezan)));
+    assertEquals(
+        "manifest-hash-mvp",
+        stampOnly.getSeedFingerprint(),
+        "a clean unchanged row must adopt the manifest hash (stamp-only save)");
+    Mockito.verify(npcService).saveAll(Mockito.argThat(list -> list.contains(stampOnly)));
+    assertEquals(Set.of(), parkedCoordinates, "tier-1 and stamp-only rows never park a decision");
+  }
+
+  @Test
+  void versionChangeDetection_toleratesBrokenSeedResource() {
+    // Inner IOException catch: a seed file that fails to deserialize is logged and skipped.
+    Npc existing = new Npc();
+    existing.setName("Charles");
+    when(npcService.findAllUnfiltered()).thenReturn(List.of(existing));
+    ObjectMapper brokenMapper =
+        new ObjectMapper() {
+          @Override
+          public <T> T readValue(
+              java.io.InputStream src, com.fasterxml.jackson.core.type.TypeReference<T> typeRef)
+              throws java.io.IOException {
+            throw new java.io.IOException("boom");
+          }
+        };
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    NpcSync detectionSync = new NpcSync("true", npcService, brokenMapper, parking, EMPTY_MANIFEST);
+    org.junit.jupiter.api.Assertions.assertDoesNotThrow(
+        detectionSync::detectVersionChangeCollisions);
+    Mockito.verify(npcService, never()).saveAll(any());
+    Mockito.verifyNoInteractions(parking);
   }
 
   @Test

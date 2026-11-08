@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.base.domain.account.*;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.AbstractJpaTest;
 import com.github.javydreamercsw.management.domain.campaign.*;
@@ -67,6 +68,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.domain.show.template.RecurrenceType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
@@ -90,17 +92,22 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
+import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.seedreview.SeedUpdateDecisionService;
 import com.github.javydreamercsw.management.sync.review.SeedDomainApplier;
 import com.github.javydreamercsw.management.sync.review.SeedFieldDecision;
 import com.github.javydreamercsw.management.sync.review.SeedReviewGate;
 import jakarta.persistence.EntityManager;
+import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -390,6 +397,155 @@ class SeedAppliersTest extends AbstractJpaTest {
   }
 
   @Test
+  void wrestlerApplierUseNewCoversGenderReferenceArms() {
+    // The typed enum/reference arms the lossy-name pin never reached: gender (enum valueOf),
+    // imageUrl, and expansionCode — one batch, one row.
+    Wrestler jessie = wrestler("Jessie McKay");
+    wrestlerRepository.save(jessie);
+    flushAndClear();
+
+    SeedUpdateDecision gender =
+        park(
+            "wrestler",
+            "wrestler:jessie-mckay",
+            "Jessie McKay",
+            "gender",
+            "MALE",
+            "FEMALE",
+            "fp-g");
+    SeedUpdateDecision image =
+        park(
+            "wrestler",
+            "wrestler:jessie-mckay",
+            "Jessie McKay",
+            "imageUrl",
+            null,
+            "http://example.com/jessie.png",
+            "fp-i");
+    SeedUpdateDecision expansion =
+        park(
+            "wrestler",
+            "wrestler:jessie-mckay",
+            "Jessie McKay",
+            "expansionCode",
+            "EXTREME",
+            "RUMBLE",
+            "fp-e");
+
+    Map<Long, SeedFieldDecision> batch = new HashMap<>();
+    batch.put(gender.getId(), SeedFieldDecision.USE_NEW);
+    batch.put(image.getId(), SeedFieldDecision.USE_NEW);
+    batch.put(expansion.getId(), SeedFieldDecision.USE_NEW);
+    service(wrestlerApplier).apply(batch);
+
+    flushAndClear();
+    Wrestler reloaded = wrestlerRepository.findById(jessie.getId()).orElseThrow();
+    assertEquals(Gender.FEMALE, reloaded.getGender(), "gender arm wrote the parsed enum");
+    assertEquals("http://example.com/jessie.png", reloaded.getImageUrl(), "imageUrl arm wrote");
+    assertEquals("RUMBLE", reloaded.getExpansionCode(), "expansionCode arm wrote");
+  }
+
+  @Test
+  void wrestlerApplierNotFoundWarnsOnEveryVerb() {
+    // Every verb's not-found lambda: decisions whose display name matches no row log a warning
+    // and leave the queue untouched (no row is created, no decision fails).
+    SeedUpdateDecision keep =
+        park("wrestler", "wrestler:ghost-row", "Ghost Row", "description", "old", "new", "fp-k");
+    SeedUpdateDecision useNew =
+        park("wrestler", "wrestler:ghost-row", "Ghost Row", "description", "old", "new", "fp-u");
+    SeedUpdateDecision custom =
+        park("wrestler", "wrestler:ghost-row", "Ghost Row", "description", "old", "new", "fp-c");
+    SeedUpdateDecision remove = parkRemoval("wrestler", "wrestler:ghost-row", "Ghost Row", "fp-r");
+
+    Map<Long, SeedFieldDecision> batch = new HashMap<>();
+    batch.put(keep.getId(), SeedFieldDecision.KEEP_MINE);
+    batch.put(useNew.getId(), SeedFieldDecision.USE_NEW);
+    batch.put(custom.getId(), SeedFieldDecision.KEEP_AS_CUSTOM);
+    batch.put(remove.getId(), SeedFieldDecision.REMOVE);
+    service(wrestlerApplier).apply(batch);
+
+    flushAndClear();
+    assertTrue(
+        wrestlerRepository.findByName("Ghost Row").isEmpty(),
+        "a decision for a missing row must not create it");
+    assertEquals(
+        SeedUpdateDecision.STATUS_APPLIED_KEEP,
+        decisionRepository.findById(keep.getId()).orElseThrow().getStatus(),
+        "the keep decision still terminates (nothing to keep is a warn, not a failure)");
+    assertEquals(
+        SeedUpdateDecision.STATUS_APPLIED_NEW,
+        decisionRepository.findById(useNew.getId()).orElseThrow().getStatus());
+    assertEquals(
+        SeedUpdateDecision.STATUS_APPLIED_KEEP_AS_CUSTOM,
+        decisionRepository.findById(custom.getId()).orElseThrow().getStatus());
+    assertEquals(
+        SeedUpdateDecision.STATUS_APPLIED_REMOVE,
+        decisionRepository.findById(remove.getId()).orElseThrow().getStatus());
+  }
+
+  @Test
+  void wrestlerApplierUseNewBuildsAlignmentAndToleratesInvalidEnum() {
+    // The alignment writer's two remaining arms: the builder path (row holds no alignment yet —
+    // setAlignment appends the first holder) and the IllegalArgumentException catch (an invalid
+    // enum string is warned and skipped, the apply still stamps).
+    Wrestler bare = wrestler("OMZ");
+    bare.getAlignments().clear();
+    wrestlerRepository.save(bare);
+    flushAndClear();
+    assertTrue(
+        wrestlerRepository.findById(bare.getId()).orElseThrow().getAlignment() == null,
+        "fixture precondition: the row holds no alignment");
+
+    SeedUpdateDecision build =
+        park("wrestler", "wrestler:omz", "OMZ", "alignment", "FACE", "HEEL", "fp-build");
+    service(wrestlerApplier).apply(Map.of(build.getId(), SeedFieldDecision.USE_NEW));
+
+    flushAndClear();
+    assertEquals(
+        AlignmentType.HEEL,
+        wrestlerRepository.findById(bare.getId()).orElseThrow().getAlignment().getAlignmentType(),
+        "USE_NEW must build the alignment holder when the row has none");
+
+    Wrestler holder = wrestler("Jessie McKay"); // seeds at HEEL
+    flushAndClear();
+    SeedUpdateDecision invalid =
+        park(
+            "wrestler",
+            "wrestler:jessie-mckay",
+            "Jessie McKay",
+            "alignment",
+            "HEEL",
+            "NOT_A_TYPE",
+            "fp-bad");
+    service(wrestlerApplier).apply(Map.of(invalid.getId(), SeedFieldDecision.USE_NEW));
+
+    flushAndClear();
+    Wrestler stillThere = wrestlerRepository.findById(holder.getId()).orElseThrow();
+    assertEquals(
+        AlignmentType.HEEL,
+        stillThere.getAlignment().getAlignmentType(),
+        "an invalid enum value must be warned and skipped, not written");
+    assertEquals("fp-bad", stillThere.getSeedFingerprint(), "the apply still stamps the row");
+  }
+
+  @Test
+  void wrestlerApplierUnknownFieldFailsLoud() {
+    // The default arm: an unknown field name fails loud with IllegalStateException.
+    Wrestler jessie = wrestler("Jessie McKay");
+    flushAndClear();
+    SeedUpdateDecision unknown =
+        park("wrestler", "wrestler:jessie-mckay", "Jessie McKay", "fans", "1", "2", "fp-u");
+    IllegalStateException exception =
+        assertThrows(
+            IllegalStateException.class,
+            () ->
+                service(wrestlerApplier).apply(Map.of(unknown.getId(), SeedFieldDecision.USE_NEW)));
+    assertTrue(
+        exception.getMessage().contains("not a seed-owned field"),
+        "an unknown wrestler field must fail loud");
+  }
+
+  @Test
   void wrestlerApplierRemoveRefusedWhenDependentsExist() {
     // A deck references the wrestler: the apply service's pre-dispatch hasDependents check must
     // refuse the removal BEFORE any dispatch, leaving the row and decision untouched.
@@ -473,6 +629,49 @@ class SeedAppliersTest extends AbstractJpaTest {
     assertEquals(
         SeedUpdateDecision.STATUS_APPLIED_NEW,
         decisionRepository.findById(decision.getId()).orElseThrow().getStatus());
+  }
+
+  @Test
+  void wrestlerApplierUseNewCoversNullValueArms() {
+    // The null-value arms of the typed writer on the columns that are nullable: a decision whose
+    // newValue is null clears heritageTag and passes a null description straight through (the
+    // drive/deckSize/startingHealth null arms are unreachable at the persistence layer — those
+    // columns are NOT NULL).
+    Wrestler jessie = wrestler("Jessie McKay");
+    jessie.setHeritageTag("old tag");
+    jessie.setDescription("old description");
+    wrestlerRepository.save(jessie);
+    flushAndClear();
+
+    SeedUpdateDecision heritage =
+        park(
+            "wrestler",
+            "wrestler:jessie-mckay",
+            "Jessie McKay",
+            "heritageTag",
+            "old tag",
+            null,
+            "fp-ht");
+    SeedUpdateDecision description =
+        park(
+            "wrestler",
+            "wrestler:jessie-mckay",
+            "Jessie McKay",
+            "description",
+            "old description",
+            null,
+            "fp-d");
+
+    service(wrestlerApplier)
+        .apply(
+            Map.of(
+                heritage.getId(), SeedFieldDecision.USE_NEW,
+                description.getId(), SeedFieldDecision.USE_NEW));
+
+    flushAndClear();
+    Wrestler reloaded = wrestlerRepository.findById(jessie.getId()).orElseThrow();
+    assertNull(reloaded.getHeritageTag(), "null heritageTag arm clears the value");
+    assertNull(reloaded.getDescription(), "null description arm clears the value");
   }
 
   // ── SegmentRuleSeedApplier ──────────────────────────────────────────────────
@@ -1195,7 +1394,107 @@ class SeedAppliersTest extends AbstractJpaTest {
         "the referenced NPC must survive the refused removal");
   }
 
-  // ── AchievementSeedApplier ──────────────────────────────────────────────────
+  @Test
+  void npcApplierUseNewCoversEveryFieldArm() {
+    // One decision per uncovered applyFieldValue arm: npcType, expansionCode, the null-alignment
+    // arm (seed omits alignment → NEUTRAL), and the awareness write through the service. A second
+    // row covers the null-awareness arm (seed omits it → 0) — both rows sit in one all-or-nothing
+    // batch, matching the review UI's single submit.
+    Npc target = npc("Charles");
+    target.setAlignment(AlignmentType.FACE);
+    target.getAttributes().put(NpcService.ATTRIBUTE_AWARENESS, 50);
+    npcRepositoryTest.save(target);
+    Npc cleared = npc("Lena Voss");
+    cleared.getAttributes().put(NpcService.ATTRIBUTE_AWARENESS, 50);
+    npcRepositoryTest.save(cleared);
+    flushAndClear();
+
+    SeedUpdateDecision type =
+        park("npc", "npc:charles", "Charles", "npcType", "Owner", "Referee", "fp-t");
+    SeedUpdateDecision expansion =
+        park("npc", "npc:charles", "Charles", "expansionCode", "BASE_GAME", "RUMBLE", "fp-e");
+    SeedUpdateDecision alignment =
+        park("npc", "npc:charles", "Charles", "alignment", "FACE", null, "fp-a");
+    SeedUpdateDecision awareness =
+        park("npc", "npc:charles", "Charles", "awareness", "50", "85", "fp-w");
+    SeedUpdateDecision clearedAwareness =
+        park("npc", "npc:lena-voss", "Lena Voss", "awareness", "50", null, "fp-w0");
+
+    service(npcApplier)
+        .apply(
+            Map.of(
+                type.getId(), SeedFieldDecision.USE_NEW,
+                expansion.getId(), SeedFieldDecision.USE_NEW,
+                alignment.getId(), SeedFieldDecision.USE_NEW,
+                awareness.getId(), SeedFieldDecision.USE_NEW,
+                clearedAwareness.getId(), SeedFieldDecision.USE_NEW));
+
+    flushAndClear();
+    Npc reloaded = npcRepositoryTest.findById(target.getId()).orElseThrow();
+    assertEquals("Referee", reloaded.getNpcType(), "npcType arm wrote the decision value");
+    assertEquals(
+        "RUMBLE", reloaded.getExpansionCode(), "expansionCode arm wrote the decision value");
+    assertEquals(
+        AlignmentType.NEUTRAL, reloaded.getAlignment(), "null alignment arm falls back to NEUTRAL");
+    assertEquals(
+        85,
+        ((Number) reloaded.getAttributes().get(NpcService.ATTRIBUTE_AWARENESS)).intValue(),
+        "awareness arm wrote through the service");
+    Npc clearedRow = npcRepositoryTest.findById(cleared.getId()).orElseThrow();
+    assertEquals(
+        0,
+        ((Number) clearedRow.getAttributes().get(NpcService.ATTRIBUTE_AWARENESS)).intValue(),
+        "null-awareness arm falls back to 0");
+  }
+
+  @Test
+  void npcApplierVerbsOnOrphanedAndMissingRows() {
+    // The remaining verb paths: KEEP_MINE stamps without changing the value; KEEP_AS_CUSTOM
+    // clears the stamp; REMOVE on a genuinely unreferenced row deletes it; and one missing-row
+    // decision per verb covers the warn lambdas.
+    Npc orphan = npc("Ghost Manager");
+    orphan.setSeedFingerprint("fp-old");
+    npcRepositoryTest.save(orphan);
+    Npc doomed = npc("Doomed Manager");
+    npcRepositoryTest.save(doomed);
+    flushAndClear();
+
+    SeedUpdateDecision keep =
+        park("npc", "npc:charles", "Charles", "description", "old", "seed", "fp-k");
+    SeedUpdateDecision custom =
+        park("npc", "npc:ghost-manager", "Ghost Manager", "description", "old", "seed", "fp-c");
+    SeedUpdateDecision remove = parkRemoval("npc", "npc:doomed-manager", "Doomed Manager", "fp-r");
+    SeedUpdateDecision ghostKeep =
+        park("npc", "npc:missing-row", "Missing Row", "description", "old", "seed", "fp-gk");
+    SeedUpdateDecision ghostNew =
+        park("npc", "npc:missing-row", "Missing Row", "description", "old", "seed", "fp-gn");
+    SeedUpdateDecision ghostCustom =
+        park("npc", "npc:missing-row", "Missing Row", "description", "old", "seed", "fp-gc");
+    SeedUpdateDecision ghostRemove = parkRemoval("npc", "npc:missing-row", "Missing Row", "fp-gr");
+
+    Map<Long, SeedFieldDecision> batch = new HashMap<>();
+    batch.put(keep.getId(), SeedFieldDecision.KEEP_MINE);
+    batch.put(custom.getId(), SeedFieldDecision.KEEP_AS_CUSTOM);
+    batch.put(remove.getId(), SeedFieldDecision.REMOVE);
+    batch.put(ghostKeep.getId(), SeedFieldDecision.KEEP_MINE);
+    batch.put(ghostNew.getId(), SeedFieldDecision.USE_NEW);
+    batch.put(ghostCustom.getId(), SeedFieldDecision.KEEP_AS_CUSTOM);
+    batch.put(ghostRemove.getId(), SeedFieldDecision.REMOVE);
+    service(npcApplier).apply(batch);
+
+    flushAndClear();
+    Npc reloaded = npcRepositoryTest.findById(orphan.getId()).orElseThrow();
+    assertNull(reloaded.getSeedFingerprint(), "KEEP_AS_CUSTOM clears the orphan's stamp");
+    assertFalse(
+        npcRepositoryTest.findById(doomed.getId()).isPresent(),
+        "REMOVE deletes the unreferenced row");
+    assertEquals(
+        SeedUpdateDecision.STATUS_APPLIED_KEEP,
+        decisionRepository.findById(keep.getId()).orElseThrow().getStatus());
+    assertTrue(
+        npcRepositoryTest.findByName("Missing Row").isEmpty(),
+        "missing-row decisions never create the row");
+  }
 
   private Achievement achievement(String key, String name) {
     return achievementRepository
@@ -1290,6 +1589,174 @@ class SeedAppliersTest extends AbstractJpaTest {
     assertTrue(
         achievementRepository.findById(ach.getId()).isPresent(),
         "the earned achievement must survive the refused removal");
+  }
+
+  @Test
+  void achievementApplierUseNewCoversEveryFieldArm() {
+    // One decision per uncovered applyFieldValue arm: name, xpValue, the category enum arm, and
+    // unlockCondition, plus the null-category fail-safe pin on the second row. xpValue's null arm
+    // is unreachable at the persistence layer (NOT NULL column), so the value arm is pinned
+    // instead.
+    Achievement first = achievement("FIRST_WRESTLER", "Rookie Manager");
+    Achievement blank = achievement("CHALLENGE_FIRST_HARD", "Glutton for Punishment");
+    flushAndClear();
+
+    SeedUpdateDecision name =
+        park(
+            "achievement",
+            "achievement:first_wrestler",
+            "FIRST_WRESTLER",
+            "name",
+            "Rookie Manager",
+            "Renamed By Seed",
+            "fp-n");
+    SeedUpdateDecision xp =
+        park(
+            "achievement",
+            "achievement:first_wrestler",
+            "FIRST_WRESTLER",
+            "xpValue",
+            "50",
+            "75",
+            "fp-x");
+    SeedUpdateDecision category =
+        park(
+            "achievement",
+            "achievement:first_wrestler",
+            "FIRST_WRESTLER",
+            "category",
+            "COLLECTION",
+            "CHALLENGE",
+            "fp-c");
+    SeedUpdateDecision unlock =
+        park(
+            "achievement",
+            "achievement:first_wrestler",
+            "FIRST_WRESTLER",
+            "unlockCondition",
+            "!wrestlers.isEmpty()",
+            "own three wrestlers",
+            "fp-u");
+    SeedUpdateDecision secondCategory =
+        park(
+            "achievement",
+            "achievement:challenge_first_hard",
+            "CHALLENGE_FIRST_HARD",
+            "category",
+            "CHALLENGE",
+            "FANS",
+            "fp-c0");
+
+    Map<Long, SeedFieldDecision> batch = new HashMap<>();
+    batch.put(name.getId(), SeedFieldDecision.USE_NEW);
+    batch.put(xp.getId(), SeedFieldDecision.USE_NEW);
+    batch.put(category.getId(), SeedFieldDecision.USE_NEW);
+    batch.put(unlock.getId(), SeedFieldDecision.USE_NEW);
+    batch.put(secondCategory.getId(), SeedFieldDecision.USE_NEW);
+
+    service(achievementApplier).apply(batch);
+
+    flushAndClear();
+    Achievement reloaded = achievementRepository.findById(first.getId()).orElseThrow();
+    assertEquals("Renamed By Seed", reloaded.getName(), "name arm wrote the decision value");
+    assertEquals(75, reloaded.getXpValue(), "xpValue arm wrote the parsed int");
+    assertEquals(
+        AchievementCategory.CHALLENGE, reloaded.getCategory(), "category arm wrote the enum");
+    assertEquals(
+        "own three wrestlers",
+        reloaded.getUnlockCondition(),
+        "unlockCondition arm wrote the value");
+    Achievement blankRow = achievementRepository.findById(blank.getId()).orElseThrow();
+    assertEquals(
+        AchievementCategory.FANS,
+        blankRow.getCategory(),
+        "the second row's category arm wrote its own decision's enum");
+  }
+
+  @Test
+  void achievementApplierVerbsOnOrphanedAndMissingRows() {
+    // The remaining verb paths: KEEP_MINE on an orphaned row stamps it; KEEP_AS_CUSTOM clears
+    // the stamp; REMOVE deletes the unearned row; and one missing-row decision per verb covers
+    // the warn lambdas.
+    Achievement orphan = achievement("ORPHAN_ACHIEVEMENT", "Orphan Achievement");
+    orphan.setSeedFingerprint("fp-old");
+    achievementRepository.save(orphan);
+    Achievement doomed = achievement("DOOMED_ACHIEVEMENT", "Doomed Achievement");
+    achievementRepository.save(doomed);
+    flushAndClear();
+
+    SeedUpdateDecision keep =
+        park(
+            "achievement",
+            "achievement:first_wrestler",
+            "FIRST_WRESTLER",
+            "description",
+            "old",
+            "seed",
+            "fp-k");
+    SeedUpdateDecision custom =
+        park(
+            "achievement",
+            "achievement:orphan_achievement",
+            "ORPHAN_ACHIEVEMENT",
+            "description",
+            "old",
+            "seed",
+            "fp-c");
+    SeedUpdateDecision remove =
+        parkRemoval("achievement", "achievement:doomed_achievement", "DOOMED_ACHIEVEMENT", "fp-r");
+    SeedUpdateDecision ghostKeep =
+        park(
+            "achievement",
+            "achievement:missing_key",
+            "MISSING_KEY",
+            "description",
+            "old",
+            "seed",
+            "fp-gk");
+    SeedUpdateDecision ghostNew =
+        park(
+            "achievement",
+            "achievement:missing_key",
+            "MISSING_KEY",
+            "description",
+            "old",
+            "seed",
+            "fp-gn");
+    SeedUpdateDecision ghostCustom =
+        park(
+            "achievement",
+            "achievement:missing_key",
+            "MISSING_KEY",
+            "description",
+            "old",
+            "seed",
+            "fp-gc");
+    SeedUpdateDecision ghostRemove =
+        parkRemoval("achievement", "achievement:missing_key", "MISSING_KEY", "fp-gr");
+
+    Map<Long, SeedFieldDecision> batch = new HashMap<>();
+    batch.put(keep.getId(), SeedFieldDecision.KEEP_MINE);
+    batch.put(custom.getId(), SeedFieldDecision.KEEP_AS_CUSTOM);
+    batch.put(remove.getId(), SeedFieldDecision.REMOVE);
+    batch.put(ghostKeep.getId(), SeedFieldDecision.KEEP_MINE);
+    batch.put(ghostNew.getId(), SeedFieldDecision.USE_NEW);
+    batch.put(ghostCustom.getId(), SeedFieldDecision.KEEP_AS_CUSTOM);
+    batch.put(ghostRemove.getId(), SeedFieldDecision.REMOVE);
+    service(achievementApplier).apply(batch);
+
+    flushAndClear();
+    Achievement reloaded = achievementRepository.findById(orphan.getId()).orElseThrow();
+    assertNull(reloaded.getSeedFingerprint(), "KEEP_AS_CUSTOM clears the orphan's stamp");
+    assertFalse(
+        achievementRepository.findById(doomed.getId()).isPresent(),
+        "REMOVE deletes the unearned achievement");
+    assertEquals(
+        SeedUpdateDecision.STATUS_APPLIED_KEEP,
+        decisionRepository.findById(keep.getId()).orElseThrow().getStatus());
+    assertTrue(
+        achievementRepository.findByKey("MISSING_KEY").isEmpty(),
+        "missing-row decisions never create the row");
   }
 
   // ── RingsideActionSeedApplier ───────────────────────────────────────────────
@@ -1615,6 +2082,237 @@ class SeedAppliersTest extends AbstractJpaTest {
     assertTrue(
         showTemplateRepository.findById(template.getId()).isPresent(),
         "the referenced template must survive the refused removal");
+  }
+
+  @Test
+  void showTemplateApplierUseNewCoversEveryFieldArm() {
+    // One decision per uncovered applyFieldValue arm, all riding one batch on the fixture
+    // template: showTypeName (resolved through the repository), commentaryTeamName (found),
+    // expectedMatches (null → cleared), expectedPromos, recurrenceType, dayOfWeek, dayOfMonth,
+    // weekOfMonth, month, genderConstraint, and requiredExpansions (replaced). The unknown-name
+    // arms are exercised in the second template: showTypeName and commentaryTeamName lookups
+    // that resolve to nothing keep the current references (warn, not write).
+    var template = showTemplateFixture();
+    template.setCommentaryTeam(null);
+    template.setRecurrenceType(RecurrenceType.NONE);
+    template.setDayOfWeek(null);
+    template.setDayOfMonth(null);
+    template.setWeekOfMonth(null);
+    template.setMonth(null);
+    template.setGenderConstraint(null);
+    template.setExpectedPromos(1);
+    showTemplateRepository.save(template);
+    var drift = new ShowTemplate();
+    drift.setName("Ghost Reference Template");
+    drift.setShowType(showTypeFixture("Weekly"));
+    drift.setExpectedPromos(2);
+    showTemplateRepository.save(drift);
+    var team = commentaryTeamFixture("Applier Crew", List.of("Solo Member"));
+    flushAndClear();
+
+    String key = ShowTemplateSync.entityKeyFor("Applier Fixture Template");
+    String driftKey = ShowTemplateSync.entityKeyFor("Ghost Reference Template");
+    SeedUpdateDecision showType =
+        park(
+            "show_template",
+            key,
+            "Applier Fixture Template",
+            "showTypeName",
+            "Weekly",
+            "Weekly",
+            "fp-st");
+    SeedUpdateDecision crew =
+        park(
+            "show_template",
+            key,
+            "Applier Fixture Template",
+            "commentaryTeamName",
+            null,
+            "Applier Crew",
+            "fp-ct");
+    SeedUpdateDecision expectedMatches =
+        park(
+            "show_template",
+            key,
+            "Applier Fixture Template",
+            "expectedMatches",
+            "3",
+            null,
+            "fp-em");
+    SeedUpdateDecision expectedPromos =
+        park("show_template", key, "Applier Fixture Template", "expectedPromos", "1", "4", "fp-ep");
+    SeedUpdateDecision recurrence =
+        park(
+            "show_template",
+            key,
+            "Applier Fixture Template",
+            "recurrenceType",
+            "NONE",
+            "WEEKLY",
+            "fp-rt");
+    SeedUpdateDecision dayOfWeek =
+        park(
+            "show_template",
+            key,
+            "Applier Fixture Template",
+            "dayOfWeek",
+            null,
+            "MONDAY",
+            "fp-dow");
+    SeedUpdateDecision dayOfMonth =
+        park("show_template", key, "Applier Fixture Template", "dayOfMonth", null, "7", "fp-dom");
+    SeedUpdateDecision weekOfMonth =
+        park("show_template", key, "Applier Fixture Template", "weekOfMonth", null, "2", "fp-wom");
+    SeedUpdateDecision month =
+        park("show_template", key, "Applier Fixture Template", "month", null, "JANUARY", "fp-m");
+    SeedUpdateDecision gender =
+        park(
+            "show_template",
+            key,
+            "Applier Fixture Template",
+            "genderConstraint",
+            null,
+            "MALE",
+            "fp-g");
+    SeedUpdateDecision expansions =
+        park(
+            "show_template",
+            key,
+            "Applier Fixture Template",
+            "requiredExpansions",
+            "",
+            "RUMBLE\nEXTREME",
+            "fp-re");
+    SeedUpdateDecision ghostShowType =
+        park(
+            "show_template",
+            driftKey,
+            "Ghost Reference Template",
+            "showTypeName",
+            "Weekly",
+            "Ghost Show Type",
+            "fp-gst");
+    SeedUpdateDecision ghostCrew =
+        park(
+            "show_template",
+            driftKey,
+            "Ghost Reference Template",
+            "commentaryTeamName",
+            null,
+            "Ghost Crew",
+            "fp-gct");
+
+    SeedUpdateDecision durationFallback =
+        park(
+            "show_template",
+            driftKey,
+            "Ghost Reference Template",
+            "durationDays",
+            "2",
+            null,
+            "fp-df");
+
+    Map<Long, SeedFieldDecision> batch = new HashMap<>();
+    batch.put(showType.getId(), SeedFieldDecision.USE_NEW);
+    batch.put(crew.getId(), SeedFieldDecision.USE_NEW);
+    batch.put(expectedMatches.getId(), SeedFieldDecision.USE_NEW);
+    batch.put(expectedPromos.getId(), SeedFieldDecision.USE_NEW);
+    batch.put(recurrence.getId(), SeedFieldDecision.USE_NEW);
+    batch.put(dayOfWeek.getId(), SeedFieldDecision.USE_NEW);
+    batch.put(dayOfMonth.getId(), SeedFieldDecision.USE_NEW);
+    batch.put(weekOfMonth.getId(), SeedFieldDecision.USE_NEW);
+    batch.put(month.getId(), SeedFieldDecision.USE_NEW);
+    batch.put(gender.getId(), SeedFieldDecision.USE_NEW);
+    batch.put(expansions.getId(), SeedFieldDecision.USE_NEW);
+    batch.put(ghostShowType.getId(), SeedFieldDecision.USE_NEW);
+    batch.put(ghostCrew.getId(), SeedFieldDecision.USE_NEW);
+    batch.put(durationFallback.getId(), SeedFieldDecision.USE_NEW);
+
+    service(showTemplateApplier).apply(batch);
+
+    flushAndClear();
+    var reloaded = showTemplateRepository.findById(template.getId()).orElseThrow();
+    assertEquals("Weekly", reloaded.getShowType().getName(), "showTypeName arm resolved the type");
+    assertEquals(
+        "Applier Crew",
+        reloaded.getCommentaryTeam().getName(),
+        "commentaryTeamName arm resolved the team");
+    assertNull(reloaded.getExpectedMatches(), "null expectedMatches arm clears the value");
+    assertEquals(4, reloaded.getExpectedPromos(), "expectedPromos arm wrote the value");
+    assertEquals(RecurrenceType.WEEKLY, reloaded.getRecurrenceType(), "recurrenceType arm wrote");
+    assertEquals(DayOfWeek.MONDAY, reloaded.getDayOfWeek(), "dayOfWeek arm wrote the value");
+    assertEquals(7, reloaded.getDayOfMonth(), "dayOfMonth arm wrote the value");
+    assertEquals(2, reloaded.getWeekOfMonth(), "weekOfMonth arm wrote the value");
+    assertEquals(Month.JANUARY, reloaded.getMonth(), "month arm wrote the enum");
+    assertEquals(
+        Gender.MALE, reloaded.getGenderConstraint(), "genderConstraint arm wrote the enum");
+    assertEquals(
+        Set.of("RUMBLE", "EXTREME"),
+        reloaded.getRequiredExpansions(),
+        "requiredExpansions arm replaced the list");
+    var drifted = showTemplateRepository.findById(drift.getId()).orElseThrow();
+    assertEquals(
+        "Weekly",
+        drifted.getShowType().getName(),
+        "unknown showTypeName keeps the current reference (warn arm)");
+    assertNull(drifted.getCommentaryTeam(), "unknown commentaryTeamName keeps the reference unset");
+    assertEquals(
+        1, drifted.getDurationDays(), "null durationDays arm falls back to the default of 1");
+  }
+
+  @Test
+  void showTemplateApplierNotFoundWarnsOnEveryVerb() {
+    // Every verb's not-found lambda plus the fail-safe remove re-check: decisions whose key
+    // matches no template log a warning; a removal that arrives with shows already checked via
+    // hasDependents still re-checks harmlessly through the delete-time guard.
+    SeedUpdateDecision keep =
+        park(
+            "show_template",
+            ShowTemplateSync.entityKeyFor("Ghost Template"),
+            "Ghost Template",
+            "description",
+            "o",
+            "n",
+            "fp-k");
+    SeedUpdateDecision useNew =
+        park(
+            "show_template",
+            ShowTemplateSync.entityKeyFor("Ghost Template"),
+            "Ghost Template",
+            "description",
+            "o",
+            "n",
+            "fp-u");
+    SeedUpdateDecision custom =
+        park(
+            "show_template",
+            ShowTemplateSync.entityKeyFor("Ghost Template"),
+            "Ghost Template",
+            "description",
+            "o",
+            "n",
+            "fp-c");
+    SeedUpdateDecision remove =
+        parkRemoval(
+            "show_template",
+            ShowTemplateSync.entityKeyFor("Ghost Template"),
+            "Ghost Template",
+            "fp-r");
+
+    Map<Long, SeedFieldDecision> batch = new HashMap<>();
+    batch.put(keep.getId(), SeedFieldDecision.KEEP_MINE);
+    batch.put(useNew.getId(), SeedFieldDecision.USE_NEW);
+    batch.put(custom.getId(), SeedFieldDecision.KEEP_AS_CUSTOM);
+    batch.put(remove.getId(), SeedFieldDecision.REMOVE);
+    service(showTemplateApplier).apply(batch);
+
+    flushAndClear();
+    assertTrue(
+        showTemplateRepository.findByName("Ghost Template").isEmpty(),
+        "decisions for a missing template never create the row");
+    assertEquals(
+        SeedUpdateDecision.STATUS_APPLIED_KEEP,
+        decisionRepository.findById(keep.getId()).orElseThrow().getStatus());
   }
 
   // ── StatusCardSeedApplier ───────────────────────────────────────────────────
@@ -2675,6 +3373,143 @@ class SeedAppliersTest extends AbstractJpaTest {
   }
 
   @Test
+  void arenaApplierUseNewCoversEveryFieldArm() {
+    // One decision per uncovered applyFieldValue arm on the fixture arena: the resolvable
+    // location arm, the unresolvable-location warn arm (reference kept), the null-capacity arm
+    // (falls back to 0), the alignmentBias enum arm, the imageUrl arm, and the
+    // environmentalTraits serialization arm.
+    var arena = arenaFixture("Trait Test Arena");
+    arena.setCapacity(50);
+    arena.setImageUrl("http://example.com/old.png");
+    arena.setEnvironmentalTraits(new HashSet<>(Set.of("old-trait")));
+    arenaRepositoryTest.save(arena);
+    var ghost = arenaFixture("Ghost Reference Arena");
+    arenaRepositoryTest.save(ghost);
+    flushAndClear();
+
+    String key = ArenaSync.entityKeyFor("Trait Test Arena");
+    String ghostKey = ArenaSync.entityKeyFor("Ghost Reference Arena");
+    SeedUpdateDecision location =
+        park(
+            "arena",
+            key,
+            "Trait Test Arena",
+            "location",
+            "Trait Test Arena Site",
+            "Chicago",
+            "fp-l");
+    SeedUpdateDecision capacity =
+        park("arena", key, "Trait Test Arena", "capacity", "50", null, "fp-c");
+    SeedUpdateDecision bias =
+        park(
+            "arena", key, "Trait Test Arena", "alignmentBias", "NEUTRAL", "HEEL_FAVORABLE", "fp-b");
+    SeedUpdateDecision image =
+        park(
+            "arena",
+            key,
+            "Trait Test Arena",
+            "imageUrl",
+            "http://example.com/old.png",
+            "http://example.com/new.png",
+            "fp-i");
+    SeedUpdateDecision traits =
+        park(
+            "arena",
+            key,
+            "Trait Test Arena",
+            "environmentalTraits",
+            "old-trait",
+            "new-trait-a\nnew-trait-b",
+            "fp-t");
+    SeedUpdateDecision ghostLocation =
+        park(
+            "arena",
+            ghostKey,
+            "Ghost Reference Arena",
+            "location",
+            "Ghost Site",
+            "Ghost City",
+            "fp-gl");
+
+    service(arenaApplier)
+        .apply(
+            Map.of(
+                location.getId(), SeedFieldDecision.USE_NEW,
+                capacity.getId(), SeedFieldDecision.USE_NEW,
+                bias.getId(), SeedFieldDecision.USE_NEW,
+                image.getId(), SeedFieldDecision.USE_NEW,
+                traits.getId(), SeedFieldDecision.USE_NEW,
+                ghostLocation.getId(), SeedFieldDecision.USE_NEW));
+
+    flushAndClear();
+    var reloaded = arenaRepositoryTest.findById(arena.getId()).orElseThrow();
+    assertEquals("Chicago", reloaded.getLocation().getName(), "location arm resolved by name");
+    assertEquals(0, reloaded.getCapacity(), "null capacity arm falls back to 0");
+    assertEquals(
+        Arena.AlignmentBias.HEEL_FAVORABLE, reloaded.getAlignmentBias(), "bias arm wrote the enum");
+    assertEquals("http://example.com/new.png", reloaded.getImageUrl(), "imageUrl arm wrote");
+    assertEquals(
+        Set.of("new-trait-a", "new-trait-b"),
+        reloaded.getEnvironmentalTraits(),
+        "traits arm split the newline-joined serialization");
+    var ghostRow = arenaRepositoryTest.findById(ghost.getId()).orElseThrow();
+    assertEquals(
+        "Ghost Reference Arena Site",
+        ghostRow.getLocation().getName(),
+        "unknown location keeps the current reference (warn arm)");
+  }
+
+  @Test
+  void arenaApplierNotFoundWarnsOnEveryVerb() {
+    // Every verb's not-found lambda: decisions whose entity key matches no arena log a warning
+    // and leave the queue untouched.
+    SeedUpdateDecision keep =
+        park(
+            "arena",
+            ArenaSync.entityKeyFor("Ghost Arena"),
+            "Ghost Arena",
+            "description",
+            "o",
+            "n",
+            "fp-k");
+    SeedUpdateDecision useNew =
+        park(
+            "arena",
+            ArenaSync.entityKeyFor("Ghost Arena"),
+            "Ghost Arena",
+            "description",
+            "o",
+            "n",
+            "fp-u");
+    SeedUpdateDecision custom =
+        park(
+            "arena",
+            ArenaSync.entityKeyFor("Ghost Arena"),
+            "Ghost Arena",
+            "description",
+            "o",
+            "n",
+            "fp-c");
+    SeedUpdateDecision remove =
+        parkRemoval("arena", ArenaSync.entityKeyFor("Ghost Arena"), "Ghost Arena", "fp-r");
+
+    Map<Long, SeedFieldDecision> batch = new HashMap<>();
+    batch.put(keep.getId(), SeedFieldDecision.KEEP_MINE);
+    batch.put(useNew.getId(), SeedFieldDecision.USE_NEW);
+    batch.put(custom.getId(), SeedFieldDecision.KEEP_AS_CUSTOM);
+    batch.put(remove.getId(), SeedFieldDecision.REMOVE);
+    service(arenaApplier).apply(batch);
+
+    flushAndClear();
+    assertTrue(
+        arenaRepositoryTest.findByName("Ghost Arena").isEmpty(),
+        "decisions for a missing arena never create the row");
+    assertEquals(
+        SeedUpdateDecision.STATUS_APPLIED_KEEP,
+        decisionRepository.findById(keep.getId()).orElseThrow().getStatus());
+  }
+
+  @Test
   void locationApplierAppliesUseNewAndStamps() {
     var location = locationFixture("Applier Location");
     location.setDescription("old description");
@@ -3629,6 +4464,276 @@ class SeedAppliersTest extends AbstractJpaTest {
         SeedUpdateDecision.STATUS_PENDING,
         decisionRepository.findById(decision.getId()).orElseThrow().getStatus(),
         "the refused removal decision must stay pending");
+  }
+
+  @Test
+  void outcomeMatrixApplierUseNewCoversCategoryAndEntryDeltaArms() {
+    // One decision per uncovered arm, riding one batch: the matrix's category enum arm, the
+    // entry's heatDelta/fanDelta/tvGradeDelta/grudgeGradeDelta arms (including null values that
+    // clear the mechanical deltas), the injuryCaused boolean arm, and both redirect arms — a
+    // resolvable target sets the reference and a blank value clears it (the redirect-to-nowhere
+    // resolution arm).
+    var matrix = matrixFixture("Delta Target Matrix");
+    matrix.setCategory(OutcomeMatrixCategory.MATCH_FLOW);
+    outcomeMatrixRepositoryTest.save(matrix);
+    var target = matrixFixture("Redirect Resolution Matrix");
+    var entry = matrixEntryFixture(matrix, 11, "old template");
+    entry.setHeatDelta(1);
+    entry.setFanDelta(1L);
+    entry.setTvGradeDelta(1);
+    entry.setGrudgeGradeDelta(1);
+    entry.setInjuryCaused(false);
+    entry.setRedirectToMatrix(target);
+    outcomeMatrixEntryRepositoryTest.save(entry);
+    var cleared = matrixEntryFixture(matrix, 12, "cleared template");
+    cleared.setHeatDelta(null);
+    outcomeMatrixEntryRepositoryTest.save(cleared);
+    flushAndClear();
+
+    String matrixKey = OutcomeMatrixSync.matrixEntityKeyFor("Delta Target Matrix");
+    String entryKey = OutcomeMatrixSync.entryEntityKeyFor("Delta Target Matrix", 11);
+    String clearedKey = OutcomeMatrixSync.entryEntityKeyFor("Delta Target Matrix", 12);
+    SeedUpdateDecision category =
+        park(
+            "outcome_matrix",
+            matrixKey,
+            "Delta Target Matrix",
+            "category",
+            "MATCH_FLOW",
+            "PROMO",
+            "fp-cat");
+    SeedUpdateDecision heat =
+        park(
+            "outcome_matrix",
+            entryKey,
+            "Delta Target Matrix (roll 11)",
+            "heatDelta",
+            "1",
+            "9",
+            "fp-h");
+    SeedUpdateDecision fan =
+        park(
+            "outcome_matrix",
+            entryKey,
+            "Delta Target Matrix (roll 11)",
+            "fanDelta",
+            "1",
+            null,
+            "fp-f");
+    SeedUpdateDecision tv =
+        park(
+            "outcome_matrix",
+            entryKey,
+            "Delta Target Matrix (roll 11)",
+            "tvGradeDelta",
+            "1",
+            null,
+            "fp-tv");
+    SeedUpdateDecision grudge =
+        park(
+            "outcome_matrix",
+            entryKey,
+            "Delta Target Matrix (roll 11)",
+            "grudgeGradeDelta",
+            "1",
+            null,
+            "fp-g");
+    SeedUpdateDecision injury =
+        park(
+            "outcome_matrix",
+            entryKey,
+            "Delta Target Matrix (roll 11)",
+            "injuryCaused",
+            "false",
+            "true",
+            "fp-i");
+    SeedUpdateDecision redirect =
+        park(
+            "outcome_matrix",
+            entryKey,
+            "Delta Target Matrix (roll 11)",
+            "redirectToMatrix",
+            "Redirect Resolution Matrix",
+            "Delta Target Matrix",
+            "fp-r");
+    SeedUpdateDecision redirectCleared =
+        park(
+            "outcome_matrix",
+            clearedKey,
+            "Delta Target Matrix (roll 12)",
+            "redirectToMatrix",
+            null,
+            "   ",
+            "fp-r0");
+
+    service(outcomeMatrixApplier)
+        .apply(
+            Map.of(
+                category.getId(), SeedFieldDecision.USE_NEW,
+                heat.getId(), SeedFieldDecision.USE_NEW,
+                fan.getId(), SeedFieldDecision.USE_NEW,
+                tv.getId(), SeedFieldDecision.USE_NEW,
+                grudge.getId(), SeedFieldDecision.USE_NEW,
+                injury.getId(), SeedFieldDecision.USE_NEW,
+                redirect.getId(), SeedFieldDecision.USE_NEW,
+                redirectCleared.getId(), SeedFieldDecision.USE_NEW));
+
+    flushAndClear();
+    var reloadedMatrix = outcomeMatrixRepositoryTest.findById(matrix.getId()).orElseThrow();
+    assertEquals(
+        OutcomeMatrixCategory.PROMO, reloadedMatrix.getCategory(), "category arm wrote the enum");
+    var reloaded = outcomeMatrixEntryRepositoryTest.findById(entry.getId()).orElseThrow();
+    assertEquals(9, reloaded.getHeatDelta(), "heatDelta arm wrote the value");
+    assertNull(reloaded.getFanDelta(), "null fanDelta arm clears the value");
+    assertNull(reloaded.getTvGradeDelta(), "null tvGradeDelta arm clears the value");
+    assertNull(reloaded.getGrudgeGradeDelta(), "null grudgeGradeDelta arm clears the value");
+    assertTrue(reloaded.isInjuryCaused(), "injuryCaused arm wrote the boolean");
+    assertEquals(
+        matrix,
+        reloaded.getRedirectToMatrix(),
+        "redirect arm resolved the target matrix by seed name");
+    var clearedRow = outcomeMatrixEntryRepositoryTest.findById(cleared.getId()).orElseThrow();
+    assertNull(
+        clearedRow.getRedirectToMatrix(), "blank redirect value clears the reference (null arm)");
+  }
+
+  @Test
+  void outcomeMatrixApplierEntryNotFoundAndUnresolvableRedirectWarn() {
+    // The entry-family warn arms: USE_NEW/KEEP/KEEP_AS_CUSTOM/REMOVE on an entry key that
+    // matches no row (the not-found lambdas), plus a redirect decision whose target name
+    // resolves to nothing (the redirect-not-changed warn arm — the reference is kept).
+    var matrix = matrixFixture("Warn Target Matrix");
+    var entry = matrixEntryFixture(matrix, 21, "keep me");
+    entry.setRedirectToMatrix(matrix);
+    outcomeMatrixEntryRepositoryTest.save(entry);
+    flushAndClear();
+
+    String entryKey = OutcomeMatrixSync.entryEntityKeyFor("Warn Target Matrix", 21);
+    String ghostKey = OutcomeMatrixSync.entryEntityKeyFor("Warn Target Matrix", 99);
+    SeedUpdateDecision redirectGhost =
+        park(
+            "outcome_matrix",
+            entryKey,
+            "Warn Target Matrix (roll 21)",
+            "redirectToMatrix",
+            "Warn Target Matrix",
+            "Ghost Matrix Nowhere",
+            "fp-rg");
+    SeedUpdateDecision ghostNew =
+        park(
+            "outcome_matrix",
+            ghostKey,
+            "Warn Target Matrix (roll 99)",
+            "templateText",
+            "a",
+            "b",
+            "fp-gn");
+    SeedUpdateDecision ghostKeep =
+        park(
+            "outcome_matrix",
+            ghostKey,
+            "Warn Target Matrix (roll 99)",
+            "templateText",
+            "a",
+            "b",
+            "fp-gk");
+    SeedUpdateDecision ghostCustom =
+        park(
+            "outcome_matrix",
+            ghostKey,
+            "Warn Target Matrix (roll 99)",
+            "templateText",
+            "a",
+            "b",
+            "fp-gc");
+    SeedUpdateDecision ghostRemove =
+        parkRemoval("outcome_matrix", ghostKey, "Warn Target Matrix (roll 99)", "fp-gr");
+
+    Map<Long, SeedFieldDecision> batch = new HashMap<>();
+    batch.put(redirectGhost.getId(), SeedFieldDecision.USE_NEW);
+    batch.put(ghostNew.getId(), SeedFieldDecision.USE_NEW);
+    batch.put(ghostKeep.getId(), SeedFieldDecision.KEEP_MINE);
+    batch.put(ghostCustom.getId(), SeedFieldDecision.KEEP_AS_CUSTOM);
+    batch.put(ghostRemove.getId(), SeedFieldDecision.REMOVE);
+    service(outcomeMatrixApplier).apply(batch);
+
+    flushAndClear();
+    var reloaded = outcomeMatrixEntryRepositoryTest.findById(entry.getId()).orElseThrow();
+    assertEquals(
+        matrix,
+        reloaded.getRedirectToMatrix(),
+        "an unresolvable redirect target keeps the current reference (warn arm)");
+    assertTrue(
+        outcomeMatrixEntryRepositoryTest.findById(entry.getId()).isPresent(),
+        "ghost-key decisions never touch the real entry");
+  }
+
+  @Test
+  void outcomeMatrixApplierMatrixFieldValueDefaultsFailLoud() {
+    // The matrix writer's default arm: an unknown matrix-header field fails loud.
+    var matrix = matrixFixture("Loud Matrix");
+    flushAndClear();
+    SeedUpdateDecision unknown =
+        park(
+            "outcome_matrix",
+            OutcomeMatrixSync.matrixEntityKeyFor("Loud Matrix"),
+            "Loud Matrix",
+            "entries",
+            "x",
+            "y",
+            "fp-u");
+    assertThrows(
+        IllegalStateException.class,
+        () ->
+            service(outcomeMatrixApplier)
+                .apply(Map.of(unknown.getId(), SeedFieldDecision.USE_NEW)));
+  }
+
+  @Test
+  void outcomeMatrixApplierApplyKeepOnEntryRow() {
+    // KEEP_MINE on an entry row: the second branch of the keep resolver (matrix miss → entry).
+    var matrix = matrixFixture("Entry Keep Matrix");
+    var entry = matrixEntryFixture(matrix, 5, "admin's template");
+    flushAndClear();
+    SeedUpdateDecision keep =
+        park(
+            "outcome_matrix",
+            OutcomeMatrixSync.entryEntityKeyFor("Entry Keep Matrix", 5),
+            "Entry Keep Matrix (roll 5)",
+            "templateText",
+            "admin's template",
+            "seed template",
+            "fp-k");
+    service(outcomeMatrixApplier).apply(Map.of(keep.getId(), SeedFieldDecision.KEEP_MINE));
+
+    flushAndClear();
+    var reloaded = outcomeMatrixEntryRepositoryTest.findById(entry.getId()).orElseThrow();
+    assertEquals("admin's template", reloaded.getTemplateText(), "KEEP_MINE keeps the value");
+    assertEquals("fp-k", reloaded.getSeedFingerprint(), "KEEP_MINE stamps the entry row");
+  }
+
+  @Test
+  void outcomeMatrixApplierKeepAsCustomOnEntryRow() {
+    // KEEP_AS_CUSTOM on an entry row: the second branch of the custom resolver.
+    var matrix = matrixFixture("Entry Custom Matrix");
+    var entry = matrixEntryFixture(matrix, 6, "admin's template");
+    entry.setSeedFingerprint("fp-old");
+    outcomeMatrixEntryRepositoryTest.save(entry);
+    flushAndClear();
+    SeedUpdateDecision custom =
+        park(
+            "outcome_matrix",
+            OutcomeMatrixSync.entryEntityKeyFor("Entry Custom Matrix", 6),
+            "Entry Custom Matrix (roll 6)",
+            "templateText",
+            "admin's template",
+            "seed template",
+            "fp-c");
+    service(outcomeMatrixApplier).apply(Map.of(custom.getId(), SeedFieldDecision.KEEP_AS_CUSTOM));
+
+    flushAndClear();
+    var reloaded = outcomeMatrixEntryRepositoryTest.findById(entry.getId()).orElseThrow();
+    assertNull(reloaded.getSeedFingerprint(), "KEEP_AS_CUSTOM clears the entry's stamp");
   }
 
   private WrestlerRelationship relationshipFixture(

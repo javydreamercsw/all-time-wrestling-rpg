@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Assertions;
@@ -408,6 +409,128 @@ class AchievementSyncTest {
         Set.of("achievement:challenge_first_hard|xpValue"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
+  }
+
+  @Test
+  void versionChange_silentUpdatesCoverEveryWriteArm() throws IOException {
+    // Tier-1 write arms the three-tier pin never reached: the FIRST_WRESTLER row is stamped clean
+    // at older values and the real seed (achievements.json) supplies changed name, xpValue,
+    // category, and unlockCondition — each classified SILENT_UPDATE and written through its own
+    // applySilentSeedFields arm.
+    Achievement seed = seedFirstWrestler();
+    Achievement row = new Achievement();
+    row.setKey("FIRST_WRESTLER");
+    row.setName("Old Name");
+    row.setDescription(seed.getDescription());
+    row.setXpValue(1);
+    row.setCategory(AchievementCategory.FANS);
+    row.setUnlockCondition("old condition");
+    row.setSeedFingerprint(achievementFingerprint(row));
+
+    when(achievementRepository.count()).thenReturn(1L);
+    when(achievementRepository.findAll()).thenReturn(List.of());
+    when(achievementRepository.findByKey("FIRST_WRESTLER")).thenReturn(Optional.of(row));
+    when(achievementRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    AchievementSync detectionSync =
+        new AchievementSync(
+            "true", achievementRepository, new ObjectMapper(), parking, EMPTY_MANIFEST);
+    detectionSync.detectVersionChangeCollisions();
+
+    Assertions.assertEquals(seed.getName(), row.getName(), "name arm wrote the seed value");
+    Assertions.assertEquals(
+        seed.getXpValue(), row.getXpValue(), "xpValue arm wrote the seed value");
+    Assertions.assertEquals(
+        seed.getCategory(), row.getCategory(), "category arm wrote the seed value");
+    Assertions.assertEquals(
+        seed.getUnlockCondition(),
+        row.getUnlockCondition(),
+        "unlockCondition arm wrote the seed value");
+    Assertions.assertEquals(
+        achievementFingerprint(row),
+        row.getSeedFingerprint(),
+        "tier-1 row re-stamps with the incoming fingerprint");
+    Mockito.verify(parking, Mockito.never())
+        .parkFieldConflict(
+            anyString(), anyString(), anyString(), anyString(), any(), any(), anyString());
+  }
+
+  @Test
+  void versionChange_stampOnlyRowReStampsFromManifest() throws IOException {
+    // The stamp-only-save branch: a clean row whose seed is unchanged adopts the manifest hash
+    // through the silent-apply-free save path.
+    Achievement seed = seedFirstWrestler();
+    Achievement row = new Achievement();
+    row.setKey("FIRST_WRESTLER");
+    row.setName(seed.getName());
+    row.setDescription(seed.getDescription());
+    row.setXpValue(seed.getXpValue());
+    row.setCategory(seed.getCategory());
+    row.setUnlockCondition(seed.getUnlockCondition());
+    row.setSeedFingerprint(achievementFingerprint(row));
+
+    when(achievementRepository.count()).thenReturn(1L);
+    when(achievementRepository.findAll()).thenReturn(List.of());
+    when(achievementRepository.findByKey("FIRST_WRESTLER")).thenReturn(Optional.of(row));
+    when(achievementRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    SeedProvenanceManifest manifest =
+        SeedProvenanceManifest.of(
+            Map.of("achievement", Map.of("FIRST_WRESTLER", "manifest-hash-ach")));
+    AchievementSync detectionSync =
+        new AchievementSync(
+            "true",
+            achievementRepository,
+            new ObjectMapper(),
+            Mockito.mock(SeedUpdateReviewService.class),
+            manifest);
+    detectionSync.detectVersionChangeCollisions();
+
+    Assertions.assertEquals(
+        "manifest-hash-ach",
+        row.getSeedFingerprint(),
+        "a clean unchanged row must adopt the manifest hash (stamp-only save)");
+    ArgumentCaptor<List<Achievement>> captor = ArgumentCaptor.forClass(List.class);
+    verify(achievementRepository, Mockito.atLeastOnce()).saveAll(captor.capture());
+    Assertions.assertTrue(
+        captor.getAllValues().stream().flatMap(List::stream).anyMatch(a -> a == row),
+        "the stamp-only row must be persisted");
+  }
+
+  @Test
+  void versionChange_unstampedLegacyRowAdoptsContentCompare() throws IOException {
+    // The unstamped-row arm (no seed_fingerprint): the classifier ignores stored values and does
+    // a direct content compare — fields equal to the seed read NO_OP and the row adopts the
+    // incoming content hash; a differing field would park instead of silently updating.
+    Achievement seed = seedFirstWrestler();
+    Achievement legacy = new Achievement();
+    legacy.setKey("FIRST_WRESTLER");
+    legacy.setName(seed.getName());
+    legacy.setDescription(seed.getDescription());
+    legacy.setXpValue(seed.getXpValue());
+    legacy.setCategory(seed.getCategory());
+    legacy.setUnlockCondition(seed.getUnlockCondition());
+    // no stamp
+
+    when(achievementRepository.count()).thenReturn(1L);
+    when(achievementRepository.findAll()).thenReturn(List.of());
+    when(achievementRepository.findByKey("FIRST_WRESTLER")).thenReturn(Optional.of(legacy));
+    when(achievementRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    AchievementSync detectionSync =
+        new AchievementSync(
+            "true", achievementRepository, new ObjectMapper(), parking, EMPTY_MANIFEST);
+    detectionSync.detectVersionChangeCollisions();
+
+    Assertions.assertEquals(
+        achievementFingerprint(legacy),
+        legacy.getSeedFingerprint(),
+        "an unstamped row whose fields equal the seed adopts the content hash");
+    Mockito.verify(parking, Mockito.never())
+        .parkFieldConflict(
+            anyString(), anyString(), anyString(), anyString(), any(), any(), anyString());
   }
 
   @Test

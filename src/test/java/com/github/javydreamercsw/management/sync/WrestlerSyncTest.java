@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.sync;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -31,6 +32,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.universe.Universe;
@@ -51,6 +53,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -732,6 +735,257 @@ class WrestlerSyncTest {
               .build());
     }
     return w;
+  }
+
+  @Test
+  void versionChange_silentUpdatesApplyNullGuardedFields() throws Exception {
+    // Tier-1 write-set arms the three-tier pin never reached: the null-guarded silent fields.
+    // Rob Van Dam is the clean row whose seed changed several null-guarded fields (imageUrl set
+    // on a row missing it, gender/drive/resilience/charisma/brawl/alignment changed); Gail Kim's
+    // row carries an imageUrl the new seed drops — the silent write for imageUrl must skip the
+    // null (seed-omitted) value, and her deckSize (row null, seed 16) must be written.
+    WrestlerImportDTO rvdDto = rvdSeedDto();
+    WrestlerImportDTO gailDto = seedDtoFor("Gail Kim");
+
+    Wrestler rvd = seededRvd(rvdDto);
+    rvd.getAlignments().clear(); // no alignment holder — the silent alignment write builds one
+    rvd.setSeedFingerprint(VERIFY_SUPPORT.fingerprint(WrestlerSeedFields.canonical(rvd)));
+
+    Wrestler gail = seededFrom(gailDto);
+    gail.setDeckSize(null); // row missing deckSize — the observation ternary's null side
+    gail.setStartingHealth(null); // row missing startingHealth — another ternary null side
+    gail.setImageUrl("http://example.com/gail.png"); // the new seed drops it
+    gail.setSeedFingerprint(VERIFY_SUPPORT.fingerprint(WrestlerSeedFields.canonical(gail)));
+    String gailStampBefore = gail.getSeedFingerprint();
+
+    when(wrestlerRepository.count()).thenReturn(2L);
+    when(wrestlerRepository.findAllWithAlignments()).thenReturn(List.of(rvd, gail));
+    when(wrestlerRepository.findAll()).thenReturn(List.of(rvd, gail));
+
+    ArrayNode rvdSeed = new ObjectMapper().createArrayNode();
+    ObjectNode rvdNode = rvdSeed.addObject();
+    rvdNode.put("name", rvdDto.getName());
+    rvdNode.put("deckSize", rvdDto.getDeckSize() + 1);
+    rvdNode.put("startingHealth", rvdDto.getStartingHealth() + 1);
+    rvdNode.put("lowHealth", rvdDto.getLowHealth() + 1);
+    rvdNode.put("startingStamina", rvdDto.getStartingStamina() + 1);
+    rvdNode.put("lowStamina", rvdDto.getLowStamina() + 1);
+    rvdNode.put("description", "seed description rebuilt by the release");
+    rvdNode.put("gender", "FEMALE");
+    rvdNode.put("imageUrl", "http://example.com/rvd.png");
+    rvdNode.put("heritageTag", rvdDto.getHeritageTag());
+    rvdNode.put("expansion_code", rvdDto.getExpansionCode());
+    rvdNode.put("drive", 5);
+    rvdNode.put("resilience", 5);
+    rvdNode.put("charisma", 5);
+    rvdNode.put("brawl", 5);
+    rvdNode.put("alignment", "HEEL");
+    ByteArrayResource changedRvd =
+        new ByteArrayResource(rvdSeed.toString().getBytes(StandardCharsets.UTF_8));
+
+    ArrayNode gailSeed = new ObjectMapper().createArrayNode();
+    ObjectNode gailNode = gailSeed.addObject();
+    gailNode.put("name", gailDto.getName());
+    gailNode.put("deckSize", gailDto.getDeckSize());
+    gailNode.put("startingHealth", gailDto.getStartingHealth());
+    gailNode.put("lowHealth", gailDto.getLowHealth());
+    gailNode.put("startingStamina", gailDto.getStartingStamina());
+    gailNode.put("lowStamina", gailDto.getLowStamina());
+    gailNode.put("description", gailDto.getDescription());
+    gailNode.put("gender", gailDto.getGender() == null ? null : gailDto.getGender().name());
+    gailNode.putNull("imageUrl"); // the seed drops the field the row carries
+    gailNode.put("heritageTag", gailDto.getHeritageTag());
+    gailNode.put("expansion_code", gailDto.getExpansionCode());
+    gailNode.put("drive", gailDto.getDrive());
+    gailNode.put("resilience", gailDto.getResilience());
+    gailNode.put("charisma", gailDto.getCharisma());
+    gailNode.put("brawl", gailDto.getBrawl());
+    gailNode.put("alignment", gailDto.getAlignment());
+    ByteArrayResource changedGail =
+        new ByteArrayResource(gailSeed.toString().getBytes(StandardCharsets.UTF_8));
+
+    when(resourcePatternResolver.getResources(ArgumentMatchers.anyString()))
+        .thenReturn(new Resource[] {changedRvd, changedGail});
+
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    WrestlerSync detectionSync =
+        new WrestlerSync(
+            "true",
+            wrestlerRepository,
+            wrestlerAbilityRepository,
+            wrestlerService,
+            universeRepository,
+            wrestlerStateRepository,
+            npcService,
+            tierRecalculationService,
+            resourcePatternResolver,
+            new ObjectMapper(),
+            parking,
+            EMPTY_MANIFEST);
+    detectionSync.detectVersionChangeCollisions();
+
+    // Rob Van Dam: every changed seed field applied silently through its write arm.
+    assertEquals("http://example.com/rvd.png", rvd.getImageUrl(), "null-guarded imageUrl set");
+    assertEquals(Gender.FEMALE, rvd.getGender(), "gender updated silently");
+    assertEquals(rvdDto.getDeckSize() + 1, rvd.getDeckSize(), "deckSize arm wrote the seed value");
+    assertEquals(
+        rvdDto.getStartingHealth() + 1,
+        rvd.getStartingHealth(),
+        "startingHealth arm wrote the seed value");
+    assertEquals(
+        rvdDto.getLowHealth() + 1, rvd.getLowHealth(), "lowHealth arm wrote the seed value");
+    assertEquals(
+        rvdDto.getStartingStamina() + 1,
+        rvd.getStartingStamina(),
+        "startingStamina arm wrote the seed value");
+    assertEquals(rvdDto.getLowStamina() + 1, rvd.getLowStamina(), "lowStamina arm wrote");
+    assertEquals(
+        "seed description rebuilt by the release",
+        rvd.getDescription(),
+        "description arm wrote the seed value");
+    assertEquals(5, rvd.getDrive(), "drive updated silently");
+    assertEquals(5, rvd.getResilience(), "resilience updated silently");
+    assertEquals(5, rvd.getCharisma(), "charisma updated silently");
+    assertEquals(5, rvd.getBrawl(), "brawl updated silently");
+    assertEquals(
+        AlignmentType.HEEL, rvd.getAlignment().getAlignmentType(), "alignment built when absent");
+    // Gail Kim: deckSize written (row was null), imageUrl kept (seed-omitted null write skips).
+    assertEquals(16, gail.getDeckSize(), "row-missing deckSize written from the seed");
+    assertEquals(13, gail.getStartingHealth(), "row-missing startingHealth written from the seed");
+    assertEquals(
+        "http://example.com/gail.png",
+        gail.getImageUrl(),
+        "seed-omitted imageUrl must NOT clear the row's value (null-guard skip arm)");
+    // Both rows are provenance-exact clean rows → re-stamped with the incoming fingerprint.
+    org.junit.jupiter.api.Assertions.assertNotEquals(
+        gailStampBefore,
+        gail.getSeedFingerprint(),
+        "tier-1 row re-stamps with the incoming fingerprint");
+    Mockito.verify(parking, Mockito.never())
+        .parkFieldConflict(
+            ArgumentMatchers.anyString(),
+            ArgumentMatchers.anyString(),
+            ArgumentMatchers.anyString(),
+            ArgumentMatchers.anyString(),
+            ArgumentMatchers.any(),
+            ArgumentMatchers.any(),
+            ArgumentMatchers.anyString());
+  }
+
+  @Test
+  void versionChange_stampOnlyRowReStampsFromManifest() throws Exception {
+    // The stamp-only-save branch: a clean row whose seed is unchanged (nothing to apply, nothing
+    // to park) but whose manifest hash differs from the row's content stamp adopts the manifest
+    // hash through the silent-apply-free save path.
+    WrestlerImportDTO rvdDto = rvdSeedDto();
+    Wrestler rvd = seededRvd(rvdDto);
+    rvd.setSeedFingerprint(VERIFY_SUPPORT.fingerprint(WrestlerSeedFields.canonical(rvd)));
+
+    when(wrestlerRepository.count()).thenReturn(1L);
+    when(wrestlerRepository.findAllWithAlignments()).thenReturn(List.of(rvd));
+    when(wrestlerRepository.findAll()).thenReturn(List.of(rvd));
+
+    SeedProvenanceManifest manifest =
+        SeedProvenanceManifest.of(Map.of("wrestler", Map.of("Rob Van Dam", "manifest-hash-rvd")));
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    WrestlerSync detectionSync =
+        new WrestlerSync(
+            "true",
+            wrestlerRepository,
+            wrestlerAbilityRepository,
+            wrestlerService,
+            universeRepository,
+            wrestlerStateRepository,
+            npcService,
+            tierRecalculationService,
+            resourcePatternResolver,
+            new ObjectMapper(),
+            parking,
+            manifest);
+    detectionSync.detectVersionChangeCollisions();
+
+    assertEquals(
+        "manifest-hash-rvd",
+        rvd.getSeedFingerprint(),
+        "a clean unchanged row must adopt the manifest hash (stamp-only save)");
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Wrestler>> captor = ArgumentCaptor.forClass(List.class);
+    verify(wrestlerRepository).saveAll(captor.capture());
+    assertTrue(captor.getValue().contains(rvd), "the stamp-only row must be persisted");
+    Mockito.verify(parking, Mockito.never())
+        .parkFieldConflict(
+            ArgumentMatchers.anyString(),
+            ArgumentMatchers.anyString(),
+            ArgumentMatchers.anyString(),
+            ArgumentMatchers.anyString(),
+            ArgumentMatchers.any(),
+            ArgumentMatchers.any(),
+            ArgumentMatchers.anyString());
+  }
+
+  @Test
+  void versionChangeDetection_emptyTableIsInert() {
+    // Empty-DB guard arm: PROTECT mode with no rows returns before touching any resource.
+    when(wrestlerRepository.count()).thenReturn(0L);
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    WrestlerSync detectionSync =
+        new WrestlerSync(
+            "true",
+            wrestlerRepository,
+            wrestlerAbilityRepository,
+            wrestlerService,
+            universeRepository,
+            wrestlerStateRepository,
+            npcService,
+            tierRecalculationService,
+            resourcePatternResolver,
+            new ObjectMapper(),
+            parking,
+            EMPTY_MANIFEST);
+    detectionSync.detectVersionChangeCollisions();
+    Mockito.verifyNoInteractions(parking);
+    verify(wrestlerRepository, never()).findAllWithAlignments();
+  }
+
+  @Test
+  void versionChangeDetection_toleratesBrokenSeedResource() throws Exception {
+    // Inner IOException catch: a seed file that fails to deserialize is logged and skipped —
+    // the pass never propagates the failure.
+    WrestlerImportDTO rvdDto = rvdSeedDto();
+    Wrestler rvd = seededRvd(rvdDto);
+    rvd.setSeedFingerprint(VERIFY_SUPPORT.fingerprint(WrestlerSeedFields.canonical(rvd)));
+    when(wrestlerRepository.count()).thenReturn(1L);
+    when(wrestlerRepository.findAllWithAlignments()).thenReturn(List.of(rvd));
+    when(wrestlerRepository.findAll()).thenReturn(List.of(rvd));
+
+    ObjectMapper brokenMapper =
+        new ObjectMapper() {
+          @Override
+          public <T> T readValue(java.io.InputStream src, TypeReference<T> typeRef)
+              throws IOException {
+            throw new IOException("boom");
+          }
+        };
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    WrestlerSync detectionSync =
+        new WrestlerSync(
+            "true",
+            wrestlerRepository,
+            wrestlerAbilityRepository,
+            wrestlerService,
+            universeRepository,
+            wrestlerStateRepository,
+            npcService,
+            tierRecalculationService,
+            resourcePatternResolver,
+            brokenMapper,
+            parking,
+            EMPTY_MANIFEST);
+
+    org.junit.jupiter.api.Assertions.assertDoesNotThrow(
+        detectionSync::detectVersionChangeCollisions);
+    verify(wrestlerRepository, never()).saveAll(any());
+    Mockito.verifyNoInteractions(parking);
   }
 
   @Test
