@@ -1323,6 +1323,51 @@ class SeedAppliersTest extends AbstractJpaTest {
         "USE_NEW must stamp the detection fingerprint");
   }
 
+  @Test
+  void deckApplierUseNewRewritesAmountOfAlreadyPresentCardAndStamps() {
+    // Regression pin (sandbox MySQL failure): rebuilding the composition when a card ALREADY in
+    // the deck keeps its slot with a changed amount. Hibernate orders INSERTs before DELETEs in
+    // one flush, so clearing + re-adding the same (deck, card, set) row without an intermediate
+    // flush violates the deck_card unique key. The apply must flush the orphan-removal DELETEs
+    // before inserting the rebuilt rows.
+    Wrestler holder = wrestlerRepository.save(Wrestler.builder().name("Deck Holder 2").build());
+    Deck deck = new Deck();
+    deck.setWrestler(holder);
+    deck.setCreationDate(Instant.now());
+    deck = deckRepository.save(deck);
+    Card sameCard = card("TST1", 5, "Same Card");
+    DeckCard existing = new DeckCard();
+    existing.setDeck(deck);
+    existing.setCard(sameCard);
+    existing.setSet(sameCard.getSet());
+    existing.setAmount(1);
+    deck.getCards().add(existing);
+    deckCardRepository.save(existing);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "deck",
+            "deck:deck-holder-2",
+            "Deck Holder 2",
+            "composition",
+            "TST1#5x1",
+            "TST1#5x2",
+            "fp-deck-amount");
+
+    service(deckApplier).apply(Map.of(decision.getId(), SeedFieldDecision.USE_NEW));
+
+    flushAndClear();
+    Deck reloaded = deckRepository.findById(deck.getId()).orElseThrow();
+    assertEquals(
+        1, reloaded.getCards().size(), "the same card must appear exactly once after the rebuild");
+    assertEquals(
+        2,
+        reloaded.getCards().iterator().next().getAmount(),
+        "USE_NEW must rewrite the amount on the already-present card");
+    assertEquals("fp-deck-amount", reloaded.getSeedFingerprint());
+  }
+
   // ── NpcSeedApplier ──────────────────────────────────────────────────────────
 
   private Npc npc(String name) {

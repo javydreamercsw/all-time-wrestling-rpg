@@ -26,6 +26,7 @@ import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import jakarta.annotation.security.PermitAll;
 
 /**
  * Full-page screen the navigation freeze reroutes to while seed decisions are pending (seed-update
@@ -35,6 +36,7 @@ import com.vaadin.flow.router.Route;
  */
 @Route(SeedReviewGateView.ROUTE)
 @PageTitle("Source Data Review | All Time Wrestling RPG")
+@PermitAll
 public class SeedReviewGateView extends VerticalLayout {
 
   /** This view's route — also the {@link SeedReviewGateObserver} exemption anchor. */

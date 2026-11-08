@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.sync;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.deck.DeckCard;
+import com.github.javydreamercsw.management.domain.deck.DeckCardRepository;
 import com.github.javydreamercsw.management.domain.seedreview.SeedUpdateDecision;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
@@ -51,14 +52,17 @@ public class DeckSeedApplier implements SeedDomainApplier {
   private final DeckService deckService;
   private final WrestlerRepository wrestlerRepository;
   private final CardService cardService;
+  private final DeckCardRepository deckCardRepository;
 
   public DeckSeedApplier(
       final DeckService deckService,
       final WrestlerRepository wrestlerRepository,
-      final CardService cardService) {
+      final CardService cardService,
+      final DeckCardRepository deckCardRepository) {
     this.deckService = deckService;
     this.wrestlerRepository = wrestlerRepository;
     this.cardService = cardService;
+    this.deckCardRepository = deckCardRepository;
   }
 
   @Override
@@ -188,6 +192,10 @@ public class DeckSeedApplier implements SeedDomainApplier {
       amounts.merge(setCode + "#" + number, amount, Integer::sum);
     }
     deck.getCards().clear();
+    // Flush the orphan-removal DELETEs now: Hibernate orders INSERTs before DELETEs within a
+    // flush, so without this a rebuilt row for a card that already exists in the deck (amount
+    // change on the same card) hits the deck_card unique key before its old row is deleted.
+    deckCardRepository.flush();
     for (Map.Entry<String, Integer> entry : amounts.entrySet()) {
       Card card = catalog.get(entry.getKey());
       DeckCard dc = new DeckCard();
