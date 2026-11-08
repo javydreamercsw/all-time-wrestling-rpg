@@ -35,6 +35,11 @@ import org.springframework.stereotype.Component;
  * <p>Stamp obligations: {@code USE_NEW} and {@code KEEP_MINE} both stamp the decision's {@code
  * new_fingerprint} on the row — keep-mine stamps while keeping the admin's value, so a later seed
  * change to that field re-parks instead of silently overwriting.
+ *
+ * <p>Known limitation: a {@code guideHash} decision cannot be resolved as {@code USE_NEW} into an
+ * actual guide rewrite — the decision's value carries the payload's hash, not the guide — so the
+ * applier warns, writes nothing, and still stamps and marks the row {@code APPLIED_NEW} (matching
+ * {@link SegmentTypeSeedApplier}'s behavior; seed-JSON guide reload is deferred).
  */
 @Slf4j
 @Component
@@ -128,12 +133,16 @@ public class SegmentRuleSeedApplier implements SeedDomainApplier {
                   : com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition
                       .valueOf(value));
       case "expansionCode" -> rule.setExpansionCode(value);
+      case "guideHash" ->
+          log.warn(
+              "Seed decision {}: segment rule guideHash is derived from the guide payload and"
+                  + " cannot be applied directly — the decision's value carries the hash, not the"
+                  + " guide, so USE_NEW cannot rewrite the guide content (the guide hash field is"
+                  + " guide-managed)",
+              decision.getId());
       default ->
           throw new IllegalStateException(
-              "Segment rule field '"
-                  + decision.getFieldName()
-                  + "' is not a seed-owned field (guideHash is guide-managed, not directly"
-                  + " writable)");
+              "Segment rule field '" + decision.getFieldName() + "' is not a seed-owned field");
     }
     segmentRuleRepository.save(rule);
   }

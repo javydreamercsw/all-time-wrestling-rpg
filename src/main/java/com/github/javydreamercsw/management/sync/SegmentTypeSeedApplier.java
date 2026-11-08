@@ -37,6 +37,11 @@ import org.springframework.stereotype.Component;
  * <p>Stamp obligations: {@code USE_NEW} and {@code KEEP_MINE} both stamp the decision's {@code
  * new_fingerprint} on the row — keep-mine stamps while keeping the admin's value, so a later seed
  * change to that field re-parks instead of silently overwriting.
+ *
+ * <p>Known limitation: a {@code guideHash} decision cannot be resolved as {@code USE_NEW} into an
+ * actual guide rewrite — the decision's value carries the payload's hash, not the guide — so the
+ * applier warns, writes nothing, and still stamps and marks the row {@code APPLIED_NEW} (seed-JSON
+ * guide reload is deferred).
  */
 @Slf4j
 @Component

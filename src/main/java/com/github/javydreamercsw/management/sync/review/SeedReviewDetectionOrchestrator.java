@@ -84,15 +84,15 @@ import org.springframework.stereotype.Component;
  * <h2>Stamp liveness (markDetected once per boot)</h2>
  *
  * On a boot where {@code shouldRunDetection()} is false the pass is skipped entirely, yet {@code
- * markDetected()} is still called once at the end. That is deliberate: the stamp is the ONLY
- * writer's output {@code shouldRunDetection()} compares against, and its "no stamp yet" branch
- * treats a missing stamp as NOT a version change — if the stamp were written only inside the gated
- * pass, no boot could ever write the first stamp (fresh install: nothing pending, no stamp → skip →
- * still no stamp), the version-change trigger would stay dead for the install's whole lifetime, and
- * the sandbox upgrade verification could never pass. The call is an idempotent upsert: on a
- * same-version boot it writes nothing; on a fresh install it lays the bootstrap stamp this
- * feature's own javadoc contract requires ("called exactly once per boot, after the version-change
- * detection pass has finished").
+ * markDetected()} is still called once at the end. That is deliberate: {@code markDetected()} is
+ * the only writer of the stamp that {@code shouldRunDetection()} compares against, and its "no
+ * stamp yet" branch treats a missing stamp as NOT a version change — if the stamp were written only
+ * inside the gated pass, no boot could ever write the first stamp (fresh install: nothing pending,
+ * no stamp → skip → still no stamp), the version-change trigger would stay dead for the install's
+ * whole lifetime, and the sandbox upgrade verification could never pass. The call is an idempotent
+ * upsert: on a same-version boot it writes nothing; on a fresh install it lays the bootstrap stamp
+ * this feature's own javadoc contract requires ("called exactly once per boot, after the
+ * version-change detection pass has finished").
  */
 @Slf4j
 @Component

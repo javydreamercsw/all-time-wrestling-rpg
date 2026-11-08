@@ -28,6 +28,7 @@ import com.github.javydreamercsw.base.domain.account.AchievementCategory;
 import com.github.javydreamercsw.base.domain.account.AchievementRepository;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.AbstractJpaTest;
+import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardRepository;
 import com.github.javydreamercsw.management.domain.card.CardSet;
@@ -48,6 +49,7 @@ import com.github.javydreamercsw.management.domain.show.segment.RingsideActionTy
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRulePlayGuide;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
@@ -446,6 +448,43 @@ class SeedAppliersTest extends AbstractJpaTest {
         "KEEP_AS_CUSTOM must clear the stamp (the row becomes user-owned content)");
   }
 
+  @Test
+  void wrestlerApplierUseNewRewritesAlignmentAndStamps() {
+    // "Jessie McKay" seeds at HEEL; the admin changed the row to FACE, so the seed's HEEL parked
+    // as a field conflict. USE_NEW must rewrite the row's alignment holder in place (the derived
+    // getAlignment() must reflect the seed change, not leave the stale holder first in the set)
+    // and stamp the decision's new fingerprint.
+    Wrestler jessie = wrestler("Jessie McKay");
+    flushAndClear();
+    assertEquals(
+        AlignmentType.HEEL,
+        wrestlerRepository.findById(jessie.getId()).orElseThrow().getAlignment().getAlignmentType(),
+        "fixture precondition: the seeded row holds the seed's HEEL alignment");
+
+    SeedUpdateDecision decision =
+        park(
+            "wrestler",
+            "wrestler:jessie-mckay",
+            "Jessie McKay",
+            "alignment",
+            AlignmentType.FACE.name(),
+            AlignmentType.HEEL.name(),
+            "fp-align");
+    service(wrestlerApplier).apply(Map.of(decision.getId(), SeedFieldDecision.USE_NEW));
+
+    flushAndClear();
+    Wrestler reloaded = wrestlerRepository.findById(jessie.getId()).orElseThrow();
+    assertEquals(
+        AlignmentType.HEEL,
+        reloaded.getAlignment().getAlignmentType(),
+        "USE_NEW must rewrite the row's alignment to the decision's incoming seed value");
+    assertEquals(
+        "fp-align", reloaded.getSeedFingerprint(), "USE_NEW must stamp the detection fingerprint");
+    assertEquals(
+        SeedUpdateDecision.STATUS_APPLIED_NEW,
+        decisionRepository.findById(decision.getId()).orElseThrow().getStatus());
+  }
+
   // ── SegmentRuleSeedApplier ──────────────────────────────────────────────────
 
   @Test
@@ -531,6 +570,44 @@ class SeedAppliersTest extends AbstractJpaTest {
         "fp-keep",
         reloaded.getSeedFingerprint(),
         "KEEP_MINE must stamp the detection fingerprint (re-collision on the next seed change)");
+  }
+
+  @Test
+  void segmentRuleApplierUseNewGuideHashWarnsStampsAndAppliesWithoutRewriting() {
+    // The guide payload travels as a hash: the decision's newValue carries the SHA-256 of the
+    // incoming guide JSON, not the guide itself, so USE_NEW cannot rewrite the guide content.
+    // The applier must warn, write nothing, and still stamp + mark APPLIED_NEW (same behavior as
+    // SegmentTypeSeedApplier) instead of throwing and rolling back the whole apply batch.
+    SegmentRule noDq = segmentRule("No DQ");
+    SegmentRulePlayGuide guideBefore = noDq.getGuide();
+    String hashBefore = noDq.getGuideHash();
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "segment_rule",
+            "segment_rule:no-dq",
+            "No DQ",
+            "guideHash",
+            hashBefore,
+            "incoming-guide-hash-value",
+            "fp-guide");
+    service(segmentRuleApplier).apply(Map.of(decision.getId(), SeedFieldDecision.USE_NEW));
+
+    flushAndClear();
+    SegmentRule reloaded = segmentRuleRepository.findById(noDq.getId()).orElseThrow();
+    assertEquals(
+        guideBefore,
+        reloaded.getGuide(),
+        "USE_NEW on guideHash must leave the guide content unchanged (the hash is not the guide)");
+    assertEquals(
+        "fp-guide",
+        reloaded.getSeedFingerprint(),
+        "USE_NEW on guideHash must still stamp the detection fingerprint");
+    assertEquals(
+        SeedUpdateDecision.STATUS_APPLIED_NEW,
+        decisionRepository.findById(decision.getId()).orElseThrow().getStatus(),
+        "the guideHash decision must resolve as APPLIED_NEW, not roll back");
   }
 
   // ── ChampionshipSeedApplier ─────────────────────────────────────────────────

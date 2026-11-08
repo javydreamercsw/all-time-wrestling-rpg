@@ -16,7 +16,11 @@
 */
 package com.github.javydreamercsw.management.sync;
 
+import com.github.javydreamercsw.base.util.LogSanitizer;
+import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
+import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.seedreview.SeedUpdateDecision;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.sync.review.SeedDomainApplier;
@@ -40,9 +44,12 @@ import org.springframework.stereotype.Component;
 public class WrestlerSeedApplier implements SeedDomainApplier {
 
   private final WrestlerRepository wrestlerRepository;
+  private final UniverseRepository universeRepository;
 
-  public WrestlerSeedApplier(final WrestlerRepository wrestlerRepository) {
+  public WrestlerSeedApplier(
+      final WrestlerRepository wrestlerRepository, final UniverseRepository universeRepository) {
     this.wrestlerRepository = wrestlerRepository;
+    this.universeRepository = universeRepository;
   }
 
   @Override
@@ -156,6 +163,35 @@ public class WrestlerSeedApplier implements SeedDomainApplier {
       case "resilience" -> wrestler.setResilience(value == null ? null : Integer.valueOf(value));
       case "charisma" -> wrestler.setCharisma(value == null ? null : Integer.valueOf(value));
       case "brawl" -> wrestler.setBrawl(value == null ? null : Integer.valueOf(value));
+      case "alignment" -> {
+        // Same write semantics as the silent-update writer (WrestlerSync.applySilentSeedFields):
+        // replace the campaign-free alignment holder in place — setAlignment appends, which
+        // would leave the stale alignment first in the set and the derived getter never
+        // reflecting the seed change.
+        if (value != null) {
+          try {
+            AlignmentType seedType = AlignmentType.valueOf(value);
+            WrestlerAlignment current = wrestler.getAlignment();
+            if (current != null) {
+              current.setAlignmentType(seedType);
+            } else {
+              wrestler.setAlignment(
+                  WrestlerAlignment.builder()
+                      .wrestler(wrestler)
+                      .universe(universeRepository.findAll().stream().findFirst().orElse(null))
+                      .alignmentType(seedType)
+                      .level(0)
+                      .build());
+            }
+          } catch (IllegalArgumentException e) {
+            log.warn(
+                "Seed decision {}: invalid alignment '{}' for wrestler '{}'",
+                decision.getId(),
+                LogSanitizer.sanitize(value),
+                LogSanitizer.sanitize(wrestler.getName()));
+          }
+        }
+      }
       default ->
           throw new IllegalStateException(
               "Wrestler field '" + decision.getFieldName() + "' is not a seed-owned field");
