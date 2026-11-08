@@ -409,14 +409,22 @@ public class SeedUpdateReviewView extends VerticalLayout {
   }
 
   /**
-   * Visual state for one field row: decided rows dim to ~55% opacity (and drop to 80% text
-   * emphasis) so the administrator can see at a glance which rows still need a decision — the rows
-   * stay in place and reversible (deselecting the radio restores them).
+   * Visual state for one field row: decided rows dim to 70% opacity and carry a green success tint
+   * plus a colored left stripe (Lumo's semantic success token, so it reads in both themes) — an
+   * unmistakable at-a-glance signal of which rows still need a decision, even mid-scroll. The rows
+   * stay in place and reversible (deselecting the radio restores the undecided visuals).
    */
   private void markRowDecided(Long decisionId, boolean decided) {
     VerticalLayout rowLayout = rowLayoutsByDecisionId.get(decisionId);
     if (rowLayout != null) {
-      rowLayout.getStyle().set("opacity", decided ? "0.55" : "1");
+      rowLayout.getStyle().set("opacity", decided ? "0.7" : "1");
+      if (decided) {
+        rowLayout.getStyle().set("color", "var(--lumo-success-color)");
+        rowLayout.getStyle().set("border-left", "2px solid var(--lumo-success-color)");
+      } else {
+        rowLayout.getStyle().remove("color");
+        rowLayout.getStyle().remove("border-left");
+      }
     }
   }
 

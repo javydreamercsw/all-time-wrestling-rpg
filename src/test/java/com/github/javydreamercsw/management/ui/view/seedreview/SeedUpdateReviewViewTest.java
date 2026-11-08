@@ -43,6 +43,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
 import com.vaadin.flow.data.provider.ListDataProvider;
 import java.lang.reflect.Method;
@@ -232,6 +233,81 @@ class SeedUpdateReviewViewTest extends AbstractViewTest {
 
     decideAll(view, SeedFieldDecision.KEEP_MINE);
     assertTrue(apply.isEnabled(), "Every pending row decided — apply unlocks");
+  }
+
+  // ── Decided-row visual state ────────────────────────────────────────────────
+
+  /**
+   * The row container for a radio (the layout the visual state is painted on) — its direct parent.
+   */
+  private VerticalLayout rowLayoutOf(SeedUpdateReviewView reviewView, String radioId) {
+    RadioButtonGroup<SeedFieldDecision> radio = radio(reviewView, radioId);
+    return (VerticalLayout) radio.getParent().orElseThrow();
+  }
+
+  @Test
+  @DisplayName("Deciding a row paints its decision; deselecting unpaints it")
+  void decidedRowGetsVisualState() {
+    view = viewWith(baseFixture());
+    VerticalLayout row = rowLayoutOf(view, RADIO_1);
+
+    // Undecided rows carry NO decision styling (opacity/tint/stripe are only painted on decide).
+    assertNull(row.getElement().getStyle().get("opacity"), "Undecided rows carry no explicit dim");
+    assertNull(row.getElement().getStyle().get("color"), "Undecided rows carry no decision color");
+    assertNull(
+        row.getElement().getStyle().get("border-left"), "Undecided rows carry no decision stripe");
+
+    radio(view, RADIO_1).setValue(SeedFieldDecision.KEEP_MINE);
+    assertEquals("0.7", row.getElement().getStyle().get("opacity"), "Decided rows dim");
+    assertEquals(
+        "var(--lumo-success-color)",
+        row.getElement().getStyle().get("color"),
+        "Decided rows tint with the decision color");
+    assertEquals(
+        "2px solid var(--lumo-success-color)",
+        row.getElement().getStyle().get("border-left"),
+        "Decided rows carry a colored stripe");
+
+    // Deselecting (userdeselected) restores the row to undecided visuals.
+    radio(view, RADIO_1).setValue(null);
+    assertEquals("1", row.getElement().getStyle().get("opacity"), "Deselect restores opacity");
+    assertNull(row.getElement().getStyle().get("color"), "Deselect clears the decision color");
+    assertNull(row.getElement().getStyle().get("border-left"), "Deselect clears the stripe");
+  }
+
+  @Test
+  @DisplayName("Sweep buttons paint every swept row; per-row radio still works after a sweep")
+  void sweepPaintsRows() {
+    view = viewWith(baseFixture());
+    VerticalLayout row1 = rowLayoutOf(view, RADIO_1);
+    VerticalLayout row2 = rowLayoutOf(view, RADIO_2);
+
+    button(view, "domain-wrestler-keep-all-mine").click();
+    assertEquals("0.7", row1.getElement().getStyle().get("opacity"), "Swept row dims");
+    assertEquals(
+        "var(--lumo-success-color)", row2.getElement().getStyle().get("color"), "Swept row tints");
+    assertEquals(
+        "2px solid var(--lumo-success-color)",
+        row1.getElement().getStyle().get("border-left"),
+        "Swept row carries a stripe");
+
+    // Per-row radios remain live after a sweep: switching one decision re-paints that row only.
+    radio(view, RADIO_1).setValue(SeedFieldDecision.USE_NEW);
+    assertEquals("0.7", row1.getElement().getStyle().get("opacity"), "Still decided after switch");
+  }
+
+  @Test
+  @DisplayName("Decided counter tracks choices made and totals pending rows")
+  void decidedCounterTracksProgress() {
+    view = viewWith(baseFixture());
+    Span counter = _get(view, Span.class, spec -> spec.withId("seed-review-decided-counter"));
+    assertEquals("0 of 6 decided", counter.getText(), "Counter starts at zero");
+
+    radio(view, RADIO_1).setValue(SeedFieldDecision.KEEP_MINE);
+    assertEquals("1 of 6 decided", counter.getText(), "Counter advances per decision");
+
+    decideAll(view, SeedFieldDecision.USE_NEW);
+    assertEquals("6 of 6 decided", counter.getText(), "Counter reaches the full total");
   }
 
   // ── Removal rows ────────────────────────────────────────────────────────────
