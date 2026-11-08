@@ -232,7 +232,7 @@
     <dependency>
       <groupId>com.github.oshi</groupId>
       <artifactId>oshi-core</artifactId>
-      <version>7.7.2</version>
+      <version>7.7.3</version>
     </dependency>
     <dependency>
       <groupId>com.github.appreciated</groupId>
@@ -972,7 +972,7 @@
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
         <artifactId>spotless-maven-plugin</artifactId>
-        <version>3.10.4</version>
+        <version>3.11.0</version>
         <configuration>
           <!-- optional: limit format enforcement to just the files changed by this feature branch
                 <ratchetFrom>origin/master</ratchetFrom>-->
