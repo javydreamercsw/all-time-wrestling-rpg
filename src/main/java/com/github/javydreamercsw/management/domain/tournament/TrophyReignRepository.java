@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.tournament;
 
+import com.github.javydreamercsw.management.domain.team.Team;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -37,8 +38,7 @@ public interface TrophyReignRepository extends JpaRepository<TrophyReign, Long> 
   List<TrophyReign> findByWinnerWrestlerId(Long winnerWrestlerId);
 
   /** Reigns won by the team (seed-review removal guard). */
-  List<TrophyReign> findByWinnerTeam(
-      com.github.javydreamercsw.management.domain.team.Team winnerTeam);
+  List<TrophyReign> findByWinnerTeam(Team winnerTeam);
 
   /** Narration honors for a team winner (members expand in the service). */
   @Query(

@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.domain.title;
 
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.team.Team;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.Instant;
 import java.util.List;
@@ -47,7 +48,7 @@ public interface TitleReignRepository extends JpaRepository<TitleReign, Long> {
   List<TitleReign> findByChampionsContaining(Wrestler wrestler);
 
   /** Reigns held by the team (seed-review removal guard). */
-  List<TitleReign> findByTeam(com.github.javydreamercsw.management.domain.team.Team team);
+  List<TitleReign> findByTeam(Team team);
 
   List<TitleReign> findByStartDateBetween(Instant startDate, Instant endDate);
 

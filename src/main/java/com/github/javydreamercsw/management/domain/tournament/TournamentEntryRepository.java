@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.tournament;
 
+import com.github.javydreamercsw.management.domain.team.Team;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -31,5 +32,5 @@ public interface TournamentEntryRepository extends JpaRepository<TournamentEntry
   boolean existsByTournamentIdAndWrestlerId(Long tournamentId, Long wrestlerId);
 
   /** Bracket entries fielded by the team (seed-review removal guard). */
-  List<TournamentEntry> findByTeam(com.github.javydreamercsw.management.domain.team.Team team);
+  List<TournamentEntry> findByTeam(Team team);
 }

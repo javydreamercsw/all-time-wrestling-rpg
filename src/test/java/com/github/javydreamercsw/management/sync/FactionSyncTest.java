@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -107,26 +108,33 @@ class FactionSyncTest {
   @Test
   void versionChangeBootsParkCollisions() {
     // THREE-TIER pin, end-to-end through the wired pipeline. The factions.json seed entries carry
-    // no description and no affinity, so the incoming seed values are null and 0 respectively.
-    // "Team USA" is the tier-1 row (description stale vs the stamp, seed current); "The Hurt
-    // Business" the tier-2-shaped row — an admin affinity edit the seed did NOT change, which the
-    // single-edit reconstruction must classify tier 3 (preserve), parking nothing.
+    // no description and no affinity, so the incoming seed values are null and 0 respectively —
+    // and The Hurt Business's seed manager IS "MVP" (the file supplies the new value of the
+    // tier-2 collision). "Team USA" is the tier-1 row (description stale vs the stamp, seed
+    // current); "The Hurt Business" the tier-2 row — an ADMIN-CHANGED managerName whose seed
+    // value ALSO changed since the stamp (previous release shipped "CM Punk", the admin swapped
+    // to "Paul Heyman", the incoming release ships "MVP"): the seed changed the very field the
+    // admin edited, so neither the clean nor the single-edit reconstruction matches → fail-safe,
+    // and exactly the managerName collision parks while description/affinity (matching the seed)
+    // stay NO_OP.
     Faction tier1row = faction("Team USA", "stale description");
     tier1row.setAffinity(2);
     tier1row.setSeedFingerprint(VERIFY_SUPPORT.fingerprint("stale description", null, "2"));
 
     Faction tier2row = faction("The Hurt Business", null);
-    Npc mvp = managerNpc("MVP");
-    tier2row.setManager(mvp); // the seed's manager write
-    // The stamp carries the PREVIOUS release's seed values (null description, MVP, affinity 0)
-    // while the row shows the admin's affinity edit (7) — substituting the incoming seed's 0 for
-    // that one field reproduces the stamp → single-edit reconstruction, all other fields attested.
-    tier2row.setSeedFingerprint(VERIFY_SUPPORT.fingerprint(null, "MVP", "0"));
-    tier2row.setAffinity(7); // admin edit AFTER the stamp → dirty row
+    Npc adminManager = managerNpc("Paul Heyman");
+    tier2row.setManager(adminManager); // the ADMIN's pick — neither the stamp's nor the seed's
+    tier2row.setAffinity(0);
+    // The stamp hashes the PREVIOUS release's seed vector: managerName "CM Punk" — every other
+    // field equals the incoming seed (null description, affinity 0). Substituting the incoming
+    // seed's manager ("MVP") for the row's manager field does NOT reproduce the stamp (it would
+    // need "CM Punk"), so the row is fail-safe: managerName parks (current "Paul Heyman" ≠ new
+    // "MVP"); description and affinity equal the seed → NO_OP.
+    tier2row.setSeedFingerprint(VERIFY_SUPPORT.fingerprint(null, "CM Punk", "0"));
 
     when(factionService.count()).thenReturn(2L);
     when(factionRepository.findAllWithManager()).thenReturn(List.of(tier1row, tier2row));
-    when(npcService.findAllUnfiltered()).thenReturn(List.of(mvp));
+    when(npcService.findAllUnfiltered()).thenReturn(List.of(adminManager));
 
     java.util.Set<String> parkedCoordinates = new java.util.HashSet<>();
     SeedUpdateReviewService parking = org.mockito.Mockito.mock(SeedUpdateReviewService.class);
@@ -155,12 +163,25 @@ class FactionSyncTest {
     // Tier 1: the untouched description updated silently to the NEW seed value (the seed ships no
     // description → null).
     assertNull(tier1row.getDescription(), "tier 1: seed's null description must apply silently");
-    // Tier 2 row: the admin's affinity edit kept its value (seed unchanged → tier 3 preserve).
-    assertEquals(7, tier2row.getAffinity(), "tier 3: the seed-unchanged admin edit must persist");
+    // Tier 2: the admin's manager kept its value; the row parked the collision with the exact
+    // (current, new) pair.
     assertEquals(
-        java.util.Set.of(),
+        adminManager,
+        tier2row.getManager(),
+        "tier 2: the admin's manager edit must keep its value");
+    org.mockito.Mockito.verify(parking)
+        .parkFieldConflict(
+            eq("faction"),
+            eq("faction:the-hurt-business"),
+            eq("The Hurt Business"),
+            eq("managerName"),
+            eq("Paul Heyman"),
+            eq("MVP"),
+            anyString());
+    assertEquals(
+        java.util.Set.of("faction:the-hurt-business|managerName"),
         parkedCoordinates,
-        "single-edit rows with an unchanged seed park nothing; every field is tier 1 or tier 3");
+        "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
   }
 
   @Test

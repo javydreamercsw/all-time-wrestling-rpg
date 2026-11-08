@@ -149,8 +149,8 @@ public class FactionSeedApplier implements SeedDomainApplier {
    * rivalries ({@code FactionRivalry.faction1/faction2}).
    */
   private boolean hasDependents(Faction faction) {
-    return wrestlerStateRepository.findByFaction(faction).stream()
-            .anyMatch(state -> faction.equals(state.getFaction()))
+    // findByFaction already filters states by the faction FK — no redundant equals re-check.
+    return !wrestlerStateRepository.findByFaction(faction).isEmpty()
         || !teamRepository.findByFaction(faction).isEmpty()
         || !factionRivalryRepository.findByFaction1OrFaction2(faction, faction).isEmpty();
   }
