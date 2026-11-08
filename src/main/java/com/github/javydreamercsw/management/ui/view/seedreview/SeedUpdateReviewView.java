@@ -95,6 +95,12 @@ public class SeedUpdateReviewView extends VerticalLayout {
   /** Chosen outcome per pending decision id — the state the Apply button submits. */
   private final Map<Long, SeedFieldDecision> choices = new LinkedHashMap<>();
 
+  /** Row layouts by decision id, for the decided visual state (dimming). */
+  private final Map<Long, VerticalLayout> rowLayoutsByDecisionId = new LinkedHashMap<>();
+
+  /** Live "X of Y decided" counter in the top bar. */
+  private Span decidedCounter;
+
   /** Radios by decision id, for the sweep buttons to set in one move. */
   private final Map<Long, RadioButtonGroup<SeedFieldDecision>> radiosByDecisionId =
       new LinkedHashMap<>();
@@ -125,6 +131,8 @@ public class SeedUpdateReviewView extends VerticalLayout {
     pendingRows.addAll(decisionService.pendingGrouped());
     choices.clear();
     radiosByDecisionId.clear();
+    rowLayoutsByDecisionId.clear();
+    decidedCounter = null;
 
     if (pendingRows.isEmpty()) {
       // The gate should have kept this route unreachable while decisions are pending; landing here
@@ -147,13 +155,18 @@ public class SeedUpdateReviewView extends VerticalLayout {
     Span summary =
         new Span(entityCount + " entities · " + fieldCount + " fields awaiting decision");
     summary.setId("seed-review-summary");
+    // Live progress: how many of the pending rows already carry a choice. Decided rows dim in
+    // place (they stay visible so progress through the list is readable).
+    decidedCounter = new Span("0 of " + pendingRows.size() + " decided");
+    decidedCounter.setId("seed-review-decided-counter");
 
     Button approveEverything = new Button("Approve Everything — use all new values");
     approveEverything.setId(APPROVE_EVERYTHING_BUTTON_ID);
     approveEverything.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     approveEverything.addClickListener(e -> confirmApproveEverything());
 
-    HorizontalLayout topBar = new HorizontalLayout(heading, summary, approveEverything);
+    HorizontalLayout topBar =
+        new HorizontalLayout(heading, summary, decidedCounter, approveEverything);
     topBar.setAlignItems(Alignment.CENTER);
     topBar.setWidthFull();
     add(topBar);
@@ -251,6 +264,7 @@ public class SeedUpdateReviewView extends VerticalLayout {
     VerticalLayout rowLayout = new VerticalLayout();
     rowLayout.setPadding(false);
     rowLayout.setSpacing(false);
+    rowLayoutsByDecisionId.put(row.getId(), rowLayout);
 
     boolean removal = SeedUpdateDecision.DECISION_TYPE_REMOVAL.equals(row.getDecisionType());
 
@@ -266,6 +280,11 @@ public class SeedUpdateReviewView extends VerticalLayout {
         e -> {
           if (e.getValue() != null) {
             choices.put(row.getId(), e.getValue());
+            markRowDecided(row.getId(), true);
+            refreshApplyState();
+          } else {
+            choices.remove(row.getId());
+            markRowDecided(row.getId(), false);
             refreshApplyState();
           }
         });
@@ -384,6 +403,21 @@ public class SeedUpdateReviewView extends VerticalLayout {
             .map(SeedUpdateDecision::getId)
             .collect(Collectors.toCollection(LinkedHashSet::new));
     applyButton.setEnabled(choices.keySet().containsAll(pendingIds));
+    if (decidedCounter != null) {
+      decidedCounter.setText(choices.size() + " of " + pendingRows.size() + " decided");
+    }
+  }
+
+  /**
+   * Visual state for one field row: decided rows dim to ~55% opacity (and drop to 80% text
+   * emphasis) so the administrator can see at a glance which rows still need a decision — the rows
+   * stay in place and reversible (deselecting the radio restores them).
+   */
+  private void markRowDecided(Long decisionId, boolean decided) {
+    VerticalLayout rowLayout = rowLayoutsByDecisionId.get(decisionId);
+    if (rowLayout != null) {
+      rowLayout.getStyle().set("opacity", decided ? "0.55" : "1");
+    }
   }
 
   /**
