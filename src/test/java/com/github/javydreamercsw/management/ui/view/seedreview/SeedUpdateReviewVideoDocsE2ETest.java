@@ -18,7 +18,6 @@ package com.github.javydreamercsw.management.ui.view.seedreview;
 
 import com.github.javydreamercsw.management.domain.seedreview.SeedUpdateDecision;
 import com.github.javydreamercsw.management.domain.seedreview.SeedUpdateDecisionRepository;
-import com.github.javydreamercsw.management.sync.review.SeedDomainApplier;
 import com.github.javydreamercsw.management.sync.review.SeedReviewGate;
 import com.github.javydreamercsw.management.ui.view.AbstractDocsE2ETest;
 import org.junit.jupiter.api.AfterEach;
@@ -29,7 +28,6 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 
 /**
@@ -53,47 +51,11 @@ class SeedUpdateReviewVideoDocsE2ETest extends AbstractDocsE2ETest {
   @TestConfiguration
   static class SeedReviewVideoAppliers {
 
-    // No wrestler no-op here: the wiring PR registered the REAL WrestlerSeedApplier — a second
-    // "wrestler" domain bean would collide at context startup (domain keys are unique). The real
-    // applier is harmless in this throwaway DB: the video's wrestler decisions stamp or write
-    // Bret Hart's row, which the scenario never asserts on.
+    // No no-op appliers here anymore: PR 4 wired every content domain, so the real appliers for
+    // wrestler, npc, and deck all exist — a second bean for any of those domain keys collides at
+    // context startup (domain keys are unique). The real appliers are harmless in this throwaway
+    // DB: the video's decisions stamp or write throwaway rows the scenario never asserts on.
 
-    @Bean
-    SeedDomainApplier npcApplier() {
-      return new NoopApplier("npc");
-    }
-
-    @Bean
-    SeedDomainApplier deckApplier() {
-      return new NoopApplier("deck");
-    }
-
-    private record NoopApplier(String domainKey) implements SeedDomainApplier {
-      @Override
-      public void applyKeep(SeedUpdateDecision decision) {
-        // keep current value — nothing to write for the video
-      }
-
-      @Override
-      public void applyNew(SeedUpdateDecision decision) {
-        // no backing entity row in the video scenario — nothing to write
-      }
-
-      @Override
-      public void applyKeepAsCustom(SeedUpdateDecision decision) {
-        // no backing entity row in the video scenario — nothing to write
-      }
-
-      @Override
-      public void applyRemove(SeedUpdateDecision decision) {
-        // no backing entity row in the video scenario — nothing to write
-      }
-
-      @Override
-      public boolean hasDependents(String entityKey) {
-        return false;
-      }
-    }
   }
 
   @BeforeEach
