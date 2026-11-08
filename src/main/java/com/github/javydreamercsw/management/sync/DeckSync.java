@@ -446,8 +446,11 @@ public class DeckSync implements DataSyncContributor {
    * meaningful in PROTECT/VERIFY mode with existing rows. The domain's only seed-owned state is the
    * card composition (single-blob row, Task 5's per-row parking contract): the one observed field
    * is the sorted composition string.
+   *
+   * <p>Public: the orchestrator entry point — invoked once per boot by {@code
+   * SeedReviewDetectionOrchestrator} when {@code shouldRunDetection()} is true; no other callers.
    */
-  void detectVersionChangeCollisions() {
+  public void detectVersionChangeCollisions() {
     if (syncSupport.mode() == SeedSyncMode.FULL) {
       return; // FULL mode applies the seed everywhere
     }

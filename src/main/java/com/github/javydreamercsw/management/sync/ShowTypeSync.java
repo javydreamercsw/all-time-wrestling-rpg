@@ -115,8 +115,11 @@ public class ShowTypeSync implements DataSyncContributor {
    * <p>Callers invoke this once per boot after the domain passes and only when {@link
    * SeedUpdateReviewService#shouldRunDetection()} is true; {@code markDetected()} is NOT called
    * here (the orchestrator stamps the version after all domains finish).
+   *
+   * <p>Public: the orchestrator entry point — invoked once per boot by {@code
+   * SeedReviewDetectionOrchestrator} when {@code shouldRunDetection()} is true; no other callers.
    */
-  void detectVersionChangeCollisions() {
+  public void detectVersionChangeCollisions() {
     if (syncSupport.mode() == SeedSyncMode.FULL || showTypeService.count() == 0) {
       return; // FULL mode applies the seed everywhere; an empty DB has nothing to collide
     }

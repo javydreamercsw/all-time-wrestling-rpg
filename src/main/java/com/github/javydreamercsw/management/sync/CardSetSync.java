@@ -204,8 +204,11 @@ public class CardSetSync implements DataSyncContributor {
    * fields update silently and re-stamp, tier-2 fields park as PENDING decisions, tier-3 fields
    * stay untouched. Only meaningful in PROTECT/VERIFY mode with existing rows. The domain's only
    * seed-owned field is the display name (single-blob row, Task 5's per-row parking contract).
+   *
+   * <p>Public: the orchestrator entry point — invoked once per boot by {@code
+   * SeedReviewDetectionOrchestrator} when {@code shouldRunDetection()} is true; no other callers.
    */
-  void detectVersionChangeCollisions() {
+  public void detectVersionChangeCollisions() {
     if (syncSupport.mode() == SeedSyncMode.FULL) {
       return; // FULL mode applies the seed everywhere
     }

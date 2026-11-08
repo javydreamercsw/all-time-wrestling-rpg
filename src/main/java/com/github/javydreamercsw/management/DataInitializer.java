@@ -21,6 +21,7 @@ import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.management.migration.DataMigrationRunner;
 import com.github.javydreamercsw.management.sync.DataSyncContributor;
 import com.github.javydreamercsw.management.sync.review.SeedReviewConfig;
+import com.github.javydreamercsw.management.sync.review.SeedReviewDetectionOrchestrator;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,17 +36,20 @@ public class DataInitializer implements Initializable {
   private final List<DataSyncContributor> contributors;
   private final DataMigrationRunner dataMigrationRunner;
   private final SeedReviewConfig seedReviewConfig;
+  private final SeedReviewDetectionOrchestrator seedReviewDetectionOrchestrator;
 
   @Autowired
   public DataInitializer(
       @Value("${data.initializer.enabled:true}") final boolean enabled,
       final List<DataSyncContributor> contributors,
       final DataMigrationRunner dataMigrationRunner,
-      final SeedReviewConfig seedReviewConfig) {
+      final SeedReviewConfig seedReviewConfig,
+      final SeedReviewDetectionOrchestrator seedReviewDetectionOrchestrator) {
     this.enabled = enabled;
     this.contributors = contributors;
     this.dataMigrationRunner = dataMigrationRunner;
     this.seedReviewConfig = seedReviewConfig;
+    this.seedReviewDetectionOrchestrator = seedReviewDetectionOrchestrator;
   }
 
   public void init() {
@@ -58,6 +62,14 @@ public class DataInitializer implements Initializable {
   private void performInit() {
     contributors.forEach(DataSyncContributor::sync);
     dataMigrationRunner.runMigrations();
+    // Seed-update review detection (PR 4): once per version change, after the syncs (all domain
+    // passes complete, stamp top-ups committed) and before the escape hatch below (a keep-all
+    // force-resolve must decide only after THIS boot's collisions are parked). The orchestrator
+    // checks the gate once, runs the 24 content domains' version-changed branches with
+    // per-domain failure isolation, closes the pending-notification phase, and stamps the
+    // detected version. Parking raises the seed-review gate from inside park*; the orchestrator
+    // never touches the gate itself.
+    seedReviewDetectionOrchestrator.detectIfVersionChanged();
     // Operator escape hatch (seed-update review gate): runs last so detection/parking from THIS
     // boot's syncs and migrations is already parked before any force-resolve decides the rows.
     seedReviewConfig.forceResolveIfConfigured();

@@ -343,8 +343,11 @@ public class CardSync implements DataSyncContributor {
    * field-by-field through {@link SeedCollisionDetector} instead of reconciling directly — tier-1
    * fields update silently and re-stamp, tier-2 fields park as PENDING decisions, tier-3 fields
    * stay untouched. Only meaningful in PROTECT/VERIFY mode with existing rows.
+   *
+   * <p>Public: the orchestrator entry point — invoked once per boot by {@code
+   * SeedReviewDetectionOrchestrator} when {@code shouldRunDetection()} is true; no other callers.
    */
-  void detectVersionChangeCollisions() {
+  public void detectVersionChangeCollisions() {
     if (syncSupport.mode() == SeedSyncMode.FULL) {
       return; // FULL mode applies the seed everywhere
     }

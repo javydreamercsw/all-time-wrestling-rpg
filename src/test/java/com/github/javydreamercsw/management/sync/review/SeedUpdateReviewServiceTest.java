@@ -79,9 +79,17 @@ class SeedUpdateReviewServiceTest extends AbstractJpaTest {
     // entity-manager delete would be discarded by the clear() below.
     decisionRepository.deleteAllInBatch();
     historyRepository.deleteAllInBatch();
+    // Same immediate-delete discipline as above: the orchestrator's boot-time markDetected() now
+    // writes the stamp outside the test transaction, and a queued repository.delete() here would
+    // be discarded by the clear() below (the stamp row would survive and look like a previous
+    // boot's version). flush() pushes the DELETE through before the context is cleared.
     gameSettingRepository
         .findGlobal(SeedUpdateReviewService.DETECTED_VERSION_KEY)
-        .ifPresent(s -> gameSettingRepository.delete(s));
+        .ifPresent(
+            s -> {
+              gameSettingRepository.delete(s);
+              gameSettingRepository.flush();
+            });
     entityManager.clear();
     gate = null;
     buildProperties = mock(BuildProperties.class);
