@@ -31,12 +31,15 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignUpgradeRepos
 import com.github.javydreamercsw.management.service.campaign.CampaignUpgradeService;
 import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
 import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -108,9 +111,9 @@ class CampaignUpgradeSyncTest {
     when(upgradeRepository.count()).thenReturn(2L);
     when(upgradeRepository.findAll()).thenReturn(List.of(tier1row, tier2row));
 
-    java.util.Set<String> parkedCoordinates = new java.util.HashSet<>();
-    SeedUpdateReviewService parking = org.mockito.Mockito.mock(SeedUpdateReviewService.class);
-    org.mockito.Mockito.doAnswer(
+    Set<String> parkedCoordinates = new HashSet<>();
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
               return null;
@@ -137,7 +140,7 @@ class CampaignUpgradeSyncTest {
     // Tier 2: the admin's description kept its value; the row parked the collision.
     assertEquals(
         "admin's description", tier2row.getDescription(), "tier 2: admin edit must keep its value");
-    org.mockito.Mockito.verify(parking)
+    Mockito.verify(parking)
         .parkFieldConflict(
             eq("campaign_upgrade"),
             eq("campaign_upgrade:lethal-strike"),
@@ -147,7 +150,7 @@ class CampaignUpgradeSyncTest {
             eq("All Strike attack [[card]]s deal +1 extra damage."),
             anyString());
     assertEquals(
-        java.util.Set.of("campaign_upgrade:lethal-strike|description"),
+        Set.of("campaign_upgrade:lethal-strike|description"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
   }
@@ -175,7 +178,7 @@ class CampaignUpgradeSyncTest {
 
     sync.sync();
 
-    verify(upgradeRepository, org.mockito.Mockito.atLeastOnce())
+    verify(upgradeRepository, Mockito.atLeastOnce())
         .saveAll(
             ArgumentMatchers.argThat(
                 rows -> {
@@ -200,9 +203,9 @@ class CampaignUpgradeSyncTest {
     when(upgradeRepository.count()).thenReturn(1L);
     when(upgradeRepository.findAll()).thenReturn(List.of(clean));
 
-    java.util.Set<String> parkedCoordinates = new java.util.HashSet<>();
-    SeedUpdateReviewService parking = org.mockito.Mockito.mock(SeedUpdateReviewService.class);
-    org.mockito.Mockito.doAnswer(
+    Set<String> parkedCoordinates = new HashSet<>();
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
               return null;
@@ -222,6 +225,6 @@ class CampaignUpgradeSyncTest {
     detectionSync.detectVersionChangeCollisions();
 
     verify(campaignUpgradeService, never()).loadUpgrades();
-    assertEquals(java.util.Set.of(), parkedCoordinates, "a clean row collides with nothing");
+    assertEquals(Set.of(), parkedCoordinates, "a clean row collides with nothing");
   }
 }

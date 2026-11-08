@@ -16,11 +16,16 @@
 */
 package com.github.javydreamercsw.management.sync;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.seedreview.SeedUpdateDecision;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
+import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.sync.review.SeedDomainApplier;
+import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -48,7 +53,7 @@ public class ChampionshipSeedApplier implements SeedDomainApplier {
   public interface TitleServiceBridge {
     Optional<Title> findByName(String name);
 
-    java.util.List<Title> findAllUnfiltered();
+    List<Title> findAllUnfiltered();
 
     Title save(Title title);
 
@@ -56,7 +61,7 @@ public class ChampionshipSeedApplier implements SeedDomainApplier {
   }
 
   public ChampionshipSeedApplier(
-      final com.github.javydreamercsw.management.service.title.TitleService titleService,
+      final TitleService titleService,
       final TitleReignRepository titleReignRepository,
       final SegmentRepository segmentRepository) {
     this.titleService =
@@ -67,7 +72,7 @@ public class ChampionshipSeedApplier implements SeedDomainApplier {
           }
 
           @Override
-          public java.util.List<Title> findAllUnfiltered() {
+          public List<Title> findAllUnfiltered() {
             return titleService.findAllUnfiltered();
           }
 
@@ -164,23 +169,11 @@ public class ChampionshipSeedApplier implements SeedDomainApplier {
     String value = decision.getNewValue();
     switch (decision.getFieldName()) {
       case "description" -> title.setDescription(value);
-      case "tier" ->
-          title.setTier(
-              value == null
-                  ? null
-                  : com.github.javydreamercsw.base.domain.wrestler.WrestlerTier.valueOf(value));
+      case "tier" -> title.setTier(value == null ? null : WrestlerTier.valueOf(value));
       case "championshipType" ->
-          title.setChampionshipType(
-              value == null
-                  ? null
-                  : com.github.javydreamercsw.management.domain.title.ChampionshipType.valueOf(
-                      value));
+          title.setChampionshipType(value == null ? null : ChampionshipType.valueOf(value));
       case "effectScript" -> title.setEffectScript(value);
-      case "gender" ->
-          title.setGender(
-              value == null
-                  ? null
-                  : com.github.javydreamercsw.base.domain.wrestler.Gender.valueOf(value));
+      case "gender" -> title.setGender(value == null ? null : Gender.valueOf(value));
       case "imageUrl" -> title.setImageUrl(value);
       case "expansionCode" -> title.setExpansionCode(value);
       case "includeInRankings" ->

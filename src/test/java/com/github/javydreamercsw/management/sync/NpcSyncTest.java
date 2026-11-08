@@ -34,6 +34,7 @@ import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
 import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -42,6 +43,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -313,9 +315,9 @@ class NpcSyncTest {
     when(npcService.count()).thenReturn(2L);
     when(npcService.findAllUnfiltered()).thenReturn(List.of(tier1row, tier2row));
 
-    java.util.Set<String> parkedCoordinates = new java.util.HashSet<>();
-    SeedUpdateReviewService parking = org.mockito.Mockito.mock(SeedUpdateReviewService.class);
-    org.mockito.Mockito.doAnswer(
+    Set<String> parkedCoordinates = new HashSet<>();
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
               return null;
@@ -343,7 +345,7 @@ class NpcSyncTest {
         10,
         tier2row.getAttributes().get(NpcService.ATTRIBUTE_AWARENESS),
         "tier 2: admin-edited field must keep its value — only a PENDING decision is created");
-    org.mockito.Mockito.verify(parking)
+    Mockito.verify(parking)
         .parkFieldConflict(
             eq("npc"),
             eq("npc:samuel-winters"),
@@ -353,7 +355,7 @@ class NpcSyncTest {
             eq("85"),
             anyString());
     assertEquals(
-        java.util.Set.of("npc:samuel-winters|awareness"),
+        Set.of("npc:samuel-winters|awareness"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
   }
@@ -366,16 +368,14 @@ class NpcSyncTest {
     existing.setName("Charles");
     existing.setDescription("stale description");
     when(npcService.count()).thenReturn(1L);
-    org.mockito.Mockito.lenient()
-        .when(npcService.findAllUnfiltered())
-        .thenReturn(List.of(existing));
+    Mockito.lenient().when(npcService.findAllUnfiltered()).thenReturn(List.of(existing));
 
-    SeedUpdateReviewService parking = org.mockito.Mockito.mock(SeedUpdateReviewService.class);
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
     NpcSync fullModeSync =
         new NpcSync("false", npcService, new ObjectMapper(), parking, EMPTY_MANIFEST);
     fullModeSync.detectVersionChangeCollisions(); // FULL mode → inert
 
-    org.mockito.Mockito.verifyNoInteractions(parking);
+    Mockito.verifyNoInteractions(parking);
     assertEquals(
         "stale description",
         existing.getDescription(),

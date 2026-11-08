@@ -33,11 +33,15 @@ import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
 import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -79,11 +83,7 @@ class ShowTypeSyncTest {
         showType("Premium Live Event (PLE)", "Premium Live Event", 7, 3, ShowCategory.PLE);
     ShowType weekly = showType("Weekly", "Weekly Event", 5, 2, ShowCategory.WEEKLY);
     when(showTypeService.createOrUpdateShowType(
-            anyString(),
-            anyString(),
-            org.mockito.ArgumentMatchers.anyInt(),
-            org.mockito.ArgumentMatchers.anyInt(),
-            any()))
+            anyString(), anyString(), ArgumentMatchers.anyInt(), ArgumentMatchers.anyInt(), any()))
         .thenAnswer(
             inv ->
                 showType(
@@ -97,7 +97,7 @@ class ShowTypeSyncTest {
     sync.sync();
 
     // Both catalog rows stamped (the service's save leaves the stamp unset).
-    verify(showTypeService, org.mockito.Mockito.atLeast(2))
+    verify(showTypeService, Mockito.atLeast(2))
         .save(argThat(st -> st.getSeedFingerprint() != null));
   }
 
@@ -124,9 +124,9 @@ class ShowTypeSyncTest {
     when(showTypeService.count()).thenReturn(2L);
     when(showTypeRepository.findAll()).thenReturn(List.of(tier1row, tier2row));
 
-    java.util.Set<String> parkedCoordinates = new java.util.HashSet<>();
-    SeedUpdateReviewService parking = org.mockito.Mockito.mock(SeedUpdateReviewService.class);
-    org.mockito.Mockito.doAnswer(
+    Set<String> parkedCoordinates = new HashSet<>();
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
               return null;
@@ -156,7 +156,7 @@ class ShowTypeSyncTest {
     assertEquals(9, tier2row.getExpectedMatches(), "tier 2: admin edit must keep its value");
     assertTrue(
         !tier2row.isActive(), "tier 3: the non-seed-owned admin toggle must never be touched");
-    org.mockito.Mockito.verify(parking)
+    Mockito.verify(parking)
         .parkFieldConflict(
             eq("show_type"),
             eq("show_type:premium-live-event-(ple)"),
@@ -166,7 +166,7 @@ class ShowTypeSyncTest {
             eq("7"),
             anyString());
     assertEquals(
-        java.util.Set.of("show_type:premium-live-event-(ple)|expectedMatches"),
+        Set.of("show_type:premium-live-event-(ple)|expectedMatches"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
   }
@@ -180,7 +180,7 @@ class ShowTypeSyncTest {
 
     fullSync.detectVersionChangeCollisions(); // FULL mode → inert
 
-    org.mockito.Mockito.verifyNoInteractions(seedReviewService);
+    Mockito.verifyNoInteractions(seedReviewService);
     verify(showTypeRepository, never()).findAll();
   }
 

@@ -16,13 +16,17 @@
 */
 package com.github.javydreamercsw.management.sync;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.seedreview.SeedUpdateDecision;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
+import com.github.javydreamercsw.management.domain.show.template.RecurrenceType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
 import com.github.javydreamercsw.management.sync.review.SeedDomainApplier;
+import java.time.DayOfWeek;
+import java.time.Month;
 import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
@@ -192,20 +196,13 @@ public class ShowTemplateSeedApplier implements SeedDomainApplier {
       case "durationDays" -> template.setDurationDays(value == null ? 1 : Integer.valueOf(value));
       case "recurrenceType" ->
           template.setRecurrenceType(
-              value == null
-                  ? com.github.javydreamercsw.management.domain.show.template.RecurrenceType.NONE
-                  : com.github.javydreamercsw.management.domain.show.template.RecurrenceType
-                      .valueOf(value));
-      case "dayOfWeek" ->
-          template.setDayOfWeek(value == null ? null : java.time.DayOfWeek.valueOf(value));
+              value == null ? RecurrenceType.NONE : RecurrenceType.valueOf(value));
+      case "dayOfWeek" -> template.setDayOfWeek(value == null ? null : DayOfWeek.valueOf(value));
       case "dayOfMonth" -> template.setDayOfMonth(value == null ? null : Integer.valueOf(value));
       case "weekOfMonth" -> template.setWeekOfMonth(value == null ? null : Integer.valueOf(value));
-      case "month" -> template.setMonth(value == null ? null : java.time.Month.valueOf(value));
+      case "month" -> template.setMonth(value == null ? null : Month.valueOf(value));
       case "genderConstraint" ->
-          template.setGenderConstraint(
-              value == null
-                  ? null
-                  : com.github.javydreamercsw.base.domain.wrestler.Gender.valueOf(value));
+          template.setGenderConstraint(value == null ? null : Gender.valueOf(value));
       case "requiredExpansions" -> {
         template.getRequiredExpansions().clear();
         if (value != null && !value.isBlank()) {

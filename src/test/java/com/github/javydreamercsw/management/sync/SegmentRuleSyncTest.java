@@ -33,10 +33,13 @@ import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
 import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -336,8 +339,8 @@ class SegmentRuleSyncTest {
               return target;
             });
 
-    java.util.Set<String> parkedCoordinates = new java.util.HashSet<>();
-    org.mockito.Mockito.doAnswer(
+    Set<String> parkedCoordinates = new HashSet<>();
+    Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
               return null;
@@ -369,10 +372,10 @@ class SegmentRuleSyncTest {
         tier2row.getBumpAddition(),
         "tier 2: admin-edited field must keep its value — only a PENDING decision is created");
     assertEquals(
-        java.util.Set.of("segment_rule:elimination|bumpAddition"),
+        Set.of("segment_rule:elimination|bumpAddition"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
-    org.mockito.Mockito.verify(seedReviewService)
+    Mockito.verify(seedReviewService)
         .parkFieldConflict(
             eq("segment_rule"),
             eq("segment_rule:elimination"),
@@ -397,7 +400,7 @@ class SegmentRuleSyncTest {
 
     fullSync.detectVersionChangeCollisions(); // FULL mode → inert
 
-    org.mockito.Mockito.verifyNoInteractions(seedReviewService);
+    Mockito.verifyNoInteractions(seedReviewService);
     assertEquals(
         "stale description",
         existing.getDescription(),

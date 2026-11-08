@@ -25,22 +25,30 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.card.CardSetService;
 import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
 import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
+import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
@@ -290,9 +298,8 @@ class CardSyncTest {
     when(cardSetService.findBySetCode("ATW")).thenReturn(Optional.of(atw));
 
     // Seed fixture: #60's name changed (tier 1), #59's momentum bumped 4 → 9 (tier 2 target).
-    com.fasterxml.jackson.databind.node.ArrayNode array =
-        new com.fasterxml.jackson.databind.ObjectMapper().createArrayNode();
-    com.fasterxml.jackson.databind.node.ObjectNode n60 = array.addObject();
+    ArrayNode array = new ObjectMapper().createArrayNode();
+    ObjectNode n60 = array.addObject();
     n60.put("name", "Shoulder Tackle Renamed");
     n60.put("type", "Strike");
     n60.put("damage", 1);
@@ -306,7 +313,7 @@ class CardSyncTest {
     n60.put("pin", false);
     n60.put("number", 60);
     n60.put("set", "ATW");
-    com.fasterxml.jackson.databind.node.ObjectNode n59 = array.addObject();
+    ObjectNode n59 = array.addObject();
     n59.put("name", "Gori Special");
     n59.put("type", "Throw");
     n59.put("damage", 3);
@@ -321,28 +328,27 @@ class CardSyncTest {
     n59.put("number", 59);
     n59.put("set", "ATW");
     Resource[] seedResources = {
-      new org.springframework.core.io.ByteArrayResource(
-          array.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8))
+      new ByteArrayResource(array.toString().getBytes(StandardCharsets.UTF_8))
     };
-    when(resourcePatternResolver.getResources(org.mockito.ArgumentMatchers.anyString()))
+    when(resourcePatternResolver.getResources(ArgumentMatchers.anyString()))
         .thenReturn(seedResources);
 
-    java.util.Set<String> parkedCoordinates = new java.util.HashSet<>();
-    SeedUpdateReviewService parking = org.mockito.Mockito.mock(SeedUpdateReviewService.class);
-    org.mockito.Mockito.doAnswer(
+    Set<String> parkedCoordinates = new HashSet<>();
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
               return null;
             })
         .when(parking)
         .parkFieldConflict(
-            org.mockito.ArgumentMatchers.anyString(),
-            org.mockito.ArgumentMatchers.anyString(),
-            org.mockito.ArgumentMatchers.anyString(),
-            org.mockito.ArgumentMatchers.anyString(),
-            org.mockito.ArgumentMatchers.any(),
-            org.mockito.ArgumentMatchers.any(),
-            org.mockito.ArgumentMatchers.anyString());
+            ArgumentMatchers.anyString(),
+            ArgumentMatchers.anyString(),
+            ArgumentMatchers.anyString(),
+            ArgumentMatchers.anyString(),
+            ArgumentMatchers.any(),
+            ArgumentMatchers.any(),
+            ArgumentMatchers.anyString());
 
     CardSync detectionSync =
         new CardSync(
@@ -367,17 +373,17 @@ class CardSyncTest {
         "tier 3: admin edit on an unchanged seed field must be preserved silently");
     // Tier 2: the admin-edited momentum kept its value; the row parked the momentum collision.
     assertEquals(7, tier2row.getMomentum(), "tier 2: admin-edited field must keep its value");
-    org.mockito.Mockito.verify(parking)
+    Mockito.verify(parking)
         .parkFieldConflict(
-            org.mockito.ArgumentMatchers.eq("card"),
-            org.mockito.ArgumentMatchers.eq("card:atw#59"),
-            org.mockito.ArgumentMatchers.eq("Gori Special"),
-            org.mockito.ArgumentMatchers.eq("momentum"),
-            org.mockito.ArgumentMatchers.eq("7"),
-            org.mockito.ArgumentMatchers.eq("9"),
-            org.mockito.ArgumentMatchers.anyString());
+            ArgumentMatchers.eq("card"),
+            ArgumentMatchers.eq("card:atw#59"),
+            ArgumentMatchers.eq("Gori Special"),
+            ArgumentMatchers.eq("momentum"),
+            ArgumentMatchers.eq("7"),
+            ArgumentMatchers.eq("9"),
+            ArgumentMatchers.anyString());
     assertEquals(
-        java.util.Set.of("card:atw#59|momentum"),
+        Set.of("card:atw#59|momentum"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 fields never park");
   }
@@ -396,7 +402,7 @@ class CardSyncTest {
     atw.setCode("ATW");
     when(cardSetService.findBySetCode("ATW")).thenReturn(Optional.of(atw));
 
-    SeedUpdateReviewService parking = org.mockito.Mockito.mock(SeedUpdateReviewService.class);
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
     CardSync fullModeSync =
         new CardSync(
             "false",
@@ -407,7 +413,7 @@ class CardSyncTest {
             parking,
             EMPTY_MANIFEST);
     fullModeSync.detectVersionChangeCollisions();
-    org.mockito.Mockito.verifyNoInteractions(parking);
+    Mockito.verifyNoInteractions(parking);
     assertEquals(
         "Shoulder Tackle",
         existing.getName(),

@@ -32,8 +32,10 @@ import com.github.javydreamercsw.management.service.card.CardSetService;
 import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
 import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -243,9 +245,9 @@ class CardSetSyncTest {
             argThat(code -> !"ATW".equals(code) && !"RVD".equals(code) && !"CUSTOM".equals(code))))
         .thenReturn(Optional.empty());
 
-    java.util.Set<String> parkedCoordinates = new java.util.HashSet<>();
-    SeedUpdateReviewService parking = org.mockito.Mockito.mock(SeedUpdateReviewService.class);
-    org.mockito.Mockito.doAnswer(
+    Set<String> parkedCoordinates = new HashSet<>();
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
               return null;
@@ -271,7 +273,7 @@ class CardSetSyncTest {
         "tier 3: user-created sets must never be touched");
     // Tier 2: the admin rename kept its value; the row parked the name collision.
     assertEquals("admin-renamed set", tier2row.getName(), "tier 2: admin edit must keep its value");
-    org.mockito.Mockito.verify(parking)
+    Mockito.verify(parking)
         .parkFieldConflict(
             eq("card_set"),
             eq("card_set:rvd"),
@@ -281,7 +283,7 @@ class CardSetSyncTest {
             eq("Rob Van Dam"),
             anyString());
     assertEquals(
-        java.util.Set.of("card_set:rvd|name"),
+        Set.of("card_set:rvd|name"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
   }
@@ -299,7 +301,7 @@ class CardSetSyncTest {
 
     fullSync.detectVersionChangeCollisions(); // FULL mode → inert
 
-    org.mockito.Mockito.verifyNoInteractions(seedReviewService);
+    Mockito.verifyNoInteractions(seedReviewService);
     assertEquals(
         "stale name",
         existing.getName(),

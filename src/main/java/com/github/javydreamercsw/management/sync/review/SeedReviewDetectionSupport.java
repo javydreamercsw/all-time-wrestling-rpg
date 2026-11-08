@@ -20,6 +20,7 @@ import com.github.javydreamercsw.management.sync.SeedSyncSupport;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 
@@ -173,8 +174,7 @@ public final class SeedReviewDetectionSupport {
     log.debug("Seed review: row provenance unresolvable — parking every differing field fail-safe");
     List<String> failSafe = new ArrayList<>(observations.size());
     for (SeedCollisionDetector.FieldObservation o : observations) {
-      failSafe.add(
-          java.util.Objects.equals(o.currentValue(), o.newSeedValue()) ? o.currentValue() : null);
+      failSafe.add(Objects.equals(o.currentValue(), o.newSeedValue()) ? o.currentValue() : null);
     }
     return withStored(observations, failSafe);
   }
@@ -189,14 +189,6 @@ public final class SeedReviewDetectionSupport {
               o.fieldName(), storedValues.get(i), o.currentValue(), o.newSeedValue()));
     }
     return rebuilt;
-  }
-
-  private static List<String> nullList(int size) {
-    List<String> values = new ArrayList<>(size);
-    for (int i = 0; i < size; i++) {
-      values.add(null);
-    }
-    return values;
   }
 
   /**

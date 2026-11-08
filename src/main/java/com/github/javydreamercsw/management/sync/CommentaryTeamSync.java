@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
+import com.github.javydreamercsw.management.domain.commentator.Commentator;
 import com.github.javydreamercsw.management.dto.commentator.CommentaryTeamImportDTO;
 import com.github.javydreamercsw.management.service.commentator.CommentaryService;
 import com.github.javydreamercsw.management.sync.review.SeedCollisionDetector;
@@ -218,8 +219,7 @@ public class CommentaryTeamSync implements DataSyncContributor {
         : dto.getMemberNames().stream().sorted().collect(Collectors.joining("\n"));
   }
 
-  private static String membersCanonical(
-      List<com.github.javydreamercsw.management.domain.commentator.Commentator> commentators) {
+  private static String membersCanonical(List<Commentator> commentators) {
     return commentators == null
         ? ""
         : commentators.stream()

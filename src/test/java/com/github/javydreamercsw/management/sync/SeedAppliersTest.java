@@ -22,26 +22,40 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.github.javydreamercsw.base.domain.account.AccountAchievementRepository;
-import com.github.javydreamercsw.base.domain.account.Achievement;
-import com.github.javydreamercsw.base.domain.account.AchievementCategory;
-import com.github.javydreamercsw.base.domain.account.AchievementRepository;
+import com.github.javydreamercsw.base.domain.account.*;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.AbstractJpaTest;
-import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
+import com.github.javydreamercsw.management.domain.campaign.*;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardRepository;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.card.CardSetRepository;
+import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
+import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
+import com.github.javydreamercsw.management.domain.commentator.Commentator;
+import com.github.javydreamercsw.management.domain.commentator.CommentatorRepository;
 import com.github.javydreamercsw.management.domain.deck.Deck;
 import com.github.javydreamercsw.management.domain.deck.DeckCard;
 import com.github.javydreamercsw.management.domain.deck.DeckCardRepository;
 import com.github.javydreamercsw.management.domain.deck.DeckRepository;
+import com.github.javydreamercsw.management.domain.faction.Faction;
+import com.github.javydreamercsw.management.domain.faction.FactionRepository;
+import com.github.javydreamercsw.management.domain.faction.FactionRivalry;
+import com.github.javydreamercsw.management.domain.faction.FactionRivalryRepository;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.npc.NpcRepository;
+import com.github.javydreamercsw.management.domain.outcome.OutcomeMatrix;
+import com.github.javydreamercsw.management.domain.outcome.OutcomeMatrixCategory;
+import com.github.javydreamercsw.management.domain.outcome.OutcomeMatrixEntry;
+import com.github.javydreamercsw.management.domain.outcome.OutcomeMatrixEntryRepository;
+import com.github.javydreamercsw.management.domain.outcome.OutcomeMatrixRepository;
 import com.github.javydreamercsw.management.domain.relationship.RelationshipType;
+import com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship;
+import com.github.javydreamercsw.management.domain.relationship.WrestlerRelationshipRepository;
 import com.github.javydreamercsw.management.domain.seedreview.SeedUpdateDecision;
 import com.github.javydreamercsw.management.domain.seedreview.SeedUpdateDecisionRepository;
+import com.github.javydreamercsw.management.domain.show.Show;
+import com.github.javydreamercsw.management.domain.show.ShowRepository;
 import com.github.javydreamercsw.management.domain.show.segment.RingsideAction;
 import com.github.javydreamercsw.management.domain.show.segment.RingsideActionRepository;
 import com.github.javydreamercsw.management.domain.show.segment.RingsideActionType;
@@ -51,19 +65,40 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAdditio
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRulePlayGuide;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
+import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
+import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
+import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
+import com.github.javydreamercsw.management.domain.team.Team;
+import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
 import com.github.javydreamercsw.management.domain.title.TitleRepository;
+import com.github.javydreamercsw.management.domain.tournament.*;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
+import com.github.javydreamercsw.management.domain.world.Arena;
+import com.github.javydreamercsw.management.domain.world.ArenaRepository;
+import com.github.javydreamercsw.management.domain.world.Location;
+import com.github.javydreamercsw.management.domain.world.LocationRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.seedreview.SeedUpdateDecisionService;
 import com.github.javydreamercsw.management.sync.review.SeedDomainApplier;
 import com.github.javydreamercsw.management.sync.review.SeedFieldDecision;
 import com.github.javydreamercsw.management.sync.review.SeedReviewGate;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -129,102 +164,57 @@ class SeedAppliersTest extends AbstractJpaTest {
   @Autowired private AchievementRepository achievementRepository;
   @Autowired private AccountAchievementRepository accountAchievementRepository;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository
-      segmentTypeRepository;
+  @Autowired private SegmentTypeRepository segmentTypeRepository;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository
-      showTypeRepository;
+  @Autowired private ShowTypeRepository showTypeRepository;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository
-      showTemplateRepository;
+  @Autowired private ShowTemplateRepository showTemplateRepository;
 
-  @Autowired private com.github.javydreamercsw.management.domain.show.ShowRepository showRepository;
+  @Autowired private ShowRepository showRepository;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.StatusCardRepository
-      statusCardRepository;
+  @Autowired private StatusCardRepository statusCardRepository;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.WrestlerStatusRepository
-      wrestlerStatusRepository;
+  @Autowired private WrestlerStatusRepository wrestlerStatusRepository;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.tournament.TournamentRepository
-      tournamentRepository;
+  @Autowired private TournamentRepository tournamentRepository;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCardRepository
-      campaignAbilityCardRepository;
+  @Autowired private CampaignAbilityCardRepository campaignAbilityCardRepository;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository
-      wrestlerStateRepository;
+  @Autowired private WrestlerStateRepository wrestlerStateRepository;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.CampaignRepository
-      campaignRepository;
+  @Autowired private CampaignRepository campaignRepository;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.CampaignStateRepository
-      campaignStateRepository;
+  @Autowired private CampaignStateRepository campaignStateRepository;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.faction.FactionRepository factionRepository;
+  @Autowired private FactionRepository factionRepository;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.faction.FactionRivalryRepository
-      factionRivalryRepository;
+  @Autowired private FactionRivalryRepository factionRivalryRepository;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.world.ArenaRepository arenaRepositoryTest;
+  @Autowired private ArenaRepository arenaRepositoryTest;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.world.LocationRepository
-      locationRepositoryTest;
+  @Autowired private LocationRepository locationRepositoryTest;
 
-  @Autowired private com.github.javydreamercsw.management.domain.team.TeamRepository teamRepoTest;
+  @Autowired private TeamRepository teamRepoTest;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.commentator.CommentatorRepository
-      commentatorRepositoryTest;
+  @Autowired private CommentatorRepository commentatorRepositoryTest;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository
-      commentaryTeamRepositoryTest;
+  @Autowired private CommentaryTeamRepository commentaryTeamRepositoryTest;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.universe.UniverseRepository
-      universeRepositoryTest;
+  @Autowired private UniverseRepository universeRepositoryTest;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.npc.NpcRepository npcRepositoryTest;
+  @Autowired private NpcRepository npcRepositoryTest;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.outcome.OutcomeMatrixRepository
-      outcomeMatrixRepositoryTest;
+  @Autowired private OutcomeMatrixRepository outcomeMatrixRepositoryTest;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.outcome.OutcomeMatrixEntryRepository
-      outcomeMatrixEntryRepositoryTest;
+  @Autowired private OutcomeMatrixEntryRepository outcomeMatrixEntryRepositoryTest;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.relationship.WrestlerRelationshipRepository
-      wrestlerRelationshipRepositoryTest;
+  @Autowired private WrestlerRelationshipRepository wrestlerRelationshipRepositoryTest;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.campaign.CampaignUpgradeRepository
-      campaignUpgradeRepositoryTest;
+  @Autowired private CampaignUpgradeRepository campaignUpgradeRepositoryTest;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.tournament.TrophyReignRepository
-      trophyReignRepository;
+  @Autowired private TrophyReignRepository trophyReignRepository;
 
-  @Autowired
-  private com.github.javydreamercsw.management.domain.tournament.TournamentEntryRepository
-      tournamentEntryRepository;
+  @Autowired private TournamentEntryRepository tournamentEntryRepository;
 
   @Autowired private EntityManager entityManager;
 
@@ -1117,7 +1107,7 @@ class SeedAppliersTest extends AbstractJpaTest {
 
     flushAndClear();
     Deck reloaded = deckRepository.findById(deck.getId()).orElseThrow();
-    Map<String, Integer> composition = new java.util.HashMap<>();
+    Map<String, Integer> composition = new HashMap<>();
     reloaded
         .getCards()
         .forEach(
@@ -1184,11 +1174,8 @@ class SeedAppliersTest extends AbstractJpaTest {
     // refuse the removal BEFORE any dispatch.
     Npc manager = npc("Charles");
     Wrestler managed = wrestlerRepository.save(Wrestler.builder().name("Managed Wrestler").build());
-    com.github.javydreamercsw.management.domain.wrestler.WrestlerState state =
-        com.github.javydreamercsw.management.domain.wrestler.WrestlerState.builder()
-            .wrestler(managed)
-            .universe(defaultUniverse)
-            .build();
+    WrestlerState state =
+        WrestlerState.builder().wrestler(managed).universe(defaultUniverse).build();
     state.setManager(manager);
     wrestlerStateRepository.save(state);
     flushAndClear();
@@ -1282,9 +1269,7 @@ class SeedAppliersTest extends AbstractJpaTest {
   void achievementApplierRemoveRefusedWhenAccountProgressExists() {
     // An account references the achievement: the pre-dispatch hasDependents check must refuse.
     Achievement ach = achievement("FIRST_WRESTLER", "Rookie Manager");
-    com.github.javydreamercsw.base.domain.account.Account account =
-        createTestAccount(
-            "seed-achiever", com.github.javydreamercsw.base.domain.account.RoleName.PLAYER);
+    Account account = createTestAccount("seed-achiever", RoleName.PLAYER);
     account.getAchievements().add(ach);
     accountRepository.save(account);
     flushAndClear();
@@ -1378,29 +1363,12 @@ class SeedAppliersTest extends AbstractJpaTest {
         "REMOVE must delete the row resolved by display name");
   }
 
-  // ── SegmentTypeSeedApplier ──────────────────────────────────────────────────
-
-  private com.github.javydreamercsw.management.domain.show.segment.type.SegmentType segmentType(
-      String name) {
+  private SegmentType segmentTypeFixture(String name, String description) {
     return segmentTypeRepository
         .findByName(name)
         .orElseGet(
             () -> {
-              com.github.javydreamercsw.management.domain.show.segment.type.SegmentType st =
-                  new com.github.javydreamercsw.management.domain.show.segment.type.SegmentType();
-              st.setName(name);
-              return segmentTypeRepository.save(st);
-            });
-  }
-
-  private com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
-      segmentTypeFixture(String name, String description) {
-    return segmentTypeRepository
-        .findByName(name)
-        .orElseGet(
-            () -> {
-              com.github.javydreamercsw.management.domain.show.segment.type.SegmentType st =
-                  new com.github.javydreamercsw.management.domain.show.segment.type.SegmentType();
+              SegmentType st = new SegmentType();
               st.setName(name);
               st.setDescription(description);
               return segmentTypeRepository.save(st);
@@ -1474,11 +1442,8 @@ class SeedAppliersTest extends AbstractJpaTest {
     var free = segmentTypeFixture("Removable Type", "unused");
     var booked = segmentTypeFixture("Booked Type", "used");
     // A template assignment row references the booked type (ShowTemplateSegmentAssignment FK).
-    com.github.javydreamercsw.management.domain.show.template.ShowTemplate template =
-        showTemplateFixture();
-    com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment row =
-        new com.github.javydreamercsw.management.domain.show.template
-            .ShowTemplateSegmentAssignment();
+    ShowTemplate template = showTemplateFixture();
+    ShowTemplateSegmentAssignment row = new ShowTemplateSegmentAssignment();
     row.setTemplate(template);
     row.setSegmentType(booked);
     template.getSegmentAssignments().add(row);
@@ -1519,18 +1484,15 @@ class SeedAppliersTest extends AbstractJpaTest {
 
   // ── ShowTypeSeedApplier ─────────────────────────────────────────────────────
 
-  private com.github.javydreamercsw.management.domain.show.type.ShowType showTypeFixture(
-      String name) {
+  private ShowType showTypeFixture(String name) {
     return showTypeRepository
         .findByName(name)
         .orElseGet(
             () -> {
-              com.github.javydreamercsw.management.domain.show.type.ShowType st =
-                  new com.github.javydreamercsw.management.domain.show.type.ShowType();
+              ShowType st = new ShowType();
               st.setName(name);
               st.setDescription("original");
-              st.setCategory(
-                  com.github.javydreamercsw.management.domain.show.type.ShowCategory.OTHER);
+              st.setCategory(ShowCategory.OTHER);
               return showTypeRepository.save(st);
             });
   }
@@ -1561,7 +1523,7 @@ class SeedAppliersTest extends AbstractJpaTest {
   @Test
   void showTypeApplierRemoveRefusedWhenShowsExist() {
     var referenced = showTypeFixture("Referenced Type");
-    var show = new com.github.javydreamercsw.management.domain.show.Show();
+    var show = new Show();
     show.setName("Seed Applier Show");
     show.setDescription("a show");
     show.setType(referenced);
@@ -1588,10 +1550,8 @@ class SeedAppliersTest extends AbstractJpaTest {
 
   // ── ShowTemplateSeedApplier ─────────────────────────────────────────────────
 
-  private com.github.javydreamercsw.management.domain.show.template.ShowTemplate
-      showTemplateFixture() {
-    com.github.javydreamercsw.management.domain.show.template.ShowTemplate t =
-        new com.github.javydreamercsw.management.domain.show.template.ShowTemplate();
+  private ShowTemplate showTemplateFixture() {
+    ShowTemplate t = new ShowTemplate();
     t.setName("Applier Fixture Template");
     t.setShowType(showTypeFixture("Weekly"));
     return showTemplateRepository.save(t);
@@ -1627,7 +1587,7 @@ class SeedAppliersTest extends AbstractJpaTest {
   @Test
   void showTemplateApplierRemoveRefusedWhenShowsExist() {
     var template = showTemplateFixture();
-    var show = new com.github.javydreamercsw.management.domain.show.Show();
+    var show = new Show();
     show.setName("Template Show");
     show.setDescription("a show");
     show.setType(template.getShowType());
@@ -1659,14 +1619,12 @@ class SeedAppliersTest extends AbstractJpaTest {
 
   // ── StatusCardSeedApplier ───────────────────────────────────────────────────
 
-  private com.github.javydreamercsw.management.domain.campaign.StatusCard statusCardFixture(
-      String key) {
+  private StatusCard statusCardFixture(String key) {
     return statusCardRepository
         .findByKey(key)
         .orElseGet(
             () -> {
-              com.github.javydreamercsw.management.domain.campaign.StatusCard card =
-                  new com.github.javydreamercsw.management.domain.campaign.StatusCard();
+              StatusCard card = new StatusCard();
               card.setKey(key);
               card.setLevel1Name("Level One");
               card.setDescription("original");
@@ -1702,11 +1660,7 @@ class SeedAppliersTest extends AbstractJpaTest {
   void statusCardApplierRemoveRefusedWhenWrestlerStatusesExist() {
     var card = statusCardFixture("status_applier_dependent");
     Wrestler holder = wrestlerRepository.save(Wrestler.builder().name("Status Holder").build());
-    com.github.javydreamercsw.management.domain.campaign.WrestlerStatus status =
-        com.github.javydreamercsw.management.domain.campaign.WrestlerStatus.builder()
-            .wrestler(holder)
-            .statusCard(card)
-            .build();
+    WrestlerStatus status = WrestlerStatus.builder().wrestler(holder).statusCard(card).build();
     wrestlerStatusRepository.save(status);
     flushAndClear();
 
@@ -1733,14 +1687,12 @@ class SeedAppliersTest extends AbstractJpaTest {
 
   // ── TournamentSeedApplier ───────────────────────────────────────────────────
 
-  private com.github.javydreamercsw.management.domain.tournament.Tournament tournamentFixture(
-      String code) {
+  private Tournament tournamentFixture(String code) {
     return tournamentRepository
         .findByCodeWithRules(code)
         .orElseGet(
             () -> {
-              com.github.javydreamercsw.management.domain.tournament.Tournament t =
-                  new com.github.javydreamercsw.management.domain.tournament.Tournament();
+              Tournament t = new Tournament();
               t.setCode(code);
               t.setName("Fixture " + code);
               t.setFormatId("SINGLE_ELIMINATION");
@@ -1827,18 +1779,14 @@ class SeedAppliersTest extends AbstractJpaTest {
 
   // ── CampaignAbilityCardSeedApplier ──────────────────────────────────────────
 
-  private com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCard abilityCard(
-      String name, int level) {
+  private CampaignAbilityCard abilityCard(String name, int level) {
     return campaignAbilityCardRepository
-        .findByNameAndAlignmentTypeAndLevel(
-            name, com.github.javydreamercsw.management.domain.campaign.AlignmentType.HEEL, level)
+        .findByNameAndAlignmentTypeAndLevel(name, AlignmentType.HEEL, level)
         .orElseGet(
             () -> {
-              com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCard c =
-                  new com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCard();
+              CampaignAbilityCard c = new CampaignAbilityCard();
               c.setName(name);
-              c.setAlignmentType(
-                  com.github.javydreamercsw.management.domain.campaign.AlignmentType.HEEL);
+              c.setAlignmentType(AlignmentType.HEEL);
               c.setLevel(level);
               return campaignAbilityCardRepository.save(c);
             });
@@ -2252,14 +2200,12 @@ class SeedAppliersTest extends AbstractJpaTest {
     // A bracket round exists: the pre-dispatch hasDependents check must refuse the removal —
     // deleting the tournament would cascade-destroy the bracket (TournamentRound FK).
     var referenced = tournamentFixture("applier_rounded");
-    com.github.javydreamercsw.management.domain.tournament.TournamentRound round =
-        com.github.javydreamercsw.management.domain.tournament.TournamentRound.builder()
+    TournamentRound round =
+        TournamentRound.builder()
             .tournament(referenced)
             .roundNumber(1)
             .roundName("Quarterfinals")
-            .status(
-                com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus
-                    .PENDING)
+            .status(TournamentRoundStatus.PENDING)
             .build();
     referenced.getRounds().add(round); // cascade ALL on the parent persists the round
     tournamentRepository.saveAndFlush(referenced);
@@ -2348,17 +2294,12 @@ class SeedAppliersTest extends AbstractJpaTest {
     // refuse the removal — deleting the card would orphan the campaign's active deck (FK).
     var referenced = abilityCard("Held Card", 2);
     Wrestler player = wrestlerRepository.save(Wrestler.builder().name("Campaign Player").build());
-    com.github.javydreamercsw.management.domain.campaign.Campaign campaign =
-        com.github.javydreamercsw.management.domain.campaign.Campaign.builder()
-            .wrestler(player)
-            .status(com.github.javydreamercsw.management.domain.campaign.CampaignStatus.ACTIVE)
-            .build();
+    Campaign campaign = Campaign.builder().wrestler(player).status(CampaignStatus.ACTIVE).build();
     campaign = campaignRepository.save(campaign);
-    com.github.javydreamercsw.management.domain.campaign.CampaignState state =
-        com.github.javydreamercsw.management.domain.campaign.CampaignState.builder()
+    CampaignState state =
+        CampaignState.builder()
             .campaign(campaign)
-            .activeCards(
-                new java.util.ArrayList<>(List.of(referenced))) // the FK the guard must protect
+            .activeCards(new ArrayList<>(List.of(referenced))) // the FK the guard must protect
             .build();
     campaignStateRepository.save(state);
     flushAndClear();
@@ -2388,63 +2329,43 @@ class SeedAppliersTest extends AbstractJpaTest {
         "the refused removal decision must stay pending");
   }
 
-  // ── Slice C: the 24-path verb matrix for faction/arena/location/team/commentator ──
-  // Same per-domain shape as the fix-round block above: USE_NEW through the reminted entity key,
-  // KEEP_MINE (stamp without changing the value), KEEP_AS_CUSTOM (clear the stamp), and REMOVE —
-  // positive where the domain's real-FK guard permits a genuinely orphaned row, plus the refusal
-  // pins for every FK the entity model holds.
-
-  private com.github.javydreamercsw.management.domain.universe.Universe fixtureUniverse() {
-    return universeRepositoryTest.findAll().stream()
-        .findFirst()
-        .orElseThrow(() -> new IllegalStateException("no default universe after reset"));
-  }
-
-  private com.github.javydreamercsw.management.domain.faction.Faction factionFixture(String name) {
+  private Faction factionFixture(String name) {
     return factionRepository
         .findByName(name)
         .orElseGet(
             () -> {
-              com.github.javydreamercsw.management.domain.faction.Faction f =
-                  com.github.javydreamercsw.management.domain.faction.Faction.builder()
-                      .name(name)
-                      .build();
+              Faction f = Faction.builder().name(name).build();
               return factionRepository.save(f);
             });
   }
 
-  private com.github.javydreamercsw.management.domain.world.Location locationFixture(String name) {
+  private Location locationFixture(String name) {
     return locationRepositoryTest
         .findByName(name)
         .orElseGet(
             () -> {
-              com.github.javydreamercsw.management.domain.world.Location l =
-                  com.github.javydreamercsw.management.domain.world.Location.builder()
-                      .name(name)
-                      .build();
+              Location l = Location.builder().name(name).build();
               return locationRepositoryTest.save(l);
             });
   }
 
-  private com.github.javydreamercsw.management.domain.world.Arena arenaFixture(String name) {
+  private Arena arenaFixture(String name) {
     return arenaRepositoryTest
         .findByName(name)
         .orElseGet(
             () -> {
-              com.github.javydreamercsw.management.domain.world.Arena a =
-                  com.github.javydreamercsw.management.domain.world.Arena.builder()
+              Arena a =
+                  Arena.builder()
                       .name(name)
                       .location(locationFixture(name + " Site"))
                       .capacity(100)
-                      .alignmentBias(
-                          com.github.javydreamercsw.management.domain.world.Arena.AlignmentBias
-                              .NEUTRAL)
+                      .alignmentBias(Arena.AlignmentBias.NEUTRAL)
                       .build();
               return arenaRepositoryTest.save(a);
             });
   }
 
-  private com.github.javydreamercsw.management.domain.team.Team teamFixture(String name) {
+  private Team teamFixture(String name) {
     return teamRepoTest
         .findByName(name)
         .orElseGet(
@@ -2453,17 +2374,13 @@ class SeedAppliersTest extends AbstractJpaTest {
                   wrestlerRepository.save(Wrestler.builder().name(name + " Member One").build());
               Wrestler w2 =
                   wrestlerRepository.save(Wrestler.builder().name(name + " Member Two").build());
-              com.github.javydreamercsw.management.domain.team.Team t =
-                  com.github.javydreamercsw.management.domain.team.Team.builder()
-                      .name(name)
-                      .build();
+              Team t = Team.builder().name(name).build();
               t.setMembers(List.of(w1, w2));
               return teamRepoTest.save(t);
             });
   }
 
-  private com.github.javydreamercsw.management.domain.commentator.Commentator commentatorFixture(
-      String npcName) {
+  private Commentator commentatorFixture(String npcName) {
     return commentatorRepositoryTest.findAll().stream()
         .filter(c -> c.getNpc() != null && npcName.equals(c.getNpc().getName()))
         .findFirst()
@@ -2480,8 +2397,7 @@ class SeedAppliersTest extends AbstractJpaTest {
                             n.setNpcType("Commentator");
                             return npcRepositoryTest.save(n);
                           });
-              com.github.javydreamercsw.management.domain.commentator.Commentator c =
-                  new com.github.javydreamercsw.management.domain.commentator.Commentator();
+              Commentator c = new Commentator();
               c.setNpc(npc);
               c.setStyle("Play-by-play");
               return commentatorRepositoryTest.save(c);
@@ -2595,8 +2511,7 @@ class SeedAppliersTest extends AbstractJpaTest {
     // refuse the removal — deleting the faction would orphan the FactionRivalry FK.
     var referenced = factionFixture("Rivaled Faction");
     var other = factionFixture("Rival Opposition");
-    com.github.javydreamercsw.management.domain.faction.FactionRivalry rivalry =
-        new com.github.javydreamercsw.management.domain.faction.FactionRivalry();
+    FactionRivalry rivalry = new FactionRivalry();
     rivalry.setFaction1(referenced);
     rivalry.setFaction2(other);
     rivalry.setIsActive(true);
@@ -2731,7 +2646,7 @@ class SeedAppliersTest extends AbstractJpaTest {
     // the arena would orphan the show's arena FK.
     var referenced = arenaFixture("Booked Arena");
     var showType = showTypeFixture("Arena Show Type");
-    var show = new com.github.javydreamercsw.management.domain.show.Show();
+    var show = new Show();
     show.setName("Seed Applier Arena Show");
     show.setDescription("a show");
     show.setType(showType);
@@ -2997,13 +2912,12 @@ class SeedAppliersTest extends AbstractJpaTest {
     // A trophy reign names the team as winner: the pre-dispatch hasDependents check must refuse —
     // deleting the team would orphan the TrophyReign.winnerTeam FK.
     var referenced = teamFixture("Reigning Team");
-    com.github.javydreamercsw.management.domain.tournament.TrophyReign reign =
-        new com.github.javydreamercsw.management.domain.tournament.TrophyReign();
+    TrophyReign reign = new TrophyReign();
     reign.setTournament(tournamentFixture("applier_reign_tournament"));
     reign.setWinnerTeam(referenced);
     reign.setTrophyName("Applier Cup");
     reign.setYearWon(2034);
-    reign.setWonOn(java.time.LocalDate.now());
+    reign.setWonOn(LocalDate.now());
     trophyReignRepository.save(reign);
     flushAndClear();
 
@@ -3132,11 +3046,9 @@ class SeedAppliersTest extends AbstractJpaTest {
     // A commentary team fields the commentator: the pre-dispatch hasDependents check must refuse —
     // deleting the commentator would orphan the commentary_team_members join row.
     var referenced = commentatorFixture("Teamed Commentator");
-    com.github.javydreamercsw.management.domain.commentator.CommentaryTeam team =
-        new com.github.javydreamercsw.management.domain.commentator.CommentaryTeam();
+    CommentaryTeam team = new CommentaryTeam();
     team.setName("Applier Booth");
-    team.setCommentators(
-        new java.util.ArrayList<>(java.util.List.of(referenced))); // the FK the guard must protect
+    team.setCommentators(new ArrayList<>(List.of(referenced))); // the FK the guard must protect
     commentaryTeamRepositoryTest.save(team);
     flushAndClear();
 
@@ -3171,15 +3083,13 @@ class SeedAppliersTest extends AbstractJpaTest {
   // and REMOVE — positive where the domain's real-FK guard permits a genuinely orphaned row, plus
   // the refusal pins for every FK the entity model holds.
 
-  private com.github.javydreamercsw.management.domain.commentator.CommentaryTeam
-      commentaryTeamFixture(String name, List<String> memberNpcNames) {
+  private CommentaryTeam commentaryTeamFixture(String name, List<String> memberNpcNames) {
     return commentaryTeamRepositoryTest.findAll().stream()
         .filter(t -> name.equals(t.getName()))
         .findFirst()
         .orElseGet(
             () -> {
-              com.github.javydreamercsw.management.domain.commentator.CommentaryTeam t =
-                  new com.github.javydreamercsw.management.domain.commentator.CommentaryTeam();
+              CommentaryTeam t = new CommentaryTeam();
               t.setName(name);
               for (String npcName : memberNpcNames) {
                 Npc npc =
@@ -3193,8 +3103,7 @@ class SeedAppliersTest extends AbstractJpaTest {
                               n.setNpcType("Commentator");
                               return npcRepositoryTest.save(n);
                             });
-                com.github.javydreamercsw.management.domain.commentator.Commentator c =
-                    new com.github.javydreamercsw.management.domain.commentator.Commentator();
+                Commentator c = new Commentator();
                 c.setNpc(npc);
                 c.setStyle("Play-by-play");
                 t.getCommentators().add(commentatorRepositoryTest.save(c));
@@ -3319,7 +3228,7 @@ class SeedAppliersTest extends AbstractJpaTest {
     // team would orphan the show's commentary_team FK.
     var referenced = commentaryTeamFixture("Booked Crew", List.of("Booked Member"));
     var showType = showTypeFixture("Crew Show Type");
-    var show = new com.github.javydreamercsw.management.domain.show.Show();
+    var show = new Show();
     show.setName("Crew Seed Applier Show");
     show.setDescription("a show");
     show.setType(showType);
@@ -3350,15 +3259,14 @@ class SeedAppliersTest extends AbstractJpaTest {
         "the refused removal decision must stay pending");
   }
 
-  private com.github.javydreamercsw.management.domain.campaign.CampaignUpgrade upgradeFixture(
-      String name, String description, String type) {
+  private CampaignUpgrade upgradeFixture(String name, String description, String type) {
     return campaignUpgradeRepositoryTest.findAll().stream()
         .filter(u -> name.equals(u.getName()))
         .findFirst()
         .orElseGet(
             () ->
                 campaignUpgradeRepositoryTest.save(
-                    com.github.javydreamercsw.management.domain.campaign.CampaignUpgrade.builder()
+                    CampaignUpgrade.builder()
                         .name(name)
                         .description(description)
                         .type(type)
@@ -3470,16 +3378,12 @@ class SeedAppliersTest extends AbstractJpaTest {
     // refuse — deleting the upgrade would orphan the campaign_state_upgrades join row.
     var referenced = upgradeFixture("Owned Upgrade", "used", "STAMINA");
     Wrestler player = wrestlerRepository.save(Wrestler.builder().name("Upgrade Player").build());
-    com.github.javydreamercsw.management.domain.campaign.Campaign campaign =
-        com.github.javydreamercsw.management.domain.campaign.Campaign.builder()
-            .wrestler(player)
-            .status(com.github.javydreamercsw.management.domain.campaign.CampaignStatus.ACTIVE)
-            .build();
+    Campaign campaign = Campaign.builder().wrestler(player).status(CampaignStatus.ACTIVE).build();
     campaign = campaignRepository.save(campaign);
-    com.github.javydreamercsw.management.domain.campaign.CampaignState state =
-        com.github.javydreamercsw.management.domain.campaign.CampaignState.builder()
+    CampaignState state =
+        CampaignState.builder()
             .campaign(campaign)
-            .upgrades(new java.util.ArrayList<>(List.of(referenced))) // the FK the guard protects
+            .upgrades(new ArrayList<>(List.of(referenced))) // the FK the guard protects
             .build();
     campaignStateRepository.save(state);
     flushAndClear();
@@ -3509,33 +3413,25 @@ class SeedAppliersTest extends AbstractJpaTest {
         "the refused removal decision must stay pending");
   }
 
-  private com.github.javydreamercsw.management.domain.outcome.OutcomeMatrix matrixFixture(
-      String name) {
+  private OutcomeMatrix matrixFixture(String name) {
     return outcomeMatrixRepositoryTest
         .findByNameIgnoreCase(name)
         .orElseGet(
             () -> {
-              com.github.javydreamercsw.management.domain.outcome.OutcomeMatrix m =
-                  new com.github.javydreamercsw.management.domain.outcome.OutcomeMatrix();
+              OutcomeMatrix m = new OutcomeMatrix();
               m.setName(name);
               m.setDescription("original");
-              m.setCategory(
-                  com.github.javydreamercsw.management.domain.outcome.OutcomeMatrixCategory
-                      .MATCH_FLOW);
+              m.setCategory(OutcomeMatrixCategory.MATCH_FLOW);
               return outcomeMatrixRepositoryTest.save(m);
             });
   }
 
-  private com.github.javydreamercsw.management.domain.outcome.OutcomeMatrixEntry matrixEntryFixture(
-      com.github.javydreamercsw.management.domain.outcome.OutcomeMatrix matrix,
-      int roll,
-      String text) {
+  private OutcomeMatrixEntry matrixEntryFixture(OutcomeMatrix matrix, int roll, String text) {
     return outcomeMatrixEntryRepositoryTest
         .findByMatrixAndDiceRoll(matrix, roll)
         .orElseGet(
             () -> {
-              com.github.javydreamercsw.management.domain.outcome.OutcomeMatrixEntry e =
-                  new com.github.javydreamercsw.management.domain.outcome.OutcomeMatrixEntry();
+              OutcomeMatrixEntry e = new OutcomeMatrixEntry();
               e.setMatrix(matrix);
               e.setDiceRoll(roll);
               e.setTemplateText(text);
@@ -3735,9 +3631,8 @@ class SeedAppliersTest extends AbstractJpaTest {
         "the refused removal decision must stay pending");
   }
 
-  private com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship
-      relationshipFixture(
-          Wrestler w1, Wrestler w2, RelationshipType type, int level, String notes) {
+  private WrestlerRelationship relationshipFixture(
+      Wrestler w1, Wrestler w2, RelationshipType type, int level, String notes) {
     return wrestlerRelationshipRepositoryTest.findAllWithWrestlers().stream()
         .filter(
             r ->
@@ -3747,9 +3642,8 @@ class SeedAppliersTest extends AbstractJpaTest {
         .findFirst()
         .orElseGet(
             () -> {
-              com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship r =
-                  com.github.javydreamercsw.management.domain.relationship.WrestlerRelationship
-                      .builder()
+              WrestlerRelationship r =
+                  WrestlerRelationship.builder()
                       .wrestler1(w1)
                       .wrestler2(w2)
                       .type(type)

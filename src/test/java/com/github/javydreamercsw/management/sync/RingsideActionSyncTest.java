@@ -32,11 +32,14 @@ import com.github.javydreamercsw.management.domain.show.segment.RingsideActionTy
 import com.github.javydreamercsw.management.service.ringside.RingsideActionDataService;
 import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
 import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -227,9 +230,9 @@ class RingsideActionSyncTest {
         .thenReturn(List.of(tier1row, tier2row));
     when(ringsideActionDataService.findAllTypes()).thenReturn(List.of());
 
-    java.util.Set<String> parkedCoordinates = new java.util.HashSet<>();
-    SeedUpdateReviewService parking = org.mockito.Mockito.mock(SeedUpdateReviewService.class);
-    org.mockito.Mockito.doAnswer(
+    Set<String> parkedCoordinates = new HashSet<>();
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
               return null;
@@ -253,7 +256,7 @@ class RingsideActionSyncTest {
         3, tier1row.getRisk(), "tier 3: admin edit on an unchanged seed field must be preserved");
     // Tier 2: the admin-edited impact kept its value; the row parked the impact collision.
     assertEquals(12, tier2row.getImpact(), "tier 2: admin-edited field must keep its value");
-    org.mockito.Mockito.verify(parking)
+    Mockito.verify(parking)
         .parkFieldConflict(
             eq("ringside_action"),
             eq("ringside_action:coaching-advice"),
@@ -263,7 +266,7 @@ class RingsideActionSyncTest {
             eq("8"),
             anyString());
     assertEquals(
-        java.util.Set.of("ringside_action:coaching-advice|impact"),
+        Set.of("ringside_action:coaching-advice|impact"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
   }
@@ -277,7 +280,7 @@ class RingsideActionSyncTest {
     when(ringsideActionDataService.countActions()).thenReturn(1L);
     when(ringsideActionDataService.findAllActionsUnfiltered()).thenReturn(List.of(existing));
 
-    SeedUpdateReviewService parking = org.mockito.Mockito.mock(SeedUpdateReviewService.class);
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
     RingsideActionSync fullModeSync = sync("false");
     // Rebuild the sync against the parking mock: the helper binds the class mock, so a direct
     // constructor call is clearer for the FULL pin.
@@ -286,8 +289,8 @@ class RingsideActionSyncTest {
             "false", ringsideActionDataService, new ObjectMapper(), parking, EMPTY_MANIFEST);
     fullSync.detectVersionChangeCollisions(); // FULL mode → inert
 
-    org.mockito.Mockito.verifyNoInteractions(parking);
-    org.mockito.Mockito.verifyNoInteractions(seedReviewService);
+    Mockito.verifyNoInteractions(parking);
+    Mockito.verifyNoInteractions(seedReviewService);
     assertEquals(
         "admin-tuned",
         existing.getDescription(),

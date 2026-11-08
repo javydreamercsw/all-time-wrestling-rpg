@@ -34,6 +34,10 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * Contract tests for the decision apply service (seed-update review feature, Task 9).
@@ -48,7 +52,7 @@ class SeedUpdateDecisionServiceTest extends AbstractJpaTest {
 
   @Autowired private SeedUpdateDecisionRepository decisionRepository;
   @Autowired private EntityManager entityManager;
-  @Autowired private org.springframework.transaction.PlatformTransactionManager transactionManager;
+  @Autowired private PlatformTransactionManager transactionManager;
 
   /** Gate of the most recently created service, for cross-path state assertions. */
   private SeedReviewGate gate;
@@ -521,8 +525,7 @@ class SeedUpdateDecisionServiceTest extends AbstractJpaTest {
   }
 
   @Test
-  @org.springframework.transaction.annotation.Transactional(
-      propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
+  @Transactional(propagation = Propagation.NOT_SUPPORTED)
   void applyRollsBackEverythingWhenApplierThrowsMidBatch() {
     // Real (Spring-proxied) applier service, real repository, REAL transaction boundary: the
     // base class's test transaction is suspended (NOT_SUPPORTED) so the PROXIED service's
@@ -531,12 +534,8 @@ class SeedUpdateDecisionServiceTest extends AbstractJpaTest {
     ExplodingApplier applier = new ExplodingApplier("wrestler");
     SeedUpdateDecisionService proxied =
         new SeedUpdateDecisionService(
-            decisionRepository,
-            List.of(applier),
-            new com.github.javydreamercsw.management.sync.review.SeedReviewGate(
-                decisionRepository));
-    org.springframework.transaction.support.TransactionTemplate template =
-        new org.springframework.transaction.support.TransactionTemplate(transactionManager);
+            decisionRepository, List.of(applier), new SeedReviewGate(decisionRepository));
+    TransactionTemplate template = new TransactionTemplate(transactionManager);
     SeedUpdateDecision first =
         pendingFieldConflict(
             "wrestler", "wrestler:bret-hart", "Bret Hart", "catchphrase", "mine", "new", "fp-1");

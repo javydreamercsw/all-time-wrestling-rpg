@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.sync;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.show.segment.RingsideAction;
 import com.github.javydreamercsw.management.dto.RingsideActionDTO;
 import com.github.javydreamercsw.management.dto.RingsideActionTypeDTO;
@@ -446,9 +447,7 @@ public class RingsideActionSync implements DataSyncContributor {
         case "risk" -> action.setRisk(dto.getRisk());
         case "alignment" ->
             action.setAlignment(
-                dto.getAlignment() == null
-                    ? com.github.javydreamercsw.management.domain.campaign.AlignmentType.NEUTRAL
-                    : dto.getAlignment());
+                dto.getAlignment() == null ? AlignmentType.NEUTRAL : dto.getAlignment());
         case "expansionCode" ->
             action.setExpansionCode(
                 dto.getExpansionCode() != null ? dto.getExpansionCode() : "BASE_GAME");

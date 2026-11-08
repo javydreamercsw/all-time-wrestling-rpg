@@ -36,11 +36,15 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.relationship.WrestlerRelationshipService;
 import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
 import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -117,9 +121,9 @@ class RelationshipSyncTest {
     when(wrestlerRepository.findAll()).thenReturn(List.of(johnny, taya));
     when(relationshipRepository.findAllWithWrestlers()).thenReturn(List.of(row));
 
-    java.util.Set<String> parkedCoordinates = new java.util.HashSet<>();
-    SeedUpdateReviewService parking = org.mockito.Mockito.mock(SeedUpdateReviewService.class);
-    org.mockito.Mockito.doAnswer(
+    Set<String> parkedCoordinates = new HashSet<>();
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
               return null;
@@ -141,7 +145,7 @@ class RelationshipSyncTest {
 
     // Tier 2: the admin's note kept its value; the row parked the collision.
     assertEquals("admin's note", row.getNotes(), "tier 2: admin edit must keep its value");
-    org.mockito.Mockito.verify(parking)
+    Mockito.verify(parking)
         .parkFieldConflict(
             eq("wrestler_relationship"),
             eq("relationship:johnny-all-time<SPOUSE>taya-valkyrie"),
@@ -151,7 +155,7 @@ class RelationshipSyncTest {
             eq("Real life husband and wife"),
             anyString());
     assertEquals(
-        java.util.Set.of("relationship:johnny-all-time<SPOUSE>taya-valkyrie|notes"),
+        Set.of("relationship:johnny-all-time<SPOUSE>taya-valkyrie|notes"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
     // The parked row is never written.
@@ -175,7 +179,7 @@ class RelationshipSyncTest {
     when(wrestlerRepository.findAll()).thenReturn(List.of(johnny, taya));
     when(relationshipRepository.findAllWithWrestlers()).thenReturn(List.of(row));
 
-    SeedUpdateReviewService parking = org.mockito.Mockito.mock(SeedUpdateReviewService.class);
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
     RelationshipSync detectionSync =
         new RelationshipSync(
             "true",
@@ -226,7 +230,7 @@ class RelationshipSyncTest {
 
     sync.sync();
 
-    verify(relationshipRepository, org.mockito.Mockito.atLeastOnce())
-        .save(org.mockito.ArgumentMatchers.argThat(r -> r.getSeedFingerprint() != null));
+    verify(relationshipRepository, Mockito.atLeastOnce())
+        .save(ArgumentMatchers.argThat(r -> r.getSeedFingerprint() != null));
   }
 }

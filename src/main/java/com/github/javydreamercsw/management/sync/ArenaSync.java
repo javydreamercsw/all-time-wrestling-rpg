@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -281,7 +282,7 @@ public class ArenaSync implements DataSyncContributor {
    * ElementCollection} set has no order guarantee across restarts, so both sides sort before
    * hashing).
    */
-  private String traitsCanonical(java.util.Set<String> traits) {
+  private String traitsCanonical(Set<String> traits) {
     return traits == null ? "" : traits.stream().sorted().collect(Collectors.joining("\n"));
   }
 

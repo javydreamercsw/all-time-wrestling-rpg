@@ -32,12 +32,16 @@ import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.service.commentator.CommentaryService;
 import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
 import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -116,9 +120,9 @@ class CommentatorSyncTest {
     when(commentaryService.countCommentators()).thenReturn(2L);
     when(commentatorRepository.findAll()).thenReturn(List.of(tier1row, tier2row));
 
-    java.util.Set<String> parkedCoordinates = new java.util.HashSet<>();
-    SeedUpdateReviewService parking = org.mockito.Mockito.mock(SeedUpdateReviewService.class);
-    org.mockito.Mockito.doAnswer(
+    Set<String> parkedCoordinates = new HashSet<>();
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
               return null;
@@ -145,7 +149,7 @@ class CommentatorSyncTest {
     // Tier 2: the admin's catchphrase kept its value; the row parked the collision.
     assertEquals(
         "admin's catchphrase", tier2row.getCatchphrase(), "tier 2: admin edit must keep its value");
-    org.mockito.Mockito.verify(parking)
+    Mockito.verify(parking)
         .parkFieldConflict(
             eq("commentator"),
             eq("commentator:lord-bastian-von-crowe"),
@@ -155,7 +159,7 @@ class CommentatorSyncTest {
             eq("Champions rise… but villains endure."),
             anyString());
     assertEquals(
-        java.util.Set.of("commentator:lord-bastian-von-crowe|catchphrase"),
+        Set.of("commentator:lord-bastian-von-crowe|catchphrase"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
   }
@@ -186,7 +190,7 @@ class CommentatorSyncTest {
 
     sync.sync();
 
-    verify(commentatorRepository, org.mockito.Mockito.atLeastOnce())
-        .save(org.mockito.ArgumentMatchers.argThat(c -> c.getSeedFingerprint() != null));
+    verify(commentatorRepository, Mockito.atLeastOnce())
+        .save(ArgumentMatchers.argThat(c -> c.getSeedFingerprint() != null));
   }
 }

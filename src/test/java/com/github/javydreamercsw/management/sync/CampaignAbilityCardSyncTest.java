@@ -31,11 +31,17 @@ import com.github.javydreamercsw.management.domain.campaign.AbilityTiming;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCard;
 import com.github.javydreamercsw.management.service.campaign.CampaignAbilityCardService;
+import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
+import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -46,15 +52,11 @@ class CampaignAbilityCardSyncTest {
 
   @Mock private CampaignAbilityCardService campaignAbilityCardService;
 
-  @Mock
-  private com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService
-      seedReviewService;
+  @Mock private SeedUpdateReviewService seedReviewService;
 
   private static final SeedSyncSupport VERIFY_SUPPORT = new SeedSyncSupport("verify");
 
-  private static final com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest
-      EMPTY_MANIFEST =
-          com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest.empty();
+  private static final SeedProvenanceManifest EMPTY_MANIFEST = SeedProvenanceManifest.empty();
 
   private CampaignAbilityCardSync sync(String mode) {
     return new CampaignAbilityCardSync(
@@ -281,16 +283,14 @@ class CampaignAbilityCardSyncTest {
     when(campaignAbilityCardService.count()).thenReturn(2L);
     when(campaignAbilityCardService.findByNameAndAlignmentAndLevel(
             "Poke Eye", AlignmentType.HEEL, 1))
-        .thenReturn(java.util.Optional.of(tier1row));
+        .thenReturn(Optional.of(tier1row));
     when(campaignAbilityCardService.findByNameAndAlignmentAndLevel(
             "Low Blow", AlignmentType.HEEL, 1))
-        .thenReturn(java.util.Optional.of(tier2row));
+        .thenReturn(Optional.of(tier2row));
 
-    java.util.Set<String> parkedCoordinates = new java.util.HashSet<>();
-    com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService parking =
-        org.mockito.Mockito.mock(
-            com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService.class);
-    org.mockito.Mockito.doAnswer(
+    Set<String> parkedCoordinates = new HashSet<>();
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
               return null;
@@ -328,7 +328,7 @@ class CampaignAbilityCardSyncTest {
 
     fullSync.detectVersionChangeCollisions(); // FULL mode → inert
 
-    org.mockito.Mockito.verifyNoInteractions(seedReviewService);
-    verify(campaignAbilityCardService, org.mockito.Mockito.never()).save(any());
+    Mockito.verifyNoInteractions(seedReviewService);
+    verify(campaignAbilityCardService, Mockito.never()).save(any());
   }
 }

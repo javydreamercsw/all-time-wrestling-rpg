@@ -38,13 +38,17 @@ import com.github.javydreamercsw.management.dto.TournamentDefinitionDTO;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
 import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -78,7 +82,7 @@ class TournamentSyncTest {
               t.setName(inv.getArgument(1));
               t.setFormatId(inv.getArgument(2));
               t.setDefaultEntrantCount(inv.getArgument(3));
-              t.setAllowedRules(new java.util.ArrayList<>());
+              t.setAllowedRules(new ArrayList<>());
               return t;
             });
     lenient().when(tournamentRepository.findByCode(anyString())).thenReturn(Optional.empty());
@@ -152,8 +156,7 @@ class TournamentSyncTest {
     Tournament tier2row = catalogTournament();
     tier2row.setName("Deadly Combat");
     tier2row.setAllowedRules(
-        new java.util.ArrayList<>(
-            List.of(segmentRule("Cage")))); // admin trimmed the pool after seeding
+        new ArrayList<>(List.of(segmentRule("Cage")))); // admin trimmed the pool after seeding
     tier2row.setSeedFingerprint(
         VERIFY_SUPPORT.fingerprint("Deadly Combat", "SINGLE_ELIMINATION", 8, "", (Object) null));
 
@@ -168,9 +171,9 @@ class TournamentSyncTest {
       when(segmentRuleRepository.findByName(name)).thenReturn(Optional.of(segmentRule(name)));
     }
 
-    java.util.Set<String> parkedCoordinates = new java.util.HashSet<>();
-    SeedUpdateReviewService parking = org.mockito.Mockito.mock(SeedUpdateReviewService.class);
-    org.mockito.Mockito.doAnswer(
+    Set<String> parkedCoordinates = new HashSet<>();
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
               return null;
@@ -197,7 +200,7 @@ class TournamentSyncTest {
         List.of("Cage"),
         tier2row.getAllowedRules().stream().map(SegmentRule::getName).toList(),
         "tier 2: admin edit must keep its value");
-    org.mockito.Mockito.verify(parking)
+    Mockito.verify(parking)
         .parkFieldConflict(
             eq("tournament"),
             eq("tournament:deadly_combat"),
@@ -207,7 +210,7 @@ class TournamentSyncTest {
             anyString(),
             anyString());
     assertEquals(
-        java.util.Set.of("tournament:deadly_combat|allowedRules"),
+        Set.of("tournament:deadly_combat|allowedRules"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
   }
@@ -238,7 +241,7 @@ class TournamentSyncTest {
     t.setName("Deadly Combat");
     t.setFormatId("SINGLE_ELIMINATION");
     t.setDefaultEntrantCount(8);
-    t.setAllowedRules(new java.util.ArrayList<>());
+    t.setAllowedRules(new ArrayList<>());
     return t;
   }
 

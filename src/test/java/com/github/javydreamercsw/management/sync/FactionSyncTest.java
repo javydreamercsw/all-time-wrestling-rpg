@@ -29,6 +29,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.faction.Faction;
+import com.github.javydreamercsw.management.domain.faction.FactionRepository;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
@@ -38,13 +39,16 @@ import com.github.javydreamercsw.management.service.faction.FactionService;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
 import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -56,8 +60,7 @@ class FactionSyncTest {
 
   @Mock private FactionService factionService;
 
-  @Mock
-  private com.github.javydreamercsw.management.domain.faction.FactionRepository factionRepository;
+  @Mock private FactionRepository factionRepository;
 
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private NpcService npcService;
@@ -136,9 +139,9 @@ class FactionSyncTest {
     when(factionRepository.findAllWithManager()).thenReturn(List.of(tier1row, tier2row));
     when(npcService.findAllUnfiltered()).thenReturn(List.of(adminManager));
 
-    java.util.Set<String> parkedCoordinates = new java.util.HashSet<>();
-    SeedUpdateReviewService parking = org.mockito.Mockito.mock(SeedUpdateReviewService.class);
-    org.mockito.Mockito.doAnswer(
+    Set<String> parkedCoordinates = new HashSet<>();
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
               return null;
@@ -169,7 +172,7 @@ class FactionSyncTest {
         adminManager,
         tier2row.getManager(),
         "tier 2: the admin's manager edit must keep its value");
-    org.mockito.Mockito.verify(parking)
+    Mockito.verify(parking)
         .parkFieldConflict(
             eq("faction"),
             eq("faction:the-hurt-business"),
@@ -179,7 +182,7 @@ class FactionSyncTest {
             eq("MVP"),
             anyString());
     assertEquals(
-        java.util.Set.of("faction:the-hurt-business|managerName"),
+        Set.of("faction:the-hurt-business|managerName"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
   }

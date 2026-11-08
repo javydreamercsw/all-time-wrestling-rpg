@@ -37,10 +37,14 @@ import com.github.javydreamercsw.management.service.title.TitleReignRepairServic
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
 import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -272,8 +276,8 @@ class ChampionshipSyncTest {
     when(titleService.findByName("ATW World")).thenReturn(Optional.of(tier1row));
     when(titleService.findByName("ATW Extreme")).thenReturn(Optional.of(tier2row));
 
-    java.util.Set<String> parkedCoordinates = new java.util.HashSet<>();
-    org.mockito.Mockito.doAnswer(
+    Set<String> parkedCoordinates = new HashSet<>();
+    Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
               return null;
@@ -309,7 +313,7 @@ class ChampionshipSyncTest {
         "admin's custom effect",
         tier2row.getEffectScript(),
         "tier 2: admin-edited field must keep its value — only a PENDING decision is created");
-    org.mockito.Mockito.verify(seedReviewService)
+    Mockito.verify(seedReviewService)
         .parkFieldConflict(
             eq("championship"),
             eq("championship:atw-extreme"),
@@ -320,7 +324,7 @@ class ChampionshipSyncTest {
             anyString());
     // Only ATW Extreme's effectScript parked; the tier-1/tier-3 fields never park.
     assertEquals(
-        java.util.Set.of("championship:atw-extreme|effectScript"),
+        Set.of("championship:atw-extreme|effectScript"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
   }
@@ -351,8 +355,7 @@ class ChampionshipSyncTest {
 
     when(titleService.findByName("ATW World")).thenReturn(Optional.of(cleanButStale));
 
-    org.mockito.ArgumentCaptor<java.util.List<Title>> saved =
-        org.mockito.ArgumentCaptor.forClass(java.util.List.class);
+    ArgumentCaptor<List<Title>> saved = ArgumentCaptor.forClass(List.class);
     ChampionshipSync detectionSync =
         new ChampionshipSync(
             "verify",
@@ -363,8 +366,7 @@ class ChampionshipSyncTest {
             new ObjectMapper(),
             seedReviewService,
             SeedProvenanceManifest.of(
-                java.util.Map.of(
-                    "championship", java.util.Map.of("ATW World", "manifest-hash-v2"))));
+                Map.of("championship", Map.of("ATW World", "manifest-hash-v2"))));
     detectionSync.detectVersionChangeCollisions();
 
     verify(titleService).saveAll(saved.capture());
@@ -375,7 +377,7 @@ class ChampionshipSyncTest {
         "manifest-hash-v2",
         cleanButStale.getSeedFingerprint(),
         "a provenance-exact row with no collisions adopts the incoming manifest fingerprint");
-    org.mockito.Mockito.verifyNoInteractions(seedReviewService);
+    Mockito.verifyNoInteractions(seedReviewService);
   }
 
   @Test
@@ -400,7 +402,7 @@ class ChampionshipSyncTest {
             EMPTY_MANIFEST);
     fullSync.detectVersionChangeCollisions(); // FULL mode → inert
 
-    org.mockito.Mockito.verifyNoInteractions(seedReviewService);
+    Mockito.verifyNoInteractions(seedReviewService);
     assertEquals(
         "admin-tuned description",
         existing.getDescription(),

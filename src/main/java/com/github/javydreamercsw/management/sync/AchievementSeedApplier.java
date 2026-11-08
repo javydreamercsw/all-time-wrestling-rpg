@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.sync;
 
 import com.github.javydreamercsw.base.domain.account.AccountAchievementRepository;
 import com.github.javydreamercsw.base.domain.account.Achievement;
+import com.github.javydreamercsw.base.domain.account.AchievementCategory;
 import com.github.javydreamercsw.base.domain.account.AchievementRepository;
 import com.github.javydreamercsw.management.domain.seedreview.SeedUpdateDecision;
 import com.github.javydreamercsw.management.sync.review.SeedDomainApplier;
@@ -144,11 +145,7 @@ public class AchievementSeedApplier implements SeedDomainApplier {
       case "description" -> achievement.setDescription(value);
       case "xpValue" -> achievement.setXpValue(value == null ? null : Integer.valueOf(value));
       case "category" ->
-          achievement.setCategory(
-              value == null
-                  ? null
-                  : com.github.javydreamercsw.base.domain.account.AchievementCategory.valueOf(
-                      value));
+          achievement.setCategory(value == null ? null : AchievementCategory.valueOf(value));
       case "unlockCondition" -> achievement.setUnlockCondition(value);
       default ->
           throw new IllegalStateException(

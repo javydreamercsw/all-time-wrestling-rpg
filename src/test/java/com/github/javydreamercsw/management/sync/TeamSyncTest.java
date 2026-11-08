@@ -38,12 +38,17 @@ import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.service.team.TeamService;
 import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
 import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -105,7 +110,7 @@ class TeamSyncTest {
         EMPTY_MANIFEST);
   }
 
-  @org.junit.jupiter.api.BeforeEach
+  @BeforeEach
   void setUp() {
     when(teamService.count()).thenReturn(0L);
   }
@@ -135,9 +140,9 @@ class TeamSyncTest {
     when(teamRepository.findByName("The Trailblazers")).thenReturn(Optional.of(tier1row));
     when(teamRepository.findByName("The British Bulldogs")).thenReturn(Optional.of(tier2row));
 
-    java.util.Set<String> parkedCoordinates = new java.util.HashSet<>();
-    SeedUpdateReviewService parking = org.mockito.Mockito.mock(SeedUpdateReviewService.class);
-    org.mockito.Mockito.doAnswer(
+    Set<String> parkedCoordinates = new HashSet<>();
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
               return null;
@@ -168,7 +173,7 @@ class TeamSyncTest {
     // Tier 2: the admin's description kept its value; the row parked the collision.
     assertEquals(
         "admin's description", tier2row.getDescription(), "tier 2: admin edit must keep its value");
-    org.mockito.Mockito.verify(parking)
+    Mockito.verify(parking)
         .parkFieldConflict(
             eq("team"),
             eq("team:the-british-bulldogs"),
@@ -181,7 +186,7 @@ class TeamSyncTest {
                     + " high-impact style in the 1980s"),
             anyString());
     assertEquals(
-        java.util.Set.of("team:the-british-bulldogs|description"),
+        Set.of("team:the-british-bulldogs|description"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
   }
@@ -194,8 +199,8 @@ class TeamSyncTest {
 
     fullSync.detectVersionChangeCollisions(); // FULL mode → inert
 
-    org.mockito.Mockito.verifyNoInteractions(seedReviewService);
-    org.mockito.Mockito.verify(teamRepository, org.mockito.Mockito.never()).findByName(anyString());
+    Mockito.verifyNoInteractions(seedReviewService);
+    Mockito.verify(teamRepository, Mockito.never()).findByName(anyString());
   }
 
   @Test
@@ -217,8 +222,7 @@ class TeamSyncTest {
 
     sync("false").sync();
 
-    org.mockito.Mockito.verify(teamRepository, org.mockito.Mockito.atLeastOnce())
-        .save(
-            org.mockito.ArgumentMatchers.argThat(t -> t != null && t.getSeedFingerprint() != null));
+    Mockito.verify(teamRepository, Mockito.atLeastOnce())
+        .save(ArgumentMatchers.argThat(t -> t != null && t.getSeedFingerprint() != null));
   }
 }

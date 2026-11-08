@@ -297,8 +297,7 @@ public class TournamentSync implements DataSyncContributor {
    * {@link #tournamentFingerprint} and needs the eager-rules query ({@code findAllWithRules}),
    * which lives on the repository rather than the service.
    */
-  public com.github.javydreamercsw.management.domain.tournament.TournamentRepository
-      repositoryForManifest() {
+  public TournamentRepository repositoryForManifest() {
     return tournamentRepository;
   }
 

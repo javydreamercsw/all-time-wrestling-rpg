@@ -29,6 +29,8 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
 import com.github.javydreamercsw.management.domain.universe.Universe;
@@ -45,19 +47,24 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
 import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
@@ -568,11 +575,10 @@ class WrestlerSyncTest {
 
     // Seed fixture: RVD's row with the description changed (a normal release's seed delta),
     // served through the same resolver mock the sync already uses.
-    org.springframework.core.io.ByteArrayResource changedRvd;
+    ByteArrayResource changedRvd;
     {
-      com.fasterxml.jackson.databind.node.ArrayNode array =
-          new com.fasterxml.jackson.databind.ObjectMapper().createArrayNode();
-      com.fasterxml.jackson.databind.node.ObjectNode node = array.addObject();
+      ArrayNode array = new ObjectMapper().createArrayNode();
+      ObjectNode node = array.addObject();
       node.put("name", rvdDto.getName());
       node.put("deckSize", rvdDto.getDeckSize());
       node.put("startingHealth", rvdDto.getStartingHealth());
@@ -588,16 +594,13 @@ class WrestlerSyncTest {
       node.put("charisma", rvdDto.getCharisma());
       node.put("brawl", rvdDto.getBrawl());
       node.put("alignment", rvdDto.getAlignment());
-      changedRvd =
-          new org.springframework.core.io.ByteArrayResource(
-              array.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+      changedRvd = new ByteArrayResource(array.toString().getBytes(StandardCharsets.UTF_8));
     }
     // Gail Kim's seed entry with the brawl bumped 2 → 9 (the release's second seed change).
-    org.springframework.core.io.ByteArrayResource changedGail;
+    ByteArrayResource changedGail;
     {
-      com.fasterxml.jackson.databind.node.ArrayNode array =
-          new com.fasterxml.jackson.databind.ObjectMapper().createArrayNode();
-      com.fasterxml.jackson.databind.node.ObjectNode node = array.addObject();
+      ArrayNode array = new ObjectMapper().createArrayNode();
+      ObjectNode node = array.addObject();
       node.put("name", gailDto.getName());
       node.put("deckSize", gailDto.getDeckSize());
       node.put("startingHealth", gailDto.getStartingHealth());
@@ -614,17 +617,15 @@ class WrestlerSyncTest {
       node.put("charisma", gailDto.getCharisma());
       node.put("brawl", 9);
       node.put("alignment", gailDto.getAlignment());
-      changedGail =
-          new org.springframework.core.io.ByteArrayResource(
-              array.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+      changedGail = new ByteArrayResource(array.toString().getBytes(StandardCharsets.UTF_8));
     }
     Resource[] seedResources = {changedRvd, changedGail};
-    when(resourcePatternResolver.getResources(org.mockito.ArgumentMatchers.anyString()))
+    when(resourcePatternResolver.getResources(ArgumentMatchers.anyString()))
         .thenReturn(seedResources);
 
-    java.util.Set<String> parkedCoordinates = new java.util.HashSet<>();
-    SeedUpdateReviewService parking = org.mockito.Mockito.mock(SeedUpdateReviewService.class);
-    org.mockito.Mockito.doAnswer(
+    Set<String> parkedCoordinates = new HashSet<>();
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    Mockito.doAnswer(
             inv -> {
               // Distinct coordinates only: parkFieldConflict's refresh path fires per pass, the
               // contract is at most one open decision per (entity, field).
@@ -633,13 +634,13 @@ class WrestlerSyncTest {
             })
         .when(parking)
         .parkFieldConflict(
-            org.mockito.ArgumentMatchers.anyString(),
-            org.mockito.ArgumentMatchers.anyString(),
-            org.mockito.ArgumentMatchers.anyString(),
-            org.mockito.ArgumentMatchers.anyString(),
-            org.mockito.ArgumentMatchers.any(),
-            org.mockito.ArgumentMatchers.any(),
-            org.mockito.ArgumentMatchers.anyString());
+            ArgumentMatchers.anyString(),
+            ArgumentMatchers.anyString(),
+            ArgumentMatchers.anyString(),
+            ArgumentMatchers.anyString(),
+            ArgumentMatchers.any(),
+            ArgumentMatchers.any(),
+            ArgumentMatchers.anyString());
 
     WrestlerSync detectionSync =
         new WrestlerSync(
@@ -672,18 +673,18 @@ class WrestlerSyncTest {
         7,
         gail.getBrawl(),
         "tier 2: admin-edited field must keep its value — only a PENDING decision is created");
-    org.mockito.Mockito.verify(parking)
+    Mockito.verify(parking)
         .parkFieldConflict(
-            org.mockito.ArgumentMatchers.eq("wrestler"),
-            org.mockito.ArgumentMatchers.eq("wrestler:gail-kim"),
-            org.mockito.ArgumentMatchers.eq("Gail Kim"),
-            org.mockito.ArgumentMatchers.eq("brawl"),
-            org.mockito.ArgumentMatchers.eq("7"),
-            org.mockito.ArgumentMatchers.eq("9"),
-            org.mockito.ArgumentMatchers.anyString());
+            ArgumentMatchers.eq("wrestler"),
+            ArgumentMatchers.eq("wrestler:gail-kim"),
+            ArgumentMatchers.eq("Gail Kim"),
+            ArgumentMatchers.eq("brawl"),
+            ArgumentMatchers.eq("7"),
+            ArgumentMatchers.eq("9"),
+            ArgumentMatchers.anyString());
     // Only Gail Kim's brawl parked; Rob Van Dam's tier-1/tier-3 fields never park.
     assertEquals(
-        java.util.Set.of("wrestler:gail-kim|brawl"),
+        Set.of("wrestler:gail-kim|brawl"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
   }
@@ -747,7 +748,7 @@ class WrestlerSyncTest {
     stubOneExisting(existing);
 
     // FULL-mode detection is a no-op (FULL applies the seed everywhere, nothing to collide).
-    SeedUpdateReviewService parking = org.mockito.Mockito.mock(SeedUpdateReviewService.class);
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
     WrestlerSync fullModeSync =
         new WrestlerSync(
             "false",
@@ -763,7 +764,7 @@ class WrestlerSyncTest {
             parking,
             EMPTY_MANIFEST);
     fullModeSync.detectVersionChangeCollisions();
-    org.mockito.Mockito.verifyNoInteractions(parking);
+    Mockito.verifyNoInteractions(parking);
     // Verify mode (the normal-boot path this class already pins) still preserves the edit.
     verifySync().sync();
     assertEquals(

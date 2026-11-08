@@ -32,8 +32,10 @@ import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
 import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -364,9 +366,9 @@ class AchievementSyncTest {
     when(achievementRepository.findByKey("CHALLENGE_FIRST_HARD")).thenReturn(Optional.of(tier2row));
     when(achievementRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
 
-    java.util.Set<String> parkedCoordinates = new java.util.HashSet<>();
-    SeedUpdateReviewService parking = org.mockito.Mockito.mock(SeedUpdateReviewService.class);
-    org.mockito.Mockito.doAnswer(
+    Set<String> parkedCoordinates = new HashSet<>();
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
               return null;
@@ -393,7 +395,7 @@ class AchievementSyncTest {
     // Tier 2: the admin-edited xpValue kept its value; the row parked the xpValue collision.
     Assertions.assertEquals(
         500, tier2row.getXpValue(), "tier 2: admin-edited field must keep its value");
-    org.mockito.Mockito.verify(parking)
+    Mockito.verify(parking)
         .parkFieldConflict(
             eq("achievement"),
             eq("achievement:challenge_first_hard"),
@@ -403,7 +405,7 @@ class AchievementSyncTest {
             eq("150"),
             anyString());
     assertEquals(
-        java.util.Set.of("achievement:challenge_first_hard|xpValue"),
+        Set.of("achievement:challenge_first_hard|xpValue"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
   }
@@ -417,13 +419,13 @@ class AchievementSyncTest {
     existing.setDescription("admin-tuned");
     when(achievementRepository.count()).thenReturn(1L);
 
-    SeedUpdateReviewService parking = org.mockito.Mockito.mock(SeedUpdateReviewService.class);
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
     AchievementSync fullModeSync =
         new AchievementSync(
             "false", achievementRepository, new ObjectMapper(), parking, EMPTY_MANIFEST);
     fullModeSync.detectVersionChangeCollisions(); // FULL mode → inert
 
-    org.mockito.Mockito.verifyNoInteractions(parking);
+    Mockito.verifyNoInteractions(parking);
     Assertions.assertEquals(
         "admin-tuned",
         existing.getDescription(),

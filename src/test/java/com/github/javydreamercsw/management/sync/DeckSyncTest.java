@@ -39,13 +39,16 @@ import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.deck.DeckService;
 import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
 import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -394,9 +397,9 @@ class DeckSyncTest {
     when(deckService.findByWrestlerWithCards(rvd)).thenReturn(List.of(tier1deck));
     when(deckService.findByWrestlerWithCards(eddie)).thenReturn(List.of(tier2deck));
 
-    java.util.Set<String> parkedCoordinates = new java.util.HashSet<>();
-    SeedUpdateReviewService parking = org.mockito.Mockito.mock(SeedUpdateReviewService.class);
-    org.mockito.Mockito.doAnswer(
+    Set<String> parkedCoordinates = new HashSet<>();
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
               return null;
@@ -428,7 +431,7 @@ class DeckSyncTest {
         tier2deck.getCards().size(),
         "tier 2: admin-edited composition must keep its value — only a PENDING decision is"
             + " created");
-    org.mockito.Mockito.verify(parking)
+    Mockito.verify(parking)
         .parkFieldConflict(
             eq("deck"),
             eq("deck:eddie-guerrero"),
@@ -439,7 +442,7 @@ class DeckSyncTest {
             anyString());
     // Eddie's deck is the only tier-2 collision; RVD's tier-1 fields never park.
     assertEquals(
-        java.util.Set.of("deck:eddie-guerrero|composition"),
+        Set.of("deck:eddie-guerrero|composition"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 fields never park");
   }
@@ -455,7 +458,7 @@ class DeckSyncTest {
     when(wrestlerRepository.findAll()).thenReturn(List.of(eddie));
     when(deckService.findByWrestlerWithCards(eddie)).thenReturn(List.of(existingDeck));
 
-    SeedUpdateReviewService parking = org.mockito.Mockito.mock(SeedUpdateReviewService.class);
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
     DeckSync fullModeSync =
         new DeckSync(
             "false",
@@ -468,7 +471,7 @@ class DeckSyncTest {
             EMPTY_MANIFEST);
     fullModeSync.detectVersionChangeCollisions(); // FULL mode → inert
 
-    org.mockito.Mockito.verifyNoInteractions(parking);
+    Mockito.verifyNoInteractions(parking);
     assertTrue(
         existingDeck.getCards().isEmpty(),
         "FULL-mode detection must not touch rows (the FULL sync's own load does that)");

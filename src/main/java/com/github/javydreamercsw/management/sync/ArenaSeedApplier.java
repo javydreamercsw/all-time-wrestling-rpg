@@ -22,7 +22,9 @@ import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.world.ArenaRepository;
 import com.github.javydreamercsw.management.domain.world.LocationRepository;
 import com.github.javydreamercsw.management.sync.review.SeedDomainApplier;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -171,10 +173,7 @@ public class ArenaSeedApplier implements SeedDomainApplier {
       case "capacity" -> arena.setCapacity(value == null ? 0 : Integer.parseInt(value));
       case "alignmentBias" ->
           arena.setAlignmentBias(
-              value == null
-                  ? com.github.javydreamercsw.management.domain.world.Arena.AlignmentBias.NEUTRAL
-                  : com.github.javydreamercsw.management.domain.world.Arena.AlignmentBias.valueOf(
-                      value));
+              value == null ? Arena.AlignmentBias.NEUTRAL : Arena.AlignmentBias.valueOf(value));
       case "imageUrl" -> arena.setImageUrl(value);
       case "environmentalTraits" -> arena.setEnvironmentalTraits(splitLines(value));
       default ->
@@ -185,8 +184,8 @@ public class ArenaSeedApplier implements SeedDomainApplier {
   }
 
   /** Splits the canonical newline-joined trait serialization back into the row's trait set. */
-  private java.util.Set<String> splitLines(String value) {
-    java.util.Set<String> traits = new java.util.HashSet<>();
+  private Set<String> splitLines(String value) {
+    Set<String> traits = new HashSet<>();
     if (value != null && !value.isBlank()) {
       for (String line : value.split("\n")) {
         if (!line.isBlank()) {

@@ -31,8 +31,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.dto.SegmentTypeDTO;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
+import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
+import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,15 +53,11 @@ class SegmentTypeSyncTest {
 
   @Mock private SegmentTypeService segmentTypeService;
 
-  @Mock
-  private com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService
-      seedReviewService;
+  @Mock private SeedUpdateReviewService seedReviewService;
 
   private static final SeedSyncSupport VERIFY_SUPPORT = new SeedSyncSupport("verify");
 
-  private static final com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest
-      EMPTY_MANIFEST =
-          com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest.empty();
+  private static final SeedProvenanceManifest EMPTY_MANIFEST = SeedProvenanceManifest.empty();
 
   private SegmentTypeSync sync;
 
@@ -323,11 +323,9 @@ class SegmentTypeSyncTest {
     when(segmentTypeService.count()).thenReturn(3L);
     when(segmentTypeService.findAllForAdmin()).thenReturn(List.of(tier1row, tier2row, tier3row));
 
-    java.util.Set<String> parkedCoordinates = new java.util.HashSet<>();
-    com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService parking =
-        org.mockito.Mockito.mock(
-            com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService.class);
-    org.mockito.Mockito.doAnswer(
+    Set<String> parkedCoordinates = new HashSet<>();
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
               return null;
@@ -352,7 +350,7 @@ class SegmentTypeSyncTest {
     // Tier 3: the admin eventOnly edit preserved (the seed doesn't declare it → PRESERVE_EDIT).
     assertTrue(tier3row.isEventOnly(), "tier 3: admin edit must be preserved");
     assertEquals(
-        java.util.Set.of(SegmentTypeSync.entityKeyFor("Trios") + "|code"),
+        Set.of(SegmentTypeSync.entityKeyFor("Trios") + "|code"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
   }
@@ -366,7 +364,7 @@ class SegmentTypeSyncTest {
 
     fullSync.detectVersionChangeCollisions(); // FULL mode → inert
 
-    org.mockito.Mockito.verifyNoInteractions(seedReviewService);
-    verify(segmentTypeService, org.mockito.Mockito.never()).saveSegmentType(any());
+    Mockito.verifyNoInteractions(seedReviewService);
+    verify(segmentTypeService, Mockito.never()).saveSegmentType(any());
   }
 }

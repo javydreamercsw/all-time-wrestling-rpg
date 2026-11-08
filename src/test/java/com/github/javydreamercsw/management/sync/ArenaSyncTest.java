@@ -30,9 +30,11 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.world.ArenaRepository;
+import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.domain.world.LocationRepository;
 import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
 import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -41,6 +43,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -76,9 +79,8 @@ class ArenaSyncTest {
         EMPTY_MANIFEST);
   }
 
-  private static com.github.javydreamercsw.management.domain.world.Location location(String name) {
-    com.github.javydreamercsw.management.domain.world.Location l =
-        com.github.javydreamercsw.management.domain.world.Location.builder().name(name).build();
+  private static Location location(String name) {
+    Location l = Location.builder().name(name).build();
     l.setCulturalTags(Set.of());
     return l;
   }
@@ -86,7 +88,7 @@ class ArenaSyncTest {
   private static Arena arena(
       String name,
       String description,
-      com.github.javydreamercsw.management.domain.world.Location location,
+      Location location,
       int capacity,
       Arena.AlignmentBias bias,
       Set<String> traits) {
@@ -157,9 +159,9 @@ class ArenaSyncTest {
     when(locationRepository.findByName(anyString()))
         .thenAnswer(inv -> Optional.of(location(inv.getArgument(0))));
 
-    java.util.Set<String> parkedCoordinates = new java.util.HashSet<>();
-    SeedUpdateReviewService parking = org.mockito.Mockito.mock(SeedUpdateReviewService.class);
-    org.mockito.Mockito.doAnswer(
+    Set<String> parkedCoordinates = new HashSet<>();
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
               return null;
@@ -191,7 +193,7 @@ class ArenaSyncTest {
         Set.of("massive-scale", "respectful-silence"),
         tier2row.getEnvironmentalTraits(),
         "tier 3: the seed-matching field must never be touched");
-    org.mockito.Mockito.verify(parking)
+    Mockito.verify(parking)
         .parkFieldConflict(
             eq("arena"),
             eq("arena:tokyo-dome"),
@@ -201,7 +203,7 @@ class ArenaSyncTest {
             eq("45000"),
             anyString());
     assertEquals(
-        java.util.Set.of("arena:tokyo-dome|capacity"),
+        Set.of("arena:tokyo-dome|capacity"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
   }

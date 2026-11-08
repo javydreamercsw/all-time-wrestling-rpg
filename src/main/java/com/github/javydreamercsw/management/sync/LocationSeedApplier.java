@@ -21,7 +21,9 @@ import com.github.javydreamercsw.management.domain.world.ArenaRepository;
 import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.domain.world.LocationRepository;
 import com.github.javydreamercsw.management.sync.review.SeedDomainApplier;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -161,8 +163,8 @@ public class LocationSeedApplier implements SeedDomainApplier {
   }
 
   /** Splits the canonical newline-joined tag serialization back into the row's tag set. */
-  private java.util.Set<String> splitLines(String value) {
-    java.util.Set<String> tags = new java.util.HashSet<>();
+  private Set<String> splitLines(String value) {
+    Set<String> tags = new HashSet<>();
     if (value != null && !value.isBlank()) {
       for (String line : value.split("\n")) {
         if (!line.isBlank()) {

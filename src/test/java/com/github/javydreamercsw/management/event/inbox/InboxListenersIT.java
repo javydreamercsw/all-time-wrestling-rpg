@@ -27,6 +27,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.Role;
+import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
@@ -430,10 +432,7 @@ public class InboxListenersIT extends ManagementIntegrationTest {
     // caller in the version-change wiring).
     Account admin = accountRepository.save(new Account("admin1", "password1", "admin1@test.com"));
     // Grant the ADMIN role so the listener's findAllByRoles_Name(ADMIN) finds this account.
-    com.github.javydreamercsw.base.domain.account.Role adminRole =
-        roleRepository
-            .findByName(com.github.javydreamercsw.base.domain.account.RoleName.ADMIN)
-            .orElseThrow();
+    Role adminRole = roleRepository.findByName(RoleName.ADMIN).orElseThrow();
     admin.addRole(adminRole);
     accountRepository.save(admin);
 

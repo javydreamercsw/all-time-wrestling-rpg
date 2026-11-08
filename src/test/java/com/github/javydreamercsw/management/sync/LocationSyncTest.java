@@ -32,6 +32,7 @@ import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.domain.world.LocationRepository;
 import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
 import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -40,6 +41,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -104,9 +106,9 @@ class LocationSyncTest {
     when(locationRepository.count()).thenReturn(2L);
     when(locationRepository.findAll()).thenReturn(List.of(tier1row, tier2row));
 
-    java.util.Set<String> parkedCoordinates = new java.util.HashSet<>();
-    SeedUpdateReviewService parking = org.mockito.Mockito.mock(SeedUpdateReviewService.class);
-    org.mockito.Mockito.doAnswer(
+    Set<String> parkedCoordinates = new HashSet<>();
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
               return null;
@@ -133,7 +135,7 @@ class LocationSyncTest {
         Set.of("uk", "british-strong-style", "europe", "historic", "vocal-crowd"),
         tier2row.getCulturalTags(),
         "tier 3: the seed-unchanged field must never be touched");
-    org.mockito.Mockito.verify(parking)
+    Mockito.verify(parking)
         .parkFieldConflict(
             eq("location"),
             eq("location:london"),
@@ -145,7 +147,7 @@ class LocationSyncTest {
                     + " mix of technical and hard-hitting styles."),
             anyString());
     assertEquals(
-        java.util.Set.of("location:london|description"),
+        Set.of("location:london|description"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
   }

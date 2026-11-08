@@ -34,15 +34,20 @@ import com.github.javydreamercsw.management.domain.outcome.OutcomeMatrixReposito
 import com.github.javydreamercsw.management.service.outcome.OutcomeMatrixService;
 import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
 import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.test.util.ReflectionTestUtils;
 
 /** Unit tests for the outcome_matrices seed sync, including the version-change pass. */
@@ -73,7 +78,7 @@ class OutcomeMatrixSyncTest {
         outcomeMatrixService,
         matrixRepository,
         entryRepository,
-        new org.springframework.core.io.support.PathMatchingResourcePatternResolver(),
+        new PathMatchingResourcePatternResolver(),
         new ObjectMapper(),
         seedReviewService,
         EMPTY_MANIFEST);
@@ -124,9 +129,9 @@ class OutcomeMatrixSyncTest {
     when(outcomeMatrixService.getByName("Feud Angle")).thenReturn(Optional.of(tier1matrix));
     when(entryRepository.findAllWithMatrixAndRedirect()).thenReturn(List.of(tier2entry));
 
-    java.util.Set<String> parkedCoordinates = new java.util.HashSet<>();
-    SeedUpdateReviewService parking = org.mockito.Mockito.mock(SeedUpdateReviewService.class);
-    org.mockito.Mockito.doAnswer(
+    Set<String> parkedCoordinates = new HashSet<>();
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
               return null;
@@ -141,7 +146,7 @@ class OutcomeMatrixSyncTest {
             outcomeMatrixService,
             matrixRepository,
             entryRepository,
-            new org.springframework.core.io.support.PathMatchingResourcePatternResolver(),
+            new PathMatchingResourcePatternResolver(),
             new ObjectMapper(),
             parking,
             EMPTY_MANIFEST);
@@ -155,7 +160,7 @@ class OutcomeMatrixSyncTest {
     // Tier 2 (entry row): the admin's template kept its value; the row parked the collision.
     assertEquals(
         "admin's template", tier2entry.getTemplateText(), "tier 2: admin edit must keep its value");
-    org.mockito.Mockito.verify(parking)
+    Mockito.verify(parking)
         .parkFieldConflict(
             eq("outcome_matrix"),
             eq("entry:feud-angle#1"),
@@ -167,7 +172,7 @@ class OutcomeMatrixSyncTest {
                     + " shattering their alliance in front of a stunned arena."),
             anyString());
     assertEquals(
-        java.util.Set.of("entry:feud-angle#1|templateText"),
+        Set.of("entry:feud-angle#1|templateText"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
   }
@@ -201,10 +206,10 @@ class OutcomeMatrixSyncTest {
 
     sync.sync();
 
-    verify(outcomeMatrixService, org.mockito.Mockito.atLeastOnce())
-        .updateMatrix(org.mockito.ArgumentMatchers.argThat(m -> m.getSeedFingerprint() != null));
-    verify(outcomeMatrixService, org.mockito.Mockito.atLeastOnce())
-        .updateEntry(org.mockito.ArgumentMatchers.argThat(e -> e.getSeedFingerprint() != null));
+    verify(outcomeMatrixService, Mockito.atLeastOnce())
+        .updateMatrix(ArgumentMatchers.argThat(m -> m.getSeedFingerprint() != null));
+    verify(outcomeMatrixService, Mockito.atLeastOnce())
+        .updateEntry(ArgumentMatchers.argThat(e -> e.getSeedFingerprint() != null));
   }
 
   @Test
@@ -224,8 +229,8 @@ class OutcomeMatrixSyncTest {
     when(outcomeMatrixService.getByName("Feud Angle")).thenReturn(Optional.of(m));
     when(entryRepository.findAllWithMatrixAndRedirect()).thenReturn(List.of(parked));
 
-    SeedUpdateReviewService parking = org.mockito.Mockito.mock(SeedUpdateReviewService.class);
-    org.mockito.Mockito.doNothing()
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    Mockito.doNothing()
         .when(parking)
         .parkFieldConflict(
             anyString(), anyString(), anyString(), anyString(), any(), any(), anyString());
@@ -236,7 +241,7 @@ class OutcomeMatrixSyncTest {
             outcomeMatrixService,
             matrixRepository,
             entryRepository,
-            new org.springframework.core.io.support.PathMatchingResourcePatternResolver(),
+            new PathMatchingResourcePatternResolver(),
             new ObjectMapper(),
             parking,
             EMPTY_MANIFEST);

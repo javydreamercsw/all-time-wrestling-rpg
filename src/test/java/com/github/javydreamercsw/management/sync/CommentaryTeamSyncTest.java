@@ -29,15 +29,21 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
+import com.github.javydreamercsw.management.domain.commentator.Commentator;
+import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.service.commentator.CommentaryService;
 import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
 import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -78,11 +84,9 @@ class CommentaryTeamSyncTest {
     t.setName(name);
     memberNames.forEach(
         n -> {
-          com.github.javydreamercsw.management.domain.npc.Npc npc =
-              new com.github.javydreamercsw.management.domain.npc.Npc();
+          Npc npc = new Npc();
           npc.setName(n);
-          com.github.javydreamercsw.management.domain.commentator.Commentator c =
-              new com.github.javydreamercsw.management.domain.commentator.Commentator();
+          Commentator c = new Commentator();
           c.setNpc(npc);
           t.getCommentators().add(c);
         });
@@ -107,9 +111,9 @@ class CommentaryTeamSyncTest {
     when(commentaryService.countTeams()).thenReturn(1L);
     when(commentaryTeamRepository.findAll()).thenReturn(List.of(tier2row));
 
-    java.util.Set<String> parkedCoordinates = new java.util.HashSet<>();
-    SeedUpdateReviewService parking = org.mockito.Mockito.mock(SeedUpdateReviewService.class);
-    org.mockito.Mockito.doAnswer(
+    Set<String> parkedCoordinates = new HashSet<>();
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
               return null;
@@ -134,7 +138,7 @@ class CommentaryTeamSyncTest {
         List.of("Admin Pick One", "Admin Pick Two"),
         tier2row.getCommentators().stream().map(c -> c.getNpc().getName()).toList(),
         "tier 2: admin membership must keep its value");
-    org.mockito.Mockito.verify(parking)
+    Mockito.verify(parking)
         .parkFieldConflict(
             eq("commentary_team"),
             eq("commentary_team:all-time-broadcast-team"),
@@ -144,7 +148,7 @@ class CommentaryTeamSyncTest {
             eq("Dara Hoshiko\nLord Bastian Von Crowe"),
             anyString());
     assertEquals(
-        java.util.Set.of("commentary_team:all-time-broadcast-team|members"),
+        Set.of("commentary_team:all-time-broadcast-team|members"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
     // The parked row is never written (the decision owns any later value change).
@@ -164,7 +168,7 @@ class CommentaryTeamSyncTest {
     when(commentaryService.countTeams()).thenReturn(1L);
     when(commentaryTeamRepository.findAll()).thenReturn(List.of(tier1row));
 
-    SeedUpdateReviewService parking = org.mockito.Mockito.mock(SeedUpdateReviewService.class);
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
     CommentaryTeamSync detectionSync =
         new CommentaryTeamSync(
             "true",
@@ -208,7 +212,7 @@ class CommentaryTeamSyncTest {
 
     sync.sync();
 
-    verify(commentaryTeamRepository, org.mockito.Mockito.atLeastOnce())
-        .save(org.mockito.ArgumentMatchers.argThat(t -> t.getSeedFingerprint() != null));
+    verify(commentaryTeamRepository, Mockito.atLeastOnce())
+        .save(ArgumentMatchers.argThat(t -> t.getSeedFingerprint() != null));
   }
 }

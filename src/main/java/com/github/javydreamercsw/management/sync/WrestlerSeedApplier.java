@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.sync;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.util.LogSanitizer;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.campaign.WrestlerAlignment;
@@ -151,11 +152,7 @@ public class WrestlerSeedApplier implements SeedDomainApplier {
           wrestler.setStartingStamina(value == null ? null : Integer.valueOf(value));
       case "lowStamina" -> wrestler.setLowStamina(value == null ? null : Integer.valueOf(value));
       case "description" -> wrestler.setDescription(value);
-      case "gender" ->
-          wrestler.setGender(
-              value == null
-                  ? null
-                  : com.github.javydreamercsw.base.domain.wrestler.Gender.valueOf(value));
+      case "gender" -> wrestler.setGender(value == null ? null : Gender.valueOf(value));
       case "imageUrl" -> wrestler.setImageUrl(value);
       case "heritageTag" -> wrestler.setHeritageTag(value);
       case "expansionCode" -> wrestler.setExpansionCode(value);

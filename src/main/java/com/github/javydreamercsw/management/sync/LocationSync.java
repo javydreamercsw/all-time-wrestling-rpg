@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -238,7 +239,7 @@ public class LocationSync implements DataSyncContributor {
    * ElementCollection} set has no order guarantee across restarts, so both sides sort before
    * hashing).
    */
-  private String tagsCanonical(java.util.Set<String> tags) {
+  private String tagsCanonical(Set<String> tags) {
     return tags == null ? "" : tags.stream().sorted().collect(Collectors.joining("\n"));
   }
 

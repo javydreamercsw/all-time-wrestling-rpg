@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface TournamentRepository extends JpaRepository<Tournament, Long> {
 
@@ -49,8 +50,7 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long> {
    * {@code @ManyToMany} proxy would throw.
    */
   @Query("SELECT t FROM Tournament t LEFT JOIN FETCH t.allowedRules WHERE t.code = :code")
-  Optional<Tournament> findByCodeWithRules(
-      @org.springframework.data.repository.query.Param("code") String code);
+  Optional<Tournament> findByCodeWithRules(@Param("code") String code);
 
   /**
    * All tournaments with the allowed-rules collection eagerly fetched (same eager-read need as

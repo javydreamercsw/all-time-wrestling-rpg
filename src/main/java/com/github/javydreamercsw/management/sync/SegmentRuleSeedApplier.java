@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.sync;
 
 import com.github.javydreamercsw.management.domain.seedreview.SeedUpdateDecision;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.sync.review.SeedDomainApplier;
@@ -127,11 +128,7 @@ public class SegmentRuleSeedApplier implements SeedDomainApplier {
       case "noDq" -> rule.setNoDq(Boolean.parseBoolean(value));
       case "allowsRefereeStopage" -> rule.setAllowsRefereeStopage(Boolean.parseBoolean(value));
       case "bumpAddition" ->
-          rule.setBumpAddition(
-              value == null
-                  ? null
-                  : com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition
-                      .valueOf(value));
+          rule.setBumpAddition(value == null ? null : BumpAddition.valueOf(value));
       case "expansionCode" -> rule.setExpansionCode(value);
       case "guideHash" ->
           log.warn(
