@@ -49,6 +49,7 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
 import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -57,6 +58,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -857,7 +859,7 @@ class WrestlerSyncTest {
         gail.getImageUrl(),
         "seed-omitted imageUrl must NOT clear the row's value (null-guard skip arm)");
     // Both rows are provenance-exact clean rows → re-stamped with the incoming fingerprint.
-    org.junit.jupiter.api.Assertions.assertNotEquals(
+    Assertions.assertNotEquals(
         gailStampBefore,
         gail.getSeedFingerprint(),
         "tier-1 row re-stamps with the incoming fingerprint");
@@ -961,8 +963,7 @@ class WrestlerSyncTest {
     ObjectMapper brokenMapper =
         new ObjectMapper() {
           @Override
-          public <T> T readValue(java.io.InputStream src, TypeReference<T> typeRef)
-              throws IOException {
+          public <T> T readValue(InputStream src, TypeReference<T> typeRef) throws IOException {
             throw new IOException("boom");
           }
         };
@@ -982,8 +983,7 @@ class WrestlerSyncTest {
             parking,
             EMPTY_MANIFEST);
 
-    org.junit.jupiter.api.Assertions.assertDoesNotThrow(
-        detectionSync::detectVersionChangeCollisions);
+    Assertions.assertDoesNotThrow(detectionSync::detectVersionChangeCollisions);
     verify(wrestlerRepository, never()).saveAll(any());
     Mockito.verifyNoInteractions(parking);
   }

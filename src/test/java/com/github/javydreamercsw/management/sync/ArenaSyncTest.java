@@ -28,6 +28,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.world.Arena;
 import com.github.javydreamercsw.management.domain.world.ArenaRepository;
@@ -35,11 +36,14 @@ import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.domain.world.LocationRepository;
 import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
 import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -381,10 +385,8 @@ class ArenaSyncTest {
     ObjectMapper brokenMapper =
         new ObjectMapper() {
           @Override
-          public <T> T readValue(
-              java.io.InputStream src, com.fasterxml.jackson.core.type.TypeReference<T> typeRef)
-              throws java.io.IOException {
-            throw new java.io.IOException("boom");
+          public <T> T readValue(InputStream src, TypeReference<T> typeRef) throws IOException {
+            throw new IOException("boom");
           }
         };
     ArenaSync detectionSync =
@@ -395,8 +397,7 @@ class ArenaSyncTest {
             brokenMapper,
             Mockito.mock(SeedUpdateReviewService.class),
             EMPTY_MANIFEST);
-    org.junit.jupiter.api.Assertions.assertDoesNotThrow(
-        detectionSync::detectVersionChangeCollisions);
+    Assertions.assertDoesNotThrow(detectionSync::detectVersionChangeCollisions);
     verify(arenaRepository, never()).saveAll(any());
   }
 

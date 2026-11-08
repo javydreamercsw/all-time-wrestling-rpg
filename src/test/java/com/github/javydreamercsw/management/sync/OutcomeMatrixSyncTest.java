@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.StreamSupport;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -301,9 +302,8 @@ class OutcomeMatrixSyncTest {
         .saveAll(
             Mockito.argThat(
                 l ->
-                    java.util.stream.StreamSupport.stream(l.spliterator(), false)
-                            .anyMatch(e -> e == drift)
-                        && java.util.stream.StreamSupport.stream(l.spliterator(), false)
+                    StreamSupport.stream(l.spliterator(), false).anyMatch(e -> e == drift)
+                        && StreamSupport.stream(l.spliterator(), false)
                             .anyMatch(e -> e == stampOnly)));
     Mockito.verify(parking, Mockito.never())
         .parkFieldConflict(

@@ -29,16 +29,20 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
 import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -430,16 +434,13 @@ class NpcSyncTest {
     ObjectMapper brokenMapper =
         new ObjectMapper() {
           @Override
-          public <T> T readValue(
-              java.io.InputStream src, com.fasterxml.jackson.core.type.TypeReference<T> typeRef)
-              throws java.io.IOException {
-            throw new java.io.IOException("boom");
+          public <T> T readValue(InputStream src, TypeReference<T> typeRef) throws IOException {
+            throw new IOException("boom");
           }
         };
     SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
     NpcSync detectionSync = new NpcSync("true", npcService, brokenMapper, parking, EMPTY_MANIFEST);
-    org.junit.jupiter.api.Assertions.assertDoesNotThrow(
-        detectionSync::detectVersionChangeCollisions);
+    Assertions.assertDoesNotThrow(detectionSync::detectVersionChangeCollisions);
     Mockito.verify(npcService, never()).saveAll(any());
     Mockito.verifyNoInteractions(parking);
   }
