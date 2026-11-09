@@ -70,12 +70,19 @@ public class CampaignUpgradeSync implements DataSyncContributor {
 
   @Override
   public void sync() {
-    // The service's load is the seed write (deleteAll + saveAll); its @PostConstruct already
-    // runs it unconditionally on every boot, so the sync only re-issues it in FULL mode (the
-    // production first-boot shape) and always tops up the stamps afterwards — the service's
-    // save leaves the stamp unset and the wipe re-creates rows every boot.
+    // The service's load (deleteAll + saveAll) is a FULL-mode-only seed write — see
+    // CampaignUpgradeService: its former @PostConstruct boot-wipe (ATW-26sy) destroyed admin
+    // customizations on every boot before review semantics could see them. Non-FULL modes top
+    // up only MISSING seed rows (later-release catalog entries reach flag-protected installs,
+    // mirroring NpcSync's top-up) and never re-save existing rows; the stamp sweep below keeps
+    // every row's provenance current.
     if (syncSupport.mode() == SeedSyncMode.FULL) {
       campaignUpgradeService.loadUpgrades();
+    } else {
+      // An empty table (fresh install upgraded to this feature, or a test-profile H2) must get
+      // the full seed catalog — with the @PostConstruct wipe gone, the sync is the ONLY seeder.
+      // Non-empty tables get the missing-row top-up. Both insert rows stamped at seed values.
+      topUpMissingUpgrades();
     }
     try (InputStream is = getClass().getResourceAsStream("/campaign_upgrades.json")) {
       if (is == null) {
@@ -102,6 +109,45 @@ public class CampaignUpgradeSync implements DataSyncContributor {
       }
     } catch (IOException e) {
       log.error("Error stamping campaign upgrades after load", e);
+    }
+  }
+
+  /**
+   * Skip-gate branch: the table is non-empty and the mode protects existing rows. Insert ONLY the
+   * seed entries missing from the table (stamped at seed values on insert, mirroring NpcSync's
+   * top-up) — existing rows are never re-saved here, protecting admin customizations (beads
+   * ATW-26sy). A removed-from-seed row is likewise left alone (removals park via detection).
+   */
+  private void topUpMissingUpgrades() {
+    try (InputStream is = getClass().getResourceAsStream("/campaign_upgrades.json")) {
+      if (is == null) {
+        return;
+      }
+      List<CampaignUpgrade> dtos = objectMapper.readValue(is, new TypeReference<>() {});
+      Map<String, CampaignUpgrade> existingByName =
+          upgradeRepository.findAll().stream()
+              .collect(Collectors.toMap(CampaignUpgrade::getName, u -> u, (a, b) -> a));
+      List<CampaignUpgrade> missing = new ArrayList<>();
+      for (CampaignUpgrade dto : dtos) {
+        if (existingByName.containsKey(dto.getName())) {
+          continue;
+        }
+        CampaignUpgrade row =
+            CampaignUpgrade.builder()
+                .name(dto.getName())
+                .description(dto.getDescription())
+                .type(dto.getType())
+                .subType(dto.getSubType())
+                .build();
+        row.setSeedFingerprint(upgradeFingerprint(row));
+        missing.add(row);
+      }
+      if (!missing.isEmpty()) {
+        log.info("Campaign upgrade top-up: inserting {} missing seed upgrade(s).", missing.size());
+        upgradeRepository.saveAll(missing);
+      }
+    } catch (IOException e) {
+      log.error("Error during campaign upgrade top-up", e);
     }
   }
 
