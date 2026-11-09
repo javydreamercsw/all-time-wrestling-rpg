@@ -126,10 +126,10 @@ public class SegmentTypeSync implements DataSyncContributor {
               dto.getGuide(),
               dto.getCode(),
               dto.getEventOnly());
-      if (segmentType != null
-          && SeedSyncSupport.isBlankFingerprint(segmentType.getSeedFingerprint())) {
-        // The service save leaves the stamp unset (same as the top-up branch): stamp the freshly
-        // seeded row so verify mode's stored-side check can match it against the manifest.
+      // CardSync parity (beads ATW-sytl): re-stamp unconditionally after the field update — a
+      // blank-only stamp goes stale when the seed changes, and a later switch to verify would
+      // flag the row as "modified after seeding" forever, blocking its fast path.
+      if (segmentType != null) {
         segmentType.setSeedFingerprint(segmentTypeFingerprint(segmentType));
         segmentTypeService.saveSegmentType(segmentType);
       }
