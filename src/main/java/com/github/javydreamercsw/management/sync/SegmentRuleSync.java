@@ -21,6 +21,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRulePlayGuide;
 import com.github.javydreamercsw.management.dto.SegmentRuleDTO;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.sync.review.SeedCollisionDetector;
@@ -28,6 +29,7 @@ import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
 import com.github.javydreamercsw.management.sync.review.SeedReviewDetectionSupport;
 import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -36,6 +38,7 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -320,17 +323,46 @@ public class SegmentRuleSync implements DataSyncContributor {
 
   /** Guide hash the seed write would compute for a DTO (mirrors the service's private method). */
   private String guideHashFor(SegmentRuleDTO dto) {
-    if (dto.getGuide() == null) {
+    return guideHashForGuide(dto.getGuide());
+  }
+
+  /**
+   * Guide hash the seed write computes for a guide payload (beads ATW-md1i): public so the seed
+   * applier stamps the reloaded guide's row with exactly the hash the seed write would produce.
+   */
+  public String guideHashForGuide(SegmentRulePlayGuide guide) {
+    if (guide == null) {
       return null;
     }
     try {
-      String json = objectMapper.writeValueAsString(dto.getGuide());
+      String json = objectMapper.writeValueAsString(guide);
       MessageDigest digest = MessageDigest.getInstance("SHA-256");
       byte[] hash = digest.digest(json.getBytes(StandardCharsets.UTF_8));
       return HexFormat.of().formatHex(hash);
     } catch (JsonProcessingException | NoSuchAlgorithmException e) {
       log.warn("Failed to compute seed guide hash for segment rule", e);
       return null;
+    }
+  }
+
+  /**
+   * The seed JSON's guide payload for one rule name (beads ATW-md1i): lets the seed applier resolve
+   * a {@code USE_NEW} guideHash decision back to the real guide content — the decision's value
+   * carries only the hash. Empty when the name has no seed entry (admin-created rows).
+   */
+  public Optional<SegmentRulePlayGuide> reloadSeedGuide(String ruleName) {
+    ClassPathResource resource = new ClassPathResource("segment_rules.json");
+    if (!resource.exists()) {
+      return Optional.empty();
+    }
+    try (InputStream is = resource.getInputStream()) {
+      return objectMapper.readValue(is, new TypeReference<List<SegmentRuleDTO>>() {}).stream()
+          .filter(dto -> dto.getName().equals(ruleName))
+          .map(SegmentRuleDTO::getGuide)
+          .findFirst();
+    } catch (IOException e) {
+      log.error("Error reloading segment rule guide for '{}'", ruleName, e);
+      return Optional.empty();
     }
   }
 
