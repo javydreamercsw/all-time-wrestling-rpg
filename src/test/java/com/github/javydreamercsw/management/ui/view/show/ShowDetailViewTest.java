@@ -479,6 +479,44 @@ class ShowDetailViewTest extends AbstractViewTest {
   }
 
   @Test
+  void confirmDialog_doubleClickOpensOnlyOneDialog() {
+    // ATW-b08p: a double-click on Adjudicate during the pre-flight .join() used to open two
+    // ConfirmDialogs. confirmThenAdjudicate now disables the button on entry, so the second
+    // click cannot re-enter.
+    ShowType showType = new ShowType();
+    showType.setName("Test");
+    Show show = new Show();
+    show.setId(52L);
+    show.setName("Double Click Show");
+    show.setType(showType);
+
+    Mockito.when(showService.getShowById(52L)).thenReturn(Optional.of(show));
+    Mockito.when(showService.getAdjudicationPreFlight(52L))
+        .thenReturn(
+            new ShowService.AdjudicationPreFlight(
+                List.of("Match 1 — no winner"), List.of("Match 1"), true));
+    Mockito.when(segmentRepository.findByShow(any(Show.class))).thenReturn(List.of());
+
+    ShowDetailView view = buildView(mock(SecurityUtils.class));
+    ReflectionTestUtils.setField(view, "currentShow", show);
+
+    // First click opens the dialog and disables the Adjudicate button.
+    ReflectionTestUtils.invokeMethod(view, "confirmThenAdjudicate", show);
+    assertThat(LocatorJ._find(ConfirmDialog.class).stream().filter(ConfirmDialog::isOpened).count())
+        .isEqualTo(1);
+
+    // Go Back re-enables the button (its cancel listener) without starting adjudication; a
+    // second click then opens a fresh dialog — still exactly one at a time.
+    LocatorJ._get(ConfirmDialog.class).setOpened(false);
+    Mockito.verify(showController, Mockito.never()).adjudicateShow(Mockito.anyLong());
+
+    ReflectionTestUtils.invokeMethod(view, "confirmThenAdjudicate", show);
+    assertThat(LocatorJ._find(ConfirmDialog.class).stream().filter(ConfirmDialog::isOpened).count())
+        .isEqualTo(1);
+    Mockito.verify(showController, Mockito.never()).adjudicateShow(Mockito.anyLong());
+  }
+
+  @Test
   void confirmDialog_noNarrationProvider_showsSkipNoteAndPlainConfirm() {
     // ATW-ktta: with no AI provider configured the dialog must not promise narration —
     // it says segments use their booked descriptions, and proceeding is a normal path
