@@ -285,44 +285,67 @@ class ChallengeListViewTest extends AbstractViewTest {
   }
 
   @Test
-  @DisplayName("Print card renders title, flavor, objective, conditions and modifiers")
-  void buildChallengeCard_rendersAllSections() {
+  @DisplayName("Print page renders header meta, flavor, objective, conditions and modifiers")
+  void buildChallengePage_rendersAllSections() {
     ChallengeDTO challenge =
         ChallengeDTO.builder()
             .id("week_11_deadly_combat_year_5")
             .weekNumber(11)
+            .season("Season 1")
             .title("Deadly Combat — Year Five: The Gauntlet")
             .flavorText("Freedom. One more tournament.")
             .expansionCode("EXTREME")
             .difficulty(Difficulty.HARD)
+            .matchType("Gauntlet")
             .objective("Defeat all four as OMZ.")
             .setupInstructions("Requires the ATW Extreme expansion.")
             .conditions(List.of("No pinfalls — defeat at 1 Health."))
             .modifiers(List.of("The pit medics: one Elixir and one Health Pack."))
             .build();
 
-    Div card = ChallengeListView.buildChallengeCard(challenge);
+    Div page = ChallengeListView.buildChallengePage(challenge);
 
-    String text = textOf(card);
+    String text = textOf(page);
     assertThat(text)
         .contains("Deadly Combat — Year Five: The Gauntlet")
+        .contains("Week 11")
+        .contains("HARD")
+        .contains("Gauntlet")
+        .contains("Season 1")
         .contains("Freedom. One more tournament.")
         .contains("Defeat all four as OMZ.")
         .contains("No pinfalls")
         .contains("The pit medics")
         .contains("EXTREME");
-    assertThat(card.hasClassName("campaign-card")).isTrue();
+    assertThat(page.hasClassName("challenge-print-page")).isTrue();
   }
 
   @Test
-  @DisplayName("Print card tolerates null optional fields (no NPE)")
-  void buildChallengeCard_nullOptionals_noNpe() {
+  @DisplayName("Print page includes the challenge image when present")
+  void buildChallengePage_includesImage() {
+    ChallengeDTO challenge =
+        ChallengeDTO.builder()
+            .id("week_01_locker_room_attack")
+            .weekNumber(1)
+            .title("Locker Room Attack!!!")
+            .imageUrl("challenge-content/images/week1.png")
+            .build();
+
+    Div page = ChallengeListView.buildChallengePage(challenge);
+
+    Element img = page.getElement().getChild(1).getChild(0);
+    assertThat(img.getAttribute("src")).isEqualTo("challenge-content/images/week1.png");
+  }
+
+  @Test
+  @DisplayName("Print page tolerates null optional fields (no NPE)")
+  void buildChallengePage_nullOptionals_noNpe() {
     ChallengeDTO challenge = ChallengeDTO.builder().id("x").title("Bare challenge").build();
 
-    Div card = ChallengeListView.buildChallengeCard(challenge);
+    Div page = ChallengeListView.buildChallengePage(challenge);
 
-    assertThat(card.hasClassName("campaign-card")).isTrue();
-    assertThat(textOf(card)).contains("Bare challenge");
+    assertThat(page.hasClassName("challenge-print-page")).isTrue();
+    assertThat(textOf(page)).contains("Bare challenge");
   }
 
   private static String textOf(Div card) {

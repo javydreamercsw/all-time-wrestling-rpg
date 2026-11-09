@@ -328,6 +328,106 @@ public final class PrintableCardSupport {
       display: none;
     }
 
+    /* ── Full-page challenge sheets (one challenge per printed page) ── */
+    .challenge-print-page {
+      font-family: Georgia, 'Times New Roman', serif;
+      color: var(--lumo-body-text-color, #111);
+      background: var(--lumo-base-color, #fff);
+      border: 0.5mm solid #999;
+      border-radius: 2mm;
+      padding: 8mm;
+      margin-bottom: 6mm;
+      display: flex;
+      flex-direction: column;
+      gap: 4mm;
+      min-height: 250mm;
+    }
+    .challenge-page-header {
+      background: #1e4620;
+      color: #f5f5f5;
+      border-radius: 2mm;
+      padding: 5mm 6mm;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5mm;
+    }
+    .challenge-page-kicker {
+      font-size: 8pt;
+      font-family: Arial, sans-serif;
+      letter-spacing: 1.5pt;
+      text-transform: uppercase;
+      opacity: 0.8;
+    }
+    .challenge-page-title {
+      font-size: 20pt;
+      font-weight: bold;
+      line-height: 1.15;
+    }
+    .challenge-page-meta {
+      font-size: 8pt;
+      font-family: Arial, sans-serif;
+      background: rgba(255,255,255,0.18);
+      padding: 1mm 2.5mm;
+      border-radius: 1.5mm;
+      display: inline-block;
+    }
+    .challenge-page-body {
+      display: flex;
+      flex-direction: column;
+      gap: 4mm;
+      flex: 1;
+    }
+    .challenge-page-image {
+      width: 100%;
+      max-height: 90mm;
+      object-fit: contain;
+      border-radius: 2mm;
+    }
+    .challenge-page-flavor {
+      font-style: italic;
+      font-size: 10.5pt;
+      line-height: 1.45;
+    }
+    .challenge-page-section {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5mm;
+    }
+    .challenge-page-section-label {
+      font-size: 8pt;
+      font-weight: bold;
+      font-family: Arial, sans-serif;
+      letter-spacing: 1pt;
+      text-transform: uppercase;
+      color: #1e4620;
+      border-bottom: 0.3mm solid #ccc;
+      padding-bottom: 0.8mm;
+    }
+    .challenge-page-section-text {
+      font-size: 10pt;
+      line-height: 1.4;
+      font-style: normal !important;
+    }
+    .challenge-page-list-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.8mm;
+    }
+    /* On screen the sheets are preview-sized; on paper they fill pages. */
+    @media print {
+      .challenge-print-page {
+        border: none;
+        padding: 0;
+        margin: 0;
+        min-height: auto;
+        width: 100%;
+        page-break-after: always;
+      }
+      .challenge-print-page:last-child {
+        page-break-after: auto;
+      }
+    }
+
     /* ── Print suppression: only the card area (and its title) hits the paper ── */
     @media print {
       body * { visibility: hidden !important; }

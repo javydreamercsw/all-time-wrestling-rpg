@@ -623,95 +623,116 @@ public class ChallengeListView extends VerticalLayout {
             + (selectedSeason != null && !selectedSeason.isBlank() ? " — " + selectedSeason : ""));
     printTitle.setId("campaign-card-print-title");
     printArea.add(printTitle);
-    toPrint.forEach(c -> printArea.add(buildChallengeCard(c)));
+    toPrint.forEach(c -> printArea.add(buildChallengePage(c)));
     if (printArea.getParent().isEmpty()) {
       add(printArea);
     }
     PrintableCardSupport.print();
   }
 
-  /** Builds the printable poker-size card for one challenge (print DOM only). */
-  static Div buildChallengeCard(final ChallengeDTO challenge) {
-    Div header =
-        PrintableCardSupport.cardHeader(
-            "challenge-header",
-            "WEEKLY CHALLENGE"
-                + (challenge.getWeekNumber() != null ? " · WEEK " + challenge.getWeekNumber() : ""),
-            challenge.getTitle());
+  /**
+   * Builds the printable full-page sheet for one challenge (print DOM only): A4 portrait, one
+   * challenge per page — header band with week/difficulty, the challenge image when present, flavor
+   * text with inline icon rendering, objective, setup, conditions, modifiers, and the expansion
+   * footer.
+   */
+  static Div buildChallengePage(final ChallengeDTO challenge) {
+    Div page = new Div();
+    page.addClassName("challenge-print-page");
+
+    Div header = new Div();
+    header.addClassName("challenge-page-header");
+    Span kicker = new Span("WEEKLY CHALLENGE");
+    kicker.addClassName("challenge-page-kicker");
+    Div title = new Div(challenge.getTitle() != null ? challenge.getTitle() : "");
+    title.addClassName("challenge-page-title");
+    header.add(kicker, title);
+    FlexLayout meta = new FlexLayout();
+    meta.addClassNames(FlexWrap.WRAP, Gap.SMALL);
+    if (challenge.getWeekNumber() != null) {
+      Span week = new Span("Week " + challenge.getWeekNumber());
+      week.addClassName("challenge-page-meta");
+      meta.add(week);
+    }
     if (challenge.getDifficulty() != null) {
       Span diff = new Span(challenge.getDifficulty().name());
-      diff.addClassName("difficulty-badge");
-      header.add(diff);
+      diff.addClassName("challenge-page-meta");
+      meta.add(diff);
     }
+    if (challenge.getMatchType() != null) {
+      Span match = new Span(challenge.getMatchType());
+      match.addClassName("challenge-page-meta");
+      meta.add(match);
+    }
+    if (challenge.getSeason() != null && !challenge.getSeason().isBlank()) {
+      Span season = new Span(challenge.getSeason());
+      season.addClassName("challenge-page-meta");
+      meta.add(season);
+    }
+    header.add(meta);
+    page.add(header);
 
     Div body = new Div();
-    body.addClassName("card-body");
-    PrintableCardSupport.addNarrative(body, challenge.getFlavorText());
-
-    Span objective = new Span(challenge.getObjective() != null ? challenge.getObjective() : "");
-    objective.addClassName("section-text");
-    Div objectiveBlock = new Div();
-    objectiveBlock.addClassName("challenge-objective");
-    objectiveBlock.add(
-        new Span("OBJECTIVE") {
-          {
-            addClassName("section-label");
-          }
-        },
-        objective);
-    body.add(objectiveBlock);
-
-    if (challenge.getSetupInstructions() != null && !challenge.getSetupInstructions().isBlank()) {
-      Div setup = new Div();
-      setup.addClassName("challenge-setup");
-      Span setupLabel = new Span("SETUP");
-      setupLabel.addClassName("section-label");
-      Span setupText = new Span(challenge.getSetupInstructions());
-      setupText.addClassName("section-text");
-      setup.add(setupLabel, setupText);
-      body.add(setup);
+    body.addClassName("challenge-page-body");
+    if (challenge.getImageUrl() != null && !challenge.getImageUrl().isBlank()) {
+      Image img = new Image(challenge.getImageUrl(), challenge.getTitle());
+      img.addClassName("challenge-page-image");
+      body.add(img);
     }
-
-    if (challenge.getConditions() != null && !challenge.getConditions().isEmpty()) {
-      Div conditions = new Div();
-      conditions.addClassName("challenge-conditions");
-      Span label = new Span("CONDITIONS");
-      label.addClassName("section-label");
-      conditions.add(label);
-      challenge
-          .getConditions()
-          .forEach(
-              c -> {
-                Span line = new Span("• " + c);
-                line.addClassName("section-text");
-                conditions.add(line);
-              });
-      body.add(conditions);
+    if (challenge.getFlavorText() != null && !challenge.getFlavorText().isBlank()) {
+      Component flavor = GuideTextRenderer.render(challenge.getFlavorText());
+      flavor.getElement().getThemeList().add("challenge-page-flavor");
+      body.add(flavor);
     }
+    addPageSection(body, "Objective", challenge.getObjective());
+    addPageSection(body, "Setup", challenge.getSetupInstructions());
+    addPageListSection(
+        body,
+        "Conditions",
+        challenge.getConditions() == null
+            ? null
+            : challenge.getConditions().toArray(new String[0]));
+    addPageListSection(
+        body,
+        "Modifiers",
+        challenge.getModifiers() == null ? null : challenge.getModifiers().toArray(new String[0]));
+    PrintableCardSupport.addExpansionFooter(body, challenge.getExpansionCode());
+    page.add(body);
+    return page;
+  }
 
-    if (challenge.getModifiers() != null && !challenge.getModifiers().isEmpty()) {
-      Div modifiers = new Div();
-      modifiers.addClassName("challenge-modifiers");
-      Span label = new Span("MODIFIERS");
-      label.addClassName("section-label");
-      modifiers.add(label);
-      challenge
-          .getModifiers()
-          .forEach(
-              m -> {
-                Span line = new Span("• " + m);
-                line.addClassName("section-text");
-                modifiers.add(line);
-              });
-      body.add(modifiers);
+  private static void addPageSection(Div body, String label, String text) {
+    if (text == null || text.isBlank()) {
+      return;
     }
+    Div section = new Div();
+    section.addClassName("challenge-page-section");
+    Span labelSpan = new Span(label);
+    labelSpan.addClassName("challenge-page-section-label");
+    Component rendered = GuideTextRenderer.render(text);
+    rendered.getElement().getThemeList().add("challenge-page-section-text");
+    section.add(labelSpan, rendered);
+    body.add(section);
+  }
 
-    PrintableCardSupport.addExpansionFooter(
-        body, challenge.getExpansionCode() != null ? challenge.getExpansionCode() : "");
-    Div card = new Div();
-    card.addClassName("campaign-card");
-    card.add(header, body);
-    return card;
+  private static void addPageListSection(Div body, String label, String... items) {
+    if (items == null || items.length == 0) {
+      return;
+    }
+    Div section = new Div();
+    section.addClassName("challenge-page-section");
+    Span labelSpan = new Span(label);
+    labelSpan.addClassName("challenge-page-section-label");
+    section.add(labelSpan);
+    for (String item : items) {
+      Div line = new Div();
+      line.addClassName("challenge-page-list-item");
+      Component rendered = GuideTextRenderer.render(item);
+      rendered.getElement().getThemeList().add("challenge-page-section-text");
+      line.add(rendered);
+      section.add(line);
+    }
+    body.add(section);
   }
 
   private String difficultyTheme(final ChallengeDTO challenge) {
