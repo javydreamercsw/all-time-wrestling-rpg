@@ -109,6 +109,20 @@ class NpcServiceTest {
   }
 
   @Test
+  void pickUnusedReferee_sameIdSiblingIsSelfExcluded() {
+    // beads ATW-jbyo: a concurrent re-assignment can pass the segment's own row as its own
+    // "sibling" (same id in both lists); the id filter must drop it so the referee can be
+    // re-picked for the same segment instead of every candidate being "booked".
+    Npc ref = new Npc();
+    ref.setId(7L);
+    ref.setName("Same Ref");
+
+    Npc picked = npcService.pickUnusedReferee(List.of(ref), List.of(ref));
+
+    assertEquals(ref, picked, "same-id sibling must not count as booked");
+  }
+
+  @Test
   void testFindAllByType() {
     List<Npc> npcs = new ArrayList<>();
     npcs.add(npc);

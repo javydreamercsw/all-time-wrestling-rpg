@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.sync;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.dto.NpcDTO;
@@ -149,6 +150,10 @@ public class NpcSync implements DataSyncContributor {
           if (dto.getAwareness() != null) {
             npcService.setAwareness(npc, dto.getAwareness());
           }
+          if (dto.getGender() != null && !Objects.equals(npc.getGender(), dto.getGender())) {
+            npc.setGender(dto.getGender());
+            changed = true;
+          }
           if (changed) {
             npc.setSeedFingerprint(npcFingerprint(npc, dto.getAwareness()));
             toSave.add(npc);
@@ -168,9 +173,9 @@ public class NpcSync implements DataSyncContributor {
 
   /**
    * Canonical seed-owned field values for an NPC, in fingerprint order: description, type,
-   * expansionCode, alignment, awareness. Mirrors the seed write set (NpcDTO fields). Public for the
-   * seed-provenance manifest generator, which re-hashes fresh seed rows through the owning sync's
-   * own method.
+   * expansionCode, alignment, gender, awareness. Mirrors the seed write set (NpcDTO fields). Public
+   * for the seed-provenance manifest generator, which re-hashes fresh seed rows through the owning
+   * sync's own method.
    */
   public String npcFingerprint(Npc npc, Integer seedAwareness) {
     Integer awareness;
@@ -185,6 +190,7 @@ public class NpcSync implements DataSyncContributor {
         npc.getNpcType(),
         npc.getExpansionCode(),
         npc.getAlignment() == null ? null : npc.getAlignment().name(),
+        npc.getGender() == null ? null : npc.getGender().name(),
         awareness == null ? null : awareness.toString());
   }
 
@@ -391,6 +397,13 @@ public class NpcSync implements DataSyncContributor {
             dto.getAlignment() == null
                 ? AlignmentType.NEUTRAL.name()
                 : AlignmentType.valueOf(dto.getAlignment().toUpperCase()).name()));
+    // The seed write leaves the entity default (MALE) when the seed omits gender (ATW-jbyo).
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "gender",
+            null,
+            npc.getGender() == null ? null : npc.getGender().name(),
+            dto.getGender() == null ? Gender.MALE.name() : dto.getGender().name()));
     Object attr = npc.getAttributes().get(NpcService.ATTRIBUTE_AWARENESS);
     Integer npcAwareness = attr instanceof Number number ? number.intValue() : null;
     obs.add(
@@ -413,6 +426,7 @@ public class NpcSync implements DataSyncContributor {
         dto.getAlignment() == null
             ? AlignmentType.NEUTRAL.name()
             : AlignmentType.valueOf(dto.getAlignment().toUpperCase()).name(),
+        dto.getGender() == null ? Gender.MALE.name() : dto.getGender().name(),
         dto.getAwareness() == null
             ? null
             : Integer.toString(Math.max(0, Math.min(100, dto.getAwareness()))));
@@ -425,7 +439,7 @@ public class NpcSync implements DataSyncContributor {
    */
   private String npcValueListFingerprint(List<String> values) {
     return syncSupport.fingerprint(
-        values.get(0), values.get(1), values.get(2), values.get(3), values.get(4));
+        values.get(0), values.get(1), values.get(2), values.get(3), values.get(4), values.get(5));
   }
 
   private static String entityKey(String name) {
@@ -464,6 +478,11 @@ public class NpcSync implements DataSyncContributor {
             }
           }
         }
+        case "gender" -> {
+          if (dto.getGender() != null) {
+            npc.setGender(dto.getGender());
+          }
+        }
         case "awareness" -> {
           if (dto.getAwareness() != null) {
             npcService.setAwareness(npc, dto.getAwareness());
@@ -482,6 +501,9 @@ public class NpcSync implements DataSyncContributor {
     npc.setNpcType(dto.getType());
     if (dto.getExpansionCode() != null) {
       npc.setExpansionCode(dto.getExpansionCode());
+    }
+    if (dto.getGender() != null) {
+      npc.setGender(dto.getGender());
     }
     if (dto.getAwareness() != null) {
       // NpcSync cannot call npcService here without coupling the mapping to the service;

@@ -31,6 +31,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.service.npc.NpcService;
 import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
@@ -215,6 +216,7 @@ class NpcSyncTest {
         npc.getNpcType(),
         npc.getExpansionCode(),
         npc.getAlignment() == null ? null : npc.getAlignment().name(),
+        npc.getGender() == null ? null : npc.getGender().name(),
         awareness == null ? null : awareness.toString());
   }
 
@@ -466,5 +468,91 @@ class NpcSyncTest {
         "stale description",
         existing.getDescription(),
         "FULL-mode detection must not touch rows (the FULL sync's own load does that)");
+  }
+
+  // ── Gender seed support (beads ATW-jbyo) ────────────────────────────────────
+
+  @Test
+  void sync_seededFemaleRefereesCarryTheirGender() {
+    // The three female referees in npcs.json must land as FEMALE, not the entity's MALE default;
+    // nothing consumes Npc.gender yet — this pins the data before a consumer exists.
+    when(npcService.findAllUnfiltered()).thenReturn(List.of());
+
+    sync.sync();
+
+    ArgumentCaptor<List<Npc>> captor = ArgumentCaptor.forClass(List.class);
+    verify(npcService, atLeastOnce()).saveAll(captor.capture());
+    List<Npc> saved = captor.getAllValues().stream().flatMap(List::stream).toList();
+    for (String female : List.of("Beatrix “Trixie” Halvorsen", "Dr. Yumi Sato", "Amara Diallo")) {
+      Npc npc =
+          saved.stream()
+              .filter(n -> female.equals(n.getName()))
+              .findFirst()
+              .orElseThrow(() -> new AssertionError(female + " must be seeded"));
+      Assertions.assertEquals(Gender.FEMALE, npc.getGender(), female + " seeds as FEMALE");
+    }
+    // Male referees keep the default.
+    Npc samuel =
+        saved.stream().filter(n -> "Samuel Winters".equals(n.getName())).findFirst().orElseThrow();
+    Assertions.assertEquals(Gender.MALE, samuel.getGender());
+  }
+
+  @Test
+  void sync_fullModeUpdatesGenderOnExistingRow() {
+    // A pre-existing row seeded before the gender field existed (stored as MALE) must adopt
+    // the seed's gender on the next FULL pass.
+    Npc trixie = new Npc();
+    trixie.setName("Beatrix “Trixie” Halvorsen");
+    trixie.setGender(Gender.MALE); // the pre-fix stored state
+    when(npcService.findAllUnfiltered()).thenReturn(List.of(trixie));
+
+    sync.sync();
+
+    Assertions.assertEquals(
+        Gender.FEMALE, trixie.getGender(), "FULL mode must adopt the seed's gender");
+  }
+
+  @Test
+  void sync_genderChangeRestampsFingerprint() {
+    // The stamp covers seed-owned fields; a gender correction on an existing row must refresh it.
+    Npc yumi = new Npc();
+    yumi.setName("Dr. Yumi Sato");
+    yumi.setGender(Gender.MALE);
+    yumi.setSeedFingerprint("stale-stamp-from-before-gender");
+    when(npcService.findAllUnfiltered()).thenReturn(List.of(yumi));
+
+    sync.sync();
+
+    Assertions.assertNotEquals("stale-stamp-from-before-gender", yumi.getSeedFingerprint());
+    Assertions.assertNotNull(yumi.getSeedFingerprint(), "row re-stamps after the gender update");
+  }
+
+  @Test
+  void sync_nullGenderRowDetectionToleratesUnsetGender() {
+    // A pre-seed row with no gender at all must flow through fingerprinting, field
+    // observations, and the canonical fingerprint order without NPEs — every gender slot
+    // nulls out and the seed default (MALE) drives the "new value".
+    Npc ghost = new Npc();
+    ghost.setName("Ghost Announcer");
+    when(npcService.findAllUnfiltered()).thenReturn(List.of(ghost));
+
+    sync.sync();
+
+    verify(npcService, atLeastOnce()).saveAll(any());
+  }
+
+  @Test
+  void sync_silentGenderUpdateWritesThroughSingleSave() {
+    // A row whose ONLY divergence is gender hits the silent-update path: the seed's gender
+    // wins (entity default MALE was stored), and the field writes through applySilentSeedFields.
+    Npc mustafa = new Npc();
+    mustafa.setName("Colonel Mustafa");
+    mustafa.setGender(Gender.MALE);
+    mustafa.setSeedFingerprint("stale-pre-gender-stamp");
+    when(npcService.findAllUnfiltered()).thenReturn(List.of(mustafa));
+
+    sync.sync();
+
+    verify(npcService, atLeastOnce()).saveAll(any());
   }
 }

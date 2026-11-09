@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-11-09T08:28:04Z",
+  "generatedAt" : "2026-11-09T14:57:54Z",
   "domains" : {
     "achievement" : {
       "ABILENE_BLESS_YOUR_HEART" : "9288b567c2091fd69215816044e405d85ce777337a348e6396f2e8b3028c3abb",
@@ -879,21 +879,21 @@
       "Zambezi Sanctuary" : "22fbd23adbbdc869960cf9db684a5b2072a90ee91d70bfec3f518477528ff1c4"
     },
     "npc" : {
-      "Amara Diallo" : "482a4539a2f861287a42ac5b45385cda7becfb6dc09d10570ee832f61a326f6a",
-      "Anika Stroud" : "2fabb2ee3cb90f26cbfb6d5af05b2c4d3825f6fde69647f5d56b48210f99c4fe",
-      "Beatrix “Trixie” Halvorsen" : "421808c6e41164e0542bec16da1391a3b158a3498a6bc4489a6eb6a5b33b5755",
-      "Brother Cassian" : "465943c6f181c9070f21f62399140f42f24526db0ff8e19dd8381a3f8b36bf1d",
-      "Charles" : "8c9748366d94fc73ecf41234c9c237a8561a4c3b73f842a71dc1c3f7e16d90de",
-      "Colonel Mustafa" : "96ea3bdcbd12b05300065e1905b4561774fc78138410d8ef3d7d1f83158f14a2",
-      "Commissioner Blake" : "56cbc9d0aef12fc28360cdeebdba1eab48e482a4793a3957ece0c6f7d36fc6b2",
-      "Dr. Yumi Sato" : "3c62dd49abd73e9c99169799d9095278314e927ce89803fbb5b2fa37a91e7057",
-      "Lena Voss" : "69aed5b03c33f7d42b98074a18434b650d77c391c1a8089f2f77a18470bc545d",
-      "MVP" : "62964d7fc4a6edf647680c008c445bf28bfed078eb246fa8bc31bbadcd244a4e",
-      "Reginald Fairfax III" : "46df05b7ff141cd336d6af184c4c4d079ea460e7034e9933a7868f950691e3da",
-      "Rezan the Resolved" : "a2277ecb4b57c29d616558240f21506ec14620b77433893c02f957ac65835c4f",
-      "Rigo Del Sarto" : "ae04081de478488a78fe52a96465fa8cab0990b7681bbc580de1617f98410836",
-      "Samuel Winters" : "f87467ca170bf65610a18598c0d98404c864dd91447ec8846254cda22a50a535",
-      "Tomás “Kid Whistle” Iglesias" : "53d245c6f487b1716f082818f105c6e05578afad16067bf15ff4fdd3a18a056c"
+      "Amara Diallo" : "81869b99e798b3f43252dcbafa932fdd59acea63bae85d48e28edd62f87f8f53",
+      "Anika Stroud" : "4d4eb5ce0f1d178918c894a7f246146a799ed28982182cf7150508198bee6a00",
+      "Beatrix “Trixie” Halvorsen" : "d20d37fd94f0954648c23aeceb12087951c9a83178362d39bcfe65196808ce0a",
+      "Brother Cassian" : "ce94c4885a11fa0ac6c74885236f50a2f3fe13f2a84e47f404ab74ef41b4a386",
+      "Charles" : "6a13a5f0d4a2d2e4cce0f1b41a93629e92c3a3f22901af416a43482812e02c43",
+      "Colonel Mustafa" : "597d84bbde4b1da156fcb0324237722de51f52eb34c860d9764f645222b96cf4",
+      "Commissioner Blake" : "26f4270632839520c063f82b46c6f3fbee9520bcc23d5cdab63ea08b3acb3201",
+      "Dr. Yumi Sato" : "9f16e71288acb3afb26201eb2d32afa84a62fd6f0bbeaf57cda86415d1423de4",
+      "Lena Voss" : "a23b07b7c5a71e3e80dbaad33ec4703195964b8af4f07ca7095208409beb8f3d",
+      "MVP" : "2325d7a4c9232f669d6b8c92baba68c4c275aee1e3f28ab1fdd25b4f2b6fb82e",
+      "Reginald Fairfax III" : "57ca908fc82a8747f3962bfbebacc09b36c520aa4d2a7e3e5e1782418a238923",
+      "Rezan the Resolved" : "6b5c13f9dc9d107ce2630087a9a5c8576e492495e466570c847893aecd4e67f3",
+      "Rigo Del Sarto" : "b8cb06d73fb0663d15e43f94ecc266e221fd6125967f4f2288ebef632baf1c5e",
+      "Samuel Winters" : "3baa243b96aaf17956a7b13e7379b26f851627aa45f3a6afb80f276e00f0b01f",
+      "Tomás “Kid Whistle” Iglesias" : "80f84d060838ea9b88827fb5e7416e1aac4aa73af47c591715d82c2bfaec6150"
     },
     "outcome_matrix" : {
       "Feud Angle" : "081eb48126200f7cb0b646709ea3a0b99bbcba3f9af25a339617a15682196bcb",
