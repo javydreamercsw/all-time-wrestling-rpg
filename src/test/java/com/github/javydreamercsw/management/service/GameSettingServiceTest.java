@@ -551,4 +551,124 @@ class GameSettingServiceTest {
 
     assertThat(result).isPresent().contains(scopedSetting);
   }
+
+  @Test
+  void findById_credentialNullValuedScopedRowFallsBackToGlobal() {
+    // hasText(null) is the third "not configured" shape: a row that exists but never had a
+    // value written (distinct from empty and whitespace) — it must also fall through.
+    Long universeId = 9L;
+    Mockito.when(universeContextService.getCurrentUniverseId()).thenReturn(universeId);
+    GameSetting nullScoped = setting("AI_GEMINI_API_KEY", null);
+    nullScoped.setUniverseId(universeId);
+    GameSetting globalKey = setting("AI_GEMINI_API_KEY", "global-working-key");
+    Mockito.when(repository.findBySettingKeyAndUniverseId("AI_GEMINI_API_KEY", universeId))
+        .thenReturn(Optional.of(nullScoped));
+    Mockito.when(repository.findGlobal("AI_GEMINI_API_KEY")).thenReturn(Optional.of(globalKey));
+
+    Optional<GameSetting> result = service.findById("AI_GEMINI_API_KEY");
+
+    assertThat(result).isPresent().contains(globalKey);
+  }
+
+  @Test
+  void findByKeyForUniverseNullValuedScopedRowFallsBackToGlobal() {
+    // Same null-value shape on the explicit-universe lookup path.
+    Long universeId = 9L;
+    GameSetting nullScoped = setting("AI_CLAUDE_API_KEY", null);
+    nullScoped.setUniverseId(universeId);
+    GameSetting globalKey = setting("AI_CLAUDE_API_KEY", "global-key");
+    Mockito.when(repository.findBySettingKeyAndUniverseId("AI_CLAUDE_API_KEY", universeId))
+        .thenReturn(Optional.of(nullScoped));
+    Mockito.when(repository.findGlobal("AI_CLAUDE_API_KEY")).thenReturn(Optional.of(globalKey));
+
+    Optional<GameSetting> result = service.findByKeyForUniverse("AI_CLAUDE_API_KEY", universeId);
+
+    assertThat(result).isPresent().contains(globalKey);
+  }
+
+  @Test
+  void findByKeyForUniverseBlankScopedRowFallsBackToGlobal() {
+    // Blank-scoped on the explicit-universe path mirrors the findById credential rule.
+    Long universeId = 5L;
+    GameSetting blankScoped = setting("AI_CLAUDE_API_KEY", "  ");
+    blankScoped.setUniverseId(universeId);
+    GameSetting globalKey = setting("AI_CLAUDE_API_KEY", "global-key");
+    Mockito.when(repository.findBySettingKeyAndUniverseId("AI_CLAUDE_API_KEY", universeId))
+        .thenReturn(Optional.of(blankScoped));
+    Mockito.when(repository.findGlobal("AI_CLAUDE_API_KEY")).thenReturn(Optional.of(globalKey));
+
+    Optional<GameSetting> result = service.findByKeyForUniverse("AI_CLAUDE_API_KEY", universeId);
+
+    assertThat(result).isPresent().contains(globalKey);
+  }
+
+  @Test
+  void findById_genericBlankScopedRowFallsBackToGlobal() {
+    // Blank-scoped on the generic-key path: blank never shadows the global value.
+    Long universeId = 6L;
+    Mockito.when(universeContextService.getCurrentUniverseId()).thenReturn(universeId);
+    GameSetting blankScoped = setting("narration_tone", "");
+    blankScoped.setUniverseId(universeId);
+    GameSetting globalSetting = setting("narration_tone", "cinematic");
+    Mockito.when(repository.findBySettingKeyAndUniverseId("narration_tone", universeId))
+        .thenReturn(Optional.of(blankScoped));
+    Mockito.when(repository.findGlobal("narration_tone")).thenReturn(Optional.of(globalSetting));
+
+    Optional<GameSetting> result = service.findById("narration_tone");
+
+    assertThat(result).isPresent().contains(globalSetting);
+  }
+
+  @Test
+  void findById_genericAbsentScopedRowFallsBackToGlobal() {
+    // Absent-scoped on the generic-key path completes the truth table.
+    Long universeId = 8L;
+    Mockito.when(universeContextService.getCurrentUniverseId()).thenReturn(universeId);
+    Mockito.when(repository.findBySettingKeyAndUniverseId("narration_tone", universeId))
+        .thenReturn(Optional.empty());
+    GameSetting globalSetting = setting("narration_tone", "cinematic");
+    Mockito.when(repository.findGlobal("narration_tone")).thenReturn(Optional.of(globalSetting));
+
+    assertThat(service.findById("narration_tone")).isPresent().contains(globalSetting);
+  }
+
+  @Test
+  void findByKeyForUniverseNullUniverseIdGoesStraightToGlobal() {
+    // Explicit-universe lookup with no universe: the scoped branch is skipped entirely.
+    GameSetting globalKey = setting("AI_CLAUDE_API_KEY", "global-key");
+    Mockito.when(repository.findGlobal("AI_CLAUDE_API_KEY")).thenReturn(Optional.of(globalKey));
+
+    Optional<GameSetting> result = service.findByKeyForUniverse("AI_CLAUDE_API_KEY", null);
+
+    assertThat(result).isPresent().contains(globalKey);
+    Mockito.verify(repository, Mockito.never())
+        .findBySettingKeyAndUniverseId(Mockito.anyString(), Mockito.any());
+  }
+
+  @Test
+  void findById_credentialAbsentScopedRowFallsBackToGlobal() {
+    // The absent arm of the credential condition: no scoped row at all → global.
+    Long universeId = 11L;
+    Mockito.when(universeContextService.getCurrentUniverseId()).thenReturn(universeId);
+    Mockito.when(repository.findBySettingKeyAndUniverseId("AI_GEMINI_API_KEY", universeId))
+        .thenReturn(Optional.empty());
+    GameSetting globalKey = setting("AI_GEMINI_API_KEY", "global-working-key");
+    Mockito.when(repository.findGlobal("AI_GEMINI_API_KEY")).thenReturn(Optional.of(globalKey));
+
+    assertThat(service.findById("AI_GEMINI_API_KEY")).isPresent().contains(globalKey);
+  }
+
+  @Test
+  void findByKeyForUniverseAbsentScopedRowFallsBackToGlobal() {
+    // The absent arm of the explicit-universe lookup condition → global.
+    Long universeId = 12L;
+    Mockito.when(repository.findBySettingKeyAndUniverseId("AI_CLAUDE_API_KEY", universeId))
+        .thenReturn(Optional.empty());
+    GameSetting globalKey = setting("AI_CLAUDE_API_KEY", "global-key");
+    Mockito.when(repository.findGlobal("AI_CLAUDE_API_KEY")).thenReturn(Optional.of(globalKey));
+
+    assertThat(service.findByKeyForUniverse("AI_CLAUDE_API_KEY", universeId))
+        .isPresent()
+        .contains(globalKey);
+  }
 }
