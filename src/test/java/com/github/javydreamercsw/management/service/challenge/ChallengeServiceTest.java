@@ -35,6 +35,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.Resource;
@@ -155,7 +156,7 @@ class ChallengeServiceTest {
    */
   @Test
   void deadlyCombatArcShipsAllFiveTournamentYears() {
-    for (int week = 7; week <= 11; week++) {
+    for (int week = 7; week < 11 + 1; week++) {
       final int weekNum = week;
       final int year = week - 6;
       ChallengeDTO challenge =
@@ -182,7 +183,7 @@ class ChallengeServiceTest {
             Difficulty.HARD,
             Difficulty.LEGENDARY);
     List<Difficulty> actual =
-        java.util.stream.IntStream.rangeClosed(7, 11)
+        IntStream.rangeClosed(7, 11)
             .mapToObj(
                 week ->
                     service
@@ -207,7 +208,7 @@ class ChallengeServiceTest {
               .map(r -> (String) r.get("name"))
               .forEach(shippedRuleNames::add);
     }
-    java.util.stream.IntStream.rangeClosed(7, 11)
+    IntStream.rangeClosed(7, 11)
         .mapToObj(
             week ->
                 service
