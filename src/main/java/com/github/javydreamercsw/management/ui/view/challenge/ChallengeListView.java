@@ -105,6 +105,7 @@ public class ChallengeListView extends VerticalLayout {
   private ComboBox<String> seasonFilter;
   private final Div printArea = new Div();
   private final Div printTitle = new Div();
+  private ComboBox<ChallengeDTO> printChallengeSelect;
 
   @Autowired
   public ChallengeListView(
@@ -157,11 +158,20 @@ public class ChallengeListView extends VerticalLayout {
       updateBtn.addClickListener(e -> runUpdateCheck(updateBtn));
       filters.add(updateBtn);
 
-      // Print the filtered challenges as poker-size cards (reuses the card-export machinery).
-      Button printBtn = new Button("Print Cards", new Icon(VaadinIcon.PRINT));
+      // Print controls: pick a single challenge or leave empty to print all filtered ones.
+      printChallengeSelect = new ComboBox<>("Print challenge");
+      printChallengeSelect.setPlaceholder("All filtered challenges");
+      printChallengeSelect.setClearButtonVisible(true);
+      printChallengeSelect.setWidth("340px");
+      printChallengeSelect.setItemLabelGenerator(
+          c ->
+              (c.getWeekNumber() != null ? "Week " + c.getWeekNumber() + " — " : "")
+                  + c.getTitle());
+
+      Button printBtn = new Button("Print", new Icon(VaadinIcon.PRINT));
       printBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_PRIMARY);
       printBtn.addClickListener(e -> printFilteredChallenges());
-      filters.add(printBtn);
+      filters.add(printChallengeSelect, printBtn);
     }
 
     add(filters);
@@ -197,6 +207,8 @@ public class ChallengeListView extends VerticalLayout {
     return securityUtils.getAuthenticatedUser().map(CustomUserDetails::getAccount);
   }
 
+  private List<String> lastSeasons = List.of();
+
   private void refreshCards() {
     List<String> seasons =
         challengeService.getAllChallenges().stream()
@@ -205,7 +217,13 @@ public class ChallengeListView extends VerticalLayout {
             .distinct()
             .sorted()
             .toList();
-    seasonFilter.setItems(seasons);
+    // setItems on a ComboBox during its own value-change event resets the selection — only
+    // refresh the season list when it actually changed (it normally never does within a
+    // session; new seasons arrive via content updates followed by reload).
+    if (!seasons.equals(lastSeasons)) {
+      lastSeasons = seasons;
+      seasonFilter.setItems(seasons);
+    }
 
     cardsLayout.removeAll();
 
@@ -213,14 +231,27 @@ public class ChallengeListView extends VerticalLayout {
     Set<String> enabledCodes = Set.copyOf(expansionService.getEnabledExpansionCodes());
     String selectedSeason = seasonFilter.getValue();
 
-    all.stream()
-        .filter(c -> !officialOnlyFilter.getValue() || !"CUSTOM".equals(c.getExpansionCode()))
-        .filter(
-            c ->
-                selectedSeason == null
-                    || selectedSeason.isBlank()
-                    || selectedSeason.equals(c.getSeason()))
-        .forEach(c -> cardsLayout.add(buildCard(c, enabledCodes)));
+    List<ChallengeDTO> filtered =
+        all.stream()
+            .filter(c -> !officialOnlyFilter.getValue() || !"CUSTOM".equals(c.getExpansionCode()))
+            .filter(
+                c ->
+                    selectedSeason == null
+                        || selectedSeason.isBlank()
+                        || selectedSeason.equals(c.getSeason()))
+            .sorted(
+                Comparator.comparing(
+                        ChallengeDTO::getWeekNumber,
+                        Comparator.nullsLast(Comparator.naturalOrder()))
+                    .thenComparing(ChallengeDTO::getTitle))
+            .toList();
+    filtered.forEach(c -> cardsLayout.add(buildCard(c, enabledCodes)));
+    if (printChallengeSelect != null) {
+      ChallengeDTO selected = printChallengeSelect.getValue();
+      printChallengeSelect.setItems(filtered);
+      printChallengeSelect.setValue(
+          selected != null && filtered.contains(selected) ? selected : null);
+    }
   }
 
   private Div buildCard(final ChallengeDTO challenge, final Set<String> enabledCodes) {
@@ -594,22 +625,32 @@ public class ChallengeListView extends VerticalLayout {
    * the print area visible on paper.
    */
   private void printFilteredChallenges() {
+    // A picked challenge prints alone; an empty selector prints every filtered challenge.
+    if (printChallengeSelect.getValue() != null) {
+      printSelection(List.of(printChallengeSelect.getValue()));
+      return;
+    }
+    printSelection(filteredChallenges());
+  }
+
+  List<ChallengeDTO> filteredChallenges() {
     Set<String> enabledCodes = Set.copyOf(expansionService.getEnabledExpansionCodes());
     String selectedSeason = seasonFilter.getValue();
-    List<ChallengeDTO> toPrint =
-        challengeService.getActiveChallenges().stream()
-            .filter(c -> !officialOnlyFilter.getValue() || !"CUSTOM".equals(c.getExpansionCode()))
-            .filter(
-                c ->
-                    selectedSeason == null
-                        || selectedSeason.isBlank()
-                        || selectedSeason.equals(c.getSeason()))
-            .sorted(
-                Comparator.comparing(
-                        ChallengeDTO::getWeekNumber,
-                        Comparator.nullsLast(Comparator.naturalOrder()))
-                    .thenComparing(ChallengeDTO::getTitle))
-            .toList();
+    return challengeService.getActiveChallenges().stream()
+        .filter(c -> !officialOnlyFilter.getValue() || !"CUSTOM".equals(c.getExpansionCode()))
+        .filter(
+            c ->
+                selectedSeason == null
+                    || selectedSeason.isBlank()
+                    || selectedSeason.equals(c.getSeason()))
+        .sorted(
+            Comparator.comparing(
+                    ChallengeDTO::getWeekNumber, Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparing(ChallengeDTO::getTitle))
+        .toList();
+  }
+
+  void printSelection(final List<ChallengeDTO> toPrint) {
     if (toPrint.isEmpty()) {
       return;
     }
@@ -618,9 +659,14 @@ public class ChallengeListView extends VerticalLayout {
     printArea.getElement().removeAttribute("id");
     printArea.setId("campaign-card-print-area");
     printArea.addClassNames("campaign-card-grid");
-    printTitle.setText(
-        "Weekly Challenges"
-            + (selectedSeason != null && !selectedSeason.isBlank() ? " — " + selectedSeason : ""));
+    String scope;
+    if (toPrint.size() == 1) {
+      scope = toPrint.getFirst().getTitle();
+    } else {
+      String season = seasonFilter.getValue();
+      scope = "Weekly Challenges" + (season != null && !season.isBlank() ? " — " + season : "");
+    }
+    printTitle.setText(scope);
     printTitle.setId("campaign-card-print-title");
     printArea.add(printTitle);
     toPrint.forEach(c -> printArea.add(buildChallengePage(c)));
