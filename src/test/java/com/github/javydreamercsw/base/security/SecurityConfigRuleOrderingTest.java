@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.base.security;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.base.domain.account.RoleName;
@@ -180,5 +181,28 @@ class SecurityConfigRuleOrderingTest {
         result.reachedTerminal(),
         "ROLE_ADMIN must clear the /api/admin/** rule and reach the endpoint — the rule must"
             + " ADMIT admins, not merely deny everyone");
+  }
+
+  @Test
+  @DisplayName(
+      "Shared rules must not add anyRequest — the Vaadin configurer registers matchers after"
+          + " (beads ATW-8j9w)")
+  void productionRegistrationOrderBuildsAfterVaadinConfigurer() throws Exception {
+    // SecurityConfig.vaadinSecurityFilterChain applies VaadinSecurityConfigurer first, but the
+    // configurer DEFERS its own authorizeHttpRequests contribution to build/init time — its
+    // route matchers register AFTER everything declared inline. #662's anyRequest() inside
+    // applyAuthorizationRules therefore sat between the inline requestMatchers and Vaadin's
+    // deferred matchers, and Vaadin's registration threw "Can't configure requestMatchers
+    // after anyRequest" — the docker-it production context could not start. This pin drives
+    // the exact sequence: shared rules (which must stay anyRequest-free), then a deferred
+    // requestMatchers registration (what the Vaadin configurer adds at init).
+    HttpSecurity http = bareHttpSecurity();
+    http.authorizeHttpRequests(
+        auth -> {
+          SecurityConfig.applyAuthorizationRules(auth); // must stay anyRequest-free
+          auth.requestMatchers("/vaadin-mock/**").permitAll(); // Vaadin's deferred contribution
+        });
+    SecurityFilterChain chain = http.build();
+    assertNotNull(chain, "shared rules + Vaadin's deferred matchers must compose");
   }
 }
