@@ -137,6 +137,10 @@ class RankingServiceTest {
     assertEquals(1, championships.size());
     assertEquals("World Heavyweight Championship", championships.getFirst().getName());
     assertEquals("default.png", championships.getFirst().getImageUrl());
+    // beads ATW-r6zt: the dropdown ordering (tier desc, then gender, then name) needs the
+    // championship's gender on the DTO — tier was already carried.
+    assertEquals(Gender.MALE, championships.getFirst().getGender());
+    assertEquals(WrestlerTier.MAIN_EVENTER, championships.getFirst().getTier());
   }
 
   @Test

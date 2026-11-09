@@ -81,9 +81,19 @@ public class RankingView extends Main {
 
     ComboBox<ChampionshipDTO> championshipComboBox = new ComboBox<>("Championship");
     championshipComboBox.setId("championship-combo-box");
+    // beads ATW-r6zt: tier first (world-level = highest tier on top), then gender (MALE before
+    // FEMALE), then name — a title ladder reads top-down, not alphabetically.
+    Comparator<ChampionshipDTO> championshipOrder =
+        Comparator.comparing(
+                ChampionshipDTO::getTier, Comparator.nullsLast(Comparator.naturalOrder()))
+            .reversed()
+            .thenComparing(
+                c -> c.getGender() == Gender.FEMALE ? 1 : 0) // MALE (and unset) before FEMALE
+            .thenComparing(
+                ChampionshipDTO::getName, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER));
     List<ChampionshipDTO> championships =
         rankingService.getChampionships().stream()
-            .sorted(Comparator.comparing(ChampionshipDTO::getName))
+            .sorted(championshipOrder)
             .collect(Collectors.toList());
     championshipComboBox.setItems(championships);
     championshipComboBox.setItemLabelGenerator(ChampionshipDTO::getName);
@@ -93,9 +103,10 @@ public class RankingView extends Main {
           updateView(currentChampionship);
         });
 
-    // Select the first championship by default
+    // Select the first championship by default — now the highest-tier title, not alphabetically
+    // first.
     championships.stream()
-        .min(Comparator.comparing(ChampionshipDTO::getName))
+        .findFirst()
         .ifPresent(
             championship -> {
               championshipComboBox.setValue(championship);
