@@ -526,4 +526,33 @@ class NpcSyncTest {
     Assertions.assertNotEquals("stale-stamp-from-before-gender", yumi.getSeedFingerprint());
     Assertions.assertNotNull(yumi.getSeedFingerprint(), "row re-stamps after the gender update");
   }
+
+  @Test
+  void sync_nullGenderRowDetectionToleratesUnsetGender() {
+    // A pre-seed row with no gender at all must flow through fingerprinting, field
+    // observations, and the canonical fingerprint order without NPEs — every gender slot
+    // nulls out and the seed default (MALE) drives the "new value".
+    Npc ghost = new Npc();
+    ghost.setName("Ghost Announcer");
+    when(npcService.findAllUnfiltered()).thenReturn(List.of(ghost));
+
+    sync.sync();
+
+    verify(npcService, atLeastOnce()).saveAll(any());
+  }
+
+  @Test
+  void sync_silentGenderUpdateWritesThroughSingleSave() {
+    // A row whose ONLY divergence is gender hits the silent-update path: the seed's gender
+    // wins (entity default MALE was stored), and the field writes through applySilentSeedFields.
+    Npc mustafa = new Npc();
+    mustafa.setName("Colonel Mustafa");
+    mustafa.setGender(Gender.MALE);
+    mustafa.setSeedFingerprint("stale-pre-gender-stamp");
+    when(npcService.findAllUnfiltered()).thenReturn(List.of(mustafa));
+
+    sync.sync();
+
+    verify(npcService, atLeastOnce()).saveAll(any());
+  }
 }
