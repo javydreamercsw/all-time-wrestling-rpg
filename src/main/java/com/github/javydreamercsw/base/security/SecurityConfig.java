@@ -30,6 +30,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractAuthenticationFilterConfigurer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextHolderStrategy;
@@ -78,23 +79,7 @@ public class SecurityConfig {
     http.with(VaadinSecurityConfigurer.vaadin(), customizer -> customizer.loginView("/login"));
 
     // 2. Public access to static resources and specific API endpoints
-    http.authorizeHttpRequests(
-        auth ->
-            auth.requestMatchers(
-                    "/images/**",
-                    "/challenge-content/**",
-                    "/icons/**",
-                    "/public/**",
-                    "/api/**",
-                    "/docs/**",
-                    "/api/auth/**",
-                    "/login",
-                    "/register",
-                    "/health",
-                    "/api/system/health")
-                .permitAll()
-                .requestMatchers("/api/admin/**")
-                .hasRole(RoleName.ADMIN_ROLE));
+    http.authorizeHttpRequests(SecurityConfig::applyAuthorizationRules);
 
     // 3. Use cookie-based CSRF tokens so JavaScript/REST clients can read XSRF-TOKEN and submit it.
     // The deferred handler avoids the Spring Security 6 double-read issue with Vaadin.
@@ -137,6 +122,40 @@ public class SecurityConfig {
                 hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31_536_000)));
 
     return http.build();
+  }
+
+  /**
+   * The authorization rules for the production chain, in declaration order — FIRST MATCH WINS in
+   * {@code authorizeHttpRequests}, so the ordering here is a security invariant: specific rules
+   * MUST precede broad catch-alls, or they are silently unreachable. {@code /api/admin/**} is
+   * declared BEFORE {@code /api/**} so the admin API requires ADMIN even though the general API
+   * surface is public-read (pinned by {@code SecurityConfigRuleOrderingTest}).
+   *
+   * <p>Extracted as a static method so the ordering test can exercise the exact rules the
+   * production chain registers — the test profile swaps in a permit-all chain, which would
+   * otherwise make this ordering untestable in-process.
+   */
+  static void applyAuthorizationRules(
+      AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry
+          auth) {
+    // Specific admin rule FIRST — a later rule can never override an earlier broad one.
+    auth.requestMatchers("/api/admin/**").hasRole(RoleName.ADMIN_ROLE);
+    // Static resources, the general API surface (public-read), and auth pages.
+    auth.requestMatchers(
+            "/images/**",
+            "/challenge-content/**",
+            "/icons/**",
+            "/public/**",
+            "/api/**",
+            "/docs/**",
+            "/api/auth/**",
+            "/login",
+            "/register",
+            "/health",
+            "/api/system/health")
+        .permitAll();
+    // Everything else falls through to Vaadin's route-based access control.
+    auth.anyRequest().permitAll();
   }
 
   @Bean
