@@ -246,7 +246,7 @@ class SeedUpdateReviewViewTest extends AbstractViewTest {
   }
 
   @Test
-  @DisplayName("Deciding a row paints its decision; deselecting unpaints it")
+  @DisplayName("Row visuals are choice-aware: keep = amber, use-new = green; deselect clears")
   void decidedRowGetsVisualState() {
     view = viewWith(baseFixture());
     VerticalLayout row = rowLayoutOf(view, RADIO_1);
@@ -260,13 +260,24 @@ class SeedUpdateReviewViewTest extends AbstractViewTest {
     radio(view, RADIO_1).setValue(SeedFieldDecision.KEEP_MINE);
     assertEquals("0.7", row.getElement().getStyle().get("opacity"), "Decided rows dim");
     assertEquals(
+        "var(--lumo-warning-color)",
+        row.getElement().getStyle().get("color"),
+        "Keep-mine rows tint amber");
+    assertEquals(
+        "2px solid var(--lumo-warning-color)",
+        row.getElement().getStyle().get("border-left"),
+        "Keep-mine rows carry an amber stripe");
+
+    // Switching the decision re-paints the row in the new decision's color.
+    radio(view, RADIO_1).setValue(SeedFieldDecision.USE_NEW);
+    assertEquals(
         "var(--lumo-success-color)",
         row.getElement().getStyle().get("color"),
-        "Decided rows tint with the decision color");
+        "Use-new rows tint green");
     assertEquals(
         "2px solid var(--lumo-success-color)",
         row.getElement().getStyle().get("border-left"),
-        "Decided rows carry a colored stripe");
+        "Use-new rows carry a green stripe");
 
     // Deselecting (userdeselected) restores the row to undecided visuals.
     radio(view, RADIO_1).setValue(null);
@@ -285,15 +296,111 @@ class SeedUpdateReviewViewTest extends AbstractViewTest {
     button(view, "domain-wrestler-keep-all-mine").click();
     assertEquals("0.7", row1.getElement().getStyle().get("opacity"), "Swept row dims");
     assertEquals(
-        "var(--lumo-success-color)", row2.getElement().getStyle().get("color"), "Swept row tints");
+        "var(--lumo-warning-color)", row2.getElement().getStyle().get("color"), "Swept row tints");
     assertEquals(
-        "2px solid var(--lumo-success-color)",
+        "2px solid var(--lumo-warning-color)",
         row1.getElement().getStyle().get("border-left"),
         "Swept row carries a stripe");
 
     // Per-row radios remain live after a sweep: switching one decision re-paints that row only.
     radio(view, RADIO_1).setValue(SeedFieldDecision.USE_NEW);
     assertEquals("0.7", row1.getElement().getStyle().get("opacity"), "Still decided after switch");
+    assertEquals(
+        "var(--lumo-success-color)",
+        row1.getElement().getStyle().get("color"),
+        "Switched row re-tints to its new decision");
+  }
+
+  @Test
+  @DisplayName("Titles roll up by weight+color: bold=pending, italic=partial, color=uniform")
+  void sectionTitlesRollUpDecisionState() {
+    view = viewWith(baseFixture());
+    Span entityTitle =
+        _get(view, Span.class, spec -> spec.withId("entity-section-wrestler-bret-hart-title"));
+    Span domainTitle = _get(view, Span.class, spec -> spec.withId("domain-section-wrestler-title"));
+
+    // Nothing decided: BOLD, no color — the tree announces the remaining work.
+    assertEquals("Bret Hart", entityTitle.getText());
+    assertEquals("bold", entityTitle.getElement().getStyle().get("font-weight"));
+    assertNull(entityTitle.getElement().getStyle().get("color"));
+    assertEquals("bold", domainTitle.getElement().getStyle().get("font-weight"));
+    assertNull(domainTitle.getElement().getStyle().get("color"));
+
+    // One row decided → entity goes ITALIC (in progress), no color; domain is itself partial →
+    // italic too (weight tracks "remaining work" at every level).
+    radio(view, RADIO_1).setValue(SeedFieldDecision.KEEP_MINE);
+    assertEquals("italic", entityTitle.getElement().getStyle().get("font-style"));
+    assertNull(entityTitle.getElement().getStyle().get("color"));
+    assertEquals("italic", domainTitle.getElement().getStyle().get("font-style"));
+    assertNull(domainTitle.getElement().getStyle().get("color"));
+
+    // Entity fully decided keep-mine → normal weight + amber (uniform keep); domain still italic
+    // (Shawn Michaels undecided).
+    radio(view, RADIO_2).setValue(SeedFieldDecision.KEEP_MINE);
+    assertNull(entityTitle.getElement().getStyle().get("font-style"), "Decided entity un-italics");
+    assertEquals(
+        "var(--lumo-warning-color)",
+        entityTitle.getElement().getStyle().get("color"),
+        "Uniform keep entity is amber");
+    assertEquals("italic", domainTitle.getElement().getStyle().get("font-style"));
+    assertNull(domainTitle.getElement().getStyle().get("color"));
+
+    // Mixed decisions on the entity (one keep, one new) → normal weight, NO color.
+    radio(view, RADIO_2).setValue(SeedFieldDecision.USE_NEW);
+    assertNull(entityTitle.getElement().getStyle().get("color"), "Mixed entity drops the color");
+
+    // Everything decided use-new across the domain → domain normal + green.
+    decideAll(view, SeedFieldDecision.USE_NEW);
+    assertNull(domainTitle.getElement().getStyle().get("font-weight"), "Decided domain un-bolds");
+    assertEquals(
+        "var(--lumo-success-color)",
+        domainTitle.getElement().getStyle().get("color"),
+        "Uniform use-new domain is green");
+  }
+
+  @Test
+  @DisplayName("Deselecting a row re-weights its titles: normal entity → italic → domain bold")
+  void deselectRewindsTitleState() {
+    view = viewWith(baseFixture());
+    Span entityTitle =
+        _get(view, Span.class, spec -> spec.withId("entity-section-wrestler-bret-hart-title"));
+    Span domainTitle = _get(view, Span.class, spec -> spec.withId("domain-section-wrestler-title"));
+
+    decideAll(view, SeedFieldDecision.USE_NEW);
+    assertNull(entityTitle.getElement().getStyle().get("font-weight"), "Decided entity un-bolds");
+    assertEquals("var(--lumo-success-color)", entityTitle.getElement().getStyle().get("color"));
+
+    // Pull one row back to undecided → entity back to italic, color gone; domain (partially
+    // decided again) back to italic, color gone.
+    radio(view, RADIO_1).setValue(null);
+    assertEquals(
+        "italic", entityTitle.getElement().getStyle().get("font-style"), "Entity re-italics");
+    assertNull(entityTitle.getElement().getStyle().get("color"), "Entity color drops");
+    assertEquals(
+        "italic", domainTitle.getElement().getStyle().get("font-style"), "Domain re-italics");
+    assertNull(domainTitle.getElement().getStyle().get("color"), "Domain color drops");
+  }
+
+  @Test
+  @DisplayName("Removal rows paint by choice: keep-as-custom amber, remove red")
+  void removalRowVisuals() {
+    List<SeedUpdateDecision> rows = new ArrayList<>(baseFixture());
+    rows.add(removal(7L, "championship", "championship:legacy-title", "Legacy Title"));
+    view = viewWith(rows);
+
+    String removalRadioId = "decision-championship-championship-legacy-title-removal";
+    VerticalLayout row = rowLayoutOf(view, removalRadioId);
+    RadioButtonGroup<SeedFieldDecision> removalRadio = radio(view, removalRadioId);
+
+    removalRadio.setValue(SeedFieldDecision.KEEP_AS_CUSTOM);
+    assertEquals(
+        "var(--lumo-warning-color)",
+        row.getElement().getStyle().get("color"),
+        "Keep-as-custom paints amber");
+
+    removalRadio.setValue(SeedFieldDecision.REMOVE);
+    assertEquals(
+        "var(--lumo-error-color)", row.getElement().getStyle().get("color"), "Remove paints red");
   }
 
   @Test

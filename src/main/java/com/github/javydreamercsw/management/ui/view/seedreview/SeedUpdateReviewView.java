@@ -98,6 +98,12 @@ public class SeedUpdateReviewView extends VerticalLayout {
   /** Row layouts by decision id, for the decided visual state (dimming). */
   private final Map<Long, VerticalLayout> rowLayoutsByDecisionId = new LinkedHashMap<>();
 
+  /** Entity section-title spans by entity key, for the roll-up visual state (weight + color). */
+  private final Map<String, Span> entityTitlesByKey = new LinkedHashMap<>();
+
+  /** Domain section-title spans by domain key, for the roll-up visual state (weight + color). */
+  private final Map<String, Span> domainTitlesByKey = new LinkedHashMap<>();
+
   /** Live "X of Y decided" counter in the top bar. */
   private Span decidedCounter;
 
@@ -132,6 +138,8 @@ public class SeedUpdateReviewView extends VerticalLayout {
     choices.clear();
     radiosByDecisionId.clear();
     rowLayoutsByDecisionId.clear();
+    entityTitlesByKey.clear();
+    domainTitlesByKey.clear();
     decidedCounter = null;
 
     if (pendingRows.isEmpty()) {
@@ -196,6 +204,10 @@ public class SeedUpdateReviewView extends VerticalLayout {
     applyButton.setEnabled(false); // Disabled until every pending row has a choice.
     applyButton.addClickListener(e -> apply());
     add(applyButton);
+
+    // Initial roll-up: at first load the whole tree is pending, so every title renders bold —
+    // the tree announces the remaining work before the first click.
+    refreshRollupState();
   }
 
   /** Builds one domain Details containing one entity Details per entity with pending rows. */
@@ -212,9 +224,13 @@ public class SeedUpdateReviewView extends VerticalLayout {
         new Button("Approve all new", e -> sweep(domainRows, SeedFieldDecision.USE_NEW));
     approveAllNew.setId("domain-" + sanitize(domainKey) + "-approve-all-new");
 
+    Span domainTitle = new Span(domainKey + " (" + rowsByEntity.size() + " entities)");
+    domainTitle.setId("domain-section-" + sanitize(domainKey) + "-title");
+    domainTitlesByKey.put(domainKey, domainTitle);
+
     Details domainSection =
         section(
-            domainKey + " (" + rowsByEntity.size() + " entities)",
+            domainTitle,
             "domain-section-" + sanitize(domainKey),
             true,
             new HorizontalLayout(keepAllMine, approveAllNew));
@@ -239,9 +255,13 @@ public class SeedUpdateReviewView extends VerticalLayout {
     Button useNew = new Button("Use new", e -> sweep(rows, SeedFieldDecision.USE_NEW));
     useNew.setId("entity-" + sanitizedEntity + "-use-new");
 
+    Span entityTitle = new Span(first.getEntityDisplayName());
+    entityTitle.setId("entity-section-" + sanitizedEntity + "-title");
+    entityTitlesByKey.put(entityKey, entityTitle);
+
     Details entitySection =
         section(
-            first.getEntityDisplayName(),
+            entityTitle,
             "entity-section-" + sanitizedEntity,
             false,
             new HorizontalLayout(keepMine, useNew));
@@ -278,15 +298,17 @@ public class SeedUpdateReviewView extends VerticalLayout {
     radio.setItemLabelGenerator(this::labelFor);
     radio.addValueChangeListener(
         e -> {
-          if (e.getValue() != null) {
-            choices.put(row.getId(), e.getValue());
-            markRowDecided(row.getId(), true);
-            refreshApplyState();
-          } else {
+          // A null value is a deselect: the choice must LEAVE the map, not sit in it as a null
+          // value (Map.copyOf in apply() rejects null values, and an entry here would let the
+          // Apply button enable while the batch is still incomplete).
+          if (e.getValue() == null) {
             choices.remove(row.getId());
-            markRowDecided(row.getId(), false);
-            refreshApplyState();
+          } else {
+            choices.put(row.getId(), e.getValue());
           }
+          markRowDecided(row.getId(), e.getValue());
+          refreshRollupState();
+          refreshApplyState();
         });
     String radioId = radioIdFor(row);
     radio.setId(radioId);
@@ -341,6 +363,7 @@ public class SeedUpdateReviewView extends VerticalLayout {
                   radio.setValue(decision);
                 }
               });
+          refreshRollupState();
           refreshApplyState();
         });
     dialog.open();
@@ -367,6 +390,7 @@ public class SeedUpdateReviewView extends VerticalLayout {
               }
               choices.put(row.getId(), decision);
             });
+    refreshRollupState();
     refreshApplyState();
   }
 
@@ -409,23 +433,88 @@ public class SeedUpdateReviewView extends VerticalLayout {
   }
 
   /**
-   * Visual state for one field row: decided rows dim to 70% opacity and carry a green success tint
-   * plus a colored left stripe (Lumo's semantic success token, so it reads in both themes) — an
-   * unmistakable at-a-glance signal of which rows still need a decision, even mid-scroll. The rows
-   * stay in place and reversible (deselecting the radio restores the undecided visuals).
+   * Visual state for one field row, keyed by its decision: undecided rows stay plain; decided rows
+   * dim to 70% and carry a decision-colored text tint plus a colored left stripe — green for
+   * use-new, amber for keep-mine/keep-as-custom, red for remove (Lumo semantic tokens, readable in
+   * both themes). Reversible: deselecting the radio restores the undecided visuals.
    */
-  private void markRowDecided(Long decisionId, boolean decided) {
+  private void markRowDecided(Long decisionId, SeedFieldDecision decision) {
     VerticalLayout rowLayout = rowLayoutsByDecisionId.get(decisionId);
-    if (rowLayout != null) {
-      rowLayout.getStyle().set("opacity", decided ? "0.7" : "1");
-      if (decided) {
-        rowLayout.getStyle().set("color", "var(--lumo-success-color)");
-        rowLayout.getStyle().set("border-left", "2px solid var(--lumo-success-color)");
-      } else {
-        rowLayout.getStyle().remove("color");
-        rowLayout.getStyle().remove("border-left");
-      }
+    if (rowLayout == null) {
+      return;
     }
+    if (decision == null) {
+      rowLayout.getStyle().set("opacity", "1");
+      rowLayout.getStyle().remove("color");
+      rowLayout.getStyle().remove("border-left");
+    } else {
+      rowLayout.getStyle().set("opacity", "0.7");
+      rowLayout.getStyle().set("color", colorFor(decision));
+      rowLayout.getStyle().set("border-left", "2px solid " + colorFor(decision));
+    }
+  }
+
+  /**
+   * Recomputes the roll-up visual state of every entity and domain title from the current choices:
+   * bold while nothing beneath is decided, italic while partially decided, and normal weight with a
+   * decision color once fully decided — green (all use-new), amber (all keep-family), red (all
+   * remove); mixed outcomes stay neutral. Weight announces the remaining work; color announces the
+   * outcome.
+   */
+  private void refreshRollupState() {
+    entityTitlesByKey.forEach(
+        (entityKey, title) -> paintRollup(title, rowsOfEntity(entityKey), entityKey));
+    domainTitlesByKey.forEach(
+        (domainKey, title) ->
+            paintRollup(
+                title,
+                pendingRows.stream().filter(row -> domainKey.equals(row.getDomainKey())).toList(),
+                null));
+  }
+
+  /** Rows of one entity, looked up through the title maps' entity key. */
+  private List<SeedUpdateDecision> rowsOfEntity(String entityKey) {
+    return pendingRows.stream().filter(row -> entityKey.equals(row.getEntityKey())).toList();
+  }
+
+  /**
+   * Paints one title span for the state of its rows: bold / no color (nothing decided), italic / no
+   * color (partial), normal + uniform-outcome color, normal + no color (mixed). {@code entityKey}
+   * limits the uniformity check to keep-family rows of one entity; domain-level checks pass {@code
+   * null} to consider every row.
+   */
+  private void paintRollup(Span title, List<SeedUpdateDecision> rows, String entityKey) {
+    List<SeedFieldDecision> decided =
+        rows.stream()
+            .map(row -> choices.get(row.getId()))
+            .filter(java.util.Objects::nonNull)
+            .toList();
+
+    if (decided.isEmpty()) {
+      title.getElement().getStyle().remove("font-style");
+      title.getElement().getStyle().set("font-weight", "bold");
+      title.getElement().getStyle().remove("color");
+      return;
+    }
+    if (decided.size() < rows.size()) {
+      title.getElement().getStyle().remove("font-weight");
+      title.getElement().getStyle().set("font-style", "italic");
+      title.getElement().getStyle().remove("color");
+      return;
+    }
+    title.getElement().getStyle().remove("font-weight");
+    title.getElement().getStyle().remove("font-style");
+    boolean uniform = decided.stream().allMatch(d -> d == decided.getFirst());
+    title.getElement().getStyle().set("color", uniform ? colorFor(decided.getFirst()) : null);
+  }
+
+  /** Decision → Lumo semantic color token: green for use-new, amber for keeps, red for remove. */
+  private String colorFor(SeedFieldDecision decision) {
+    return switch (decision) {
+      case USE_NEW -> "var(--lumo-success-color)";
+      case KEEP_MINE, KEEP_AS_CUSTOM -> "var(--lumo-warning-color)";
+      case REMOVE -> "var(--lumo-error-color)";
+    };
   }
 
   /**
@@ -460,9 +549,12 @@ public class SeedUpdateReviewView extends VerticalLayout {
     return value == null || value.isBlank() ? "—" : value;
   }
 
-  /** Builds a filled collapsible section with the given title, id, and content. */
+  /**
+   * Builds a filled collapsible section with the given title component, id, and content. The title
+   * is a Component (not text) so the roll-up visual state can style it in place.
+   */
   private Details section(
-      final String title,
+      final com.vaadin.flow.component.Component title,
       final String id,
       final boolean opened,
       final com.vaadin.flow.component.Component... content) {
