@@ -145,6 +145,7 @@ class TeamSyncTest {
     Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
+              parkedCoordinates.add("#" + inv.getArgument(2));
               return null;
             })
         .when(parking)
@@ -186,7 +187,7 @@ class TeamSyncTest {
                     + " high-impact style in the 1980s"),
             anyString());
     assertEquals(
-        Set.of("team:the-british-bulldogs|description"),
+        Set.of("team:the-british-bulldogs|description", "#The British Bulldogs"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
   }

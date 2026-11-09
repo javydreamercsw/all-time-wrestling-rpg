@@ -126,6 +126,7 @@ class RelationshipSyncTest {
     Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
+              parkedCoordinates.add("#" + inv.getArgument(2));
               return null;
             })
         .when(parking)
@@ -155,7 +156,9 @@ class RelationshipSyncTest {
             eq("Real life husband and wife"),
             anyString());
     assertEquals(
-        Set.of("relationship:johnny-all-time<SPOUSE>taya-valkyrie|notes"),
+        Set.of(
+            "relationship:johnny-all-time<SPOUSE>taya-valkyrie|notes",
+            "#Johnny All Time <SPOUSE> Taya Valkyrie"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
     // The parked row is never written.

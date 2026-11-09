@@ -111,6 +111,7 @@ class LocationSyncTest {
     Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
+              parkedCoordinates.add("#" + inv.getArgument(2));
               return null;
             })
         .when(parking)
@@ -147,7 +148,7 @@ class LocationSyncTest {
                     + " mix of technical and hard-hitting styles."),
             anyString());
     assertEquals(
-        Set.of("location:london|description"),
+        Set.of("location:london|description", "#London"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
   }

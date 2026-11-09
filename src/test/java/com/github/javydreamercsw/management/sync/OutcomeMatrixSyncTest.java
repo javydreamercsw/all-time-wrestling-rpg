@@ -138,6 +138,7 @@ class OutcomeMatrixSyncTest {
     Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
+              parkedCoordinates.add("#" + inv.getArgument(2));
               return null;
             })
         .when(parking)
@@ -161,6 +162,14 @@ class OutcomeMatrixSyncTest {
         "Storyline developments that drive ongoing rivalries and generate dramatic twists",
         tier1matrix.getDescription(),
         "tier 1: untouched matrix description with a changed seed value must update silently");
+    // Sync-side tier-1 re-stamp pin (ATW-1rmi item 6): the silent write also re-stamps the row
+    // to the incoming seed's content fingerprint.
+    assertEquals(
+        VERIFY_SUPPORT.fingerprint(
+            "Storyline developments that drive ongoing rivalries and generate dramatic twists",
+            "FEUD_ANGLE"),
+        tier1matrix.getSeedFingerprint(),
+        "tier 1: the silent update must re-stamp the row");
     // Tier 2 (entry row): the admin's template kept its value; the row parked the collision.
     assertEquals(
         "admin's template", tier2entry.getTemplateText(), "tier 2: admin edit must keep its value");
@@ -176,7 +185,7 @@ class OutcomeMatrixSyncTest {
                     + " shattering their alliance in front of a stunned arena."),
             anyString());
     assertEquals(
-        Set.of("entry:feud-angle#1|templateText"),
+        Set.of("entry:feud-angle#1|templateText", "#Feud Angle (roll 1)"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
   }

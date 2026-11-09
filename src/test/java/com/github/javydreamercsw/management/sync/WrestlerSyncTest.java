@@ -635,6 +635,7 @@ class WrestlerSyncTest {
               // Distinct coordinates only: parkFieldConflict's refresh path fires per pass, the
               // contract is at most one open decision per (entity, field).
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
+              parkedCoordinates.add("#" + inv.getArgument(2));
               return null;
             })
         .when(parking)
@@ -689,7 +690,7 @@ class WrestlerSyncTest {
             ArgumentMatchers.anyString());
     // Only Gail Kim's brawl parked; Rob Van Dam's tier-1/tier-3 fields never park.
     assertEquals(
-        Set.of("wrestler:gail-kim|brawl"),
+        Set.of("wrestler:gail-kim|brawl", "#Gail Kim"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
   }

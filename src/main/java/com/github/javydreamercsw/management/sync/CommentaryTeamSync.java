@@ -209,14 +209,20 @@ public class CommentaryTeamSync implements DataSyncContributor {
   /**
    * Canonical membership serialization: the member NPCs' names sorted, newline-joined (the seed
    * file's order is arbitrary and the persisted M2M list has no order guarantee across reloads).
-   * The CommentaryTeamImportDTO overload resolves member names directly — the seed write only
-   * stores resolvable members, so unresolved seed names never reach the row and are excluded here
-   * exactly like {@link CommentaryService#createOrUpdateTeam}.
+   * The DTO overload keeps only the names {@link CommentaryService#createOrUpdateTeam} would
+   * actually resolve — behavior DECISION (ATW-1rmi item 10): an unresolvable seed member is
+   * invisible to BOTH the write and the detection comparison, so a seed listing a member that can't
+   * resolve does not park "members" on every boot; it simply never reaches the row, exactly as the
+   * write path treats it.
    */
-  private static String membersCanonical(CommentaryTeamImportDTO dto) {
-    return dto.getMemberNames() == null
-        ? ""
-        : dto.getMemberNames().stream().sorted().collect(Collectors.joining("\n"));
+  private String membersCanonical(CommentaryTeamImportDTO dto) {
+    if (dto.getMemberNames() == null) {
+      return "";
+    }
+    return dto.getMemberNames().stream()
+        .filter(name -> commentaryService.findCommentatorByNpcName(name).isPresent())
+        .sorted()
+        .collect(Collectors.joining("\n"));
   }
 
   private static String membersCanonical(List<Commentator> commentators) {

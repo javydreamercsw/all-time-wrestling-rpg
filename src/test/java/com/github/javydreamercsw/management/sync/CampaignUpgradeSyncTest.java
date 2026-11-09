@@ -219,6 +219,7 @@ class CampaignUpgradeSyncTest {
     Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
+              parkedCoordinates.add("#" + inv.getArgument(2));
               return null;
             })
         .when(parking)
@@ -253,7 +254,7 @@ class CampaignUpgradeSyncTest {
             eq("All Strike attack [[card]]s deal +1 extra damage."),
             anyString());
     assertEquals(
-        Set.of("campaign_upgrade:lethal-strike|description"),
+        Set.of("campaign_upgrade:lethal-strike|description", "#Lethal Strike"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
   }
@@ -311,6 +312,7 @@ class CampaignUpgradeSyncTest {
     Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
+              parkedCoordinates.add("#" + inv.getArgument(2));
               return null;
             })
         .when(parking)

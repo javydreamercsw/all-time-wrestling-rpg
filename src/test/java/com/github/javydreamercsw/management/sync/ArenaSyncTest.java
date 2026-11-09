@@ -170,6 +170,7 @@ class ArenaSyncTest {
     Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
+              parkedCoordinates.add("#" + inv.getArgument(2));
               return null;
             })
         .when(parking)
@@ -209,7 +210,7 @@ class ArenaSyncTest {
             eq("45000"),
             anyString());
     assertEquals(
-        Set.of("arena:tokyo-dome|capacity"),
+        Set.of("arena:tokyo-dome|capacity", "#Tokyo Dome"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
   }

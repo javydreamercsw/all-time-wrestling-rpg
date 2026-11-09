@@ -345,6 +345,7 @@ class SegmentRuleSyncTest {
     Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
+              parkedCoordinates.add("#" + inv.getArgument(2));
               return null;
             })
         .when(seedReviewService)
@@ -374,7 +375,7 @@ class SegmentRuleSyncTest {
         tier2row.getBumpAddition(),
         "tier 2: admin-edited field must keep its value — only a PENDING decision is created");
     assertEquals(
-        Set.of("segment_rule:elimination|bumpAddition"),
+        Set.of("segment_rule:elimination|bumpAddition", "#Elimination"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
     Mockito.verify(seedReviewService)

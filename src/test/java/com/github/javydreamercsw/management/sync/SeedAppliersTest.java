@@ -26,6 +26,7 @@ import com.github.javydreamercsw.base.domain.account.*;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.AbstractJpaTest;
+import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.campaign.*;
 import com.github.javydreamercsw.management.domain.card.Card;
 import com.github.javydreamercsw.management.domain.card.CardRepository;
@@ -61,7 +62,9 @@ import com.github.javydreamercsw.management.domain.show.segment.RingsideAction;
 import com.github.javydreamercsw.management.domain.show.segment.RingsideActionRepository;
 import com.github.javydreamercsw.management.domain.show.segment.RingsideActionType;
 import com.github.javydreamercsw.management.domain.show.segment.RingsideActionTypeRepository;
+import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentStatus;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRulePlayGuide;
@@ -735,6 +738,71 @@ class SeedAppliersTest extends AbstractJpaTest {
     assertFalse(
         segmentRuleRepository.findById(doomed.getId()).isPresent(),
         "REMOVE must delete the row resolved by display name");
+  }
+
+  @Test
+  void segmentRuleApplierRemoveRefusedWhenDependentsExist() {
+    // A segment uses the rule: the apply service's pre-dispatch hasDependents check must refuse
+    // the removal BEFORE any dispatch, leaving the rule and decision untouched. This is the
+    // SegmentRule-specific pin of the generic refusal path (ATW-1rmi item 1) — the rule applier's
+    // hasDependents resolves via SegmentRuleSync.entityKeyFor, not the generic slug round-trip.
+    SegmentRule referenced = segmentRule("No DQ");
+    SegmentType type =
+        segmentTypeRepository
+            .findByName("One on One")
+            .orElseGet(
+                () -> {
+                  SegmentType fresh = new SegmentType();
+                  fresh.setName("One on One");
+                  return segmentTypeRepository.save(fresh);
+                });
+    Segment segment = new Segment();
+    ShowType showType =
+        showTypeRepository
+            .findByName("Weekly")
+            .orElseGet(
+                () -> {
+                  ShowType fresh = new ShowType();
+                  fresh.setName("Weekly");
+                  fresh.setDescription("Weekly show");
+                  return showTypeRepository.save(fresh);
+                });
+    Show show = new Show();
+    show.setName("Dependency Fixture Show");
+    show.setDescription("fixture");
+    show.setCreationDate(Instant.now());
+    show.setType(showType);
+    show = showRepository.save(show);
+    segment.setShow(show);
+    segment.setSegmentType(type);
+    segment.setSegmentDate(Instant.now());
+    segment.setStatus(SegmentStatus.BOOKED);
+    segment.setAdjudicationStatus(AdjudicationStatus.PENDING);
+    segment.setSegmentOrder(1);
+    segment.addSegmentRule(referenced);
+    segmentRepository.save(segment);
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        parkRemoval("segment_rule", "segment_rule:no-dq", "No DQ", "fp-dep");
+    IllegalStateException exception =
+        assertThrows(
+            IllegalStateException.class,
+            () ->
+                service(segmentRuleApplier)
+                    .apply(Map.of(decision.getId(), SeedFieldDecision.REMOVE)));
+
+    assertTrue(
+        exception.getMessage().contains("references it"),
+        "removal with dependents must be refused by the pre-dispatch check");
+    flushAndClear();
+    assertTrue(
+        segmentRuleRepository.findById(referenced.getId()).isPresent(),
+        "the referenced segment rule must survive the refused removal");
+    assertEquals(
+        SeedUpdateDecision.STATUS_PENDING,
+        decisionRepository.findById(decision.getId()).orElseThrow().getStatus(),
+        "the refused removal decision must stay pending");
   }
 
   @Test

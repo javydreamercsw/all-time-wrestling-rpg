@@ -235,6 +235,7 @@ class RingsideActionSyncTest {
     Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
+              parkedCoordinates.add("#" + inv.getArgument(2));
               return null;
             })
         .when(parking)
@@ -266,7 +267,7 @@ class RingsideActionSyncTest {
             eq("8"),
             anyString());
     assertEquals(
-        Set.of("ringside_action:coaching-advice|impact"),
+        Set.of("ringside_action:coaching-advice|impact", "#Coaching Advice"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
   }
@@ -281,9 +282,8 @@ class RingsideActionSyncTest {
     when(ringsideActionDataService.findAllActionsUnfiltered()).thenReturn(List.of(existing));
 
     SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
-    RingsideActionSync fullModeSync = sync("false");
-    // Rebuild the sync against the parking mock: the helper binds the class mock, so a direct
-    // constructor call is clearer for the FULL pin.
+    // Build the sync directly against the parking mock: the helper binds the class mock, so a
+    // direct constructor call is clearer for the FULL pin.
     RingsideActionSync fullSync =
         new RingsideActionSync(
             "false", ringsideActionDataService, new ObjectMapper(), parking, EMPTY_MANIFEST);
