@@ -25,6 +25,7 @@ import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -220,13 +221,14 @@ class CampaignUpgradeServiceTest {
   // ── init ────────────────────────────────────────────────────────────────────
 
   @Test
-  void init_callsLoadUpgrades() throws Exception {
-    // init() delegates to loadUpgrades(). Stub the mapper so the method completes cleanly.
-    when(objectMapper.readValue(any(InputStream.class), any(TypeReference.class)))
-        .thenReturn(List.of());
-
-    assertThatCode(() -> service.init()).doesNotThrowAnyException();
-
-    verify(upgradeRepository).deleteAllInBatch();
+  void loadUpgrades_isTheOnlySeedWritePathAndTheSyncOwnsInvokingIt() {
+    // beads ATW-26sy: the @PostConstruct boot-wipe is REMOVED — loadUpgrades() runs only when
+    // the sync calls it (FULL mode), so admin-customized campaign_upgrade rows survive boots
+    // in PROTECT/VERIFY mode. loadUpgrades itself keeps its full-refresh contract (FULL-mode
+    // seed write is a deliberate wipe+reseed), which the two tests above already pin.
+    //
+    // This test pins the structural consequence: constructing the service must NOT trigger a
+    // repository write (no hidden @PostConstruct equivalent).
+    verifyNoInteractions(upgradeRepository);
   }
 }

@@ -87,6 +87,109 @@ class CampaignUpgradeSyncTest {
   }
 
   @Test
+  void protectModeTopUpsMissingRowsWithoutTouchingExisting() {
+    // beads ATW-26sy: the @PostConstruct wipe is gone, so non-FULL modes must still receive
+    // seed entries added in later releases — the top-up inserts ONLY rows missing from the
+    // table (stamped at seed values on insert) and never re-saves existing rows.
+    CampaignUpgrade existing = upgrade("Iron Man", "admin's custom description", "STAMINA");
+    existing.setSeedFingerprint("admin-stamp");
+    when(upgradeRepository.count()).thenReturn(1L);
+    when(upgradeRepository.findAll()).thenReturn(List.of(existing));
+
+    CampaignUpgradeSync protectSync = sync("true");
+    protectSync.sync();
+
+    // The service's wipe-load is NOT re-issued in non-FULL modes.
+    verify(campaignUpgradeService, never()).loadUpgrades();
+    // The existing (admin-edited, stamped) row is never re-saved.
+    verify(upgradeRepository, never())
+        .saveAll(
+            ArgumentMatchers.argThat(
+                rows -> {
+                  if (rows == null) {
+                    return false;
+                  }
+                  for (CampaignUpgrade u : rows) {
+                    if ("Iron Man".equals(u.getName())) {
+                      return true;
+                    }
+                  }
+                  return false;
+                }));
+    // A missing seed entry IS inserted. The real seed file is read (real ObjectMapper), so the
+    // inserted set is whatever campaign_upgrades.json carries beyond "Iron Man" — assert every
+    // inserted row arrives stamped.
+    verify(upgradeRepository)
+        .saveAll(
+            ArgumentMatchers.argThat(
+                rows -> {
+                  if (rows == null) {
+                    return false;
+                  }
+                  for (CampaignUpgrade u : rows) {
+                    if (u.getSeedFingerprint() == null) {
+                      return false;
+                    }
+                  }
+                  return true;
+                }));
+  }
+
+  @Test
+  void protectModeWithEverythingPresentSavesNothing() {
+    // Every seed entry already exists in the table: the top-up must be a no-op (no saveAll
+    // carrying inserts, no re-save of existing rows). The full seed catalog is mocked present
+    // (the real campaign_upgrades.json is read: Iron Man, Unbreakable, Lethal Strike/Grapple/
+    // Throw/Aerial, Rope-a-dope).
+    List<CampaignUpgrade> allSeedEntries =
+        List.of(
+            upgrade("Iron Man", "d", "STAMINA"),
+            upgrade("Unbreakable", "d", "HEALTH"),
+            upgrade("Lethal Strike", "d", "DAMAGE"),
+            upgrade("Lethal Grapple", "d", "DAMAGE"),
+            upgrade("Lethal Throw", "d", "DAMAGE"),
+            upgrade("Lethal Aerial", "d", "DAMAGE"),
+            upgrade("Rope-a-dope", "d", "DEFENSE"));
+    allSeedEntries.forEach(u -> u.setSeedFingerprint("stamped"));
+    when(upgradeRepository.count()).thenReturn((long) allSeedEntries.size());
+    when(upgradeRepository.findAll()).thenReturn(allSeedEntries);
+
+    CampaignUpgradeSync protectSync = sync("true");
+    protectSync.sync();
+
+    verify(upgradeRepository, never()).saveAll(any());
+  }
+
+  @Test
+  void protectModeWithEmptyTableSeedsTheFullCatalog() {
+    // beads ATW-26sy, empty-table leg: with the @PostConstruct wipe gone, the sync is the ONLY
+    // seeder — a fresh H2 test-profile database (initializer PROTECT mode) must receive the
+    // whole campaign_upgrades.json catalog through the top-up, rows stamped at seed values.
+    when(upgradeRepository.count()).thenReturn(0L);
+    when(upgradeRepository.findAll()).thenReturn(List.of());
+
+    CampaignUpgradeSync protectSync = sync("true");
+    protectSync.sync();
+
+    verify(upgradeRepository)
+        .saveAll(
+            ArgumentMatchers.argThat(
+                rows -> {
+                  if (rows == null) {
+                    return false;
+                  }
+                  int count = 0;
+                  for (CampaignUpgrade u : rows) {
+                    if (u.getSeedFingerprint() == null) {
+                      return false;
+                    }
+                    count++;
+                  }
+                  return count >= 7; // the seed file carries 7 upgrades
+                }));
+  }
+
+  @Test
   void versionChangeBootsParkCollisions() {
     // THREE-TIER pin, end-to-end through the wired pipeline, against the real seed file (the
     // detection pass reads campaign_upgrades.json). "Unbreakable" is the tier-1 row (clean:
