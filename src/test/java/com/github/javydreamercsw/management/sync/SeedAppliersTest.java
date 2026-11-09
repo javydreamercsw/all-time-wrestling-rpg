@@ -1496,6 +1496,15 @@ class SeedAppliersTest extends AbstractJpaTest {
         park("npc", "npc:charles", "Charles", "awareness", "50", "85", "fp-w");
     SeedUpdateDecision clearedAwareness =
         park("npc", "npc:lena-voss", "Lena Voss", "awareness", "50", null, "fp-w0");
+    target.setGender(Gender.MALE);
+    npcRepositoryTest.save(target);
+    Npc gendered = npc("Marta Vane");
+    gendered.setGender(Gender.MALE);
+    npcRepositoryTest.save(gendered);
+    SeedUpdateDecision gender =
+        park("npc", "npc:charles", "Charles", "gender", "MALE", "FEMALE", "fp-g");
+    SeedUpdateDecision nulledGender =
+        park("npc", "npc:marta-vane", "Marta Vane", "gender", "MALE", null, "fp-g0");
 
     service(npcApplier)
         .apply(
@@ -1504,7 +1513,9 @@ class SeedAppliersTest extends AbstractJpaTest {
                 expansion.getId(), SeedFieldDecision.USE_NEW,
                 alignment.getId(), SeedFieldDecision.USE_NEW,
                 awareness.getId(), SeedFieldDecision.USE_NEW,
-                clearedAwareness.getId(), SeedFieldDecision.USE_NEW));
+                clearedAwareness.getId(), SeedFieldDecision.USE_NEW,
+                gender.getId(), SeedFieldDecision.USE_NEW,
+                nulledGender.getId(), SeedFieldDecision.USE_NEW));
 
     flushAndClear();
     Npc reloaded = npcRepositoryTest.findById(target.getId()).orElseThrow();
@@ -1522,6 +1533,9 @@ class SeedAppliersTest extends AbstractJpaTest {
         0,
         ((Number) clearedRow.getAttributes().get(NpcService.ATTRIBUTE_AWARENESS)).intValue(),
         "null-awareness arm falls back to 0");
+    assertEquals(Gender.FEMALE, reloaded.getGender(), "gender arm wrote the parsed enum");
+    Npc genderedRow = npcRepositoryTest.findById(gendered.getId()).orElseThrow();
+    assertEquals(Gender.MALE, genderedRow.getGender(), "null gender arm falls back to MALE");
   }
 
   @Test
