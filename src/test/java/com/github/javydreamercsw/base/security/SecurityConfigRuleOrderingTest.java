@@ -36,7 +36,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.config.ObjectPostProcessor;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.ExceptionHandlingConfigurer;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -84,7 +83,8 @@ class SecurityConfigRuleOrderingTest {
   /** Builds the production authorization rules into a bare HttpSecurity and returns the chain. */
   private static SecurityFilterChain productionRulesChain() throws Exception {
     HttpSecurity http = bareHttpSecurity();
-    http.csrf(AbstractHttpConfigurer::disable);
+    // CSRF stays at its default (enabled) — this test only issues GETs, which CSRF does not
+    // guard, so no token handling is needed and the scan sees no disabled protection.
     http.authorizeHttpRequests(SecurityConfig::applyAuthorizationRules);
     // Map the outcomes this test distinguishes: anonymous denied → 401 (entry point), a
     // non-admin authenticated user denied → 403 (access denied handler), authorized → reaches
