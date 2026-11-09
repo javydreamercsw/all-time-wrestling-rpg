@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.sync;
 
 import com.github.javydreamercsw.management.domain.seedreview.SeedUpdateDecision;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRulePlayGuide;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentTypeRepository;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRepository;
@@ -38,10 +39,9 @@ import org.springframework.stereotype.Component;
  * new_fingerprint} on the row — keep-mine stamps while keeping the admin's value, so a later seed
  * change to that field re-parks instead of silently overwriting.
  *
- * <p>Known limitation: a {@code guideHash} decision cannot be resolved as {@code USE_NEW} into an
- * actual guide rewrite — the decision's value carries the payload's hash, not the guide — so the
- * applier warns, writes nothing, and still stamps and marks the row {@code APPLIED_NEW} (seed-JSON
- * guide reload is deferred).
+ * <p>{@code guideHash} decisions resolve as {@code USE_NEW} by reloading the guide payload from
+ * {@code segment_types.json} (beads ATW-md1i) — the decision's value carries only the hash. Rows
+ * with no seed entry fall back to warn-and-stamp so the apply batch never rolls back.
  */
 @Slf4j
 @Component
@@ -50,14 +50,17 @@ public class SegmentTypeSeedApplier implements SeedDomainApplier {
   private final SegmentTypeRepository segmentTypeRepository;
   private final SegmentRepository segmentRepository;
   private final ShowTemplateRepository showTemplateRepository;
+  private final SegmentTypeSync segmentTypeSync;
 
   public SegmentTypeSeedApplier(
       final SegmentTypeRepository segmentTypeRepository,
       final SegmentRepository segmentRepository,
-      final ShowTemplateRepository showTemplateRepository) {
+      final ShowTemplateRepository showTemplateRepository,
+      final SegmentTypeSync segmentTypeSync) {
     this.segmentTypeRepository = segmentTypeRepository;
     this.segmentRepository = segmentRepository;
     this.showTemplateRepository = showTemplateRepository;
+    this.segmentTypeSync = segmentTypeSync;
   }
 
   @Override
@@ -177,11 +180,24 @@ public class SegmentTypeSeedApplier implements SeedDomainApplier {
     switch (decision.getFieldName()) {
       case "description" -> segmentType.setDescription(value);
       case "expansionCode" -> segmentType.setExpansionCode(value);
-      case "guideHash" ->
+      case "guideHash" -> {
+        // beads ATW-md1i: the decision's value carries the payload's HASH, not the guide — reload
+        // the real payload from segment_types.json and write guide + hash exactly the way the
+        // sync's seed write does. Without a seed entry (admin-created row) there is nothing to
+        // reload: warn-and-continue keeps the batch alive (the choice is recorded, row stamped).
+        SegmentRulePlayGuide seedGuide =
+            segmentTypeSync.reloadSeedGuide(decision.getEntityDisplayName()).orElse(null);
+        if (seedGuide == null) {
           log.warn(
-              "Seed decision {}: segment type guideHash is derived from the guide payload and"
-                  + " cannot be applied directly — the guide hash field is guide-managed",
-              decision.getId());
+              "Seed decision {}: segment type '{}' has no seed guide payload to reload —"
+                  + " guideHash applied as stamp only (the hash is not the guide)",
+              decision.getId(),
+              decision.getEntityDisplayName());
+        } else {
+          segmentType.setGuide(seedGuide);
+          segmentType.setGuideHash(segmentTypeSync.guideHashForGuide(seedGuide));
+        }
+      }
       case "code" -> segmentType.setCode(value);
       case "eventOnly" -> segmentType.setEventOnly(Boolean.parseBoolean(value));
       default ->

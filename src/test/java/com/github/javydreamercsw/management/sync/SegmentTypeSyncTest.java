@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.sync;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -366,5 +367,34 @@ class SegmentTypeSyncTest {
 
     Mockito.verifyNoInteractions(seedReviewService);
     verify(segmentTypeService, Mockito.never()).saveSegmentType(any());
+  }
+
+  // ── Guide reload helpers (beads ATW-md1i) ───────────────────────────────────
+
+  @Test
+  void reloadSeedGuideReturnsTheSeedPayloadForAKnownType() {
+    SegmentTypeSync typeSync = sync("true");
+
+    var guide = typeSync.reloadSeedGuide("One on One").orElseThrow();
+
+    assertNotNull(guide, "'One on One' ships a guide in segment_types.json");
+    assertEquals(
+        typeSync.guideHashForGuide(guide),
+        typeSync.guideHashForGuide(guide),
+        "hash is deterministic");
+  }
+
+  @Test
+  void reloadSeedGuideIsEmptyForUnseededTypeNames() {
+    SegmentTypeSync typeSync = sync("true");
+
+    assertTrue(typeSync.reloadSeedGuide("Admin Custom Type").isEmpty());
+  }
+
+  @Test
+  void guideHashForGuideIsNullForANullPayload() {
+    SegmentTypeSync typeSync = sync("true");
+
+    assertNull(typeSync.guideHashForGuide(null), "no payload → no hash (mirrors the seed write)");
   }
 }

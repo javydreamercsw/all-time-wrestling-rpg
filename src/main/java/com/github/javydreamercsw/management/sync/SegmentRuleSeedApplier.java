@@ -20,6 +20,7 @@ import com.github.javydreamercsw.management.domain.seedreview.SeedUpdateDecision
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRulePlayGuide;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRuleRepository;
 import com.github.javydreamercsw.management.sync.review.SeedDomainApplier;
 import java.util.Optional;
@@ -37,10 +38,10 @@ import org.springframework.stereotype.Component;
  * new_fingerprint} on the row — keep-mine stamps while keeping the admin's value, so a later seed
  * change to that field re-parks instead of silently overwriting.
  *
- * <p>Known limitation: a {@code guideHash} decision cannot be resolved as {@code USE_NEW} into an
- * actual guide rewrite — the decision's value carries the payload's hash, not the guide — so the
- * applier warns, writes nothing, and still stamps and marks the row {@code APPLIED_NEW} (matching
- * {@link SegmentTypeSeedApplier}'s behavior; seed-JSON guide reload is deferred).
+ * <p>{@code guideHash} decisions resolve as {@code USE_NEW} by reloading the guide payload from
+ * {@code segment_rules.json} (beads ATW-md1i) — the decision's value carries only the hash. Rows
+ * with no seed entry fall back to warn-and-stamp so the apply batch never rolls back (matching
+ * {@link SegmentTypeSeedApplier}).
  */
 @Slf4j
 @Component
@@ -48,12 +49,15 @@ public class SegmentRuleSeedApplier implements SeedDomainApplier {
 
   private final SegmentRuleRepository segmentRuleRepository;
   private final SegmentRepository segmentRepository;
+  private final SegmentRuleSync segmentRuleSync;
 
   public SegmentRuleSeedApplier(
       final SegmentRuleRepository segmentRuleRepository,
-      final SegmentRepository segmentRepository) {
+      final SegmentRepository segmentRepository,
+      final SegmentRuleSync segmentRuleSync) {
     this.segmentRuleRepository = segmentRuleRepository;
     this.segmentRepository = segmentRepository;
+    this.segmentRuleSync = segmentRuleSync;
   }
 
   @Override
@@ -130,13 +134,24 @@ public class SegmentRuleSeedApplier implements SeedDomainApplier {
       case "bumpAddition" ->
           rule.setBumpAddition(value == null ? null : BumpAddition.valueOf(value));
       case "expansionCode" -> rule.setExpansionCode(value);
-      case "guideHash" ->
+      case "guideHash" -> {
+        // beads ATW-md1i: the decision's value carries the payload's HASH, not the guide — reload
+        // the real payload from segment_rules.json and write guide + hash exactly the way the
+        // sync's seed write does. Without a seed entry (admin-created row) there is nothing to
+        // reload: warn-and-continue keeps the batch alive (the choice is recorded, row stamped).
+        SegmentRulePlayGuide seedGuide =
+            segmentRuleSync.reloadSeedGuide(decision.getEntityDisplayName()).orElse(null);
+        if (seedGuide == null) {
           log.warn(
-              "Seed decision {}: segment rule guideHash is derived from the guide payload and"
-                  + " cannot be applied directly — the decision's value carries the hash, not the"
-                  + " guide, so USE_NEW cannot rewrite the guide content (the guide hash field is"
-                  + " guide-managed)",
-              decision.getId());
+              "Seed decision {}: segment rule '{}' has no seed guide payload to reload —"
+                  + " guideHash applied as stamp only (the hash is not the guide)",
+              decision.getId(),
+              decision.getEntityDisplayName());
+        } else {
+          rule.setGuide(seedGuide);
+          rule.setGuideHash(segmentRuleSync.guideHashForGuide(seedGuide));
+        }
+      }
       default ->
           throw new IllegalStateException(
               "Segment rule field '" + decision.getFieldName() + "' is not a seed-owned field");

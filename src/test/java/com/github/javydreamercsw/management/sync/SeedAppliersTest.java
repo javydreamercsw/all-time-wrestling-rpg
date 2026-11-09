@@ -132,6 +132,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 class SeedAppliersTest extends AbstractJpaTest {
 
   @Autowired private SeedUpdateDecisionRepository decisionRepository;
+  @Autowired private SegmentRuleSync segmentRuleSync;
+  @Autowired private SegmentTypeSync segmentTypeSync;
   @Autowired private WrestlerSeedApplier wrestlerApplier;
   @Autowired private SegmentRuleSeedApplier segmentRuleApplier;
   @Autowired private ChampionshipSeedApplier championshipApplier;
@@ -759,44 +761,6 @@ class SeedAppliersTest extends AbstractJpaTest {
         "fp-keep",
         reloaded.getSeedFingerprint(),
         "KEEP_MINE must stamp the detection fingerprint (re-collision on the next seed change)");
-  }
-
-  @Test
-  void segmentRuleApplierUseNewGuideHashWarnsStampsAndAppliesWithoutRewriting() {
-    // The guide payload travels as a hash: the decision's newValue carries the SHA-256 of the
-    // incoming guide JSON, not the guide itself, so USE_NEW cannot rewrite the guide content.
-    // The applier must warn, write nothing, and still stamp + mark APPLIED_NEW (same behavior as
-    // SegmentTypeSeedApplier) instead of throwing and rolling back the whole apply batch.
-    SegmentRule noDq = segmentRule("No DQ");
-    SegmentRulePlayGuide guideBefore = noDq.getGuide();
-    String hashBefore = noDq.getGuideHash();
-    flushAndClear();
-
-    SeedUpdateDecision decision =
-        park(
-            "segment_rule",
-            "segment_rule:no-dq",
-            "No DQ",
-            "guideHash",
-            hashBefore,
-            "incoming-guide-hash-value",
-            "fp-guide");
-    service(segmentRuleApplier).apply(Map.of(decision.getId(), SeedFieldDecision.USE_NEW));
-
-    flushAndClear();
-    SegmentRule reloaded = segmentRuleRepository.findById(noDq.getId()).orElseThrow();
-    assertEquals(
-        guideBefore,
-        reloaded.getGuide(),
-        "USE_NEW on guideHash must leave the guide content unchanged (the hash is not the guide)");
-    assertEquals(
-        "fp-guide",
-        reloaded.getSeedFingerprint(),
-        "USE_NEW on guideHash must still stamp the detection fingerprint");
-    assertEquals(
-        SeedUpdateDecision.STATUS_APPLIED_NEW,
-        decisionRepository.findById(decision.getId()).orElseThrow().getStatus(),
-        "the guideHash decision must resolve as APPLIED_NEW, not roll back");
   }
 
   // ── ChampionshipSeedApplier ─────────────────────────────────────────────────
@@ -1885,6 +1849,122 @@ class SeedAppliersTest extends AbstractJpaTest {
               st.setDescription(description);
               return segmentTypeRepository.save(st);
             });
+  }
+
+  @Test
+  void segmentTypeApplierUseNewGuideHashReloadsSeedGuide() {
+    // beads ATW-md1i, segment-type leg: USE_NEW on a guideHash decision reloads the payload from
+    // segment_types.json ("One on One" ships a guide) and writes guide + hash — same contract as
+    // the segment-rule applier.
+    var oneOnOne = segmentTypeFixture("One on One", "seed description");
+    String hashBefore = oneOnOne.getGuideHash();
+    flushAndClear();
+
+    SegmentRulePlayGuide seedGuide = segmentTypeSync.reloadSeedGuide("One on One").orElseThrow();
+    String seedHash = segmentTypeSync.guideHashForGuide(seedGuide);
+
+    SeedUpdateDecision decision =
+        park(
+            "segment_type",
+            SegmentTypeSync.entityKeyFor("One on One"),
+            "One on One",
+            "guideHash",
+            hashBefore,
+            "incoming-guide-hash-value",
+            "fp-st-guide");
+    service(segmentTypeApplier).apply(Map.of(decision.getId(), SeedFieldDecision.USE_NEW));
+
+    flushAndClear();
+    var reloaded = segmentTypeRepository.findById(oneOnOne.getId()).orElseThrow();
+    assertEquals(
+        seedHash,
+        reloaded.getGuideHash(),
+        "USE_NEW on guideHash must adopt the seed guide's own hash (payload reloaded)");
+    assertEquals(seedGuide, reloaded.getGuide(), "The seed's guide payload must land on the row");
+    assertEquals("fp-st-guide", reloaded.getSeedFingerprint(), "Row still stamps");
+  }
+
+  @Test
+  void segmentRuleApplierUseNewGuideHashReloadsSeedGuide() {
+    // beads ATW-md1i, segment-rule leg: USE_NEW on a guideHash decision reloads the payload from
+    // segment_rules.json ("No DQ" ships a guide) and writes guide + hash exactly the way the
+    // sync's seed write does.
+    var noDq = segmentRule("No DQ");
+    String hashBefore = noDq.getGuideHash();
+    flushAndClear();
+
+    SegmentRulePlayGuide seedGuide = segmentRuleSync.reloadSeedGuide("No DQ").orElseThrow();
+    String seedHash = segmentRuleSync.guideHashForGuide(seedGuide);
+
+    SeedUpdateDecision decision =
+        park(
+            "segment_rule",
+            SegmentRuleSync.entityKeyFor("No DQ"),
+            "No DQ",
+            "guideHash",
+            hashBefore,
+            "incoming-guide-hash-value",
+            "fp-rule-guide");
+    service(segmentRuleApplier).apply(Map.of(decision.getId(), SeedFieldDecision.USE_NEW));
+
+    flushAndClear();
+    var reloaded = segmentRuleRepository.findById(noDq.getId()).orElseThrow();
+    assertEquals(
+        seedHash,
+        reloaded.getGuideHash(),
+        "USE_NEW on guideHash must adopt the seed guide's own hash (payload reloaded)");
+    assertEquals(seedGuide, reloaded.getGuide(), "The seed's guide payload must land on the row");
+    assertEquals("fp-rule-guide", reloaded.getSeedFingerprint(), "Row still stamps");
+  }
+
+  @Test
+  void segmentRuleApplierUseNewGuideHashWithoutSeedEntryWarnsAndStamps() {
+    // Fallback leg: an admin-created rule has no segment_rules.json entry, so there is no payload
+    // to reload. The apply batch must not roll back: the row stamps and marks APPLIED_NEW with
+    // guide content untouched.
+    var adminRule = segmentRule("Admin Custom Rule");
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "segment_rule",
+            SegmentRuleSync.entityKeyFor("Admin Custom Rule"),
+            "Admin Custom Rule",
+            "guideHash",
+            adminRule.getGuideHash(),
+            "incoming-guide-hash-value",
+            "fp-admin-rule");
+    service(segmentRuleApplier).apply(Map.of(decision.getId(), SeedFieldDecision.USE_NEW));
+
+    flushAndClear();
+    var reloaded = segmentRuleRepository.findById(adminRule.getId()).orElseThrow();
+    assertNull(reloaded.getGuide(), "No seed payload exists — the guide must stay untouched");
+    assertNull(reloaded.getGuideHash(), "And its hash with it (hash is guide-managed)");
+    assertEquals("fp-admin-rule", reloaded.getSeedFingerprint(), "Row still stamps");
+  }
+
+  @Test
+  void segmentTypeApplierUseNewGuideHashWithoutSeedEntryWarnsAndStamps() {
+    // Fallback leg, segment-type side: same contract as the rule applier — stamp, don't roll back.
+    var adminType = segmentTypeFixture("Admin Custom Type", "custom description");
+    flushAndClear();
+
+    SeedUpdateDecision decision =
+        park(
+            "segment_type",
+            SegmentTypeSync.entityKeyFor("Admin Custom Type"),
+            "Admin Custom Type",
+            "guideHash",
+            adminType.getGuideHash(),
+            "incoming-guide-hash-value",
+            "fp-admin-type");
+    service(segmentTypeApplier).apply(Map.of(decision.getId(), SeedFieldDecision.USE_NEW));
+
+    flushAndClear();
+    var reloaded = segmentTypeRepository.findById(adminType.getId()).orElseThrow();
+    assertNull(reloaded.getGuide(), "No seed payload exists — the guide must stay untouched");
+    assertNull(reloaded.getGuideHash(), "And its hash with it (hash is guide-managed)");
+    assertEquals("fp-admin-type", reloaded.getSeedFingerprint(), "Row still stamps");
   }
 
   @Test
