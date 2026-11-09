@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.sync;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.commentator.CommentatorRepository;
 import com.github.javydreamercsw.management.domain.faction.FactionRepository;
@@ -182,6 +183,7 @@ public class NpcSeedApplier implements SeedDomainApplier {
       case "expansionCode" -> npc.setExpansionCode(value);
       case "alignment" ->
           npc.setAlignment(value == null ? AlignmentType.NEUTRAL : AlignmentType.valueOf(value));
+      case "gender" -> npc.setGender(value == null ? Gender.MALE : Gender.valueOf(value));
       case "awareness" -> npcService.setAwareness(npc, value == null ? 0 : Integer.parseInt(value));
       default ->
           throw new IllegalStateException(
