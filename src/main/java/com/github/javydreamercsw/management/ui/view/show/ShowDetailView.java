@@ -2308,6 +2308,13 @@ public class ShowDetailView extends Main
    * async adjudication. A pre-flight failure never blocks — adjudication proceeds directly.
    */
   private void confirmThenAdjudicate(@NonNull final Show show) {
+    // Guard against double-click during the pre-flight .join() opening two ConfirmDialogs
+    // (ATW-b08p): disable on entry; the pre-flight's early paths re-adjudicate directly (their
+    // callee disables the button again), and the dialog's "Go Back" re-enables it. The button
+    // can be absent in reconstructed views (tests) — the guard is then a no-op.
+    if (adjudicateButton != null) {
+      adjudicateButton.setEnabled(false);
+    }
     List<String> missingWinnerWarnings;
     List<String> toNarrate;
     boolean narrationProviderAvailable;
@@ -2375,6 +2382,12 @@ public class ShowDetailView extends Main
     dialog.setConfirmText(missingWinnerWarnings.isEmpty() ? "Adjudicate" : "Adjudicate Anyway");
     dialog.setConfirmButtonTheme(missingWinnerWarnings.isEmpty() ? "primary" : "primary error");
     dialog.addConfirmListener(e -> adjudicateShow(show));
+    dialog.addCancelListener(
+        e -> {
+          if (adjudicateButton != null) {
+            adjudicateButton.setEnabled(true);
+          }
+        });
     dialog.open();
   }
 
