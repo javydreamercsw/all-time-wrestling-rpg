@@ -2242,23 +2242,5 @@
     "set": "ATW",
     "amount": 1
   }
-  // Pending spoilers - uncomment when cards are revealed:
-  // , {
-  //   "number": 9,
-  //   "set": "JFH",
-  //   "amount": 1
-  // }, {
-  //   "number": 10,
-  //   "set": "JFH",
-  //   "amount": 1
-  // }, {
-  //   "number": 11,
-  //   "set": "JFH",
-  //   "amount": 1
-  // }, {
-  //   "number": 13,
-  //   "set": "JFH",
-  //   "amount": 1
-  // }
   ]
 } ]

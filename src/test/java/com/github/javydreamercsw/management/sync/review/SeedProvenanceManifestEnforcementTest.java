@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.config.JacksonConfig;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -98,6 +99,36 @@ class SeedProvenanceManifestEnforcementTest {
               + "\n\nTo fix: run scripts/generate-seed-provenance.sh and commit the regenerated"
               + " src/main/resources/seed-provenance.json.");
     }
+  }
+
+  /**
+   * Cross-pin (beads ATW-l6si): the generator's extraction set must equal the registry. Without
+   * this, a brand-new stamping sync missing from BOTH {@link SeedDomains#STAMPING_DOMAINS} and
+   * {@code GenerateSeedProvenanceManifest.extractFingerprints} would ship permanently green — the
+   * manifest test can only check domains the registry already names, and the generator would
+   * silently never extract the new domain's rows.
+   */
+  @Test
+  void generatorExtractionDomains_matchStampingRegistry() {
+    Set<String> registry = new HashSet<>(SeedDomains.STAMPING_DOMAINS);
+    Set<String> generator = new HashSet<>(GenerateSeedProvenanceManifest.EXTRACTION_DOMAINS);
+
+    Set<String> registryOnly = new TreeSet<>(registry);
+    registryOnly.removeAll(generator);
+    Set<String> generatorOnly = new TreeSet<>(generator);
+    generatorOnly.removeAll(registry);
+
+    assertTrue(
+        registryOnly.isEmpty() && generatorOnly.isEmpty(),
+        "SeedDomains.STAMPING_DOMAINS and GenerateSeedProvenanceManifest.EXTRACTION_DOMAINS"
+            + " drifted apart — every stamping sync must be in BOTH sets.\n"
+            + "  Registry-only (generator would never extract): "
+            + registryOnly
+            + "\n"
+            + "  Generator-only (registry never counts them): "
+            + generatorOnly
+            + "\n"
+            + "Add the new domain to both, or remove it from both.");
   }
 
   /**

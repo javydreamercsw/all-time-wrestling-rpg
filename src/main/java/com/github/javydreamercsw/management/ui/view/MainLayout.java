@@ -27,11 +27,14 @@ import static com.vaadin.flow.theme.lumo.LumoUtility.Margin;
 import static com.vaadin.flow.theme.lumo.LumoUtility.Padding;
 import static com.vaadin.flow.theme.lumo.LumoUtility.TextColor;
 
+import com.github.javydreamercsw.base.ai.SegmentNarrationService;
+import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.theme.ThemeService;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
+import com.github.javydreamercsw.management.event.inbox.AiSettingsChangeBroadcaster;
 import com.github.javydreamercsw.management.event.inbox.InboxUpdateBroadcaster;
 import com.github.javydreamercsw.management.event.inbox.OpenProfileDrawerBroadcaster;
 import com.github.javydreamercsw.management.service.AccountService;
@@ -59,6 +62,7 @@ import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Footer;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
@@ -126,6 +130,10 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
   private TutorialService tutorialService;
   private TutorialStepOverlay tutorialOverlay;
   private ShowFacade showFacade;
+  private SegmentNarrationServiceFactory aiServiceFactory;
+  private AiSettingsChangeBroadcaster aiSettingsChangeBroadcaster;
+  private Registration aiSettingsChangeRegistration;
+  private Button aiAvailabilityIndicator;
 
   @Autowired
   public MainLayout(
@@ -142,7 +150,9 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
       final InboxService inboxService,
       final TutorialService tutorialService,
       final OpenProfileDrawerBroadcaster openProfileDrawerBroadcaster,
-      final ShowFacade showFacade) {
+      final ShowFacade showFacade,
+      final SegmentNarrationServiceFactory aiServiceFactory,
+      final AiSettingsChangeBroadcaster aiSettingsChangeBroadcaster) {
     this.menuService = menuService;
     this.inboxUpdateBroadcaster = inboxUpdateBroadcaster;
     this.buildProperties = buildProperties.orElse(null);
@@ -157,6 +167,8 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
     this.tutorialService = tutorialService;
     this.openProfileDrawerBroadcaster = openProfileDrawerBroadcaster;
     this.showFacade = showFacade;
+    this.aiServiceFactory = aiServiceFactory;
+    this.aiSettingsChangeBroadcaster = aiSettingsChangeBroadcaster;
     setPrimarySection(Section.DRAWER);
 
     SideNav sideNav = createSideNav();
@@ -350,6 +362,15 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
       // Initialise the badge count
       refreshInboxBadge();
 
+      // Global AI provider availability indicator (ATW-ftnb): a standing signal on every
+      // view for booker+ roles — amber when narration is disabled (no provider configured),
+      // neutral when a provider is active. Click-through goes to Admin → AI Settings.
+      if (securityUtils.isBooker() || securityUtils.isAdmin()) {
+        aiAvailabilityIndicator = createAiAvailabilityIndicator();
+        navbar.add(aiAvailabilityIndicator);
+        refreshAiAvailabilityIndicator();
+      }
+
       // Profile button (opens drawer)
       Button profileButton = new Button("Profile", VaadinIcon.USER.create());
       profileButton.addClassName("navbar-action");
@@ -383,6 +404,39 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
     }
 
     return navbar;
+  }
+
+  private Button createAiAvailabilityIndicator() {
+    Icon icon = VaadinIcon.MAGIC.create();
+    Button indicator = new Button(icon);
+    indicator.setId("ai-availability-indicator");
+    indicator.addClassName("navbar-action");
+    indicator.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_SMALL);
+    indicator.setAriaLabel("AI narration availability");
+    indicator.addClickListener(e -> UI.getCurrent().navigate("admin"));
+    return indicator;
+  }
+
+  private void refreshAiAvailabilityIndicator() {
+    Button indicator = aiAvailabilityIndicator;
+    if (indicator == null) {
+      return;
+    }
+    List<SegmentNarrationService> available =
+        aiServiceFactory != null
+            ? aiServiceFactory.getAvailableServicesInPriorityOrder()
+            : List.of();
+    boolean hasProvider = !available.isEmpty();
+    String activeProvider = hasProvider ? available.get(0).getProviderName() : null;
+
+    Icon icon = (Icon) indicator.getChildren().findFirst().orElseThrow();
+    if (hasProvider) {
+      icon.setColor("var(--lumo-contrast-60pct)");
+      indicator.setTooltipText("AI narration: " + activeProvider);
+    } else {
+      icon.setColor("var(--lumo-warning-color)");
+      indicator.setTooltipText("No AI provider configured - narration disabled");
+    }
   }
 
   private long refreshInboxBadge() {
@@ -486,6 +540,15 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
                 }
               });
     }
+    if (aiSettingsChangeBroadcaster != null) {
+      aiSettingsChangeRegistration =
+          aiSettingsChangeBroadcaster.register(
+              ignored -> {
+                if (ui.isAttached()) {
+                  ui.access(this::refreshAiAvailabilityIndicator);
+                }
+              });
+    }
   }
 
   @Override
@@ -496,6 +559,9 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
     }
     if (openProfileDrawerRegistration != null) {
       openProfileDrawerRegistration.remove();
+    }
+    if (aiSettingsChangeRegistration != null) {
+      aiSettingsChangeRegistration.remove();
     }
     ScheduledFuture<?> pending = pendingInboxNotification;
     if (pending != null) {

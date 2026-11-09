@@ -18,6 +18,9 @@ package com.github.javydreamercsw.management.sync;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
@@ -25,6 +28,10 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.dto.TitleDTO;
 import com.github.javydreamercsw.management.service.title.TitleReignRepairService;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.sync.review.SeedCollisionDetector;
+import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
+import com.github.javydreamercsw.management.sync.review.SeedReviewDetectionSupport;
+import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -51,6 +58,11 @@ public class ChampionshipSync implements DataSyncContributor {
   private final UniverseRepository universeRepository;
   private final TitleReignRepairService titleReignRepairService;
   private final ObjectMapper objectMapper;
+  private final SeedUpdateReviewService seedReviewService;
+  private final SeedProvenanceManifest provenanceManifest;
+
+  /** Seed domain key (must match {@code SeedDomains.STAMPING_DOMAINS}). */
+  public static final String DOMAIN_KEY = "championship";
 
   @Autowired
   public ChampionshipSync(
@@ -59,13 +71,17 @@ public class ChampionshipSync implements DataSyncContributor {
       final WrestlerRepository wrestlerRepository,
       final UniverseRepository universeRepository,
       final TitleReignRepairService titleReignRepairService,
-      final ObjectMapper objectMapper) {
+      final ObjectMapper objectMapper,
+      final SeedUpdateReviewService seedReviewService,
+      final SeedProvenanceManifest provenanceManifest) {
     this.syncSupport = new SeedSyncSupport(skipIfNotEmptyRaw);
     this.titleService = titleService;
     this.wrestlerRepository = wrestlerRepository;
     this.universeRepository = universeRepository;
     this.titleReignRepairService = titleReignRepairService;
     this.objectMapper = objectMapper;
+    this.seedReviewService = seedReviewService;
+    this.provenanceManifest = provenanceManifest;
   }
 
   @Override
@@ -186,6 +202,200 @@ public class ChampionshipSync implements DataSyncContributor {
       }
     } catch (IOException e) {
       log.error("Error loading championships from file", e);
+    }
+  }
+
+  /**
+   * Version-change detection pass (seed-update review feature): classifies existing titles
+   * field-by-field through {@link SeedCollisionDetector} instead of reconciling directly — tier-1
+   * fields update silently and re-stamp, tier-2 fields park as PENDING decisions, tier-3 fields
+   * stay untouched. Only meaningful in PROTECT/VERIFY mode with existing rows.
+   *
+   * <p>Public: the orchestrator entry point — invoked once per boot by {@code
+   * SeedReviewDetectionOrchestrator} when {@code shouldRunDetection()} is true; no other callers.
+   */
+  public void detectVersionChangeCollisions() {
+    if (syncSupport.mode() == SeedSyncMode.FULL) {
+      return; // FULL mode applies the seed everywhere
+    }
+    long start = System.currentTimeMillis();
+    ClassPathResource resource = new ClassPathResource("championships.json");
+    if (!resource.exists()) {
+      return;
+    }
+    try (var is = resource.getInputStream()) {
+      List<TitleDTO> dtos = objectMapper.readValue(is, new TypeReference<>() {});
+      List<Title> toSave = new ArrayList<>();
+      for (TitleDTO dto : dtos) {
+        Title title = titleService.findByName(dto.getName()).orElse(null);
+        if (title == null) {
+          continue; // user-created rows have no seed match; missing rows are top-up's job
+        }
+        String newFingerprint =
+            SeedReviewDetectionSupport.incomingFingerprint(
+                provenanceManifest, DOMAIN_KEY, dto.getName(), seedValueFingerprint(dto));
+        boolean rowHasStoredStamp = SeedReviewDetectionSupport.hasStamp(title.getSeedFingerprint());
+        List<SeedCollisionDetector.FieldObservation> observations = fieldObservations(title, dto);
+        SeedReviewDetectionSupport.DetectionResult result =
+            SeedReviewDetectionSupport.detectRow(
+                DOMAIN_KEY,
+                entityKey(dto.getName()),
+                dto.getName(),
+                rowHasStoredStamp,
+                title.getSeedFingerprint(),
+                observations,
+                this::titleValueListFingerprint,
+                newFingerprint,
+                seedReviewService);
+        String stamp =
+            SeedReviewDetectionSupport.stampForResolvedRow(
+                result.provenanceExact(), newFingerprint);
+        if (!result.silentUpdateFields().isEmpty()) {
+          // Tier-1 write set: ONLY the silent-update fields — a tier-3-preserved admin edit on
+          // the same row must never be touched (per-field granularity, spec "Tier 2 granularity").
+          applySilentSeedFields(title, dto, result.silentUpdateFields());
+          toSave.add(title);
+        }
+        // Stamp-only rows must persist the re-stamp too: capture the change BEFORE setting it —
+        // comparing after the set reads the NEW value and the save is silently skipped forever
+        // (the row never converges).
+        if (stamp != null && !stamp.equals(title.getSeedFingerprint())) {
+          title.setSeedFingerprint(stamp);
+          if (!toSave.contains(title)) {
+            toSave.add(title);
+          }
+        }
+      }
+      if (!toSave.isEmpty()) {
+        titleService.saveAll(toSave);
+      }
+      log.info(
+          "Seed review detection (championship) complete ({} ms).",
+          System.currentTimeMillis() - start);
+    } catch (IOException e) {
+      log.error("Error during championship seed-review detection", e);
+    }
+  }
+
+  /** The detection-time per-field observations for one title row against its seed DTO. */
+  private List<SeedCollisionDetector.FieldObservation> fieldObservations(
+      Title title, TitleDTO dto) {
+    List<SeedCollisionDetector.FieldObservation> obs = new ArrayList<>();
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "description", null, title.getDescription(), dto.getDescription()));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "tier",
+            null,
+            title.getTier() == null ? null : title.getTier().name(),
+            dto.getTier() == null ? null : dto.getTier().name()));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "championshipType",
+            null,
+            title.getChampionshipType() == null ? null : title.getChampionshipType().name(),
+            dto.getChampionshipType() == null ? null : dto.getChampionshipType().name()));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "effectScript", null, title.getEffectScript(), dto.getEffectScript()));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "gender",
+            null,
+            title.getGender() == null ? null : title.getGender().name(),
+            dto.getGender() == null ? null : dto.getGender().name()));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "imageUrl", null, title.getImageUrl(), dto.getImageUrl()));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "expansionCode",
+            null,
+            title.getExpansionCode(),
+            dto.getExpansionCode() != null ? dto.getExpansionCode() : "BASE_GAME"));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "includeInRankings",
+            null,
+            String.valueOf(title.getIncludeInRankings()),
+            String.valueOf(
+                dto.getIncludeInRankings() != null ? dto.getIncludeInRankings() : Boolean.TRUE)));
+    return obs;
+  }
+
+  /** Fingerprint the incoming seed values would produce, in the canonical field order. */
+  private String seedValueFingerprint(TitleDTO dto) {
+    return syncSupport.fingerprint(
+        dto.getDescription(),
+        dto.getTier() == null ? null : dto.getTier().name(),
+        dto.getChampionshipType() == null ? null : dto.getChampionshipType().name(),
+        dto.getEffectScript(),
+        dto.getGender() == null ? null : dto.getGender().name(),
+        dto.getImageUrl(),
+        dto.getExpansionCode() != null ? dto.getExpansionCode() : "BASE_GAME",
+        dto.getIncludeInRankings() != null ? dto.getIncludeInRankings() : Boolean.TRUE);
+  }
+
+  /**
+   * Re-hashes a field-value list (the {@link #fieldObservations} order) back into a row fingerprint
+   * — the hash-function half of the clean-row/single-edit provenance reconstruction. Serialization
+   * mirrors {@link #titleFingerprint(Title)} exactly.
+   */
+  private String titleValueListFingerprint(List<String> values) {
+    return syncSupport.fingerprint(
+        values.get(0),
+        values.get(1) == null ? null : WrestlerTier.valueOf(values.get(1)),
+        values.get(2) == null ? null : ChampionshipType.valueOf(values.get(2)),
+        values.get(3),
+        values.get(4) == null ? null : Gender.valueOf(values.get(4)),
+        values.get(5),
+        values.get(6),
+        values.get(7) == null ? null : Boolean.valueOf(values.get(7)));
+  }
+
+  private static String entityKey(String name) {
+    return entityKeyFor(name);
+  }
+
+  /**
+   * The canonical entity key for a championship name — shared with {@code ChampionshipSeedApplier}
+   * so apply-side resolution derives keys exactly as detection minted them.
+   */
+  static String entityKeyFor(String name) {
+    return "championship:" + name.toLowerCase().replace(' ', '-');
+  }
+
+  /**
+   * Writes ONLY the named silent-update fields from the seed DTO onto the row — the tier-1 write
+   * set of the version-change pass. Field names match {@link #fieldObservations} entries; the field
+   * write semantics mirror {@link #applySeedFields(Title, TitleDTO)}.
+   */
+  private void applySilentSeedFields(Title title, TitleDTO dto, List<String> silentFields) {
+    for (String field : silentFields) {
+      switch (field) {
+        case "description" -> title.setDescription(dto.getDescription());
+        case "tier" -> {
+          if (dto.getTier() != null) {
+            title.setTier(dto.getTier());
+          }
+        }
+        case "championshipType" -> title.setChampionshipType(dto.getChampionshipType());
+        case "effectScript" -> title.setEffectScript(dto.getEffectScript());
+        case "gender" -> title.setGender(dto.getGender());
+        case "imageUrl" -> title.setImageUrl(dto.getImageUrl());
+        case "expansionCode" ->
+            title.setExpansionCode(
+                dto.getExpansionCode() != null ? dto.getExpansionCode() : "BASE_GAME");
+        case "includeInRankings" -> {
+          if (dto.getIncludeInRankings() != null) {
+            title.setIncludeInRankings(dto.getIncludeInRankings());
+          }
+        }
+        default ->
+            throw new IllegalStateException(
+                "Unknown silent-update championship field '" + field + "'");
+      }
     }
   }
 

@@ -25,6 +25,7 @@ import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.dto.GameDateChangedEvent;
+import com.github.javydreamercsw.management.sync.review.SeedReviewGate;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
@@ -46,6 +47,7 @@ class DramaEventSchedulerTest {
   @Mock private DramaEventService dramaEventService;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private UniverseRepository universeRepository;
+  @Mock private SeedReviewGate seedReviewGate;
 
   private DramaEventScheduler scheduler;
 
@@ -53,7 +55,9 @@ class DramaEventSchedulerTest {
 
   @BeforeEach
   void setUp() {
-    scheduler = new DramaEventScheduler(dramaEventService, wrestlerRepository, universeRepository);
+    scheduler =
+        new DramaEventScheduler(
+            dramaEventService, wrestlerRepository, universeRepository, seedReviewGate);
     // thresholdDays is @Value-injected; Spring isn't present in unit tests so set it explicitly
     ReflectionTestUtils.setField(scheduler, "thresholdDays", 7);
     universe1 = new Universe();

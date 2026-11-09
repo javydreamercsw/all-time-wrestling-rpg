@@ -298,6 +298,30 @@ class NewsGenerationServiceTest {
   }
 
   @Test
+  void testFallbackNews_winnersResultWithoutWinners_hasNoLeadingSpaceHeadline() {
+    // ATW-b08p: a WINNERS result with an empty winner list used to render " Victorious at ..."
+    // (leading space, no victor). The fallback now describes the conclusion without naming one.
+    Segment segment = new Segment();
+    segment.setShow(new Show());
+    segment.getShow().setName("Great American Bash");
+    segment.setSegmentType(new SegmentType());
+    segment.getSegmentType().setName("Battle Royal");
+    segment.declareResult(SegmentResult.WINNERS); // result says winners; the list is empty
+
+    when(aiService.generateText(anyString())).thenThrow(new RuntimeException("AI Down"));
+
+    newsGenerationService.generateNewsForSegment(segment);
+
+    verify(newsService)
+        .createNewsItem(
+            eq("Match Concludes at Great American Bash"),
+            contains("no victor was recorded"),
+            eq(NewsCategory.BREAKING),
+            eq(false),
+            eq(3));
+  }
+
+  @Test
   void testRollForRumor_Success() {
     when(gameSettingService.getNewsRumorChance()).thenReturn(100); // 100% chance
 

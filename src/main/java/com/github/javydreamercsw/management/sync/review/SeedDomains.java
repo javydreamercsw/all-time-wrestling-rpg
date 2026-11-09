@@ -36,25 +36,40 @@ import java.util.Set;
 public final class SeedDomains {
 
   /**
-   * Every domain the committed manifest must cover, in manifest document order: achievement,
-   * campaign_ability_card, card, card_set, championship, deck, npc, ringside_action, segment_rule,
-   * segment_type, wrestler.
+   * Every domain the committed manifest must cover, in manifest document order: achievement, arena,
+   * campaign_ability_card, campaign_upgrade, card, card_set, championship, commentator,
+   * commentary_team, deck, faction, location, npc, outcome_matrix, ringside_action, segment_rule,
+   * segment_type, show_template, show_type, status_card, team, tournament, wrestler,
+   * wrestler_relationship.
    */
   public static final Set<String> STAMPING_DOMAINS =
       Collections.unmodifiableSet(
           new LinkedHashSet<>(
               List.of(
                   "achievement",
+                  "arena",
                   "campaign_ability_card",
+                  "campaign_upgrade",
                   "card",
                   "card_set",
                   "championship",
+                  "commentator",
+                  "commentary_team",
                   "deck",
+                  "faction",
+                  "location",
                   "npc",
+                  "outcome_matrix",
                   "ringside_action",
                   "segment_rule",
                   "segment_type",
-                  "wrestler")));
+                  "show_template",
+                  "show_type",
+                  "status_card",
+                  "team",
+                  "tournament",
+                  "wrestler",
+                  "wrestler_relationship")));
 
   private SeedDomains() {}
 }

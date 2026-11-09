@@ -27,6 +27,7 @@ import com.github.javydreamercsw.management.domain.GameSettingRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.event.dto.GameDateChangedEvent;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.sync.review.SeedReviewGate;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -50,6 +51,7 @@ class GameSettingServiceTest {
   @Mock private GameSettingRepository repository;
   @Mock private ApplicationEventPublisher eventPublisher;
   @Mock private UniverseContextService universeContextService;
+  @Mock private SeedReviewGate seedReviewGate;
 
   @InjectMocks private GameSettingService service;
 

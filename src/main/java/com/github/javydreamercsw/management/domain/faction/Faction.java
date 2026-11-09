@@ -108,6 +108,14 @@ public class Faction extends AbstractEntity<Long> {
   @Builder.Default
   private int affinity = 0;
 
+  /**
+   * Per-row seed provenance stamp (seed-update review feature): the hash of the row's seed-owned
+   * fields as the last seed write left them. NULL = pre-fingerprint-era (legacy) or user-created
+   * row.
+   */
+  @Column(name = "seed_fingerprint", length = 64)
+  private String seedFingerprint;
+
   // Computed count of members — avoids lazy-init when rendering grid columns detached
   @Formula("(SELECT COUNT(*) FROM wrestler_state ws WHERE ws.faction_id = faction_id)")
   @Getter(AccessLevel.NONE)

@@ -422,13 +422,23 @@ public class NewsGenerationService {
     } else {
       String winners =
           segment.getWinners().stream().map(Wrestler::getName).collect(Collectors.joining(", "));
-      headline = winners + " Victorious at " + segment.getShow().getName();
-      content =
-          "In a hard-fought "
-              + segment.getSegmentType().getName()
-              + ", "
-              + winners
-              + " emerged victorious.";
+      if (winners.isBlank()) {
+        // WINNERS result with no winner recorded (ATW-b08p): never render a leading-space
+        // " Victorious at …" headline — describe the conclusion without naming a victor.
+        headline = "Match Concludes at " + segment.getShow().getName();
+        content =
+            "The "
+                + segment.getSegmentType().getName()
+                + " has concluded — no victor was recorded for this match.";
+      } else {
+        headline = winners + " Victorious at " + segment.getShow().getName();
+        content =
+            "In a hard-fought "
+                + segment.getSegmentType().getName()
+                + ", "
+                + winners
+                + " emerged victorious.";
+      }
     }
 
     newsService.createNewsItem(

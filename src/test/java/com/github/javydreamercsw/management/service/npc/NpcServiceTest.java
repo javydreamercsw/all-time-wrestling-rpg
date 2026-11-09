@@ -38,6 +38,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -337,5 +338,19 @@ class NpcServiceTest {
 
     assertFalse(activeNpc.isActive());
     verify(npcRepository).save(activeNpc);
+  }
+
+  @Test
+  void findAllUnfiltered_requiresAuthentication() {
+    // beads ATW-w0bq: defense-in-depth pin — sync callers run under runAsAdmin, UI callers
+    // under authenticated Vaadin sessions; the loader must refuse anonymous access.
+    try {
+      var annotation =
+          NpcService.class.getMethod("findAllUnfiltered").getAnnotation(PreAuthorize.class);
+      assertNotNull(annotation, "findAllUnfiltered must be @PreAuthorize-annotated");
+      assertEquals("isAuthenticated()", annotation.value());
+    } catch (NoSuchMethodException e) {
+      throw new AssertionError("findAllUnfiltered method not found", e);
+    }
   }
 }

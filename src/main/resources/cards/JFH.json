@@ -111,64 +111,6 @@
   "number": 8,
   "set": "JFH"
 }
-// Pending spoilers - uncomment and fill in when cards are revealed:
-// , {
-//   "name": "Double Leg Drop",
-//   "type": "Strike",
-//   "damage": 1,
-//   "stamina": 1,
-//   "target": 2,
-//   "momentum": 1,
-//   "signature": false,
-//   "finisher": false,
-//   "taunt": false,
-//   "recover": false,
-//   "pin": false,
-//   "number": 9,
-//   "set": "JFH"
-// }, {
-//   "name": "JFH 10 name",
-//   "type": "Aerial",
-//   "damage": 0,
-//   "stamina": 0,
-//   "target": 0,
-//   "momentum": 0,
-//   "signature": false,
-//   "finisher": false,
-//   "taunt": false,
-//   "recover": false,
-//   "pin": false,
-//   "number": 10,
-//   "set": "JFH"
-// }, {
-//   "name": "JFH 11 name",
-//   "type": "Aerial",
-//   "damage": 0,
-//   "stamina": 0,
-//   "target": 0,
-//   "momentum": 0,
-//   "signature": false,
-//   "finisher": false,
-//   "taunt": false,
-//   "recover": false,
-//   "pin": false,
-//   "number": 11,
-//   "set": "JFH"
-// }, {
-//   "name": "JFH 13 name",
-//   "type": "Aerial",
-//   "damage": 0,
-//   "stamina": 0,
-//   "target": 0,
-//   "momentum": 0,
-//   "signature": false,
-//   "finisher": false,
-//   "taunt": false,
-//   "recover": false,
-//   "pin": false,
-//   "number": 13,
-//   "set": "JFH"
-// }
 , {
   "name": "Twist of Fate",
   "type": "Grapple",

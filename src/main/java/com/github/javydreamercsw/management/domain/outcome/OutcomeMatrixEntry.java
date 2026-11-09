@@ -83,6 +83,14 @@ public class OutcomeMatrixEntry extends AbstractEntity<Long> {
   @JoinColumn(name = "redirect_matrix_id")
   private OutcomeMatrix redirectToMatrix;
 
+  /**
+   * Per-row seed provenance stamp (seed-update review feature): the hash of the row's seed-owned
+   * fields as the last seed write left them. NULL = pre-fingerprint-era (legacy) or user-created
+   * row.
+   */
+  @Column(name = "seed_fingerprint", length = 64)
+  private String seedFingerprint;
+
   public boolean hasEffects() {
     return heatDelta != null
         || fanDelta != null

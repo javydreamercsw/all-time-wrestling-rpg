@@ -68,6 +68,13 @@ public class ShowType extends AbstractEntity<Long> {
   @Column(name = "category", nullable = false)
   private ShowCategory category = ShowCategory.OTHER;
 
+  /**
+   * Seed verify mode: SHA-256 over the seed-owned field values as shipped by the seed payload. NULL
+   * means a pre-fingerprint-era (legacy) or user-created row.
+   */
+  @Column(name = "seed_fingerprint", length = 64)
+  private String seedFingerprint;
+
   /** Ensure default values before persisting. */
   @PrePersist
   private void ensureDefaults() {

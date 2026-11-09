@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.domain.wrestler;
 
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
+import com.github.javydreamercsw.management.domain.faction.Faction;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import java.util.List;
 import java.util.Optional;
@@ -44,6 +45,9 @@ public interface WrestlerStateRepository extends JpaRepository<WrestlerState, Lo
   List<WrestlerState> findByWrestlerIsPlayerFalseAndUniverseId(Long universeId);
 
   List<WrestlerState> findByUniverseId(Long universeId);
+
+  /** Member states belonging to the faction (seed-review removal guard). */
+  List<WrestlerState> findByFaction(Faction faction);
 
   @Query(
       "SELECT s FROM WrestlerState s LEFT JOIN FETCH s.wrestler LEFT JOIN FETCH s.manager"

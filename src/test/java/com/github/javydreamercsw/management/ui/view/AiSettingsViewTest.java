@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
+import com.github.javydreamercsw.management.event.inbox.AiSettingsChangeBroadcaster;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
@@ -41,6 +42,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 
 class AiSettingsViewTest extends AbstractViewTest {
 
@@ -75,7 +77,12 @@ class AiSettingsViewTest extends AbstractViewTest {
     when(aiSettingsService.getOllamaBaseUrl()).thenReturn("");
     when(aiSettingsService.getOllamaModel()).thenReturn("llama3.2:1b");
 
-    view = new AiSettingsView(aiSettingsService, gameSettingService, notificationService);
+    view =
+        new AiSettingsView(
+            aiSettingsService,
+            gameSettingService,
+            notificationService,
+            Mockito.mock(AiSettingsChangeBroadcaster.class));
     UI.getCurrent().add(view);
   }
 
