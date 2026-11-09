@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -31,6 +32,7 @@ import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.commentator.Commentator;
 import com.github.javydreamercsw.management.domain.npc.Npc;
+import com.github.javydreamercsw.management.dto.commentator.CommentaryTeamImportDTO;
 import com.github.javydreamercsw.management.service.commentator.CommentaryService;
 import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
 import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
@@ -67,6 +69,12 @@ class CommentaryTeamSyncTest {
   void setUp() {
     sync = sync("false");
     when(commentaryService.countTeams()).thenReturn(0L);
+    // Healthy-install semantics (ATW-1rmi item 10): membersCanonical(CommentaryTeamImportDTO)
+    // keeps only names the service can resolve, mirroring the write path's filter. The fixture
+    // members all resolve.
+    lenient()
+        .when(commentaryService.findCommentatorByNpcName(anyString()))
+        .thenAnswer(inv -> Optional.of(new Commentator()));
   }
 
   private CommentaryTeamSync sync(String mode) {
@@ -116,6 +124,7 @@ class CommentaryTeamSyncTest {
     Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
+              parkedCoordinates.add("#" + inv.getArgument(2));
               return null;
             })
         .when(parking)
@@ -148,7 +157,7 @@ class CommentaryTeamSyncTest {
             eq("Dara Hoshiko\nLord Bastian Von Crowe"),
             anyString());
     assertEquals(
-        Set.of("commentary_team:all-time-broadcast-team|members"),
+        Set.of("commentary_team:all-time-broadcast-team|members", "#All-Time Broadcast Team"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
     // The parked row is never written (the decision owns any later value change).
@@ -187,6 +196,17 @@ class CommentaryTeamSyncTest {
     verify(parking, never())
         .parkFieldConflict(
             anyString(), anyString(), anyString(), anyString(), any(), any(), anyString());
+  }
+
+  @Test
+  void membersCanonical_nullMemberNames_serializesAsEmpty() {
+    // ATW-1rmi coverage pin: a seed DTO without memberNames (missing key) canonicalizes to ""
+    // — the same serialization the stored side produces for a team with no members.
+    CommentaryTeamImportDTO dto = new CommentaryTeamImportDTO();
+    dto.setTeamName("Ghost Booth");
+    assertEquals("", sync.membersCanonical(dto));
+    dto.setMemberNames(null);
+    assertEquals("", sync.membersCanonical(dto));
   }
 
   @Test

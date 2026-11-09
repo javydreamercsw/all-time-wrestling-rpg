@@ -125,6 +125,7 @@ class CommentatorSyncTest {
     Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
+              parkedCoordinates.add("#" + inv.getArgument(2));
               return null;
             })
         .when(parking)
@@ -159,7 +160,7 @@ class CommentatorSyncTest {
             eq("Champions rise… but villains endure."),
             anyString());
     assertEquals(
-        Set.of("commentator:lord-bastian-von-crowe|catchphrase"),
+        Set.of("commentator:lord-bastian-von-crowe|catchphrase", "#Lord Bastian Von Crowe"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
   }

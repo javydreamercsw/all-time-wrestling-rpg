@@ -187,10 +187,16 @@ public class RelationshipSync implements DataSyncContributor {
             SeedReviewDetectionSupport.hasStamp(relationship.getSeedFingerprint());
         List<SeedCollisionDetector.FieldObservation> observations =
             fieldObservations(relationship, dto);
+        // Key normalization (ATW-1rmi item 11): detection matches the pair in either order, but
+        // the applier remints the key from the row's STORED order. Mint the parked key from the
+        // stored order too, so a seed row listing (B, A) for a stored (A, B) relationship parks
+        // under a key the applier can resolve instead of an unresolvable PENDING.
+        String parkedKey =
+            entityKey(relationship.getWrestler1(), relationship.getWrestler2(), dto.getType());
         SeedReviewDetectionSupport.DetectionResult result =
             SeedReviewDetectionSupport.detectRow(
                 DOMAIN_KEY,
-                entityKey(w1, w2, dto.getType()),
+                parkedKey,
                 seedName,
                 rowHasStoredStamp,
                 relationship.getSeedFingerprint(),

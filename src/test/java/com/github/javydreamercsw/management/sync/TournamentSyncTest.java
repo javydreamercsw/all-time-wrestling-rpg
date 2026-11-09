@@ -176,6 +176,7 @@ class TournamentSyncTest {
     Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
+              parkedCoordinates.add("#" + inv.getArgument(2));
               return null;
             })
         .when(parking)
@@ -210,7 +211,7 @@ class TournamentSyncTest {
             anyString(),
             anyString());
     assertEquals(
-        Set.of("tournament:deadly_combat|allowedRules"),
+        Set.of("tournament:deadly_combat|allowedRules", "#Deadly Combat"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
   }

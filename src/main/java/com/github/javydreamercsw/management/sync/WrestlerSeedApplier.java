@@ -167,7 +167,10 @@ public class WrestlerSeedApplier implements SeedDomainApplier {
         // reflecting the seed change.
         if (value != null) {
           try {
-            AlignmentType seedType = AlignmentType.valueOf(value);
+            // Case-normalize like the silent writer (ATW-1rmi item 12): detection fingerprints
+            // the seed value upper-cased, so a non-uppercase capture in the decision must parse
+            // the same way instead of falling to the warn-and-stamp tolerant path.
+            AlignmentType seedType = AlignmentType.valueOf(value.toUpperCase());
             WrestlerAlignment current = wrestler.getAlignment();
             if (current != null) {
               current.setAlignmentType(seedType);

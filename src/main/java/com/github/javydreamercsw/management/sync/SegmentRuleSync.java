@@ -162,14 +162,20 @@ public class SegmentRuleSync implements DataSyncContributor {
         String stamp =
             SeedReviewDetectionSupport.stampForResolvedRow(
                 result.provenanceExact(), newFingerprint);
+        // Single-save convergence (ATW-1rmi item 3): set the stamp BEFORE the tier-1 save so a
+        // row needing both a silent write and a re-stamp hits the service once. The two saves
+        // were idempotent (self-healing), but one save is one flush.
+        boolean stampChanged = stamp != null && !stamp.equals(sr.getSeedFingerprint());
         if (!result.silentUpdateFields().isEmpty()) {
           // Tier-1 write set: ONLY the silent-update fields, written in place on the row (the
           // service's createOrUpdateRule would apply the full seed write-set and clobber a
           // tier-3-preserved admin edit on the same row).
           applySilentSeedFields(sr, dto, result.silentUpdateFields());
+          if (stampChanged) {
+            sr.setSeedFingerprint(stamp);
+          }
           segmentRuleService.saveRule(sr);
-        }
-        if (stamp != null && !stamp.equals(sr.getSeedFingerprint())) {
+        } else if (stampChanged) {
           sr.setSeedFingerprint(stamp);
           segmentRuleService.saveRule(sr);
         }

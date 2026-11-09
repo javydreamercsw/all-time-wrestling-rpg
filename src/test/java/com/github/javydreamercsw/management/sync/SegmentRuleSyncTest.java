@@ -28,15 +28,18 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.dto.SegmentRuleDTO;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
 import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,6 +48,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -345,6 +349,7 @@ class SegmentRuleSyncTest {
     Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
+              parkedCoordinates.add("#" + inv.getArgument(2));
               return null;
             })
         .when(seedReviewService)
@@ -374,7 +379,7 @@ class SegmentRuleSyncTest {
         tier2row.getBumpAddition(),
         "tier 2: admin-edited field must keep its value — only a PENDING decision is created");
     assertEquals(
-        Set.of("segment_rule:elimination|bumpAddition"),
+        Set.of("segment_rule:elimination|bumpAddition", "#Elimination"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
     Mockito.verify(seedReviewService)
@@ -386,6 +391,54 @@ class SegmentRuleSyncTest {
             eq(BumpAddition.ALL.name()),
             eq(BumpAddition.NONE.name()),
             anyString());
+  }
+
+  @Test
+  void versionChangeStampOnlyRowReStampsWithoutSilentFields() {
+    // Stamp-only arm of the single-save convergence (ATW-1rmi item 3): a clean row whose seed
+    // is unchanged hits the `else if (stampChanged)` arm — the manifest's hash differs from the
+    // stored stamp, so the row re-stamps through the service with nothing to apply and nothing
+    // to park.
+    SegmentRule clean =
+        rule(
+            "Normal",
+            "Standard Match: Victory is achieved by pinfall, submission, count-out, or"
+                + " disqualification. Standard rules apply, including rope breaks and a 10-count"
+                + " for being outside the ring.");
+    // The row mirrors what a FULL seed write left: seed description + the seed's guide hash
+    // (computed via the sync's own guideHashFor through reflection — it's private). With every
+    // seed-owned field matching, detection classifies NO_OP and only the stamp differs
+    // (manifest hash vs stored) → the else-if (stamp-only) arm.
+    SegmentRuleDTO seedDto = loadSeedDto("Normal");
+    clean.setGuide(seedDto.getGuide());
+    clean.setGuideHash(
+        (String)
+            ReflectionTestUtils.invokeMethod(
+                new SegmentRuleSync(
+                    "verify",
+                    segmentRuleService,
+                    new ObjectMapper(),
+                    seedReviewService,
+                    EMPTY_MANIFEST),
+                "guideHashFor",
+                seedDto));
+    clean.setSeedFingerprint(ruleFingerprint(clean));
+
+    Mockito.when(segmentRuleService.findAllForAdmin()).thenReturn(List.of(clean));
+    SeedProvenanceManifest manifest =
+        SeedProvenanceManifest.of(Map.of("segment_rule", Map.of("Normal", "manifest-hash-normal")));
+
+    SegmentRuleSync detectionSync =
+        new SegmentRuleSync(
+            "verify", segmentRuleService, new ObjectMapper(), seedReviewService, manifest);
+    detectionSync.detectVersionChangeCollisions();
+
+    assertEquals(
+        "manifest-hash-normal",
+        clean.getSeedFingerprint(),
+        "a clean seed-unchanged row must adopt the manifest hash (stamp-only save)");
+    Mockito.verify(segmentRuleService).saveRule(clean);
+    Mockito.verifyNoInteractions(seedReviewService);
   }
 
   @Test
@@ -440,5 +493,16 @@ class SegmentRuleSyncTest {
             "true", segmentRuleService, new ObjectMapper(), seedReviewService, EMPTY_MANIFEST);
 
     assertNull(sync.guideHashForGuide(null), "no payload → no hash (mirrors the seed write)");
+  }
+
+  /** Reads the real seed file and returns the DTO for the given rule name. */
+  private static SegmentRuleDTO loadSeedDto(String name) {
+    try (var is = SegmentRuleSyncTest.class.getResourceAsStream("/segment_rules.json")) {
+      List<SegmentRuleDTO> dtos =
+          new ObjectMapper().readValue(is, new TypeReference<List<SegmentRuleDTO>>() {});
+      return dtos.stream().filter(d -> name.equals(d.getName())).findFirst().orElseThrow();
+    } catch (Exception e) {
+      throw new IllegalStateException("seed segment_rules.json failed to parse", e);
+    }
   }
 }

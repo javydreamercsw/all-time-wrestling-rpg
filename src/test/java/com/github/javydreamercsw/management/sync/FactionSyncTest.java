@@ -144,6 +144,7 @@ class FactionSyncTest {
     Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
+              parkedCoordinates.add("#" + inv.getArgument(2));
               return null;
             })
         .when(parking)
@@ -182,7 +183,7 @@ class FactionSyncTest {
             eq("MVP"),
             anyString());
     assertEquals(
-        Set.of("faction:the-hurt-business|managerName"),
+        Set.of("faction:the-hurt-business|managerName", "#The Hurt Business"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
   }

@@ -338,6 +338,7 @@ class CardSyncTest {
     Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
+              parkedCoordinates.add("#" + inv.getArgument(2));
               return null;
             })
         .when(parking)
@@ -383,7 +384,7 @@ class CardSyncTest {
             ArgumentMatchers.eq("9"),
             ArgumentMatchers.anyString());
     assertEquals(
-        Set.of("card:atw#59|momentum"),
+        Set.of("card:atw#59|momentum", "#Gori Special"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 fields never park");
   }

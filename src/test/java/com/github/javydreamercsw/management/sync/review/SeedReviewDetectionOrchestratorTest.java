@@ -212,7 +212,7 @@ class SeedReviewDetectionOrchestratorTest {
   }
 
   @Test
-  void oneDomainFailingDoesNotPreventTheOtherTwentyThree() {
+  void oneDomainFailingDoesNotPreventTheOtherDomainsFromRunning() {
     when(reviewService.shouldRunDetection()).thenReturn(true);
     doThrow(new IllegalStateException("wrestler detection exploded"))
         .when(wrestlerSync)

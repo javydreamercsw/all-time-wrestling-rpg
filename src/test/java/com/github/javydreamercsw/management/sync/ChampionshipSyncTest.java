@@ -280,6 +280,7 @@ class ChampionshipSyncTest {
     Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
+              parkedCoordinates.add("#" + inv.getArgument(2));
               return null;
             })
         .when(seedReviewService)
@@ -324,7 +325,7 @@ class ChampionshipSyncTest {
             anyString());
     // Only ATW Extreme's effectScript parked; the tier-1/tier-3 fields never park.
     assertEquals(
-        Set.of("championship:atw-extreme|effectScript"),
+        Set.of("championship:atw-extreme|effectScript", "#ATW Extreme"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
   }

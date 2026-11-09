@@ -297,9 +297,8 @@ class NpcSyncTest {
     Npc tier1row = new Npc();
     tier1row.setName("Charles");
     tier1row.setDescription("stale description from an older release"); // seed changed since
-    tier1row.setNpcType("Owner");
-    tier1row.setExpansionCode("BASE_GAME");
     tier1row.setNpcType("Owner"); // seed value
+    tier1row.setExpansionCode("BASE_GAME");
     npcCanonicalHashed(tier1row);
     tier1row.setNpcType("Administrator"); // tier 3: admin edit AFTER the stamp, seed says "Owner"
 
@@ -325,6 +324,7 @@ class NpcSyncTest {
     Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
+              parkedCoordinates.add("#" + inv.getArgument(2));
               return null;
             })
         .when(parking)
@@ -360,7 +360,7 @@ class NpcSyncTest {
             eq("85"),
             anyString());
     assertEquals(
-        Set.of("npc:samuel-winters|awareness"),
+        Set.of("npc:samuel-winters|awareness", "#Samuel Winters"),
         parkedCoordinates,
         "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
   }
@@ -404,6 +404,7 @@ class NpcSyncTest {
     Mockito.doAnswer(
             inv -> {
               parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
+              parkedCoordinates.add("#" + inv.getArgument(2));
               return null;
             })
         .when(parking)
