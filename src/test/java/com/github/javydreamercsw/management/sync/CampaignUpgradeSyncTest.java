@@ -131,7 +131,7 @@ class CampaignUpgradeSyncTest {
                       return false;
                     }
                   }
-                  return !rows.iterator().hasNext() || true;
+                  return true;
                 }));
   }
 
