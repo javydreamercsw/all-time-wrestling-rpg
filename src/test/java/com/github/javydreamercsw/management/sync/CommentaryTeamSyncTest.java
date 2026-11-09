@@ -32,6 +32,7 @@ import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.commentator.Commentator;
 import com.github.javydreamercsw.management.domain.npc.Npc;
+import com.github.javydreamercsw.management.dto.commentator.CommentaryTeamImportDTO;
 import com.github.javydreamercsw.management.service.commentator.CommentaryService;
 import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
 import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
@@ -195,6 +196,17 @@ class CommentaryTeamSyncTest {
     verify(parking, never())
         .parkFieldConflict(
             anyString(), anyString(), anyString(), anyString(), any(), any(), anyString());
+  }
+
+  @Test
+  void membersCanonical_nullMemberNames_serializesAsEmpty() {
+    // ATW-1rmi coverage pin: a seed DTO without memberNames (missing key) canonicalizes to ""
+    // — the same serialization the stored side produces for a team with no members.
+    CommentaryTeamImportDTO dto = new CommentaryTeamImportDTO();
+    dto.setTeamName("Ghost Booth");
+    assertEquals("", sync.membersCanonical(dto));
+    dto.setMemberNames(null);
+    assertEquals("", sync.membersCanonical(dto));
   }
 
   @Test

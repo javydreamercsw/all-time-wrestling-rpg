@@ -215,7 +215,7 @@ public class CommentaryTeamSync implements DataSyncContributor {
    * resolve does not park "members" on every boot; it simply never reaches the row, exactly as the
    * write path treats it.
    */
-  private String membersCanonical(CommentaryTeamImportDTO dto) {
+  String membersCanonical(CommentaryTeamImportDTO dto) {
     if (dto.getMemberNames() == null) {
       return "";
     }
