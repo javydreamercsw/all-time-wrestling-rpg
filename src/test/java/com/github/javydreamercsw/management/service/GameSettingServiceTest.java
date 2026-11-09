@@ -460,4 +460,65 @@ class GameSettingServiceTest {
   private GameSetting assertThatCaptorMatches(Predicate<GameSetting> match) {
     return ArgumentMatchers.argThat(s -> match.test(s));
   }
+
+  // ── Credential fallback (beads ATW-p2y2) ────────────────────────────────────
+
+  @Test
+  void findById_credentialEmptyScopedRowFallsBackToGlobal() {
+    // The sandbox bug: AiSettingsSync (or an admin save) left an EMPTY universe-scoped row; that
+    // must not shadow a working global key — blank is not "this universe has its own key".
+    Long universeId = 1L;
+    Mockito.when(universeContextService.getCurrentUniverseId()).thenReturn(universeId);
+    GameSetting emptyScoped = setting("AI_GEMINI_API_KEY", "");
+    emptyScoped.setUniverseId(universeId);
+    GameSetting globalKey = setting("AI_GEMINI_API_KEY", "global-working-key");
+    Mockito.when(repository.findBySettingKeyAndUniverseId("AI_GEMINI_API_KEY", universeId))
+        .thenReturn(Optional.of(emptyScoped));
+    Mockito.when(repository.findGlobal("AI_GEMINI_API_KEY")).thenReturn(Optional.of(globalKey));
+
+    Optional<GameSetting> result = service.findById("AI_GEMINI_API_KEY");
+
+    assertThat(result).isPresent().contains(globalKey);
+  }
+
+  @Test
+  void findById_credentialBlankScopedRowFallsBackToGlobal() {
+    Long universeId = 2L;
+    Mockito.when(universeContextService.getCurrentUniverseId()).thenReturn(universeId);
+    GameSetting blankScoped = setting("AI_GEMINI_API_KEY", "   ");
+    blankScoped.setUniverseId(universeId);
+    GameSetting globalKey = setting("AI_GEMINI_API_KEY", "global-working-key");
+    Mockito.when(repository.findBySettingKeyAndUniverseId("AI_GEMINI_API_KEY", universeId))
+        .thenReturn(Optional.of(blankScoped));
+    Mockito.when(repository.findGlobal("AI_GEMINI_API_KEY")).thenReturn(Optional.of(globalKey));
+
+    Optional<GameSetting> result = service.findById("AI_GEMINI_API_KEY");
+
+    assertThat(result).isPresent().contains(globalKey);
+  }
+
+  @Test
+  void findById_credentialNonEmptyScopedRowStaysAuthoritative() {
+    // A configured per-universe key still wins — the fallback only rescues blank rows.
+    Long universeId = 3L;
+    Mockito.when(universeContextService.getCurrentUniverseId()).thenReturn(universeId);
+    GameSetting scopedKey = setting("AI_GEMINI_API_KEY", "universe-specific-key");
+    scopedKey.setUniverseId(universeId);
+    Mockito.when(repository.findBySettingKeyAndUniverseId("AI_GEMINI_API_KEY", universeId))
+        .thenReturn(Optional.of(scopedKey));
+
+    Optional<GameSetting> result = service.findById("AI_GEMINI_API_KEY");
+
+    assertThat(result).isPresent().contains(scopedKey);
+  }
+
+  @Test
+  void findById_credentialNoUniverseStillReturnsEmpty() {
+    // The CREDENTIAL_KEYS safety property is unchanged: no active universe → no credential read.
+    Mockito.when(universeContextService.getCurrentUniverseId()).thenReturn(null);
+    Mockito.when(repository.findGlobal("AI_GEMINI_API_KEY"))
+        .thenReturn(Optional.of(setting("AI_GEMINI_API_KEY", "global-key")));
+
+    assertThat(service.findById("AI_GEMINI_API_KEY")).isEmpty();
+  }
 }

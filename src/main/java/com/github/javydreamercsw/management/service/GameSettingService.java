@@ -114,9 +114,9 @@ public class GameSettingService {
   public static final String BRIEFCASE_NPC_CASH_IN_ENABLED_KEY = "briefcase.npc_cash_in_enabled";
 
   /**
-   * Keys that are strictly per-universe credentials. They are NEVER inherited from the global
-   * defaults — each universe must configure its own. Reading without an active universe returns
-   * empty.
+   * Keys that are strictly per-universe credentials. Each universe configures its own; a BLANK
+   * universe-scoped row does not shadow a working global credential (blank falls through — beads
+   * ATW-p2y2). Reading without an active universe returns empty.
    */
   private static final Set<String> CREDENTIAL_KEYS =
       Set.of(
@@ -140,7 +140,7 @@ public class GameSettingService {
    *
    * <ul>
    *   <li>System keys → always global (universe_id IS NULL)
-   *   <li>Credential keys → universe-scoped only, no fallback
+   *   <li>Credential keys → universe-scoped; a BLANK scoped row falls through to global (ATW-p2y2)
    *   <li>Gameplay keys → universe-scoped with fallback to global
    * </ul>
    */
@@ -565,7 +565,7 @@ public class GameSettingService {
   public Optional<GameSetting> findByKeyForUniverse(final String key, final Long universeId) {
     if (universeId != null) {
       Optional<GameSetting> scoped = repository.findBySettingKeyAndUniverseId(key, universeId);
-      if (scoped.isPresent()) {
+      if (scoped.isPresent() && hasText(scoped.get().getValue())) {
         return scoped;
       }
     }
@@ -585,16 +585,27 @@ public class GameSettingService {
       if (universeId == null) {
         return Optional.empty();
       }
-      return repository.findBySettingKeyAndUniverseId(key, universeId);
+      // A BLANK universe-scoped row is not "this universe has its own key" (beads ATW-p2y2): a
+      // save that never wrote a value — or AiSettingsSync's empty seed row — must not shadow a
+      // working global credential. Only a configured (non-blank) scoped row is authoritative.
+      Optional<GameSetting> scoped = repository.findBySettingKeyAndUniverseId(key, universeId);
+      if (scoped.isPresent() && hasText(scoped.get().getValue())) {
+        return scoped;
+      }
+      return repository.findGlobal(key);
     }
 
     if (universeId != null) {
       Optional<GameSetting> scoped = repository.findBySettingKeyAndUniverseId(key, universeId);
-      if (scoped.isPresent()) {
+      if (scoped.isPresent() && hasText(scoped.get().getValue())) {
         return scoped;
       }
     }
     return repository.findGlobal(key);
+  }
+
+  private static boolean hasText(final String value) {
+    return value != null && !value.isBlank();
   }
 
   @Transactional
