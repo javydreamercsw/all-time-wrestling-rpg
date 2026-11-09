@@ -27,4 +27,7 @@ public interface WrestlerStatusRepository extends JpaRepository<WrestlerStatus, 
   List<WrestlerStatus> findByWrestler(Wrestler wrestler);
 
   Optional<WrestlerStatus> findByWrestlerAndStatusCard(Wrestler wrestler, StatusCard statusCard);
+
+  /** Whether any wrestler status row applies the given card (seed-review removal guard). */
+  boolean existsByStatusCard(StatusCard statusCard);
 }

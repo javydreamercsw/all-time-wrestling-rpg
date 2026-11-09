@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.card;
 
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,6 +29,9 @@ public interface CardRepository extends JpaRepository<Card, Long>, JpaSpecificat
 
   // If you don't need a total row count, Slice is better than Page.
   Page<Card> findAllBy(Pageable pageable);
+
+  /** Cards belonging to a set (seed-review removal dependent check). */
+  List<Card> findBySet(CardSet set);
 
   Optional<Card> findByNumberAndSetCode(Integer number, String setCode);
 

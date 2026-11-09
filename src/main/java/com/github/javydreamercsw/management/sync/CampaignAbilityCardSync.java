@@ -21,7 +21,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.campaign.CampaignAbilityCard;
 import com.github.javydreamercsw.management.dto.CampaignAbilityCardDTO;
 import com.github.javydreamercsw.management.service.campaign.CampaignAbilityCardService;
+import com.github.javydreamercsw.management.sync.review.SeedCollisionDetector;
+import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
+import com.github.javydreamercsw.management.sync.review.SeedReviewDetectionSupport;
+import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -38,18 +43,27 @@ import org.springframework.stereotype.Component;
 @Order(180)
 public class CampaignAbilityCardSync implements DataSyncContributor {
 
+  /** Seed domain key (must match {@code SeedDomains.STAMPING_DOMAINS}). */
+  public static final String DOMAIN_KEY = "campaign_ability_card";
+
   private final SeedSyncSupport syncSupport;
   private final CampaignAbilityCardService campaignAbilityCardService;
   private final ObjectMapper objectMapper;
+  private final SeedUpdateReviewService seedReviewService;
+  private final SeedProvenanceManifest provenanceManifest;
 
   @Autowired
   public CampaignAbilityCardSync(
       @Value("${data.initializer.skip-if-not-empty:false}") final String skipIfNotEmptyRaw,
       final CampaignAbilityCardService campaignAbilityCardService,
-      final ObjectMapper objectMapper) {
+      final ObjectMapper objectMapper,
+      final SeedUpdateReviewService seedReviewService,
+      final SeedProvenanceManifest provenanceManifest) {
     this.syncSupport = new SeedSyncSupport(skipIfNotEmptyRaw);
     this.campaignAbilityCardService = campaignAbilityCardService;
     this.objectMapper = objectMapper;
+    this.seedReviewService = seedReviewService;
+    this.provenanceManifest = provenanceManifest;
   }
 
   @Override
@@ -232,6 +246,197 @@ public class CampaignAbilityCardSync implements DataSyncContributor {
           System.currentTimeMillis() - start);
     } catch (IOException e) {
       log.error("Error during campaign ability card verify reconcile", e);
+    }
+  }
+
+  /**
+   * Version-change detection pass (seed-update review feature): on a boot where the app version
+   * changed (or undecided decisions exist), existing ability cards are classified field-by-field
+   * through {@link SeedCollisionDetector} instead of being reconciled directly — tier-1 fields
+   * update silently and re-stamp, tier-2 fields park as PENDING decisions, tier-3 fields stay
+   * untouched. Runs only in PROTECT/VERIFY mode with existing rows (FULL mode's load already
+   * applies the seed everywhere; an empty DB has nothing to collide).
+   *
+   * <p>Callers invoke this once per boot after the domain passes and only when {@link
+   * SeedUpdateReviewService#shouldRunDetection()} is true; {@code markDetected()} is NOT called
+   * here (the orchestrator stamps the version after all domains finish).
+   *
+   * <p>Public: the orchestrator entry point — invoked once per boot by {@code
+   * SeedReviewDetectionOrchestrator} when {@code shouldRunDetection()} is true; no other callers.
+   */
+  public void detectVersionChangeCollisions() {
+    if (syncSupport.mode() == SeedSyncMode.FULL || campaignAbilityCardService.count() == 0) {
+      return; // FULL mode applies the seed everywhere; an empty DB has nothing to collide
+    }
+    long start = System.currentTimeMillis();
+    ClassPathResource resource = new ClassPathResource("campaign_ability_cards.json");
+    if (!resource.exists()) {
+      return;
+    }
+    try (var is = resource.getInputStream()) {
+      List<CampaignAbilityCardDTO> dtos = objectMapper.readValue(is, new TypeReference<>() {});
+      List<CampaignAbilityCard> toSave = new ArrayList<>();
+      for (CampaignAbilityCardDTO dto : dtos) {
+        CampaignAbilityCard card =
+            campaignAbilityCardService
+                .findByNameAndAlignmentAndLevel(
+                    dto.getName(), dto.getAlignmentType(), dto.getLevel())
+                .orElse(null);
+        if (card == null) {
+          continue; // user-created rows have no seed match; missing rows are top-up's job
+        }
+        String newFingerprint =
+            SeedReviewDetectionSupport.incomingFingerprint(
+                provenanceManifest, DOMAIN_KEY, seedKeyOf(dto), seedValueFingerprint(dto));
+        boolean rowHasStoredStamp = SeedReviewDetectionSupport.hasStamp(card.getSeedFingerprint());
+        List<SeedCollisionDetector.FieldObservation> observations = fieldObservations(card, dto);
+        SeedReviewDetectionSupport.DetectionResult result =
+            SeedReviewDetectionSupport.detectRow(
+                DOMAIN_KEY,
+                entityKeyFor(seedKeyOf(dto)),
+                // The display name is the seed's name portion of the composite key — captured
+                // verbatim for the review UI; the applier resolves through the entity key (names
+                // are not unique across alignment/level rows).
+                dto.getName(),
+                rowHasStoredStamp,
+                card.getSeedFingerprint(),
+                observations,
+                this::cardValueListFingerprint,
+                newFingerprint,
+                seedReviewService);
+        String stamp =
+            SeedReviewDetectionSupport.stampForResolvedRow(
+                result.provenanceExact(), newFingerprint);
+        if (!result.silentUpdateFields().isEmpty()) {
+          // Tier-1 write set: ONLY the silent-update fields — a tier-3-preserved admin edit on
+          // the same row must never be touched (per-field granularity, spec "Tier 2 granularity").
+          applySilentSeedFields(card, dto, result.silentUpdateFields());
+          toSave.add(card);
+        }
+        // Stamp-only rows must persist the re-stamp too: capture the change BEFORE setting it —
+        // comparing after the set reads the NEW value and the save is silently skipped forever
+        // (the row never converges).
+        if (stamp != null && !stamp.equals(card.getSeedFingerprint())) {
+          card.setSeedFingerprint(stamp);
+          if (!toSave.contains(card)) {
+            toSave.add(card);
+          }
+        }
+      }
+      if (!toSave.isEmpty()) {
+        for (CampaignAbilityCard card : toSave) {
+          campaignAbilityCardService.save(card);
+        }
+      }
+      log.info(
+          "Seed review detection (campaign ability card) complete ({} ms).",
+          System.currentTimeMillis() - start);
+    } catch (IOException e) {
+      log.error("Error during campaign ability card seed-review detection", e);
+    }
+  }
+
+  /** The composite seed key of an ability card DTO (the manifest's lookup key). */
+  private static String seedKeyOf(CampaignAbilityCardDTO dto) {
+    return dto.getName() + "|" + dto.getAlignmentType() + "|" + dto.getLevel();
+  }
+
+  /** The detection-time per-field observations for one ability card row against its seed DTO. */
+  private List<SeedCollisionDetector.FieldObservation> fieldObservations(
+      CampaignAbilityCard card, CampaignAbilityCardDTO dto) {
+    List<SeedCollisionDetector.FieldObservation> obs = new ArrayList<>();
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "description", null, card.getDescription(), dto.getDescription()));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "oneTimeUse",
+            null,
+            String.valueOf(card.isOneTimeUse()),
+            String.valueOf(dto.isOneTimeUse())));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "timing",
+            null,
+            card.getTiming() == null ? null : card.getTiming().name(),
+            dto.getTiming() == null ? null : dto.getTiming().name()));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "effectScript", null, card.getEffectScript(), dto.getEffectScript()));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "secondaryEffectScript",
+            null,
+            card.getSecondaryEffectScript(),
+            dto.getSecondaryEffectScript()));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "secondaryOneTimeUse",
+            null,
+            String.valueOf(card.isSecondaryOneTimeUse()),
+            String.valueOf(dto.isSecondaryOneTimeUse())));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "secondaryTiming",
+            null,
+            card.getSecondaryTiming() == null ? null : card.getSecondaryTiming().name(),
+            dto.getSecondaryTiming() == null ? null : dto.getSecondaryTiming().name()));
+    return obs;
+  }
+
+  /** Fingerprint the incoming seed values would produce, in the canonical field order. */
+  private String seedValueFingerprint(CampaignAbilityCardDTO dto) {
+    return syncSupport.fingerprint(
+        dto.getDescription(),
+        dto.isOneTimeUse(),
+        dto.getTiming() == null ? null : dto.getTiming().name(),
+        dto.getEffectScript(),
+        dto.getSecondaryEffectScript(),
+        dto.isSecondaryOneTimeUse(),
+        dto.getSecondaryTiming() == null ? null : dto.getSecondaryTiming().name());
+  }
+
+  /**
+   * Re-hashes a field-value list (the {@link #fieldObservations} order) back into a row fingerprint
+   * — the hash-function half of the clean-row/single-edit provenance reconstruction. Serialization
+   * mirrors {@link #cardFingerprint(CampaignAbilityCard)} exactly.
+   */
+  private String cardValueListFingerprint(List<String> values) {
+    // Raw pass-through: fingerprint serializes each value via toString, so the observed string
+    // forms hash identically to the row fingerprint's typed values (see WrestlerSync's shape).
+    return syncSupport.fingerprint(values.toArray());
+  }
+
+  /**
+   * The canonical entity key for an ability card's composite seed key — shared with {@code
+   * CampaignAbilityCardSeedApplier} so apply-side resolution derives keys exactly as detection
+   * minted them.
+   */
+  static String entityKeyFor(String seedKey) {
+    return "campaign_ability_card:" + seedKey.toLowerCase();
+  }
+
+  /**
+   * Writes ONLY the named silent-update fields from the seed DTO onto the row — the tier-1 write
+   * set of the version-change pass. Field names match {@link #fieldObservations} entries; the write
+   * semantics mirror {@code createOrUpdateCard}'s write set.
+   */
+  private void applySilentSeedFields(
+      CampaignAbilityCard card, CampaignAbilityCardDTO dto, List<String> silentFields) {
+    for (String field : silentFields) {
+      switch (field) {
+        case "description" -> card.setDescription(dto.getDescription());
+        case "oneTimeUse" -> card.setOneTimeUse(dto.isOneTimeUse());
+        case "timing" -> card.setTiming(dto.getTiming());
+        case "effectScript" -> card.setEffectScript(dto.getEffectScript());
+        case "secondaryEffectScript" ->
+            card.setSecondaryEffectScript(dto.getSecondaryEffectScript());
+        case "secondaryOneTimeUse" -> card.setSecondaryOneTimeUse(dto.isSecondaryOneTimeUse());
+        case "secondaryTiming" -> card.setSecondaryTiming(dto.getSecondaryTiming());
+        default ->
+            throw new IllegalStateException(
+                "Unknown silent-update campaign ability card field '" + field + "'");
+      }
     }
   }
 }

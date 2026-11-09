@@ -203,6 +203,14 @@ public interface FactionRepository
       """)
   Optional<Faction> findByIdWithMembers(@Param("id") Long id);
 
+  /**
+   * Every faction with its manager eagerly loaded — the seed-provenance manifest generator
+   * re-hashes rows outside a Hibernate session ({@code Faction.manager} is LAZY and the manager
+   * name is part of the faction domain's fingerprint).
+   */
+  @Query("SELECT f FROM Faction f LEFT JOIN FETCH f.manager")
+  List<Faction> findAllWithManager();
+
   /** Find newest active factions. */
   List<Faction> findByIsActiveTrueOrderByFormedDateDesc();
 

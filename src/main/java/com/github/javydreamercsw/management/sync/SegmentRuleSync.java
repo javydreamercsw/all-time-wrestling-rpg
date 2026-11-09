@@ -19,13 +19,19 @@ package com.github.javydreamercsw.management.sync;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.dto.SegmentRuleDTO;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
+import com.github.javydreamercsw.management.sync.review.SeedCollisionDetector;
+import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
+import com.github.javydreamercsw.management.sync.review.SeedReviewDetectionSupport;
+import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
@@ -46,15 +52,24 @@ public class SegmentRuleSync implements DataSyncContributor {
   private final SeedSyncSupport syncSupport;
   private final SegmentRuleService segmentRuleService;
   private final ObjectMapper objectMapper;
+  private final SeedUpdateReviewService seedReviewService;
+  private final SeedProvenanceManifest provenanceManifest;
+
+  /** Seed domain key (must match {@code SeedDomains.STAMPING_DOMAINS}). */
+  public static final String DOMAIN_KEY = "segment_rule";
 
   @Autowired
   public SegmentRuleSync(
       @Value("${data.initializer.skip-if-not-empty:false}") final String skipIfNotEmptyRaw,
       final SegmentRuleService segmentRuleService,
-      final ObjectMapper objectMapper) {
+      final ObjectMapper objectMapper,
+      final SeedUpdateReviewService seedReviewService,
+      final SeedProvenanceManifest provenanceManifest) {
     this.syncSupport = new SeedSyncSupport(skipIfNotEmptyRaw);
     this.segmentRuleService = segmentRuleService;
     this.objectMapper = objectMapper;
+    this.seedReviewService = seedReviewService;
+    this.provenanceManifest = provenanceManifest;
   }
 
   @Override
@@ -94,6 +109,182 @@ public class SegmentRuleSync implements DataSyncContributor {
       }
     } else {
       log.warn("Segment rules file not found: {}", resource.getPath());
+    }
+  }
+
+  /**
+   * Version-change detection pass (seed-update review feature): classifies existing rules
+   * field-by-field through {@link SeedCollisionDetector} instead of reconciling directly — tier-1
+   * fields update silently and re-stamp, tier-2 fields park as PENDING decisions, tier-3 fields
+   * stay untouched. Only meaningful in PROTECT/VERIFY mode with existing rows.
+   *
+   * <p>Public: the orchestrator entry point — invoked once per boot by {@code
+   * SeedReviewDetectionOrchestrator} when {@code shouldRunDetection()} is true; no other callers.
+   */
+  public void detectVersionChangeCollisions() {
+    if (syncSupport.mode() == SeedSyncMode.FULL) {
+      return; // FULL mode applies the seed everywhere
+    }
+    long start = System.currentTimeMillis();
+    ClassPathResource resource = new ClassPathResource("segment_rules.json");
+    if (!resource.exists()) {
+      return;
+    }
+    try (var is = resource.getInputStream()) {
+      List<SegmentRuleDTO> dtos = objectMapper.readValue(is, new TypeReference<>() {});
+      Map<String, SegmentRule> existingByName =
+          segmentRuleService.findAllForAdmin().stream()
+              .collect(Collectors.toMap(SegmentRule::getName, sr -> sr, (a, b) -> a));
+      for (SegmentRuleDTO dto : dtos) {
+        SegmentRule sr = existingByName.get(dto.getName());
+        if (sr == null) {
+          continue; // user-created rows have no seed match; missing rows are top-up's job
+        }
+        String newFingerprint =
+            SeedReviewDetectionSupport.incomingFingerprint(
+                provenanceManifest, DOMAIN_KEY, dto.getName(), seedValueFingerprint(dto, sr));
+        boolean rowHasStoredStamp = SeedReviewDetectionSupport.hasStamp(sr.getSeedFingerprint());
+        List<SeedCollisionDetector.FieldObservation> observations = fieldObservations(sr, dto);
+        SeedReviewDetectionSupport.DetectionResult result =
+            SeedReviewDetectionSupport.detectRow(
+                DOMAIN_KEY,
+                entityKey(dto.getName()),
+                dto.getName(),
+                rowHasStoredStamp,
+                sr.getSeedFingerprint(),
+                observations,
+                this::ruleValueListFingerprint,
+                newFingerprint,
+                seedReviewService);
+        String stamp =
+            SeedReviewDetectionSupport.stampForResolvedRow(
+                result.provenanceExact(), newFingerprint);
+        if (!result.silentUpdateFields().isEmpty()) {
+          // Tier-1 write set: ONLY the silent-update fields, written in place on the row (the
+          // service's createOrUpdateRule would apply the full seed write-set and clobber a
+          // tier-3-preserved admin edit on the same row).
+          applySilentSeedFields(sr, dto, result.silentUpdateFields());
+          segmentRuleService.saveRule(sr);
+        }
+        if (stamp != null && !stamp.equals(sr.getSeedFingerprint())) {
+          sr.setSeedFingerprint(stamp);
+          segmentRuleService.saveRule(sr);
+        }
+      }
+      log.info(
+          "Seed review detection (segment rule) complete ({} ms).",
+          System.currentTimeMillis() - start);
+    } catch (IOException e) {
+      log.error("Error during segment rule seed-review detection", e);
+    }
+  }
+
+  /** The detection-time per-field observations for one segment rule row against its seed DTO. */
+  private List<SeedCollisionDetector.FieldObservation> fieldObservations(
+      SegmentRule sr, SegmentRuleDTO dto) {
+    List<SeedCollisionDetector.FieldObservation> obs = new ArrayList<>();
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "description", null, sr.getDescription(), dto.getDescription()));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "requiresHighHeat",
+            null,
+            String.valueOf(sr.getRequiresHighHeat()),
+            String.valueOf(dto.isRequiresHighHeat())));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "noDq", null, String.valueOf(sr.getNoDq()), String.valueOf(dto.isNoDq())));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "allowsRefereeStopage",
+            null,
+            String.valueOf(sr.isAllowsRefereeStopage()),
+            String.valueOf(dto.isAllowsRefereeStopage())));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "bumpAddition",
+            null,
+            sr.getBumpAddition() == null ? null : sr.getBumpAddition().name(),
+            dto.getBumpAddition() == null ? null : dto.getBumpAddition().name()));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "expansionCode",
+            null,
+            sr.getExpansionCode(),
+            dto.getExpansionCode() != null ? dto.getExpansionCode() : "BASE_GAME"));
+    obs.add(
+        new SeedCollisionDetector.FieldObservation(
+            "guideHash", null, sr.getGuideHash(), guideHashFor(dto)));
+    return obs;
+  }
+
+  /** Fingerprint the incoming seed values would produce, in the canonical field order. */
+  private String seedValueFingerprint(SegmentRuleDTO dto, SegmentRule sr) {
+    return syncSupport.fingerprint(
+        dto.getDescription(),
+        dto.isRequiresHighHeat(),
+        dto.isNoDq(),
+        dto.isAllowsRefereeStopage(),
+        dto.getBumpAddition() == null ? null : dto.getBumpAddition().name(),
+        dto.getExpansionCode() != null ? dto.getExpansionCode() : "BASE_GAME",
+        guideHashFor(dto) == null && sr.getGuideHash() == null ? null : guideHashFor(dto));
+  }
+
+  /**
+   * Re-hashes a field-value list (the {@link #fieldObservations} order) back into a row fingerprint
+   * — the hash-function half of the clean-row/single-edit provenance reconstruction. Serialization
+   * mirrors {@link #ruleFingerprint(SegmentRule)} exactly.
+   */
+  private String ruleValueListFingerprint(List<String> values) {
+    return syncSupport.fingerprint(
+        values.get(0),
+        Boolean.valueOf(values.get(1)),
+        Boolean.valueOf(values.get(2)),
+        Boolean.valueOf(values.get(3)),
+        values.get(4) == null ? null : BumpAddition.valueOf(values.get(4)),
+        values.get(5),
+        values.get(6));
+  }
+
+  private static String entityKey(String name) {
+    return entityKeyFor(name);
+  }
+
+  /**
+   * The canonical entity key for a segment-rule name — shared with {@code SegmentRuleSeedApplier}
+   * so apply-side resolution derives keys exactly as detection minted them.
+   */
+  static String entityKeyFor(String name) {
+    return "segment_rule:" + name.toLowerCase().replace(' ', '-');
+  }
+
+  /**
+   * Writes ONLY the named silent-update fields from the seed DTO onto the row — the tier-1 write
+   * set of the version-change pass. Field names match {@link #fieldObservations} entries. The guide
+   * hash is recomputed from the DTO and written with the guide (the service's private
+   * computeGuideHash mirrors {@link #guideHashFor}).
+   */
+  private void applySilentSeedFields(
+      SegmentRule sr, SegmentRuleDTO dto, List<String> silentFields) {
+    for (String field : silentFields) {
+      switch (field) {
+        case "description" -> sr.setDescription(dto.getDescription());
+        case "requiresHighHeat" -> sr.setRequiresHighHeat(dto.isRequiresHighHeat());
+        case "noDq" -> sr.setNoDq(dto.isNoDq());
+        case "allowsRefereeStopage" -> sr.setAllowsRefereeStopage(dto.isAllowsRefereeStopage());
+        case "bumpAddition" -> sr.setBumpAddition(dto.getBumpAddition());
+        case "expansionCode" ->
+            sr.setExpansionCode(
+                dto.getExpansionCode() != null ? dto.getExpansionCode() : "BASE_GAME");
+        case "guideHash" -> {
+          sr.setGuide(dto.getGuide());
+          sr.setGuideHash(guideHashFor(dto));
+        }
+        default ->
+            throw new IllegalStateException(
+                "Unknown silent-update segment rule field '" + field + "'");
+      }
     }
   }
 

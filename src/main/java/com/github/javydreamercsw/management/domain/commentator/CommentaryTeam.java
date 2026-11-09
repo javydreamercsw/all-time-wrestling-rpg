@@ -54,4 +54,12 @@ public class CommentaryTeam extends AbstractEntity<Long> {
       joinColumns = @JoinColumn(name = "team_id"),
       inverseJoinColumns = @JoinColumn(name = "commentator_id"))
   private List<Commentator> commentators = new ArrayList<>();
+
+  /**
+   * Per-row seed provenance stamp (seed-update review feature): the hash of the row's seed-owned
+   * fields as the last seed write left them. NULL = pre-fingerprint-era (legacy) or user-created
+   * row.
+   */
+  @Column(name = "seed_fingerprint", length = 64)
+  private String seedFingerprint;
 }

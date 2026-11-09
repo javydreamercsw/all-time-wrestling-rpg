@@ -18,7 +18,10 @@ package com.github.javydreamercsw.management.sync;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -34,13 +37,18 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.card.CardService;
 import com.github.javydreamercsw.management.service.deck.DeckService;
+import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
+import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -53,6 +61,11 @@ class DeckSyncTest {
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private CardSetRepository cardSetRepository;
   @Mock private CardService cardService;
+  @Mock private SeedUpdateReviewService seedReviewService;
+
+  private static final SeedProvenanceManifest EMPTY_MANIFEST = SeedProvenanceManifest.empty();
+
+  private static final SeedSyncSupport VERIFY_SUPPORT = new SeedSyncSupport("verify");
 
   private DeckSync skipSync;
   private DeckSync fullSync;
@@ -92,7 +105,9 @@ class DeckSyncTest {
             wrestlerRepository,
             cardSetRepository,
             cardService,
-            new ObjectMapper());
+            new ObjectMapper(),
+            seedReviewService,
+            EMPTY_MANIFEST);
     when(deckService.count()).thenReturn(35L);
 
     Wrestler jeff = jeffHardy();
@@ -128,7 +143,9 @@ class DeckSyncTest {
             wrestlerRepository,
             cardSetRepository,
             cardService,
-            new ObjectMapper());
+            new ObjectMapper(),
+            seedReviewService,
+            EMPTY_MANIFEST);
     when(deckService.count()).thenReturn(1L);
 
     Wrestler jeff = jeffHardy();
@@ -154,7 +171,9 @@ class DeckSyncTest {
             wrestlerRepository,
             cardSetRepository,
             cardService,
-            new ObjectMapper());
+            new ObjectMapper(),
+            seedReviewService,
+            EMPTY_MANIFEST);
     when(deckService.count()).thenReturn(1L);
 
     Wrestler jeff = jeffHardy();
@@ -200,7 +219,9 @@ class DeckSyncTest {
             wrestlerRepository,
             cardSetRepository,
             cardService,
-            new ObjectMapper());
+            new ObjectMapper(),
+            seedReviewService,
+            EMPTY_MANIFEST);
     when(deckService.count()).thenReturn(1L);
 
     Wrestler eddie = jeffHardy();
@@ -236,7 +257,9 @@ class DeckSyncTest {
             wrestlerRepository,
             cardSetRepository,
             cardService,
-            new ObjectMapper());
+            new ObjectMapper(),
+            seedReviewService,
+            EMPTY_MANIFEST);
     when(deckService.count()).thenReturn(1L);
 
     Wrestler eddie = jeffHardy();
@@ -278,7 +301,9 @@ class DeckSyncTest {
             wrestlerRepository,
             cardSetRepository,
             cardService,
-            new ObjectMapper());
+            new ObjectMapper(),
+            seedReviewService,
+            EMPTY_MANIFEST);
     when(deckService.count()).thenReturn(1L);
 
     Wrestler eddie = jeffHardy();
@@ -319,5 +344,136 @@ class DeckSyncTest {
             .sorted()
             .collect(Collectors.joining("\n"));
     return new SeedSyncSupport("verify").fingerprint((Object[]) entries.split("\n"));
+  }
+
+  // ── Version-change detection (seed-update review, PR 4 Step 4 three-tier pin) ──
+
+  @Test
+  void versionChangeBootsParkCollisions() {
+    // THREE-TIER pin, end-to-end through the wired pipeline. The domain's only seed-owned state is
+    // the card composition (single-blob row, Task 5's per-row parking contract): the clean deck's
+    // composition is seed-changed (tier 1 silent reconcile + re-stamp), the edited deck's
+    // composition was hand-tuned by the user AND the seed changed too (tier 2 collision on the one
+    // field — the field and the row are the same coordinate here). One deck per wrestler: the two
+    // fixture decks belong to two seed wrestlers (both present in decks.json).
+    Wrestler eddie = jeffHardy();
+    Wrestler rvd = new Wrestler();
+    rvd.setId(100L);
+    rvd.setName("Rob Van Dam");
+    when(wrestlerRepository.findAll()).thenReturn(List.of(eddie, rvd));
+
+    CardSet set = eddieSet();
+    Card card1 = eddieCard(1);
+    Card card2 = eddieCard(2);
+    when(cardSetRepository.findAll()).thenReturn(List.of(set));
+    // Eddie's seed entry resolves EDDIE #1 and #2.
+    when(cardService.findByNumberAndSet(1, "EDDIE")).thenReturn(Optional.of(card1));
+    when(cardService.findByNumberAndSet(2, "EDDIE")).thenReturn(Optional.of(card2));
+    // RVD's seed entry resolves the same two cards through the RVD set code (the stub catalog).
+    when(cardService.findByNumberAndSet(1, "RVD")).thenReturn(Optional.of(card1));
+    when(cardService.findByNumberAndSet(2, "RVD")).thenReturn(Optional.of(card2));
+
+    // Tier 1: RVD's deck holds only EDDIE #1 — the previous release's seed write, stamped clean;
+    // the seed's resolvable composition now includes #2 → silent update territory.
+    Deck tier1deck = seededEddieDeck(set, card1);
+    tier1deck.setWrestler(rvd);
+    tier1deck.setSeedFingerprint(deckCompositionFingerprint(tier1deck));
+
+    // Tier 2: Eddie's deck holds #1 x3 + #2 (the user's hand-tuned composition) while the stamp
+    // carries the PREVIOUS release's amounts (EDDIE#1x2) — differing from BOTH the current
+    // composition and the incoming seed's (EDDIE#1x1 + #2) → genuine tier-2 collision.
+    Deck tier2deck = seededEddieDeck(set, card1);
+    tier2deck.setWrestler(eddie);
+    tier2deck.getCards().iterator().next().setAmount(3);
+    DeckCard userAddition = new DeckCard();
+    userAddition.setDeck(tier2deck);
+    userAddition.setCard(card2);
+    userAddition.setSet(set);
+    userAddition.setAmount(1);
+    tier2deck.getCards().add(userAddition);
+    tier2deck.setSeedFingerprint(VERIFY_SUPPORT.fingerprint((Object[]) new String[] {"EDDIE#1x2"}));
+
+    when(deckService.count()).thenReturn(2L);
+    when(deckService.findByWrestlerWithCards(rvd)).thenReturn(List.of(tier1deck));
+    when(deckService.findByWrestlerWithCards(eddie)).thenReturn(List.of(tier2deck));
+
+    Set<String> parkedCoordinates = new HashSet<>();
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    Mockito.doAnswer(
+            inv -> {
+              parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
+              return null;
+            })
+        .when(parking)
+        .parkFieldConflict(
+            anyString(), anyString(), anyString(), anyString(), any(), any(), anyString());
+
+    DeckSync detectionSync =
+        new DeckSync(
+            "true",
+            deckService,
+            wrestlerRepository,
+            cardSetRepository,
+            cardService,
+            new ObjectMapper(),
+            parking,
+            EMPTY_MANIFEST);
+    detectionSync.detectVersionChangeCollisions();
+
+    // Tier 1: the clean deck's composition was reconciled to the seed in place.
+    assertEquals(
+        2,
+        tier1deck.getCards().size(),
+        "tier 1: untouched composition with a changed seed value must update silently");
+    // Tier 2: the user-edited composition kept its value; the row parked the composition.
+    assertEquals(
+        2,
+        tier2deck.getCards().size(),
+        "tier 2: admin-edited composition must keep its value — only a PENDING decision is"
+            + " created");
+    Mockito.verify(parking)
+        .parkFieldConflict(
+            eq("deck"),
+            eq("deck:eddie-guerrero"),
+            eq("Eddie Guerrero"),
+            eq("composition"),
+            eq("EDDIE#1x3\nEDDIE#2x1"),
+            eq("EDDIE#1x1\nEDDIE#2x1"),
+            anyString());
+    // Eddie's deck is the only tier-2 collision; RVD's tier-1 fields never park.
+    assertEquals(
+        Set.of("deck:eddie-guerrero|composition"),
+        parkedCoordinates,
+        "exactly the one tier-2 collision parked; tier-1 fields never park");
+  }
+
+  @Test
+  void normalBootBehaviorUnchanged() {
+    // Normal boot pin: FULL-mode detection is inert, and the pre-existing verify behavior still
+    // holds with the new constructor dependencies.
+    Wrestler eddie = jeffHardy();
+    Deck existingDeck = new Deck();
+    existingDeck.setWrestler(eddie);
+    when(deckService.count()).thenReturn(1L);
+    when(wrestlerRepository.findAll()).thenReturn(List.of(eddie));
+    when(deckService.findByWrestlerWithCards(eddie)).thenReturn(List.of(existingDeck));
+
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    DeckSync fullModeSync =
+        new DeckSync(
+            "false",
+            deckService,
+            wrestlerRepository,
+            cardSetRepository,
+            cardService,
+            new ObjectMapper(),
+            parking,
+            EMPTY_MANIFEST);
+    fullModeSync.detectVersionChangeCollisions(); // FULL mode → inert
+
+    Mockito.verifyNoInteractions(parking);
+    assertTrue(
+        existingDeck.getCards().isEmpty(),
+        "FULL-mode detection must not touch rows (the FULL sync's own load does that)");
   }
 }
