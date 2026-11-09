@@ -18,6 +18,8 @@ package com.github.javydreamercsw.management.sync;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -405,5 +407,38 @@ class SegmentRuleSyncTest {
         "stale description",
         existing.getDescription(),
         "FULL-mode detection must not touch rows (the FULL sync's own load does that)");
+  }
+
+  // ── Guide reload helpers (beads ATW-md1i) ───────────────────────────────────
+
+  @Test
+  void reloadSeedGuideReturnsTheSeedPayloadForAKnownRule() {
+    SegmentRuleSync sync =
+        new SegmentRuleSync(
+            "true", segmentRuleService, new ObjectMapper(), seedReviewService, EMPTY_MANIFEST);
+
+    var guide = sync.reloadSeedGuide("No DQ").orElseThrow();
+
+    assertNotNull(guide, "'No DQ' ships a guide in segment_rules.json");
+    assertEquals(
+        sync.guideHashForGuide(guide), sync.guideHashForGuide(guide), "hash is deterministic");
+  }
+
+  @Test
+  void reloadSeedGuideIsEmptyForUnseededRuleNames() {
+    SegmentRuleSync sync =
+        new SegmentRuleSync(
+            "true", segmentRuleService, new ObjectMapper(), seedReviewService, EMPTY_MANIFEST);
+
+    assertTrue(sync.reloadSeedGuide("Admin Custom Rule").isEmpty());
+  }
+
+  @Test
+  void guideHashForGuideIsNullForANullPayload() {
+    SegmentRuleSync sync =
+        new SegmentRuleSync(
+            "true", segmentRuleService, new ObjectMapper(), seedReviewService, EMPTY_MANIFEST);
+
+    assertNull(sync.guideHashForGuide(null), "no payload → no hash (mirrors the seed write)");
   }
 }
