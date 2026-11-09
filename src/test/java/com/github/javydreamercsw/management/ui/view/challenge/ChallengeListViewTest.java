@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.ui.view.challenge;
 
 import static com.github.mvysny.kaributesting.v10.LocatorJ._find;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -37,7 +38,9 @@ import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.dom.Element;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -279,5 +282,65 @@ class ChallengeListViewTest extends AbstractViewTest {
     List<Button> viewBtns = _find(view, Button.class, spec -> spec.withText("View Challenge"));
     assertTrue(
         viewBtns.isEmpty(), "Custom challenge should be hidden when Official only is checked");
+  }
+
+  @Test
+  @DisplayName("Print card renders title, flavor, objective, conditions and modifiers")
+  void buildChallengeCard_rendersAllSections() {
+    ChallengeDTO challenge =
+        ChallengeDTO.builder()
+            .id("week_11_deadly_combat_year_5")
+            .weekNumber(11)
+            .title("Deadly Combat — Year Five: The Gauntlet")
+            .flavorText("Freedom. One more tournament.")
+            .expansionCode("EXTREME")
+            .difficulty(Difficulty.HARD)
+            .objective("Defeat all four as OMZ.")
+            .setupInstructions("Requires the ATW Extreme expansion.")
+            .conditions(List.of("No pinfalls — defeat at 1 Health."))
+            .modifiers(List.of("The pit medics: one Elixir and one Health Pack."))
+            .build();
+
+    Div card = ChallengeListView.buildChallengeCard(challenge);
+
+    String text = textOf(card);
+    assertThat(text)
+        .contains("Deadly Combat — Year Five: The Gauntlet")
+        .contains("Freedom. One more tournament.")
+        .contains("Defeat all four as OMZ.")
+        .contains("No pinfalls")
+        .contains("The pit medics")
+        .contains("EXTREME");
+    assertThat(card.hasClassName("campaign-card")).isTrue();
+  }
+
+  @Test
+  @DisplayName("Print card tolerates null optional fields (no NPE)")
+  void buildChallengeCard_nullOptionals_noNpe() {
+    ChallengeDTO challenge = ChallengeDTO.builder().id("x").title("Bare challenge").build();
+
+    Div card = ChallengeListView.buildChallengeCard(challenge);
+
+    assertThat(card.hasClassName("campaign-card")).isTrue();
+    assertThat(textOf(card)).contains("Bare challenge");
+  }
+
+  private static String textOf(Div card) {
+    StringBuilder sb = new StringBuilder();
+    collectText(card.getElement(), sb);
+    return sb.toString();
+  }
+
+  private static void collectText(Element el, StringBuilder sb) {
+    if (el.getChildCount() == 0) {
+      sb.append(el.getText()).append(' ');
+      return;
+    }
+    if (el.getText() != null && !el.getText().isBlank()) {
+      sb.append(el.getText()).append(' ');
+    }
+    for (int i = 0; i < el.getChildCount(); i++) {
+      collectText(el.getChild(i), sb);
+    }
   }
 }

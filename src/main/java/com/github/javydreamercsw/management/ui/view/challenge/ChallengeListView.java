@@ -30,8 +30,10 @@ import com.github.javydreamercsw.management.service.challenge.ChallengeService;
 import com.github.javydreamercsw.management.service.challenge.ChallengeUpdateService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
 import com.github.javydreamercsw.management.ui.component.GuideTextRenderer;
+import com.github.javydreamercsw.management.ui.component.PrintableCardSupport;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.github.javydreamercsw.management.ui.view.show.MatchInfoDialog;
+import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -74,6 +76,7 @@ import com.vaadin.flow.theme.lumo.LumoUtility.Padding;
 import com.vaadin.flow.theme.lumo.LumoUtility.TextColor;
 import jakarta.annotation.security.PermitAll;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -100,6 +103,8 @@ public class ChallengeListView extends VerticalLayout {
   private FlexLayout cardsLayout;
   private Checkbox officialOnlyFilter;
   private ComboBox<String> seasonFilter;
+  private final Div printArea = new Div();
+  private final Div printTitle = new Div();
 
   @Autowired
   public ChallengeListView(
@@ -151,6 +156,12 @@ public class ChallengeListView extends VerticalLayout {
       updateBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_CONTRAST);
       updateBtn.addClickListener(e -> runUpdateCheck(updateBtn));
       filters.add(updateBtn);
+
+      // Print the filtered challenges as poker-size cards (reuses the card-export machinery).
+      Button printBtn = new Button("Print Cards", new Icon(VaadinIcon.PRINT));
+      printBtn.addThemeVariants(ButtonVariant.LUMO_SMALL, ButtonVariant.LUMO_PRIMARY);
+      printBtn.addClickListener(e -> printFilteredChallenges());
+      filters.add(printBtn);
     }
 
     add(filters);
@@ -569,6 +580,138 @@ public class ChallengeListView extends VerticalLayout {
             parent.add(rendered);
           });
     }
+  }
+
+  @Override
+  protected void onAttach(AttachEvent event) {
+    super.onAttach(event);
+    PrintableCardSupport.injectPrintStyles();
+  }
+
+  /**
+   * Builds the print-only card DOM from the challenges the current filters select and fires the
+   * browser print dialog. The on-screen grid is untouched; the shared @media print block makes only
+   * the print area visible on paper.
+   */
+  private void printFilteredChallenges() {
+    Set<String> enabledCodes = Set.copyOf(expansionService.getEnabledExpansionCodes());
+    String selectedSeason = seasonFilter.getValue();
+    List<ChallengeDTO> toPrint =
+        challengeService.getActiveChallenges().stream()
+            .filter(c -> !officialOnlyFilter.getValue() || !"CUSTOM".equals(c.getExpansionCode()))
+            .filter(
+                c ->
+                    selectedSeason == null
+                        || selectedSeason.isBlank()
+                        || selectedSeason.equals(c.getSeason()))
+            .sorted(
+                Comparator.comparing(
+                        ChallengeDTO::getWeekNumber,
+                        Comparator.nullsLast(Comparator.naturalOrder()))
+                    .thenComparing(ChallengeDTO::getTitle))
+            .toList();
+    if (toPrint.isEmpty()) {
+      return;
+    }
+
+    printArea.removeAll();
+    printArea.getElement().removeAttribute("id");
+    printArea.setId("campaign-card-print-area");
+    printArea.addClassNames("campaign-card-grid");
+    printTitle.setText(
+        "Weekly Challenges"
+            + (selectedSeason != null && !selectedSeason.isBlank() ? " — " + selectedSeason : ""));
+    printTitle.setId("campaign-card-print-title");
+    printArea.add(printTitle);
+    toPrint.forEach(c -> printArea.add(buildChallengeCard(c)));
+    if (printArea.getParent().isEmpty()) {
+      add(printArea);
+    }
+    PrintableCardSupport.print();
+  }
+
+  /** Builds the printable poker-size card for one challenge (print DOM only). */
+  static Div buildChallengeCard(final ChallengeDTO challenge) {
+    Div header =
+        PrintableCardSupport.cardHeader(
+            "challenge-header",
+            "WEEKLY CHALLENGE"
+                + (challenge.getWeekNumber() != null ? " · WEEK " + challenge.getWeekNumber() : ""),
+            challenge.getTitle());
+    if (challenge.getDifficulty() != null) {
+      Span diff = new Span(challenge.getDifficulty().name());
+      diff.addClassName("difficulty-badge");
+      header.add(diff);
+    }
+
+    Div body = new Div();
+    body.addClassName("card-body");
+    PrintableCardSupport.addNarrative(body, challenge.getFlavorText());
+
+    Span objective = new Span(challenge.getObjective() != null ? challenge.getObjective() : "");
+    objective.addClassName("section-text");
+    Div objectiveBlock = new Div();
+    objectiveBlock.addClassName("challenge-objective");
+    objectiveBlock.add(
+        new Span("OBJECTIVE") {
+          {
+            addClassName("section-label");
+          }
+        },
+        objective);
+    body.add(objectiveBlock);
+
+    if (challenge.getSetupInstructions() != null && !challenge.getSetupInstructions().isBlank()) {
+      Div setup = new Div();
+      setup.addClassName("challenge-setup");
+      Span setupLabel = new Span("SETUP");
+      setupLabel.addClassName("section-label");
+      Span setupText = new Span(challenge.getSetupInstructions());
+      setupText.addClassName("section-text");
+      setup.add(setupLabel, setupText);
+      body.add(setup);
+    }
+
+    if (challenge.getConditions() != null && !challenge.getConditions().isEmpty()) {
+      Div conditions = new Div();
+      conditions.addClassName("challenge-conditions");
+      Span label = new Span("CONDITIONS");
+      label.addClassName("section-label");
+      conditions.add(label);
+      challenge
+          .getConditions()
+          .forEach(
+              c -> {
+                Span line = new Span("• " + c);
+                line.addClassName("section-text");
+                conditions.add(line);
+              });
+      body.add(conditions);
+    }
+
+    if (challenge.getModifiers() != null && !challenge.getModifiers().isEmpty()) {
+      Div modifiers = new Div();
+      modifiers.addClassName("challenge-modifiers");
+      Span label = new Span("MODIFIERS");
+      label.addClassName("section-label");
+      modifiers.add(label);
+      challenge
+          .getModifiers()
+          .forEach(
+              m -> {
+                Span line = new Span("• " + m);
+                line.addClassName("section-text");
+                modifiers.add(line);
+              });
+      body.add(modifiers);
+    }
+
+    PrintableCardSupport.addExpansionFooter(
+        body, challenge.getExpansionCode() != null ? challenge.getExpansionCode() : "");
+    Div card = new Div();
+    card.addClassName("campaign-card");
+    card.add(header, body);
+    return card;
   }
 
   private String difficultyTheme(final ChallengeDTO challenge) {
