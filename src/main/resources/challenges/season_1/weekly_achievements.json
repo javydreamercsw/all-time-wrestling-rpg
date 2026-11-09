@@ -37,25 +37,25 @@
 }, {
   "key": "CHALLENGE_WEEK_07",
   "name": "The Pit Awaits",
-  "description": "Completed Deadly Combat Year One: beat Gilgamesh in a Submission match as OMZ",
+  "description": "Completed Deadly Combat Year One: beat Sabu in a Barbwire Exploding Deathmatch as OMZ",
   "xpValue": 100,
   "category": "CHALLENGE"
 }, {
   "key": "CHALLENGE_WEEK_08",
-  "name": "Headhunter's Fall",
-  "description": "Completed Deadly Combat Year Two: beat Kamala in a No DQ match as OMZ",
+  "name": "Whole Damn Show, Down",
+  "description": "Completed Deadly Combat Year Two: beat Rob Van Dam in a Last Man Standing match as OMZ",
   "xpValue": 100,
   "category": "CHALLENGE"
 }, {
   "key": "CHALLENGE_WEEK_09",
-  "name": "Loose Cannon Tamed",
-  "description": "Completed Deadly Combat Year Three: beat Brian Pillman in a Ladder match as OMZ",
+  "name": "The Spider Unwebbed",
+  "description": "Completed Deadly Combat Year Three: beat Raven in a Cage match as OMZ",
   "xpValue": 100,
   "category": "CHALLENGE"
 }, {
   "key": "CHALLENGE_WEEK_10",
   "name": "Lights Out, Darkness",
-  "description": "Completed Deadly Combat Year Four: beat Daemon in a Last Man Standing match as OMZ",
+  "description": "Completed Deadly Combat Year Four: made Daemon quit in an I Quit match as OMZ",
   "xpValue": 100,
   "category": "CHALLENGE"
 }, {

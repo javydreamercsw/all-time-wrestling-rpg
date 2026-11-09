@@ -172,16 +172,16 @@ class ChallengeServiceTest {
     }
   }
 
-  /** The arc escalates through the tournament years: MEDIUM twice, HARD twice, LEGENDARY finale. */
+  /**
+   * The arc escalates through the tournament years: MEDIUM Year One, then HARD from Year Two on —
+   * the finale card is HARD with the LEGENDARY tier expressed in its rules text (the Warden's
+   * cruelty modifiers).
+   */
   @Test
   void deadlyCombatDifficultyEscalatesAcrossTheArc() {
     List<Difficulty> expected =
         List.of(
-            Difficulty.MEDIUM,
-            Difficulty.MEDIUM,
-            Difficulty.HARD,
-            Difficulty.HARD,
-            Difficulty.LEGENDARY);
+            Difficulty.MEDIUM, Difficulty.HARD, Difficulty.HARD, Difficulty.HARD, Difficulty.HARD);
     List<Difficulty> actual =
         IntStream.rangeClosed(7, 11)
             .mapToObj(
@@ -197,7 +197,7 @@ class ChallengeServiceTest {
   /**
    * Every match type must resolve to a shipped SegmentRule name — the detail dialog links to the
    * in-app match-info page by exact name match. The arc leans on Extreme-style rules per the issue:
-   * Submission, No DQ, Last Man Standing, and a Gauntlet finale.
+   * Barbwire Exploding Deathmatch, Last Man Standing, Cage, I Quit Match, and a Gauntlet finale.
    */
   @Test
   void deadlyCombatMatchTypesResolveToShippedSegmentRules() throws Exception {
@@ -230,9 +230,12 @@ class ChallengeServiceTest {
   void deadlyCombatFinaleRequiresBothExpansionsOfItsOpponents() {
     ChallengeDTO finale = service.getChallenge("week_11_deadly_combat_year_5").orElseThrow();
     assertEquals("Gauntlet", finale.getMatchType());
+    // Extreme-only arc: every opponent comes from the Extreme roster, so RUMBLE is NOT required.
     assertTrue(finale.getRequiredExpansions().contains("EXTREME"));
-    assertTrue(finale.getRequiredExpansions().contains("RUMBLE"));
-    assertTrue(finale.getRequiredWrestlerNames().size() >= 4, "OMZ plus three gauntlet opponents");
+    assertTrue(
+        !finale.getRequiredExpansions().contains("RUMBLE"),
+        "RUMBLE is not part of the Extreme-only arc");
+    assertTrue(finale.getRequiredWrestlerNames().size() >= 4, "OMZ plus gauntlet opponents");
     assertFalse(finale.getModifiers().isEmpty(), "gauntlet needs between-match modifiers");
   }
 
