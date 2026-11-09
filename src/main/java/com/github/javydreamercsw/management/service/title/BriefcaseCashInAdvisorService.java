@@ -99,6 +99,12 @@ public class BriefcaseCashInAdvisorService {
   /**
    * Evaluates every NPC-held, HELD briefcase against this show and returns the proposals that clear
    * the threshold, ordered by score descending. Deterministic: same state, same proposals.
+   *
+   * <p>Target selection (beads ATW-u1hr): per briefcase only the highest-tier eligible title
+   * becomes a proposal — the holder cashes in on the top title matching their gender/division, and
+   * rivalry heat with a lower-tier champion never diverts the case to a lesser belt. The score
+   * still decides WHEN a proposal fires (threshold) and the mode (RUN_IN vs PLANNED); it no longer
+   * decides WHICH title the case targets.
    */
   public List<BriefcaseProposal> proposalsFor(Show show) {
     if (!gameSettingService.isNpcBriefcaseCashInEnabled()) {
@@ -109,7 +115,9 @@ public class BriefcaseCashInAdvisorService {
 
     return opportunityRepository.findByStatus(TitleOpportunityStatus.HELD).stream()
         .filter(opp -> passesGates(opp, gameDate))
-        .flatMap(opp -> scoreAgainstTitles(opp, show, gameDate, activeTitles).stream())
+        .map(opp -> highestTierProposal(opp, show, gameDate, activeTitles))
+        .filter(Optional::isPresent)
+        .map(Optional::get)
         .filter(p -> p.score() >= PROPOSAL_THRESHOLD)
         .sorted(Comparator.comparingInt(BriefcaseProposal::score).reversed())
         .toList();
@@ -199,6 +207,20 @@ public class BriefcaseCashInAdvisorService {
     }
     long daysUntilExpiry = ChronoUnit.DAYS.between(gameDate, opportunity.getExpiryDate());
     return daysUntilExpiry <= window / 4;
+  }
+
+  /**
+   * The briefcase's one candidate: the highest-tier eligible title's proposal (beads ATW-u1hr).
+   * Ties on tier (two titles at the same level) fall back to score, preserving determinism.
+   */
+  private Optional<BriefcaseProposal> highestTierProposal(
+      TitleOpportunity opportunity, Show show, LocalDate gameDate, List<Title> activeTitles) {
+    return scoreAgainstTitles(opportunity, show, gameDate, activeTitles).stream()
+        .max(
+            Comparator.comparing(
+                    (BriefcaseProposal p) -> p.title().getTier(),
+                    Comparator.nullsFirst(Comparator.naturalOrder()))
+                .thenComparingInt(BriefcaseProposal::score));
   }
 
   private List<BriefcaseProposal> scoreAgainstTitles(
