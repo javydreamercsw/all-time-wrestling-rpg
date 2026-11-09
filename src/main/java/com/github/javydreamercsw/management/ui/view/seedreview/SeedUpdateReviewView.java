@@ -40,6 +40,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
@@ -485,10 +486,7 @@ public class SeedUpdateReviewView extends VerticalLayout {
    */
   private void paintRollup(Span title, List<SeedUpdateDecision> rows, String entityKey) {
     List<SeedFieldDecision> decided =
-        rows.stream()
-            .map(row -> choices.get(row.getId()))
-            .filter(java.util.Objects::nonNull)
-            .toList();
+        rows.stream().map(row -> choices.get(row.getId())).filter(Objects::nonNull).toList();
 
     if (decided.isEmpty()) {
       title.getElement().getStyle().remove("font-style");
