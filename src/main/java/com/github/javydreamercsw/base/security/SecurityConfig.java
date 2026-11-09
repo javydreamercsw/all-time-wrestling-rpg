@@ -154,8 +154,11 @@ public class SecurityConfig {
             "/health",
             "/api/system/health")
         .permitAll();
-    // Everything else falls through to Vaadin's route-based access control.
-    auth.anyRequest().permitAll();
+    // NO anyRequest() here: the production chain applies VaadinSecurityConfigurer first, and
+    // its route-access catch-all already registers an anyRequest() rule — any requestMatchers
+    // added after that throw "Can't configure requestMatchers after anyRequest" (the docker-it
+    // startup failure of beads ATW-8j9w). Non-API paths fall through to Vaadin's route-based
+    // access control, as they did before #662.
   }
 
   @Bean
