@@ -563,13 +563,10 @@ public class WrestlerProfileView extends Main implements BeforeEnterObserver {
       if (history.isEmpty()) {
         titleHistoryLayout.add(new Paragraph("No title history available."));
       } else {
+        // Both variants window the reigns lazily (ATW-3a0t): the strip and the card grid render
+        // only the newest reigns initially; older history loads on demand.
         titleHistoryLayout.add(new HistoryTimelineComponent(history));
-
-        Div cardsContainer = new Div();
-        cardsContainer.addClassNames(
-            LumoUtility.Display.FLEX, LumoUtility.FlexWrap.WRAP, LumoUtility.Gap.SMALL);
-        history.forEach(reign -> cardsContainer.add(new ReignCardComponent(reign)));
-        titleHistoryLayout.add(cardsContainer);
+        titleHistoryLayout.add(new ReignHistoryPanel(history));
       }
 
       // Bumps and Injuries
