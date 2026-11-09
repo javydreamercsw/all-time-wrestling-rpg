@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.sync;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -366,5 +367,36 @@ class SegmentTypeSyncTest {
 
     Mockito.verifyNoInteractions(seedReviewService);
     verify(segmentTypeService, Mockito.never()).saveSegmentType(any());
+  }
+
+  @Test
+  void fullModeRestampsStaleFingerprintUnconditionally() {
+    // beads ATW-sytl: the FULL branch must re-stamp after field updates even when the row already
+    // carries a (stale) stamp — CardSync parity. Otherwise a future seed change updates fields
+    // but leaves the stale stamp, and a later switch to verify flags the row as
+    // "modified after seeding" forever, blocking its fast path.
+    SegmentTypeSync fullSync = sync("false");
+    SegmentType stale = segmentType("One on One");
+    stale.setSeedFingerprint("stale-fingerprint-from-an-older-release");
+    // The FULL loop iterates every seed entry; unstubbed names would return null and NPE.
+    // Last arg is a boxed Boolean that the seed JSON may leave null — any(), not anyBoolean().
+    when(segmentTypeService.createOrUpdateSegmentType(
+            anyString(), any(), any(), any(), any(), any()))
+        .thenAnswer(
+            inv -> {
+              if ("One on One".equals(inv.getArgument(0))) {
+                return stale;
+              }
+              return segmentType(inv.getArgument(0));
+            });
+
+    fullSync.sync(); // FULL mode: straight into loadSegmentTypes(true)
+
+    verify(segmentTypeService).saveSegmentType(stale);
+    assertEquals(
+        segmentTypeFingerprint(stale),
+        stale.getSeedFingerprint(),
+        "FULL mode must replace the stale stamp with the current fingerprint");
+    assertNotEquals("stale-fingerprint-from-an-older-release", stale.getSeedFingerprint());
   }
 }
