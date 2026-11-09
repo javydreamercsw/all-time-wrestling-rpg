@@ -778,6 +778,24 @@ class ShowPlanningPromptBuilderTest {
   }
 
   @Test
+  void build_heldBriefcases_instructsMatchBasedProgramNotPromoFunneling() {
+    // beads ATW-u1hr: production showed briefcase holders funneled into promos show after show.
+    // The prompt must direct the AI to keep holders in matches (building the program toward the
+    // cash-in), not reserve them for talking segments.
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ctx.setHeldBriefcases(List.of("Mukundi Shumba — Time Vault briefcase"));
+
+    String prompt = builder.build(ctx);
+
+    assertTrue(
+        prompt.contains("keep building toward their cash-in with MATCHES"),
+        "The holder instruction must demand matches, not just angles: " + prompt);
+    assertFalse(
+        prompt.contains("champion-vs-holder angle is a strong"),
+        "The old angle-only phrasing that let holders drift into promos must be gone");
+  }
+
+  @Test
   void build_noHeldBriefcases_noSection() {
     ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
 
