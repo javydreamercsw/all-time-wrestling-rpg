@@ -41,6 +41,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -211,5 +212,20 @@ class RingsideActionDataServiceTest {
 
     assertNotNull(result);
     assertEquals(AlignmentType.NEUTRAL, result.getAlignment());
+  }
+
+  @Test
+  void findAllActionsUnfiltered_requiresAuthentication() {
+    // beads ATW-w0bq: defense-in-depth pin — the unfiltered loader must refuse anonymous access.
+    try {
+      var annotation =
+          RingsideActionDataService.class
+              .getMethod("findAllActionsUnfiltered")
+              .getAnnotation(PreAuthorize.class);
+      assertNotNull(annotation, "findAllActionsUnfiltered must be @PreAuthorize-annotated");
+      assertEquals("isAuthenticated()", annotation.value());
+    } catch (NoSuchMethodException e) {
+      throw new AssertionError("findAllActionsUnfiltered method not found", e);
+    }
   }
 }
