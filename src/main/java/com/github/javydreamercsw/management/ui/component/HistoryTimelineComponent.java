@@ -18,6 +18,8 @@ package com.github.javydreamercsw.management.ui.component;
 
 import com.github.javydreamercsw.management.dto.ranking.TitleReignDTO;
 import com.vaadin.flow.component.Composite;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.theme.lumo.LumoUtility.*;
@@ -27,6 +29,12 @@ import java.time.format.FormatStyle;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Horizontal championship timeline. Renders only the newest {@link #INITIAL_VISIBLE_REIGNS} reigns
+ * initially — as reign histories accumulate over seasons the strip must not scroll forever
+ * (ATW-3a0t). Older reigns load on demand in {@link #EXPAND_BATCH} chunks through the trailing
+ * "show older" control, which disappears once the history is exhausted.
+ */
 public class HistoryTimelineComponent extends Composite<Div> {
 
   private static final DateTimeFormatter DATE_FORMATTER =
@@ -34,17 +42,56 @@ public class HistoryTimelineComponent extends Composite<Div> {
           .withLocale(Locale.US)
           .withZone(ZoneId.systemDefault());
 
+  /** Reigns visible before any expansion — roughly the current season plus a look-back. */
+  public static final int INITIAL_VISIBLE_REIGNS = 8;
+
+  /** How many older reigns each click of the expansion control reveals. */
+  public static final int EXPAND_BATCH = 12;
+
+  private final List<TitleReignDTO> history;
+  private final Div track;
+  private int visibleCount;
+
   public HistoryTimelineComponent(final List<TitleReignDTO> history) {
-    getContent().addClassNames(Display.FLEX, Overflow.AUTO, Padding.Vertical.MEDIUM, Gap.SMALL);
+    this.history = history;
+    getContent().addClassNames(Display.FLEX, FlexDirection.COLUMN, Gap.SMALL);
     getContent().getStyle().set("scrollbar-width", "thin");
 
-    for (int i = history.size() - 1; i >= 0; i--) {
+    track = new Div();
+    track.addClassNames(Display.FLEX, Overflow.AUTO, Padding.Vertical.MEDIUM, Gap.SMALL);
+    getContent().add(track);
+
+    this.visibleCount = Math.min(INITIAL_VISIBLE_REIGNS, history.size());
+    renderWindow();
+  }
+
+  private void renderWindow() {
+    track.removeAll();
+    // The history arrives newest-first (index 0 = current reign, drawn rightmost); the visible
+    // window is therefore the HEAD of the list, and older reigns sit unrendered at the tail.
+    for (int i = visibleCount - 1; i >= 0; i--) {
       TitleReignDTO reign = history.get(i);
-      getContent().add(createTimelineItem(reign, i == 0));
+      track.add(createTimelineItem(reign, i == 0));
       if (i > 0) {
-        getContent().add(createConnector());
+        track.add(createConnector());
       }
     }
+
+    int hidden = history.size() - visibleCount;
+    if (hidden > 0) {
+      track.add(createExpandControl(hidden));
+    }
+  }
+
+  private Button createExpandControl(int hiddenCount) {
+    Button expand = new Button("%d older reigns — show older…".formatted(hiddenCount));
+    expand.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
+    expand.addClickListener(
+        event -> {
+          visibleCount = Math.min(visibleCount + EXPAND_BATCH, history.size());
+          renderWindow();
+        });
+    return expand;
   }
 
   private Div createTimelineItem(final TitleReignDTO reign, final boolean isCurrent) {

@@ -27,13 +27,12 @@ import com.github.javydreamercsw.management.dto.ranking.TitleReignDTO;
 import com.github.javydreamercsw.management.service.ranking.RankingService;
 import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
 import com.github.javydreamercsw.management.ui.component.HistoryTimelineComponent;
-import com.github.javydreamercsw.management.ui.component.ReignCardComponent;
+import com.github.javydreamercsw.management.ui.component.ReignHistoryPanel;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Image;
@@ -308,12 +307,10 @@ public class RankingView extends Main {
     if (history.isEmpty()) {
       historyLayout.add("No history available.");
     } else {
+      // Both variants window the reigns lazily (ATW-3a0t): the strip and the card grid render
+      // only the newest reigns initially; older history loads on demand.
       historyLayout.add(new HistoryTimelineComponent(history));
-      Div cardsContainer = new Div();
-      cardsContainer.addClassNames(
-          LumoUtility.Display.FLEX, LumoUtility.FlexWrap.WRAP, LumoUtility.Gap.SMALL);
-      history.forEach(reign -> cardsContainer.add(new ReignCardComponent(reign)));
-      historyLayout.add(cardsContainer);
+      historyLayout.add(new ReignHistoryPanel(history));
     }
   }
 }
