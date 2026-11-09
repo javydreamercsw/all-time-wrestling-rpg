@@ -164,6 +164,39 @@ public final class GenerateSeedProvenanceManifest {
       Set.of("Faction Beatdown", "GM Office Confrontation", "Performance Review");
 
   /**
+   * The domains {@link #extractFingerprints} actually populates (beads ATW-l6si). The enforcement
+   * test cross-asserts this equals {@link SeedDomains#STAMPING_DOMAINS} — without the pin, a
+   * brand-new stamping sync missing from BOTH the registry and this generator would ship
+   * permanently green, outside fast-path coverage forever.
+   */
+  static final Set<String> EXTRACTION_DOMAINS =
+      Set.of(
+          "achievement",
+          "arena",
+          "campaign_ability_card",
+          "campaign_upgrade",
+          "card",
+          "card_set",
+          "championship",
+          "commentator",
+          "commentary_team",
+          "deck",
+          "faction",
+          "location",
+          "npc",
+          "outcome_matrix",
+          "ringside_action",
+          "segment_rule",
+          "segment_type",
+          "show_template",
+          "show_type",
+          "status_card",
+          "team",
+          "tournament",
+          "wrestler",
+          "wrestler_relationship");
+
+  /**
    * Names + types of the rows {@code CampaignUpgradeService}'s {@code @PostConstruct} MERGEs into
    * {@code campaign_upgrade} at bean creation (a full deleteAll + saveAll of the {@code
    * campaign_upgrades.json} catalog) — boot bootstrap, not user data. The empty-DB precondition
@@ -646,6 +679,11 @@ public final class GenerateSeedProvenanceManifest {
     Map<String, String> achievement = new TreeMap<>();
     for (Achievement a : context.getBean(AchievementRepository.class).findAll()) {
       if (SeedSyncSupport.isBlankFingerprint(a.getSeedFingerprint())) {
+        log.warn(
+            "Seed manifest extraction: skipping blank-stamped {} row '{}' (not stamped — a sync"
+                + " that stopped stamping would silently shrink the manifest)",
+            "achievement",
+            a.getKey());
         continue;
       }
       achievement.put(a.getKey(), achievementSync.achievementFingerprint(a));
@@ -656,6 +694,11 @@ public final class GenerateSeedProvenanceManifest {
     Map<String, String> arenas = new TreeMap<>();
     for (Arena a : context.getBean(ArenaRepository.class).findAllWithLocation()) {
       if (SeedSyncSupport.isBlankFingerprint(a.getSeedFingerprint())) {
+        log.warn(
+            "Seed manifest extraction: skipping blank-stamped {} row '{}' (not stamped — a sync"
+                + " that stopped stamping would silently shrink the manifest)",
+            "arena",
+            a.getName());
         continue;
       }
       arenas.put(a.getName(), arenaSync.arenaFingerprint(a));
@@ -666,6 +709,11 @@ public final class GenerateSeedProvenanceManifest {
     Map<String, String> abilityCards = new TreeMap<>();
     for (CampaignAbilityCard c : context.getBean(CampaignAbilityCardService.class).findAll()) {
       if (SeedSyncSupport.isBlankFingerprint(c.getSeedFingerprint())) {
+        log.warn(
+            "Seed manifest extraction: skipping blank-stamped {} row '{}' (not stamped — a sync"
+                + " that stopped stamping would silently shrink the manifest)",
+            "campaign_ability_card",
+            c.getName());
         continue;
       }
       abilityCards.put(
@@ -678,6 +726,11 @@ public final class GenerateSeedProvenanceManifest {
     Map<String, String> campaignUpgrades = new TreeMap<>();
     for (CampaignUpgrade u : context.getBean(CampaignUpgradeRepository.class).findAll()) {
       if (SeedSyncSupport.isBlankFingerprint(u.getSeedFingerprint())) {
+        log.warn(
+            "Seed manifest extraction: skipping blank-stamped {} row '{}' (not stamped — a sync"
+                + " that stopped stamping would silently shrink the manifest)",
+            "campaign_upgrade",
+            u.getName());
         continue;
       }
       campaignUpgrades.put(u.getName(), upgradeSync.upgradeFingerprint(u));
@@ -688,6 +741,11 @@ public final class GenerateSeedProvenanceManifest {
     Map<String, String> cards = new TreeMap<>();
     for (Card c : context.getBean(CardService.class).findAll()) {
       if (SeedSyncSupport.isBlankFingerprint(c.getSeedFingerprint())) {
+        log.warn(
+            "Seed manifest extraction: skipping blank-stamped {} row '{}' (not stamped — a sync"
+                + " that stopped stamping would silently shrink the manifest)",
+            "card",
+            c.getSet().getCode());
         continue;
       }
       cards.put(c.getSet().getCode() + "#" + c.getNumber(), cardSync.cardFingerprint(c));
@@ -697,6 +755,11 @@ public final class GenerateSeedProvenanceManifest {
     Map<String, String> cardSets = new TreeMap<>();
     for (CardSet c : context.getBean(CardSetService.class).findAll()) {
       if (SeedSyncSupport.isBlankFingerprint(c.getSeedFingerprint())) {
+        log.warn(
+            "Seed manifest extraction: skipping blank-stamped {} row '{}' (not stamped — a sync"
+                + " that stopped stamping would silently shrink the manifest)",
+            "card_set",
+            c.getCode());
         continue;
       }
       cardSets.put(c.getCode(), syncSupport.fingerprint(c.getName()));
@@ -707,6 +770,11 @@ public final class GenerateSeedProvenanceManifest {
     Map<String, String> championships = new TreeMap<>();
     for (Title t : context.getBean(TitleService.class).findAllUnfiltered()) {
       if (SeedSyncSupport.isBlankFingerprint(t.getSeedFingerprint())) {
+        log.warn(
+            "Seed manifest extraction: skipping blank-stamped {} row '{}' (not stamped — a sync"
+                + " that stopped stamping would silently shrink the manifest)",
+            "championship",
+            t.getName());
         continue;
       }
       championships.put(t.getName(), championshipSync.titleFingerprint(t));
@@ -718,6 +786,11 @@ public final class GenerateSeedProvenanceManifest {
     Map<String, String> commentators = new TreeMap<>();
     for (Commentator c : commentatorRepository.findAll()) {
       if (c.getNpc() == null || SeedSyncSupport.isBlankFingerprint(c.getSeedFingerprint())) {
+        log.warn(
+            "Seed manifest extraction: skipping blank-stamped {} row '{}' (not stamped — a sync"
+                + " that stopped stamping would silently shrink the manifest)",
+            "commentator",
+            c.getNpc().getName());
         continue;
       }
       commentators.put(c.getNpc().getName(), commentatorSync.commentatorFingerprint(c));
@@ -728,6 +801,11 @@ public final class GenerateSeedProvenanceManifest {
     Map<String, String> commentaryTeams = new TreeMap<>();
     for (CommentaryTeam t : context.getBean(CommentaryTeamRepository.class).findAll()) {
       if (SeedSyncSupport.isBlankFingerprint(t.getSeedFingerprint())) {
+        log.warn(
+            "Seed manifest extraction: skipping blank-stamped {} row '{}' (not stamped — a sync"
+                + " that stopped stamping would silently shrink the manifest)",
+            "commentary_team",
+            t.getName());
         continue;
       }
       commentaryTeams.put(t.getName(), commentaryTeamSync.teamFingerprint(t));
@@ -741,6 +819,11 @@ public final class GenerateSeedProvenanceManifest {
         continue; // mirrors DeckSync's seed write: wrestler-less decks are not seed state
       }
       if (SeedSyncSupport.isBlankFingerprint(deck.getSeedFingerprint())) {
+        log.warn(
+            "Seed manifest extraction: skipping blank-stamped {} row '{}' (not stamped — a sync"
+                + " that stopped stamping would silently shrink the manifest)",
+            "deck",
+            deck.getWrestler().getName());
         continue;
       }
       decks.put(deck.getWrestler().getName(), deckSync.compositionFingerprint(deck));
@@ -751,6 +834,11 @@ public final class GenerateSeedProvenanceManifest {
     Map<String, String> factions = new TreeMap<>();
     for (Faction f : context.getBean(FactionRepository.class).findAllWithManager()) {
       if (SeedSyncSupport.isBlankFingerprint(f.getSeedFingerprint())) {
+        log.warn(
+            "Seed manifest extraction: skipping blank-stamped {} row '{}' (not stamped — a sync"
+                + " that stopped stamping would silently shrink the manifest)",
+            "faction",
+            f.getName());
         continue;
       }
       factions.put(f.getName(), factionSync.factionFingerprint(f));
@@ -761,6 +849,11 @@ public final class GenerateSeedProvenanceManifest {
     Map<String, String> locations = new TreeMap<>();
     for (Location l : context.getBean(LocationRepository.class).findAll()) {
       if (SeedSyncSupport.isBlankFingerprint(l.getSeedFingerprint())) {
+        log.warn(
+            "Seed manifest extraction: skipping blank-stamped {} row '{}' (not stamped — a sync"
+                + " that stopped stamping would silently shrink the manifest)",
+            "location",
+            l.getName());
         continue;
       }
       locations.put(l.getName(), locationSync.locationFingerprint(l));
@@ -771,7 +864,14 @@ public final class GenerateSeedProvenanceManifest {
     Map<String, String> npcs = new TreeMap<>();
     for (Npc n : context.getBean(NpcService.class).findAllUnfiltered()) {
       if (SeedSyncSupport.isBlankFingerprint(n.getSeedFingerprint())) {
-        continue; // e.g. commentator-created NPCs — NpcSync never stamps those rows
+        // Commentator-created NPCs are not NpcSync catalog state — expected blank, but WARN so a
+        // sync that STOPPED stamping its catalog rows is still visible in the regen output.
+        log.warn(
+            "Seed manifest extraction: skipping blank-stamped {} row '{}' (expected for non-catalog"
+                + " rows; unexpected if the catalog sync stopped stamping)",
+            "npc",
+            n.getName());
+        continue;
       }
       npcs.put(n.getName(), npcSync.npcFingerprint(n, null));
     }
@@ -781,6 +881,11 @@ public final class GenerateSeedProvenanceManifest {
     Map<String, String> outcomeMatrices = new TreeMap<>();
     for (OutcomeMatrix m : context.getBean(OutcomeMatrixRepository.class).findAll()) {
       if (SeedSyncSupport.isBlankFingerprint(m.getSeedFingerprint())) {
+        log.warn(
+            "Seed manifest extraction: skipping blank-stamped {} row '{}' (not stamped — a sync"
+                + " that stopped stamping would silently shrink the manifest)",
+            "outcome_matrix",
+            m.getName());
         continue;
       }
       outcomeMatrices.put(m.getName(), outcomeMatrixSync.matrixFingerprint(m));
@@ -788,6 +893,11 @@ public final class GenerateSeedProvenanceManifest {
     for (OutcomeMatrixEntry e :
         context.getBean(OutcomeMatrixEntryRepository.class).findAllWithMatrixAndRedirect()) {
       if (SeedSyncSupport.isBlankFingerprint(e.getSeedFingerprint())) {
+        log.warn(
+            "Seed manifest extraction: skipping blank-stamped {} row '{}' (not stamped — a sync"
+                + " that stopped stamping would silently shrink the manifest)",
+            "outcome_matrix",
+            OutcomeMatrixSync.entrySeedKeyFor(e.getMatrix().getName(), e.getDiceRoll()));
         continue;
       }
       outcomeMatrices.put(
@@ -801,6 +911,11 @@ public final class GenerateSeedProvenanceManifest {
     for (RingsideAction a :
         context.getBean(RingsideActionDataService.class).findAllActionsUnfiltered()) {
       if (SeedSyncSupport.isBlankFingerprint(a.getSeedFingerprint())) {
+        log.warn(
+            "Seed manifest extraction: skipping blank-stamped {} row '{}' (not stamped — a sync"
+                + " that stopped stamping would silently shrink the manifest)",
+            "ringside_action",
+            a.getName());
         continue;
       }
       ringsideActions.put(a.getName(), ringsideSync.actionFingerprint(a));
@@ -811,6 +926,11 @@ public final class GenerateSeedProvenanceManifest {
     Map<String, String> segmentRules = new TreeMap<>();
     for (SegmentRule sr : context.getBean(SegmentRuleService.class).findAllForAdmin()) {
       if (SeedSyncSupport.isBlankFingerprint(sr.getSeedFingerprint())) {
+        log.warn(
+            "Seed manifest extraction: skipping blank-stamped {} row '{}' (not stamped — a sync"
+                + " that stopped stamping would silently shrink the manifest)",
+            "segment_rule",
+            sr.getName());
         continue;
       }
       segmentRules.put(sr.getName(), ruleSync.ruleFingerprint(sr));
@@ -821,6 +941,11 @@ public final class GenerateSeedProvenanceManifest {
     Map<String, String> segmentTypes = new TreeMap<>();
     for (SegmentType st : context.getBean(SegmentTypeService.class).findAll()) {
       if (SeedSyncSupport.isBlankFingerprint(st.getSeedFingerprint())) {
+        log.warn(
+            "Seed manifest extraction: skipping blank-stamped {} row '{}' (not stamped — a sync"
+                + " that stopped stamping would silently shrink the manifest)",
+            "segment_type",
+            st.getName());
         continue;
       }
       segmentTypes.put(st.getName(), typeSync.segmentTypeFingerprint(st));
@@ -831,6 +956,11 @@ public final class GenerateSeedProvenanceManifest {
     Map<String, String> showTemplates = new TreeMap<>();
     for (ShowTemplate t : context.getBean(ShowTemplateService.class).findAllForAdmin()) {
       if (SeedSyncSupport.isBlankFingerprint(t.getSeedFingerprint())) {
+        log.warn(
+            "Seed manifest extraction: skipping blank-stamped {} row '{}' (not stamped — a sync"
+                + " that stopped stamping would silently shrink the manifest)",
+            "show_template",
+            t.getName());
         continue;
       }
       showTemplates.put(t.getName(), templateSync.templateFingerprint(t));
@@ -841,6 +971,11 @@ public final class GenerateSeedProvenanceManifest {
     Map<String, String> showTypes = new TreeMap<>();
     for (ShowType st : context.getBean(ShowTypeService.class).findAllForAdmin()) {
       if (SeedSyncSupport.isBlankFingerprint(st.getSeedFingerprint())) {
+        log.warn(
+            "Seed manifest extraction: skipping blank-stamped {} row '{}' (not stamped — a sync"
+                + " that stopped stamping would silently shrink the manifest)",
+            "show_type",
+            st.getName());
         continue;
       }
       showTypes.put(st.getName(), showTypeSync.showTypeFingerprint(st));
@@ -851,6 +986,11 @@ public final class GenerateSeedProvenanceManifest {
     Map<String, String> statusCards = new TreeMap<>();
     for (StatusCard card : context.getBean(StatusCardService.class).findAll()) {
       if (SeedSyncSupport.isBlankFingerprint(card.getSeedFingerprint())) {
+        log.warn(
+            "Seed manifest extraction: skipping blank-stamped {} row '{}' (not stamped — a sync"
+                + " that stopped stamping would silently shrink the manifest)",
+            "status_card",
+            card.getKey());
         continue;
       }
       statusCards.put(card.getKey(), statusCardSync.statusCardFingerprint(card));
@@ -861,6 +1001,11 @@ public final class GenerateSeedProvenanceManifest {
     Map<String, String> teams = new TreeMap<>();
     for (Team t : context.getBean(TeamRepository.class).findAll()) {
       if (SeedSyncSupport.isBlankFingerprint(t.getSeedFingerprint())) {
+        log.warn(
+            "Seed manifest extraction: skipping blank-stamped {} row '{}' (not stamped — a sync"
+                + " that stopped stamping would silently shrink the manifest)",
+            "team",
+            t.getName());
         continue;
       }
       teams.put(t.getName(), teamSync.teamFingerprint(t));
@@ -870,8 +1015,16 @@ public final class GenerateSeedProvenanceManifest {
     TournamentSync tournamentSync = context.getBean(TournamentSync.class);
     Map<String, String> tournaments = new TreeMap<>();
     for (Tournament t : tournamentSync.repositoryForManifest().findAllWithRules()) {
-      if (t.getCode() == null || SeedSyncSupport.isBlankFingerprint(t.getSeedFingerprint())) {
+      if (t.getCode() == null) {
         continue; // booker-created rows (no code) are never catalog state
+      }
+      if (SeedSyncSupport.isBlankFingerprint(t.getSeedFingerprint())) {
+        log.warn(
+            "Seed manifest extraction: skipping blank-stamped {} row '{}' (not stamped — a sync"
+                + " that stopped stamping would silently shrink the manifest)",
+            "tournament",
+            t.getCode());
+        continue;
       }
       tournaments.put(t.getCode(), tournamentSync.tournamentFingerprint(t));
     }
@@ -881,7 +1034,14 @@ public final class GenerateSeedProvenanceManifest {
     Map<String, String> wrestlers = new TreeMap<>();
     for (Wrestler w : context.getBean(WrestlerRepository.class).findAllWithAlignments()) {
       if (SeedSyncSupport.isBlankFingerprint(w.getSeedFingerprint())) {
-        continue; // e.g. player-owned rows created by test bootstrapping
+        // Player-owned rows are not WrestlerSync catalog state — expected blank, but WARN so a
+        // sync that STOPPED stamping its catalog rows is still visible in the regen output.
+        log.warn(
+            "Seed manifest extraction: skipping blank-stamped {} row '{}' (expected for non-catalog"
+                + " rows; unexpected if the catalog sync stopped stamping)",
+            "wrestler",
+            w.getName());
+        continue;
       }
       wrestlers.put(w.getName(), wrestlerSync.wrestlerFingerprint(w));
     }
@@ -892,6 +1052,12 @@ public final class GenerateSeedProvenanceManifest {
     for (WrestlerRelationship r :
         context.getBean(WrestlerRelationshipRepository.class).findAllWithWrestlers()) {
       if (SeedSyncSupport.isBlankFingerprint(r.getSeedFingerprint())) {
+        log.warn(
+            "Seed manifest extraction: skipping blank-stamped {} row '{}' (not stamped — a sync"
+                + " that stopped stamping would silently shrink the manifest)",
+            "wrestler_relationship",
+            RelationshipSync.relationshipSeedKeyFor(
+                r.getWrestler1().getName(), r.getWrestler2().getName(), r.getType()));
         continue;
       }
       relationships.put(
