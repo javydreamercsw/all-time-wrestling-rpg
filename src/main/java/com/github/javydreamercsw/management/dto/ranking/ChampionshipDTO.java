@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.dto.ranking;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,4 +34,7 @@ public class ChampionshipDTO {
   private String name;
   private String imageUrl;
   private WrestlerTier tier;
+  // Carried for the rankings dropdown ordering (tier desc, then gender, then name — beads
+  // ATW-r6zt). Null for legacy callers that construct the DTO without it.
+  private Gender gender;
 }
