@@ -53,6 +53,22 @@ if ! git diff --quiet HEAD -- package-lock.json 2>/dev/null \
   git checkout -- package.json package-lock.json
 fi
 
+# Flow's TaskUpdatePackages "repairs" package.json toward the vite version
+# bundled in flow-server (ATW-qzaj), reverting deliberate dependabot bumps —
+# and the auto-commit below would capture the downgrade as a style fix.
+# Discard npm churn when package.json differs from HEAD ONLY by vite not
+# moving forward (the decision lives in scripts/discard-npm-downgrade.cjs).
+if ! git diff --quiet HEAD -- package.json 2>/dev/null; then
+  VERDICT=$(printf '{"head":%s,"worktree":%s}' "$(git show HEAD:package.json)" "$(cat package.json)" \
+      | node "$(git rev-parse --show-toplevel)/scripts/discard-npm-downgrade.cjs" 2>/dev/null)
+  case "$VERDICT" in
+    *'"discard":true'*)
+      echo 1>&2 "NOTICE: discarding Flow-driven vite downgrade from the formatting run."
+      git checkout -- package.json package-lock.json
+      ;;
+  esac
+fi
+
 # If either tool changed anything, commit the fixes and abort the push.
 # Git has already resolved HEAD's SHA before invoking this hook, so a new
 # commit created here would not be included in the push that triggered it.
