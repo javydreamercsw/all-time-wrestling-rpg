@@ -71,18 +71,26 @@ class OllamaTournamentFedPleIT extends AbstractTournamentFedPleIT {
   @Autowired private HolidayService holidayService;
   @Autowired private SegmentRepository segmentRepository;
 
+  @Autowired
+  private com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
+
   private ShowPlanningAiService aiService;
 
   @BeforeEach
   void setUpFixtureAndAi() {
     buildTournamentFedPleFixture();
+    // Legacy AI-booking path: this IT exercises the real LLM's booking (ATW-wbch keeps it behind
+    // the local-planner game setting).
+    gameSettingService.setShowPlanningLocalPlannerEnabled(false);
     aiService =
         new ShowPlanningAiService(
             new SegmentNarrationServiceFactory(List.of(ollamaService)),
             objectMapper,
             segmentTypeService,
             segmentRuleService,
-            holidayService);
+            holidayService,
+            new LocalShowPlanner(new WeeklyParticipationTracker()),
+            gameSettingService);
   }
 
   @Test

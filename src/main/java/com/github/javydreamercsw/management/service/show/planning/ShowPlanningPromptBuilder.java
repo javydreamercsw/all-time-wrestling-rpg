@@ -634,6 +634,108 @@ public class ShowPlanningPromptBuilder {
   }
 
   /**
+   * Narration-mode prompt (ATW-wbch): the card is already fixed by the local planner — the AI's
+   * only job is to write a description and outcome for each slot. No selection instructions, no
+   * booking rules: the participants, types, and rules are presented as facts. The response must be
+   * the same-length JSON array with exactly the fields the parser maps (description → narration,
+   * outcome → summary).
+   *
+   * @param context the planning context (roster/rivalries/recent segments for storytelling color)
+   * @param fixedSegments the locally planned card (deterministic rows included)
+   */
+  public String buildNarrationPrompt(
+      @NonNull ShowPlanningContextDTO context,
+      @NonNull List<com.github.javydreamercsw.management.service.show.planning.ProposedSegment>
+              fixedSegments) {
+    StringBuilder prompt = new StringBuilder();
+    prompt.append(
+        """
+        You are a professional wrestling narrator. A show card has already been booked — every \
+        segment below is FINAL. Your ONLY job is to write the story for each segment: a vivid \
+        description and a clear outcome. Do NOT change participants, segment types, or rules. Do \
+        NOT add or remove segments.
+
+        """);
+    prompt.append("Show: ").append(sanitize(context.getShowTemplate().getShowName())).append("\n");
+    if (context.getShowDate() != null) {
+      prompt.append("Show Date: ").append(context.getShowDate()).append("\n");
+    }
+    prompt
+        .append("Show Description: ")
+        .append(sanitize(context.getShowTemplate().getDescription()))
+        .append("\n\n");
+
+    prompt.append("THE FIXED CARD (narrate these segments in order):\n");
+    for (int i = 0; i < fixedSegments.size(); i++) {
+      var segment = fixedSegments.get(i);
+      prompt.append(i + 1).append(". Type: ").append(segment.getType());
+      if (segment.getRules() != null && !segment.getRules().isEmpty()) {
+        prompt.append(", Rules: ").append(String.join(", ", segment.getRules()));
+      }
+      prompt.append(", Participants: ");
+      if (segment.getTeams() != null) {
+        prompt.append(
+            segment.getTeams().stream()
+                .map(team -> String.join(" & ", team))
+                .collect(Collectors.joining(" vs ")));
+      }
+      prompt.append("\n");
+      if (segment.getSummary() != null && !segment.getSummary().isBlank()) {
+        prompt.append("   Context: ").append(sanitize(segment.getSummary())).append("\n");
+      }
+    }
+
+    if (context.getCurrentRivalries() != null && !context.getCurrentRivalries().isEmpty()) {
+      prompt.append("\nActive Rivalries (for storyline color):\n");
+      context
+          .getCurrentRivalries()
+          .forEach(
+              rivalry ->
+                  prompt
+                      .append("- ")
+                      .append(sanitize(rivalry.getName()))
+                      .append(" (heat ")
+                      .append(rivalry.getHeat())
+                      .append(")\n"));
+    }
+    if (context.getChampionships() != null && !context.getChampionships().isEmpty()) {
+      prompt.append("\nChampionships:\n");
+      context
+          .getChampionships()
+          .forEach(
+              championship -> {
+                prompt.append("- ").append(sanitize(championship.getChampionshipName()));
+                if (championship.getChampionName() != null) {
+                  prompt.append(" — champion: ").append(sanitize(championship.getChampionName()));
+                }
+                prompt.append("\n");
+              });
+    }
+    if (context.getRecentSegments() != null && !context.getRecentSegments().isEmpty()) {
+      prompt.append("\nRecent story beats (last 3 weeks, for continuity):\n");
+      context.getRecentSegments().stream()
+          .limit(10)
+          .forEach(
+              segment -> {
+                prompt.append("- ").append(sanitize(segment.getSummary())).append("\n");
+              });
+    }
+
+    prompt.append(
+        """
+
+        Respond with a JSON array of EXACTLY the same length as the card above, in the same \
+        order. Each element: {"segmentId": "<index starting at 1>", "description": "<vivid \
+        one-to-three sentence story of the segment>", "outcome": "<what happens / who wins — \
+        keep the outcome plausible for the participants' tiers>"} — nothing else. Be concise \
+        so the whole array fits in one response.
+
+        JSON:
+        """);
+    return prompt.toString();
+  }
+
+  /**
    * How many match/promo slots on this card are pre-determined: one per scripted beat (a promo-type
    * beat claims a promo slot, anything else a match slot), plus one per real-participant tournament
    * row. Placeholder tournament rows don't claim AI slots — the bracket booking is additive, and

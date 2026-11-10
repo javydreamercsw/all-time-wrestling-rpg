@@ -57,6 +57,8 @@ class ShowPlanningAiServiceTest {
   private SegmentRuleService segmentRuleService;
   private HolidayService holidayService;
   private SegmentTypeService segmentTypeService;
+  private com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
+  private LocalShowPlanner localShowPlanner;
 
   @BeforeEach
   public void setUp() {
@@ -66,6 +68,11 @@ class ShowPlanningAiServiceTest {
     holidayService = mock(HolidayService.class);
     ObjectMapper objectMapper = new ObjectMapper(); // Use real ObjectMapper for JSON parsing
     segmentTypeService = mock(SegmentTypeService.class);
+    gameSettingService =
+        mock(com.github.javydreamercsw.management.service.GameSettingService.class);
+    // Tests below exercise the legacy AI-booking path; the local planner is opt-out here.
+    when(gameSettingService.isShowPlanningLocalPlannerEnabled()).thenReturn(false);
+    localShowPlanner = new LocalShowPlanner(new WeeklyParticipationTracker());
 
     // Mock the factory to return the service
     when(narrationServiceFactory.getBestAvailableService()).thenReturn(segmentNarrationService);
@@ -88,7 +95,9 @@ class ShowPlanningAiServiceTest {
             objectMapper,
             segmentTypeService,
             segmentRuleService,
-            holidayService);
+            holidayService,
+            localShowPlanner,
+            gameSettingService);
   }
 
   @Test
