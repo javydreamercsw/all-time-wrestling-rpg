@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.domain.title.*;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -73,6 +74,7 @@ public class BriefcaseCashInAdvisorService {
   private final RivalryRepository rivalryRepository;
   private final WrestlerRepository wrestlerRepository;
   private final GameSettingService gameSettingService;
+  private final WrestlerService wrestlerService;
   private final Clock clock;
 
   /**
@@ -99,6 +101,12 @@ public class BriefcaseCashInAdvisorService {
   /**
    * Evaluates every NPC-held, HELD briefcase against this show and returns the proposals that clear
    * the threshold, ordered by score descending. Deterministic: same state, same proposals.
+   *
+   * <p>Target selection (beads ATW-u1hr): per briefcase only the highest-tier eligible title
+   * becomes a proposal — the holder cashes in on the top title matching their gender/division, and
+   * rivalry heat with a lower-tier champion never diverts the case to a lesser belt. The score
+   * still decides WHEN a proposal fires (threshold) and the mode (RUN_IN vs PLANNED); it no longer
+   * decides WHICH title the case targets.
    */
   public List<BriefcaseProposal> proposalsFor(Show show) {
     if (!gameSettingService.isNpcBriefcaseCashInEnabled()) {
@@ -109,7 +117,9 @@ public class BriefcaseCashInAdvisorService {
 
     return opportunityRepository.findByStatus(TitleOpportunityStatus.HELD).stream()
         .filter(opp -> passesGates(opp, gameDate))
-        .flatMap(opp -> scoreAgainstTitles(opp, show, gameDate, activeTitles).stream())
+        .map(opp -> highestTierProposal(opp, show, gameDate, activeTitles))
+        .filter(Optional::isPresent)
+        .map(Optional::get)
         .filter(p -> p.score() >= PROPOSAL_THRESHOLD)
         .sorted(Comparator.comparingInt(BriefcaseProposal::score).reversed())
         .toList();
@@ -175,6 +185,17 @@ public class BriefcaseCashInAdvisorService {
         || !Boolean.TRUE.equals(holder.getActive())) {
       return false;
     }
+    // ATW-1nyv: an unavailable holder (active injury or below the rest threshold) cannot cash
+    // in — the case waits for their return instead of surfacing a proposal the booker would
+    // have to veto. Same canonical predicate every booking layer consults. Null universe on
+    // the opportunity (legacy/test rows) skips the check rather than blocking the holder.
+    if (opportunity.getUniverse() != null
+        && !wrestlerService.isAvailableForBooking(
+            holder.getId(),
+            opportunity.getUniverse().getId(),
+            gameSettingService.getConditionRestThreshold())) {
+      return false;
+    }
     // Cooldown: a recent booker decline suppresses re-proposals, except when urgency is in the
     // top band (last quarter of the case's window) — the case is about to lapse and the booker
     // must see it again regardless of earlier rejections.
@@ -199,6 +220,20 @@ public class BriefcaseCashInAdvisorService {
     }
     long daysUntilExpiry = ChronoUnit.DAYS.between(gameDate, opportunity.getExpiryDate());
     return daysUntilExpiry <= window / 4;
+  }
+
+  /**
+   * The briefcase's one candidate: the highest-tier eligible title's proposal (beads ATW-u1hr).
+   * Ties on tier (two titles at the same level) fall back to score, preserving determinism.
+   */
+  private Optional<BriefcaseProposal> highestTierProposal(
+      TitleOpportunity opportunity, Show show, LocalDate gameDate, List<Title> activeTitles) {
+    return scoreAgainstTitles(opportunity, show, gameDate, activeTitles).stream()
+        .max(
+            Comparator.comparing(
+                    (BriefcaseProposal p) -> p.title().getTier(),
+                    Comparator.nullsFirst(Comparator.naturalOrder()))
+                .thenComparingInt(BriefcaseProposal::score));
   }
 
   private List<BriefcaseProposal> scoreAgainstTitles(

@@ -337,9 +337,17 @@ public class ShowPlanningPromptBuilder {
     }
 
     if (context.getHeldBriefcases() != null && !context.getHeldBriefcases().isEmpty()) {
+      // beads ATW-u1hr: production showed holders funneled into promos — the participation
+      // leftovers rule alone parks them in talking segments. A holder must keep building the
+      // program toward the cash-in in MATCHES against the champion they stalk (or contenders
+      // around that title); angles support the program, they don't replace it.
       prompt.append("\nHeld Briefcases (Money in the Bank style — a cashable title shot against");
-      prompt.append(" any reigning champion; a cash-in or champion-vs-holder angle is a strong");
-      prompt.append(" proposal candidate):\n");
+      prompt.append(" any reigning champion). For each holder: keep building toward their");
+      prompt.append(" cash-in with MATCHES — ideally against the champion of the highest-tier");
+      prompt.append(" title matching the holder's division, or contenders around that title —");
+      prompt.append(" not a Promo every week. A champion-vs-holder angle (confrontation, brawl,");
+      prompt.append(" contract signing) may support the program, but must not replace regular");
+      prompt.append(" matches for the holder:\n");
       context
           .getHeldBriefcases()
           .forEach(line -> prompt.append("- ").append(sanitize(line)).append("\n"));
@@ -376,7 +384,7 @@ public class ShowPlanningPromptBuilder {
                 if (wrestler.getAlignment() != null) {
                   prompt.append(", Alignment: ").append(wrestler.getAlignment());
                 }
-                prompt.append(", Injured: ").append(wrestler.isInjured()).append("\n");
+                prompt.append("\n");
               });
       prompt.append(
           "IMPORTANT: You MUST only book wrestlers listed in the Full Roster above."
@@ -546,6 +554,12 @@ public class ShowPlanningPromptBuilder {
     }
     prompt.append("  \"description\": \"string\",\n");
     prompt.append("  \"outcome\": \"string\",\n");
+    prompt.append(
+        "  \"result\": \"WINNERS\" | \"DRAW\" | \"NO_CONTEST\", // Optional declared result,"
+            + " defaults to WINNERS. Use DRAW or NO_CONTEST only for a deliberate storyline"
+            + " finish with no winner (a double count-out, an interference that ends the"
+            + " match). NEVER set DRAW or NO_CONTEST on a tournament match — brackets must"
+            + " resolve.\n");
     prompt.append(
         "  \"notes\": \"string\", // Optional instructions/feedback for future AI narration\n");
     prompt.append(

@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.domain.show.export;
 
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import java.time.format.DateTimeFormatter;
@@ -77,6 +78,10 @@ public abstract class AbstractSocialMediaFormatter implements ShowCardFormatter 
         String winners =
             segment.getWinners().stream().map(Wrestler::getName).collect(Collectors.joining(", "));
         sb.append("✅ Winner(s): ").append(winners).append("\n");
+      } else if (includeResults && segment.getResult() == SegmentResult.DRAW) {
+        sb.append("🤝 Result: Draw\n");
+      } else if (includeResults && segment.getResult() == SegmentResult.NO_CONTEST) {
+        sb.append("🚫 Result: No Contest\n");
       }
 
       if (includeSummary

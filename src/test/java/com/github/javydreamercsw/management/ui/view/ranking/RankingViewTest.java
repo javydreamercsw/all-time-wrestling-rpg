@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.dto.ranking.ChampionDTO;
 import com.github.javydreamercsw.management.dto.ranking.ChampionshipDTO;
@@ -39,6 +40,7 @@ import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.data.provider.Query;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -57,7 +59,7 @@ class RankingViewTest extends AbstractViewTest {
   public void setUp() {
     championshipDTO =
         new ChampionshipDTO(
-            1L, "Test Title", "images/championships/test.png", WrestlerTier.MIDCARDER);
+            1L, "Test Title", "images/championships/test.png", WrestlerTier.MIDCARDER, Gender.MALE);
     when(rankingService.getChampionships()).thenReturn(List.of(championshipDTO));
     when(rankingService.getCurrentChampions(championshipDTO.getId()))
         .thenReturn(
@@ -105,6 +107,38 @@ class RankingViewTest extends AbstractViewTest {
     assertEquals(2, items.size());
     assertEquals("Contender 2", items.get(0).getName());
     assertEquals("Contender 1", items.get(1).getName());
+  }
+
+  @Test
+  void championshipDropdownOrdersByTierDescThenGenderThenName() {
+    // beads ATW-r6zt: the dropdown must sort by tier (world-level first = highest tier), then
+    // gender (MALE before FEMALE), then name — NOT alphabetically.
+    ChampionshipDTO iconMale =
+        new ChampionshipDTO(1L, "Alpha Title", "images/x.png", WrestlerTier.ICON, Gender.MALE);
+    ChampionshipDTO iconFemale =
+        new ChampionshipDTO(2L, "Zeta Title", "images/x.png", WrestlerTier.ICON, Gender.FEMALE);
+    ChampionshipDTO midcardMaleZ =
+        new ChampionshipDTO(3L, "Zulu Title", "images/x.png", WrestlerTier.MIDCARDER, Gender.MALE);
+    ChampionshipDTO midcardMaleA =
+        new ChampionshipDTO(4L, "Alpha Belt", "images/x.png", WrestlerTier.MIDCARDER, Gender.MALE);
+    ChampionshipDTO midcardFemale =
+        new ChampionshipDTO(5L, "Aaa Title", "images/x.png", WrestlerTier.MIDCARDER, Gender.FEMALE);
+    ChampionshipDTO rookieFemale =
+        new ChampionshipDTO(6L, "Zzz Title", "images/x.png", WrestlerTier.ROOKIE, Gender.FEMALE);
+    // Deliberately unsorted input (name order shuffled against the expected tier order).
+    when(rankingService.getChampionships())
+        .thenReturn(
+            List.of(midcardMaleZ, rookieFemale, iconFemale, midcardMaleA, iconMale, midcardFemale));
+
+    RankingView view = new RankingView(rankingService, tierBoundaryService);
+    ComboBox<ChampionshipDTO> comboBox = _get(view, ComboBox.class);
+
+    List<ChampionshipDTO> items =
+        (List<ChampionshipDTO>) comboBox.getListDataView().getItems().collect(Collectors.toList());
+    assertEquals(
+        List.of(iconMale, iconFemale, midcardMaleA, midcardMaleZ, midcardFemale, rookieFemale),
+        items,
+        "tier desc (world-level first), then gender (MALE first), then name");
   }
 
   @Test

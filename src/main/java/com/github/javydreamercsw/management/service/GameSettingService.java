@@ -22,6 +22,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSe
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.event.dto.GameDateChangedEvent;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
+import com.github.javydreamercsw.management.sync.review.SeedReviewGate;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -113,9 +114,9 @@ public class GameSettingService {
   public static final String BRIEFCASE_NPC_CASH_IN_ENABLED_KEY = "briefcase.npc_cash_in_enabled";
 
   /**
-   * Keys that are strictly per-universe credentials. They are NEVER inherited from the global
-   * defaults — each universe must configure its own. Reading without an active universe returns
-   * empty.
+   * Keys that are strictly per-universe credentials. Each universe configures its own; a BLANK
+   * universe-scoped row does not shadow a working global credential (blank falls through — beads
+   * ATW-p2y2). Reading without an active universe returns empty.
    */
   private static final Set<String> CREDENTIAL_KEYS =
       Set.of(
@@ -130,6 +131,7 @@ public class GameSettingService {
   private final GameSettingRepository repository;
   private final ApplicationEventPublisher eventPublisher;
   private final UniverseContextService universeContextService;
+  private final SeedReviewGate seedReviewGate;
 
   // ── Internal resolution ───────────────────────────────────────────────────
 
@@ -138,7 +140,7 @@ public class GameSettingService {
    *
    * <ul>
    *   <li>System keys → always global (universe_id IS NULL)
-   *   <li>Credential keys → universe-scoped only, no fallback
+   *   <li>Credential keys → universe-scoped; a BLANK scoped row falls through to global (ATW-p2y2)
    *   <li>Gameplay keys → universe-scoped with fallback to global
    * </ul>
    */
@@ -288,6 +290,16 @@ public class GameSettingService {
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @Transactional
   public void saveCurrentGameDate(final LocalDate date) {
+    // Seed-update review gate: kayfabe time must not move while seed collisions are undecided —
+    // the post-show auto-advance in ShowService flows through here too.
+    if (seedReviewGate.isUp()) {
+      log.info(
+          "Game date advance to {} refused: seed-update review gate is up ({} pending decision(s))"
+              + " — resolve them in the seed review screen first.",
+          date,
+          seedReviewGate.pendingCount());
+      return;
+    }
     LocalDate oldDate = getCurrentGameDate();
     saveInternal(CURRENT_GAME_DATE_KEY, date.format(DateTimeFormatter.ISO_LOCAL_DATE));
     if (!date.equals(oldDate)) {
@@ -553,7 +565,7 @@ public class GameSettingService {
   public Optional<GameSetting> findByKeyForUniverse(final String key, final Long universeId) {
     if (universeId != null) {
       Optional<GameSetting> scoped = repository.findBySettingKeyAndUniverseId(key, universeId);
-      if (scoped.isPresent()) {
+      if (scoped.isPresent() && hasText(scoped.get().getValue())) {
         return scoped;
       }
     }
@@ -573,16 +585,27 @@ public class GameSettingService {
       if (universeId == null) {
         return Optional.empty();
       }
-      return repository.findBySettingKeyAndUniverseId(key, universeId);
+      // A BLANK universe-scoped row is not "this universe has its own key" (beads ATW-p2y2): a
+      // save that never wrote a value — or AiSettingsSync's empty seed row — must not shadow a
+      // working global credential. Only a configured (non-blank) scoped row is authoritative.
+      Optional<GameSetting> scoped = repository.findBySettingKeyAndUniverseId(key, universeId);
+      if (scoped.isPresent() && hasText(scoped.get().getValue())) {
+        return scoped;
+      }
+      return repository.findGlobal(key);
     }
 
     if (universeId != null) {
       Optional<GameSetting> scoped = repository.findBySettingKeyAndUniverseId(key, universeId);
-      if (scoped.isPresent()) {
+      if (scoped.isPresent() && hasText(scoped.get().getValue())) {
         return scoped;
       }
     }
     return repository.findGlobal(key);
+  }
+
+  private static boolean hasText(final String value) {
+    return value != null && !value.isBlank();
   }
 
   @Transactional

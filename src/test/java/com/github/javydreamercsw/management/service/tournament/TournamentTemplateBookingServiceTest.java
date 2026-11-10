@@ -57,10 +57,12 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentRoundSta
 import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.segment.NPCSegmentResolutionService;
 import com.github.javydreamercsw.management.service.segment.SegmentTeam;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -89,6 +91,8 @@ class TournamentTemplateBookingServiceTest {
   @Mock private ShowService showService;
   @Mock private TournamentRepository tournamentRepository;
   @Mock private TournamentFormat format;
+  @Mock private WrestlerService wrestlerService;
+  @Mock private GameSettingService gameSettingService;
 
   private TournamentTemplateBookingService service;
   private Show show;
@@ -108,7 +112,9 @@ class TournamentTemplateBookingServiceTest {
             pacingService,
             segmentTypeService,
             showService,
-            tournamentRepository);
+            tournamentRepository,
+            wrestlerService,
+            gameSettingService);
 
     ShowType showType = new ShowType();
     showType.setName("PLE");
@@ -132,6 +138,9 @@ class TournamentTemplateBookingServiceTest {
     lenient()
         .when(pacingService.payoffKindOf(any()))
         .thenReturn(TournamentPacingService.PayoffKind.FINAL_AT_PLE);
+    // Canonical availability (ATW-1nyv): every wrestler bookable unless a test defers them.
+    lenient().when(wrestlerService.isAvailableForBooking(any(), any(), anyInt())).thenReturn(true);
+    lenient().when(gameSettingService.getConditionRestThreshold()).thenReturn(0);
     lenient().when(tournamentService.isTitleVacant(any())).thenReturn(true);
     lenient().when(tournamentService.currentChampionsOf(any())).thenReturn(List.of());
     lenient().when(format.getMaxEntrants()).thenReturn(8);
@@ -604,6 +613,75 @@ class TournamentTemplateBookingServiceTest {
     verify(tournamentService).markRoundInProgress(match.getRound());
     verify(tournamentService).recordMatchResult(eq(match), eq(aliceEntry));
     assertEquals(booked, match.getSegment());
+  }
+
+  @Test
+  void inProgressTournament_injuredEntrant_defersRound() {
+    // ATW-1nyv: an unavailable entrant (injury / below rest threshold) defers the round — the
+    // booking returns empty (fall back to AI participants) instead of booking the injured
+    // wrestler, and the bracket is left untouched (no segment, no result recorded).
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.ACTIVE);
+    TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ACTIVE);
+    TournamentMatch match = match(1, aliceEntry, bobEntry);
+    tournament.setRounds(new ArrayList<>(List.of(round(1, match))));
+
+    when(wrestlerService.isAvailableForBooking(eq(bob.getId()), eq(1L), anyInt()))
+        .thenReturn(false);
+
+    Optional<TournamentTemplateBookingService.TournamentBooking> booking =
+        service.bookTournamentFedSegment(assignment, rumbleType, show);
+
+    assertTrue(booking.isEmpty(), "A match with an unavailable entrant must defer");
+    verify(tournamentService, never()).recordMatchResult(any(), any());
+    verify(tournamentService, never()).markRoundInProgress(any());
+    assertNull(match.getSegment(), "The deferred match must stay unbooked");
+  }
+
+  @Test
+  void inProgressTournament_unavailableTeamMember_defersRound() {
+    // ATW-1nyv, team tournaments: ONE unavailable member defers the whole side — a tag match
+    // cannot book with a substitute in a bracket slot.
+    Wrestler ace = wrestler(30L, "Ace");
+    Wrestler bea = wrestler(31L, "Bea");
+    Team duo = new Team();
+    duo.setId(10L);
+    duo.setName("High Flyers");
+    duo.setMembers(new ArrayList<>(List.of(ace, bea)));
+    duo.setTeamSize(TeamSize.DUO);
+    TournamentEntry duoEntry =
+        TournamentEntry.builder().tournament(tournament).team(duo).seed(1).build();
+    TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ACTIVE);
+    TournamentMatch match = match(1, duoEntry, bobEntry);
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    tournament.setRounds(new ArrayList<>(List.of(round(1, match))));
+
+    when(wrestlerService.isAvailableForBooking(eq(bea.getId()), eq(1L), anyInt()))
+        .thenReturn(false);
+
+    Optional<TournamentTemplateBookingService.TournamentBooking> booking =
+        service.bookTournamentFedSegment(assignment, rumbleType, show);
+
+    assertTrue(booking.isEmpty(), "One unavailable team member must defer the round");
+  }
+
+  @Test
+  void bookWeeklyRounds_injuredEntrant_booksNoRound() {
+    // ATW-1nyv: weekly pacing breaks out of the booking loop when a round defers — remaining
+    // rounds wait for the wrestler's return rather than shuffling the bracket forward.
+    tournament.setStatus(TournamentStatus.IN_PROGRESS);
+    TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.ACTIVE);
+    TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ACTIVE);
+    TournamentMatch match = match(1, aliceEntry, bobEntry);
+    tournament.setRounds(new ArrayList<>(List.of(round(1, match))));
+
+    when(wrestlerService.isAvailableForBooking(eq(alice.getId()), eq(1L), anyInt()))
+        .thenReturn(false);
+
+    List<TournamentTemplateBookingService.TournamentBooking> bookings =
+        service.bookWeeklyRounds(assignment, show);
+
+    assertTrue(bookings.isEmpty(), "A deferred entrant must stop weekly round booking");
   }
 
   @Test
@@ -2682,6 +2760,56 @@ class TournamentTemplateBookingServiceTest {
     assertTrue(bookings.get(0).titleMatch());
     assertEquals(title, bookings.get(0).title());
     verify(tournamentService).clearPayoffShow(tournament);
+  }
+
+  @Test
+  void bookShowPayoff_championShowcase_injuredWinner_defersWithoutConsuming() {
+    // ATW-1nyv: an injured tournament winner defers the showcase — the booking falls through
+    // and the host-show link is NOT consumed, so the payoff retries once the winner returns.
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.COMPLETE);
+    Title title = new Title();
+    title.setId(7L);
+    tournament.setLinkedTitle(title);
+    tournament.setEntries(new ArrayList<>(List.of(entry(alice, 1, TournamentEntryStatus.WINNER))));
+    when(tournamentService.isTitleVacant(title)).thenReturn(false);
+    when(tournamentService.currentChampionsOf(title)).thenReturn(List.of(bob));
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(new SegmentType()));
+    when(wrestlerService.isAvailableForBooking(eq(alice.getId()), eq(1L), anyInt()))
+        .thenReturn(false);
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
+
+    List<TournamentTemplateBookingService.TournamentBooking> bookings =
+        service.bookShowAttachedTournamentSegments(show);
+
+    assertTrue(bookings.isEmpty(), "An injured tournament winner must defer the showcase");
+    verify(tournamentService, never()).clearPayoffShow(any());
+  }
+
+  @Test
+  void bookShowPayoff_championShowcase_injuredChampion_defersWithoutConsuming() {
+    // ATW-1nyv, mirror side: an injured reigning champion also defers — the title match cannot
+    // book without the champion, and the link stays for a later catch-up.
+    tournament.setPayoffShow(show);
+    tournament.setStatus(TournamentStatus.COMPLETE);
+    Title title = new Title();
+    title.setId(7L);
+    tournament.setLinkedTitle(title);
+    tournament.setEntries(new ArrayList<>(List.of(entry(alice, 1, TournamentEntryStatus.WINNER))));
+    when(tournamentService.isTitleVacant(title)).thenReturn(false);
+    when(tournamentService.currentChampionsOf(title)).thenReturn(List.of(bob));
+    when(segmentTypeService.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()))
+        .thenReturn(Optional.of(new SegmentType()));
+    when(wrestlerService.isAvailableForBooking(eq(bob.getId()), eq(1L), anyInt()))
+        .thenReturn(false);
+    when(tournamentRepository.findByPayoffShowId(1L)).thenReturn(List.of(tournament));
+
+    List<TournamentTemplateBookingService.TournamentBooking> bookings =
+        service.bookShowAttachedTournamentSegments(show);
+
+    assertTrue(bookings.isEmpty(), "An injured champion must defer the showcase");
+    verify(tournamentService, never()).clearPayoffShow(any());
   }
 
   @Test

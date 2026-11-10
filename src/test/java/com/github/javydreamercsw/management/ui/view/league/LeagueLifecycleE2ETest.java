@@ -340,6 +340,11 @@ public class LeagueLifecycleE2ETest extends AbstractE2ETest {
 
     // Click Adjudicate Fans
     clickElement(By.id("adjudicate-show-btn"));
+    // 2.13.0: adjudication now goes through a pre-flight ConfirmDialog — confirm it.
+    waitForVaadinElement(driver, By.xpath("//vaadin-confirm-dialog[@opened]"));
+    clickElement(
+        driver.findElement(
+            By.xpath("//vaadin-confirm-dialog[@opened]//vaadin-button[@slot='confirm-button']")));
     waitForNotification("Fan adjudication completed!");
 
     // Verify FINALIZED

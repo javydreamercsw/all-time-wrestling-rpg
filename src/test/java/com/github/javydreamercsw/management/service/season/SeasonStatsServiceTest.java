@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.season.WrestlerSeasonSnapshot
 import com.github.javydreamercsw.management.domain.season.WrestlerSeasonSnapshotRepository;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentStatus;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
@@ -159,6 +160,38 @@ class SeasonStatsServiceTest {
     SeasonStatsDTO stats = seasonStatsService.calculateStats(wrestler, season);
 
     assertThat(stats.getStartingFans()).isZero();
+  }
+
+  @Test
+  @DisplayName("A declared no-contest match counts as neither win, loss, nor draw")
+  void testNoContestCountsAsNothing() {
+    Segment noContest = createSegment(201L, matchType, null);
+    noContest.declareResult(SegmentResult.NO_CONTEST);
+    when(segmentRepository.findByWrestlerParticipationAndSeason(
+            eq(wrestler), eq(season), any(Pageable.class)))
+        .thenReturn(new PageImpl<>(List.of(noContest)));
+    when(titleReignRepository.findByChampionsContaining(wrestler)).thenReturn(List.of());
+
+    SeasonStatsDTO stats = seasonStatsService.calculateStats(wrestler, season);
+
+    assertThat(stats.getWins()).isZero();
+    assertThat(stats.getLosses()).isZero();
+    assertThat(stats.getDraws()).isZero();
+  }
+
+  @Test
+  @DisplayName("A declared draw match still counts as a draw")
+  void testDeclaredDrawCountsAsDraw() {
+    Segment draw = createSegment(202L, matchType, null);
+    draw.declareResult(SegmentResult.DRAW);
+    when(segmentRepository.findByWrestlerParticipationAndSeason(
+            eq(wrestler), eq(season), any(Pageable.class)))
+        .thenReturn(new PageImpl<>(List.of(draw)));
+    when(titleReignRepository.findByChampionsContaining(wrestler)).thenReturn(List.of());
+
+    SeasonStatsDTO stats = seasonStatsService.calculateStats(wrestler, season);
+
+    assertThat(stats.getDraws()).isEqualTo(1);
   }
 
   private Segment createSegment(final Long id, final SegmentType type, final Boolean isWinner) {

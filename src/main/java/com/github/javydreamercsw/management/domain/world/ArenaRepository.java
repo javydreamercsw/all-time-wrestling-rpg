@@ -29,6 +29,9 @@ public interface ArenaRepository
     extends JpaRepository<Arena, Long>, JpaSpecificationExecutor<Arena> {
   Optional<Arena> findByName(String name);
 
+  /** Check if any arena is sited at the location (seed-review removal guard). */
+  boolean existsByLocation(Location location);
+
   @Query(
       "SELECT DISTINCT a FROM Arena a JOIN FETCH a.location LEFT JOIN FETCH a.environmentalTraits")
   List<Arena> findAllWithLocation();

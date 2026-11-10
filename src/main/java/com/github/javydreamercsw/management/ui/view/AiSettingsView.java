@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.ui.view;
 
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
+import com.github.javydreamercsw.management.event.inbox.AiSettingsChangeBroadcaster;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.details.Details;
@@ -44,6 +45,7 @@ public class AiSettingsView extends VerticalLayout {
   private final AiSettingsService aiSettingsService;
   private final GameSettingService gameSettingService;
   private final NotificationService notificationService;
+  private final transient AiSettingsChangeBroadcaster aiSettingsChangeBroadcaster;
 
   private Checkbox aiProviderAuto;
   private NumberField aiTimeout;
@@ -74,10 +76,12 @@ public class AiSettingsView extends VerticalLayout {
   public AiSettingsView(
       final AiSettingsService aiSettingsService,
       final GameSettingService gameSettingService,
-      final NotificationService notificationService) {
+      final NotificationService notificationService,
+      final AiSettingsChangeBroadcaster aiSettingsChangeBroadcaster) {
     this.aiSettingsService = aiSettingsService;
     this.gameSettingService = gameSettingService;
     this.notificationService = notificationService;
+    this.aiSettingsChangeBroadcaster = aiSettingsChangeBroadcaster;
     init();
   }
 
@@ -327,5 +331,7 @@ public class AiSettingsView extends VerticalLayout {
     }
     gameSettingService.save(key, value);
     notificationService.showSuccess("Setting '" + key + "' updated!");
+    // Provider availability may have changed — refresh the global indicator everywhere (ATW-ftnb).
+    aiSettingsChangeBroadcaster.broadcast();
   }
 }

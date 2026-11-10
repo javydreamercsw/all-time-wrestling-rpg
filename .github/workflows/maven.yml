@@ -186,6 +186,15 @@ jobs:
     needs: [check-paths]
     if: needs.check-paths.outputs.code_changed == 'true' || needs.check-paths.outputs.deps_changed == 'true'
     runs-on: ubuntu-latest
+    # Sharded: the unit suite (~593 classes, ~60 min at forkCount=4) exceeded the
+    # ~30-40 min window in which shared GitHub runners have repeatedly reaped the
+    # job mid-run (3 kills, all with zero test failures). 3 hash-based shards keep
+    # each job around ~20 min. UnitTestShardCondition does the class filtering;
+    # absent properties disable it (local dev and other jobs unaffected).
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
 
     steps:
     - uses: actions/checkout@v6
@@ -202,14 +211,18 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-maven-
 
-    - name: Run unit tests with coverage and verify WAR packaging
+    - name: Run unit tests with coverage and verify WAR packaging (shard ${{ matrix.shard }} of 3)
       # Single Maven invocation: compile once, run tests, then package WAR.
       # Previously two separate invocations caused a full recompile in the WAR step (~3-5 min wasted).
       # surefire.forkCount=4 caps the forked-JVM parallelism (ATW-5jhs): the runner
       # has 4 vCPUs and each fork carries -Xmx3g, so 4 forks ≈ peak heap demand
       # well within the 16 GB runner limit while cutting the ~62 min sequential
       # unit-test phase to roughly a quarter.
-      run: mvn -B package -Pwar,coverage -DnvdApiKey=${{ secrets.NVD_API }} -Dsurefire.forkCount=4
+      run: >-
+        mvn -B package -Pwar,coverage -DnvdApiKey=${{ secrets.NVD_API }} -Dsurefire.forkCount=4
+        -Dunit.shard.index=${{ matrix.shard }} -Dunit.shard.total=3
+        -Djunit.jupiter.extensions.autodetection.enabled=true
+        -Djacoco.ut.destFile=target/jacoco-unit-${{ matrix.shard }}.exec
 
     - name: Test release-cleanup helper scripts
       # cleanup-rc-releases.sh deletes superseded RC releases on final releases
@@ -220,8 +233,8 @@ jobs:
     - name: Upload unit test coverage data
       uses: actions/upload-artifact@v7
       with:
-        name: jacoco-exec
-        path: target/jacoco.exec
+        name: jacoco-exec-${{ matrix.shard }}
+        path: target/jacoco-unit-${{ matrix.shard }}.exec
         if-no-files-found: error
 
   integration-tests:
@@ -505,8 +518,9 @@ jobs:
     - name: Download unit test coverage data
       uses: actions/download-artifact@v8
       with:
-        name: jacoco-exec
+        pattern: jacoco-exec-*
         path: target/
+        merge-multiple: true
 
     - name: Download integration test coverage data
       if: needs.integration-tests.result == 'success'

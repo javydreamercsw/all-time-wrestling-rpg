@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.domain.npc.NpcRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
 import com.github.javydreamercsw.management.domain.title.TitleReignRepository;
@@ -404,16 +405,41 @@ public class NewsGenerationService {
   }
 
   private void createFallbackNews(final Segment segment) {
-    String winners =
-        segment.getWinners().stream().map(Wrestler::getName).collect(Collectors.joining(", "));
-
-    String headline = winners + " Victorious at " + segment.getShow().getName();
-    String content =
-        "In a hard-fought "
-            + segment.getSegmentType().getName()
-            + ", "
-            + winners
-            + " emerged victorious.";
+    String headline;
+    String content;
+    if (segment.getResult() == SegmentResult.DRAW) {
+      headline = "Showdown Ends in a Draw at " + segment.getShow().getName();
+      content =
+          "The "
+              + segment.getSegmentType().getName()
+              + " ended in a draw — neither side could claim the victory.";
+    } else if (segment.getResult() == SegmentResult.NO_CONTEST) {
+      headline = "Match Ends in No-Contest at " + segment.getShow().getName();
+      content =
+          "The "
+              + segment.getSegmentType().getName()
+              + " was declared a no-contest, leaving the outcome unresolved.";
+    } else {
+      String winners =
+          segment.getWinners().stream().map(Wrestler::getName).collect(Collectors.joining(", "));
+      if (winners.isBlank()) {
+        // WINNERS result with no winner recorded (ATW-b08p): never render a leading-space
+        // " Victorious at …" headline — describe the conclusion without naming a victor.
+        headline = "Match Concludes at " + segment.getShow().getName();
+        content =
+            "The "
+                + segment.getSegmentType().getName()
+                + " has concluded — no victor was recorded for this match.";
+      } else {
+        headline = winners + " Victorious at " + segment.getShow().getName();
+        content =
+            "In a hard-fought "
+                + segment.getSegmentType().getName()
+                + ", "
+                + winners
+                + " emerged victorious.";
+      }
+    }
 
     newsService.createNewsItem(
         headline, content, NewsCategory.BREAKING, false, segment.getIsTitleSegment() ? 5 : 3);

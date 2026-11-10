@@ -88,6 +88,13 @@ public class SegmentRule extends AbstractEntity<Long> {
   @Column(name = "rules_hash", length = 64)
   @Nullable private String guideHash;
 
+  /**
+   * Seed verify mode: SHA-256 over the seed-owned field values as shipped by the seed payload. NULL
+   * means a pre-fingerprint-era (legacy) or user-created row.
+   */
+  @Column(name = "seed_fingerprint", length = 64)
+  private String seedFingerprint;
+
   @Column(name = "is_active", nullable = false)
   private boolean isActive = true;
 

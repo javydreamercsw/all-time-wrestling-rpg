@@ -17,6 +17,8 @@
 package com.github.javydreamercsw.management.service.title;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
@@ -69,6 +71,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -1222,5 +1225,19 @@ class TitleServiceTest {
    */
   private static <T> T eq(final T value) {
     return ArgumentMatchers.eq(value);
+  }
+
+  @Test
+  void findAllUnfiltered_requiresAuthentication() {
+    // beads ATW-w0bq: defense-in-depth pin — the unfiltered loader must carry the same
+    // @PreAuthorize("isAuthenticated()") as every other public read in this service.
+    try {
+      var annotation =
+          TitleService.class.getMethod("findAllUnfiltered").getAnnotation(PreAuthorize.class);
+      assertNotNull(annotation, "findAllUnfiltered must be @PreAuthorize-annotated");
+      assertEquals("isAuthenticated()", annotation.value());
+    } catch (NoSuchMethodException e) {
+      throw new AssertionError("findAllUnfiltered method not found", e);
+    }
   }
 }

@@ -101,6 +101,19 @@ public class Segment extends AbstractEntity<Long> {
   @Column(name = "adjudication_status", nullable = false)
   private AdjudicationStatus adjudicationStatus;
 
+  /** Declared result. WINNERS means decided by winner flags; DRAW/NO_CONTEST are booked calls. */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "result", nullable = false)
+  private SegmentResult result = SegmentResult.WINNERS;
+
+  /**
+   * True once the final narration exists — either AI-generated (adjudication flow, MatchView,
+   * NarrationDialog) or hand-typed. The narration column otherwise holds the AI-planning brief
+   * description, which is not narration.
+   */
+  @Column(name = "narration_generated", nullable = false)
+  private boolean narrationGenerated = false;
+
   // Segment rules (many-to-many relationship)
   @ManyToMany(fetch = FetchType.EAGER)
   @JoinTable(
@@ -273,6 +286,17 @@ public class Segment extends AbstractEntity<Long> {
       }
     }
     this.status = SegmentStatus.COMPLETED;
+  }
+
+  /**
+   * Declares the segment's result. For DRAW or NO_CONTEST this also clears all winner flags — a
+   * booked draw/no-contest must not carry winners. WINNERS leaves the flags untouched.
+   */
+  public void declareResult(final SegmentResult declaredResult) {
+    this.result = declaredResult != null ? declaredResult : SegmentResult.WINNERS;
+    if (this.result != SegmentResult.WINNERS) {
+      setWinners(null);
+    }
   }
 
   public void syncParticipants(final List<Wrestler> newParticipantWrestlers) {

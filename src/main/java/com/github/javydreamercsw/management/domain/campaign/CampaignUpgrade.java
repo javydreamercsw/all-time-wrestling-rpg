@@ -50,4 +50,12 @@ public class CampaignUpgrade {
 
   @Column(name = "sub_type")
   private String subType; // e.g., Strike, Grapple, Throw, Aerial for DAMAGE type
+
+  /**
+   * Per-row seed provenance stamp (seed-update review feature): the hash of the row's seed-owned
+   * fields as the last seed write left them. NULL = pre-fingerprint-era (legacy) or user-created
+   * row.
+   */
+  @Column(name = "seed_fingerprint", length = 64)
+  private String seedFingerprint;
 }

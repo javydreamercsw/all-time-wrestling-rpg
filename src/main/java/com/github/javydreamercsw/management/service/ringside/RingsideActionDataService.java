@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -69,6 +70,7 @@ public class RingsideActionDataService {
         .collect(Collectors.toList());
   }
 
+  @PreAuthorize("isAuthenticated()")
   public List<RingsideAction> findAllActionsUnfiltered() {
     return ringsideActionRepository.findAll();
   }
@@ -100,6 +102,12 @@ public class RingsideActionDataService {
     type.setBaseRiskMultiplier(baseRiskMultiplier);
 
     return ringsideActionTypeRepository.save(type);
+  }
+
+  /** Persists a ringside action row, e.g. after the seed sync stamps its fingerprint. */
+  @Transactional
+  public RingsideAction saveAction(RingsideAction action) {
+    return ringsideActionRepository.save(action);
   }
 
   @Transactional

@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.show.planning;
 
+import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.title.BriefcaseCashInMode;
 import com.github.javydreamercsw.management.domain.title.Title;
 import java.util.HashSet;
@@ -36,6 +37,9 @@ public class ProposedSegment {
   private List<String> winners;
   private Boolean isTitleSegment = false;
   private Boolean isContenderMatch = false;
+
+  /** Declared result (WINNERS default; DRAW / NO_CONTEST are booked calls). */
+  private SegmentResult result = SegmentResult.WINNERS;
 
   /** Title id whose #1 contender is decided by this segment (resolved at approval time). */
   private Long contenderTitleId;

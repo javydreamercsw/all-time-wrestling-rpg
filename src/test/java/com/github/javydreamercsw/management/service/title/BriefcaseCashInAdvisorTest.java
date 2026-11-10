@@ -17,6 +17,9 @@
 package com.github.javydreamercsw.management.service.title;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
@@ -27,9 +30,11 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.title.*;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -67,6 +72,7 @@ class BriefcaseCashInAdvisorTest {
   @Mock private WrestlerRepository wrestlerRepository;
 
   @Mock private GameSettingService gameSettingService;
+  @Mock private WrestlerService wrestlerService;
 
   private BriefcaseCashInAdvisorService advisor;
 
@@ -91,6 +97,7 @@ class BriefcaseCashInAdvisorTest {
             rivalryRepository,
             wrestlerRepository,
             gameSettingService,
+            wrestlerService,
             fixedClock);
 
     show = new Show();
@@ -117,6 +124,9 @@ class BriefcaseCashInAdvisorTest {
 
     lenient().when(gameSettingService.isNpcBriefcaseCashInEnabled()).thenReturn(true);
     lenient().when(gameSettingService.getCurrentGameDate()).thenReturn(GAME_DATE);
+    // Canonical availability (ATW-1nyv): the holder is bookable unless a test pulls them out.
+    lenient().when(wrestlerService.isAvailableForBooking(any(), any(), anyInt())).thenReturn(true);
+    lenient().when(gameSettingService.getConditionRestThreshold()).thenReturn(0);
     lenient()
         .when(opportunityRepository.findByStatus(TitleOpportunityStatus.HELD))
         .thenReturn(List.of(opportunity));
@@ -287,6 +297,39 @@ class BriefcaseCashInAdvisorTest {
   }
 
   @Test
+  @DisplayName("propose: excludes an unavailable holder (injury / low condition — ATW-1nyv)")
+  void propose_excludesUnavailableHolder() {
+    // An injured holder cannot cash in — the proposal waits for their return. The gate consults
+    // the canonical availability predicate through the opportunity's universe.
+    Universe universe = new Universe();
+    universe.setId(1L);
+    opportunity.setUniverse(universe);
+    lenient()
+        .when(wrestlerService.isAvailableForBooking(eq(holder.getId()), eq(1L), anyInt()))
+        .thenReturn(false);
+    assertThat(advisor.proposalsFor(show)).isEmpty();
+  }
+
+  @Test
+  @DisplayName("propose: opportunity without a universe skips the availability gate")
+  void propose_nullUniverseOpportunity_skipsAvailabilityGate() {
+    // Legacy/test rows without a universe never block the holder on availability. The hot
+    // fixture (ICON title, warm rivalry, stale reign, near expiry) clears every other gate.
+    title.setTier(WrestlerTier.ICON);
+    opportunity.setExpiryDate(GAME_DATE.plusDays(40));
+    Rivalry rivalry = new Rivalry();
+    rivalry.setHeat(60);
+    lenient()
+        .when(rivalryRepository.findActiveRivalryBetween(holder, champion))
+        .thenReturn(Optional.of(rivalry));
+    lenient()
+        .when(segmentRepository.findByTitle(title))
+        .thenReturn(List.of(segmentDefendedOn(GAME_DATE.minusDays(21))));
+    opportunity.setUniverse(null);
+    assertThat(advisor.proposalsFor(show)).isNotEmpty();
+  }
+
+  @Test
   @DisplayName("propose: skips a title with no reigning champion (vacant)")
   void propose_skipsVacantTitle() {
     lenient()
@@ -342,54 +385,72 @@ class BriefcaseCashInAdvisorTest {
   // ── Proposals: ordering ────────────────────────────────────────────────────
 
   @Test
-  @DisplayName("propose: multiple candidates order by score descending")
+  @DisplayName("propose: multiple briefcases order by score descending (one title each)")
   void propose_ordersByScoreDescending() {
+    // Two holders; each briefcase collapses to its highest-tier eligible title, and the two
+    // resulting proposals order by score descending.
+    Wrestler holder2 = npcWrestler("Second Holder");
+    TitleOpportunity opportunity2 = new TitleOpportunity();
+    opportunity2.setId(8L);
+    opportunity2.setName("Crown Cup briefcase");
+    opportunity2.setStatus(TitleOpportunityStatus.HELD);
+    opportunity2.setWrestler(holder2);
+    opportunity2.setEarnedAt(EARNED_AT);
+    opportunity2.setExpiryDate(GAME_DATE.plusDays(200)); // cold case: minimal urgency
+
     Title iconTitle = new Title();
     iconTitle.setName("ATW Icon Championship");
     iconTitle.setTier(WrestlerTier.ICON);
     iconTitle.setIsActive(true);
 
-    Title rookieTitle = new Title();
-    rookieTitle.setName("ATW Rookie Championship");
-    rookieTitle.setTier(WrestlerTier.ROOKIE);
-    rookieTitle.setIsActive(true);
-
     TitleReign iconReign = new TitleReign();
     iconReign.setStartDate(GAME_DATE.atStartOfDay(ZoneId.systemDefault()).toInstant());
     iconReign.setChampions(Set.of(champion));
-    TitleReign rookieReign = new TitleReign();
-    rookieReign.setStartDate(GAME_DATE.atStartOfDay(ZoneId.systemDefault()).toInstant());
-    rookieReign.setChampions(Set.of(champion));
 
-    // Hot shared inputs so both clear the threshold and only prestige separates them.
+    // Hot shared inputs so both clear the threshold.
     Rivalry rivalry = new Rivalry();
     rivalry.setHeat(90);
     lenient()
         .when(rivalryRepository.findActiveRivalryBetween(holder, champion))
         .thenReturn(Optional.of(rivalry));
+    lenient()
+        .when(rivalryRepository.findActiveRivalryBetween(holder2, champion))
+        .thenReturn(Optional.of(rivalry));
     opportunity.setExpiryDate(GAME_DATE.plusDays(40));
+    lenient()
+        .when(segmentRepository.findByTitle(title))
+        .thenReturn(List.of(segmentDefendedOn(GAME_DATE.minusDays(21))));
     lenient()
         .when(segmentRepository.findByTitle(iconTitle))
         .thenReturn(List.of(segmentDefendedOn(GAME_DATE.minusDays(21))));
-    lenient()
-        .when(segmentRepository.findByTitle(rookieTitle))
-        .thenReturn(List.of(segmentDefendedOn(GAME_DATE.minusDays(21))));
 
     lenient()
-        .when(titleRepository.findByIsActiveTrue())
-        .thenReturn(List.of(rookieTitle, iconTitle));
+        .when(opportunityRepository.findByStatus(TitleOpportunityStatus.HELD))
+        .thenReturn(List.of(opportunity, opportunity2));
+    lenient().when(titleRepository.findByIsActiveTrue()).thenReturn(List.of(title, iconTitle));
+    lenient()
+        .when(titleReignRepository.findByTitleIdAndEndDateIsNull(title.getId()))
+        .thenReturn(List.of(new TitleReign()));
+    TitleReign baseReign = new TitleReign();
+    baseReign.setStartDate(GAME_DATE.atStartOfDay(ZoneId.systemDefault()).toInstant());
+    baseReign.setChampions(Set.of(champion));
+    lenient()
+        .when(titleReignRepository.findByTitleIdAndEndDateIsNull(title.getId()))
+        .thenReturn(List.of(baseReign));
     lenient()
         .when(titleReignRepository.findByTitleIdAndEndDateIsNull(iconTitle.getId()))
         .thenReturn(List.of(iconReign));
-    lenient()
-        .when(titleReignRepository.findByTitleIdAndEndDateIsNull(rookieTitle.getId()))
-        .thenReturn(List.of(rookieReign));
 
     List<BriefcaseCashInAdvisorService.BriefcaseProposal> proposals = advisor.proposalsFor(show);
 
     assertThat(proposals).hasSize(2);
+    // Each briefcase independently targets its highest-tier eligible title — the ICON title is
+    // both holders' top pick (cases may share a target; only one can hold each briefcase).
+    // Score ordering across briefcases: the near-expiry case (opportunity) outranks the cold one.
     assertThat(proposals.get(0).title()).isSameAs(iconTitle);
-    assertThat(proposals.get(1).title()).isSameAs(rookieTitle);
+    assertThat(proposals.get(0).opportunity()).isSameAs(opportunity);
+    assertThat(proposals.get(1).title()).isSameAs(iconTitle);
+    assertThat(proposals.get(1).opportunity()).isSameAs(opportunity2);
     assertThat(proposals.get(0).score()).isGreaterThanOrEqualTo(proposals.get(1).score());
   }
 
@@ -439,5 +500,105 @@ class BriefcaseCashInAdvisorTest {
 
     assertThat(proposals).hasSize(1);
     assertThat(proposals.get(0).mode()).isEqualTo(BriefcaseCashInMode.PLANNED);
+  }
+
+  // ── Tier-preference (beads ATW-u1hr): highest eligible tier wins ───────────
+
+  @Test
+  @DisplayName("tier preference: one proposal per briefcase, targeting the highest eligible tier")
+  void tierPreference_singleProposalAtTheHighestEligibleTier() {
+    // A hot rivalry with the midcard champion must not out-compete the world title: the issue
+    // pins the TARGET to the highest-tier title matching the holder's gender; the score decides
+    // only WHEN the proposal fires.
+    Title worldTitle = new Title();
+    worldTitle.setName("ATW World Championship");
+    worldTitle.setTier(WrestlerTier.MAIN_EVENTER);
+    worldTitle.setIsActive(true);
+    Title midcardTitle = new Title();
+    midcardTitle.setName("ATW Midcard Championship");
+    midcardTitle.setTier(WrestlerTier.MIDCARDER);
+    midcardTitle.setIsActive(true);
+    TitleReign worldReign = new TitleReign();
+    worldReign.setStartDate(GAME_DATE.atStartOfDay(ZoneId.systemDefault()).toInstant());
+    worldReign.setChampions(Set.of(champion));
+    TitleReign midReign = new TitleReign();
+    midReign.setStartDate(GAME_DATE.atStartOfDay(ZoneId.systemDefault()).toInstant());
+    midReign.setChampions(Set.of(champion));
+
+    // Only the midcard champion shares a hot rivalry with the holder — under pure score ordering
+    // the midcard title would win; tier preference must keep the world title as THE proposal.
+    Rivalry hotMidcardRivalry = new Rivalry();
+    hotMidcardRivalry.setHeat(90);
+    lenient()
+        .when(rivalryRepository.findActiveRivalryBetween(holder, champion))
+        .thenReturn(Optional.of(hotMidcardRivalry));
+    opportunity.setExpiryDate(GAME_DATE.plusDays(40));
+    lenient()
+        .when(segmentRepository.findByTitle(worldTitle))
+        .thenReturn(List.of(segmentDefendedOn(GAME_DATE.minusDays(21))));
+    lenient()
+        .when(segmentRepository.findByTitle(midcardTitle))
+        .thenReturn(List.of(segmentDefendedOn(GAME_DATE.minusDays(21))));
+
+    lenient()
+        .when(titleRepository.findByIsActiveTrue())
+        .thenReturn(List.of(midcardTitle, worldTitle));
+    lenient()
+        .when(titleReignRepository.findByTitleIdAndEndDateIsNull(worldTitle.getId()))
+        .thenReturn(List.of(worldReign));
+    lenient()
+        .when(titleReignRepository.findByTitleIdAndEndDateIsNull(midcardTitle.getId()))
+        .thenReturn(List.of(midReign));
+
+    List<BriefcaseCashInAdvisorService.BriefcaseProposal> proposals = advisor.proposalsFor(show);
+
+    assertThat(proposals).hasSize(1);
+    assertThat(proposals.get(0).title()).isSameAs(worldTitle);
+  }
+
+  @Test
+  @DisplayName("tier preference: ties collapse to one proposal; tier beats same-tier score order")
+  void tierPreference_tierBeatsScoreWhenTiersDiffer() {
+    // Midcard title with maximally hot inputs vs MAIN_EVENTER title with cold inputs: the higher
+    // tier wins even though the midcard proposal scores higher.
+    Title worldTitle = new Title();
+    worldTitle.setName("ATW World Championship");
+    worldTitle.setTier(WrestlerTier.MAIN_EVENTER);
+    worldTitle.setIsActive(true);
+    Title midcardTitle = new Title();
+    midcardTitle.setName("ATW Midcard Championship");
+    midcardTitle.setTier(WrestlerTier.MIDCARDER);
+    midcardTitle.setIsActive(true);
+    TitleReign worldReign = new TitleReign();
+    worldReign.setStartDate(GAME_DATE.atStartOfDay(ZoneId.systemDefault()).toInstant());
+    worldReign.setChampions(Set.of(champion));
+    TitleReign midReign = new TitleReign();
+    midReign.setStartDate(GAME_DATE.atStartOfDay(ZoneId.systemDefault()).toInstant());
+    midReign.setChampions(Set.of(champion));
+
+    Rivalry hotMidcardRivalry = new Rivalry();
+    hotMidcardRivalry.setHeat(90);
+    lenient()
+        .when(rivalryRepository.findActiveRivalryBetween(holder, champion))
+        .thenReturn(Optional.of(hotMidcardRivalry));
+    opportunity.setExpiryDate(GAME_DATE.plusDays(40));
+    lenient()
+        .when(segmentRepository.findByTitle(midcardTitle))
+        .thenReturn(List.of(segmentDefendedOn(GAME_DATE.minusDays(21))));
+
+    lenient()
+        .when(titleRepository.findByIsActiveTrue())
+        .thenReturn(List.of(midcardTitle, worldTitle));
+    lenient()
+        .when(titleReignRepository.findByTitleIdAndEndDateIsNull(worldTitle.getId()))
+        .thenReturn(List.of(worldReign));
+    lenient()
+        .when(titleReignRepository.findByTitleIdAndEndDateIsNull(midcardTitle.getId()))
+        .thenReturn(List.of(midReign));
+
+    List<BriefcaseCashInAdvisorService.BriefcaseProposal> proposals = advisor.proposalsFor(show);
+
+    assertThat(proposals).hasSize(1);
+    assertThat(proposals.get(0).title()).isSameAs(worldTitle);
   }
 }

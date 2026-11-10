@@ -56,6 +56,14 @@ public class Deck extends AbstractEntity<Long> { // Removed implements Ownable
       orphanRemoval = true)
   private Set<DeckCard> cards = new HashSet<>();
 
+  /**
+   * Seed verify mode: SHA-256 over the seed-owned field values as shipped by the seed payload. NULL
+   * means a pre-fingerprint-era (legacy) or user-created row. For decks the seed-owned state is the
+   * card composition (set code, card number, amount per DeckCard).
+   */
+  @Column(name = "seed_fingerprint", length = 64)
+  private String seedFingerprint;
+
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
 }

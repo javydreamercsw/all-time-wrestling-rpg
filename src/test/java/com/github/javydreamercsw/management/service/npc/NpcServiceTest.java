@@ -38,6 +38,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -75,6 +76,50 @@ class NpcServiceTest {
 
     assertEquals(1, result.size());
     assertEquals(npc, result.get(0));
+  }
+
+  @Test
+  void pickUnusedReferee_skipsRefereeAlreadyAssignedOnShow() {
+    Npc bookedRef = new Npc();
+    bookedRef.setId(7L);
+    bookedRef.setName("Booked Ref");
+    Npc freeRef = new Npc();
+    freeRef.setId(8L);
+    freeRef.setName("Free Ref");
+
+    Npc picked = npcService.pickUnusedReferee(List.of(bookedRef, freeRef), List.of(bookedRef));
+
+    assertEquals(freeRef, picked);
+  }
+
+  @Test
+  void pickUnusedReferee_fallsBackToFullPoolWhenAllBooked() {
+    Npc onlyRef = new Npc();
+    onlyRef.setId(7L);
+    onlyRef.setName("Only Ref");
+
+    Npc picked = npcService.pickUnusedReferee(List.of(onlyRef), List.of(onlyRef));
+
+    assertEquals(onlyRef, picked);
+  }
+
+  @Test
+  void pickUnusedReferee_emptyPoolReturnsNull() {
+    assertNull(npcService.pickUnusedReferee(List.of(), List.of()));
+  }
+
+  @Test
+  void pickUnusedReferee_sameIdSiblingIsSelfExcluded() {
+    // beads ATW-jbyo: a concurrent re-assignment can pass the segment's own row as its own
+    // "sibling" (same id in both lists); the id filter must drop it so the referee can be
+    // re-picked for the same segment instead of every candidate being "booked".
+    Npc ref = new Npc();
+    ref.setId(7L);
+    ref.setName("Same Ref");
+
+    Npc picked = npcService.pickUnusedReferee(List.of(ref), List.of(ref));
+
+    assertEquals(ref, picked, "same-id sibling must not count as booked");
   }
 
   @Test
@@ -307,5 +352,19 @@ class NpcServiceTest {
 
     assertFalse(activeNpc.isActive());
     verify(npcRepository).save(activeNpc);
+  }
+
+  @Test
+  void findAllUnfiltered_requiresAuthentication() {
+    // beads ATW-w0bq: defense-in-depth pin — sync callers run under runAsAdmin, UI callers
+    // under authenticated Vaadin sessions; the loader must refuse anonymous access.
+    try {
+      var annotation =
+          NpcService.class.getMethod("findAllUnfiltered").getAnnotation(PreAuthorize.class);
+      assertNotNull(annotation, "findAllUnfiltered must be @PreAuthorize-annotated");
+      assertEquals("isAuthenticated()", annotation.value());
+    } catch (NoSuchMethodException e) {
+      throw new AssertionError("findAllUnfiltered method not found", e);
+    }
   }
 }

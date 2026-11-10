@@ -557,7 +557,7 @@ class ShowPlanningViewTest extends AbstractViewTest {
     ReflectionTestUtils.setField(showPlanningView, "segments", List.of(seg));
 
     // No errors, no warnings
-    when(showPlanningService.validateCard(any()))
+    when(showPlanningService.validateCard(any(Show.class), any()))
         .thenReturn(new CardValidationResult(List.of(), List.of()));
 
     ReflectionTestUtils.invokeMethod(showPlanningView, "approvePlanning");
@@ -582,7 +582,7 @@ class ShowPlanningViewTest extends AbstractViewTest {
     ReflectionTestUtils.setField(showPlanningView, "segments", List.of(seg));
 
     // Hard error — stipulation required
-    when(showPlanningService.validateCard(any()))
+    when(showPlanningService.validateCard(any(Show.class), any()))
         .thenReturn(
             new CardValidationResult(List.of("STIPULATION_REQUIRED: A vs B (heat=35)"), List.of()));
 
@@ -610,7 +610,7 @@ class ShowPlanningViewTest extends AbstractViewTest {
     ReflectionTestUtils.setField(showPlanningView, "segments", List.of(seg));
 
     // No errors, but warnings — booker must confirm
-    when(showPlanningService.validateCard(any()))
+    when(showPlanningService.validateCard(any(Show.class), any()))
         .thenReturn(
             new CardValidationResult(List.of(), List.of("MUST_BOOK: Alpha vs Beta (heat=15)")));
 
@@ -638,7 +638,7 @@ class ShowPlanningViewTest extends AbstractViewTest {
     seg.setTeams(List.of(List.of("A"), List.of("B")));
     ReflectionTestUtils.setField(showPlanningView, "segments", List.of(seg));
 
-    when(showPlanningService.validateCard(any()))
+    when(showPlanningService.validateCard(any(Show.class), any()))
         .thenReturn(new CardValidationResult(List.of(), List.of()));
     when(tournamentTemplateBookingService.payoffCatchUpWarnings(show))
         .thenReturn(List.of("Crown Cup cannot finish before its payoff show 'Test Show'"));
@@ -647,6 +647,64 @@ class ShowPlanningViewTest extends AbstractViewTest {
 
     // The advisory holds approval — confirmation is pending.
     verify(showPlanningService, never()).approveSegments(any(), any());
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void approvePlanning_injuredParticipant_showsConfirmDialogFirst() {
+    // ATW-1nyv: a card that books an unavailable wrestler (active injury / below rest threshold)
+    // must surface the confirm dialog before approval — same advisory pattern as the tournament
+    // payoff warning. Approval is held until the booker confirms.
+    Show show = new Show();
+    show.setId(1L);
+    show.setName("Test Show");
+    show.setShowDate(LocalDate.now());
+
+    when(showPlanningService.getShowPlanningContext(show)).thenReturn(new ShowPlanningContextDTO());
+    selectShowAndAwaitAutoLoad(show);
+
+    ProposedSegment seg = new ProposedSegment();
+    seg.setType("Match");
+    seg.setTeams(List.of(List.of("A"), List.of("B")));
+    ReflectionTestUtils.setField(showPlanningView, "segments", List.of(seg));
+
+    when(showPlanningService.validateCard(any(Show.class), any()))
+        .thenReturn(new CardValidationResult(List.of(), List.of()));
+    when(showPlanningService.injuredParticipantWarnings(eq(show), any()))
+        .thenReturn(List.of("1st segment (Singles Match — A — B) books A — active injury"));
+
+    ReflectionTestUtils.invokeMethod(showPlanningView, "approvePlanning");
+
+    // The advisory holds approval — confirmation is pending.
+    verify(showPlanningService, never()).approveSegments(any(), any());
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void approvePlanning_injuryPreFlightFails_continuesToTournamentCheck() {
+    // The injury pre-flight failing must never block approval — it is advisory only; approval
+    // continues into the tournament-payoff check and then approves with no further warnings.
+    Show show = new Show();
+    show.setId(1L);
+    show.setName("Test Show");
+    show.setShowDate(LocalDate.now());
+
+    when(showPlanningService.getShowPlanningContext(show)).thenReturn(new ShowPlanningContextDTO());
+    selectShowAndAwaitAutoLoad(show);
+
+    ProposedSegment seg = new ProposedSegment();
+    seg.setType("Match");
+    seg.setTeams(List.of(List.of("A"), List.of("B")));
+    ReflectionTestUtils.setField(showPlanningView, "segments", List.of(seg));
+
+    when(showPlanningService.validateCard(any(Show.class), any()))
+        .thenReturn(new CardValidationResult(List.of(), List.of()));
+    when(showPlanningService.injuredParticipantWarnings(eq(show), any()))
+        .thenThrow(new IllegalStateException("boom"));
+
+    ReflectionTestUtils.invokeMethod(showPlanningView, "approvePlanning");
+
+    verify(showPlanningService).approveSegments(eq(show), any());
   }
 
   @Test
@@ -666,7 +724,7 @@ class ShowPlanningViewTest extends AbstractViewTest {
     seg.setTeams(List.of(List.of("A"), List.of("B")));
     ReflectionTestUtils.setField(showPlanningView, "segments", List.of(seg));
 
-    when(showPlanningService.validateCard(any()))
+    when(showPlanningService.validateCard(any(Show.class), any()))
         .thenReturn(new CardValidationResult(List.of(), List.of()));
     when(tournamentTemplateBookingService.payoffCatchUpWarnings(show))
         .thenThrow(new IllegalStateException("boom"));

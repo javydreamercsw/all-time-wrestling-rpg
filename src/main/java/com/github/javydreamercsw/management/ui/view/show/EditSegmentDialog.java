@@ -20,6 +20,7 @@ import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
@@ -49,6 +50,7 @@ import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.server.VaadinSession;
@@ -158,7 +160,9 @@ public class EditSegmentDialog extends Dialog {
       String notes,
       boolean isTitleSegment,
       boolean isContenderMatch,
-      Set<Title> titles) {
+      Set<Title> titles,
+      SegmentResult result,
+      boolean tournamentBound) {
 
     /** Build from a planning DTO using pre-loaded wrestler map for name resolution. */
     public static SegmentDialogData from(final ProposedSegment proposed, final PreloadedData data) {
@@ -232,11 +236,21 @@ public class EditSegmentDialog extends Dialog {
           proposed.getNotes() != null ? proposed.getNotes() : "",
           Boolean.TRUE.equals(proposed.getIsTitleSegment()),
           Boolean.TRUE.equals(proposed.getIsContenderMatch()),
-          proposed.getTitles() != null ? proposed.getTitles() : new HashSet<>());
+          proposed.getTitles() != null ? proposed.getTitles() : new HashSet<>(),
+          proposed.getResult() != null ? proposed.getResult() : SegmentResult.WINNERS,
+          ProposedSegment.SOURCE_TOURNAMENT.equals(proposed.getSource()));
     }
 
-    /** Build from a persisted Segment entity. */
+    /** Build from a persisted Segment entity (not tournament-bound by default). */
     public static SegmentDialogData from(final Segment segment) {
+      return from(segment, false);
+    }
+
+    /**
+     * Build from a persisted Segment entity. {@code tournamentBound} locks the outcome selector at
+     * WINNERS — the caller resolves tournament linkage (the repository isn't reachable here).
+     */
+    public static SegmentDialogData from(final Segment segment, final boolean tournamentBound) {
       Map<Integer, List<Wrestler>> teams = segment.getWrestlersByTeam();
       if (teams.isEmpty()) {
         for (Wrestler w : segment.getWrestlers()) {
@@ -260,7 +274,9 @@ public class EditSegmentDialog extends Dialog {
           segment.getNotes() != null ? segment.getNotes() : "",
           Boolean.TRUE.equals(segment.getIsTitleSegment()),
           segment.isContenderMatch(),
-          segment.getTitles() != null ? segment.getTitles() : new HashSet<>());
+          segment.getTitles() != null ? segment.getTitles() : new HashSet<>(),
+          segment.getResult() != null ? segment.getResult() : SegmentResult.WINNERS,
+          tournamentBound);
     }
   }
 
@@ -277,7 +293,8 @@ public class EditSegmentDialog extends Dialog {
       boolean isTitleSegment,
       boolean isContenderMatch,
       Set<Title> titles,
-      Map<Long, Integer> finalHealthValues) {}
+      Map<Long, Integer> finalHealthValues,
+      SegmentResult result) {}
 
   @FunctionalInterface
   public interface SaveCallback {
@@ -317,7 +334,8 @@ public class EditSegmentDialog extends Dialog {
   @Getter private final Checkbox intergenderCheckbox;
   private final ComboBox<AlignmentType> alignmentFilter;
   private final MultiSelectComboBox<SegmentRule> rulesCombo;
-  private final MultiSelectComboBox<Wrestler> winnersCombo;
+  @Getter private final MultiSelectComboBox<Wrestler> winnersCombo;
+  @Getter private final RadioButtonGroup<SegmentResult> resultRadio;
   private final HorizontalLayout winnerTeamButtonsLayout = new HorizontalLayout();
   private final TextArea summaryArea;
   private final Checkbox isTitleSegmentCheckbox;
@@ -417,6 +435,36 @@ public class EditSegmentDialog extends Dialog {
     winnersCombo.setItemLabelGenerator(Wrestler::getName);
     winnersCombo.setWidthFull();
     winnersCombo.setId("edit-winners-combo-box");
+
+    // Declared result: DRAW / NO_CONTEST disable the winners combo — a booked
+    // draw/no-contest must not carry winners. Locked at WINNERS for tournament
+    // segments (brackets must resolve) — the service chokepoint covers the AI path;
+    // this covers direct edits of persisted tournament segments.
+    resultRadio = new RadioButtonGroup<>("Outcome");
+    resultRadio.setItems(SegmentResult.values());
+    resultRadio.setItemLabelGenerator(
+        r ->
+            switch (r) {
+              case WINNERS -> "Winners";
+              case DRAW -> "Draw";
+              case NO_CONTEST -> "No Contest";
+            });
+    resultRadio.setValue(SegmentResult.WINNERS);
+    resultRadio.setId("edit-segment-result-radio");
+    resultRadio.addValueChangeListener(
+        e -> {
+          boolean hasWinners = e.getValue() == SegmentResult.WINNERS;
+          winnersCombo.setEnabled(hasWinners);
+          if (!hasWinners) {
+            winnersCombo.clear();
+          }
+        });
+    if (initial.tournamentBound()) {
+      // Tournament-bound segments stay resolvable: the caller disables the selector for
+      // non-admin bookers (admins may always edit — owner decision).
+      resultRadio.setEnabled(false);
+      resultRadio.setValue(SegmentResult.WINNERS);
+    }
 
     // Dummy field to satisfy @Getter contract (teams replace participantsCombo functionally)
     participantsCombo = new MultiSelectComboBox<>();
@@ -578,6 +626,7 @@ public class EditSegmentDialog extends Dialog {
     formLayout.setColspan(teamsSection, 2);
 
     winnersCombo.setValue(new HashSet<>(initial.winners()));
+    resultRadio.setValue(initial.result() != null ? initial.result() : SegmentResult.WINNERS);
 
     summaryArea = new TextArea("Summary");
     summaryArea.setWidthFull();
@@ -689,6 +738,7 @@ public class EditSegmentDialog extends Dialog {
         intergenderCheckbox,
         teamsSection,
         synergyBonusLabel,
+        resultRadio,
         winnersCombo,
         winnerTeamButtonsLayout,
         isTitleSegmentCheckbox,
@@ -727,7 +777,10 @@ public class EditSegmentDialog extends Dialog {
                       isTitleSegmentCheckbox.getValue(),
                       isContenderMatchCheckbox.getValue(),
                       titleMultiSelectComboBox.getValue(),
-                      healthValues));
+                      healthValues,
+                      resultRadio.getValue() != null
+                          ? resultRadio.getValue()
+                          : SegmentResult.WINNERS));
             });
 
     saveButton.setId("edit-segment-save-button");
@@ -779,8 +832,13 @@ public class EditSegmentDialog extends Dialog {
                   .collect(Collectors.toList());
           segment.setTeams(teams);
           segment.setTeamIds(null);
-          segment.setWinners(
-              saveData.winners().stream().map(Wrestler::getName).collect(Collectors.toList()));
+          segment.setResult(saveData.result() != null ? saveData.result() : SegmentResult.WINNERS);
+          if (segment.getResult() == SegmentResult.WINNERS) {
+            segment.setWinners(
+                saveData.winners().stream().map(Wrestler::getName).collect(Collectors.toList()));
+          } else {
+            segment.setWinners(new ArrayList<>());
+          }
           segment.setRules(
               saveData.rules().stream().map(SegmentRule::getName).collect(Collectors.toList()));
           segment.setRefereeName(saveData.referee() != null ? saveData.referee().getName() : null);

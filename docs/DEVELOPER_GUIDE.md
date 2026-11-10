@@ -212,7 +212,7 @@ All `Tournament` associations (`entries`, `rounds`, rounds' `matches`, matches' 
 
 ### Seed Catalogs & Sync Order
 
-Content catalogs are seeded at startup by `DataSyncContributor` beans (`management.sync`), each gated on its table being empty (skip-if-not-empty). The **order matters** because later catalogs resolve references from earlier ones by name/code:
+Content catalogs are seeded at startup by `DataSyncContributor` beans (`management.sync`). The **order matters** because later catalogs resolve references from earlier ones by name/code:
 
 | @Order |    Contributor     |                              Seeds                               |
 |--------|--------------------|------------------------------------------------------------------|
@@ -220,6 +220,58 @@ Content catalogs are seeded at startup by `DataSyncContributor` beans (`manageme
 | 40     | `SegmentTypeSync`  | `segment_types.json`                                             |
 | 55     | `TournamentSync`   | `tournaments.json` (rules pool resolved by name)                 |
 | 60     | `ShowTemplateSync` | `show_templates.json` (assignment targets resolved by name/code) |
+
+#### Seed sync modes (`data.initializer.skip-if-not-empty`)
+
+Every sync contributor routes through the same mode resolver (`SeedSyncSupport`). The flag accepts three values:
+
+|  Value   |  Mode   |                                                                      Behavior                                                                       |
+|----------|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
+| `false`  | FULL    | Unconditional seed sync: existing rows are updated to match the seed files (release-line installs and tests).                                       |
+| `true`   | PROTECT | Skip-gate: existing rows are never re-saved; only seed entries missing from the database are inserted (top-up). Legacy default for installed bases. |
+| `verify` | VERIFY  | Top-up **plus** fingerprint-gated reconcile (see below).                                                                                            |
+
+Any other truthy value logs a one-time warning and behaves as PROTECT.
+
+**How VERIFY reconciles.** Each in-scope row carries a `seed_fingerprint` column — a SHA-256 over the row's *seed-owned* fields in a fixed per-entity order, stamped whenever a seed write (insert or reconcile) touches the row. On startup, verify re-hashes each seed-matching row's current fields and compares:
+
+- **Clean** (current fields still hash to the stored stamp): the row is seed-owned, so it adopts the new seed values and is re-stamped. Seed fixes shipped in a release reach verify installs on the next startup.
+- **Drifted** (fields changed after the stamp): the row is treated as user-edited — logged with a WARN and preserved, never overwritten.
+- **No stamp** (pre-fingerprint-era rows): adopted if the fields already equal the seed, otherwise treated as user-edited and preserved.
+- **No seed match** (user-created wrestlers, CUSTOM card sets, custom segment rules, …): never considered, never touched.
+
+In-scope entities with verify: Wrestler, CardSet, Card, Deck (composition only), Npc, SegmentType, Title (current holders/reigns are never seed-owned), RingsideAction, Achievement, CampaignAbilityCard, SegmentRule. SegmentRule is the one entity where VERIFY tightens a previously unconditional reconcile — user-customized rules are now preserved instead of clobbered. All remaining syncs treat `verify` as PROTECT.
+
+Each pass logs one summary line per entity: `verify(<entity>): reconciled N, preserved M edited (<elapsed> ms)`.
+
+**Field ownership.** Seed-owned field lists per entity live in the sync classes (`WrestlerSeedFields.canonical`, `cardFingerprint`, `compositionFingerprint`, `npcFingerprint`, `titleFingerprint`, `actionFingerprint`, `achievementFingerprint`, `cardFingerprint`, `ruleFingerprint`) — the fingerprint contract. Gameplay/UI state (fans, bumps, tier, fans' state, current champions, deck edits by players, active flags) is deliberately excluded: verify must never revert it.
+
+#### Seed Update Review (upgrade-boot collision review)
+
+On an upgrade boot (a previous app version recorded in `data_migration_history` differs from the current one), content syncs run detection **before** reconciling: a field a user edited whose seed value also changed becomes a three-tier decision instead of a silent overwrite.
+
+- **Tier 1 — untouched field, seed changed**: adopted silently and re-stamped (same as VERIFY's clean path).
+- **Tier 2 — user-edited field, seed changed**: parked as a PENDING `SeedUpdateDecision` row (`management.domain.seedreview`) — the value in the database is left alone.
+- **Tier 3 — seed unchanged**: no-op, whether or not the user edited the field.
+
+Parking is idempotent per `(domain_key, entity_key, field_name)` PENDING coordinate and refreshes the incoming snapshot on re-park, so a later apply always writes the current release's values. On boots with undecided decisions, detection stays alive across same-version restarts until an administrator resolves them. Detection runs only when the version changed or undecided decisions exist — **fresh installs never detect**.
+
+**The review gate.** While PENDING decisions exist, `SeedReviewGate` is up: the in-game date cannot be advanced, `SeedReviewRestGuard` rejects `/api/*` mutations, Vaadin navigation freezes to the `seed-review-gate` waiting screen, and scheduled gameplay writers (rivalry decay/retention, weekly tier recalculation, drama event processing) skip their runs. **Housekeeping schedulers keep running during the freeze** — inbox cleanup, heat-event cleanup, drama-event cleanup, and performance monitoring are deliberately not held, so the inbox stays tidy while the app is paused. Drama *generation* holds transitively: the drama publisher is fed by the held game-date advance, so no new drama events can be created while the gate is up.
+
+**The review screen.** Administrators resolve the parked decisions at the `seed-review` route (exempt from the freeze): a diff-approval tree grouped domain → entity → field, with keep/use choices per field, an approve-everything shortcut that never sweeps removals, and a single all-or-nothing Apply that lowers the gate and unlocks the app. Applying is terminal; the batch applies through per-domain `SeedDomainApplier` beans inside one transaction.
+
+**Inbox notification.** When a boot's detection phase fresh-parks at least one collision, `SeedUpdateReviewService.notifyPending()` publishes one `SeedUpdateReviewPendingEvent` for the whole phase — never one per row — and `SeedUpdateReviewPendingInboxListener` turns it into a single `ACTION_REQUIRED` inbox item ("N seed data decisions pending from v<version> update.") for every ADMIN account. A boot that parks nothing notifies no one, and a re-park (refreshing an already-parked coordinate's incoming snapshot) deliberately does not arm the notification — unresolved decisions persist across restarts, so arming on re-park would duplicate the inbox item on every same-version restart while the freeze persists.
+
+#### Seed review gate escape hatch (`seed.review.force-resolve=keep-all`)
+
+For unattended/headless environments where no admin can reach the review screen at boot time, setting `seed.review.force-resolve=keep-all` (JVM property or environment property, read at the end of `DataInitializer.performInit()`) force-decides **every pending decision as keep-mine** and lowers the gate so the boot completes. This is an operator escape, not a real apply:
+
+- Keep-mine changes nothing in the database — the current values stay.
+- Unlike the review UI's apply flow, the escape hatch does **not** re-stamp the rows' seed fingerprints, so **those collisions re-appear on the next upgrade boot** (fail-safe: you are asked again, no seed value is ever silently adopted).
+- Only PENDING rows are touched; decisions an administrator already made keep their outcome.
+- **Force-resolve is crash-safe:** a boot that crashes mid-hatch (some rows flipped, some not) converges on the next run — the already-flipped rows are in a terminal `APPLIED_*` state and are never re-touched, and the remaining PENDING rows are force-resolved then. No row ends up half-decided.
+
+Any other value is ignored with a warning. Use it only when you understand the parked collisions and accept answering them again on the next upgrade.
 
 When adding a new catalog that references seeded content, give it a higher `@Order` than every catalog it resolves from. Unknown references are skipped with a warning — a missing name must never fail the whole startup sync. See the [Content Management Guide](CONTENT_GUIDE.md#tournaments) for the JSON field reference.
 

@@ -238,7 +238,6 @@ class ShowPlanningPromptBuilderTest {
     entry.setId(id);
     entry.setName(name);
     entry.setGender(gender);
-    entry.setInjured(false);
     return entry;
   }
 
@@ -248,7 +247,6 @@ class ShowPlanningPromptBuilderTest {
     ShowPlanningRosterEntryDTO wrestler = new ShowPlanningRosterEntryDTO();
     wrestler.setId(1L);
     wrestler.setName("John[INJECT]Cena");
-    wrestler.setInjured(false);
     ctx.setFullRoster(List.of(wrestler));
     String prompt = builder.build(ctx);
     assertFalse(prompt.contains("[INJECT]"), "Prompt must not contain raw injection brackets");
@@ -277,7 +275,6 @@ class ShowPlanningPromptBuilderTest {
     ShowPlanningRosterEntryDTO healthy = new ShowPlanningRosterEntryDTO();
     healthy.setId(1L);
     healthy.setName("Healthy Wrestler");
-    healthy.setInjured(false);
     ctx.setFullRoster(List.of(healthy));
 
     String prompt = builder.build(ctx);
@@ -294,7 +291,6 @@ class ShowPlanningPromptBuilderTest {
     ShowPlanningRosterEntryDTO healthy = new ShowPlanningRosterEntryDTO();
     healthy.setId(2L);
     healthy.setName("Top Condition Wrestler");
-    healthy.setInjured(false);
     ctx.setFullRoster(List.of(healthy));
 
     String prompt = builder.build(ctx);
@@ -310,13 +306,11 @@ class ShowPlanningPromptBuilderTest {
     ShowPlanningRosterEntryDTO wrestler = new ShowPlanningRosterEntryDTO();
     wrestler.setId(3L);
     wrestler.setName("Roman Reigns");
-    wrestler.setInjured(false);
     ctx.setFullRoster(List.of(wrestler));
 
     String prompt = builder.build(ctx);
 
     assertTrue(prompt.contains("Roman Reigns"), "Healthy wrestler must appear in roster section");
-    assertTrue(prompt.contains("Injured: false"), "Injured flag must be rendered as false");
   }
 
   @Test
@@ -364,7 +358,6 @@ class ShowPlanningPromptBuilderTest {
     wrestler.setId(10L);
     wrestler.setName("The Heel");
     wrestler.setAlignment("HEEL");
-    wrestler.setInjured(false);
     ctx.setFullRoster(List.of(wrestler));
 
     String prompt = builder.build(ctx);
@@ -775,6 +768,24 @@ class ShowPlanningPromptBuilderTest {
     assertTrue(prompt.contains("Held Briefcases"), "The held-briefcases section must render");
     assertTrue(prompt.contains("Mukundi Shumba — Time Vault briefcase"));
     assertTrue(prompt.contains("Money in the Bank"), "The cash-in angle hint must be present");
+  }
+
+  @Test
+  void build_heldBriefcases_instructsMatchBasedProgramNotPromoFunneling() {
+    // beads ATW-u1hr: production showed briefcase holders funneled into promos show after show.
+    // The prompt must direct the AI to keep holders in matches (building the program toward the
+    // cash-in), not reserve them for talking segments.
+    ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
+    ctx.setHeldBriefcases(List.of("Mukundi Shumba — Time Vault briefcase"));
+
+    String prompt = builder.build(ctx);
+
+    assertTrue(
+        prompt.contains("keep building toward their cash-in with MATCHES"),
+        "The holder instruction must demand matches, not just angles: " + prompt);
+    assertFalse(
+        prompt.contains("champion-vs-holder angle is a strong"),
+        "The old angle-only phrasing that let holders drift into promos must be gone");
   }
 
   @Test
