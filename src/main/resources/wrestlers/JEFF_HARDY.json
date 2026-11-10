@@ -1,0 +1,43 @@
+[ {
+  "name": "Jeff Hardy",
+  "alignment": "FACE",
+  "deckSize": 16,
+  "startingHealth": 14,
+  "lowHealth": 2,
+  "startingStamina": 16,
+  "lowStamina": 4,
+  "drive": 1,
+  "resilience": 3,
+  "charisma": 3,
+  "brawl": 1,
+  "heritageTag": "North Carolina",
+  "description": "High-flying is not a style; it is a way of life. Jeff Hardy has always treated the top rope like a launch pad and the arena floor like a landing zone, painting his body, his ring gear, and occasionally the canvas itself in colors nobody else would dare wear. As one half of the most daring tag team ever to climb the turnbuckles, and later as a singles competitor, he turned suicide dives into art and ladders into instruments of legend.\n\nHe has fallen farther, and gotten back up more times, than almost anyone in the sport. Charisma drips off him the way the face paint sweats off in the third match of the night, and the crowd sings his name whether he wins or loses. They call him the Charismatic Enigma because no one, least of all his opponents, can ever predict what he will do next.\n\nNow, 200 years into the future, Jeff Hardy returns in his prime to prove that gravity remains optional and that the craziest stuntman in wrestling history still has one more Swanton left in him.",
+  "gender": "MALE",
+  "expansion_code": "JEFF_HARDY",
+  "abilities": [ {
+    "name": "Charismatic Enigma",
+    "description": "Gain +2 [[stamina]]. Then either gain +2 [[health]] or remove 1 Wear and Tear Token.",
+    "type": "USES_LIMITED",
+    "category": "SIGNATURE",
+    "maxUses": 1,
+    "default": false,
+    "effectScript": "wrestler.stamina += 2; if (wrestler.abilityTokens['Extreme Endurance'] > 0) { wrestler.abilityTokens['Extreme Endurance'] -= 1 } else { wrestler.health += 2 }"
+  }, {
+    "name": "Extreme Endurance",
+    "description": "May suffer half the damage (rounded up) and gain +1 [[stamina]]. Place 1 Wear and Tear Token on this ability. If you suffer your 3rd Wear and Tear Token, place the \"Broken Body\" ability next to your player board. It is now active.",
+    "type": "ALWAYS_ON",
+    "category": "PASSIVE",
+    "default": false,
+    "timing": "DEFENSE",
+    "unlockCondition": "event == 'DAMAGE_TAKEN'",
+    "effectScript": "match.damageAmount = Math.ceil(match.damageAmount / 2); wrestler.stamina += 1; wrestler.abilityTokens['Extreme Endurance'] = (wrestler.abilityTokens['Extreme Endurance'] ?: 0) + 1"
+  }, {
+    "name": "Reckless",
+    "description": "May trigger when you play an AERIAL attack. Place 1 Wear and Tear Token on \"Extreme Endurance\". If your attack is successful, roll 3 dice (+2 dice if using a weapon); for each result of 2+, deal -1 [[health]] or gain +1 [[health]].",
+    "type": "ALWAYS_ON",
+    "category": "SIGNATURE",
+    "default": false,
+    "unlockCondition": "event == 'AERIAL_ATTACK_SUCCESS'",
+    "effectScript": "wrestler.abilityTokens['Extreme Endurance'] = (wrestler.abilityTokens['Extreme Endurance'] ?: 0) + 1; match.onAttackOutcome('int hits = 0; 3.times { if (match.rollDie(6) >= 2) { hits++ } }; hits.times { opponent.health -= 1 }', '')"
+  } ]
+} ]
