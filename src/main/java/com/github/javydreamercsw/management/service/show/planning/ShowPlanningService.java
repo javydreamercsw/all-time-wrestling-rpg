@@ -801,9 +801,9 @@ public class ShowPlanningService {
       int index, ProposedSegment ps, Wrestler wrestler, Long universeId) {
     WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), universeId);
     String reason =
-        !injuryService.getActiveInjuriesForWrestler(wrestler.getId(), universeId).isEmpty()
-            ? "active injury"
-            : "condition below rest threshold (" + state.getPhysicalCondition() + ")";
+        injuryService.getActiveInjuriesForWrestler(wrestler.getId(), universeId).isEmpty()
+            ? "condition below rest threshold (" + state.getPhysicalCondition() + ")"
+            : "active injury";
     return describeSegment(index, ps) + " books " + wrestler.getName() + " — " + reason;
   }
 
