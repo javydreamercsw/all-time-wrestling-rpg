@@ -384,7 +384,7 @@ public class ShowPlanningPromptBuilder {
                 if (wrestler.getAlignment() != null) {
                   prompt.append(", Alignment: ").append(wrestler.getAlignment());
                 }
-                prompt.append(", Injured: ").append(wrestler.isInjured()).append("\n");
+                prompt.append("\n");
               });
       prompt.append(
           "IMPORTANT: You MUST only book wrestlers listed in the Full Roster above."

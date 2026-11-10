@@ -542,8 +542,10 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     coldRivalry.setHeat(5);
 
     when(rivalryService.getActiveRivalries()).thenReturn(Arrays.asList(hotRivalry, coldRivalry));
+    // ATW-1nyv: rivalries whose participants are unavailable are withheld from the context —
+    // all three wrestlers must be on the bookable roster for the rivalry filter to be exercised.
     when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
-        .thenReturn(Collections.emptyList());
+        .thenReturn(Arrays.asList(wrestler1, wrestler2, wrestler3));
     when(segmentRepository.findBySegmentDateBetween(any(), any()))
         .thenReturn(Collections.emptyList());
     when(titleService.getActiveTitles()).thenReturn(Collections.emptyList());

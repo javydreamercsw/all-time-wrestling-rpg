@@ -804,6 +804,244 @@ class ShowPlanningServiceTest {
   }
 
   @Test
+  void getShowPlanningContext_unavailableWrestlerNames_surfacesWithheldWrestlers() {
+    // ATW-1nyv: the DTO exposes who was withheld (injury/rest) so UIs can surface the silent
+    // absence instead of leaving the booker to wonder where a roster member went.
+    Injury activeInjury = new Injury();
+    activeInjury.setId(9L);
+    activeInjury.setHealedDate(null);
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
+        .thenReturn(List.of(activeWrestler));
+    when(injuryService.getActiveInjuriesForWrestler(activeWrestler.getId(), 1L))
+        .thenReturn(List.of(activeInjury));
+    ShowPlanningContextDTO dto = new ShowPlanningContextDTO();
+    when(mapper.toDto(any(ShowPlanningContext.class))).thenReturn(dto);
+
+    showPlanningService.getShowPlanningContext(show);
+
+    assertEquals(
+        List.of(activeWrestler.getName()),
+        dto.getUnavailableWrestlerNames(),
+        "Withheld wrestler must be surfaced to the booker");
+  }
+
+  @Test
+  void getShowPlanningContext_rivalryWithInjuredParticipant_withheldFromContext() {
+    // ATW-1nyv: a MUST_BOOK rivalry whose participant is injured must not reach the AI — the
+    // classification would pressure the model into booking the injured wrestler to satisfy it.
+    Wrestler healthy = new Wrestler();
+    healthy.setId(2L);
+    healthy.setName("Healthy Wrestler");
+    Wrestler injured = new Wrestler();
+    injured.setId(3L);
+    injured.setName("Injured Wrestler");
+
+    Rivalry rivalry = new Rivalry();
+    rivalry.setId(55L);
+    rivalry.setWrestler1(healthy);
+    rivalry.setWrestler2(injured);
+    rivalry.setHeat(15);
+    rivalry.setPriority(1);
+
+    Injury activeInjury = new Injury();
+    activeInjury.setId(9L);
+    activeInjury.setHealedDate(null);
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
+        .thenReturn(List.of(activeWrestler, healthy, injured)); // pool includes the injured side
+    when(injuryService.getActiveInjuriesForWrestler(injured.getId(), 1L))
+        .thenReturn(List.of(activeInjury));
+    when(rivalryService.getActiveRivalries()).thenReturn(List.of(rivalry));
+    when(segmentRepository.findBySegmentDateBetween(any(), any())).thenReturn(List.of());
+    when(titleService.getActiveTitles()).thenReturn(List.of());
+    when(factionService.findAll()).thenReturn(List.of());
+    when(showService.getUpcomingShows(10)).thenReturn(List.of());
+    ShowPlanningContextDTO dto = new ShowPlanningContextDTO();
+    when(mapper.toDto(any(ShowPlanningContext.class))).thenReturn(dto);
+
+    ShowPlanningContextDTO result = showPlanningService.getShowPlanningContext(show);
+
+    assertTrue(
+        result.getCurrentRivalries() == null || result.getCurrentRivalries().isEmpty(),
+        "Rivalry with an unavailable participant must be withheld from the planning context");
+    assertEquals(
+        List.of("Injured Wrestler"),
+        result.getUnavailableWrestlerNames(),
+        "Injured wrestler must be surfaced as withheld");
+  }
+
+  @Test
+  void getShowPlanningContext_injuredChampion_withholdsChampionship() {
+    // ATW-1nyv: "every championship MUST be defended" is unachievable while the champion
+    // recovers — the championship drops off the card context instead.
+    Title title = new Title();
+    title.setId(21L);
+    title.setName("ATW Undisputed");
+    Wrestler injuredChampion = new Wrestler();
+    injuredChampion.setId(31L);
+    injuredChampion.setName("Sidelined Champion");
+    title.getCurrentChampions().add(injuredChampion);
+
+    when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
+        .thenReturn(List.of(activeWrestler)); // champion NOT on the roster
+    when(titleService.getActiveTitles()).thenReturn(List.of(title));
+    when(titleReignRepository.findByTitleAndEndDateIsNull(title)).thenReturn(List.of());
+    when(segmentRepository.findByTitle(title)).thenReturn(List.of());
+    when(segmentRepository.findBySegmentDateBetween(any(), any())).thenReturn(List.of());
+    when(rivalryService.getActiveRivalries()).thenReturn(List.of());
+    when(factionService.findAll()).thenReturn(List.of());
+    when(showService.getUpcomingShows(10)).thenReturn(List.of());
+    ShowPlanningContextDTO dto = new ShowPlanningContextDTO();
+    when(mapper.toDto(any(ShowPlanningContext.class))).thenReturn(dto);
+
+    ShowPlanningContextDTO result = showPlanningService.getShowPlanningContext(show);
+
+    assertTrue(
+        result.getChampionships() == null || result.getChampionships().isEmpty(),
+        "Championship with an unavailable champion must be withheld from the context");
+  }
+
+  @Test
+  void getShowPlanningContext_heldBriefcaseOfInjuredHolder_scrubbed() {
+    // ATW-1nyv: an injured wrestler cannot cash in — their held briefcase must not appear as a
+    // cash-in proposal target.
+    Wrestler injuredHolder = new Wrestler();
+    injuredHolder.setId(41L);
+    injuredHolder.setName("Hurt Holder");
+    TitleOpportunity held = new TitleOpportunity();
+    held.setId(50L);
+    held.setName("Time Vault briefcase");
+    held.setWrestler(injuredHolder);
+    when(titleOpportunityService.findHeld()).thenReturn(List.of(held));
+
+    Injury activeInjury = new Injury();
+    activeInjury.setId(9L);
+    activeInjury.setHealedDate(null);
+    when(injuryService.getActiveInjuriesForWrestler(injuredHolder.getId(), 1L))
+        .thenReturn(List.of(activeInjury));
+
+    ShowPlanningContextDTO dto = new ShowPlanningContextDTO();
+    when(mapper.toDto(any(ShowPlanningContext.class))).thenReturn(dto);
+
+    ShowPlanningContextDTO result = showPlanningService.getShowPlanningContext(show);
+
+    assertTrue(
+        result.getHeldBriefcases() == null || result.getHeldBriefcases().isEmpty(),
+        "Briefcase held by an unavailable wrestler must be scrubbed from the context");
+  }
+
+  @Test
+  void injuredParticipantWarnings_flagsInjuredAndLowConditionParticipants() {
+    // ATW-1nyv: approval-time advisory — an unavailable participant (injury or low condition)
+    // surfaces as a warning line naming the segment and the reason.
+    Wrestler hurtA = new Wrestler();
+    hurtA.setId(61L);
+    hurtA.setName("Hurt A");
+    Wrestler tiredB = new Wrestler();
+    tiredB.setId(62L);
+    tiredB.setName("Tired B");
+
+    ProposedSegment seg = new ProposedSegment();
+    seg.setType("Singles Match");
+    seg.setTeams(List.of(List.of("Hurt A"), List.of("Tired B")));
+
+    when(wrestlerRepository.findByName("Hurt A")).thenReturn(Optional.of(hurtA));
+    when(wrestlerRepository.findByName("Tired B")).thenReturn(Optional.of(tiredB));
+    Injury activeInjury = new Injury();
+    activeInjury.setId(9L);
+    activeInjury.setHealedDate(null);
+    when(injuryService.getActiveInjuriesForWrestler(hurtA.getId(), 1L))
+        .thenReturn(List.of(activeInjury));
+    WrestlerState lowCondition = new WrestlerState();
+    lowCondition.setPhysicalCondition(10);
+    when(wrestlerService.getOrCreateState(tiredB.getId(), 1L)).thenReturn(lowCondition);
+    when(gameSettingService.getConditionRestThreshold()).thenReturn(50);
+
+    List<String> warnings = showPlanningService.injuredParticipantWarnings(show, List.of(seg));
+
+    assertEquals(2, warnings.size(), "One warning per unavailable participant");
+    assertTrue(warnings.get(0).contains("Hurt A"), "Injured wrestler must be named");
+    assertTrue(warnings.get(0).contains("active injury"), "Injury reason must be stated");
+    assertTrue(warnings.get(1).contains("Tired B"), "Low-condition wrestler must be named");
+    assertTrue(
+        warnings.get(1).contains("condition below rest threshold"),
+        "Rest-threshold reason must be stated");
+  }
+
+  @Test
+  void injuredParticipantWarnings_healthyParticipants_noWarnings() {
+    ProposedSegment seg = new ProposedSegment();
+    seg.setType("Singles Match");
+    seg.setTeams(List.of(List.of(activeWrestler.getName()), List.of("Healthy Wrestler")));
+    when(wrestlerRepository.findByName(any())).thenReturn(Optional.empty()); // unknown → silent
+
+    List<String> warnings = showPlanningService.injuredParticipantWarnings(show, List.of(seg));
+
+    assertTrue(warnings.isEmpty(), "Healthy/unknown participants must not warn");
+  }
+
+  @Test
+  void validateCardWithShow_injuredRivalryParticipants_noMustBookWarning() {
+    // ATW-1nyv: approval validation must not scold the booker for leaving an injured feud off
+    // the card — the MUST_BOOK warning is suppressed when both participants are unavailable.
+    Wrestler outA = new Wrestler();
+    outA.setId(71L);
+    outA.setName("Out A");
+    Wrestler outB = new Wrestler();
+    outB.setId(72L);
+    outB.setName("Out B");
+    Rivalry injuredRivalry = new Rivalry();
+    injuredRivalry.setId(80L);
+    injuredRivalry.setWrestler1(outA);
+    injuredRivalry.setWrestler2(outB);
+    injuredRivalry.setHeat(15);
+
+    Injury activeInjury = new Injury();
+    activeInjury.setId(9L);
+    activeInjury.setHealedDate(null);
+    when(injuryService.getActiveInjuriesForWrestler(outA.getId(), 1L))
+        .thenReturn(List.of(activeInjury));
+    when(injuryService.getActiveInjuriesForWrestler(outB.getId(), 1L))
+        .thenReturn(List.of(activeInjury));
+    when(rivalryService.getActiveRivalries()).thenReturn(List.of(injuredRivalry));
+
+    CardValidationResult result =
+        showPlanningService.validateCard(show, new ArrayList<>()); // card omits the rivalry
+
+    assertTrue(result.isValid(), "No hard errors expected");
+    assertTrue(
+        result.getWarnings().isEmpty(),
+        "A rivalry both of whose participants are unavailable must not MUST_BOOK-warn");
+  }
+
+  @Test
+  void validateCardWithShow_availableRivalryParticipant_stillWarns() {
+    // ATW-1nyv: suppression only applies when ALL participants are out — a rivalry with at
+    // least one available side still generates MUST_BOOK pressure.
+    Wrestler out = new Wrestler();
+    out.setId(73L);
+    out.setName("Out Only");
+    Rivalry rivalry = new Rivalry();
+    rivalry.setId(81L);
+    rivalry.setWrestler1(activeWrestler);
+    rivalry.setWrestler2(out);
+    rivalry.setHeat(15);
+
+    Injury activeInjury = new Injury();
+    activeInjury.setId(9L);
+    activeInjury.setHealedDate(null);
+    when(injuryService.getActiveInjuriesForWrestler(out.getId(), 1L))
+        .thenReturn(List.of(activeInjury));
+    when(rivalryService.getActiveRivalries()).thenReturn(List.of(rivalry));
+
+    CardValidationResult result = showPlanningService.validateCard(show, new ArrayList<>());
+
+    assertFalse(
+        result.getWarnings().isEmpty(),
+        "A rivalry with an available participant must still MUST_BOOK-warn");
+    assertTrue(result.getWarnings().get(0).contains("Active NPC"));
+  }
+
+  @Test
   void getShowPlanningContext_excludedBeat_surfacesWarningAndSuppressesRivalryHint() {
     // ATW-978m: a withheld beat must reach the booker (warning) and its rivalry must leave the
     // AI's unbooked-rivalry hints so no phantom match gets improvised for it.
@@ -1707,8 +1945,10 @@ class ShowPlanningServiceTest {
 
     when(titleService.getActiveTitles()).thenReturn(List.of(title));
     when(segmentRepository.findBySegmentDateBetween(any(), any())).thenReturn(List.of());
+    // ATW-1nyv: an unavailable champion withholds the championship from the context — the
+    // champion must be on the (mocked) available roster for the title block to render.
     when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
-        .thenReturn(List.of(activeWrestler));
+        .thenReturn(List.of(activeWrestler, champion));
     when(rivalryService.getActiveRivalries()).thenReturn(List.of());
     when(factionService.findAll()).thenReturn(List.of());
     when(showService.getUpcomingShows(10)).thenReturn(List.of());
@@ -1767,6 +2007,8 @@ class ShowPlanningServiceTest {
     Wrestler wrestler = new Wrestler();
     wrestler.setId(10L);
     wrestler.setName("El Fuego");
+    // ATW-1nyv: drama events for wrestlers outside the bookable roster are scrubbed — El Fuego
+    // must be available for the event to reach the prompt.
 
     DramaEvent event = new DramaEvent();
     event.setEventType(DramaEventType.BETRAYAL);
@@ -1778,12 +2020,14 @@ class ShowPlanningServiceTest {
 
     when(dramaEventService.getRecentEvents()).thenReturn(List.of(event));
     when(segmentRepository.findBySegmentDateBetween(any(), any())).thenReturn(List.of());
+    // ATW-1nyv: El Fuego must be on the bookable roster for his drama event to reach the prompt.
     when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
-        .thenReturn(List.of(activeWrestler));
+        .thenReturn(List.of(activeWrestler, wrestler));
     when(rivalryService.getActiveRivalries()).thenReturn(List.of());
     when(titleService.getActiveTitles()).thenReturn(List.of());
     when(factionService.findAll()).thenReturn(List.of());
     when(showService.getUpcomingShows(10)).thenReturn(List.of());
+
     ShowPlanningContextDTO dto = new ShowPlanningContextDTO();
     when(mapper.toDto(any(ShowPlanningContext.class))).thenReturn(dto);
 
@@ -1802,6 +2046,7 @@ class ShowPlanningServiceTest {
     Wrestler wrestler = new Wrestler();
     wrestler.setId(11L);
     wrestler.setName("Iron Mike");
+    // ATW-1nyv: the event wrestler must be on the bookable roster to survive the context scrub.
 
     DramaEvent kept = new DramaEvent();
     kept.setEventType(DramaEventType.BACKSTAGE_INCIDENT);
@@ -1821,8 +2066,9 @@ class ShowPlanningServiceTest {
 
     when(dramaEventService.getRecentEvents()).thenReturn(List.of(kept, filtered));
     when(segmentRepository.findBySegmentDateBetween(any(), any())).thenReturn(List.of());
+    // ATW-1nyv: Iron Mike must be on the bookable roster for his event to survive the scrub.
     when(wrestlerService.findAllFiltered(any(), any(), anyLong(), (String) any(), any()))
-        .thenReturn(List.of(activeWrestler));
+        .thenReturn(List.of(activeWrestler, wrestler));
     when(rivalryService.getActiveRivalries()).thenReturn(List.of());
     when(titleService.getActiveTitles()).thenReturn(List.of());
     when(factionService.findAll()).thenReturn(List.of());

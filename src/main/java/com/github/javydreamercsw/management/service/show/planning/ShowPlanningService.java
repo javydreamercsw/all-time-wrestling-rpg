@@ -135,6 +135,30 @@ public class ShowPlanningService {
     Gender genderConstraint =
         show.getTemplate() != null ? show.getTemplate().getGenderConstraint() : null;
 
+    // Bookable roster first (ATW-1nyv): injuries and low-condition wrestlers are excluded here and
+    // every other context channel below is scrubbed against this set. A wrestler the AI cannot
+    // book must not surface anywhere else (rivalries, championships, briefcases, trophies,
+    // factions, recent segments, drama events) — mixed signals make the model book them anyway.
+    Long universeId = show.getUniverse().getId();
+    int conditionThreshold = gameSettingService.getConditionRestThreshold();
+    List<Wrestler> candidates =
+        wrestlerService.findAllFiltered(null, genderConstraint, universeId, null, null);
+    List<Wrestler> allWrestlers = new ArrayList<>();
+    List<String> unavailableNames = new ArrayList<>();
+    for (Wrestler candidate : candidates) {
+      if (isUnavailable(candidate, universeId, conditionThreshold)) {
+        unavailableNames.add(candidate.getName());
+      } else {
+        allWrestlers.add(candidate);
+      }
+    }
+    Set<Long> availableIds = allWrestlers.stream().map(Wrestler::getId).collect(Collectors.toSet());
+    log.debug(
+        "Found {} available wrestlers in the roster ({} withheld for injury/condition)",
+        allWrestlers.size(),
+        unavailableNames.size());
+    context.setFullRoster(allWrestlers);
+
     // Get segments from the last 21 days (3 weeks of shows) for richer anti-repetition context
     Instant showDate = show.getShowDate().atStartOfDay(clock.getZone()).toInstant();
     context.setShowDate(showDate);
@@ -169,7 +193,9 @@ public class ShowPlanningService {
     context.setRecentSegments(lastWeekSegments);
 
     // Get current rivalries, filtered by gender constraint so the AI isn't prompted to book
-    // wrestlers that aren't in the allowed roster for this show.
+    // wrestlers that aren't in the allowed roster for this show. Rivalries with an unavailable
+    // participant (injury/rest — ATW-1nyv) are withheld entirely: the MUST_BOOK classification
+    // would otherwise pressure the AI into booking the unavailable wrestler to satisfy the feud.
     List<Rivalry> currentRivalries =
         rivalryService.getActiveRivalries().stream()
             .filter(
@@ -177,9 +203,15 @@ public class ShowPlanningService {
                     genderConstraint == null
                         || (r.getWrestler1().getGender() == genderConstraint
                             && r.getWrestler2().getGender() == genderConstraint))
+            .filter(
+                r ->
+                    r.getWrestler1().getId() != null
+                        && r.getWrestler2().getId() != null
+                        && availableIds.contains(r.getWrestler1().getId())
+                        && availableIds.contains(r.getWrestler2().getId()))
             .collect(Collectors.toList());
     log.debug(
-        "Found {} active rivalries after gender filtering (constraint={})",
+        "Found {} active rivalries after gender/availability filtering (constraint={})",
         currentRivalries.size(),
         genderConstraint);
     context.setCurrentRivalries(currentRivalries);
@@ -251,6 +283,22 @@ public class ShowPlanningService {
         championship.getContenders().addAll(numberOneContenders);
       }
 
+      // ATW-1nyv: unavailable wrestlers must not surface in the championship block either.
+      // A championship whose champion (or every contender) is out drops off the card context —
+      // "every championship MUST be defended" is unachievable while the champion recovers.
+      boolean championUnavailable =
+          championship.getChampions().stream()
+              .anyMatch(w -> w.getId() != null && !availableIds.contains(w.getId()));
+      if (championUnavailable) {
+        log.debug(
+            "Championship '{}' withheld from planning context: champion unavailable",
+            title.getName());
+        continue;
+      }
+      championship
+          .getContenders()
+          .removeIf(w -> w.getId() != null && !availableIds.contains(w.getId()));
+
       // Calculate days since last defense.
       // Query directly instead of title.getCurrentReign() — getActiveTitles() may return
       // cached detached entities whose lazy titleReigns collection cannot be initialized
@@ -281,10 +329,11 @@ public class ShowPlanningService {
     context.setChampionships(championships);
 
     // Held briefcases (ATW-brrz): a cash-in or champion-vs-holder angle is a strong proposal
-    // candidate — give the planning AI the same visibility champions get.
+    // candidate — give the planning AI the same visibility champions get. ATW-1nyv: an
+    // unavailable holder is scrubbed — an injured wrestler cannot cash in.
     for (TitleOpportunity opportunity : titleOpportunityService.findHeld()) {
       Wrestler holder = opportunity.getWrestler();
-      if (holder != null && holder.getId() != null) {
+      if (holder != null && holder.getId() != null && availableIds.contains(holder.getId())) {
         wrestlerRepository
             .findById(holder.getId())
             .ifPresent(
@@ -294,23 +343,16 @@ public class ShowPlanningService {
 
     // Trophy honors: past tournament glory on the roster — backstory the planning
     // AI can lean on, and a returning-trophy edition is a strong proposal candidate.
+    // Unavailable wrestlers are scrubbed here too (ATW-1nyv): honors are proposal bait.
     for (Wrestler rosterWrestler : wrestlerRepository.findAll()) {
+      if (rosterWrestler.getId() != null && !availableIds.contains(rosterWrestler.getId())) {
+        continue;
+      }
       List<String> honors = trophyReignService.trophyHonorsOf(rosterWrestler.getId());
       for (String honor : honors) {
         context.getTrophyHonors().add(rosterWrestler.getName() + " — " + honor);
       }
     }
-
-    // Get all wrestlers, excluding injured/low-condition (they should rest)
-    Long universeId = show.getUniverse().getId();
-    int conditionThreshold = gameSettingService.getConditionRestThreshold();
-    List<Wrestler> allWrestlers =
-        wrestlerService.findAllFiltered(null, genderConstraint, universeId, null, null).stream()
-            .filter(w -> !isUnavailable(w, universeId, conditionThreshold))
-            .collect(Collectors.toList());
-
-    log.debug("Found {} available wrestlers in the roster", allWrestlers.size());
-    context.setFullRoster(allWrestlers);
 
     // Get all factions, filtered by gender constraint
     List<Faction> allFactions =
@@ -335,6 +377,52 @@ public class ShowPlanningService {
 
     ShowPlanningContextDTO dto = mapper.toDto(context);
 
+    // ATW-1nyv: surface who was withheld so the booker sees a missing wrestler instead of a
+    // silent absence. Same wiring as excludedBeatWarnings — set directly on the DTO.
+    dto.setUnavailableWrestlerNames(unavailableNames);
+
+    // ATW-1nyv: name-based channels built from entities/DTOs are scrubbed here, after mapping.
+    // Recent segments, factions, and the next PLE's matches name wrestlers the roster filter
+    // already excluded — the AI must not see them as bookable (or recently-active) names.
+    Set<String> availableNames =
+        allWrestlers.stream().map(Wrestler::getName).collect(Collectors.toSet());
+    if (dto.getRecentSegments() != null) {
+      dto.setRecentSegments(
+          dto.getRecentSegments().stream()
+              .filter(
+                  seg ->
+                      seg.getParticipants() == null
+                          || seg.getParticipants().isEmpty()
+                          || availableNames.containsAll(seg.getParticipants()))
+              .toList());
+    }
+    if (dto.getFactions() != null) {
+      dto.getFactions()
+          .forEach(
+              faction -> {
+                if (faction.getLeader() != null && !availableNames.contains(faction.getLeader())) {
+                  faction.setLeader(null);
+                }
+                faction.getMembers().removeIf(name -> !availableNames.contains(name));
+              });
+      // A faction with no remaining leadership or members is noise — drop it entirely.
+      dto.setFactions(
+          dto.getFactions().stream()
+              .filter(faction -> !faction.getMembers().isEmpty() || faction.getLeader() != null)
+              .toList());
+    }
+    if (dto.getNextPle() != null && dto.getNextPle().getMatches() != null) {
+      dto.getNextPle()
+          .setMatches(
+              dto.getNextPle().getMatches().stream()
+                  .filter(
+                      match ->
+                          match.getParticipants() == null
+                              || match.getParticipants().isEmpty()
+                              || availableNames.containsAll(match.getParticipants()))
+                  .toList());
+    }
+
     // Stamp each rivalry with its most recent completed segment type: the prompt builder uses
     // it to classify PROMO_COOLDOWN feuds whose last appearance was a Promo.
     if (dto.getCurrentRivalries() != null) {
@@ -350,6 +438,11 @@ public class ShowPlanningService {
     List<String> dramaLines =
         dramaEventService.getRecentEvents().stream()
             .filter(de -> de.getEventType() != DramaEventType.OUTCOME_MATRIX_RESULT)
+            .filter(
+                de ->
+                    de.getPrimaryWrestler() == null
+                        || de.getPrimaryWrestler().getId() == null
+                        || availableIds.contains(de.getPrimaryWrestler().getId()))
             .limit(15)
             .map(
                 de ->
@@ -603,6 +696,117 @@ public class ShowPlanningService {
     return validateCard(proposedSegments, rivalryService.getActiveRivalries());
   }
 
+  /**
+   * ATW-1nyv: MUST_BOOK pressure is advisory, but it should not scold the booker for leaving an
+   * injured wrestler off the card. Rivalries whose participants are ALL unavailable for this show
+   * (injury or below the rest threshold) are removed from the required set; rivalries with an
+   * unavailable *side* are downgraded from MUST_BOOK to a warning that names the unavailability.
+   *
+   * <p>Availability mirrors the planning roster: active injuries plus the condition rest threshold.
+   */
+  public CardValidationResult validateCard(
+      @NonNull final Show show, @NonNull final List<ProposedSegment> proposedSegments) {
+    Long universeId = show.getUniverse() != null ? show.getUniverse().getId() : null;
+    if (universeId == null) {
+      // No universe → injuries/condition are unresolvable; fall back to the unfiltered check
+      // rather than crashing (pre-ATW-1nyv behavior).
+      return validateCard(proposedSegments, rivalryService.getActiveRivalries());
+    }
+    int conditionThreshold = gameSettingService.getConditionRestThreshold();
+    List<Rivalry> activeRivalries =
+        rivalryService.getActiveRivalries().stream()
+            .filter(
+                r -> {
+                  boolean w1Available =
+                      r.getWrestler1().getId() != null
+                          && !isUnavailable(r.getWrestler1(), universeId, conditionThreshold);
+                  boolean w2Available =
+                      r.getWrestler2().getId() != null
+                          && !isUnavailable(r.getWrestler2(), universeId, conditionThreshold);
+                  return w1Available || w2Available;
+                })
+            .toList();
+    return validateCard(proposedSegments, activeRivalries);
+  }
+
+  /**
+   * ATW-1nyv: proposed participants who are unavailable for this show (active injury or condition
+   * below the rest threshold). Advisory — the booker may approve anyway (e.g. an injury angle), but
+   * the approval dialog surfaces these before any segment is written.
+   *
+   * <p>Mirrors the planning roster's availability predicate so the prompt and the approval gate can
+   * never disagree.
+   */
+  public List<String> injuredParticipantWarnings(
+      @NonNull final Show show, @NonNull final List<ProposedSegment> proposedSegments) {
+    Long universeId = show.getUniverse() != null ? show.getUniverse().getId() : null;
+    if (universeId == null) {
+      // No universe → availability is unresolvable; no warnings (pre-ATW-1nyv behavior).
+      return List.of();
+    }
+    int conditionThreshold = gameSettingService.getConditionRestThreshold();
+    List<String> warnings = new ArrayList<>();
+    // Dedup by resolved wrestler id: the same wrestler may appear id-based in one row and
+    // name-based in another; one warning per unavailable wrestler keeps the dialog readable.
+    Set<Long> reported = new HashSet<>();
+    for (int i = 0; i < proposedSegments.size(); i++) {
+      ProposedSegment ps = proposedSegments.get(i);
+      final int segmentIndex = i;
+      if (ps.getTeamIds() != null && !ps.getTeamIds().isEmpty()) {
+        for (List<Long> team : ps.getTeamIds()) {
+          if (team == null) {
+            continue;
+          }
+          for (Long id : team) {
+            if (id == null || reported.contains(id)) {
+              continue;
+            }
+            wrestlerRepository
+                .findById(id)
+                .filter(w -> isUnavailable(w, universeId, conditionThreshold))
+                .ifPresent(
+                    w -> {
+                      reported.add(w.getId());
+                      warnings.add(describeUnavailable(segmentIndex, ps, w, universeId));
+                    });
+          }
+        }
+      }
+      if (ps.getTeams() != null) {
+        for (List<String> team : ps.getTeams()) {
+          if (team == null) {
+            continue;
+          }
+          for (String name : team) {
+            if (name == null || name.isBlank()) {
+              continue;
+            }
+            wrestlerRepository
+                .findByName(name.trim())
+                .filter(w -> !reported.contains(w.getId()))
+                .filter(w -> isUnavailable(w, universeId, conditionThreshold))
+                .ifPresent(
+                    w -> {
+                      reported.add(w.getId());
+                      warnings.add(describeUnavailable(segmentIndex, ps, w, universeId));
+                    });
+          }
+        }
+      }
+    }
+    return warnings;
+  }
+
+  private String describeUnavailable(
+      int index, ProposedSegment ps, Wrestler wrestler, Long universeId) {
+    WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), universeId);
+    String reason =
+        !injuryService.getActiveInjuriesForWrestler(wrestler.getId(), universeId).isEmpty()
+            ? "active injury"
+            : "condition below rest threshold (" + state.getPhysicalCondition() + ")";
+    return describeSegment(index, ps) + " books " + wrestler.getName() + " — " + reason;
+  }
+
   private boolean isRivalryCovered(
       final Rivalry rivalry, final List<ProposedSegment> proposedSegments) {
     return findCoveringSegment(rivalry, proposedSegments).isPresent();
@@ -664,8 +868,9 @@ public class ShowPlanningService {
       }
     }
 
-    CardValidationResult validation =
-        validateCard(cardSegments, rivalryService.getActiveRivalries());
+    // ATW-1nyv: show-aware validation — rivalries whose participants are ALL unavailable
+    // (injury/rest) don't generate MUST_BOOK pressure; the feud waits for the return.
+    CardValidationResult validation = validateCard(show, cardSegments);
     if (!validation.isValid()) {
       throw new IllegalStateException(
           "Show card validation failed for '"
@@ -682,6 +887,17 @@ public class ShowPlanningService {
 
     validateNoDuplicateParticipants(cardSegments);
     validateTeamLayouts(cardSegments);
+
+    // ATW-1nyv: the UI warns before calling this; approval proceeds (injury angles are legal).
+    // The log keeps an audit trail of exactly when an unavailable wrestler was booked anyway.
+    List<String> injuryWarnings = injuredParticipantWarnings(show, cardSegments);
+    if (!injuryWarnings.isEmpty()) {
+      log.warn(
+          "Approving card for '{}' with {} unavailable participant(s): {}",
+          show.getName(),
+          injuryWarnings.size(),
+          injuryWarnings);
+    }
 
     List<Segment> segmentsToSave = new ArrayList<>();
     int currentSegmentCount = segmentRepository.findByShow(show).size();
@@ -1452,7 +1668,9 @@ public class ShowPlanningService {
     if (!injuryService.getActiveInjuriesForWrestler(wrestler.getId(), universeId).isEmpty()) {
       return true;
     }
+    // A missing state (no condition data yet) cannot be judged below-threshold — treat as
+    // available rather than crashing or silently benching an untracked wrestler.
     WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), universeId);
-    return state.getPhysicalCondition() < conditionThreshold;
+    return state != null && state.getPhysicalCondition() < conditionThreshold;
   }
 }

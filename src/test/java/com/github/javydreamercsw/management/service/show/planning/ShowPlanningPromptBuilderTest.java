@@ -238,7 +238,6 @@ class ShowPlanningPromptBuilderTest {
     entry.setId(id);
     entry.setName(name);
     entry.setGender(gender);
-    entry.setInjured(false);
     return entry;
   }
 
@@ -248,7 +247,6 @@ class ShowPlanningPromptBuilderTest {
     ShowPlanningRosterEntryDTO wrestler = new ShowPlanningRosterEntryDTO();
     wrestler.setId(1L);
     wrestler.setName("John[INJECT]Cena");
-    wrestler.setInjured(false);
     ctx.setFullRoster(List.of(wrestler));
     String prompt = builder.build(ctx);
     assertFalse(prompt.contains("[INJECT]"), "Prompt must not contain raw injection brackets");
@@ -277,7 +275,6 @@ class ShowPlanningPromptBuilderTest {
     ShowPlanningRosterEntryDTO healthy = new ShowPlanningRosterEntryDTO();
     healthy.setId(1L);
     healthy.setName("Healthy Wrestler");
-    healthy.setInjured(false);
     ctx.setFullRoster(List.of(healthy));
 
     String prompt = builder.build(ctx);
@@ -294,7 +291,6 @@ class ShowPlanningPromptBuilderTest {
     ShowPlanningRosterEntryDTO healthy = new ShowPlanningRosterEntryDTO();
     healthy.setId(2L);
     healthy.setName("Top Condition Wrestler");
-    healthy.setInjured(false);
     ctx.setFullRoster(List.of(healthy));
 
     String prompt = builder.build(ctx);
@@ -310,13 +306,11 @@ class ShowPlanningPromptBuilderTest {
     ShowPlanningRosterEntryDTO wrestler = new ShowPlanningRosterEntryDTO();
     wrestler.setId(3L);
     wrestler.setName("Roman Reigns");
-    wrestler.setInjured(false);
     ctx.setFullRoster(List.of(wrestler));
 
     String prompt = builder.build(ctx);
 
     assertTrue(prompt.contains("Roman Reigns"), "Healthy wrestler must appear in roster section");
-    assertTrue(prompt.contains("Injured: false"), "Injured flag must be rendered as false");
   }
 
   @Test
@@ -364,7 +358,6 @@ class ShowPlanningPromptBuilderTest {
     wrestler.setId(10L);
     wrestler.setName("The Heel");
     wrestler.setAlignment("HEEL");
-    wrestler.setInjured(false);
     ctx.setFullRoster(List.of(wrestler));
 
     String prompt = builder.build(ctx);
