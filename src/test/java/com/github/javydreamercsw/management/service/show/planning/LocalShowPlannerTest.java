@@ -19,7 +19,13 @@ package com.github.javydreamercsw.management.service.show.planning;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
+import com.github.javydreamercsw.management.domain.title.DefenseFrequencyType;
+import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
+import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningChampionshipDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRivalryDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRosterEntryDTO;
@@ -42,7 +48,10 @@ class LocalShowPlannerTest {
   private static final Instant SHOW_DATE =
       LocalDate.of(2026, 9, 28).atStartOfDay(ZoneOffset.UTC).toInstant();
 
-  private final LocalShowPlanner planner = new LocalShowPlanner(new WeeklyParticipationTracker());
+  private final SegmentRuleService segmentRuleService = mock(SegmentRuleService.class);
+
+  private final LocalShowPlanner planner =
+      new LocalShowPlanner(new WeeklyParticipationTracker(), segmentRuleService);
 
   // ── Fixtures from the production paste ───────────────────────────────────────
 
@@ -319,5 +328,145 @@ class LocalShowPlannerTest {
     // simply not booked — no error, deterministic selection by heat order.
     List<ProposedSegment> segments = planner.plan(context(), 3, 2, Set.of());
     assertEquals(3, matchCount(segments), "Exactly the requested match count");
+  }
+
+  // ── Field-test regression pins (2026-11-10 production run) ──────────────────
+
+  @Test
+  void plan_intergenderDisabled_noMixedGenderMatchRows() {
+    // Production bug 1: Gail Kim & André the Giant (mixed tag) and Jordynne Grace vs Junkyard
+    // Dog (mixed singles backfill) appeared with intergender disabled. Approval would reject
+    // the card; the planner must never build one.
+    List<ProposedSegment> segments = planner.plan(context(), 5, 2, Set.of());
+
+    for (ProposedSegment segment : segments) {
+      if (segment.getType().toLowerCase().contains("promo")) {
+        continue;
+      }
+      Set<String> genders = new java.util.HashSet<>();
+      for (String name : participantsOf(segment)) {
+        genders.add(
+            timelessRoster().stream()
+                .filter(r -> r.getName().equals(name))
+                .findFirst()
+                .orElseThrow()
+                .getGender());
+      }
+      assertTrue(
+          genders.size() <= 1,
+          "Match row '"
+              + segment.getType()
+              + "' mixes genders ("
+              + participantsOf(segment)
+              + ") with intergender disabled");
+    }
+  }
+
+  @Test
+  void plan_championshipDefenses_attachedWithRealChampion() {
+    // Production bug 2: zero defenses on the card let the narration AI invent "ATW
+    // Intertemporal Champion Jordynne Grace" while the real champion is Junkyard Dog. The
+    // planner books the actual defense: champion vs bookable challenger, title attached by id.
+    ShowPlanningContextDTO context = context();
+    ShowPlanningChampionshipDTO title = new ShowPlanningChampionshipDTO();
+    title.setChampionshipName("ATW Intertemporal");
+    title.setTitleId(42L);
+    title.setChampionName("Junkyard Dog");
+    title.setContenderName("Kamala");
+    title.setDaysSinceLastDefense(20L);
+    context.setChampionships(new ArrayList<>(List.of(title)));
+
+    List<ProposedSegment> segments = planner.plan(context, 5, 2, Set.of());
+
+    ProposedSegment defense =
+        segments.stream()
+            .filter(s -> Long.valueOf(42L).equals(s.getTitleId()))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("The active title must defend on the card"));
+    assertTrue(
+        participantsOf(defense).containsAll(List.of("Junkyard Dog", "Kamala")),
+        "Defense books the REAL champion and challenger, got: " + participantsOf(defense));
+    assertTrue(defense.getIsTitleSegment(), "Defense row is a title segment");
+    assertEquals("Junkyard Dog", participantsOf(defense).get(0), "Champion listed first");
+  }
+
+  @Test
+  void plan_championshipDefense_overdueClaimsSlotBeforeFreshTitles() {
+    // Two titles, one overdue: the overdue defense must take a match slot first.
+    ShowPlanningContextDTO context = context();
+    ShowPlanningChampionshipDTO overdue = new ShowPlanningChampionshipDTO();
+    overdue.setChampionshipName("Overdue Belt");
+    overdue.setTitleId(10L);
+    overdue.setChampionName("Kurt Angle");
+    overdue.setContenderName("Nick Aldis");
+    overdue.setDaysSinceLastDefense(90L);
+    overdue.setDefenseFrequencyType(DefenseFrequencyType.PLE);
+    ShowPlanningChampionshipDTO fresh = new ShowPlanningChampionshipDTO();
+    fresh.setChampionshipName("Fresh Belt");
+    fresh.setTitleId(11L);
+    fresh.setChampionName("Randy Savage");
+    fresh.setContenderName("OMZ");
+    fresh.setDaysSinceLastDefense(3L);
+    fresh.setDefenseFrequencyType(DefenseFrequencyType.PLE);
+    context.setChampionships(new ArrayList<>(List.of(fresh, overdue)));
+
+    List<ProposedSegment> segments = planner.plan(context, 1, 0, Set.of());
+
+    assertEquals(
+        10L,
+        segments.stream()
+            .filter(s -> s.getTitleId() != null)
+            .findFirst()
+            .orElseThrow()
+            .getTitleId()
+            .longValue(),
+        "The overdue title defends before the fresh one when slots are scarce");
+  }
+
+  @Test
+  void applyHeatBasedStipulations_highHeatMatchesGetHighHeatRules() {
+    // Owner requirement: stipulations come from the match-rules configuration, driven by heat —
+    // no Ollama required. Heat ≥ 30 draws requiresHighHeat rules from the catalog; approval
+    // REJECTS heat-30 matches without a stipulation, so this is load-bearing for PLE cards.
+    ShowPlanningContextDTO context = context();
+    SegmentRule cage = new SegmentRule();
+    cage.setName("Cage");
+    cage.setRequiresHighHeat(true);
+    when(segmentRuleService.getHighHeatRules()).thenReturn(List.of(cage));
+    // The heat-89 Gail Kim/Abilene feud classifies PLE_RESOLUTION_REQUIRED on a weekly —
+    // planner books a confrontation (Promo row); use a heat-26+ feud on a PLE instead.
+    context.setPremiumLiveEvent(true);
+
+    List<ProposedSegment> segments = planner.plan(context, 5, 2, Set.of());
+    planner.applyHeatBasedStipulations(segments, context);
+
+    ProposedSegment stipulated =
+        segments.stream()
+            .filter(s -> !s.getType().toLowerCase().contains("promo"))
+            .filter(s -> s.getRivalryId() != null && Long.valueOf(748L).equals(s.getRivalryId()))
+            .findFirst()
+            .orElseThrow(
+                () -> new AssertionError("Heat-89 feud on a PLE takes a match slot (STIPULATION)"));
+    assertEquals(List.of("Cage"), stipulated.getRules(), "Heat ≥ 30 match gets a high-heat rule");
+  }
+
+  @Test
+  void applyHeatBasedStipulations_subHeatMatchesStayNormal() {
+    // Heat < 30 rows stay ruleless here — applyDefaultRules backfills "Normal" downstream.
+    ShowPlanningContextDTO context = context();
+    SegmentRule cage = new SegmentRule();
+    cage.setName("Cage");
+    cage.setRequiresHighHeat(true);
+    when(segmentRuleService.getHighHeatRules()).thenReturn(List.of(cage));
+
+    List<ProposedSegment> segments = planner.plan(context(), 5, 2, Set.of());
+    planner.applyHeatBasedStipulations(segments, context);
+
+    // No weekly rivalry exceeds heat 26 in the fixture, so nothing should be stipulated.
+    assertTrue(
+        segments.stream()
+            .filter(s -> !s.getType().toLowerCase().contains("promo"))
+            .allMatch(s -> s.getRules() == null || s.getRules().isEmpty()),
+        "Weekly-heat matches defer to the Normal default");
   }
 }

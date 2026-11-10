@@ -145,6 +145,7 @@ public class ShowPlanningDtoMapper {
   public ShowPlanningChampionshipDTO toDto(@NonNull final ShowPlanningChampionship championship) {
     ShowPlanningChampionshipDTO dto = new ShowPlanningChampionshipDTO();
     dto.setChampionshipName(championship.getTitle().getName());
+    dto.setTitleId(championship.getTitle().getId());
     if (!championship.getChampions().isEmpty()) {
       dto.setChampionName(
           championship.getChampions().stream()

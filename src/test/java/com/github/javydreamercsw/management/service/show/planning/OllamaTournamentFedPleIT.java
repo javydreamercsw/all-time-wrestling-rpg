@@ -72,6 +72,10 @@ class OllamaTournamentFedPleIT extends AbstractTournamentFedPleIT {
   @Autowired private SegmentRepository segmentRepository;
 
   @Autowired
+  private com.github.javydreamercsw.management.service.segment.SegmentRuleService
+      segmentRuleService;
+
+  @Autowired
   private com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
 
   private ShowPlanningAiService aiService;
@@ -89,7 +93,7 @@ class OllamaTournamentFedPleIT extends AbstractTournamentFedPleIT {
             segmentTypeService,
             segmentRuleService,
             holidayService,
-            new LocalShowPlanner(new WeeklyParticipationTracker()),
+            new LocalShowPlanner(new WeeklyParticipationTracker(), segmentRuleService),
             gameSettingService);
   }
 

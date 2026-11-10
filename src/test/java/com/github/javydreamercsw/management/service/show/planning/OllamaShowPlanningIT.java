@@ -71,6 +71,10 @@ class OllamaShowPlanningIT extends ManagementIntegrationTest {
   @Autowired private HolidayService holidayService;
 
   @Autowired
+  private com.github.javydreamercsw.management.service.segment.SegmentRuleService
+      segmentRuleService;
+
+  @Autowired
   private com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
 
   /**
@@ -97,7 +101,7 @@ class OllamaShowPlanningIT extends ManagementIntegrationTest {
             segmentTypeService,
             segmentRuleService,
             holidayService,
-            new LocalShowPlanner(new WeeklyParticipationTracker()),
+            new LocalShowPlanner(new WeeklyParticipationTracker(), segmentRuleService),
             gameSettingService);
   }
 

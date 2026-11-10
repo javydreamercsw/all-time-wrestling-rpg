@@ -150,6 +150,8 @@ public class ShowPlanningAiService {
     List<ProposedSegment> planned =
         localShowPlanner.plan(context, freeMatches, freePromos, claimedNames);
     proposedShow.getSegments().addAll(planned);
+    // Heat-based stipulations land BEFORE narration so the prompt shows the final rules.
+    localShowPlanner.applyHeatBasedStipulations(proposedShow.getSegments(), context);
     log.info(
         "Local planner flow: {} deterministic + {} planned row(s) on the card ({} free slots)",
         proposedShow.getSegments().size() - planned.size(),

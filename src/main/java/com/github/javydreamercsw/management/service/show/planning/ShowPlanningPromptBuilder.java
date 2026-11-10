@@ -699,7 +699,8 @@ public class ShowPlanningPromptBuilder {
                       .append(")\n"));
     }
     if (context.getChampionships() != null && !context.getChampionships().isEmpty()) {
-      prompt.append("\nChampionships:\n");
+      prompt.append("\nChampionships (background color ONLY — title defenses are already on the");
+      prompt.append(" card where they belong; do NOT invent champions or add title changes):\n");
       context
           .getChampionships()
           .forEach(

@@ -24,6 +24,10 @@ public class ShowPlanningChampionshipDTO {
   private String championshipName;
   private String championName;
   private String contenderName;
+
+  /** The defended Title's id — lets the local planner attach real title rows to the card. */
+  private Long titleId;
+
   private DefenseFrequencyType defenseFrequencyType;
   private Long daysSinceLastDefense;
 

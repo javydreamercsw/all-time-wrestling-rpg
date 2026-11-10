@@ -44,6 +44,13 @@ public class ProposedSegment {
   /** Title id whose #1 contender is decided by this segment (resolved at approval time). */
   private Long contenderTitleId;
 
+  /**
+   * Title id defended by this segment (champion vs. contender) — resolved to the Title entity at
+   * approval time. The local planner sets it on championship-defense rows so the card defends the
+   * REAL champion instead of the narration AI inventing one.
+   */
+  private Long titleId;
+
   @Setter private Set<Title> titles = new HashSet<>();
   private List<String> rules;
   private String refereeName;

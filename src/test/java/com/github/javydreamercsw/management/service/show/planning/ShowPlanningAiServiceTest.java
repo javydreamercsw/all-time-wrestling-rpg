@@ -72,7 +72,7 @@ class ShowPlanningAiServiceTest {
         mock(com.github.javydreamercsw.management.service.GameSettingService.class);
     // Tests below exercise the legacy AI-booking path; the local planner is opt-out here.
     when(gameSettingService.isShowPlanningLocalPlannerEnabled()).thenReturn(false);
-    localShowPlanner = new LocalShowPlanner(new WeeklyParticipationTracker());
+    localShowPlanner = new LocalShowPlanner(new WeeklyParticipationTracker(), segmentRuleService);
 
     // Mock the factory to return the service
     when(narrationServiceFactory.getBestAvailableService()).thenReturn(segmentNarrationService);

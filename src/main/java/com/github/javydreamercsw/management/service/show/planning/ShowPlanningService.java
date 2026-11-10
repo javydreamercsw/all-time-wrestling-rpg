@@ -989,6 +989,13 @@ public class ShowPlanningService {
       if (proposedSegment.getTitles() != null && !proposedSegment.getTitles().isEmpty()) {
         segment.setTitles(proposedSegment.getTitles());
       }
+      if (proposedSegment.getTitleId() != null) {
+        // Local-planner championship defense (ATW-wbch): resolve the defended title by id —
+        // the real champion is on this segment, unlike the narration AI's invented context.
+        titleService
+            .getTitleById(proposedSegment.getTitleId())
+            .ifPresent(title -> segment.getTitles().add(title));
+      }
       if (Boolean.TRUE.equals(proposedSegment.getIsContenderMatch())) {
         segment.setContenderMatch(true);
         if (proposedSegment.getContenderTitleId() != null) {

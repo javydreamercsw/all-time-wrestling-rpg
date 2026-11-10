@@ -16,7 +16,10 @@
 */
 package com.github.javydreamercsw.management.service.show.planning;
 
+import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
+import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
+import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningChampionshipDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRivalryDTO;
 import java.time.Instant;
@@ -64,9 +67,12 @@ import org.springframework.stereotype.Component;
 public class LocalShowPlanner {
 
   private final WeeklyParticipationTracker tracker;
+  private final SegmentRuleService segmentRuleService;
 
-  public LocalShowPlanner(WeeklyParticipationTracker tracker) {
+  public LocalShowPlanner(
+      WeeklyParticipationTracker tracker, SegmentRuleService segmentRuleService) {
     this.tracker = tracker;
+    this.segmentRuleService = segmentRuleService;
   }
 
   /**
@@ -108,6 +114,22 @@ public class LocalShowPlanner {
     Set<String> bookedThisWeek = tracker.bookedThisWeek(tally, availableNames);
     bookedThisWeek.addAll(claimed);
 
+    // Gender by normalized name — the intergender gate consults it for every pairing the
+    // planner assembles (rivalry sides, tag partners, idle backfill), not just the feud itself.
+    boolean intergenderAllowed = context.isIntergenderAllowed();
+    Map<String, String> genderByName = new HashMap<>();
+    if (context.getFullRoster() != null) {
+      context
+          .getFullRoster()
+          .forEach(
+              w -> {
+                if (w.getName() != null && w.getGender() != null) {
+                  genderByName.put(
+                      WeeklyParticipationTracker.normalize(w.getName()), w.getGender());
+                }
+              });
+    }
+
     List<ShowPlanningRivalryDTO> rivalries = rivalriesByHeat(context);
     Map<Long, String> classifications = classificationsOf(context, rivalries);
 
@@ -124,6 +146,23 @@ public class LocalShowPlanner {
         availableNames.stream()
             .filter(name -> !feudingNames.contains(WeeklyParticipationTracker.normalize(name)))
             .toList();
+
+    // ── Championship defenses ───────────────────────────────────────────────────
+    // BEFORE rivalry matches: a title defense outranks mid-card feuds — a card with zero
+    // defenses also lets the narration AI invent its own champion (the ATW Intertemporal bug).
+    // Book the real thing: the actual champion defends against the actual contender when both
+    // are bookable; overdue titles defend first (defense cadence is the whole point of the
+    // frequency setting). When no contender is set, a top available rival from the idle pool
+    // steps up.
+    fillChampionshipDefenses(
+        context,
+        segments,
+        matchBooked,
+        bookedThisWeek,
+        rosterSet,
+        genderByName,
+        idlePool,
+        freeMatches);
 
     // ── Match slots: heat-sorted, non-overlapping, format-rotated ───────────────
     boolean preferTag = prefersTagThisWeek(showDate);
@@ -152,10 +191,24 @@ public class LocalShowPlanner {
       List<String> side1 = new ArrayList<>(List.of(a));
       List<String> side2 = new ArrayList<>(List.of(b));
       String type = WellKnownSegmentType.ONE_ON_ONE.getDisplayName();
-      if (preferTag) {
+      String aGender = genderByName.get(WeeklyParticipationTracker.normalize(a));
+      String bGender = genderByName.get(WeeklyParticipationTracker.normalize(b));
+      // A tag mixes BOTH sides on one row: with intergender disabled the two feud anchors must
+      // share a gender, or the row fails approval's any-mixed-gender check.
+      boolean tagPossible =
+          preferTag
+              && (intergenderAllowed
+                  || aGender == null
+                  || bGender == null
+                  || aGender.equals(bGender));
+      if (tagPossible) {
         // Tag Team: each feud side gains a fresh partner from the IDLE pool — partners drawn
-        // from feuding wrestlers would starve those wrestlers' own pending feuds.
-        List<String> partners = freshPartnersFor(idlePool, matchBooked, rosterSet, 2);
+        // from feuding wrestlers would starve those wrestlers' own pending feuds. Partners must
+        // match their feud side's gender when intergender is disabled (approval rejects mixed
+        // tags; the planner never builds one in the first place).
+        List<String> partners =
+            freshPartnersFor(
+                idlePool, matchBooked, rosterSet, genderByName, a, b, intergenderAllowed, 2);
         if (partners.size() == 2) {
           side1.add(partners.get(0));
           side2.add(partners.get(1));
@@ -179,28 +232,47 @@ public class LocalShowPlanner {
     // Rivalries couldn't fill every match slot (skipped for bookings, or simply fewer feuds than
     // slots). A real booker fills the card: pair idle wrestlers so the show hits its match count
     // and under-used names get in-ring time. Singles pairings from the idle pool, one match per
-    // wrestler still enforced.
+    // wrestler still enforced, same-gender pairs when intergender is disabled.
+    List<String> backfillPool =
+        idlePool.stream()
+            .filter(name -> isMatchAvailable(name, matchBooked, bookedThisWeek, rosterSet))
+            .collect(Collectors.toCollection(ArrayList::new));
     while (segments.stream().filter(LocalShowPlanner::isMatchRow).count() < freeMatches
-        && idlePool.size() >= 2) {
+        && backfillPool.size() >= 2) {
+      String anchor = backfillPool.get(0);
+      String anchorGender = genderByName.get(WeeklyParticipationTracker.normalize(anchor));
       List<String> pair =
-          idlePool.stream()
-              .filter(name -> isMatchAvailable(name, matchBooked, bookedThisWeek, rosterSet))
-              .limit(2)
+          backfillPool.stream()
+              .skip(1)
+              .filter(
+                  name -> {
+                    if (intergenderAllowed || anchorGender == null) {
+                      return true;
+                    }
+                    String gender = genderByName.get(WeeklyParticipationTracker.normalize(name));
+                    return anchorGender.equals(gender);
+                  })
+              .limit(1)
               .toList();
-      if (pair.size() < 2) {
-        break; // nobody left who is both idle and bookable this week
+      if (pair.isEmpty()) {
+        // No same-gender partner for the anchor — drop the anchor and try the next wrestler
+        // (e.g. a lone female among males must not stall the fill).
+        backfillPool.remove(0);
+        continue;
       }
+      String partner = pair.get(0);
+      backfillPool.remove(anchor);
+      backfillPool.remove(partner);
       ProposedSegment row = new ProposedSegment();
       row.setType(WellKnownSegmentType.ONE_ON_ONE.getDisplayName());
       row.setTeams(
           new ArrayList<>(
-              List.of(
-                  new ArrayList<>(List.of(pair.get(0))), new ArrayList<>(List.of(pair.get(1))))));
+              List.of(new ArrayList<>(List.of(anchor)), new ArrayList<>(List.of(partner)))));
       row.setSource(SOURCE_LOCAL_PLANNER);
-      row.setSummary(
-          pair.get(0) + " vs " + pair.get(1) + " — under-card bout booked by the local planner.");
+      row.setSummary(anchor + " vs " + partner + " — under-card bout booked by the local planner.");
       segments.add(row);
-      pair.forEach(name -> matchBooked.add(WeeklyParticipationTracker.normalize(name)));
+      matchBooked.add(WeeklyParticipationTracker.normalize(anchor));
+      matchBooked.add(WeeklyParticipationTracker.normalize(partner));
     }
 
     // ── Promo / confrontation slots ─────────────────────────────────────────────
@@ -294,6 +366,176 @@ public class LocalShowPlanner {
   }
 
   /**
+   * Championship defense pass (ATW-wbch): every active title on the card's universe defends when
+   * its champion and a challenger can both take a match slot. Overdue titles claim slots first —
+   * the defense cadence exists to force these bookings. The title is attached by id ({@code
+   * titleId}) and resolved to the entity at approval, so the proposed card shows a REAL title
+   * defense instead of leaving the narration AI to invent champions.
+   *
+   * <p>Challenger selection, in order: the title's designated contender (bookable), else the
+   * highest-tier available idle wrestler of the champion's gender. The defense consumes a match
+   * slot only when one is free; when the card is out of match slots, nothing is booked (the
+   * narration prompt already carries championship context for flavor).
+   */
+  private void fillChampionshipDefenses(
+      ShowPlanningContextDTO context,
+      List<ProposedSegment> segments,
+      Set<String> matchBooked,
+      Set<String> bookedThisWeek,
+      Set<String> rosterSet,
+      Map<String, String> genderByName,
+      List<String> idlePool,
+      int freeMatches) {
+    if (context.getChampionships() == null || context.getChampionships().isEmpty()) {
+      return;
+    }
+    // Overdue titles first, then by days-since-defense descending (longest drought defends first).
+    List<ShowPlanningChampionshipDTO> titles = new ArrayList<>(context.getChampionships());
+    titles.sort(
+        (a, b) -> {
+          if (a.isOverdue() != b.isOverdue()) {
+            return a.isOverdue() ? -1 : 1;
+          }
+          return Long.compare(
+              b.getDaysSinceLastDefense() == null ? 0 : b.getDaysSinceLastDefense(),
+              a.getDaysSinceLastDefense() == null ? 0 : a.getDaysSinceLastDefense());
+        });
+    for (ShowPlanningChampionshipDTO title : titles) {
+      if (segments.stream().filter(LocalShowPlanner::isMatchRow).count() >= freeMatches) {
+        break;
+      }
+      if (title.getChampionName() == null
+          || title.getChampionName().isBlank()
+          || title.getTitleId() == null) {
+        continue; // vacant or unresolvable titles skip this pass
+      }
+      String champion = title.getChampionName();
+      // Multi-wrestler champions ("A & B") don't fit a one-side name — skip tag titles here.
+      if (!rosterSet.contains(WeeklyParticipationTracker.normalize(champion))) {
+        continue;
+      }
+      String challenger = pickChallenger(title, champion, idlePool, rosterSet, genderByName);
+      if (challenger == null
+          || !isMatchAvailable(champion, matchBooked, bookedThisWeek, rosterSet)
+          || !isMatchAvailable(challenger, matchBooked, bookedThisWeek, rosterSet)) {
+        log.debug(
+            "Title '{}' skipped: champion or challenger already booked (card or this week)",
+            title.getChampionshipName());
+        continue;
+      }
+
+      ProposedSegment row = new ProposedSegment();
+      row.setType(WellKnownSegmentType.ONE_ON_ONE.getDisplayName());
+      row.setTeams(
+          new ArrayList<>(
+              List.of(new ArrayList<>(List.of(champion)), new ArrayList<>(List.of(challenger)))));
+      row.setTitleId(title.getTitleId());
+      row.setIsTitleSegment(true);
+      row.setSource(SOURCE_LOCAL_PLANNER);
+      row.setSummary(
+          String.format(
+              "%s defense: %s (champion) vs %s%s.",
+              title.getChampionshipName(),
+              champion,
+              challenger,
+              title.getContenderName() != null && !title.getContenderName().isBlank()
+                  ? " — designated contender"
+                  : " — top available challenger"));
+      segments.add(row);
+      matchBooked.add(WeeklyParticipationTracker.normalize(champion));
+      matchBooked.add(WeeklyParticipationTracker.normalize(challenger));
+      log.info("Booked {} defense: {} vs {}", title.getChampionshipName(), champion, challenger);
+    }
+  }
+
+  /**
+   * Challenger for a defense: the title's designated contender when bookable, else the top idle
+   * wrestler of the champion's gender (idle pool order — deterministic). Same-gender when
+   * intergender is disabled; unknown genders pass.
+   */
+  private String pickChallenger(
+      ShowPlanningChampionshipDTO title,
+      String champion,
+      List<String> idlePool,
+      Set<String> rosterSet,
+      Map<String, String> genderByName) {
+    String contender = title.getContenderName();
+    if (contender != null
+        && !contender.isBlank()
+        && rosterSet.contains(WeeklyParticipationTracker.normalize(contender))) {
+      return contender.trim();
+    }
+    String championGender = genderByName.get(WeeklyParticipationTracker.normalize(champion));
+    for (String candidate : idlePool) {
+      String key = WeeklyParticipationTracker.normalize(candidate);
+      if (!rosterSet.contains(key)) {
+        continue;
+      }
+      if (WeeklyParticipationTracker.normalize(champion).equals(key)) {
+        continue; // champion can't challenge themselves
+      }
+      String gender = genderByName.get(key);
+      if (championGender != null && !championGender.equals(gender)) {
+        continue; // same-gender gate (intergender flag is checked by the caller's availability)
+      }
+      return candidate;
+    }
+    return null;
+  }
+
+  /**
+   * Heat-based stipulations (ATW-wbch): match rows the planner built without a rule get one from
+   * the seeded catalog — heat ≥ {@link RivalryClassifier#PLE_RESOLUTION_HEAT} draws a {@code
+   * requiresHighHeat} rule (Cage, No DQ, Last Man Standing…), everything else gets "Normal".
+   * Rotation over the eligible list keeps consecutive high-heat matches from all landing on the
+   * same stipulation. Approval VALIDATES this: heat ≥ 30 matches without a stipulation are rejected
+   * by ShowPlanningService.validateCard.
+   */
+  void applyHeatBasedStipulations(List<ProposedSegment> segments, ShowPlanningContextDTO context) {
+    List<SegmentRule> highHeatRules =
+        segmentRuleService.getHighHeatRules() == null
+            ? List.of()
+            : segmentRuleService.getHighHeatRules();
+    if (highHeatRules.isEmpty()) {
+      return; // catalog empty — applyDefaultRules' Normal/Promo fallback still applies
+    }
+    int stipulationIndex = 0;
+    for (ProposedSegment row : segments) {
+      if (row.getRules() != null && !row.getRules().isEmpty()) {
+        continue; // already stipulated (scripted beat, tournament row)
+      }
+      if (isPromoRow(row)) {
+        continue;
+      }
+      int heat = rivalryHeatOf(context, row.getRivalryId());
+      if (heat >= RivalryClassifier.PLE_RESOLUTION_HEAT) {
+        SegmentRule rule = highHeatRules.get(stipulationIndex % highHeatRules.size());
+        stipulationIndex++;
+        row.setRules(List.of(rule.getName()));
+        row.setSummary(
+            (row.getSummary() == null ? "" : row.getSummary() + " ") + "[" + rule.getName() + "]");
+      }
+      // Sub-threshold matches stay ruleless here — applyDefaultRules backfills "Normal".
+    }
+  }
+
+  /** Heat of the rivalry a row advances; 0 when the row isn't rivalry-backed. */
+  private int rivalryHeatOf(ShowPlanningContextDTO context, Long rivalryId) {
+    if (rivalryId == null || context.getCurrentRivalries() == null) {
+      return 0;
+    }
+    return context.getCurrentRivalries().stream()
+        .filter(r -> rivalryId.equals(r.getId()))
+        .findFirst()
+        .map(ShowPlanningRivalryDTO::getHeat)
+        .orElse(0);
+  }
+
+  private static boolean isPromoRow(ProposedSegment row) {
+    return row.getType() != null && row.getType().toLowerCase(Locale.ROOT).contains("promo");
+  }
+
+  /**
    * Whether the wrestler may take a match slot: on the roster, unbooked on-card, unbooked this
    * week.
    */
@@ -304,20 +546,39 @@ public class LocalShowPlanner {
   }
 
   /**
-   * Finds up to {@code count} fresh partners from the idle pool: on the roster, unbooked.
-   * Deterministic order (pool order) keeps the output stable for tests and repeat runs.
+   * Finds up to {@code count} fresh partners from the idle pool: on the roster, unbooked, and —
+   * when intergender is disabled — the same gender as the feud side they'll team with (partner 0
+   * teams with side1's anchor, partner 1 with side2's). Unknown genders (hand-built contexts) pass
+   * the gate. Deterministic order (pool order) keeps output stable for tests and repeat runs.
    */
   private List<String> freshPartnersFor(
-      List<String> idlePool, Set<String> matchBooked, Set<String> rosterSet, int count) {
+      List<String> idlePool,
+      Set<String> matchBooked,
+      Set<String> rosterSet,
+      Map<String, String> genderByName,
+      String side1Anchor,
+      String side2Anchor,
+      boolean intergenderAllowed,
+      int count) {
+    String side1Gender = genderByName.get(WeeklyParticipationTracker.normalize(side1Anchor));
+    String side2Gender = genderByName.get(WeeklyParticipationTracker.normalize(side2Anchor));
     List<String> partners = new ArrayList<>();
     for (String candidate : idlePool) {
       if (partners.size() >= count) {
         break;
       }
       String key = WeeklyParticipationTracker.normalize(candidate);
-      if (!matchBooked.contains(key) && rosterSet.contains(key)) {
-        partners.add(candidate);
+      if (matchBooked.contains(key) || !rosterSet.contains(key)) {
+        continue;
       }
+      if (!intergenderAllowed) {
+        String candidateGender = genderByName.get(key);
+        String requiredGender = partners.isEmpty() ? side1Gender : side2Gender;
+        if (requiredGender != null && !requiredGender.equals(candidateGender)) {
+          continue;
+        }
+      }
+      partners.add(candidate);
     }
     return partners;
   }
