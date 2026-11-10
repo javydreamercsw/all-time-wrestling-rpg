@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.ui.view.challenge;
 
 import static com.github.mvysny.kaributesting.v10.LocatorJ._find;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -37,7 +38,11 @@ import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
+import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.data.provider.Query;
+import com.vaadin.flow.dom.Element;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -279,5 +284,217 @@ class ChallengeListViewTest extends AbstractViewTest {
     List<Button> viewBtns = _find(view, Button.class, spec -> spec.withText("View Challenge"));
     assertTrue(
         viewBtns.isEmpty(), "Custom challenge should be hidden when Official only is checked");
+  }
+
+  @Test
+  @DisplayName("Print page renders header meta, flavor, objective, conditions and modifiers")
+  void buildChallengePage_rendersAllSections() {
+    ChallengeDTO challenge =
+        ChallengeDTO.builder()
+            .id("week_11_deadly_combat_year_5")
+            .weekNumber(11)
+            .season("Season 1")
+            .title("Deadly Combat — Year Five: The Gauntlet")
+            .flavorText("Freedom. One more tournament.")
+            .expansionCode("EXTREME")
+            .difficulty(Difficulty.HARD)
+            .matchType("Gauntlet")
+            .objective("Defeat all four as OMZ.")
+            .setupInstructions("Requires the ATW Extreme expansion.")
+            .conditions(List.of("No pinfalls — defeat at 1 Health."))
+            .modifiers(List.of("The pit medics: one Elixir and one Health Pack."))
+            .build();
+
+    Div page = ChallengeListView.buildChallengePage(challenge);
+
+    String text = textOf(page);
+    assertThat(text)
+        .contains("Deadly Combat — Year Five: The Gauntlet")
+        .contains("Week 11")
+        .contains("HARD")
+        .contains("Gauntlet")
+        .contains("Season 1")
+        .contains("Freedom. One more tournament.")
+        .contains("Defeat all four as OMZ.")
+        .contains("No pinfalls")
+        .contains("The pit medics")
+        .contains("EXTREME");
+    assertThat(page.hasClassName("challenge-print-page")).isTrue();
+  }
+
+  @Test
+  @DisplayName("Print page includes the challenge image when present")
+  void buildChallengePage_includesImage() {
+    ChallengeDTO challenge =
+        ChallengeDTO.builder()
+            .id("week_01_locker_room_attack")
+            .weekNumber(1)
+            .title("Locker Room Attack!!!")
+            .imageUrl("challenge-content/images/week1.png")
+            .build();
+
+    Div page = ChallengeListView.buildChallengePage(challenge);
+
+    Element img = page.getElement().getChild(1).getChild(0);
+    assertThat(img.getAttribute("src")).isEqualTo("challenge-content/images/week1.png");
+  }
+
+  @Test
+  @DisplayName("Print page tolerates null optional fields (no NPE)")
+  void buildChallengePage_nullOptionals_noNpe() {
+    ChallengeDTO challenge = ChallengeDTO.builder().id("x").title("Bare challenge").build();
+
+    Div page = ChallengeListView.buildChallengePage(challenge);
+
+    assertThat(page.hasClassName("challenge-print-page")).isTrue();
+    assertThat(textOf(page)).contains("Bare challenge");
+  }
+
+  private static String textOf(Div card) {
+    StringBuilder sb = new StringBuilder();
+    collectText(card.getElement(), sb);
+    return sb.toString();
+  }
+
+  private static void collectText(Element el, StringBuilder sb) {
+    if (el.getChildCount() == 0) {
+      sb.append(el.getText()).append(' ');
+      return;
+    }
+    if (el.getText() != null && !el.getText().isBlank()) {
+      sb.append(el.getText()).append(' ');
+    }
+    for (int i = 0; i < el.getChildCount(); i++) {
+      collectText(el.getChild(i), sb);
+    }
+  }
+
+  @Test
+  @DisplayName("Print selector items follow the active filters (season pick narrows it)")
+  void printSelectorSyncsWithFilters() {
+    ChallengeDTO s1 =
+        ChallengeDTO.builder()
+            .id("w1")
+            .weekNumber(1)
+            .season("Season 1")
+            .title("Season One Challenge")
+            .expansionCode("EXTREME")
+            .build();
+    ChallengeDTO s2 =
+        ChallengeDTO.builder()
+            .id("w2")
+            .weekNumber(2)
+            .season("Season 2")
+            .title("Season Two Challenge")
+            .expansionCode("EXTREME")
+            .build();
+    when(securityUtils.isAdmin()).thenReturn(true);
+    ChallengeListView view = buildView(List.of(s1, s2), List.of());
+
+    ComboBox<ChallengeDTO> selector =
+        (ComboBox<ChallengeDTO>)
+            _get(view, ComboBox.class, spec -> spec.withLabel("Print challenge"));
+    assertThat(selector.getDataProvider().fetch(new Query<>()))
+        .extracting(ChallengeDTO::getId)
+        .containsExactlyInAnyOrder("w1", "w2");
+
+    ComboBox<String> season =
+        (ComboBox<String>) _get(view, ComboBox.class, spec -> spec.withLabel("Season"));
+    season.setValue("Season 1");
+    assertThat(season.getValue()).isEqualTo("Season 1");
+
+    // Re-locate the selector: refreshCards replaced its data provider.
+    ComboBox<ChallengeDTO> refreshed =
+        (ComboBox<ChallengeDTO>)
+            _get(view, ComboBox.class, spec -> spec.withLabel("Print challenge"));
+    assertThat(refreshed.getDataProvider().fetch(new Query<>()))
+        .extracting(ChallengeDTO::getId)
+        .containsExactly("w1");
+  }
+
+  @Test
+  @DisplayName("filteredChallenges honors official-only: custom challenges excluded")
+  void filteredChallenges_honorsOfficialOnly() {
+    ChallengeDTO official =
+        ChallengeDTO.builder()
+            .id("off")
+            .weekNumber(1)
+            .season("Season 1")
+            .title("Official Challenge")
+            .expansionCode("EXTREME")
+            .build();
+    ChallengeDTO custom =
+        ChallengeDTO.builder()
+            .id("cus")
+            .weekNumber(2)
+            .season("Season 1")
+            .title("Custom Challenge")
+            .expansionCode("CUSTOM")
+            .build();
+    when(securityUtils.isAdmin()).thenReturn(true);
+    ChallengeListView view = buildView(List.of(official, custom), List.of());
+
+    // Official-only checked → custom challenges are excluded from the print selection.
+    _get(view, Checkbox.class, spec -> spec.withLabel("Official only")).setValue(true);
+    assertThat(view.filteredChallenges()).extracting(ChallengeDTO::getId).containsExactly("off");
+
+    // Unchecked → everything filtered by the other criteria is included.
+    _get(view, Checkbox.class, spec -> spec.withLabel("Official only")).setValue(false);
+    assertThat(view.filteredChallenges())
+        .extracting(ChallengeDTO::getId)
+        .containsExactly("off", "cus");
+  }
+
+  @Test
+  @DisplayName("printSelection renders one full-page sheet per challenge")
+  void printSelection_buildsOneSheetPerChallenge() {
+    when(securityUtils.isAdmin()).thenReturn(true);
+    ChallengeDTO a =
+        ChallengeDTO.builder()
+            .id("w1")
+            .weekNumber(1)
+            .season("Season 1")
+            .title("First Challenge")
+            .expansionCode("EXTREME")
+            .build();
+    ChallengeDTO b =
+        ChallengeDTO.builder()
+            .id("w2")
+            .weekNumber(2)
+            .season("Season 1")
+            .title("Second Challenge")
+            .expansionCode("EXTREME")
+            .build();
+    ChallengeListView view = buildView(List.of(a, b), List.of());
+
+    view.printSelection(List.of(a, b));
+
+    // The print area holds the print title plus one sheet per challenge.
+    Div printArea = _get(view, Div.class, spec -> spec.withId("campaign-card-print-area"));
+    List<Element> children = printArea.getElement().getChildren().toList();
+    assertThat(children).hasSize(3); // print title + one sheet per challenge
+    assertThat(children.getFirst().getAttribute("id")).isEqualTo("campaign-card-print-title");
+    assertThat(
+            children.stream()
+                .skip(1)
+                .allMatch(c -> "challenge-print-page".equals(c.getAttribute("class"))))
+        .isTrue();
+    assertThat(textOf(printArea)).contains("First Challenge").contains("Second Challenge");
+  }
+
+  @Test
+  @DisplayName("printSelection with an empty list is a no-op")
+  void printSelection_emptyList_noOp() {
+    when(securityUtils.isAdmin()).thenReturn(true);
+    ChallengeListView view = buildView(List.of(), List.of());
+
+    view.printSelection(List.of());
+
+    // No print area is attached when there is nothing to print.
+    assertThat(
+            view.getChildren()
+                .anyMatch(
+                    ch -> "campaign-card-print-area".equals(ch.getElement().getAttribute("id"))))
+        .isFalse();
   }
 }
