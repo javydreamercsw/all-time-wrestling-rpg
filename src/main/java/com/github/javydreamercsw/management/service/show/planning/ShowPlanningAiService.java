@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -101,6 +102,8 @@ public class ShowPlanningAiService {
     }
     ProposedShow proposedShow = planShowWithAi(context);
     dropPromoCooldownProposals(proposedShow, context);
+    dropHolderPromoProposals(proposedShow, context);
+    dropDuplicateMatchBookings(proposedShow);
     applyScriptedBeats(proposedShow, context);
     applyTournamentSlots(proposedShow, context);
     applyBriefcaseProposals(proposedShow, context);
@@ -172,6 +175,108 @@ public class ShowPlanningAiService {
         segment.getTeams().stream().flatMap(List::stream).collect(Collectors.toSet());
     return rowNames.contains(rivalry.getParticipants().get(0))
         && rowNames.contains(rivalry.getParticipants().get(1));
+  }
+
+  /**
+   * Deterministic briefcase-holder promo guard (ATW-eqo0, extending ATW-u1hr): prompts are advisory
+   * — the AI keeps funneling held-briefcase holders into Promos ("hypes up his impending cash-in")
+   * instead of building the program with matches. Drop AI-proposed Promo rows naming a current
+   * holder, mirroring the cooldown drop pass. Runs BEFORE the deterministic passes so
+   * booker-mandated, tournament, and briefcase rows are never touched — and so the briefcase pass's
+   * champion-on-card check sees the match rows the AI must book instead.
+   */
+  private void dropHolderPromoProposals(
+      @NonNull final ProposedShow proposedShow, @NonNull final ShowPlanningContextDTO context) {
+    Set<String> holders = holderNamesOf(context);
+    if (holders.isEmpty() || proposedShow.getSegments().isEmpty()) {
+      return;
+    }
+    List<ProposedSegment> kept = new ArrayList<>();
+    int dropped = 0;
+    for (ProposedSegment segment : proposedShow.getSegments()) {
+      Set<String> rowNames = rowNamesOf(segment);
+      boolean holderPromo = isPromoRow(segment) && rowNames.stream().anyMatch(holders::contains);
+      if (holderPromo) {
+        dropped++;
+        log.warn(
+            "Dropped AI-proposed Promo naming briefcase holder(s) {} — a holder builds toward"
+                + " the cash-in with matches, not another talking segment (ATW-u1hr)",
+            rowNames.stream().filter(holders::contains).collect(Collectors.joining(", ")));
+      } else {
+        kept.add(segment);
+      }
+    }
+    if (dropped > 0) {
+      proposedShow.setSegments(kept);
+    }
+  }
+
+  /** Held-briefcase holder names parsed from the context's "holder — case" lines. */
+  private Set<String> holderNamesOf(ShowPlanningContextDTO context) {
+    if (context.getHeldBriefcases() == null) {
+      return Set.of();
+    }
+    return context.getHeldBriefcases().stream()
+        .filter(line -> line != null && line.contains("—"))
+        .map(line -> line.substring(0, line.indexOf('—')).trim())
+        .filter(name -> !name.isEmpty())
+        .collect(Collectors.toSet());
+  }
+
+  /** Participant names on a proposed row, null-safe and blank-free. */
+  private Set<String> rowNamesOf(ProposedSegment segment) {
+    if (segment.getTeams() == null) {
+      return Set.of();
+    }
+    return segment.getTeams().stream()
+        .filter(Objects::nonNull)
+        .flatMap(List::stream)
+        .filter(name -> name != null && !name.isBlank())
+        .map(String::trim)
+        .collect(Collectors.toSet());
+  }
+
+  /**
+   * Deterministic one-match-per-day guard (ATW-eqo0): prompts are advisory — the AI double-books
+   * wrestlers across match rows even with 30+ available names, sometimes narrating the double duty
+   * in the segment description itself. A wrestler may appear in at most ONE match (non-promo row)
+   * per card; the first match row claiming them wins and later overlapping match rows are dropped
+   * whole (a match missing a side is unsalvageable). Promos and backstage segments never count —
+   * the prompt's calendar rule only restricts matches. Runs BEFORE the deterministic passes so
+   * scripted beats, tournament slots, and briefcase rows are never touched.
+   */
+  private void dropDuplicateMatchBookings(@NonNull final ProposedShow proposedShow) {
+    if (proposedShow.getSegments().isEmpty()) {
+      return;
+    }
+    Set<String> bookedWrestlers = new HashSet<>();
+    List<ProposedSegment> kept = new ArrayList<>();
+    int dropped = 0;
+    for (ProposedSegment segment : proposedShow.getSegments()) {
+      if (isPromoRow(segment)) {
+        kept.add(segment);
+        continue;
+      }
+      Set<String> rowNames = rowNamesOf(segment);
+      // Case-insensitive: the AI capitalizes inconsistently across rows.
+      Set<String> claimed =
+          rowNames.stream().map(name -> name.toLowerCase(Locale.ROOT)).collect(Collectors.toSet());
+      List<String> alreadyBooked =
+          claimed.stream().filter(bookedWrestlers::contains).collect(Collectors.toList());
+      if (alreadyBooked.isEmpty()) {
+        bookedWrestlers.addAll(claimed);
+        kept.add(segment);
+      } else {
+        dropped++;
+        log.warn(
+            "Dropped AI-proposed match re-booking {} — a wrestler may appear in only one match"
+                + " per card (ATW-eqo0)",
+            String.join(", ", alreadyBooked));
+      }
+    }
+    if (dropped > 0) {
+      proposedShow.setSegments(kept);
+    }
   }
 
   /**
