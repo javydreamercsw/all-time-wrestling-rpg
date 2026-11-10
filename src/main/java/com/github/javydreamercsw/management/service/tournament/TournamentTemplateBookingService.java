@@ -23,6 +23,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
 import com.github.javydreamercsw.management.domain.team.Team;
+import com.github.javydreamercsw.management.domain.team.TeamMember;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
@@ -34,9 +35,11 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRoundStatus;
 import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.segment.NPCSegmentResolutionService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import jakarta.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -85,13 +88,17 @@ public class TournamentTemplateBookingService {
       final TournamentPacingService pacingService,
       final SegmentTypeService segmentTypeService,
       final ShowService showService,
-      final TournamentRepository tournamentRepository) {
+      final TournamentRepository tournamentRepository,
+      final WrestlerService wrestlerService,
+      final GameSettingService gameSettingService) {
     this.tournamentService = tournamentService;
     this.segmentResolutionService = segmentResolutionService;
     this.pacingService = pacingService;
     this.segmentTypeService = segmentTypeService;
     this.showService = showService;
     this.tournamentRepository = tournamentRepository;
+    this.wrestlerService = wrestlerService;
+    this.gameSettingService = gameSettingService;
     this.resolver =
         new BracketMatchResolver(tournamentService, segmentResolutionService, segmentTypeService);
   }
@@ -102,6 +109,8 @@ public class TournamentTemplateBookingService {
   private final SegmentTypeService segmentTypeService;
   private final ShowService showService;
   private final TournamentRepository tournamentRepository;
+  private final WrestlerService wrestlerService;
+  private final GameSettingService gameSettingService;
 
   /**
    * Shared booking core (open-match scan, segment creation, winner mapping) — extracted so the
@@ -1061,6 +1070,12 @@ public class TournamentTemplateBookingService {
       return Optional.empty();
     }
     TournamentMatch match = openMatchOpt.get();
+    // ATW-1nyv: an unavailable entrant defers even the payoff — booking an injured finalist
+    // would stall adjudication worse than a delayed title match. The empty return falls back
+    // to AI-proposed participants for this PLE.
+    if (!matchEntrantsAvailable(match, show)) {
+      return Optional.empty();
+    }
     boolean isFinal = isBracketFinal(tournament, match);
     TournamentPacingService.PayoffKind payoffKind = pacingService.payoffKindOf(tournament);
 
@@ -1155,6 +1170,18 @@ public class TournamentTemplateBookingService {
     // the showcase books with the teamSize-resolved type (tag_team/trios) — funneled through
     // segmentTeamOf/resolveSegment so team entries never hit the solo-wrestler @NonNull path.
     SegmentType showcaseType = teamSegmentTypeOf(tournament);
+    // ATW-1nyv: an unavailable champion or tournament winner defers the showcase — the payoff
+    // consumes the pairing only when actually booked, so a deferred showcase retries next PLE.
+    Long universeId = show.getUniverse() != null ? show.getUniverse().getId() : null;
+    if (universeId != null
+        && !showcaseWrestlersAvailable(tournament, winner, champions, universeId)) {
+      log.info(
+          "Champion showcase for '{}' deferred on '{}': an unavailable champion or tournament"
+              + " winner (ATW-1nyv)",
+          tournament.getName(),
+          show.getName());
+      return Optional.empty();
+    }
     // titleOnTheLine=true inside the funnel flags the segment and attaches the linked title.
     Segment segment =
         resolveSegment(
@@ -1340,6 +1367,12 @@ public class TournamentTemplateBookingService {
     }
 
     TournamentMatch match = openMatchOpt.get();
+    // ATW-1nyv: an unavailable entrant (injury / below rest threshold) defers the round — the
+    // empty return reuses the established "fall back to AI participants" escape hatch, so the
+    // show still books and the bracket waits for the wrestler's return instead of stalling.
+    if (!matchEntrantsAvailable(match, show)) {
+      return Optional.empty();
+    }
     // Stipulation precedence: round fixedRule → row rule → tournament allowed-rules pool → the
     // format's default round rule (e.g. Free-for-All qualifiers are No-DQ by convention).
     String stipulation =
@@ -1371,6 +1404,78 @@ public class TournamentTemplateBookingService {
    */
   private Optional<TournamentMatch> nextBookableMatch(final Tournament tournament) {
     return resolver.nextBookableMatch(tournament);
+  }
+
+  /**
+   * Whether every wrestler on one side of {@code match} is available for this show (ATW-1nyv). Team
+   * entries check every member; a solo entry checks the solo wrestler. Wrestlers without an id
+   * (spec placeholders) never block — only persisted entrants can be injured.
+   */
+  private boolean matchEntrantsAvailable(final TournamentMatch match, final Show show) {
+    Long universeId = show.getUniverse() != null ? show.getUniverse().getId() : null;
+    if (universeId == null) {
+      // No universe → availability is unresolvable; the legacy behavior (book regardless) stands.
+      return true;
+    }
+    int threshold = gameSettingService.getConditionRestThreshold();
+    for (TournamentEntry entrant : match.entrants()) {
+      if (entrant == null) {
+        continue;
+      }
+      List<Wrestler> side =
+          entrant.getTeam() != null
+              ? entrant.getTeam().getMembers().stream().map(TeamMember::getWrestler).toList()
+              : entrant.getWrestler() != null ? List.of(entrant.getWrestler()) : List.of();
+      for (Wrestler w : side) {
+        if (w == null
+            || w.getId() == null
+            || !wrestlerService.isAvailableForBooking(w.getId(), universeId, threshold)) {
+          log.info(
+              "Tournament round {} deferred on show '{}': entrant '{}' includes an unavailable"
+                  + " wrestler (ATW-1nyv)",
+              match.getRound() != null ? match.getRound().getRoundNumber() : "?",
+              show.getName(),
+              entrant.entrantName());
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Whether every wrestler in the champion showcase — the reigning champions (the solo primary or
+   * the team-members subset the showcase books) and the tournament winner's side — is available for
+   * this show (ATW-1nyv).
+   */
+  private boolean showcaseWrestlersAvailable(
+      Tournament tournament, TournamentEntry winner, List<Wrestler> champions, Long universeId) {
+    int threshold = gameSettingService.getConditionRestThreshold();
+    List<Wrestler> championSide =
+        tournament.getTeamSize() != null
+            ? (champions.size() > tournament.getTeamSize().getMemberCount()
+                ? champions.subList(0, tournament.getTeamSize().getMemberCount())
+                : champions)
+            : champions.isEmpty() ? List.of() : List.of(champions.get(0));
+    List<Wrestler> winnerSide =
+        winner.getTeam() != null
+            ? winner.getTeam().getMembers().stream().map(TeamMember::getWrestler).toList()
+            : winner.getWrestler() != null ? List.of(winner.getWrestler()) : List.of();
+    for (Wrestler w : championSide) {
+      if (w == null
+          || w.getId() == null
+          || !wrestlerService.isAvailableForBooking(w.getId(), universeId, threshold)) {
+        return false;
+      }
+    }
+    for (Wrestler w : winnerSide) {
+      if (w == null
+          || w.getId() == null
+          || !wrestlerService.isAvailableForBooking(w.getId(), universeId, threshold)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /**

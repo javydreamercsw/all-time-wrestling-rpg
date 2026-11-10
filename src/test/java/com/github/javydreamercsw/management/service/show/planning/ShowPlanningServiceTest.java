@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
@@ -146,6 +147,9 @@ class ShowPlanningServiceTest {
     lenient()
         .when(injuryService.getActiveInjuriesForWrestler(anyLong(), anyLong()))
         .thenReturn(List.of());
+    // Canonical availability predicate (ATW-1nyv): everyone available unless a test stubs
+    // an injury/condition to pull a specific wrestler out of the bookable set.
+    lenient().when(wrestlerService.isAvailableForBooking(any(), any(), anyInt())).thenReturn(true);
     WrestlerState healthyState = new WrestlerState();
     healthyState.setPhysicalCondition(100);
     lenient().when(wrestlerService.getOrCreateState(anyLong(), anyLong())).thenReturn(healthyState);
@@ -793,6 +797,9 @@ class ShowPlanningServiceTest {
     lenient()
         .when(injuryService.getActiveInjuriesForWrestler(anyLong(), anyLong()))
         .thenReturn(List.of(activeInjury));
+    // The canonical predicate (ATW-1nyv) is what the planning service consults now.
+    when(wrestlerService.isAvailableForBooking(eq(activeWrestler.getId()), eq(1L), anyInt()))
+        .thenReturn(false);
     when(mapper.toDto(any(ShowPlanningContext.class))).thenReturn(new ShowPlanningContextDTO());
 
     ShowPlanningContextDTO result = showPlanningService.getShowPlanningContext(show);
@@ -814,6 +821,8 @@ class ShowPlanningServiceTest {
         .thenReturn(List.of(activeWrestler));
     when(injuryService.getActiveInjuriesForWrestler(activeWrestler.getId(), 1L))
         .thenReturn(List.of(activeInjury));
+    when(wrestlerService.isAvailableForBooking(eq(activeWrestler.getId()), eq(1L), anyInt()))
+        .thenReturn(false);
     ShowPlanningContextDTO dto = new ShowPlanningContextDTO();
     when(mapper.toDto(any(ShowPlanningContext.class))).thenReturn(dto);
 
@@ -850,6 +859,8 @@ class ShowPlanningServiceTest {
         .thenReturn(List.of(activeWrestler, healthy, injured)); // pool includes the injured side
     when(injuryService.getActiveInjuriesForWrestler(injured.getId(), 1L))
         .thenReturn(List.of(activeInjury));
+    when(wrestlerService.isAvailableForBooking(eq(injured.getId()), eq(1L), anyInt()))
+        .thenReturn(false);
     when(rivalryService.getActiveRivalries()).thenReturn(List.of(rivalry));
     when(segmentRepository.findBySegmentDateBetween(any(), any())).thenReturn(List.of());
     when(titleService.getActiveTitles()).thenReturn(List.of());
@@ -951,9 +962,13 @@ class ShowPlanningServiceTest {
     activeInjury.setHealedDate(null);
     when(injuryService.getActiveInjuriesForWrestler(hurtA.getId(), 1L))
         .thenReturn(List.of(activeInjury));
+    when(wrestlerService.isAvailableForBooking(eq(hurtA.getId()), eq(1L), anyInt()))
+        .thenReturn(false);
     WrestlerState lowCondition = new WrestlerState();
     lowCondition.setPhysicalCondition(10);
     when(wrestlerService.getOrCreateState(tiredB.getId(), 1L)).thenReturn(lowCondition);
+    when(wrestlerService.isAvailableForBooking(eq(tiredB.getId()), eq(1L), anyInt()))
+        .thenReturn(false);
     when(gameSettingService.getConditionRestThreshold()).thenReturn(50);
 
     List<String> warnings = showPlanningService.injuredParticipantWarnings(show, List.of(seg));
@@ -1002,6 +1017,10 @@ class ShowPlanningServiceTest {
         .thenReturn(List.of(activeInjury));
     when(injuryService.getActiveInjuriesForWrestler(outB.getId(), 1L))
         .thenReturn(List.of(activeInjury));
+    when(wrestlerService.isAvailableForBooking(eq(outA.getId()), eq(1L), anyInt()))
+        .thenReturn(false);
+    when(wrestlerService.isAvailableForBooking(eq(outB.getId()), eq(1L), anyInt()))
+        .thenReturn(false);
     when(rivalryService.getActiveRivalries()).thenReturn(List.of(injuredRivalry));
 
     CardValidationResult result =
@@ -1031,6 +1050,8 @@ class ShowPlanningServiceTest {
     activeInjury.setHealedDate(null);
     when(injuryService.getActiveInjuriesForWrestler(out.getId(), 1L))
         .thenReturn(List.of(activeInjury));
+    when(wrestlerService.isAvailableForBooking(eq(out.getId()), eq(1L), anyInt()))
+        .thenReturn(false);
     when(rivalryService.getActiveRivalries()).thenReturn(List.of(rivalry));
 
     CardValidationResult result = showPlanningService.validateCard(show, new ArrayList<>());

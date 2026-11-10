@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.domain.title.*;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -73,6 +74,7 @@ public class BriefcaseCashInAdvisorService {
   private final RivalryRepository rivalryRepository;
   private final WrestlerRepository wrestlerRepository;
   private final GameSettingService gameSettingService;
+  private final WrestlerService wrestlerService;
   private final Clock clock;
 
   /**
@@ -181,6 +183,17 @@ public class BriefcaseCashInAdvisorService {
         || Boolean.TRUE.equals(holder.getIsPlayer())
         || holder.getId() == null
         || !Boolean.TRUE.equals(holder.getActive())) {
+      return false;
+    }
+    // ATW-1nyv: an unavailable holder (active injury or below the rest threshold) cannot cash
+    // in — the case waits for their return instead of surfacing a proposal the booker would
+    // have to veto. Same canonical predicate every booking layer consults. Null universe on
+    // the opportunity (legacy/test rows) skips the check rather than blocking the holder.
+    if (opportunity.getUniverse() != null
+        && !wrestlerService.isAvailableForBooking(
+            holder.getId(),
+            opportunity.getUniverse().getId(),
+            gameSettingService.getConditionRestThreshold())) {
       return false;
     }
     // Cooldown: a recent booker decline suppresses re-proposals, except when urgency is in the

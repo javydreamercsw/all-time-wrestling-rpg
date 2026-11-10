@@ -96,6 +96,9 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
   void setupUniverse() {
     universe = mock(Universe.class);
     when(universe.getId()).thenReturn(1L);
+    // Canonical availability (ATW-1nyv): the mock otherwise returns false (unavailable) and
+    // would withhold every rivalry/championship from the planning context.
+    when(wrestlerService.isAvailableForBooking(any(), any(), anyInt())).thenReturn(true);
   }
 
   @Test

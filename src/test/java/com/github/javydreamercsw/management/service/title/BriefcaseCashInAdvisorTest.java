@@ -17,6 +17,9 @@
 package com.github.javydreamercsw.management.service.title;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
@@ -27,9 +30,11 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
 import com.github.javydreamercsw.management.domain.title.*;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -67,6 +72,7 @@ class BriefcaseCashInAdvisorTest {
   @Mock private WrestlerRepository wrestlerRepository;
 
   @Mock private GameSettingService gameSettingService;
+  @Mock private WrestlerService wrestlerService;
 
   private BriefcaseCashInAdvisorService advisor;
 
@@ -91,6 +97,7 @@ class BriefcaseCashInAdvisorTest {
             rivalryRepository,
             wrestlerRepository,
             gameSettingService,
+            wrestlerService,
             fixedClock);
 
     show = new Show();
@@ -117,6 +124,9 @@ class BriefcaseCashInAdvisorTest {
 
     lenient().when(gameSettingService.isNpcBriefcaseCashInEnabled()).thenReturn(true);
     lenient().when(gameSettingService.getCurrentGameDate()).thenReturn(GAME_DATE);
+    // Canonical availability (ATW-1nyv): the holder is bookable unless a test pulls them out.
+    lenient().when(wrestlerService.isAvailableForBooking(any(), any(), anyInt())).thenReturn(true);
+    lenient().when(gameSettingService.getConditionRestThreshold()).thenReturn(0);
     lenient()
         .when(opportunityRepository.findByStatus(TitleOpportunityStatus.HELD))
         .thenReturn(List.of(opportunity));
@@ -284,6 +294,39 @@ class BriefcaseCashInAdvisorTest {
   void propose_excludesInactiveHolder() {
     holder.setActive(false);
     assertThat(advisor.proposalsFor(show)).isEmpty();
+  }
+
+  @Test
+  @DisplayName("propose: excludes an unavailable holder (injury / low condition — ATW-1nyv)")
+  void propose_excludesUnavailableHolder() {
+    // An injured holder cannot cash in — the proposal waits for their return. The gate consults
+    // the canonical availability predicate through the opportunity's universe.
+    Universe universe = new Universe();
+    universe.setId(1L);
+    opportunity.setUniverse(universe);
+    lenient()
+        .when(wrestlerService.isAvailableForBooking(eq(holder.getId()), eq(1L), anyInt()))
+        .thenReturn(false);
+    assertThat(advisor.proposalsFor(show)).isEmpty();
+  }
+
+  @Test
+  @DisplayName("propose: opportunity without a universe skips the availability gate")
+  void propose_nullUniverseOpportunity_skipsAvailabilityGate() {
+    // Legacy/test rows without a universe never block the holder on availability. The hot
+    // fixture (ICON title, warm rivalry, stale reign, near expiry) clears every other gate.
+    title.setTier(WrestlerTier.ICON);
+    opportunity.setExpiryDate(GAME_DATE.plusDays(40));
+    Rivalry rivalry = new Rivalry();
+    rivalry.setHeat(60);
+    lenient()
+        .when(rivalryRepository.findActiveRivalryBetween(holder, champion))
+        .thenReturn(Optional.of(rivalry));
+    lenient()
+        .when(segmentRepository.findByTitle(title))
+        .thenReturn(List.of(segmentDefendedOn(GAME_DATE.minusDays(21))));
+    opportunity.setUniverse(null);
+    assertThat(advisor.proposalsFor(show)).isNotEmpty();
   }
 
   @Test

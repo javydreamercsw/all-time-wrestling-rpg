@@ -1664,13 +1664,7 @@ public class ShowPlanningService {
 
   private boolean isUnavailable(
       final Wrestler wrestler, final Long universeId, final int conditionThreshold) {
-    // Active injuries only — a healed injury is history and must not block availability.
-    if (!injuryService.getActiveInjuriesForWrestler(wrestler.getId(), universeId).isEmpty()) {
-      return true;
-    }
-    // A missing state (no condition data yet) cannot be judged below-threshold — treat as
-    // available rather than crashing or silently benching an untracked wrestler.
-    WrestlerState state = wrestlerService.getOrCreateState(wrestler.getId(), universeId);
-    return state != null && state.getPhysicalCondition() < conditionThreshold;
+    // Canonical predicate lives on WrestlerService (ATW-1nyv) so every booking layer agrees.
+    return !wrestlerService.isAvailableForBooking(wrestler.getId(), universeId, conditionThreshold);
   }
 }
