@@ -29,12 +29,14 @@ import com.github.javydreamercsw.management.service.HolidayService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.planning.dto.FeudScriptBeatDTO;
+import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningChampionshipDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRivalryDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRosterEntryDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningSegmentDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.TournamentSlotPreviewDTO;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -816,5 +818,65 @@ class ShowPlanningPromptBuilderTest {
     String prompt = builder.build(ctx);
 
     assertFalse(prompt.contains("Trophy Honors"));
+  }
+
+  // ── Narration prompt championship pins (ATW-wbch field bug: narrator crowned Johnny All
+  // Time champion while Junkyard Dog holds the belt) ──────────────────────────────
+
+  private ProposedSegment matchRow(String a, String b) {
+    ProposedSegment segment = new ProposedSegment();
+    segment.setType("One on One");
+    segment.setTeams(
+        new ArrayList<>(List.of(new ArrayList<>(List.of(a)), new ArrayList<>(List.of(b)))));
+    return segment;
+  }
+
+  private ShowPlanningContextDTO narrationContext() {
+    ShowPlanningContextDTO context = contextWithTemplate(2, 1);
+    ShowPlanningChampionshipDTO title = new ShowPlanningChampionshipDTO();
+    title.setChampionshipName("ATW Intertemporal");
+    title.setTitleId(42L);
+    title.setChampionName("Junkyard Dog");
+    title.setDaysSinceLastDefense(20L);
+    context.setChampionships(new ArrayList<>(List.of(title)));
+    return context;
+  }
+
+  @Test
+  void narrationPrompt_nonTitleRowWithChampion_labelsChampionAndNotOnTheLine() {
+    // JYD appears in a NON-title match: the row itself must carry his championship fact and
+    // state the title is not on the line — a weak local model can then never crown his
+    // opponent instead.
+    ShowPlanningContextDTO context = narrationContext();
+
+    String prompt =
+        builder.buildNarrationPrompt(context, List.of(matchRow("Junkyard Dog", "Johnny All Time")));
+
+    assertTrue(
+        prompt.contains("Junkyard Dog is the reigning ATW Intertemporal champion"),
+        "Champion must be labeled on the row itself");
+    assertTrue(
+        prompt.contains("NOT a title match"),
+        "Non-defense rows must say the title isn't on the line");
+    assertFalse(
+        prompt.contains("Johnny All Time is the reigning"), "The opponent must never be crowned");
+  }
+
+  @Test
+  void narrationPrompt_titleDefenseRow_statesChampionExclusively() {
+    ShowPlanningContextDTO context = narrationContext();
+    ProposedSegment defense = matchRow("Junkyard Dog", "Kamala");
+    defense.setIsTitleSegment(true);
+    defense.setTitleId(42L);
+
+    String prompt = builder.buildNarrationPrompt(context, List.of(defense));
+
+    assertTrue(
+        prompt.contains("THIS IS A TITLE DEFENSE: ATW Intertemporal"),
+        "Defense rows must carry the championship fact inline");
+    assertTrue(
+        prompt.contains("ONLY Junkyard Dog may be called champion"),
+        "The defense must pin the championship to the real champion");
+    assertFalse(prompt.contains("Kamala is the reigning"), "The challenger must never be crowned");
   }
 }

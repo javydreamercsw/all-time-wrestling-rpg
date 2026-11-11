@@ -666,6 +666,14 @@ public class ShowPlanningPromptBuilder {
         .append("\n\n");
 
     prompt.append("THE FIXED CARD (narrate these segments in order):\n");
+    // Championship facts by wrestler name — champions are labeled ON THE ROW itself so even a
+    // weak model cannot crown the wrong wrestler (the "Champion Johnny All Time" bug).
+    Map<String, String> championByWrestler = new HashMap<>();
+    if (context.getChampionships() != null) {
+      context.getChampionships().stream()
+          .filter(c -> c.getChampionName() != null && !c.getChampionName().isBlank())
+          .forEach(c -> championByWrestler.put(c.getChampionName(), c.getChampionshipName()));
+    }
     for (int i = 0; i < fixedSegments.size(); i++) {
       var segment = fixedSegments.get(i);
       prompt.append(i + 1).append(". Type: ").append(segment.getType());
@@ -680,6 +688,43 @@ public class ShowPlanningPromptBuilder {
                 .collect(Collectors.joining(" vs ")));
       }
       prompt.append("\n");
+      // Title-defense rows carry their championship fact inline; every other row that includes
+      // a reigning champion is labeled so the narrator never assigns the title to the opponent.
+      boolean isDefense =
+          Boolean.TRUE.equals(segment.getIsTitleSegment()) && segment.getTitleId() != null;
+      if (isDefense && context.getChampionships() != null) {
+        context.getChampionships().stream()
+            .filter(c -> segment.getTitleId().equals(c.getTitleId()))
+            .findFirst()
+            .ifPresent(
+                title ->
+                    prompt
+                        .append("   THIS IS A TITLE DEFENSE: ")
+                        .append(sanitize(title.getChampionshipName()))
+                        .append(" — the champion is ")
+                        .append(sanitize(title.getChampionName()))
+                        .append(" and ONLY ")
+                        .append(sanitize(title.getChampionName()))
+                        .append(" may be called champion in this segment.\n"));
+      }
+      if (segment.getTeams() != null) {
+        String titleNote =
+            isDefense ? "" : " (this segment is NOT a title match — the title is not on the line)";
+        segment.getTeams().stream()
+            .flatMap(List::stream)
+            .filter(championByWrestler::containsKey)
+            .distinct()
+            .forEach(
+                champion ->
+                    prompt
+                        .append("   NOTE: ")
+                        .append(sanitize(champion))
+                        .append(" is the reigning ")
+                        .append(sanitize(championByWrestler.get(champion)))
+                        .append(" champion")
+                        .append(titleNote)
+                        .append("\n"));
+      }
       if (segment.getSummary() != null && !segment.getSummary().isBlank()) {
         prompt.append("   Context: ").append(sanitize(segment.getSummary())).append("\n");
       }
