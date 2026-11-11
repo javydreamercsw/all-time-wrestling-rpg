@@ -454,6 +454,48 @@ class LocalShowPlannerTest {
   }
 
   @Test
+  void plan_championshipDefense_rankedContenderBeatsRosterOrder_andChampionsExcluded() {
+    // THE FIELD BUG (2026-11-11): the Intertemporal defense booked Junkyard Dog against André
+    // the Giant — the ATW WORLD champion — because the challenger was "first idle male in
+    // roster order". Rankings must drive the pick, and other titles' champions must never
+    // challenge on a weekly (champion-vs-champion is PLE material).
+    ShowPlanningContextDTO context = context();
+    ShowPlanningChampionshipDTO intertemporal = new ShowPlanningChampionshipDTO();
+    intertemporal.setChampionshipName("ATW Intertemporal");
+    intertemporal.setTitleId(5L);
+    intertemporal.setChampionName("Junkyard Dog");
+    intertemporal.setDaysSinceLastDefense(33L);
+    intertemporal.setDefenseFrequencyType(DefenseFrequencyType.BI_WEEKLY);
+    // Rankings say OMZ first, Rob Van Dam second — roster order would say André first.
+    intertemporal.setRankedContenderNames(List.of("OMZ", "Rob Van Dam"));
+    ShowPlanningChampionshipDTO world = new ShowPlanningChampionshipDTO();
+    world.setChampionshipName("ATW World");
+    world.setTitleId(1L);
+    world.setChampionName("André the Giant");
+    world.setDaysSinceLastDefense(5L);
+    world.setDefenseFrequencyType(DefenseFrequencyType.PLE);
+    context.setChampionships(new ArrayList<>(List.of(intertemporal, world)));
+
+    List<ProposedSegment> segments = planner.plan(context, 5, 2, Set.of());
+
+    ProposedSegment defense =
+        segments.stream()
+            .filter(s -> Long.valueOf(5L).equals(s.getTitleId()))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("The Intertemporal must defend"));
+    assertTrue(
+        participantsOf(defense).contains("OMZ"),
+        "The TOP RANKED contender gets the shot, got: " + participantsOf(defense));
+    assertFalse(
+        segments.stream()
+            .anyMatch(
+                s ->
+                    !Long.valueOf(1L).equals(s.getTitleId())
+                        && participantsOf(s).contains("André the Giant")),
+        "The World champion appears only in his own title's row (never a challenger elsewhere)");
+  }
+
+  @Test
   void applyHeatBasedStipulations_highHeatMatchesGetHighHeatRules() {
     // Owner requirement: stipulations come from the match-rules configuration, driven by heat —
     // no Ollama required. Heat ≥ 30 draws requiresHighHeat rules from the catalog; approval

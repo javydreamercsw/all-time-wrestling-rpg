@@ -400,6 +400,15 @@ public class LocalShowPlanner {
               b.getDaysSinceLastDefense() == null ? 0 : b.getDaysSinceLastDefense(),
               a.getDaysSinceLastDefense() == null ? 0 : a.getDaysSinceLastDefense());
         });
+    // Champions of OTHER titles never challenge here: champion-vs-champion is a PLE main-event
+    // caliber match (field bug: the Intertemporal defense consumed the World champion André,
+    // blocking his own World defense on the same card).
+    Set<String> allChampions =
+        titles.stream()
+            .map(ShowPlanningChampionshipDTO::getChampionName)
+            .filter(name -> name != null && !name.isBlank())
+            .map(WeeklyParticipationTracker::normalize)
+            .collect(Collectors.toSet());
     for (ShowPlanningChampionshipDTO title : titles) {
       if (segments.stream().filter(LocalShowPlanner::isMatchRow).count() >= freeMatches) {
         break;
@@ -415,6 +424,17 @@ public class LocalShowPlanner {
         continue;
       }
       String challenger = pickChallenger(title, champion, idlePool, rosterSet, genderByName);
+      if (challenger != null
+          && allChampions.contains(WeeklyParticipationTracker.normalize(challenger))) {
+        log.debug(
+            "Challenger '{}' skipped for '{}': champion of another title — champion-vs-champion"
+                + " is PLE material",
+            challenger,
+            title.getChampionshipName());
+        challenger =
+            pickChallengerExcludingChampions(
+                title, champion, idlePool, rosterSet, genderByName, allChampions);
+      }
       if (challenger == null
           || !isMatchAvailable(champion, matchBooked, bookedThisWeek, rosterSet)
           || !isMatchAvailable(challenger, matchBooked, bookedThisWeek, rosterSet)) {
@@ -449,9 +469,10 @@ public class LocalShowPlanner {
   }
 
   /**
-   * Challenger for a defense: the title's designated contender when bookable, else the top idle
-   * wrestler of the champion's gender (idle pool order — deterministic). Same-gender when
-   * intergender is disabled; unknown genders pass.
+   * Challenger for a defense, in priority order: the title's designated contender when bookable,
+   * then the top RANKED bookable contender ({@code rankedContenderNames} — RankingService's
+   * tier/cooldown/fans doctrine), then the top idle wrestler of the champion's gender as a fallback
+   * when the rankings are empty. Same-gender when intergender is disabled; unknown genders pass.
    */
   private String pickChallenger(
       ShowPlanningChampionshipDTO title,
@@ -465,6 +486,19 @@ public class LocalShowPlanner {
         && rosterSet.contains(WeeklyParticipationTracker.normalize(contender))) {
       return contender.trim();
     }
+    // Ranked contenders — real rankings (fans, tier, cooldowns), not roster order.
+    for (String ranked : title.getRankedContenderNames()) {
+      String key = WeeklyParticipationTracker.normalize(ranked);
+      if (!rosterSet.contains(key) || WeeklyParticipationTracker.normalize(champion).equals(key)) {
+        continue;
+      }
+      String gender = genderByName.get(key);
+      if (championGenderBlocks(champion, gender, genderByName)) {
+        continue;
+      }
+      return ranked;
+    }
+    // Fallback: idle pool in roster order (hand-built contexts without rankings).
     String championGender = genderByName.get(WeeklyParticipationTracker.normalize(champion));
     for (String candidate : idlePool) {
       String key = WeeklyParticipationTracker.normalize(candidate);
@@ -476,7 +510,62 @@ public class LocalShowPlanner {
       }
       String gender = genderByName.get(key);
       if (championGender != null && !championGender.equals(gender)) {
-        continue; // same-gender gate (intergender flag is checked by the caller's availability)
+        continue; // same-gender gate
+      }
+      return candidate;
+    }
+    return null;
+  }
+
+  /** True when the candidate's gender differs from the champion's under the current policy. */
+  private boolean championGenderBlocks(
+      String champion, String candidateGender, Map<String, String> genderByName) {
+    // The intergender flag itself is enforced at pairing time by the caller; here only the
+    // same-gender preference for challenger selection applies.
+    String championGender = genderByName.get(WeeklyParticipationTracker.normalize(champion));
+    return championGender != null && !championGender.equals(candidateGender);
+  }
+
+  /**
+   * Re-pick with the other-titles' champions excluded from every tier of the search (designated
+   * contender through ranked list through idle fallback).
+   */
+  private String pickChallengerExcludingChampions(
+      ShowPlanningChampionshipDTO title,
+      String champion,
+      List<String> idlePool,
+      Set<String> rosterSet,
+      Map<String, String> genderByName,
+      Set<String> excludedChampions) {
+    String contender = title.getContenderName();
+    if (contender != null
+        && !contender.isBlank()
+        && !excludedChampions.contains(WeeklyParticipationTracker.normalize(contender))
+        && rosterSet.contains(WeeklyParticipationTracker.normalize(contender))) {
+      return contender.trim();
+    }
+    for (String ranked : title.getRankedContenderNames()) {
+      String key = WeeklyParticipationTracker.normalize(ranked);
+      if (!rosterSet.contains(key)
+          || excludedChampions.contains(key)
+          || WeeklyParticipationTracker.normalize(champion).equals(key)) {
+        continue;
+      }
+      if (championGenderBlocks(champion, genderByName.get(key), genderByName)) {
+        continue;
+      }
+      return ranked;
+    }
+    String championGender = genderByName.get(WeeklyParticipationTracker.normalize(champion));
+    for (String candidate : idlePool) {
+      String key = WeeklyParticipationTracker.normalize(candidate);
+      if (!rosterSet.contains(key)
+          || excludedChampions.contains(key)
+          || WeeklyParticipationTracker.normalize(champion).equals(key)) {
+        continue;
+      }
+      if (championGender != null && !championGender.equals(genderByName.get(key))) {
+        continue;
       }
       return candidate;
     }

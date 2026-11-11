@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.PromoType;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.FactionDTO;
+import com.github.javydreamercsw.management.service.ranking.RankingService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningChampionship;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningContext;
@@ -34,14 +35,18 @@ import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class ShowPlanningDtoMapper {
   private final ShowService showService;
+  private final RankingService rankingService;
 
-  public ShowPlanningDtoMapper(final ShowService showService) {
+  public ShowPlanningDtoMapper(final ShowService showService, final RankingService rankingService) {
     this.showService = showService;
+    this.rankingService = rankingService;
   }
 
   public ShowPlanningContextDTO toDto(@NonNull final ShowPlanningContext context) {
@@ -160,6 +165,28 @@ public class ShowPlanningDtoMapper {
           championship.getContenders().stream()
               .map(Wrestler::getName)
               .collect(Collectors.joining(" & ")));
+    }
+    // Real rankings (ATW-wbch field bug: challenger picks ignored rankings — the Intertemporal
+    // defense booked champion-vs-champion against the World champion from roster order). The
+    // ranking service encodes tier filters, champion removal, cooldowns, and fans ordering;
+    // top 5 is plenty for challenger selection.
+    try {
+      dto.setRankedContenderNames(
+          rankingService.getRankedContenders(championship.getTitle().getId()).stream()
+              .filter(
+                  ranked ->
+                      ranked
+                          instanceof
+                          com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO)
+              .map(
+                  ranked ->
+                      ((com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO) ranked)
+                          .getName())
+              .limit(5)
+              .toList());
+    } catch (Exception e) {
+      log.debug(
+          "Rankings unavailable for '{}': {}", championship.getTitle().getName(), e.getMessage());
     }
     dto.setDefenseFrequencyType(championship.getTitle().getEffectiveDefenseFrequencyType());
     dto.setDaysSinceLastDefense(championship.getDaysSinceLastDefense());
