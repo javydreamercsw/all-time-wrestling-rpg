@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.show.planning;
 
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
+import com.github.javydreamercsw.management.domain.title.DefenseFrequencyType;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningChampionshipDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
@@ -417,6 +418,26 @@ public class LocalShowPlanner {
           || title.getChampionName().isBlank()
           || title.getTitleId() == null) {
         continue; // vacant or unresolvable titles skip this pass
+      }
+      // Cadence doctrine: the defense frequency is a SCHEDULE, not a suggestion — a title only
+      // defends when it is DUE (daysSinceLastDefense ≥ cadence). And a PLE-cadence title
+      // defends on PLEs only, mirroring the "decisive match reserved for the PLE" doctrine.
+      // Defending every active title every card burned through cadences and stripped the
+      // champion-vs-champion variety the schedules exist to create.
+      if (!title.isOverdue()) {
+        log.debug(
+            "Title '{}' not due ({} day(s) of {} cadence) — no defense this card",
+            title.getChampionshipName(),
+            title.getDaysSinceLastDefense(),
+            title.getDefenseFrequencyType());
+        continue;
+      }
+      if (!context.isPremiumLiveEvent()
+          && title.getDefenseFrequencyType() == DefenseFrequencyType.PLE) {
+        log.debug(
+            "Title '{}' is PLE-cadence — reserves its defense for premium live events",
+            title.getChampionshipName());
+        continue;
       }
       String champion = title.getChampionName();
       // Multi-wrestler champions ("A & B") don't fit a one-side name — skip tag titles here.

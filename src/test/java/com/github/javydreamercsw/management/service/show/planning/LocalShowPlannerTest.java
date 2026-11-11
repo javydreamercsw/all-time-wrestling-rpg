@@ -404,6 +404,7 @@ class LocalShowPlannerTest {
     title.setChampionName("Junkyard Dog");
     title.setContenderName("Kamala");
     title.setDaysSinceLastDefense(20L);
+    title.setDefenseFrequencyType(DefenseFrequencyType.BI_WEEKLY); // 20 ≥ 14 → due
     context.setChampionships(new ArrayList<>(List.of(title)));
 
     List<ProposedSegment> segments = planner.plan(context, 5, 2, Set.of());
@@ -430,14 +431,14 @@ class LocalShowPlannerTest {
     overdue.setChampionName("Kurt Angle");
     overdue.setContenderName("Nick Aldis");
     overdue.setDaysSinceLastDefense(90L);
-    overdue.setDefenseFrequencyType(DefenseFrequencyType.PLE);
+    overdue.setDefenseFrequencyType(DefenseFrequencyType.BI_WEEKLY);
     ShowPlanningChampionshipDTO fresh = new ShowPlanningChampionshipDTO();
     fresh.setChampionshipName("Fresh Belt");
     fresh.setTitleId(11L);
     fresh.setChampionName("Randy Savage");
     fresh.setContenderName("OMZ");
     fresh.setDaysSinceLastDefense(3L);
-    fresh.setDefenseFrequencyType(DefenseFrequencyType.PLE);
+    fresh.setDefenseFrequencyType(DefenseFrequencyType.BI_WEEKLY);
     context.setChampionships(new ArrayList<>(List.of(fresh, overdue)));
 
     List<ProposedSegment> segments = planner.plan(context, 1, 0, Set.of());
@@ -486,13 +487,77 @@ class LocalShowPlannerTest {
     assertTrue(
         participantsOf(defense).contains("OMZ"),
         "The TOP RANKED contender gets the shot, got: " + participantsOf(defense));
+    // PLE-cadence World title never defends on a weekly; André is never a CHALLENGER for
+    // another title — but he MAY wrestle a non-title match (champions wrestle; the narration
+    // prompt's "title not on the line" note covers exactly this case).
     assertFalse(
+        segments.stream().anyMatch(s -> Long.valueOf(1L).equals(s.getTitleId())),
+        "PLE-cadence World title reserves its defense for PLEs — never defends on a weekly");
+    assertTrue(
         segments.stream()
-            .anyMatch(
+            .filter(s -> !Long.valueOf(5L).equals(s.getTitleId()))
+            .noneMatch(
                 s ->
-                    !Long.valueOf(1L).equals(s.getTitleId())
+                    Boolean.TRUE.equals(s.getIsTitleSegment())
                         && participantsOf(s).contains("André the Giant")),
-        "The World champion appears only in his own title's row (never a challenger elsewhere)");
+        "André never defends or challenges on another title's row");
+  }
+
+  @Test
+  void plan_championshipDefense_cadenceIsASchedule_notDueTitlesSkipTheCard() {
+    // Cadence doctrine (owner, 2026-11-11): the defense frequency is a SCHEDULE — a title only
+    // defends when due (daysSinceLastDefense ≥ cadence). Defending every active title every
+    // card burned through schedules and stripped champion-vs-champion variety.
+    ShowPlanningContextDTO context = context();
+    ShowPlanningChampionshipDTO notDue = new ShowPlanningChampionshipDTO();
+    notDue.setChampionshipName("Fresh Belt");
+    notDue.setTitleId(20L);
+    notDue.setChampionName("Randy Savage");
+    notDue.setContenderName("OMZ");
+    notDue.setDaysSinceLastDefense(3L); // 3 < 14
+    notDue.setDefenseFrequencyType(DefenseFrequencyType.BI_WEEKLY);
+    ShowPlanningChampionshipDTO due = new ShowPlanningChampionshipDTO();
+    due.setChampionshipName("Stale Belt");
+    due.setTitleId(21L);
+    due.setChampionName("Kurt Angle");
+    due.setContenderName("Nick Aldis");
+    due.setDaysSinceLastDefense(14L); // 14 ≥ 14 — due exactly at threshold
+    due.setDefenseFrequencyType(DefenseFrequencyType.BI_WEEKLY);
+    context.setChampionships(new ArrayList<>(List.of(notDue, due)));
+
+    List<ProposedSegment> segments = planner.plan(context, 5, 2, Set.of());
+
+    assertTrue(
+        segments.stream().noneMatch(s -> Long.valueOf(20L).equals(s.getTitleId())),
+        "A title 3 days into a 14-day cadence does NOT defend");
+    assertTrue(
+        segments.stream().anyMatch(s -> Long.valueOf(21L).equals(s.getTitleId())),
+        "A title AT its cadence threshold defends");
+  }
+
+  @Test
+  void plan_championshipDefense_pleCadenceTitle_reservesDefenseForPles() {
+    ShowPlanningContextDTO context = context();
+    context.setPremiumLiveEvent(false);
+    ShowPlanningChampionshipDTO world = new ShowPlanningChampionshipDTO();
+    world.setChampionshipName("ATW World");
+    world.setTitleId(1L);
+    world.setChampionName("André the Giant");
+    world.setContenderName("Kurt Angle");
+    world.setDaysSinceLastDefense(40L); // well past even a monthly cadence
+    world.setDefenseFrequencyType(DefenseFrequencyType.PLE);
+    context.setChampionships(new ArrayList<>(List.of(world)));
+
+    List<ProposedSegment> weeklySegments = planner.plan(context, 5, 2, Set.of());
+    assertTrue(
+        weeklySegments.stream().noneMatch(s -> Long.valueOf(1L).equals(s.getTitleId())),
+        "PLE-cadence title never defends on a weekly, however overdue");
+
+    context.setPremiumLiveEvent(true);
+    List<ProposedSegment> pleSegments = planner.plan(context, 5, 2, Set.of());
+    assertTrue(
+        pleSegments.stream().anyMatch(s -> Long.valueOf(1L).equals(s.getTitleId())),
+        "The SAME overdue PLE-cadence title defends on the PLE");
   }
 
   @Test
