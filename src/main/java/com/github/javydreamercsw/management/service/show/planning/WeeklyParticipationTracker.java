@@ -18,7 +18,7 @@ package com.github.javydreamercsw.management.service.show.planning;
 
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningSegmentDTO;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -32,15 +32,16 @@ import org.springframework.stereotype.Component;
  * no repository access, so the planner's fairness logic is deterministic and testable.
  *
  * <p>Counts are split match vs promo because the two budgets fill differently and the holder rule
- * ("build toward the cash-in with matches") needs the match side. "Booked this week" spans ALL
- * shows in the seven days before the show date — production runs multiple weeklies (Timeless +
- * Continuum), so a wrestler on Monday's card should not headline Tuesday's.
+ * ("build toward the cash-in with matches") needs the match side. "Booked this week" is
+ * <b>calendar-week</b> semantics (the ISO Monday–Sunday week containing the show date, computed
+ * with epoch-day math — no locale-sensitive week fields) and <b>match-only</b>: a rolling 7-day
+ * window would catch the SAME show's previous episode every week (a weekly cadence guarantees it)
+ * and block everyone permanently — the Continuum 2026-10-02 collapse (1 match of 7 slots); and
+ * talking segments are non-physical, so a promo never blocks a match. Multiple weeklies (Timeless +
+ * Continuum) share the calendar week, so a wrestler on Monday's card does not headline Friday's.
  */
 @Component
 public class WeeklyParticipationTracker {
-
-  /** The local window that defines "this week": the 7 days before the show date. */
-  static final int THIS_WEEK_DAYS = 7;
 
   /**
    * Participation snapshot per wrestler name (context casing preserved; tracker comparisons are
@@ -56,7 +57,8 @@ public class WeeklyParticipationTracker {
 
   /**
    * Counts every participant on every recent segment, split by whether the segment is a match
-   * (non-promo type). Segments dated within {@code showDate - 7d} set the this-week flag.
+   * (non-promo type). Match segments dated in the SAME calendar week as {@code showDate} (and not
+   * after the show date) set the this-week flag.
    *
    * @param recentSegments the context's cross-show recent segments (up to 21 days back)
    * @param showDate the date of the show being planned
@@ -67,16 +69,20 @@ public class WeeklyParticipationTracker {
     if (recentSegments == null) {
       return tally;
     }
-    Instant weekStart = showDate.minus(THIS_WEEK_DAYS, ChronoUnit.DAYS);
+    int showWeek = isoWeekIndex(showDate);
     for (ShowPlanningSegmentDTO segment : recentSegments) {
       if (segment == null || segment.getParticipants() == null) {
         continue;
       }
       boolean promo = isPromoSegment(segment);
-      boolean thisWeek =
-          segment.getSegmentDate() != null
-              && !segment.getSegmentDate().isBefore(weekStart)
-              && segment.getSegmentDate().isBefore(showDate.plus(1, ChronoUnit.DAYS));
+      // "Same week, excluding PLE": PLE matches never set the guard — the PLE is the payoff all
+      // weeklies build toward, and blocking on it would starve the week after every PLE.
+      boolean thisWeekMatch =
+          !promo
+              && !segment.isPremiumLiveEvent()
+              && segment.getSegmentDate() != null
+              && !segment.getSegmentDate().isAfter(showDate)
+              && isoWeekIndex(segment.getSegmentDate()) == showWeek;
       for (String name : segment.getParticipants()) {
         if (name == null || name.isBlank()) {
           continue;
@@ -88,7 +94,7 @@ public class WeeklyParticipationTracker {
             new Participation(
                 prior.matchCount() + (promo ? 0 : 1),
                 prior.promoCount() + (promo ? 1 : 0),
-                prior.bookedThisWeek() || thisWeek,
+                prior.bookedThisWeek() || thisWeekMatch,
                 laterOf(prior.lastAppearance(), segment.getSegmentDate())));
       }
     }
@@ -134,6 +140,17 @@ public class WeeklyParticipationTracker {
 
   static String normalize(String name) {
     return name.trim().toLowerCase();
+  }
+
+  /**
+   * Calendar-week index: days since the epoch divided by 7, with the epoch (1970-01-01, a Thursday)
+   * aligned so weeks run Monday–Sunday. Same integer ⇒ same ISO week. Epoch-day math keeps this
+   * stable across locales and avoids WeekFields (whose week start varies by country).
+   */
+  static int isoWeekIndex(Instant instant) {
+    long epochDay = instant.atZone(ZoneId.of("UTC")).toLocalDate().toEpochDay();
+    // 1970-01-01 was a Thursday; shifting by 3 days puts Monday (1970-01-05) on a multiple of 7.
+    return (int) Math.floorDiv(epochDay - 3, 7L);
   }
 
   private static boolean isPromoSegment(ShowPlanningSegmentDTO segment) {

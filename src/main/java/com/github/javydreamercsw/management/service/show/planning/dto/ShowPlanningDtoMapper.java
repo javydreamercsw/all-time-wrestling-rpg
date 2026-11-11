@@ -83,6 +83,9 @@ public class ShowPlanningDtoMapper {
     dto.setId(segment.getId());
     dto.setSegmentDate(segment.getSegmentDate());
     dto.setShowName(segment.getShow().getName());
+    // PLE flag on the segment's source show — the tracker excludes PLE appearances from the
+    // this-week guard ("same week excluding PLE", ATW-wbch requirement).
+    dto.setPremiumLiveEvent(segment.getShow().isPremiumLiveEvent());
     if (segment.getShow().getShowDate() != null) {
       dto.setShowDate(segment.getShow().getShowDate().atStartOfDay(ZoneOffset.UTC).toInstant());
     }

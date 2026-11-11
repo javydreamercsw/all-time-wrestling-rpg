@@ -32,8 +32,9 @@ import org.junit.jupiter.api.Test;
 /** Pins for the cross-show weekly participation tracker (ATW-wbch). */
 class WeeklyParticipationTrackerTest {
 
+  // Friday 2026-10-02 — the Continuum date from the field bug (calendar-week anchor).
   private static final Instant SHOW_DATE =
-      LocalDate.of(2026, 9, 28).atStartOfDay(ZoneOffset.UTC).toInstant();
+      LocalDate.of(2026, 10, 2).atStartOfDay(ZoneOffset.UTC).toInstant();
 
   private final WeeklyParticipationTracker tracker = new WeeklyParticipationTracker();
 
@@ -63,29 +64,69 @@ class WeeklyParticipationTrackerTest {
 
   @Test
   void tally_thisWeekFlagSpansAllShows() {
-    // Production case: Timeless + Continuum both run weekly — a Monday match and a Friday match
-    // both fall inside the 7-day window before the planned show.
+    // Production case: Timeless + Continuum both run weekly — a Wednesday match and a Friday
+    // match in the SAME calendar week both set the guard.
     Map<String, WeeklyParticipationTracker.Participation> tally =
         tracker.tally(
             List.of(
-                segment("One on One", List.of("Rey Jaguar"), 2), // Monday, this week
-                segment("One on One", List.of("Rey Jaguar"), 20)), // three weeks ago
+                segment("One on One", List.of("Rey Jaguar"), 2), // Wednesday, same calendar week
+                segment("One on One", List.of("Rey Jaguar"), 20)), // two+ weeks ago
             SHOW_DATE);
 
     WeeklyParticipationTracker.Participation rey =
         tally.get(WeeklyParticipationTracker.normalize("Rey Jaguar"));
     assertEquals(2, rey.matchCount());
-    assertTrue(rey.bookedThisWeek(), "A match 2 days before the show is this week");
+    assertTrue(rey.bookedThisWeek(), "A match 2 days before the show in the same week blocks");
   }
 
   @Test
-  void tally_edgeOfWindow_countsAsThisWeek() {
+  void tally_lastWeeksEpisode_doesNotBlockThisWeek() {
+    // THE CONTINUUM COLLAPSE (2026-11-11 field bug): a rolling 7-day window caught the SAME
+    // show's previous episode every week — a weekly cadence guarantees it — blocking the whole
+    // roster permanently (1 match of 7 slots). Last Friday's episode is LAST week: it must not
+    // block this Friday's card. (09-25 is exactly one week back from 2026-10-02.)
     Map<String, WeeklyParticipationTracker.Participation> tally =
-        tracker.tally(List.of(segment("One on One", List.of("Kurt Angle"), 7)), SHOW_DATE);
+        tracker.tally(List.of(segment("One on One", List.of("Rey Jaguar"), 7)), SHOW_DATE);
 
-    assertTrue(
-        tally.get(WeeklyParticipationTracker.normalize("Kurt Angle")).bookedThisWeek(),
-        "Exactly 7 days before counts as this week");
+    assertFalse(
+        tally.get(WeeklyParticipationTracker.normalize("Rey Jaguar")).bookedThisWeek(),
+        "Last week's match must not block this week's card");
+  }
+
+  @Test
+  void tally_pleMatchDoesNotBlockTheWeek() {
+    // "Same week (excluding PLE)": Era of Champions ran the Sunday before the planned Friday.
+    // Its matches are the payoff the weeklies build toward — they never set the guard.
+    ShowPlanningSegmentDTO pleMatch = segment("One on One", List.of("Taya Valkyrie"), 5);
+    pleMatch.setPremiumLiveEvent(true);
+    Map<String, WeeklyParticipationTracker.Participation> tally =
+        tracker.tally(List.of(pleMatch), SHOW_DATE);
+
+    assertFalse(
+        tally.get(WeeklyParticipationTracker.normalize("Taya Valkyrie")).bookedThisWeek(),
+        "A PLE match must not block this week's card");
+  }
+
+  @Test
+  void tally_promoDoesNotBlockMatches() {
+    // Talking segments are non-physical: a Monday promo doesn't block a Friday match.
+    Map<String, WeeklyParticipationTracker.Participation> tally =
+        tracker.tally(List.of(segment("Promo", List.of("Mukundi Shumba"), 2)), SHOW_DATE);
+
+    WeeklyParticipationTracker.Participation shumba =
+        tally.get(WeeklyParticipationTracker.normalize("Mukundi Shumba"));
+    assertEquals(1, shumba.promoCount());
+    assertFalse(
+        shumba.bookedThisWeek(), "A promo never blocks a match slot (it still counts for promos)");
+  }
+
+  @Test
+  void tally_sameWeekEarlierDay_countsAsThisWeek() {
+    // A Tuesday match before a Friday show, same calendar week: the guard holds.
+    Map<String, WeeklyParticipationTracker.Participation> tally =
+        tracker.tally(List.of(segment("One on One", List.of("Kurt Angle"), 3)), SHOW_DATE);
+
+    assertTrue(tally.get(WeeklyParticipationTracker.normalize("Kurt Angle")).bookedThisWeek());
   }
 
   @Test
@@ -121,7 +162,7 @@ class WeeklyParticipationTrackerTest {
   @Test
   void bookedThisWeek_normalizesCasing() {
     Map<String, WeeklyParticipationTracker.Participation> tally =
-        tracker.tally(List.of(segment("One on One", List.of("rey jaguar"), 3)), SHOW_DATE);
+        tracker.tally(List.of(segment("One on One", List.of("rey jaguar"), 2)), SHOW_DATE);
 
     Set<String> booked = tracker.bookedThisWeek(tally, List.of("Rey Jaguar", "JAX FELIX"));
 

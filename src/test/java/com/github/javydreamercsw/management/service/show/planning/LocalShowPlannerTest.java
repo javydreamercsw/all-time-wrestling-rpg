@@ -255,12 +255,13 @@ class LocalShowPlannerTest {
 
   @Test
   void plan_wrestlerBookedThisWeekOnAnotherShow_skippedForMatches() {
-    // Cross-show guardrail: Rey Jaguar wrestled 2 days ago on Continuum — he cannot take a match
-    // slot on this show; his feud is skipped rather than double-booked across the week.
+    // Cross-show guardrail, calendar-week semantics: Rey Jaguar wrestled earlier the SAME week
+    // on Continuum — he cannot take a match slot on this show; his feud is skipped rather than
+    // double-booked across the week.
     ShowPlanningContextDTO context = context();
     context
         .getRecentSegments()
-        .add(recentSegment("One on One", List.of("Rey Jaguar", "Jax Felix"), 2));
+        .add(recentSegment("One on One", List.of("Rey Jaguar", "Jax Felix"), 1));
     List<ProposedSegment> segments = planner.plan(context, 5, 2, Set.of());
 
     for (ProposedSegment segment : segments) {
@@ -269,7 +270,7 @@ class LocalShowPlannerTest {
       }
       assertFalse(
           participantsOf(segment).contains("Rey Jaguar"),
-          "Rey Jaguar wrestled 2 days ago — no match slot this week");
+          "Rey Jaguar wrestled earlier this week — no second match this week");
     }
   }
 
@@ -320,6 +321,35 @@ class LocalShowPlannerTest {
                     !s.getType().toLowerCase().contains("promo")
                         && Long.valueOf(748L).equals(s.getRivalryId())),
         "On a PLE the heat-89 feud takes a match slot");
+  }
+
+  @Test
+  void plan_continuumCollapse_lastWeeksMatchesDoNotStarveThisWeeksCard() {
+    // THE FIELD BUG (2026-11-11): planning Continuum 10-02 produced 1 match + 2 promos of 7
+    // slots because the rolling 7-day window caught last week's Continuum (09-25), the PLE
+    // (09-27), and Timeless (09-28). With calendar-week + PLE-exempt + match-only semantics,
+    // last week's action is last week's — the card fills.
+    ShowPlanningContextDTO context = context();
+    // The exact pre-show action from the paste: last Friday's Continuum, Sunday's PLE,
+    // Monday's Timeless.
+    context
+        .getRecentSegments()
+        .addAll(
+            List.of(
+                recentSegment(
+                    "Tag Team",
+                    List.of("Oda Tsurugi", "Jax Felix", "Rey Jaguar", "Dynamite Kid"),
+                    7), // 09-25 Continuum
+                recentSegment(
+                    "One on One", List.of("André the Giant", "Kurt Angle"), 5), // 09-27 PLE
+                recentSegment(
+                    "One on One", List.of("Brian Pillman", "Gilgamesh"), 4))); // 09-28 Timeless
+    context.setShowDate(LocalDate.of(2026, 10, 2).atStartOfDay(ZoneOffset.UTC).toInstant());
+
+    List<ProposedSegment> segments = planner.plan(context, 5, 2, Set.of());
+
+    assertEquals(5, matchCount(segments), "Last week's matches must not starve this week's card");
+    assertEquals(2, promoCount(segments), "Promo budget must still fill");
   }
 
   @Test
