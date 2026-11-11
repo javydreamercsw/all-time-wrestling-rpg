@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.base.ai;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -228,6 +229,41 @@ class SegmentNarrationControllerTest extends AbstractControllerTest {
                 .content(objectMapper.writeValueAsString(context)))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.error", is("Provider 'Unknown' not available or not found")));
+  }
+
+  @Test
+  void testNarrateWithKnownButUnconfiguredProvider_namesTheConfigGap() throws Exception {
+    // Production case (2026-11-11): retrying with Ollama when no AI_OLLAMA_BASE_URL setting
+    // exists — getServiceByProvider returns null, but the provider IS registered. The error
+    // must point at configuration instead of the generic "not found".
+    when(serviceFactory.getServiceByProvider("Ollama")).thenReturn(null);
+    when(serviceFactory.getAvailableServices())
+        .thenReturn(
+            List.of(
+                new ServiceInfo(
+                    "Ollama",
+                    false,
+                    "OllamaSegmentNarrationService",
+                    4,
+                    0.0,
+                    "FREE",
+                    "Local Ollama")));
+    when(segmentOutcomeProvider.determineOutcomeIfNeeded(any(SegmentNarrationContext.class)))
+        .thenAnswer(i -> i.getArguments()[0]);
+
+    SegmentNarrationContext context = new SegmentNarrationContext();
+    context.setSegmentType(new SegmentTypeContext());
+    context.setWrestlers(new ArrayList<>());
+
+    mockMvc
+        .perform(
+            post("/api/segment-narration/narrate/Ollama")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(context)))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.error", containsString("exists but is not configured/available")))
+        .andExpect(jsonPath("$.error", containsString("AI_OLLAMA_BASE_URL")));
   }
 
   @Test
