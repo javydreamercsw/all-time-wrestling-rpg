@@ -28,6 +28,7 @@ import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRep
 import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
+import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
@@ -82,6 +83,7 @@ class ShowFinalizationTest {
   @Mock private UniverseRepository universeRepository;
   @Mock private SegmentRepository segmentRepository;
   @Mock private LeagueRepository leagueRepository;
+  @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
   @Mock private WrestlerService wrestlerService;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private SegmentAdjudicationService segmentAdjudicationService;
@@ -113,6 +115,7 @@ class ShowFinalizationTest {
             showTemplateRepository,
             universeRepository,
             leagueRepository,
+            matchFulfillmentRepository,
             Clock.systemUTC(),
             segmentAdjudicationService,
             segmentRepository,

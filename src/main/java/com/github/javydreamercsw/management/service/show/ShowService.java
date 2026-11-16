@@ -23,6 +23,8 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
+import com.github.javydreamercsw.management.domain.league.MatchFulfillment;
+import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -90,6 +92,7 @@ public class ShowService {
   private final ShowTemplateRepository showTemplateRepository;
   private final UniverseRepository universeRepository;
   private final LeagueRepository leagueRepository;
+  private final MatchFulfillmentRepository matchFulfillmentRepository;
   private final Clock clock;
   private final SegmentAdjudicationService segmentAdjudicationService;
   private final SegmentRepository segmentRepository;
@@ -115,6 +118,7 @@ public class ShowService {
       final ShowTemplateRepository showTemplateRepository,
       final UniverseRepository universeRepository,
       final LeagueRepository leagueRepository,
+      final MatchFulfillmentRepository matchFulfillmentRepository,
       final Clock clock,
       final SegmentAdjudicationService segmentAdjudicationService,
       final SegmentRepository segmentRepository,
@@ -138,6 +142,7 @@ public class ShowService {
     this.showTemplateRepository = showTemplateRepository;
     this.universeRepository = universeRepository;
     this.leagueRepository = leagueRepository;
+    this.matchFulfillmentRepository = matchFulfillmentRepository;
     this.clock = clock;
     this.segmentAdjudicationService = segmentAdjudicationService;
     this.segmentRepository = segmentRepository;
@@ -597,6 +602,27 @@ public class ShowService {
     return segment.getWrestlers().stream().anyMatch(w -> playerWrestlerIds.contains(w.getId()));
   }
 
+  /**
+   * Whether this run should EXCLUDE the segment because it involves player-controlled wrestlers.
+   * True only when the player's outcome is still theirs to make: no league fulfillment exists for
+   * the segment, or it is still PENDING_RESULTS (the player hasn't reported). A SUBMITTED (or
+   * FINALIZED) fulfillment means the player already exercised their agency — the league finalize
+   * flow depends on adjudicating that segment to honor the reported winner, so excluding it would
+   * wedge the show at PENDING forever.
+   */
+  private boolean excludesPlayerSegment(
+      @NonNull final Segment segment,
+      @NonNull final Set<Long> playerWrestlerIds,
+      final boolean includePlayerSegments) {
+    if (includePlayerSegments || !involvesPlayer(segment, playerWrestlerIds)) {
+      return false;
+    }
+    return matchFulfillmentRepository
+        .findBySegment(segment)
+        .map(f -> f.getStatus() == MatchFulfillment.FulfillmentStatus.PENDING_RESULTS)
+        .orElse(true);
+  }
+
   private String describeSegment(@NonNull final Segment segment) {
     String names =
         segment.getWrestlers().stream().map(Wrestler::getName).collect(Collectors.joining(" vs "));
@@ -669,11 +695,11 @@ public class ShowService {
             .toList();
     List<Segment> narratableSegments =
         pendingSegments.stream()
-            .filter(s -> includePlayerSegments || !involvesPlayer(s, playerWrestlerIds))
+            .filter(s -> !excludesPlayerSegment(s, playerWrestlerIds, includePlayerSegments))
             .toList();
     List<Long> skippedPlayerSegmentIds =
         pendingSegments.stream()
-            .filter(s -> !includePlayerSegments && involvesPlayer(s, playerWrestlerIds))
+            .filter(s -> excludesPlayerSegment(s, playerWrestlerIds, includePlayerSegments))
             .map(Segment::getId)
             .toList();
     if (!skippedPlayerSegmentIds.isEmpty()) {
@@ -698,7 +724,7 @@ public class ShowService {
         .forEach(
             segment -> {
               if (!WellKnownSegmentType.PROMO.matches(segment.getSegmentType())
-                  && (includePlayerSegments || !involvesPlayer(segment, playerWrestlerIds))) {
+                  && !excludesPlayerSegment(segment, playerWrestlerIds, includePlayerSegments)) {
                 segment
                     .getParticipants()
                     .forEach(p -> participatingWrestlerIds.add(p.getWrestler().getId()));
@@ -781,7 +807,9 @@ public class ShowService {
     List<Segment> segmentsToAdjudicate =
         segmentRepository.findByShow(show).stream()
             .filter(segment -> segment.getAdjudicationStatus() == AdjudicationStatus.PENDING)
-            .filter(segment -> includePlayerSegments || !involvesPlayer(segment, playerWrestlerIds))
+            .filter(
+                segment ->
+                    !excludesPlayerSegment(segment, playerWrestlerIds, includePlayerSegments))
             .toList();
     int adjudicationTarget = segmentsToAdjudicate.size();
     eventPublisher.publishEvent(
