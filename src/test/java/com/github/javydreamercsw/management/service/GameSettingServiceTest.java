@@ -457,6 +457,41 @@ class GameSettingServiceTest {
                         && s.getUniverseId() == null));
   }
 
+  // ── Local show planner flag (ATW-wbch) ─────────────────────────────────────
+
+  @Test
+  void showPlanningLocalPlannerEnabled_defaultsTrue() {
+    when(repository.findGlobal(GameSettingService.SHOW_PLANNING_LOCAL_PLANNER_KEY))
+        .thenReturn(Optional.empty());
+
+    assertThat(service.isShowPlanningLocalPlannerEnabled()).isTrue();
+  }
+
+  @Test
+  void showPlanningLocalPlannerEnabled_settingExists_returnsValue() {
+    when(repository.findGlobal(GameSettingService.SHOW_PLANNING_LOCAL_PLANNER_KEY))
+        .thenReturn(
+            Optional.of(setting(GameSettingService.SHOW_PLANNING_LOCAL_PLANNER_KEY, "false")));
+
+    assertThat(service.isShowPlanningLocalPlannerEnabled()).isFalse();
+  }
+
+  @Test
+  void setShowPlanningLocalPlannerEnabled_savesGlobalSetting() {
+    when(repository.findGlobal(GameSettingService.SHOW_PLANNING_LOCAL_PLANNER_KEY))
+        .thenReturn(Optional.empty());
+
+    service.setShowPlanningLocalPlannerEnabled(false);
+
+    verify(repository)
+        .save(
+            assertThatCaptorMatches(
+                s ->
+                    GameSettingService.SHOW_PLANNING_LOCAL_PLANNER_KEY.equals(s.getSettingKey())
+                        && "false".equals(s.getValue())
+                        && s.getUniverseId() == null));
+  }
+
   private GameSetting assertThatCaptorMatches(Predicate<GameSetting> match) {
     return ArgumentMatchers.argThat(s -> match.test(s));
   }

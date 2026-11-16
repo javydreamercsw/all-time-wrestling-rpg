@@ -2065,4 +2065,286 @@ class ShowPlanningAiServiceTest {
     assertEquals(SegmentResult.WINNERS, proposedShow.getSegments().get(0).getResult());
     assertEquals(SegmentResult.WINNERS, proposedShow.getSegments().get(1).getResult());
   }
+
+  // ── local-planner flow (ATW-wbch): deterministic booking, AI narrates only ──
+
+  @Test
+  void planShow_localPlannerEnabled_booksCardLocallyAndAppliesNarration() {
+    // The local-planner flow: the planner books the card (source-stamped rows), then ONE AI
+    // call narrates it — description → narration, outcome → summary on the SAME rows.
+    when(gameSettingService.isShowPlanningLocalPlannerEnabled()).thenReturn(true);
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setShowName("Timeless");
+    showTemplate.setExpectedMatches(2);
+    showTemplate.setExpectedPromos(1);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+
+    ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
+    rivalry.setId(42L);
+    rivalry.setName("Blood Feud");
+    rivalry.setHeat(35);
+    rivalry.setParticipants(List.of("Wrestler A", "Wrestler B"));
+    context.setCurrentRivalries(List.of(rivalry));
+
+    // The narration response covers the card's single planned row (heat ≥ 30 on a weekly
+    // books a confrontation promo, not a match).
+    String narrationJson =
+        """
+        [
+          {
+            "segmentId": "1",
+            "description": "Wrestler A and Wrestler B come to blows on the mic.",
+            "outcome": "Wrestler B leaves Wrestler A laying."
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(narrationJson);
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    assertEquals(1, proposedShow.getSegments().size());
+    ProposedSegment row = proposedShow.getSegments().get(0);
+    assertEquals("Promo", row.getType());
+    assertEquals("Local planner", row.getSource(), "The planner's rows carry its source stamp");
+    assertEquals(Long.valueOf(42L), row.getRivalryId());
+    assertEquals(
+        "Wrestler A and Wrestler B come to blows on the mic.",
+        row.getNarration(),
+        "AI description maps to narration on the planner's row");
+    assertEquals(
+        "Wrestler B leaves Wrestler A laying.",
+        row.getSummary(),
+        "AI outcome maps to summary on the planner's row");
+    verify(narrationServiceFactory, times(1)).generateText(anyString());
+  }
+
+  @Test
+  void planShow_localPlannerEnabled_noAiAvailable_cardStillBuilt() {
+    // The planner never needs the AI: with no provider configured the card is still booked —
+    // only the narration pass is skipped.
+    when(gameSettingService.isShowPlanningLocalPlannerEnabled()).thenReturn(true);
+    when(narrationServiceFactory.getBestAvailableService()).thenReturn(null);
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(2);
+    showTemplate.setExpectedPromos(1);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+
+    ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
+    rivalry.setId(42L);
+    rivalry.setName("Blood Feud");
+    rivalry.setHeat(35);
+    rivalry.setParticipants(List.of("Wrestler A", "Wrestler B"));
+    context.setCurrentRivalries(List.of(rivalry));
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    assertEquals(1, proposedShow.getSegments().size(), "The card is booked without any AI");
+    assertEquals("Promo", proposedShow.getSegments().get(0).getType());
+    assertEquals("Local planner", proposedShow.getSegments().get(0).getSource());
+    assertNull(proposedShow.getSegments().get(0).getNarration());
+    verify(narrationServiceFactory, never()).generateText(anyString());
+  }
+
+  @Test
+  void planShow_localPlanner_narrationEmptyResponse_cardKeepsPlannerSummaries() {
+    when(gameSettingService.isShowPlanningLocalPlannerEnabled()).thenReturn(true);
+    Logger logger = (Logger) LoggerFactory.getLogger(ShowPlanningAiService.class);
+    Level originalLevel = logger.getLevel();
+    logger.setLevel(Level.OFF);
+    try {
+      ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+      ShowTemplate showTemplate = new ShowTemplate();
+      showTemplate.setExpectedMatches(2);
+      showTemplate.setExpectedPromos(1);
+      context.setShowTemplate(showTemplate);
+      context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+      ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
+      rivalry.setId(42L);
+      rivalry.setName("Blood Feud");
+      rivalry.setHeat(35);
+      rivalry.setParticipants(List.of("Wrestler A", "Wrestler B"));
+      context.setCurrentRivalries(List.of(rivalry));
+
+      when(segmentNarrationService.generateText(anyString())).thenReturn("");
+
+      ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+      assertEquals(1, proposedShow.getSegments().size());
+      ProposedSegment row = proposedShow.getSegments().get(0);
+      assertNull(row.getNarration(), "Empty narration response leaves the row unnarrated");
+      assertTrue(
+          row.getSummary().contains("confrontation"),
+          "The planner's own summary survives: " + row.getSummary());
+    } finally {
+      logger.setLevel(originalLevel);
+    }
+  }
+
+  @Test
+  void planShow_localPlanner_narrationWithoutJsonArray_cardKeepsPlannerSummaries() {
+    when(gameSettingService.isShowPlanningLocalPlannerEnabled()).thenReturn(true);
+    Logger logger = (Logger) LoggerFactory.getLogger(ShowPlanningAiService.class);
+    Level originalLevel = logger.getLevel();
+    logger.setLevel(Level.OFF);
+    try {
+      ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+      ShowTemplate showTemplate = new ShowTemplate();
+      showTemplate.setExpectedMatches(2);
+      showTemplate.setExpectedPromos(1);
+      context.setShowTemplate(showTemplate);
+      context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+      ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
+      rivalry.setId(42L);
+      rivalry.setName("Blood Feud");
+      rivalry.setHeat(35);
+      rivalry.setParticipants(List.of("Wrestler A", "Wrestler B"));
+      context.setCurrentRivalries(List.of(rivalry));
+
+      when(segmentNarrationService.generateText(anyString()))
+          .thenReturn("Here is your narration, no JSON in sight.");
+
+      ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+      ProposedSegment row = proposedShow.getSegments().get(0);
+      assertNull(row.getNarration(), "No JSON array means no narration is applied");
+      assertTrue(row.getSummary().contains("confrontation"));
+    } finally {
+      logger.setLevel(originalLevel);
+    }
+  }
+
+  @Test
+  void planShow_localPlanner_narrationLengthMismatch_cardKeepsPlannerSummaries() {
+    when(gameSettingService.isShowPlanningLocalPlannerEnabled()).thenReturn(true);
+    Logger logger = (Logger) LoggerFactory.getLogger(ShowPlanningAiService.class);
+    Level originalLevel = logger.getLevel();
+    logger.setLevel(Level.OFF);
+    try {
+      ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+      ShowTemplate showTemplate = new ShowTemplate();
+      showTemplate.setExpectedMatches(2);
+      showTemplate.setExpectedPromos(1);
+      context.setShowTemplate(showTemplate);
+      context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+      ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
+      rivalry.setId(42L);
+      rivalry.setName("Blood Feud");
+      rivalry.setHeat(35);
+      rivalry.setParticipants(List.of("Wrestler A", "Wrestler B"));
+      context.setCurrentRivalries(List.of(rivalry));
+
+      // The card has one row; a two-element response is a mismatch — apply nothing.
+      when(segmentNarrationService.generateText(anyString()))
+          .thenReturn(
+              """
+              [
+                {"segmentId": "1", "description": "d1", "outcome": "o1"},
+                {"segmentId": "2", "description": "d2", "outcome": "o2"}
+              ]
+              """);
+
+      ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+      ProposedSegment row = proposedShow.getSegments().get(0);
+      assertNull(row.getNarration(), "A length mismatch must not narrate the card");
+      assertTrue(row.getSummary().contains("confrontation"));
+    } finally {
+      logger.setLevel(originalLevel);
+    }
+  }
+
+  @Test
+  void planShow_localPlanner_narrationMalformedJson_cardKeepsPlannerSummaries() {
+    when(gameSettingService.isShowPlanningLocalPlannerEnabled()).thenReturn(true);
+    Logger logger = (Logger) LoggerFactory.getLogger(ShowPlanningAiService.class);
+    Level originalLevel = logger.getLevel();
+    logger.setLevel(Level.OFF);
+    try {
+      ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+      ShowTemplate showTemplate = new ShowTemplate();
+      showTemplate.setExpectedMatches(2);
+      showTemplate.setExpectedPromos(1);
+      context.setShowTemplate(showTemplate);
+      context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+      ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
+      rivalry.setId(42L);
+      rivalry.setName("Blood Feud");
+      rivalry.setHeat(35);
+      rivalry.setParticipants(List.of("Wrestler A", "Wrestler B"));
+      context.setCurrentRivalries(List.of(rivalry));
+
+      // Looks like an array (extract succeeds) but is unparseable — the catch keeps the card.
+      when(segmentNarrationService.generateText(anyString())).thenReturn("[{bad}]");
+
+      ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+      ProposedSegment row = proposedShow.getSegments().get(0);
+      assertNull(row.getNarration(), "Unparseable narration must not break the planning flow");
+      assertTrue(row.getSummary().contains("confrontation"));
+    } finally {
+      logger.setLevel(originalLevel);
+    }
+  }
+
+  @Test
+  void planShow_localPlanner_allSlotsPredetermined_narratesFixedCard() {
+    // Every slot claimed by deterministic passes: the booking call is skipped but the
+    // narration call still runs over the fixed card (flag enabled).
+    when(gameSettingService.isShowPlanningLocalPlannerEnabled()).thenReturn(true);
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    context.setUpcomingScriptedBeats(
+        List.of(beat("Singles Match", null, "BOOKER_PICKS", "Bobby Lashley", List.of(11L, 12L))));
+
+    when(segmentNarrationService.generateText(anyString()))
+        .thenReturn(
+            """
+            [
+              {
+                "segmentId": "1",
+                "description": "Shelton Benjamin faces Bobby Lashley.",
+                "outcome": "Bobby Lashley wins clean."
+              }
+            ]
+            """);
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    assertEquals(1, proposedShow.getSegments().size());
+    ProposedSegment beatRow = proposedShow.getSegments().get(0);
+    assertEquals("Singles Match", beatRow.getType());
+    assertEquals("Scripted beat", beatRow.getSource());
+    assertEquals(
+        "Shelton Benjamin faces Bobby Lashley.", beatRow.getNarration(), "Beat row is narrated");
+    assertEquals(
+        "Bobby Lashley wins clean.",
+        beatRow.getSummary(),
+        "The beat's grid summary is replaced by the AI outcome");
+    verify(narrationServiceFactory, times(1)).generateText(anyString());
+  }
+
+  @Test
+  void planShow_localPlanner_emptyCard_skipsNarrationCall() {
+    // Zero expected slots and no deterministic content: nothing to narrate.
+    when(gameSettingService.isShowPlanningLocalPlannerEnabled()).thenReturn(true);
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(0);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    assertTrue(proposedShow.getSegments().isEmpty());
+    verify(narrationServiceFactory, never()).generateText(anyString());
+  }
 }

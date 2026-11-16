@@ -879,4 +879,92 @@ class ShowPlanningPromptBuilderTest {
         "The defense must pin the championship to the real champion");
     assertFalse(prompt.contains("Kamala is the reigning"), "The challenger must never be crowned");
   }
+
+  // ── Narration prompt context sections ────────────────────────────────────────
+
+  @Test
+  void narrationPrompt_includesRivalriesChampionshipsAndRecentStory() {
+    // The color sections (rivalries, championships, recent beats) only append when their
+    // context lists are non-empty — this test drives all three plus the show date line.
+    ShowPlanningContextDTO context = narrationContext();
+    ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
+    rivalry.setName("Blood Feud");
+    rivalry.setHeat(35);
+    rivalry.setParticipants(List.of("Junkyard Dog", "Kamala"));
+    context.setCurrentRivalries(List.of(rivalry));
+    ShowPlanningSegmentDTO recent = new ShowPlanningSegmentDTO();
+    recent.setSummary("Kamala ambushed Junkyard Dog during a contract signing.");
+    context.setRecentSegments(List.of(recent));
+
+    String prompt =
+        builder.buildNarrationPrompt(context, List.of(matchRow("Junkyard Dog", "Kamala")));
+
+    assertTrue(prompt.contains("Show Date:"), "Show date appears when set");
+    assertTrue(prompt.contains("Active Rivalries (for storyline color):"));
+    assertTrue(prompt.contains("Blood Feud (heat 35)"));
+    assertTrue(prompt.contains("Championships (background color ONLY"));
+    assertTrue(prompt.contains("ATW Intertemporal — champion: Junkyard Dog"));
+    assertTrue(prompt.contains("Recent story beats (last 3 weeks, for continuity):"));
+    assertTrue(prompt.contains("Kamala ambushed Junkyard Dog during a contract signing."));
+  }
+
+  @Test
+  void narrationPrompt_emptyContextOmitsOptionalSections() {
+    // Null rivalry/championship/recent lists leave the optional sections out entirely.
+    ShowPlanningContextDTO context = contextWithTemplate(1, 0);
+    String prompt = builder.buildNarrationPrompt(context, List.of(matchRow("A", "B")));
+
+    assertFalse(prompt.contains("Active Rivalries"), "No rivalries, no rivalry section");
+    assertFalse(prompt.contains("Championships"), "No championships, no championship section");
+    assertFalse(prompt.contains("Recent story beats"), "No recent segments, no story section");
+  }
+
+  @Test
+  void narrationPrompt_rowWithRules_showsThemInline() {
+    ShowPlanningContextDTO context = contextWithTemplate(1, 0);
+    ProposedSegment stipulated = matchRow("A", "B");
+    stipulated.setRules(List.of("Steel Cage", "No DQ"));
+
+    String prompt = builder.buildNarrationPrompt(context, List.of(stipulated));
+
+    assertTrue(prompt.contains("Rules: Steel Cage, No DQ"), "Row rules render inline");
+  }
+
+  @Test
+  void narrationPrompt_tagRow_rendersParticipantsWithAmpersandsAndVs() {
+    // Team formatting: teammates join with " & ", opposing teams with " vs ".
+    ShowPlanningContextDTO context = contextWithTemplate(1, 0);
+    ProposedSegment tag = new ProposedSegment();
+    tag.setType("Tag Team");
+    tag.setTeams(
+        new ArrayList<>(
+            List.of(
+                new ArrayList<>(List.of("A One", "A Two")),
+                new ArrayList<>(List.of("B One", "B Two")))));
+
+    String prompt = builder.buildNarrationPrompt(context, List.of(tag));
+
+    assertTrue(prompt.contains("A One & A Two vs B One & B Two"), "Tag row renders both teams");
+  }
+
+  @Test
+  void narrationPrompt_rowWithSummary_carriesContextLine() {
+    ShowPlanningContextDTO context = contextWithTemplate(1, 0);
+    ProposedSegment row = matchRow("A", "B");
+    row.setSummary("Grudge match born of last week's count-out.");
+
+    String prompt = builder.buildNarrationPrompt(context, List.of(row));
+
+    assertTrue(prompt.contains("Context: Grudge match born of last week's count-out."));
+  }
+
+  @Test
+  void narrationPrompt_showDateNull_omitsDateLine() {
+    ShowPlanningContextDTO context = contextWithTemplate(1, 0);
+    context.setShowDate(null);
+
+    String prompt = builder.buildNarrationPrompt(context, List.of(matchRow("A", "B")));
+
+    assertFalse(prompt.contains("Show Date:"), "A null show date omits the date line");
+  }
 }

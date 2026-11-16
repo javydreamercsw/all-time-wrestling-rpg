@@ -608,4 +608,416 @@ class LocalShowPlannerTest {
             .allMatch(s -> s.getRules() == null || s.getRules().isEmpty()),
         "Weekly-heat matches defer to the Normal default");
   }
+
+  // ── Selection edge branches ──────────────────────────────────────────────────
+
+  @Test
+  void plan_nullRoster_confrontationsStillBook_noMatches() {
+    // Without a roster nothing can take a MATCH slot (roster-membership gate), but
+    // confrontation promos book straight from rivalry participant names.
+    ShowPlanningContextDTO context = context();
+    context.setFullRoster(null);
+    List<ProposedSegment> segments = planner.plan(context, 5, 2, Set.of());
+
+    assertEquals(0, matchCount(segments), "No match rows without a roster");
+    assertEquals(
+        1, segments.size(), "Only the heat-89 confrontation promo books — matches need a roster");
+  }
+
+  @Test
+  void plan_nullRivalries_backfillStillFillsTheCard() {
+    // Hand-built contexts without rivalry data: the planner skips the rivalry pass entirely
+    // and fills every slot from the idle pool.
+    ShowPlanningContextDTO context = context();
+    context.setCurrentRivalries(null);
+    List<ProposedSegment> segments = planner.plan(context, 2, 0, Set.of());
+
+    assertEquals(2, matchCount(segments), "Backfill matches fill the card without rivalries");
+    assertTrue(segments.stream().allMatch(s -> s.getRivalryId() == null));
+  }
+
+  @Test
+  void plan_lowHeatRivalry_neverClaimed_backfillFillsInstead() {
+    // Heat < 10 rivalries are filtered before classification — the feud takes no slot and the
+    // idle pool backfills around it (its wrestlers stay eligible for backfill matches).
+    ShowPlanningContextDTO context = context();
+    context.setCurrentRivalries(
+        new ArrayList<>(List.of(rivalry(1L, "Kurt Angle", "Nick Aldis", 5))));
+    List<ProposedSegment> segments = planner.plan(context, 2, 0, Set.of());
+
+    assertTrue(
+        segments.stream().noneMatch(s -> Long.valueOf(1L).equals(s.getRivalryId())),
+        "A heat-5 rivalry is below the classification floor");
+    assertEquals(2, matchCount(segments));
+  }
+
+  @Test
+  void plan_rivalryWithSingleParticipant_skipped() {
+    // A malformed rivalry (one side) can't book — neither as a match nor a confrontation.
+    ShowPlanningRivalryDTO broken = rivalry(99L, "Kurt Angle", "Nick Aldis", 35);
+    broken.setParticipants(List.of("Kurt Angle"));
+    ShowPlanningContextDTO context = context();
+    context.setCurrentRivalries(new ArrayList<>(List.of(broken)));
+
+    List<ProposedSegment> segments = planner.plan(context, 3, 2, Set.of());
+
+    assertTrue(
+        segments.stream().noneMatch(s -> Long.valueOf(99L).equals(s.getRivalryId())),
+        "A one-sided rivalry takes no slot in any pass");
+  }
+
+  @Test
+  void plan_loneFemaleAnchor_skippedBackfillStillFills() {
+    // Intergender disabled + a lone female at the head of the idle pool: she cannot pair with
+    // the male pool — the planner drops her and keeps filling with same-gender pairs.
+    ShowPlanningContextDTO context = context();
+    context.setCurrentRivalries(new ArrayList<>());
+    context.setFullRoster(
+        new ArrayList<>(
+            List.of(
+                roster("Lone Female", "FEMALE"),
+                roster("Male One", "MALE"),
+                roster("Male Two", "MALE"),
+                roster("Male Three", "MALE"),
+                roster("Male Four", "MALE"))));
+
+    List<ProposedSegment> segments = planner.plan(context, 2, 0, Set.of());
+
+    assertEquals(2, matchCount(segments), "The card still fills after dropping the unpairable");
+    assertTrue(
+        segments.stream().noneMatch(s -> participantsOf(s).contains("Lone Female")),
+        "A wrestler with no same-gender pool mate never takes a match slot");
+  }
+
+  @Test
+  void plan_mixedGenderFeud_confrontationPromoSummaryNamesPolicy() {
+    // Intergender disabled + male/female feud → CONFRONTATION_ONLY: the summary states the
+    // policy instead of booking an illegal match.
+    ShowPlanningRivalryDTO mixed = rivalry(55L, "Gail Kim", "André the Giant", 15);
+    ShowPlanningContextDTO context = context();
+    context.setCurrentRivalries(new ArrayList<>(List.of(mixed)));
+
+    List<ProposedSegment> segments = planner.plan(context, 2, 1, Set.of());
+
+    ProposedSegment confrontation =
+        segments.stream()
+            .filter(s -> Long.valueOf(55L).equals(s.getRivalryId()))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("The mixed feud must advance via confrontation"));
+    assertEquals("Promo", confrontation.getType());
+    assertTrue(
+        confrontation.getSummary().contains("intergender matches are disabled"),
+        "CONFRONTATION_ONLY summary states the policy: " + confrontation.getSummary());
+    assertTrue(
+        segments.stream()
+            .filter(s -> !s.getType().toLowerCase().contains("promo"))
+            .noneMatch(s -> Long.valueOf(55L).equals(s.getRivalryId())),
+        "The mixed feud never takes a match slot");
+  }
+
+  // ── Championship-defense selection edges ─────────────────────────────────────
+
+  @Test
+  void plan_tagTeamChampionName_notOnRosterAsSingleName_skipped() {
+    // Multi-wrestler champions ("A & B") don't fit a one-side name — the defense pass skips
+    // tag titles rather than booking a phantom singles champion.
+    ShowPlanningContextDTO context = context();
+    ShowPlanningChampionshipDTO tagTitle = new ShowPlanningChampionshipDTO();
+    tagTitle.setChampionshipName("Tag Titles");
+    tagTitle.setTitleId(77L);
+    tagTitle.setChampionName("Team Alpha & Team Beta");
+    tagTitle.setDaysSinceLastDefense(90L);
+    tagTitle.setDefenseFrequencyType(DefenseFrequencyType.BI_WEEKLY);
+    context.setChampionships(new ArrayList<>(List.of(tagTitle)));
+
+    List<ProposedSegment> segments = planner.plan(context, 5, 2, Set.of());
+
+    assertTrue(
+        segments.stream().noneMatch(s -> Long.valueOf(77L).equals(s.getTitleId())),
+        "A tag-team champion name never books a singles defense");
+  }
+
+  @Test
+  void plan_championAloneOnRoster_noChallenger_noDefense() {
+    // Champion on the roster but nobody to challenge: no defense is booked, no crash.
+    ShowPlanningContextDTO context = context();
+    context.setFullRoster(new ArrayList<>(List.of(roster("Lone Champion", "MALE"))));
+    ShowPlanningChampionshipDTO title = new ShowPlanningChampionshipDTO();
+    title.setChampionshipName("Solo Belt");
+    title.setTitleId(88L);
+    title.setChampionName("Lone Champion");
+    title.setDaysSinceLastDefense(90L);
+    title.setDefenseFrequencyType(DefenseFrequencyType.BI_WEEKLY);
+    context.setChampionships(new ArrayList<>(List.of(title)));
+
+    List<ProposedSegment> segments = planner.plan(context, 3, 0, Set.of());
+
+    assertTrue(
+        segments.stream().noneMatch(s -> Long.valueOf(88L).equals(s.getTitleId())),
+        "No bookable challenger means no defense row");
+  }
+
+  @Test
+  void plan_noContenderNoRankings_idleFallbackPicksSameGender() {
+    // Hand-built context: no designated contender, empty rankings — the first same-gender idle
+    // wrestler steps up; opposite-gender idles are passed over.
+    ShowPlanningContextDTO context = context();
+    context.setCurrentRivalries(new ArrayList<>());
+    context.setFullRoster(
+        new ArrayList<>(
+            List.of(
+                roster("Champ male", "MALE"),
+                roster("Female Idle", "FEMALE"),
+                roster("Male Idle", "MALE"))));
+    ShowPlanningChampionshipDTO title = new ShowPlanningChampionshipDTO();
+    title.setChampionshipName("Men's Belt");
+    title.setTitleId(91L);
+    title.setChampionName("Champ male");
+    title.setDaysSinceLastDefense(30L);
+    title.setDefenseFrequencyType(DefenseFrequencyType.BI_WEEKLY);
+    context.setChampionships(new ArrayList<>(List.of(title)));
+
+    List<ProposedSegment> segments = planner.plan(context, 1, 0, Set.of());
+
+    ProposedSegment defense =
+        segments.stream()
+            .filter(s -> Long.valueOf(91L).equals(s.getTitleId()))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("An overdue title with idles must defend"));
+    assertTrue(
+        participantsOf(defense).contains("Male Idle"),
+        "The idle fallback picks a same-gender challenger, got: " + participantsOf(defense));
+    assertFalse(participantsOf(defense).contains("Female Idle"));
+  }
+
+  @Test
+  void plan_rankedContenderOfOtherGender_skippedForNextRanked() {
+    // Rankings drive the pick — but the same-gender gate still applies: a top-ranked contender
+    // of a different gender is skipped in favor of the next eligible ranked name.
+    ShowPlanningContextDTO context = context();
+    context.setCurrentRivalries(new ArrayList<>());
+    context.setFullRoster(
+        new ArrayList<>(
+            List.of(
+                roster("Champ male", "MALE"),
+                roster("Ranked Female", "FEMALE"),
+                roster("Ranked Male", "MALE"))));
+    ShowPlanningChampionshipDTO title = new ShowPlanningChampionshipDTO();
+    title.setChampionshipName("Men's Belt");
+    title.setTitleId(92L);
+    title.setChampionName("Champ male");
+    title.setDaysSinceLastDefense(30L);
+    title.setDefenseFrequencyType(DefenseFrequencyType.BI_WEEKLY);
+    title.setRankedContenderNames(List.of("Ranked Female", "Ranked Male"));
+    context.setChampionships(new ArrayList<>(List.of(title)));
+
+    List<ProposedSegment> segments = planner.plan(context, 1, 0, Set.of());
+
+    ProposedSegment defense =
+        segments.stream()
+            .filter(s -> Long.valueOf(92L).equals(s.getTitleId()))
+            .findFirst()
+            .orElseThrow();
+    assertTrue(
+        participantsOf(defense).contains("Ranked Male"),
+        "A cross-gender ranked contender is skipped; the next ranked name gets the shot");
+  }
+
+  @Test
+  void plan_designatedContenderIsAnotherChampion_fallsThroughToNonChampion() {
+    // The Intertemporal's designated contender is the World champion — champion-vs-champion is
+    // PLE material, so the re-pick excludes every title's champion at every tier.
+    ShowPlanningContextDTO context = context();
+    context.setCurrentRivalries(new ArrayList<>());
+    ShowPlanningChampionshipDTO world = new ShowPlanningChampionshipDTO();
+    world.setChampionshipName("ATW World");
+    world.setTitleId(1L);
+    world.setChampionName("André the Giant");
+    world.setDaysSinceLastDefense(5L);
+    world.setDefenseFrequencyType(DefenseFrequencyType.BI_WEEKLY); // not due
+    ShowPlanningChampionshipDTO intertemporal = new ShowPlanningChampionshipDTO();
+    intertemporal.setChampionshipName("ATW Intertemporal");
+    intertemporal.setTitleId(5L);
+    intertemporal.setChampionName("Junkyard Dog");
+    intertemporal.setContenderName("André the Giant"); // champion of the OTHER title
+    intertemporal.setDaysSinceLastDefense(60L);
+    intertemporal.setDefenseFrequencyType(DefenseFrequencyType.BI_WEEKLY); // due
+    context.setChampionships(new ArrayList<>(List.of(world, intertemporal)));
+
+    List<ProposedSegment> segments = planner.plan(context, 1, 0, Set.of());
+
+    ProposedSegment defense =
+        segments.stream()
+            .filter(s -> Long.valueOf(5L).equals(s.getTitleId()))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("The due Intertemporal must defend"));
+    assertFalse(
+        participantsOf(defense).contains("André the Giant"),
+        "The other title's champion is excluded from challenger selection");
+    assertTrue(
+        participantsOf(defense).contains("Junkyard Dog"),
+        "The defense still features the real champion");
+  }
+
+  @Test
+  void plan_twoOverdueTitles_longestDroughtDefendsFirst() {
+    // Both overdue: the days-since-defense tiebreak sends the longest drought to the card first.
+    ShowPlanningContextDTO context = context();
+    context.setCurrentRivalries(new ArrayList<>());
+    ShowPlanningChampionshipDTO shorter = new ShowPlanningChampionshipDTO();
+    shorter.setChampionshipName("Short Drought");
+    shorter.setTitleId(31L);
+    shorter.setChampionName("Kurt Angle");
+    shorter.setContenderName("Nick Aldis");
+    shorter.setDaysSinceLastDefense(15L);
+    shorter.setDefenseFrequencyType(DefenseFrequencyType.BI_WEEKLY);
+    ShowPlanningChampionshipDTO longer = new ShowPlanningChampionshipDTO();
+    longer.setChampionshipName("Long Drought");
+    longer.setTitleId(32L);
+    longer.setChampionName("Randy Savage");
+    longer.setContenderName("OMZ");
+    longer.setDaysSinceLastDefense(90L);
+    longer.setDefenseFrequencyType(DefenseFrequencyType.BI_WEEKLY);
+    context.setChampionships(new ArrayList<>(List.of(shorter, longer)));
+
+    List<ProposedSegment> segments = planner.plan(context, 1, 0, Set.of());
+
+    assertEquals(
+        32L,
+        segments.stream()
+            .filter(s -> s.getTitleId() != null)
+            .findFirst()
+            .orElseThrow()
+            .getTitleId()
+            .longValue(),
+        "With one slot, the 90-day drought outranks the 15-day one");
+  }
+
+  @Test
+  void plan_vacantTitle_skippedWhileActiveTitlesDefend() {
+    // A vacant title (no champion) skips the defense pass; the due title beside it defends.
+    ShowPlanningContextDTO context = context();
+    context.setCurrentRivalries(new ArrayList<>());
+    ShowPlanningChampionshipDTO vacant = new ShowPlanningChampionshipDTO();
+    vacant.setChampionshipName("Vacant Belt");
+    vacant.setTitleId(61L);
+    vacant.setChampionName(null);
+    vacant.setDaysSinceLastDefense(90L);
+    vacant.setDefenseFrequencyType(DefenseFrequencyType.BI_WEEKLY);
+    ShowPlanningChampionshipDTO active = new ShowPlanningChampionshipDTO();
+    active.setChampionshipName("Active Belt");
+    active.setTitleId(62L);
+    active.setChampionName("Kurt Angle");
+    active.setContenderName("Nick Aldis");
+    active.setDaysSinceLastDefense(30L);
+    active.setDefenseFrequencyType(DefenseFrequencyType.BI_WEEKLY);
+    context.setChampionships(new ArrayList<>(List.of(vacant, active)));
+
+    List<ProposedSegment> segments = planner.plan(context, 1, 0, Set.of());
+
+    assertTrue(segments.stream().noneMatch(s -> Long.valueOf(61L).equals(s.getTitleId())));
+    assertTrue(
+        segments.stream().anyMatch(s -> Long.valueOf(62L).equals(s.getTitleId())),
+        "The active title defends despite the vacant one sorting beside it");
+  }
+
+  // ── Format rotation and stipulation edges ────────────────────────────────────
+
+  @Test
+  void plan_tagWeek_oppositeGenderIdlesNeverPartnerAMaleFeud() {
+    // Tag-parity week, intergender disabled: a male-male feud's partners come from the same
+    // gender — a female idle at the head of the pool is passed over for both sides.
+    ShowPlanningContextDTO context = context();
+    context.setCurrentRivalries(
+        new ArrayList<>(List.of(rivalry(41L, "Kurt Angle", "Nick Aldis", 15))));
+    context.setFullRoster(
+        new ArrayList<>(
+            List.of(
+                roster("Female First", "FEMALE"),
+                roster("Kurt Angle", "MALE"),
+                roster("Nick Aldis", "MALE"),
+                roster("Male Partner One", "MALE"),
+                roster("Male Partner Two", "MALE"))));
+    context.setShowDate(LocalDate.of(2026, 1, 5).atStartOfDay(ZoneOffset.UTC).toInstant());
+
+    List<ProposedSegment> segments = planner.plan(context, 1, 0, Set.of());
+
+    if (LocalShowPlanner.prefersTagThisWeek(context.getShowDate())) {
+      ProposedSegment tag =
+          segments.stream()
+              .filter(s -> "Tag Team".equals(s.getType()))
+              .findFirst()
+              .orElseThrow(() -> new AssertionError("Tag week with fresh partners books a tag"));
+      assertTrue(
+          participantsOf(tag).stream().noneMatch("Female First"::equals),
+          "A female idle never partners a male-male feud with intergender disabled");
+    }
+  }
+
+  @Test
+  void prefersTagThisWeek_nullDate_returnsFalse() {
+    assertFalse(LocalShowPlanner.prefersTagThisWeek(null), "No show date, no tag parity");
+  }
+
+  @Test
+  void applyHeatBasedStipulations_emptyCatalog_noRulesNoCrash() {
+    // An empty high-heat catalog leaves every row ruleless — applyDefaultRules backfills later.
+    ShowPlanningContextDTO context = context();
+    when(segmentRuleService.getHighHeatRules()).thenReturn(List.of());
+
+    List<ProposedSegment> segments = planner.plan(context(), 5, 2, Set.of());
+    planner.applyHeatBasedStipulations(segments, context);
+
+    assertTrue(
+        segments.stream().allMatch(s -> s.getRules() == null || s.getRules().isEmpty()),
+        "No catalog, no stipulations");
+  }
+
+  @Test
+  void applyHeatBasedStipulations_nullCatalog_noRulesNoCrash() {
+    ShowPlanningContextDTO context = context();
+    when(segmentRuleService.getHighHeatRules()).thenReturn(null);
+
+    List<ProposedSegment> segments = planner.plan(context(), 5, 2, Set.of());
+    planner.applyHeatBasedStipulations(segments, context);
+
+    assertTrue(segments.stream().allMatch(s -> s.getRules() == null || s.getRules().isEmpty()));
+  }
+
+  @Test
+  void applyHeatBasedStipulations_alreadyStipulatedRow_keepsItsRule() {
+    // Scripted-beat/tournament rows arrive stipulated — the heat pass must not touch them.
+    ShowPlanningContextDTO context = context();
+    SegmentRule cage = new SegmentRule();
+    cage.setName("Cage");
+    cage.setRequiresHighHeat(true);
+    when(segmentRuleService.getHighHeatRules()).thenReturn(List.of(cage));
+
+    ProposedSegment stipulated = new ProposedSegment();
+    stipulated.setType("One on One");
+    stipulated.setRules(List.of("Steel Cage"));
+    stipulated.setRivalryId(748L); // heat 89 — above threshold
+
+    planner.applyHeatBasedStipulations(new ArrayList<>(List.of(stipulated)), context);
+
+    assertEquals(
+        List.of("Steel Cage"), stipulated.getRules(), "An already-stipulated row keeps its rule");
+  }
+
+  @Test
+  void applyHeatBasedStipulations_rowWithoutRivalry_staysRuleless() {
+    // A row with no rivalry id has no heat to consult — it never draws a stipulation.
+    ShowPlanningContextDTO context = context();
+    SegmentRule cage = new SegmentRule();
+    cage.setName("Cage");
+    cage.setRequiresHighHeat(true);
+    when(segmentRuleService.getHighHeatRules()).thenReturn(List.of(cage));
+
+    ProposedSegment orphan = new ProposedSegment();
+    orphan.setType("One on One");
+
+    planner.applyHeatBasedStipulations(new ArrayList<>(List.of(orphan)), context);
+
+    assertTrue(orphan.getRules() == null || orphan.getRules().isEmpty());
+  }
 }

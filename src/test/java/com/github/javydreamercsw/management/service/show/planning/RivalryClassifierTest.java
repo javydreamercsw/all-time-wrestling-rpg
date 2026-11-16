@@ -17,8 +17,12 @@
 package com.github.javydreamercsw.management.service.show.planning;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRivalryDTO;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 /** Pins for the shared rivalry classifier — the same rules the prompt teaches (ATW-wbch). */
@@ -104,5 +108,41 @@ class RivalryClassifierTest {
     assertEquals(
         RivalryClassifier.MUST_BOOK,
         RivalryClassifier.classify(rivalry(15, "One on One"), true, true, false));
+  }
+
+  @Test
+  void isMixedGender_oneSidedRivalry_isFalse() {
+    // Fewer than two participants can't resolve to two genders.
+    ShowPlanningRivalryDTO single = rivalry(15, "One on One");
+    single.setParticipants(List.of("Gail Kim"));
+
+    assertFalse(RivalryClassifier.isMixedGender(single, Map.of("Gail Kim", "FEMALE")));
+  }
+
+  @Test
+  void isMixedGender_nullParticipants_isFalse() {
+    ShowPlanningRivalryDTO nameless = rivalry(15, "One on One");
+    nameless.setParticipants(null);
+
+    assertFalse(RivalryClassifier.isMixedGender(nameless, Map.of("Gail Kim", "FEMALE")));
+  }
+
+  @Test
+  void isMixedGender_participantsMissingFromMap_contributeNothing() {
+    // Unknown names (hand-built contexts) pass the gate — only resolvable genders count.
+    ShowPlanningRivalryDTO unknown = rivalry(15, "One on One");
+    unknown.setParticipants(List.of("Gail Kim", "André the Giant"));
+
+    assertFalse(RivalryClassifier.isMixedGender(unknown, Map.of()));
+  }
+
+  @Test
+  void isMixedGender_twoResolvableGenders_isTrue() {
+    ShowPlanningRivalryDTO mixed = rivalry(15, "One on One");
+    mixed.setParticipants(List.of("Gail Kim", "André the Giant"));
+
+    assertTrue(
+        RivalryClassifier.isMixedGender(
+            mixed, Map.of("Gail Kim", "FEMALE", "André the Giant", "MALE")));
   }
 }

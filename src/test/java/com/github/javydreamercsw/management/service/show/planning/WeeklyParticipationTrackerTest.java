@@ -170,4 +170,71 @@ class WeeklyParticipationTrackerTest {
     assertTrue(booked.contains(WeeklyParticipationTracker.normalize("Rey Jaguar")));
     assertFalse(booked.contains(WeeklyParticipationTracker.normalize("Jax Felix")));
   }
+
+  @Test
+  void tally_nullSegments_returnsEmptyTally() {
+    assertTrue(tracker.tally(null, SHOW_DATE).isEmpty(), "No recent segments, no tally");
+  }
+
+  @Test
+  void tally_malformedEntries_areSkipped() {
+    // Null segment entries and entries without participants never crash the tally.
+    ShowPlanningSegmentDTO noParticipants = segment("One on One", List.of("A"), 2);
+    noParticipants.setParticipants(null);
+    ShowPlanningSegmentDTO blankNames =
+        segment("One on One", java.util.Arrays.asList("A", " ", null), 2);
+
+    Map<String, WeeklyParticipationTracker.Participation> tally =
+        tracker.tally(java.util.Arrays.asList(null, noParticipants, blankNames), SHOW_DATE);
+
+    // Only the non-blank name lands; the PLE flag is unset on these hand-built segments.
+    WeeklyParticipationTracker.Participation a =
+        tally.get(WeeklyParticipationTracker.normalize("A"));
+    assertEquals(1, a.matchCount(), "The one real participant counts exactly one match");
+  }
+
+  @Test
+  void tally_thisWeekMatch_datedAfterShow_doesNotSetGuard() {
+    // A match dated AFTER the show being planned is future data — it must not set the
+    // this-week guard (the guard exists to stop re-booking before the fact).
+    ShowPlanningSegmentDTO future =
+        segment("One on One", List.of("Rey Jaguar"), -3); // 3 days ahead
+    Map<String, WeeklyParticipationTracker.Participation> tally =
+        tracker.tally(List.of(future), SHOW_DATE);
+
+    assertFalse(
+        tally.get(WeeklyParticipationTracker.normalize("Rey Jaguar")).bookedThisWeek(),
+        "A future-dated match never sets the this-week guard");
+  }
+
+  @Test
+  void tally_pleMatchSameWeek_doesNotSetGuard() {
+    // PLE-exempt semantics: a PLE match in the same calendar week is the payoff — the weeklies
+    // build toward it, so it must not block this week's card.
+    ShowPlanningSegmentDTO ple = segment("One on One", List.of("Rey Jaguar"), 2);
+    ple.setPremiumLiveEvent(true);
+    Map<String, WeeklyParticipationTracker.Participation> tally =
+        tracker.tally(List.of(ple), SHOW_DATE);
+
+    WeeklyParticipationTracker.Participation rey =
+        tally.get(WeeklyParticipationTracker.normalize("Rey Jaguar"));
+    assertTrue(rey.matchCount() == 1, "The PLE match still counts as an appearance");
+    assertFalse(rey.bookedThisWeek(), "A PLE match never sets the this-week guard (PLE-exempt)");
+  }
+
+  @Test
+  void tally_nullSegmentDate_isCountedButNeverSetsGuard() {
+    // Hand-built segments without a date can't be week-anchored — they count, but guard-free.
+    ShowPlanningSegmentDTO undated = new ShowPlanningSegmentDTO();
+    undated.setSegmentType("One on One");
+    undated.setParticipants(List.of("Rey Jaguar"));
+
+    Map<String, WeeklyParticipationTracker.Participation> tally =
+        tracker.tally(List.of(undated), SHOW_DATE);
+
+    WeeklyParticipationTracker.Participation rey =
+        tally.get(WeeklyParticipationTracker.normalize("Rey Jaguar"));
+    assertEquals(1, rey.matchCount());
+    assertFalse(rey.bookedThisWeek(), "No date, no week guard");
+  }
 }
