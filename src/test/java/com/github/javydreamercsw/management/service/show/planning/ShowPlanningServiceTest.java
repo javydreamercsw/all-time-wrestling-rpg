@@ -1043,7 +1043,7 @@ class ShowPlanningServiceTest {
     rivalry.setId(81L);
     rivalry.setWrestler1(activeWrestler);
     rivalry.setWrestler2(out);
-    rivalry.setHeat(15);
+    rivalry.setHeat(35); // HEATED band: still triggers the MUST_BOOK warning on the new scale
 
     Injury activeInjury = new Injury();
     activeInjury.setId(9L);
@@ -1721,7 +1721,7 @@ class ShowPlanningServiceTest {
 
     CardValidationResult result =
         showPlanningService.validateCard(
-            List.of(promo), List.of(rivalryWithHeat(748L, "Gail Kim", "Abilene Maverick", 15)));
+            List.of(promo), List.of(rivalryWithHeat(748L, "Gail Kim", "Abilene Maverick", 35)));
 
     assertFalse(result.isValid(), "A consecutive promo must be a hard error");
     assertTrue(result.getErrors().getFirst().contains("PROMO_COOLDOWN"));
@@ -1741,7 +1741,7 @@ class ShowPlanningServiceTest {
 
     CardValidationResult result =
         showPlanningService.validateCard(
-            List.of(match), List.of(rivalryWithHeat(748L, "Gail Kim", "Abilene Maverick", 15)));
+            List.of(match), List.of(rivalryWithHeat(748L, "Gail Kim", "Abilene Maverick", 35)));
 
     assertTrue(result.isValid(), "A match after a promo cooldown is the desired variety");
   }
@@ -1763,7 +1763,7 @@ class ShowPlanningServiceTest {
 
     CardValidationResult result =
         showPlanningService.validateCard(
-            List.of(promo), List.of(rivalryWithHeat(748L, "Gail Kim", "Abilene Maverick", 15)));
+            List.of(promo), List.of(rivalryWithHeat(748L, "Gail Kim", "Abilene Maverick", 35)));
 
     assertTrue(result.isValid());
   }
@@ -1856,7 +1856,7 @@ class ShowPlanningServiceTest {
 
   @Test
   void validateCard_mustBookRivalry_missingFromCard_isWarningNotError() {
-    Rivalry hot = rivalryWithHeat(1L, "Alpha", "Beta", 15);
+    Rivalry hot = rivalryWithHeat(1L, "Alpha", "Beta", 35);
     CardValidationResult result = showPlanningService.validateCard(List.of(), List.of(hot));
     assertTrue(result.isValid(), "MUST_BOOK should be a warning, not a hard error");
     assertTrue(result.hasWarnings());
@@ -1868,7 +1868,7 @@ class ShowPlanningServiceTest {
 
   @Test
   void validateCard_mustBookRivalry_bookedByParticipantNames_noWarning() {
-    Rivalry hot = rivalryWithHeat(1L, "Alpha", "Beta", 15);
+    Rivalry hot = rivalryWithHeat(1L, "Alpha", "Beta", 35);
     ProposedSegment seg = new ProposedSegment();
     seg.setTeams(List.of(List.of("Alpha"), List.of("Beta")));
     CardValidationResult result = showPlanningService.validateCard(List.of(seg), List.of(hot));
@@ -1878,7 +1878,7 @@ class ShowPlanningServiceTest {
 
   @Test
   void validateCard_mustBookRivalry_bookedByRivalryId_noWarning() {
-    Rivalry hot = rivalryWithHeat(1L, "Alpha", "Beta", 15);
+    Rivalry hot = rivalryWithHeat(1L, "Alpha", "Beta", 35);
     ProposedSegment seg = new ProposedSegment();
     seg.setTeams(List.of(List.of("Alpha"), List.of("Beta")));
     seg.setRivalryId(1L);
@@ -1889,7 +1889,7 @@ class ShowPlanningServiceTest {
 
   @Test
   void validateCard_stipulationRequired_missingFromCard_isWarning() {
-    Rivalry max = rivalryWithHeat(1L, "Alpha", "Beta", 30);
+    Rivalry max = rivalryWithHeat(1L, "Alpha", "Beta", 85);
     CardValidationResult result = showPlanningService.validateCard(List.of(), List.of(max));
     assertTrue(result.isValid(), "Unbooked high-heat rivalry should be a warning, not an error");
     assertTrue(result.hasWarnings());
@@ -1898,7 +1898,7 @@ class ShowPlanningServiceTest {
 
   @Test
   void validateCard_stipulationRequired_bookedWithoutStipulation_isError() {
-    Rivalry max = rivalryWithHeat(1L, "Alpha", "Beta", 30);
+    Rivalry max = rivalryWithHeat(1L, "Alpha", "Beta", 85);
     ProposedSegment seg = new ProposedSegment();
     seg.setTeams(List.of(List.of("Alpha"), List.of("Beta")));
     seg.setRules(List.of());
@@ -1910,7 +1910,7 @@ class ShowPlanningServiceTest {
 
   @Test
   void validateCard_stipulationRequired_bookedWithStipulation_noError() {
-    Rivalry max = rivalryWithHeat(1L, "Alpha", "Beta", 30);
+    Rivalry max = rivalryWithHeat(1L, "Alpha", "Beta", 85);
     ProposedSegment seg = new ProposedSegment();
     seg.setTeams(List.of(List.of("Alpha"), List.of("Beta")));
     seg.setRules(List.of("Steel Cage"));
@@ -1922,7 +1922,7 @@ class ShowPlanningServiceTest {
   @Test
   void approveSegments_withMustBookRivalryMissingFromCard_succeedsWithWarning() {
     // MUST_BOOK violations are now warnings — approval should proceed
-    Rivalry hot = rivalryWithHeat(1L, "Alpha", "Beta", 15);
+    Rivalry hot = rivalryWithHeat(1L, "Alpha", "Beta", 35);
     when(rivalryService.getActiveRivalries()).thenReturn(List.of(hot));
     when(segmentRepository.findByShow(show)).thenReturn(List.of());
 
@@ -2128,7 +2128,7 @@ class ShowPlanningServiceTest {
   @Test
   void approveSegments_withStipulationRequiredViolation_throws() {
     // A rivalry on the card with heat >= 30 but no rules must still be a hard block
-    Rivalry hot = rivalryWithHeat(1L, "Alpha", "Beta", 35);
+    Rivalry hot = rivalryWithHeat(1L, "Alpha", "Beta", 85);
     when(rivalryService.getActiveRivalries()).thenReturn(List.of(hot));
 
     ProposedSegment seg = new ProposedSegment();

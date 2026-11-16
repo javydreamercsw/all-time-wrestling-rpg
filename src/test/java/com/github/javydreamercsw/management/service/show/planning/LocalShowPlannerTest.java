@@ -565,13 +565,13 @@ class LocalShowPlannerTest {
   @Test
   void applyHeatBasedStipulations_highHeatMatchesGetHighHeatRules() {
     // Owner requirement: stipulations come from the match-rules configuration, driven by heat —
-    // no Ollama required. Heat ≥ 30 draws requiresHighHeat rules from the catalog; approval
-    // REJECTS heat-30 matches without a stipulation, so this is load-bearing for PLE cards.
+    // no Ollama required. EXPLOSIVE heat draws rating-affordable rules from the catalog; approval
+    // REJECTS stipulation-less EXPLOSIVE matches, so this is load-bearing for PLE cards.
     ShowPlanningContextDTO context = context();
     SegmentRule cage = new SegmentRule();
     cage.setName("Cage");
-    cage.setRequiresHighHeat(true);
-    when(segmentRuleService.getHighHeatRules()).thenReturn(List.of(cage));
+    cage.setIntensityRating(60);
+    when(segmentRuleService.getStipulationRulesForHeat(89)).thenReturn(List.of(cage));
     // The heat-89 Gail Kim/Abilene feud classifies PLE_RESOLUTION_REQUIRED on a weekly —
     // planner books a confrontation (Promo row); use a heat-26+ feud on a PLE instead.
     context.setPremiumLiveEvent(true);
@@ -586,17 +586,19 @@ class LocalShowPlannerTest {
             .findFirst()
             .orElseThrow(
                 () -> new AssertionError("Heat-89 feud on a PLE takes a match slot (STIPULATION)"));
-    assertEquals(List.of("Cage"), stipulated.getRules(), "Heat ≥ 30 match gets a high-heat rule");
+    assertEquals(
+        List.of("Cage"), stipulated.getRules(), "EXPLOSIVE-heat match gets an affordable rule");
   }
 
   @Test
   void applyHeatBasedStipulations_subHeatMatchesStayNormal() {
-    // Heat < 30 rows stay ruleless here — applyDefaultRules backfills "Normal" downstream.
+    // Heat < 75 rows stay ruleless here — applyDefaultRules backfills "Normal" downstream.
     ShowPlanningContextDTO context = context();
     SegmentRule cage = new SegmentRule();
     cage.setName("Cage");
-    cage.setRequiresHighHeat(true);
-    when(segmentRuleService.getHighHeatRules()).thenReturn(List.of(cage));
+    cage.setIntensityRating(60);
+    when(segmentRuleService.getStipulationRulesForHeat(org.mockito.ArgumentMatchers.anyInt()))
+        .thenReturn(List.of(cage));
 
     List<ProposedSegment> segments = planner.plan(context(), 5, 2, Set.of());
     planner.applyHeatBasedStipulations(segments, context);

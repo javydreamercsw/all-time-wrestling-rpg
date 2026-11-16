@@ -84,12 +84,12 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
 
     // Create rules used by the booking service
     segmentRuleService.createOrUpdateRule(
-        "Standard Match", "Standard rules", false, false, BumpAddition.NONE);
+        "Standard Match", "Standard rules", 0, false, BumpAddition.NONE);
     segmentRuleService.createOrUpdateRule(
-        "Rivalry Segment", "Rivalry rules", false, false, BumpAddition.NONE);
-    segmentRuleService.createOrUpdateRule("PPV Segment", "PPV rules", true, true, BumpAddition.ALL);
+        "Rivalry Segment", "Rivalry rules", 0, false, BumpAddition.NONE);
+    segmentRuleService.createOrUpdateRule("PPV Segment", "PPV rules", 0, true, BumpAddition.ALL);
     segmentRuleService.createOrUpdateRule(
-        "Steel Cage Segment", "Cage rules", true, true, BumpAddition.ALL);
+        "Steel Cage Segment", "Cage rules", 0, true, BumpAddition.ALL);
 
     for (int i = 0; i < 15; i++) {
       wrestlerService.createWrestler(

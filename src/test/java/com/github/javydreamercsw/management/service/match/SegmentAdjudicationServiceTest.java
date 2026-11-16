@@ -294,7 +294,7 @@ class SegmentAdjudicationServiceTest {
     segmentAdjudicationService.adjudicateMatch(segment);
 
     verify(rivalryService).getRivalryBetweenWrestlers(eq(1L), eq(2L));
-    verify(rivalryService).addHeat(eq(99L), eq(1), anyString());
+    verify(rivalryService).addHeat(eq(99L), eq(3), anyString());
     verify(rivalryService, never())
         .addHeatBetweenWrestlers(eq(1L), eq(2L), anyInt(), anyString(), anyLong());
   }
@@ -837,7 +837,7 @@ class SegmentAdjudicationServiceTest {
 
     segmentAdjudicationService.adjudicateMatch(segment);
 
-    verify(rivalryService).addHeat(eq(42L), eq(2), anyString());
+    verify(rivalryService).addHeat(eq(42L), eq(5), anyString());
   }
 
   @Test
@@ -849,7 +849,7 @@ class SegmentAdjudicationServiceTest {
 
     segmentAdjudicationService.adjudicateMatch(segment);
 
-    verify(rivalryService).addHeat(eq(42L), eq(3), anyString());
+    verify(rivalryService).addHeat(eq(42L), eq(8), anyString());
   }
 
   @Test

@@ -156,11 +156,12 @@ public class Rivalry extends AbstractEntity<Long> {
 
   /**
    * Attempt to resolve the rivalry with dice roll. ATW Rule: Both roll d20 → total > threshold =
-   * rivalry ends.
+   * rivalry ends. Uses the INTENSE heat floor (the resolution-eligible band).
    */
   public boolean attemptResolution(
       final int wrestler1Roll, final int wrestler2Roll, final int threshold) {
-    return attemptResolution(wrestler1Roll, wrestler2Roll, threshold, 20);
+    return attemptResolution(
+        wrestler1Roll, wrestler2Roll, threshold, RivalryIntensity.INTENSE.getMinHeat());
   }
 
   /** Attempt resolution with a configurable minimum-heat floor. */

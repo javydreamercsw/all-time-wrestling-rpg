@@ -37,6 +37,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -75,6 +76,7 @@ public class LocalShowPlanner {
   /** Tie-break source for stipulation picks among equal-rated rules; injectable for tests. */
   private final Random random;
 
+  @Autowired
   public LocalShowPlanner(
       WeeklyParticipationTracker tracker, SegmentRuleService segmentRuleService) {
     this(tracker, segmentRuleService, new Random());

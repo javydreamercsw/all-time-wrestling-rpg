@@ -167,7 +167,7 @@ class CampaignCardExportViewTest {
     rule.setDescription("No way out.");
     rule.setExpansionCode("CUSTOM");
     rule.setNoDq(true);
-    rule.setRequiresHighHeat(true);
+    rule.setIntensityRating(85);
     rule.setAllowsRefereeStopage(false);
     rule.setBumpAddition(BumpAddition.ALL);
 
@@ -189,7 +189,7 @@ class CampaignCardExportViewTest {
     rule.setDescription("Nothing special.");
     rule.setExpansionCode("CUSTOM");
     rule.setNoDq(false);
-    rule.setRequiresHighHeat(false);
+    rule.setIntensityRating(0);
     rule.setBumpAddition(BumpAddition.NONE);
 
     Div card = CampaignCardExportView.buildSegmentRuleCard(rule);
