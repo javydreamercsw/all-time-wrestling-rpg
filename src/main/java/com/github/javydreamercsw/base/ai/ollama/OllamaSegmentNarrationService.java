@@ -16,6 +16,8 @@
 */
 package com.github.javydreamercsw.base.ai.ollama;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.AIServiceException;
@@ -26,6 +28,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpTimeoutException;
 import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.NonNull;
@@ -43,11 +46,23 @@ import org.springframework.stereotype.Service;
  *       AI_OLLAMA_BASE_URL} game setting is configured, the provider reports unavailable.
  *   <li>{@code OLLAMA_MODEL} — model tag, default {@code llama3.2:1b}.
  *   <li>{@code OLLAMA_TIMEOUT_SECONDS} — per-request timeout, default 300.
+ *   <li>{@code OLLAMA_MAX_TOKENS} — max output tokens, default 4096. Reasoning ("thinking") tokens
+ *       count toward this limit.
+ *   <li>{@code OLLAMA_DISABLE_THINKING} — when {@code true}, appends {@code /no_think} to the
+ *       system message (Qwen3-family hybrid models).
  * </ul>
+ *
+ * <p>Extra request parameters (merged into the request body, overriding the defaults above) come
+ * from the {@code AI_OLLAMA_EXTRA_PARAMS} game setting only — no environment variable, since JSON
+ * through an env var is a quoting footgun. The reserved keys {@code model} and {@code messages} are
+ * stripped from it.
  */
 @Service
 @Slf4j
 public class OllamaSegmentNarrationService extends AbstractSegmentNarrationService {
+
+  private static final String RESERVED_MODEL_KEY = "model";
+  private static final String RESERVED_MESSAGES_KEY = "messages";
 
   private final ObjectMapper objectMapper = new ObjectMapper();
   private final AiSettingsService aiSettingsService;
@@ -81,6 +96,40 @@ public class OllamaSegmentNarrationService extends AbstractSegmentNarrationServi
         : Integer.parseInt(timeout.trim());
   }
 
+  private int maxTokens() {
+    String env = System.getenv("OLLAMA_MAX_TOKENS");
+    if (env != null && !env.isBlank()) {
+      return Integer.parseInt(env.trim());
+    }
+    return aiSettingsService.getOllamaMaxTokens();
+  }
+
+  private boolean disableThinking() {
+    String env = System.getenv("OLLAMA_DISABLE_THINKING");
+    if (env != null && !env.isBlank()) {
+      return Boolean.parseBoolean(env.trim());
+    }
+    return aiSettingsService.isOllamaDisableThinking();
+  }
+
+  Map<String, Object> extraParams() {
+    String setting = aiSettingsService.getOllamaExtraParams();
+    if (setting == null || setting.isBlank()) {
+      return Map.of();
+    }
+    try {
+      JsonNode tree = objectMapper.readTree(setting);
+      if (!tree.isObject()) {
+        log.warn("AI_OLLAMA_EXTRA_PARAMS must be a JSON object; ignoring value");
+        return Map.of();
+      }
+      return objectMapper.convertValue(tree, new TypeReference<Map<String, Object>>() {});
+    } catch (JsonProcessingException e) {
+      log.warn("Failed to parse AI_OLLAMA_EXTRA_PARAMS as JSON; ignoring value", e);
+      return Map.of();
+    }
+  }
+
   @Override
   public String getProviderName() {
     return "Ollama";
@@ -90,6 +139,43 @@ public class OllamaSegmentNarrationService extends AbstractSegmentNarrationServi
   public boolean isAvailable() {
     String url = baseUrl();
     return url != null && !url.isBlank();
+  }
+
+  /**
+   * Appends the {@code /no_think} soft switch when thinking is disabled. Qwen3-family hybrid models
+   * stop emitting reasoning tokens; other models treat it as harmless trailing text.
+   */
+  @Override
+  protected String getSystemMessage(@NonNull final String prompt) {
+    String base = super.getSystemMessage(prompt);
+    return disableThinking() ? base + "\n\n/no_think" : base;
+  }
+
+  /** Builds the request body: named defaults first, then extra params merged as the last word. */
+  Map<String, Object> buildRequestBody(final String prompt) {
+    Map<String, Object> body = new LinkedHashMap<>();
+    body.put("model", model());
+    body.put(
+        "messages",
+        List.of(
+            Map.of("role", "system", "content", getSystemMessage(prompt)),
+            Map.of("role", "user", "content", prompt)));
+    body.put("temperature", 0.2);
+    body.put("max_tokens", maxTokens());
+
+    Map<String, Object> extras = new LinkedHashMap<>(extraParams());
+    List<String> reserved =
+        extras.keySet().stream()
+            .filter(key -> RESERVED_MODEL_KEY.equals(key) || RESERVED_MESSAGES_KEY.equals(key))
+            .toList();
+    if (!reserved.isEmpty()) {
+      log.warn(
+          "Ignoring reserved key(s) {} in AI_OLLAMA_EXTRA_PARAMS (they would corrupt the request)",
+          reserved);
+      reserved.forEach(extras::remove);
+    }
+    body.putAll(extras);
+    return body;
   }
 
   @Override
@@ -103,19 +189,7 @@ public class OllamaSegmentNarrationService extends AbstractSegmentNarrationServi
     }
 
     try {
-      Map<String, Object> requestBody =
-          Map.of(
-              "model",
-              model(),
-              "messages",
-              List.of(
-                  Map.of("role", "system", "content", getSystemMessage(prompt)),
-                  Map.of("role", "user", "content", prompt)),
-              "temperature",
-              0.2,
-              "max_tokens",
-              4096);
-
+      Map<String, Object> requestBody = buildRequestBody(prompt);
       String jsonBody = objectMapper.writeValueAsString(requestBody);
       int timeout = timeoutSeconds();
 
@@ -144,6 +218,12 @@ public class OllamaSegmentNarrationService extends AbstractSegmentNarrationServi
       if (content.isMissingNode() || content.isNull()) {
         throw new AIServiceException(
             502, "Bad Gateway", getProviderName(), "No content in Ollama response");
+      }
+      if ("length".equals(root.path("choices").path(0).path("finish_reason").asText())) {
+        log.warn(
+            "Ollama narration truncated at max_tokens={} (finish_reason=length); "
+                + "increase AI_OLLAMA_MAX_TOKENS or enable Disable Thinking",
+            maxTokens());
       }
       return content.asText().trim();
     } catch (AIServiceException e) {

@@ -37,6 +37,7 @@ In **Admin → AI Settings** you'll find collapsible sections — one common sec
 **Provider notes:**
 
 - **Ollama** needs no key — set the **Base URL** of your local server (default `http://localhost:11434`) and the **Model** tag to pull (default `llama3.2:1b`). Environment variables `OLLAMA_BASE_URL` and `OLLAMA_MODEL` take priority over the UI values.
+- **Ollama optional parameters:** **Max Tokens** caps the response length (default 4096) — note that _thinking_ models (e.g. Qwen3) spend hidden reasoning tokens from this budget, so enable **Disable Thinking** to keep the full budget for narration (it appends Qwen3's `/no_think` switch; harmless for other models). **Extra Request Parameters (JSON)** merges arbitrary JSON into the request body, overriding the defaults — reserved keys `model` and `messages` are ignored. Env vars `OLLAMA_MAX_TOKENS` and `OLLAMA_DISABLE_THINKING` take priority over the UI values.
 - **Timeout (seconds)** in the common section caps how long narration requests wait. Raise it for slow local models.
 - The OpenAI section exposes extra knobs (default/premium/image models, max tokens, temperature) used by features that generate art as well as narration.
 

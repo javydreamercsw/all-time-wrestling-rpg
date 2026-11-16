@@ -359,6 +359,205 @@ class ShowPlanningAiServiceTest {
   }
 
   @Test
+  void planShow_promoNamingBriefcaseHolder_isDropped() {
+    // ATW-eqo0 (ATW-u1hr follow-up): the AI funnels a held-briefcase holder into yet another
+    // Promo ("hypes up his impending cash-in") — the deterministic pass drops it; a holder
+    // builds toward the cash-in with matches.
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(1);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    context.setHeldBriefcases(List.of("Mukundi Shumba — Time Vault briefcase"));
+
+    String aiResponseJson =
+        """
+        [
+          {
+            "segmentId": "seg1",
+            "type": "Promo",
+            "description": "Mukundi Shumba addresses his Time Vault briefcase",
+            "outcome": "Crowd erupts",
+            "participants": ["Mukundi Shumba"]
+          },
+          {
+            "segmentId": "seg2",
+            "type": "One on One",
+            "description": "Mukundi Shumba battles Eddie Guerrero",
+            "outcome": "Shumba wins",
+            "participants": ["Mukundi Shumba", "Eddie Guerrero"]
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    assertEquals(
+        1,
+        proposedShow.getSegments().size(),
+        "The holder's Promo must be dropped; the match row must survive");
+    assertEquals("One on One", proposedShow.getSegments().get(0).getType());
+  }
+
+  @Test
+  void planShow_promoNamingNonHolder_isKept() {
+    // A Promo naming nobody who holds a briefcase passes through untouched.
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(1);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+    context.setHeldBriefcases(List.of("Mukundi Shumba — Time Vault briefcase"));
+
+    String aiResponseJson =
+        """
+        [
+          {
+            "segmentId": "seg1",
+            "type": "Promo",
+            "description": "Eddie Guerrero cuts a promo",
+            "outcome": "Crowd erupts",
+            "participants": ["Eddie Guerrero"]
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    assertEquals(1, proposedShow.getSegments().size(), "A non-holder Promo stays");
+    assertEquals("Promo", proposedShow.getSegments().get(0).getType());
+  }
+
+  @Test
+  void planShow_wrestlerBookedTwiceInMatches_secondRowDropped() {
+    // ATW-eqo0: the AI double-books a wrestler across match rows even with a full roster
+    // available — the later match row is dropped whole; the first claim wins.
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(3);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+
+    String aiResponseJson =
+        """
+        [
+          {
+            "segmentId": "seg1",
+            "type": "One on One",
+            "description": "Oda Tsurugi vs Dynamite Kid",
+            "outcome": "Oda Tsurugi wins via pinfall",
+            "participants": ["Oda Tsurugi", "Dynamite Kid"]
+          },
+          {
+            "segmentId": "seg2",
+            "type": "One on One",
+            "description": "Oda Tsurugi pulls double duty against Jax Felix",
+            "outcome": "Jax Felix wins",
+            "participants": ["Jax Felix", "Oda Tsurugi"]
+          },
+          {
+            "segmentId": "seg3",
+            "type": "One on One",
+            "description": "The Beast battles Princess Aussie",
+            "outcome": "The Beast wins",
+            "participants": ["The Beast", "Princess Aussie"]
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    assertEquals(
+        2, proposedShow.getSegments().size(), "The double-booked match row must be dropped");
+    assertEquals("One on One", proposedShow.getSegments().get(0).getType());
+    assertEquals(
+        "The Beast",
+        proposedShow.getSegments().get(1).getTeams().get(0).get(0),
+        "The unrelated match row must survive");
+  }
+
+  @Test
+  void planShow_wrestlerInMatchAndPromo_bothKept() {
+    // The one-match rule restricts matches only — a wrestler may appear in a match AND a promo.
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(1);
+    showTemplate.setExpectedPromos(1);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+
+    String aiResponseJson =
+        """
+        [
+          {
+            "segmentId": "seg1",
+            "type": "One on One",
+            "description": "Eddie Guerrero vs Rob Van Dam",
+            "outcome": "Eddie Guerrero wins",
+            "participants": ["Eddie Guerrero", "Rob Van Dam"]
+          },
+          {
+            "segmentId": "seg2",
+            "type": "Promo",
+            "description": "Eddie Guerrero cuts a promo",
+            "outcome": "Crowd erupts",
+            "participants": ["Eddie Guerrero"]
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    assertEquals(
+        2,
+        proposedShow.getSegments().size(),
+        "A match plus a Promo for the same wrestler is legal");
+  }
+
+  @Test
+  void planShow_caseInsensitiveDuplicateMatchBooking_dropped() {
+    // The AI capitalizes inconsistently across rows; dedup is case-insensitive.
+    ShowPlanningContextDTO context = new ShowPlanningContextDTO();
+    ShowTemplate showTemplate = new ShowTemplate();
+    showTemplate.setExpectedMatches(2);
+    showTemplate.setExpectedPromos(0);
+    context.setShowTemplate(showTemplate);
+    context.setShowDate(LocalDate.of(2025, 6, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+
+    String aiResponseJson =
+        """
+        [
+          {
+            "segmentId": "seg1",
+            "type": "One on One",
+            "description": "Oda Tsurugi vs Dynamite Kid",
+            "outcome": "Oda Tsurugi wins",
+            "participants": ["Oda Tsurugi", "Dynamite Kid"]
+          },
+          {
+            "segmentId": "seg2",
+            "type": "One on One",
+            "description": "ODA TSURUGI vs Jax Felix",
+            "outcome": "Jax Felix wins",
+            "participants": ["ODA TSURUGI", "Jax Felix"]
+          }
+        ]
+        """;
+    when(segmentNarrationService.generateText(anyString())).thenReturn(aiResponseJson);
+
+    ProposedShow proposedShow = showPlanningAiService.planShow(context);
+
+    assertEquals(1, proposedShow.getSegments().size(), "Case-variant rebooking must be dropped");
+  }
+
+  @Test
   void planShow_cooldownRivalry_matchedByParticipantNamesWithoutRivalryId() {
     // Given — the AI omits rivalryId; the participants alone identify the cooldown feud
     ShowPlanningContextDTO context = new ShowPlanningContextDTO();

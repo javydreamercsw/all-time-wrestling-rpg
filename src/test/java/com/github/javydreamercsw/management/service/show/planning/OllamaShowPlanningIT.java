@@ -157,7 +157,6 @@ class OllamaShowPlanningIT extends ManagementIntegrationTest {
     entry.setTier(WrestlerTier.MIDCARDER);
     entry.setFans(10_000L);
     entry.setAlignment("FACE");
-    entry.setInjured(false);
     return entry;
   }
 }
