@@ -695,7 +695,7 @@ class LocalShowPlannerTest {
   void plan_mixedGenderFeud_confrontationPromoSummaryNamesPolicy() {
     // Intergender disabled + male/female feud → CONFRONTATION_ONLY: the summary states the
     // policy instead of booking an illegal match.
-    ShowPlanningRivalryDTO mixed = rivalry(55L, "Gail Kim", "André the Giant", 15);
+    ShowPlanningRivalryDTO mixed = rivalry(55L, "Gail Kim", "André the Giant", 35);
     ShowPlanningContextDTO context = context();
     context.setCurrentRivalries(new ArrayList<>(List.of(mixed)));
 
@@ -931,7 +931,7 @@ class LocalShowPlannerTest {
     // gender — a female idle at the head of the pool is passed over for both sides.
     ShowPlanningContextDTO context = context();
     context.setCurrentRivalries(
-        new ArrayList<>(List.of(rivalry(41L, "Kurt Angle", "Nick Aldis", 15))));
+        new ArrayList<>(List.of(rivalry(41L, "Kurt Angle", "Nick Aldis", 35))));
     context.setFullRoster(
         new ArrayList<>(
             List.of(
@@ -965,7 +965,7 @@ class LocalShowPlannerTest {
   void applyHeatBasedStipulations_emptyCatalog_noRulesNoCrash() {
     // An empty high-heat catalog leaves every row ruleless — applyDefaultRules backfills later.
     ShowPlanningContextDTO context = context();
-    when(segmentRuleService.getHighHeatRules()).thenReturn(List.of());
+    when(segmentRuleService.findAll()).thenReturn(List.of());
 
     List<ProposedSegment> segments = planner.plan(context(), 5, 2, Set.of());
     planner.applyHeatBasedStipulations(segments, context);
@@ -978,7 +978,7 @@ class LocalShowPlannerTest {
   @Test
   void applyHeatBasedStipulations_nullCatalog_noRulesNoCrash() {
     ShowPlanningContextDTO context = context();
-    when(segmentRuleService.getHighHeatRules()).thenReturn(null);
+    when(segmentRuleService.findAll()).thenReturn(List.of());
 
     List<ProposedSegment> segments = planner.plan(context(), 5, 2, Set.of());
     planner.applyHeatBasedStipulations(segments, context);
@@ -992,8 +992,9 @@ class LocalShowPlannerTest {
     ShowPlanningContextDTO context = context();
     SegmentRule cage = new SegmentRule();
     cage.setName("Cage");
-    cage.setRequiresHighHeat(true);
-    when(segmentRuleService.getHighHeatRules()).thenReturn(List.of(cage));
+    cage.setIntensityRating(60);
+    when(segmentRuleService.getStipulationRulesForHeat(org.mockito.ArgumentMatchers.anyInt()))
+        .thenReturn(List.of(cage));
 
     ProposedSegment stipulated = new ProposedSegment();
     stipulated.setType("One on One");
@@ -1012,8 +1013,9 @@ class LocalShowPlannerTest {
     ShowPlanningContextDTO context = context();
     SegmentRule cage = new SegmentRule();
     cage.setName("Cage");
-    cage.setRequiresHighHeat(true);
-    when(segmentRuleService.getHighHeatRules()).thenReturn(List.of(cage));
+    cage.setIntensityRating(60);
+    when(segmentRuleService.getStipulationRulesForHeat(org.mockito.ArgumentMatchers.anyInt()))
+        .thenReturn(List.of(cage));
 
     ProposedSegment orphan = new ProposedSegment();
     orphan.setType("One on One");
