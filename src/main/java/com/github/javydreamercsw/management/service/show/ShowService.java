@@ -599,6 +599,22 @@ public class ShowService {
 
     Set<Long> participatingWrestlerIds = new HashSet<>();
 
+    // Wrestlers on this show's segments wrestled — regardless of WHICH run adjudicated
+    // their segment (this one, an earlier partial run, or the MatchView single-segment
+    // flow). Post-show recovery must only roll for wrestlers who actually rested.
+    // (ATW-binc follow-up: Gail Kim was adjudicated via MatchView before "Adjudicate
+    // Fans" ran, fell out of the participant set, and got healed as if she rested.)
+    segmentRepository
+        .findByShow(show)
+        .forEach(
+            segment -> {
+              if (!WellKnownSegmentType.PROMO.matches(segment.getSegmentType())) {
+                segment
+                    .getParticipants()
+                    .forEach(p -> participatingWrestlerIds.add(p.getWrestler().getId()));
+              }
+            });
+
     // Narration phase (2.13.0): generate full narrations for pending segments still
     // carrying only the AI-planning brief description. Each segment commits in its own
     // transaction (REQUIRES_NEW) before adjudication starts, so news generation below
