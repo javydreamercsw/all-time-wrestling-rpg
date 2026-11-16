@@ -176,6 +176,7 @@ public class Segment extends AbstractEntity<Long> {
   private Set<SegmentParticipant> participants = new HashSet<>();
 
   @ManyToMany(fetch = FetchType.EAGER)
+  @Setter
   @JoinTable(
       name = "segment_title",
       joinColumns = @JoinColumn(name = "segment_id"),
@@ -270,18 +271,6 @@ public class Segment extends AbstractEntity<Long> {
       titles = new HashSet<>();
     }
     return titles;
-  }
-
-  /**
-   * Defensive copy on assign: callers pass all kinds of sets (immutable {@code Set.of} from AI
-   * mapping, Vaadin combo values, entity-loaded sets). This field is mutated in place downstream
-   * (title resolution at approval, grid edits), so a by-reference assignment of an immutable set
-   * crashes the NEXT mutation with UnsupportedOperationException — whose null message surfaced as
-   * "Failed to approve planning: null" in production (ATW-wbch). The class owns the mutability
-   * invariant, not every caller.
-   */
-  public void setTitles(final Set<Title> titles) {
-    this.titles = titles == null ? new HashSet<>() : new HashSet<>(titles);
   }
 
   public void setWinners(final List<Wrestler> winners) {

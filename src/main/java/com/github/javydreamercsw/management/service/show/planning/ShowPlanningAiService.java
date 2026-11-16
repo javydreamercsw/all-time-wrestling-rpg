@@ -22,6 +22,7 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.title.BriefcaseCashInMode;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.HolidayService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
@@ -58,7 +59,7 @@ public class ShowPlanningAiService {
   private final HolidayService holidayService;
   private final ShowPlanningPromptBuilder promptBuilder;
   private final LocalShowPlanner localShowPlanner;
-  private final com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
+  private final GameSettingService gameSettingService;
 
   @Autowired
   ShowPlanningAiService(
@@ -68,7 +69,7 @@ public class ShowPlanningAiService {
       final SegmentRuleService segmentRuleService,
       final HolidayService holidayService,
       final LocalShowPlanner localShowPlanner,
-      final com.github.javydreamercsw.management.service.GameSettingService gameSettingService) {
+      final GameSettingService gameSettingService) {
     this.narrationServiceFactory = narrationServiceFactory;
     this.objectMapper = objectMapper;
     this.segmentTypeService = segmentTypeService;

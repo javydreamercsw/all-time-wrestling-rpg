@@ -33,7 +33,9 @@ import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanni
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -138,7 +140,7 @@ class LocalShowPlannerTest {
     ShowPlanningSegmentDTO dto = new ShowPlanningSegmentDTO();
     dto.setSegmentType(type);
     dto.setParticipants(participants);
-    dto.setSegmentDate(SHOW_DATE.minus(daysAgo, java.time.temporal.ChronoUnit.DAYS));
+    dto.setSegmentDate(SHOW_DATE.minus(daysAgo, ChronoUnit.DAYS));
     return dto;
   }
 
@@ -169,7 +171,7 @@ class LocalShowPlannerTest {
     // The production bug: Oda Tsurugi (3 rivalries) and Jax Felix (3) double-booked.
     List<ProposedSegment> segments = planner.plan(context(), 5, 2, Set.of());
 
-    Set<String> seen = new java.util.HashSet<>();
+    Set<String> seen = new HashSet<>();
     for (ProposedSegment segment : segments) {
       if (segment.getType().toLowerCase().contains("promo")) {
         continue;
@@ -373,7 +375,7 @@ class LocalShowPlannerTest {
       if (segment.getType().toLowerCase().contains("promo")) {
         continue;
       }
-      Set<String> genders = new java.util.HashSet<>();
+      Set<String> genders = new HashSet<>();
       for (String name : participantsOf(segment)) {
         genders.add(
             timelessRoster().stream()

@@ -29,6 +29,7 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.title.BriefcaseCashInMode;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.HolidayService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
@@ -57,7 +58,7 @@ class ShowPlanningAiServiceTest {
   private SegmentRuleService segmentRuleService;
   private HolidayService holidayService;
   private SegmentTypeService segmentTypeService;
-  private com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
+  private GameSettingService gameSettingService;
   private LocalShowPlanner localShowPlanner;
 
   @BeforeEach
@@ -68,8 +69,7 @@ class ShowPlanningAiServiceTest {
     holidayService = mock(HolidayService.class);
     ObjectMapper objectMapper = new ObjectMapper(); // Use real ObjectMapper for JSON parsing
     segmentTypeService = mock(SegmentTypeService.class);
-    gameSettingService =
-        mock(com.github.javydreamercsw.management.service.GameSettingService.class);
+    gameSettingService = mock(GameSettingService.class);
     // Tests below exercise the legacy AI-booking path; the local planner is opt-out here.
     when(gameSettingService.isShowPlanningLocalPlannerEnabled()).thenReturn(false);
     localShowPlanner = new LocalShowPlanner(new WeeklyParticipationTracker(), segmentRuleService);

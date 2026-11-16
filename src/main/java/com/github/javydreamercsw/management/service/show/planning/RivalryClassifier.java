@@ -18,7 +18,9 @@ package com.github.javydreamercsw.management.service.show.planning;
 
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRivalryDTO;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * The rivalry classification switch, shared by the prompt builder (advisory labels for the AI) and
@@ -95,8 +97,8 @@ public final class RivalryClassifier {
     Set<String> genders =
         rivalry.getParticipants().stream()
             .map(genderByName::get)
-            .filter(java.util.Objects::nonNull)
-            .collect(java.util.stream.Collectors.toSet());
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
     return genders.size() > 1;
   }
 }

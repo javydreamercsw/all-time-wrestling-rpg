@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanni
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,7 +44,7 @@ class WeeklyParticipationTrackerTest {
     ShowPlanningSegmentDTO dto = new ShowPlanningSegmentDTO();
     dto.setSegmentType(type);
     dto.setParticipants(participants);
-    dto.setSegmentDate(SHOW_DATE.minus(daysAgo, java.time.temporal.ChronoUnit.DAYS));
+    dto.setSegmentDate(SHOW_DATE.minus(daysAgo, ChronoUnit.DAYS));
     return dto;
   }
 

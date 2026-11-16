@@ -28,7 +28,9 @@ import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRecurrence;
 import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.HolidayService;
+import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import java.time.LocalDate;
 import java.util.List;
@@ -71,12 +73,9 @@ class OllamaTournamentFedPleIT extends AbstractTournamentFedPleIT {
   @Autowired private HolidayService holidayService;
   @Autowired private SegmentRepository segmentRepository;
 
-  @Autowired
-  private com.github.javydreamercsw.management.service.segment.SegmentRuleService
-      segmentRuleService;
+  @Autowired private SegmentRuleService segmentRuleService;
 
-  @Autowired
-  private com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
+  @Autowired private GameSettingService gameSettingService;
 
   private ShowPlanningAiService aiService;
 

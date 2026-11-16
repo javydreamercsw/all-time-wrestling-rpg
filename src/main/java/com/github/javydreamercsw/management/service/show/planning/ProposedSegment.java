@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.Data;
+import lombok.Setter;
 
 @Data
 public class ProposedSegment {
@@ -56,12 +57,7 @@ public class ProposedSegment {
    * downstream title resolution mutates the collection — a by-reference immutable set crashes that
    * mutation (ATW-wbch).
    */
-  private Set<Title> titles = new HashSet<>();
-
-  /** Copy-on-assign so the field stays mutable regardless of what the caller passes. */
-  public void setTitles(final Set<Title> titles) {
-    this.titles = titles == null ? new HashSet<>() : new HashSet<>(titles);
-  }
+  @Setter private Set<Title> titles = new HashSet<>();
 
   private List<String> rules;
   private String refereeName;

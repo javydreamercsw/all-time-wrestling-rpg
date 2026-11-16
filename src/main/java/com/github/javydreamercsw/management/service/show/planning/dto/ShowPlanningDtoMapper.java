@@ -26,6 +26,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.PromoType;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.dto.FactionDTO;
+import com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO;
 import com.github.javydreamercsw.management.service.ranking.RankingService;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningChampionship;
@@ -173,15 +174,8 @@ public class ShowPlanningDtoMapper {
     try {
       dto.setRankedContenderNames(
           rankingService.getRankedContenders(championship.getTitle().getId()).stream()
-              .filter(
-                  ranked ->
-                      ranked
-                          instanceof
-                          com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO)
-              .map(
-                  ranked ->
-                      ((com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO) ranked)
-                          .getName())
+              .filter(ranked -> ranked instanceof RankedWrestlerDTO)
+              .map(ranked -> ((RankedWrestlerDTO) ranked).getName())
               .limit(5)
               .toList());
     } catch (Exception e) {

@@ -644,9 +644,7 @@ public class ShowPlanningPromptBuilder {
    * @param fixedSegments the locally planned card (deterministic rows included)
    */
   public String buildNarrationPrompt(
-      @NonNull ShowPlanningContextDTO context,
-      @NonNull List<com.github.javydreamercsw.management.service.show.planning.ProposedSegment>
-              fixedSegments) {
+      @NonNull ShowPlanningContextDTO context, @NonNull List<ProposedSegment> fixedSegments) {
     StringBuilder prompt = new StringBuilder();
     prompt.append(
         """

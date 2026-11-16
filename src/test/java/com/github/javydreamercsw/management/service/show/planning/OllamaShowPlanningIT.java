@@ -23,7 +23,9 @@ import com.github.javydreamercsw.base.ai.ollama.OllamaSegmentNarrationService;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.HolidayService;
+import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRosterEntryDTO;
 import java.time.Instant;
@@ -70,12 +72,9 @@ class OllamaShowPlanningIT extends ManagementIntegrationTest {
   @Autowired private OllamaSegmentNarrationService ollamaService;
   @Autowired private HolidayService holidayService;
 
-  @Autowired
-  private com.github.javydreamercsw.management.service.segment.SegmentRuleService
-      segmentRuleService;
+  @Autowired private SegmentRuleService segmentRuleService;
 
-  @Autowired
-  private com.github.javydreamercsw.management.service.GameSettingService gameSettingService;
+  @Autowired private GameSettingService gameSettingService;
 
   /**
    * ShowPlanningAiService wired to a factory containing ONLY the Ollama provider. This sidesteps
