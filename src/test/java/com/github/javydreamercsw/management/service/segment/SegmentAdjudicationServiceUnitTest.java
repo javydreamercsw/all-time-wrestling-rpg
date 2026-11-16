@@ -196,7 +196,7 @@ class SegmentAdjudicationServiceUnitTest {
 
     adjudicationService.adjudicateMatch(matchSegment);
 
-    verify(rivalryService, times(1)).addHeat(eq(99L), eq(1), eq("From segment: match"));
+    verify(rivalryService, times(1)).addHeat(eq(99L), eq(3), eq("From segment: match"));
     verify(rivalryService, never())
         .addHeatBetweenWrestlers(anyLong(), anyLong(), anyInt(), anyString(), anyLong());
   }
@@ -418,6 +418,6 @@ class SegmentAdjudicationServiceUnitTest {
 
     adjudicationService.adjudicateMatch(matchSegment);
 
-    verify(rivalryService, times(1)).addHeat(eq(731L), eq(2), eq("AI-booked segment: Match"));
+    verify(rivalryService, times(1)).addHeat(eq(731L), eq(5), eq("AI-booked segment: Match"));
   }
 }

@@ -1154,13 +1154,29 @@ public class DataMigrationService {
         INSERT INTO segment_rule (segment_rule_id, name, description, \
         intensity_rating, creation_date) VALUES (?, ?, ?, ?, ?)\
         """;
+    // Source schema varies: a legacy (pre-V173) source carries the requires_high_heat boolean,
+    // a current source already carries intensity_rating. Detect once and select accordingly.
+    boolean legacyBooleanSource;
+    try (Statement probe = sourceConnection.createStatement();
+        ResultSet rs =
+            probe.executeQuery(
+                "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS "
+                    + "WHERE TABLE_NAME = 'SEGMENT_RULE' AND COLUMN_NAME = 'REQUIRES_HIGH_HEAT'")) {
+      rs.next();
+      legacyBooleanSource = rs.getInt(1) > 0;
+    }
+    String selectSql =
+        legacyBooleanSource
+            ? """
+            SELECT segment_rule_id, name, description, \
+            requires_high_heat, creation_date FROM segment_rule\
+            """
+            : """
+            SELECT segment_rule_id, name, description, \
+            intensity_rating, creation_date FROM segment_rule\
+            """;
     try (Statement sourceStatement = sourceConnection.createStatement();
-        ResultSet resultSet =
-            sourceStatement.executeQuery(
-                """
-                SELECT segment_rule_id, name, description, \
-                requires_high_heat, creation_date FROM segment_rule\
-                """);
+        ResultSet resultSet = sourceStatement.executeQuery(selectSql);
         PreparedStatement targetStatement = targetConnection.prepareStatement(sql)) {
 
       int count = 0;
@@ -1168,10 +1184,13 @@ public class DataMigrationService {
         targetStatement.setLong(1, resultSet.getLong("segment_rule_id"));
         targetStatement.setString(2, resultSet.getString("name"));
         targetStatement.setString(3, resultSet.getString("description"));
-        // Legacy source rows carry the boolean flag; map it to the 0-100 rating the same way the
-        // V173/V142 migration does (seed names get their real rating via the sync).
-        boolean legacyHighHeat = resultSet.getBoolean("requires_high_heat");
-        targetStatement.setInt(4, legacyHighHeat ? 75 : 0);
+        if (legacyBooleanSource) {
+          // Legacy source: map the boolean the same way the V173/V142 migration does (seed names
+          // get their real rating via the sync).
+          targetStatement.setInt(4, resultSet.getBoolean("requires_high_heat") ? 75 : 0);
+        } else {
+          targetStatement.setInt(4, resultSet.getInt("intensity_rating"));
+        }
         targetStatement.setTimestamp(5, resultSet.getTimestamp("creation_date"));
         targetStatement.addBatch();
         count++;

@@ -176,7 +176,7 @@ class CampaignCardExportViewTest {
     assertThat(card.getElement().getTextRecursively())
         .contains("SEGMENT RULE")
         .contains("NO DQ")
-        .contains("HIGH HEAT")
+        .contains("🌋 Explosive")
         .contains("NO REF STOPPAGE")
         .contains("BUMPS: ALL");
   }
@@ -197,7 +197,7 @@ class CampaignCardExportViewTest {
     assertThat(card.getElement().getTextRecursively())
         .contains("Standard Match")
         .doesNotContain("NO DQ")
-        .doesNotContain("HIGH HEAT")
+        .doesNotContain("🌋")
         .doesNotContain("BUMPS:");
   }
 
