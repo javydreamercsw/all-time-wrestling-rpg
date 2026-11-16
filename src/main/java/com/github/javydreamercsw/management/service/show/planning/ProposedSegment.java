@@ -44,7 +44,21 @@ public class ProposedSegment {
   /** Title id whose #1 contender is decided by this segment (resolved at approval time). */
   private Long contenderTitleId;
 
+  /**
+   * Title id defended by this segment (champion vs. contender) — resolved to the Title entity at
+   * approval time. The local planner sets it on championship-defense rows so the card defends the
+   * REAL champion instead of the narration AI inventing one.
+   */
+  private Long titleId;
+
+  /**
+   * Titles attached to this row. Copy-on-assign (the manual setter below, which also suppresses
+   * Lombok's bare setter): callers pass immutable sets ({@code Set.of(...)}, combo values) and
+   * downstream title resolution mutates the collection — a by-reference immutable set crashes that
+   * mutation (ATW-wbch).
+   */
   @Setter private Set<Title> titles = new HashSet<>();
+
   private List<String> rules;
   private String refereeName;
 

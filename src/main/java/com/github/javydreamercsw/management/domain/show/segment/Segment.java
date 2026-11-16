@@ -176,6 +176,7 @@ public class Segment extends AbstractEntity<Long> {
   private Set<SegmentParticipant> participants = new HashSet<>();
 
   @ManyToMany(fetch = FetchType.EAGER)
+  @Setter
   @JoinTable(
       name = "segment_title",
       joinColumns = @JoinColumn(name = "segment_id"),

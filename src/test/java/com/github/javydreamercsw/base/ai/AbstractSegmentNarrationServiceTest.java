@@ -17,12 +17,14 @@
 package com.github.javydreamercsw.base.ai;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentNarrationContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.SegmentTypeContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.VenueContext;
 import com.github.javydreamercsw.base.ai.SegmentNarrationService.WrestlerContext;
+import java.time.Duration;
 import java.util.List;
 import lombok.NonNull;
 import org.junit.jupiter.api.Test;
@@ -134,6 +136,57 @@ class AbstractSegmentNarrationServiceTest {
     assertFalse(
         prompt.contains("IMPORTANT - USER FEEDBACK"),
         "Prompt should not mention user feedback when no feedback marker exists");
+  }
+
+  @Test
+  void testRetryExhaustion_messageSurfacesLastUnderlyingFailure() {
+    // Production case (2026-11-11): Gemini 503 "high demand" — the exhausted-retries wrapper
+    // must carry the LAST provider failure in its message (the cause chain never reaches the
+    // UI; the controller maps error = e.getMessage()).
+    AbstractSegmentNarrationService failingService =
+        new AbstractSegmentNarrationService() {
+          @Override
+          protected String callAIProvider(@NonNull final String prompt) {
+            throw new AIServiceException(
+                503, "UNAVAILABLE", "TestProvider", "high demand — spikes are usually temporary");
+          }
+
+          @Override
+          public String getProviderName() {
+            return "TestProvider";
+          }
+
+          @Override
+          public boolean isAvailable() {
+            return true;
+          }
+
+          @Override
+          protected List<RetryPolicyConfig> getRetryPolicies() {
+            // Zero retries — fail fast while still exercising the exhaustion path.
+            return List.of(
+                RetryPolicyConfig.fixedDelay(
+                    0, Duration.ofMillis(1), this::isRetryableException, "Test policy"));
+          }
+        };
+
+    AIServiceException exhausted =
+        assertThrows(
+            AIServiceException.class,
+            () -> {
+              SegmentNarrationContext ctx = new SegmentNarrationContext();
+              SegmentTypeContext type = new SegmentTypeContext();
+              type.setSegmentType("Match");
+              ctx.setSegmentType(type);
+              failingService.narrateSegment(ctx);
+            });
+    assertTrue(
+        exhausted.getMessage().contains("high demand"),
+        "Exhausted message must surface the underlying provider failure, got: "
+            + exhausted.getMessage());
+    assertTrue(
+        exhausted.getMessage().contains("All retry policies exhausted"),
+        "Exhausted message must still identify the exhaustion");
   }
 
   private SegmentNarrationContext baseMatchContext() {

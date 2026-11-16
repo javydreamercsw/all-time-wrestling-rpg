@@ -17,6 +17,8 @@
 package com.github.javydreamercsw.management.service.show.planning.dto;
 
 import com.github.javydreamercsw.management.domain.title.DefenseFrequencyType;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Data;
 
 @Data
@@ -24,6 +26,17 @@ public class ShowPlanningChampionshipDTO {
   private String championshipName;
   private String championName;
   private String contenderName;
+
+  /** The defended Title's id — lets the local planner attach real title rows to the card. */
+  private Long titleId;
+
+  /**
+   * Top ranked contenders per RankingService (tier filters, champion removal, failed-challenge
+   * cooldowns, fans ordering). The local planner picks the first BOOKABLE name from this list when
+   * no designated contender is set — rankings, not roster order.
+   */
+  private List<String> rankedContenderNames = new ArrayList<>();
+
   private DefenseFrequencyType defenseFrequencyType;
   private Long daysSinceLastDefense;
 

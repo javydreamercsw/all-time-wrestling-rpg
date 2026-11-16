@@ -987,7 +987,16 @@ public class ShowPlanningService {
       segment.setSegmentOrder(currentSegmentCount + i + 1);
       segment.setIsTitleSegment(proposedSegment.getIsTitleSegment());
       if (proposedSegment.getTitles() != null && !proposedSegment.getTitles().isEmpty()) {
+        // Segment.setTitles copies on assign, so even immutable caller sets are safe to
+        // mutate below (title resolution, contender resolution).
         segment.setTitles(proposedSegment.getTitles());
+      }
+      if (proposedSegment.getTitleId() != null) {
+        // Local-planner championship defense (ATW-wbch): resolve the defended title by id —
+        // the real champion is on this segment, unlike the narration AI's invented context.
+        titleService
+            .getTitleById(proposedSegment.getTitleId())
+            .ifPresent(title -> segment.getTitles().add(title));
       }
       if (Boolean.TRUE.equals(proposedSegment.getIsContenderMatch())) {
         segment.setContenderMatch(true);

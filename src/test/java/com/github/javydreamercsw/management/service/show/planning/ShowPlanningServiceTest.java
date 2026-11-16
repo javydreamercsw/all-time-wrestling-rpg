@@ -2442,4 +2442,47 @@ class ShowPlanningServiceTest {
     // result is forced back to WINNERS so the bracket always resolves.
     assertEquals(SegmentResult.WINNERS, proposed.getResult(), "tournament matches must resolve");
   }
+
+  @Test
+  void approveSegments_localPlannerTitleDefense_resolvesTitleById() {
+    // The local planner attaches the defended title by id (ATW-wbch) — approval must resolve
+    // that id to the real Title entity and attach it to the saved segment.
+    ProposedSegment proposed = new ProposedSegment();
+    proposed.setType("Singles Match");
+    proposed.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+    proposed.setWinners(List.of("Wrestler A"));
+    proposed.setIsTitleSegment(true);
+    proposed.setTitleId(42L);
+
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+
+    SegmentType segmentType = new SegmentType();
+    segmentType.setName("Singles Match");
+    when(segmentTypeService.findByName("Singles Match")).thenReturn(Optional.of(segmentType));
+
+    Wrestler wrestlerA = new Wrestler();
+    wrestlerA.setId(1L);
+    wrestlerA.setName("Wrestler A");
+    when(wrestlerRepository.findByName("Wrestler A")).thenReturn(Optional.of(wrestlerA));
+    Wrestler wrestlerB = new Wrestler();
+    wrestlerB.setId(2L);
+    wrestlerB.setName("Wrestler B");
+    when(wrestlerRepository.findByName("Wrestler B")).thenReturn(Optional.of(wrestlerB));
+
+    Title defendedTitle = new Title();
+    defendedTitle.setId(42L);
+    defendedTitle.setName("ATW Intertemporal");
+    when(titleService.getTitleById(42L)).thenReturn(Optional.of(defendedTitle));
+
+    showPlanningService.approveSegments(show, List.of(proposed));
+
+    ArgumentCaptor<List<Segment>> segmentsCaptor = ArgumentCaptor.forClass(List.class);
+    verify(segmentRepository).saveAll(segmentsCaptor.capture());
+    Segment captured = segmentsCaptor.getValue().get(0);
+
+    assertTrue(captured.getIsTitleSegment(), "The defense row stays a title segment");
+    assertTrue(
+        captured.getTitles().stream().anyMatch(t -> "ATW Intertemporal".equals(t.getName())),
+        "The defended title resolves by id and attaches: " + captured.getTitles());
+  }
 }
