@@ -63,6 +63,7 @@ public class AdjudicationPreFlightDialog extends Dialog {
 
     // Error-toned confirm preserves the old ConfirmDialog semantics for winnerless warnings.
     confirmButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    confirmButton.setId("adjudicate-confirm-btn");
     if (!preFlight.missingWinnerWarnings().isEmpty()) {
       confirmButton.setText("Adjudicate Anyway");
       confirmButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
@@ -79,6 +80,7 @@ public class AdjudicationPreFlightDialog extends Dialog {
               close();
               callbacks.onCancel();
             });
+    cancelButton.setId("adjudicate-cancel-btn");
     getFooter().add(cancelButton, confirmButton);
   }
 
