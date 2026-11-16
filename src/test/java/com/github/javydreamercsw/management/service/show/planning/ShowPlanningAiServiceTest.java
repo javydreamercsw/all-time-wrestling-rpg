@@ -48,6 +48,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.slf4j.LoggerFactory;
 
 class ShowPlanningAiServiceTest {
@@ -130,7 +131,7 @@ class ShowPlanningAiServiceTest {
     SegmentRule highHeatRule = new SegmentRule();
     highHeatRule.setName("Steel Cage");
     highHeatRule.setDescription("A match fought within a steel cage.");
-    when(segmentRuleService.getStipulationRulesForHeat(org.mockito.ArgumentMatchers.anyInt()))
+    when(segmentRuleService.getStipulationRulesForHeat(ArgumentMatchers.anyInt()))
         .thenReturn(List.of(highHeatRule));
 
     // Mock AI response

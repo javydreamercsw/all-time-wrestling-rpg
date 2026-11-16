@@ -39,6 +39,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 
 /**
  * Deterministic pins for the local card builder (ATW-wbch), modeled on the production paste that
@@ -597,7 +598,7 @@ class LocalShowPlannerTest {
     SegmentRule cage = new SegmentRule();
     cage.setName("Cage");
     cage.setIntensityRating(60);
-    when(segmentRuleService.getStipulationRulesForHeat(org.mockito.ArgumentMatchers.anyInt()))
+    when(segmentRuleService.getStipulationRulesForHeat(ArgumentMatchers.anyInt()))
         .thenReturn(List.of(cage));
 
     List<ProposedSegment> segments = planner.plan(context(), 5, 2, Set.of());
@@ -993,7 +994,7 @@ class LocalShowPlannerTest {
     SegmentRule cage = new SegmentRule();
     cage.setName("Cage");
     cage.setIntensityRating(60);
-    when(segmentRuleService.getStipulationRulesForHeat(org.mockito.ArgumentMatchers.anyInt()))
+    when(segmentRuleService.getStipulationRulesForHeat(ArgumentMatchers.anyInt()))
         .thenReturn(List.of(cage));
 
     ProposedSegment stipulated = new ProposedSegment();
@@ -1014,7 +1015,7 @@ class LocalShowPlannerTest {
     SegmentRule cage = new SegmentRule();
     cage.setName("Cage");
     cage.setIntensityRating(60);
-    when(segmentRuleService.getStipulationRulesForHeat(org.mockito.ArgumentMatchers.anyInt()))
+    when(segmentRuleService.getStipulationRulesForHeat(ArgumentMatchers.anyInt()))
         .thenReturn(List.of(cage));
 
     ProposedSegment orphan = new ProposedSegment();

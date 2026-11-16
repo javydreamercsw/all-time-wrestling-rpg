@@ -35,6 +35,7 @@ import com.github.javydreamercsw.management.service.universe.UniverseSettingsSer
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.*;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -120,8 +121,8 @@ class SegmentRuleServiceTest {
     List<SegmentRule> rich = segmentRuleService.getStipulationRulesForHeat(85);
     List<SegmentRule> poor = segmentRuleService.getStipulationRulesForHeat(60);
 
-    org.assertj.core.api.Assertions.assertThat(rich).containsExactly(rule1, cheap); // rating DESC
-    org.assertj.core.api.Assertions.assertThat(poor).containsExactly(cheap);
+    Assertions.assertThat(rich).containsExactly(rule1, cheap); // rating DESC
+    Assertions.assertThat(poor).containsExactly(cheap);
   }
 
   @Test
@@ -130,7 +131,7 @@ class SegmentRuleServiceTest {
 
     List<SegmentRule> result = segmentRuleService.getStipulationRulesForHeat(100);
 
-    org.assertj.core.api.Assertions.assertThat(result).isEmpty();
+    Assertions.assertThat(result).isEmpty();
   }
 
   @Test
