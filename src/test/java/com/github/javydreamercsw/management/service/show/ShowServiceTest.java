@@ -802,6 +802,35 @@ class ShowServiceTest {
   }
 
   @Test
+  void adjudicateShow_previouslyAdjudicatedWrestlersAreNotResting() {
+    // ATW-binc follow-up (Gail Kim, 2026-11-16): a wrestler whose segment was adjudicated
+    // BEFORE this run (MatchView single-segment flow, or a prior partial run) wrestled on
+    // this show — post-show recovery must not roll for them as if they rested.
+    Wrestler preAdjudicatedWrestler = new Wrestler();
+    preAdjudicatedWrestler.setId(7L);
+    preAdjudicatedWrestler.setName("Gail Kim");
+    adjudicatedSegment.addParticipant(preAdjudicatedWrestler);
+
+    Wrestler restingWrestler = new Wrestler();
+    restingWrestler.setId(3L);
+    restingWrestler.setName("Wrestler C");
+
+    when(showRepository.findById(1L)).thenReturn(Optional.of(show));
+    when(segmentRepository.findByShow(show))
+        .thenReturn(Arrays.asList(pendingSegment, adjudicatedSegment));
+    // findAll returns both the pre-adjudicated participant and a genuine rester
+    when(wrestlerRepository.findAll())
+        .thenReturn(Arrays.asList(preAdjudicatedWrestler, restingWrestler));
+
+    showService.adjudicateShow(1L);
+
+    // The pre-adjudicated participant wrestled — no recovery roll for them.
+    verify(wrestlerService, never()).performNpcRecovery(eq(7L), anyLong(), any());
+    // The genuine rester still gets the recovery roll.
+    verify(wrestlerService, times(1)).performNpcRecovery(eq(3L), anyLong(), any());
+  }
+
+  @Test
   void adjudicateShow_showNotFound_throwsIllegalArgument() {
     when(showRepository.findById(anyLong())).thenReturn(Optional.empty());
 
