@@ -810,6 +810,9 @@ public class NarrationDialog extends Dialog {
       // Any save here — AI-generated or hand-typed — marks the narration final so the
       // adjudication flow never regenerates over it.
       segment.setNarrationGenerated(true);
+      // A saved narration resolves any prior failure — clear the persistent failure mark
+      // so the show view's Narration column stops flagging this segment (ATW-v0vh).
+      segment.setNarrationLastError(null);
       segment.setNotes(feedbackArea.getValue());
       if (refereeField.getValue() != null) {
         segment.setReferee(refereeField.getValue());
