@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view;
 
+import static com.github.mvysny.kaributesting.v10.HasValueUtilsKt._setValue;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._find;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -194,5 +195,42 @@ class AiSettingsViewTest extends AbstractViewTest {
     _get(ollama, NumberField.class, spec -> spec.withLabel("Max Tokens"));
     _get(ollama, Checkbox.class, spec -> spec.withLabel("Disable Thinking"));
     _get(ollama, TextArea.class, spec -> spec.withLabel("Extra Request Parameters (JSON)"));
+  }
+
+  // ── NumberField client-side edits (ATW-x6c1) ───────────────────────────────
+
+  @Test
+  @DisplayName("Clearing a NumberField from the client saves nothing and does not throw")
+  void numberField_clearedFromClient_noSaveNoException() {
+    NumberField timeout =
+        _get(view, NumberField.class, spec -> spec.withLabel("Timeout (seconds)"));
+
+    Mockito.clearInvocations(gameSettingService);
+    _setValue(timeout, null, true); // simulate the user clearing the field
+
+    Mockito.verifyNoInteractions(gameSettingService);
+  }
+
+  @Test
+  @DisplayName("Editing a NumberField from the client saves the new value")
+  void numberField_editedFromClient_savesValue() {
+    NumberField timeout =
+        _get(view, NumberField.class, spec -> spec.withLabel("Timeout (seconds)"));
+
+    Mockito.clearInvocations(gameSettingService);
+    _setValue(timeout, 600.0, true); // simulate a client-side edit
+
+    Mockito.verify(gameSettingService).save("AI_TIMEOUT", "600");
+  }
+
+  @Test
+  @DisplayName("Clearing the OpenAI temperature field from the client never saves 'null'")
+  void openAITemperature_clearedFromClient_noSaveNoException() {
+    NumberField temperature = _get(view, NumberField.class, spec -> spec.withLabel("Temperature"));
+
+    Mockito.clearInvocations(gameSettingService);
+    _setValue(temperature, null, true); // pre-fix this saved the literal string "null"
+
+    Mockito.verifyNoInteractions(gameSettingService);
   }
 }

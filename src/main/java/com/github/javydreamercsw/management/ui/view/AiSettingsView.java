@@ -100,7 +100,7 @@ public class AiSettingsView extends VerticalLayout {
     aiTimeout.setValue((double) aiSettingsService.getAiTimeout());
     aiTimeout.addValueChangeListener(
         event -> {
-          if (event.isFromClient()) {
+          if (event.isFromClient() && event.getValue() != null) {
             saveSetting("AI_TIMEOUT", String.valueOf(event.getValue().intValue()));
           }
         });
@@ -157,7 +157,7 @@ public class AiSettingsView extends VerticalLayout {
     openAIMaxTokens.setValue((double) aiSettingsService.getOpenAIMaxTokens());
     openAIMaxTokens.addValueChangeListener(
         event -> {
-          if (event.isFromClient()) {
+          if (event.isFromClient() && event.getValue() != null) {
             saveSetting("AI_OPENAI_MAX_TOKENS", String.valueOf(event.getValue().intValue()));
           }
         });
@@ -165,7 +165,7 @@ public class AiSettingsView extends VerticalLayout {
     openAITemperature.setValue((double) aiSettingsService.getOpenAITemperature());
     openAITemperature.addValueChangeListener(
         event -> {
-          if (event.isFromClient()) {
+          if (event.isFromClient() && event.getValue() != null) {
             saveSetting("AI_OPENAI_TEMPERATURE", String.valueOf(event.getValue()));
           }
         });
