@@ -2086,12 +2086,12 @@ class ShowPlanningAiServiceTest {
     ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
     rivalry.setId(42L);
     rivalry.setName("Blood Feud");
-    rivalry.setHeat(35);
+    rivalry.setHeat(88);
     rivalry.setParticipants(List.of("Wrestler A", "Wrestler B"));
     context.setCurrentRivalries(List.of(rivalry));
 
-    // The narration response covers the card's single planned row (heat ≥ 30 on a weekly
-    // books a confrontation promo, not a match).
+    // The narration response covers the card's single planned row (EXPLOSIVE heat on a
+    // weekly books a confrontation promo, not a match).
     String narrationJson =
         """
         [
@@ -2138,7 +2138,7 @@ class ShowPlanningAiServiceTest {
     ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
     rivalry.setId(42L);
     rivalry.setName("Blood Feud");
-    rivalry.setHeat(35);
+    rivalry.setHeat(88);
     rivalry.setParticipants(List.of("Wrestler A", "Wrestler B"));
     context.setCurrentRivalries(List.of(rivalry));
 
@@ -2167,7 +2167,7 @@ class ShowPlanningAiServiceTest {
       ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
       rivalry.setId(42L);
       rivalry.setName("Blood Feud");
-      rivalry.setHeat(35);
+      rivalry.setHeat(88);
       rivalry.setParticipants(List.of("Wrestler A", "Wrestler B"));
       context.setCurrentRivalries(List.of(rivalry));
 
@@ -2202,7 +2202,7 @@ class ShowPlanningAiServiceTest {
       ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
       rivalry.setId(42L);
       rivalry.setName("Blood Feud");
-      rivalry.setHeat(35);
+      rivalry.setHeat(88);
       rivalry.setParticipants(List.of("Wrestler A", "Wrestler B"));
       context.setCurrentRivalries(List.of(rivalry));
 
@@ -2235,7 +2235,7 @@ class ShowPlanningAiServiceTest {
       ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
       rivalry.setId(42L);
       rivalry.setName("Blood Feud");
-      rivalry.setHeat(35);
+      rivalry.setHeat(88);
       rivalry.setParticipants(List.of("Wrestler A", "Wrestler B"));
       context.setCurrentRivalries(List.of(rivalry));
 
@@ -2275,7 +2275,7 @@ class ShowPlanningAiServiceTest {
       ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
       rivalry.setId(42L);
       rivalry.setName("Blood Feud");
-      rivalry.setHeat(35);
+      rivalry.setHeat(88);
       rivalry.setParticipants(List.of("Wrestler A", "Wrestler B"));
       context.setCurrentRivalries(List.of(rivalry));
 
