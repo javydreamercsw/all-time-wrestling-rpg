@@ -25,6 +25,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -181,11 +182,10 @@ class WeeklyParticipationTrackerTest {
     // Null segment entries and entries without participants never crash the tally.
     ShowPlanningSegmentDTO noParticipants = segment("One on One", List.of("A"), 2);
     noParticipants.setParticipants(null);
-    ShowPlanningSegmentDTO blankNames =
-        segment("One on One", java.util.Arrays.asList("A", " ", null), 2);
+    ShowPlanningSegmentDTO blankNames = segment("One on One", Arrays.asList("A", " ", null), 2);
 
     Map<String, WeeklyParticipationTracker.Participation> tally =
-        tracker.tally(java.util.Arrays.asList(null, noParticipants, blankNames), SHOW_DATE);
+        tracker.tally(Arrays.asList(null, noParticipants, blankNames), SHOW_DATE);
 
     // Only the non-blank name lands; the PLE flag is unset on these hand-built segments.
     WeeklyParticipationTracker.Participation a =
