@@ -163,7 +163,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     Rivalry rivalry = new Rivalry();
     rivalry.setWrestler1(wrestler1);
     rivalry.setWrestler2(wrestler2);
-    rivalry.setHeat(10);
+    rivalry.setHeat(30);
     when(rivalryService.getActiveRivalriesBetween(any(), any()))
         .thenReturn(Collections.singletonList(rivalry));
 
@@ -423,7 +423,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     rivalry.setId(1L);
     rivalry.setWrestler1(w1);
     rivalry.setWrestler2(w2);
-    rivalry.setHeat(15);
+    rivalry.setHeat(35);
     when(rivalryService.getActiveRivalries()).thenReturn(List.of(rivalry));
 
     CardValidationResult result = showPlanningService.validateCard(List.of());
@@ -446,7 +446,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     rivalry.setId(1L);
     rivalry.setWrestler1(w1);
     rivalry.setWrestler2(w2);
-    rivalry.setHeat(35);
+    rivalry.setHeat(85);
     when(rivalryService.getActiveRivalries()).thenReturn(List.of(rivalry));
 
     ProposedSegment seg = new ProposedSegment();
@@ -481,7 +481,7 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     rivalry.setId(1L);
     rivalry.setWrestler1(w1);
     rivalry.setWrestler2(w2);
-    rivalry.setHeat(15); // MUST_BOOK threshold — but NOT on the card
+    rivalry.setHeat(35); // MUST_BOOK threshold — but NOT on the card
     when(rivalryService.getActiveRivalries()).thenReturn(List.of(rivalry));
     when(segmentRepository.findByShow(any())).thenReturn(List.of());
     when(wrestlerRepository.findByName("Charlie")).thenReturn(Optional.of(charlie));
@@ -536,13 +536,13 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     hotRivalry.setId(1L);
     hotRivalry.setWrestler1(wrestler1);
     hotRivalry.setWrestler2(wrestler2);
-    hotRivalry.setHeat(15);
+    hotRivalry.setHeat(35);
 
     Rivalry coldRivalry = new Rivalry();
     coldRivalry.setId(2L);
     coldRivalry.setWrestler1(wrestler1);
     coldRivalry.setWrestler2(wrestler3);
-    coldRivalry.setHeat(5);
+    coldRivalry.setHeat(10);
 
     when(rivalryService.getActiveRivalries()).thenReturn(Arrays.asList(hotRivalry, coldRivalry));
     // ATW-1nyv: rivalries whose participants are unavailable are withheld from the context —
@@ -558,10 +558,10 @@ class ShowPlanningServiceIT extends ManagementIntegrationTest {
     // Act
     ShowPlanningContextDTO context = showPlanningService.getShowPlanningContext(show);
 
-    // Assert: only the rivalry with heat >= 10 survives the mapper filter
+    // Assert: only the rivalry above the context-entry heat floor survives the mapper filter
     assertNotNull(context);
     assertNotNull(context.getCurrentRivalries());
     assertEquals(1, context.getCurrentRivalries().size());
-    assertEquals(15, context.getCurrentRivalries().get(0).getHeat());
+    assertEquals(35, context.getCurrentRivalries().get(0).getHeat());
   }
 }
