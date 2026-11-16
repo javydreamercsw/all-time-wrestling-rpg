@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.show.planning;
 
+import com.github.javydreamercsw.management.domain.rivalry.RivalryIntensity;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRivalryDTO;
 import java.util.Map;
 import java.util.Objects;
@@ -34,10 +35,10 @@ import java.util.stream.Collectors;
  *       violate the restriction; the feud advances via non-match segments.
  *   <li>{@code PROMO_COOLDOWN} — the feud's last completed segment was a Promo (non-PLE): another
  *       Promo books the same talking segment show after show; vary the format.
- *   <li>{@code STIPULATION_REQUIRED} (PLE) / {@code PLE_RESOLUTION_REQUIRED} (weekly) — heat ≥ 30:
- *       max-heat feuds get their decisive stipulation match at the PLE, not before.
- *   <li>{@code PLE_RESOLUTION_ELIGIBLE} — heat 20–29.
- *   <li>{@code MUST_BOOK} — heat 10–19: must have a segment on this show.
+ *   <li>{@code STIPULATION_REQUIRED} (PLE) / {@code PLE_RESOLUTION_REQUIRED} (weekly) — EXPLOSIVE
+ *       heat (75+): max-heat feuds get their decisive stipulation match at the PLE, not before.
+ *   <li>{@code PLE_RESOLUTION_ELIGIBLE} — INTENSE heat (50–74).
+ *   <li>{@code MUST_BOOK} — HEATED heat (25–49): must have a segment on this show.
  * </ol>
  */
 public final class RivalryClassifier {
@@ -49,11 +50,11 @@ public final class RivalryClassifier {
   public static final String PLE_RESOLUTION_ELIGIBLE = "PLE_RESOLUTION_ELIGIBLE";
   public static final String MUST_BOOK = "MUST_BOOK";
 
-  /** Heat at which a rivalry is reserved for PLE resolution (stipulation match at the PLE). */
-  static final int PLE_RESOLUTION_HEAT = 30;
+  /** EXPLOSIVE heat: a rivalry is reserved for PLE resolution (stipulation match at the PLE). */
+  static final int PLE_RESOLUTION_HEAT = RivalryIntensity.EXPLOSIVE.getMinHeat();
 
-  /** Heat at which a rivalry is strong enough to headline a PLE when it gets there. */
-  static final int PLE_ELIGIBLE_HEAT = 20;
+  /** INTENSE heat: a rivalry is strong enough to headline a PLE when it gets there. */
+  static final int PLE_ELIGIBLE_HEAT = RivalryIntensity.INTENSE.getMinHeat();
 
   private RivalryClassifier() {}
 

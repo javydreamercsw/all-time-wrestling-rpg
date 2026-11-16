@@ -94,7 +94,7 @@ public class SegmentRuleSync implements DataSyncContributor {
               segmentRuleService.createOrUpdateRule(
                   dto.getName(),
                   dto.getDescription(),
-                  dto.isRequiresHighHeat(),
+                  dto.getIntensityRating(),
                   dto.isNoDq(),
                   dto.getBumpAddition(),
                   dto.getExpansionCode() != null ? dto.getExpansionCode() : "BASE_GAME",
@@ -197,10 +197,10 @@ public class SegmentRuleSync implements DataSyncContributor {
             "description", null, sr.getDescription(), dto.getDescription()));
     obs.add(
         new SeedCollisionDetector.FieldObservation(
-            "requiresHighHeat",
+            "intensityRating",
             null,
-            String.valueOf(sr.getRequiresHighHeat()),
-            String.valueOf(dto.isRequiresHighHeat())));
+            String.valueOf(sr.getIntensityRating()),
+            String.valueOf(dto.getIntensityRating())));
     obs.add(
         new SeedCollisionDetector.FieldObservation(
             "noDq", null, String.valueOf(sr.getNoDq()), String.valueOf(dto.isNoDq())));
@@ -232,7 +232,7 @@ public class SegmentRuleSync implements DataSyncContributor {
   private String seedValueFingerprint(SegmentRuleDTO dto, SegmentRule sr) {
     return syncSupport.fingerprint(
         dto.getDescription(),
-        dto.isRequiresHighHeat(),
+        String.valueOf(dto.getIntensityRating()),
         dto.isNoDq(),
         dto.isAllowsRefereeStopage(),
         dto.getBumpAddition() == null ? null : dto.getBumpAddition().name(),
@@ -248,7 +248,7 @@ public class SegmentRuleSync implements DataSyncContributor {
   private String ruleValueListFingerprint(List<String> values) {
     return syncSupport.fingerprint(
         values.get(0),
-        Boolean.valueOf(values.get(1)),
+        values.get(1),
         Boolean.valueOf(values.get(2)),
         Boolean.valueOf(values.get(3)),
         values.get(4) == null ? null : BumpAddition.valueOf(values.get(4)),
@@ -279,7 +279,7 @@ public class SegmentRuleSync implements DataSyncContributor {
     for (String field : silentFields) {
       switch (field) {
         case "description" -> sr.setDescription(dto.getDescription());
-        case "requiresHighHeat" -> sr.setRequiresHighHeat(dto.isRequiresHighHeat());
+        case "intensityRating" -> sr.setIntensityRating(dto.getIntensityRating());
         case "noDq" -> sr.setNoDq(dto.isNoDq());
         case "allowsRefereeStopage" -> sr.setAllowsRefereeStopage(dto.isAllowsRefereeStopage());
         case "bumpAddition" -> sr.setBumpAddition(dto.getBumpAddition());
@@ -306,7 +306,7 @@ public class SegmentRuleSync implements DataSyncContributor {
   public String ruleFingerprint(SegmentRule sr) {
     return syncSupport.fingerprint(
         sr.getDescription(),
-        sr.getRequiresHighHeat(),
+        String.valueOf(sr.getIntensityRating()),
         sr.getNoDq(),
         sr.isAllowsRefereeStopage(),
         sr.getBumpAddition() == null ? null : sr.getBumpAddition().name(),
@@ -319,7 +319,7 @@ public class SegmentRuleSync implements DataSyncContributor {
     sr.setSeedFingerprint(
         syncSupport.fingerprint(
             sr.getDescription(),
-            sr.getRequiresHighHeat(),
+            String.valueOf(sr.getIntensityRating()),
             sr.getNoDq(),
             sr.isAllowsRefereeStopage(),
             sr.getBumpAddition() == null ? null : sr.getBumpAddition().name(),
@@ -396,7 +396,7 @@ public class SegmentRuleSync implements DataSyncContributor {
       String seedHash = guideHashFor(dto);
       boolean matchesSeed =
           Objects.equals(sr.getDescription(), dto.getDescription())
-              && sr.getRequiresHighHeat() == dto.isRequiresHighHeat()
+              && sr.getIntensityRating() == dto.getIntensityRating()
               && sr.getNoDq() == dto.isNoDq()
               && sr.isAllowsRefereeStopage() == dto.isAllowsRefereeStopage()
               && sr.getBumpAddition() == dto.getBumpAddition()
@@ -411,7 +411,7 @@ public class SegmentRuleSync implements DataSyncContributor {
               segmentRuleService.createOrUpdateRule(
                   dto.getName(),
                   dto.getDescription(),
-                  dto.isRequiresHighHeat(),
+                  dto.getIntensityRating(),
                   dto.isNoDq(),
                   dto.getBumpAddition(),
                   dto.getExpansionCode() != null ? dto.getExpansionCode() : "BASE_GAME",
@@ -438,7 +438,7 @@ public class SegmentRuleSync implements DataSyncContributor {
             segmentRuleService.createOrUpdateRule(
                 dto.getName(),
                 dto.getDescription(),
-                dto.isRequiresHighHeat(),
+                dto.getIntensityRating(),
                 dto.isNoDq(),
                 dto.getBumpAddition(),
                 dto.getExpansionCode() != null ? dto.getExpansionCode() : "BASE_GAME",

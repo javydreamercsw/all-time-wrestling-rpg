@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -71,10 +72,20 @@ public class LocalShowPlanner {
   private final WeeklyParticipationTracker tracker;
   private final SegmentRuleService segmentRuleService;
 
+  /** Tie-break source for stipulation picks among equal-rated rules; injectable for tests. */
+  private final Random random;
+
   public LocalShowPlanner(
       WeeklyParticipationTracker tracker, SegmentRuleService segmentRuleService) {
+    this(tracker, segmentRuleService, new Random());
+  }
+
+  /** Test-visible constructor: seed the tie-break random for deterministic stipulation picks. */
+  LocalShowPlanner(
+      WeeklyParticipationTracker tracker, SegmentRuleService segmentRuleService, Random random) {
     this.tracker = tracker;
     this.segmentRuleService = segmentRuleService;
+    this.random = random;
   }
 
   /**
@@ -595,22 +606,14 @@ public class LocalShowPlanner {
   }
 
   /**
-   * Heat-based stipulations (ATW-wbch): match rows the planner built without a rule get one from
-   * the seeded catalog — heat ≥ {@link RivalryClassifier#PLE_RESOLUTION_HEAT} draws a {@code
-   * requiresHighHeat} rule (Cage, No DQ, Last Man Standing…), everything else gets "Normal".
-   * Rotation over the eligible list keeps consecutive high-heat matches from all landing on the
-   * same stipulation. Approval VALIDATES this: heat ≥ 30 matches without a stipulation are rejected
-   * by ShowPlanningService.validateCard.
+   * Heat-based stipulations (ATW-wbch, ATW-czai): match rows the planner built without a rule get
+   * one from the seeded catalog, gated by intensity rating — a rule is affordable when the
+   * rivalry's heat is at least the rule's rating. Pick logic per rivalry: highest affordable
+   * rating, random among ties (TLC/War Games at 85 rotate naturally), excluding the rivalry's
+   * last-used stipulation when alternatives exist. Approval VALIDATES this: EXPLOSIVE-heat matches
+   * without a stipulation are rejected by ShowPlanningService.validateCard.
    */
   void applyHeatBasedStipulations(List<ProposedSegment> segments, ShowPlanningContextDTO context) {
-    List<SegmentRule> highHeatRules =
-        segmentRuleService.getHighHeatRules() == null
-            ? List.of()
-            : segmentRuleService.getHighHeatRules();
-    if (highHeatRules.isEmpty()) {
-      return; // catalog empty — applyDefaultRules' Normal/Promo fallback still applies
-    }
-    int stipulationIndex = 0;
     for (ProposedSegment row : segments) {
       if (row.getRules() != null && !row.getRules().isEmpty()) {
         continue; // already stipulated (scripted beat, tournament row)
@@ -618,28 +621,47 @@ public class LocalShowPlanner {
       if (isPromoRow(row)) {
         continue;
       }
-      int heat = rivalryHeatOf(context, row.getRivalryId());
-      if (heat >= RivalryClassifier.PLE_RESOLUTION_HEAT) {
-        SegmentRule rule = highHeatRules.get(stipulationIndex % highHeatRules.size());
-        stipulationIndex++;
-        row.setRules(List.of(rule.getName()));
-        row.setSummary(
-            (row.getSummary() == null ? "" : row.getSummary() + " ") + "[" + rule.getName() + "]");
+      ShowPlanningRivalryDTO rivalry = rivalryOf(context, row.getRivalryId());
+      if (rivalry == null || rivalry.getHeat() < RivalryClassifier.PLE_RESOLUTION_HEAT) {
+        // Sub-threshold matches stay ruleless here — applyDefaultRules backfills "Normal".
+        continue;
       }
-      // Sub-threshold matches stay ruleless here — applyDefaultRules backfills "Normal".
+      List<SegmentRule> eligible = segmentRuleService.getStipulationRulesForHeat(rivalry.getHeat());
+      if (eligible.isEmpty()) {
+        continue; // catalog empty — applyDefaultRules' Normal/Promo fallback still applies
+      }
+      SegmentRule rule = pickStipulation(eligible, rivalry);
+      row.setRules(List.of(rule.getName()));
+      row.setSummary(
+          (row.getSummary() == null ? "" : row.getSummary() + " ") + "[" + rule.getName() + "]");
     }
   }
 
-  /** Heat of the rivalry a row advances; 0 when the row isn't rivalry-backed. */
-  private int rivalryHeatOf(ShowPlanningContextDTO context, Long rivalryId) {
+  /**
+   * Anti-repeat escalation pick: drop the last-used rule (when alternatives exist), take the
+   * highest remaining rating, break ties randomly (seeded per call for deterministic tests via
+   * subclassing).
+   */
+  SegmentRule pickStipulation(List<SegmentRule> eligible, ShowPlanningRivalryDTO rivalry) {
+    List<String> lastUsed =
+        rivalry.getLastRuleNames() == null ? List.of() : rivalry.getLastRuleNames();
+    List<SegmentRule> fresh =
+        eligible.stream().filter(r -> !lastUsed.contains(r.getName())).toList();
+    List<SegmentRule> pool = fresh.isEmpty() ? eligible : fresh; // repeat only with no alternative
+    int top = pool.stream().mapToInt(SegmentRule::getIntensityRating).max().orElse(0);
+    List<SegmentRule> tied = pool.stream().filter(r -> r.getIntensityRating() == top).toList();
+    return tied.size() == 1 ? tied.get(0) : tied.get(random.nextInt(tied.size()));
+  }
+
+  /** The rivalry a row advances; null when the row isn't rivalry-backed. */
+  private ShowPlanningRivalryDTO rivalryOf(ShowPlanningContextDTO context, Long rivalryId) {
     if (rivalryId == null || context.getCurrentRivalries() == null) {
-      return 0;
+      return null;
     }
     return context.getCurrentRivalries().stream()
         .filter(r -> rivalryId.equals(r.getId()))
         .findFirst()
-        .map(ShowPlanningRivalryDTO::getHeat)
-        .orElse(0);
+        .orElse(null);
   }
 
   private static boolean isPromoRow(ProposedSegment row) {
@@ -728,7 +750,7 @@ public class LocalShowPlanner {
       return List.of();
     }
     return context.getCurrentRivalries().stream()
-        .filter(r -> r.getHeat() >= 10)
+        .filter(r -> r.getHeat() >= 25)
         .sorted((a, b) -> Integer.compare(b.getHeat(), a.getHeat()))
         .toList();
   }

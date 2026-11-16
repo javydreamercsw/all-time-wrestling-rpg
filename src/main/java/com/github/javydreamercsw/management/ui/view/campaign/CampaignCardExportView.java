@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.ui.view.campaign;
 import static com.github.javydreamercsw.base.domain.account.RoleName.ADMIN_ROLE;
 
 import com.github.javydreamercsw.management.domain.npc.Npc;
+import com.github.javydreamercsw.management.domain.rivalry.RivalryIntensity;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRulePlayGuide;
@@ -341,8 +342,8 @@ public class CampaignCardExportView extends VerticalLayout implements HasDynamic
     if (Boolean.TRUE.equals(rule.getNoDq())) {
       badges.add("NO DQ");
     }
-    if (Boolean.TRUE.equals(rule.getRequiresHighHeat())) {
-      badges.add("HIGH HEAT");
+    if (rule.getIntensityRating() >= RivalryIntensity.HEATED.getMinHeat()) {
+      badges.add(rule.getMinimumIntensity().getDisplayWithEmoji());
     }
     if (!rule.isAllowsRefereeStopage()) {
       badges.add("NO REF STOPPAGE");

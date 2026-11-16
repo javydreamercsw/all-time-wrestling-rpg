@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.show.planning;
 
+import com.github.javydreamercsw.management.domain.rivalry.RivalryIntensity;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
@@ -26,6 +27,7 @@ import com.github.javydreamercsw.management.service.show.planning.dto.FeudScript
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRivalryDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.TournamentSlotPreviewDTO;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -68,6 +70,45 @@ public class ShowPlanningPromptBuilder {
             .filter(Objects::nonNull)
             .collect(Collectors.toSet());
     return genders.size() > 1;
+  }
+
+  /**
+   * The stipulation menu grouped by intensity band, ratings attached — "TLC (85)", not a flat
+   * alphabetical list. The ratings ARE the escalation ladder: a STIPULATION_REQUIRED rivalry must
+   * pick a rule its heat can afford, so the model sees the same affordability the local planner
+   * enforces. Includes the anti-repeat reminder (the rivalry DTOs carry their last stipulation).
+   */
+  private String buildStipulationCatalog() {
+    List<SegmentRule> rules = segmentRuleService.findAll();
+    StringBuilder catalog = new StringBuilder();
+    catalog.append("Available Stipulation Matches (rating = minimum rivalry heat required):\n");
+    boolean any = false;
+    for (RivalryIntensity band :
+        List.of(RivalryIntensity.HEATED, RivalryIntensity.INTENSE, RivalryIntensity.EXPLOSIVE)) {
+      List<String> entries =
+          rules.stream()
+              .filter(r -> r.getMinimumIntensity() == band)
+              .sorted(Comparator.comparingInt(SegmentRule::getIntensityRating))
+              .map(rule -> "%s (%d)".formatted(sanitize(rule.getName()), rule.getIntensityRating()))
+              .collect(Collectors.toList());
+      if (!entries.isEmpty()) {
+        any = true;
+        catalog
+            .append("  ")
+            .append(band.getDisplayWithEmoji())
+            .append(": ")
+            .append(String.join(", ", entries))
+            .append("\n");
+      }
+    }
+    if (!any) {
+      return "";
+    }
+    catalog.append(
+        "For STIPULATION_REQUIRED rivalries the segment's `rules` array MUST contain at least"
+            + " one name from this list, with a rating the rivalry's heat can afford. Do NOT"
+            + " repeat the rivalry's Last stipulation.\n\n");
+    return catalog.toString();
   }
 
   public String build(@NonNull final ShowPlanningContextDTO context) {
@@ -199,34 +240,18 @@ public class ShowPlanningPromptBuilder {
     }
 
     if (context.getCurrentRivalries() != null && !context.getCurrentRivalries().isEmpty()) {
-      prompt.append("Current Rivalries (heat ≥ 10 only):\n");
+      prompt.append("Current Rivalries (heat ≥ 25 only):\n");
       context
           .getCurrentRivalries()
           .forEach(
               rivalry -> {
-                String classification;
-                if (!context.isIntergenderAllowed() && isMixedGender(rivalry, genderByName)) {
-                  // A match would violate the intergender restriction — advance the feud with
-                  // a non-match segment instead of leaving the model with contradictory rules.
-                  classification = "CONFRONTATION_ONLY";
-                } else if ("Promo".equals(rivalry.getLastSegmentType())
-                    && !context.isPremiumLiveEvent()) {
-                  // The feud's last completed segment was already a Promo. Booking another one
-                  // (e.g. via PLE_RESOLUTION_REQUIRED's confrontation guidance) books the same
-                  // talking segment show after show. Vary the format instead.
-                  classification = "PROMO_COOLDOWN";
-                } else if (rivalry.getHeat() >= 30) {
-                  // On a regular show, max-heat feuds are saved for the PLE — no stipulation
-                  // matches on weeklies. On a PLE they escalate to STIPULATION_REQUIRED.
-                  classification =
-                      context.isPremiumLiveEvent()
-                          ? "STIPULATION_REQUIRED"
-                          : "PLE_RESOLUTION_REQUIRED";
-                } else if (rivalry.getHeat() >= 20) {
-                  classification = "PLE_RESOLUTION_ELIGIBLE";
-                } else {
-                  classification = "MUST_BOOK";
-                }
+                // Shared classifier — the planner books exactly the doctrine the prompt describes.
+                String classification =
+                    RivalryClassifier.classify(
+                        rivalry,
+                        context.isIntergenderAllowed(),
+                        isMixedGender(rivalry, genderByName),
+                        context.isPremiumLiveEvent());
                 prompt
                     .append("- Id: ")
                     .append(rivalry.getId())
@@ -242,51 +267,44 @@ public class ShowPlanningPromptBuilder {
                     .append(", Priority: ")
                     .append(rivalry.getPriority())
                     .append(", Classification: ")
-                    .append(classification)
-                    .append("\n");
+                    .append(classification);
+                if (rivalry.getLastRuleNames() != null && !rivalry.getLastRuleNames().isEmpty()) {
+                  prompt
+                      .append(", Last stipulation: ")
+                      .append(String.join(" + ", rivalry.getLastRuleNames()));
+                }
+                prompt.append("\n");
               });
       prompt.append("\n**Rivalry Classification Rules:**\n");
       prompt.append(
           """
-          - MUST_BOOK (Heat 10-19): This rivalry MUST have a segment on this show. Book a match \
+          - MUST_BOOK (Heat 25-49): This rivalry MUST have a segment on this show. Book a match \
           or a promo confrontation — do not skip it.
           - PROMO_COOLDOWN: This rivalry's most recent segment was already a Promo — do NOT book \
           another Promo for it this show. Vary the format: book a match (any finish \
           or non-finish type) or a backstage segment. Escalate or shift momentum instead of \
           repeating the talking segment.
-          - PLE_RESOLUTION_ELIGIBLE (Heat 20-29): This rivalry is hot enough to headline a PLE. \
+          - PLE_RESOLUTION_ELIGIBLE (Heat 50-74): This rivalry is hot enough to headline a PLE. \
           On a regular show, build tension with a confrontation, brawl, or non-finish match. \
           On a PLE, give it a decisive match.
-          - PLE_RESOLUTION_REQUIRED (Heat ≥ 30, regular show): This rivalry has reached maximum \
+          - PLE_RESOLUTION_REQUIRED (Heat ≥ 75, regular show): This rivalry has reached maximum \
           intensity and MUST be saved for the next PLE. On this regular show, book a confrontation, \
           brawl, or non-finish segment to build anticipation — do NOT book a decisive match or \
           stipulation here. Reserve the stipulation for the upcoming PLE.
-          - STIPULATION_REQUIRED (Heat ≥ 30, PLE only): This rivalry has reached maximum intensity \
-          and MUST have a match with a stipulation from the Available Stipulation Matches list below. \
-          Use a decisive, no-DQ finish — do not end with a count-out or disqualification.
+          - STIPULATION_REQUIRED (Heat ≥ 75, PLE only): This rivalry has reached maximum intensity \
+          and MUST have a match with a stipulation the rivalry's heat can afford from the Available \
+          Stipulation Matches below (rule rating ≤ rivalry heat). \
+          Use a decisive, no-DQ finish — do not end with a count-out or disqualification. \
+          Do NOT repeat the rivalry's last stipulation.
           - CONFRONTATION_ONLY: This rivalry pairs wrestlers of different genders while intergender \
           matches are disabled. It MUST still appear on the card, but as a Promo, backstage \
           confrontation, or brawl — NEVER as a match. This satisfies its booking requirement, \
           including on PLEs, and overrides every match/stipulation requirement above.
           """);
-      List<SegmentRule> highHeatRules = segmentRuleService.getHighHeatRules();
-      List<String> highHeatRuleDescriptions =
-          highHeatRules.stream()
-              .map(
-                  rule ->
-                      "%s (%s)"
-                          .formatted(sanitize(rule.getName()), sanitize(rule.getDescription())))
-              .collect(Collectors.toList());
-      prompt
-          .append("Available Stipulation Matches: ")
-          .append(String.join(", ", highHeatRuleDescriptions))
-          .append("\n");
-      prompt.append(
-          "For STIPULATION_REQUIRED rivalries the segment's `rules` array MUST contain at"
-              + " least one name from Available Stipulation Matches above.\n\n");
+      prompt.append(buildStipulationCatalog());
     }
 
-    List<SegmentRule> standardRules = segmentRuleService.getStandardRules();
+    List<SegmentRule> standardRules = segmentRuleService.findAll();
     if (!standardRules.isEmpty()) {
       List<String> standardRuleDescriptions =
           standardRules.stream()

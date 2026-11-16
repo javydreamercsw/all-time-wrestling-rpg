@@ -69,8 +69,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ShowQualityService {
 
-  private static final int HEAT_CAP = 50;
-  private static final int HIGH_STAKES_HEAT = 30;
+  private static final int HEAT_CAP = 100;
+  private static final int HIGH_STAKES_HEAT = 75;
   private static final int HIGH_STAKES_FLOOR = 60;
   private static final int MAX_MOMENTUM = 100;
   private static final double STAR_DIVISOR = 20.0;

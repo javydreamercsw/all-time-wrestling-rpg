@@ -1824,7 +1824,7 @@ public class ShowDetailView extends Main
                   .toList();
           boolean hotRivalryNeedsStipulation =
               rivalryService.getActiveRivalries().stream()
-                  .filter(r -> r.getHeat() >= 30)
+                  .filter(r -> r.getHeat() >= 75)
                   .anyMatch(
                       r ->
                           selectedNames.contains(r.getWrestler1().getName())

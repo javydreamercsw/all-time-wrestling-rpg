@@ -35,4 +35,7 @@ public class ShowPlanningSegmentDTO {
   private List<String> participants;
   private List<String> winners;
   private String summary;
+
+  /** Rule (stipulation) names attached to the segment; empty for ruleless segments. */
+  private List<String> rules = List.of();
 }

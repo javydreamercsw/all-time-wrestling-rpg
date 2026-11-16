@@ -113,29 +113,35 @@ public class Rivalry extends AbstractEntity<Long> {
 
   // ==================== ATW RPG METHODS ====================
 
-  /** Add heat to the rivalry based on ATW RPG rules. */
+  /** Add heat to the rivalry based on ATW RPG rules (unclamped; tests only). */
   public void addHeat(final int heatGain, final String reason) {
+    addHeat(heatGain, reason, Integer.MAX_VALUE, Instant.now());
+  }
+
+  /** Add heat with a ceiling clamp and an explicit event timestamp (kayfabe clock). */
+  public void addHeat(
+      final int heatGain, final String reason, final int maxHeat, final Instant eventDate) {
     int newHeat = this.heat + heatGain;
-    this.heat = Math.max(0, newHeat);
+    this.heat = Math.max(0, Math.min(maxHeat, newHeat));
 
     // Create heat event for tracking
     HeatEvent event = new HeatEvent();
     event.setRivalry(this);
     event.setHeatChange(heatGain);
     event.setReason(reason);
-    event.setEventDate(Instant.now());
+    event.setEventDate(eventDate);
     event.setHeatAfterEvent(this.heat);
     heatEvents.add(event);
   }
 
-  /** Check if wrestlers must wrestle at next show (10+ heat). */
+  /** Check if wrestlers must wrestle at next show (HEATED heat or higher). */
   public boolean mustWrestleNextShow() {
-    return isActive && heat >= 10;
+    return isActive && RivalryIntensity.fromHeat(heat).requiresNextShowMatch();
   }
 
-  /** Check if rivalry can be resolved with a roll (default 20-heat floor). */
+  /** Check if rivalry can be resolved with a roll (INTENSE heat or higher). */
   public boolean canAttemptResolution() {
-    return canAttemptResolution(20);
+    return canAttemptResolution(RivalryIntensity.INTENSE.getMinHeat());
   }
 
   /** Check if rivalry can be resolved with a configurable heat floor. */
@@ -143,9 +149,9 @@ public class Rivalry extends AbstractEntity<Long> {
     return isActive && heat >= minHeat;
   }
 
-  /** Check if rivalry requires rule segment (30+ heat). */
+  /** Check if rivalry requires rule segment (EXPLOSIVE heat). */
   public boolean requiresStipulationMatch() {
-    return isActive && heat >= 30;
+    return isActive && RivalryIntensity.fromHeat(heat).requiresStipulationMatch();
   }
 
   /**
@@ -160,6 +166,16 @@ public class Rivalry extends AbstractEntity<Long> {
   /** Attempt resolution with a configurable minimum-heat floor. */
   public boolean attemptResolution(
       final int wrestler1Roll, final int wrestler2Roll, final int threshold, final int minHeat) {
+    return attemptResolution(wrestler1Roll, wrestler2Roll, threshold, minHeat, Instant.now());
+  }
+
+  /** Attempt resolution with a configurable floor and explicit event timestamp (kayfabe clock). */
+  public boolean attemptResolution(
+      final int wrestler1Roll,
+      final int wrestler2Roll,
+      final int threshold,
+      final int minHeat,
+      final Instant eventDate) {
     if (!canAttemptResolution(minHeat)) {
       return false;
     }
@@ -171,14 +187,15 @@ public class Rivalry extends AbstractEntity<Long> {
       // endRivalry() records the final "Rivalry ended" heat event — do not add a
       // second event for the same resolution.
       endRivalry(
-          "Resolved by dice roll: " + wrestler1Roll + " + " + wrestler2Roll + " = " + totalRoll);
+          "Resolved by dice roll: " + wrestler1Roll + " + " + wrestler2Roll + " = " + totalRoll,
+          eventDate);
     } else {
       // Record the failed attempt so the rivalry history shows it.
       HeatEvent event = new HeatEvent();
       event.setRivalry(this);
       event.setHeatChange(0);
       event.setReason("Failed resolution attempt (" + totalRoll + ")");
-      event.setEventDate(Instant.now());
+      event.setEventDate(eventDate);
       event.setHeatAfterEvent(this.heat);
       heatEvents.add(event);
     }
@@ -193,15 +210,20 @@ public class Rivalry extends AbstractEntity<Long> {
 
   /** End the rivalry. */
   public void endRivalry(final String reason) {
+    endRivalry(reason, Instant.now());
+  }
+
+  /** End the rivalry with an explicit event timestamp (kayfabe clock). */
+  public void endRivalry(final String reason, final Instant eventDate) {
     this.isActive = false;
-    this.endedDate = Instant.now();
+    this.endedDate = eventDate;
 
     // Add final heat event
     HeatEvent event = new HeatEvent();
     event.setRivalry(this);
     event.setHeatChange(0);
     event.setReason("Rivalry ended: " + reason);
-    event.setEventDate(Instant.now());
+    event.setEventDate(eventDate);
     event.setHeatAfterEvent(this.heat);
     heatEvents.add(event);
   }
@@ -223,16 +245,7 @@ public class Rivalry extends AbstractEntity<Long> {
 
   /** Get rivalry intensity level based on heat. */
   public RivalryIntensity getIntensity() {
-    if (heat < 10) {
-      return RivalryIntensity.SIMMERING;
-    }
-    if (heat < 20) {
-      return RivalryIntensity.HEATED;
-    }
-    if (heat < 30) {
-      return RivalryIntensity.INTENSE;
-    }
-    return RivalryIntensity.EXPLOSIVE;
+    return RivalryIntensity.fromHeat(heat);
   }
 
   /** Get display name for the rivalry. */

@@ -1152,7 +1152,7 @@ public class DataMigrationService {
     String sql =
         """
         INSERT INTO segment_rule (segment_rule_id, name, description, \
-        requires_high_heat, creation_date) VALUES (?, ?, ?, ?, ?)\
+        intensity_rating, creation_date) VALUES (?, ?, ?, ?, ?)\
         """;
     try (Statement sourceStatement = sourceConnection.createStatement();
         ResultSet resultSet =
@@ -1168,7 +1168,10 @@ public class DataMigrationService {
         targetStatement.setLong(1, resultSet.getLong("segment_rule_id"));
         targetStatement.setString(2, resultSet.getString("name"));
         targetStatement.setString(3, resultSet.getString("description"));
-        targetStatement.setBoolean(4, resultSet.getBoolean("requires_high_heat"));
+        // Legacy source rows carry the boolean flag; map it to the 0-100 rating the same way the
+        // V173/V142 migration does (seed names get their real rating via the sync).
+        boolean legacyHighHeat = resultSet.getBoolean("requires_high_heat");
+        targetStatement.setInt(4, legacyHighHeat ? 75 : 0);
         targetStatement.setTimestamp(5, resultSet.getTimestamp("creation_date"));
         targetStatement.addBatch();
         count++;
