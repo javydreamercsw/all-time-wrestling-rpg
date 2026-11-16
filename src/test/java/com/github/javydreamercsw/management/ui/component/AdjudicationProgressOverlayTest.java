@@ -21,10 +21,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.javydreamercsw.management.event.ShowAdjudicationProgressEvent;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.mvysny.kaributesting.v10.MockVaadin;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -65,11 +67,9 @@ class AdjudicationProgressOverlayTest {
         .orElse(null);
   }
 
-  private static java.util.stream.Stream<com.vaadin.flow.component.Component> flatten(
-      com.vaadin.flow.component.Component c) {
-    return java.util.stream.Stream.concat(
-        java.util.stream.Stream.of(c),
-        c.getChildren().flatMap(AdjudicationProgressOverlayTest::flatten));
+  private static Stream<Component> flatten(Component c) {
+    return Stream.concat(
+        Stream.of(c), c.getChildren().flatMap(AdjudicationProgressOverlayTest::flatten));
   }
 
   @Test
@@ -148,7 +148,7 @@ class AdjudicationProgressOverlayTest {
     assertThat(text.toString()).contains("1 of 2");
   }
 
-  private static void collect(com.vaadin.flow.component.Component component, StringBuilder sb) {
+  private static void collect(Component component, StringBuilder sb) {
     String own = component.getElement().getText();
     if (own != null && !own.isBlank()) {
       sb.append(own).append(' ');
