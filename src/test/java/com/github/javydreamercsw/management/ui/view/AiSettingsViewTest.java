@@ -34,6 +34,7 @@ import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.NumberField;
+import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import java.util.List;
 import java.util.Optional;
@@ -76,6 +77,9 @@ class AiSettingsViewTest extends AbstractViewTest {
     when(aiSettingsService.getPollinationsApiKey()).thenReturn("");
     when(aiSettingsService.getOllamaBaseUrl()).thenReturn("");
     when(aiSettingsService.getOllamaModel()).thenReturn("llama3.2:1b");
+    when(aiSettingsService.getOllamaMaxTokens()).thenReturn(4096);
+    when(aiSettingsService.isOllamaDisableThinking()).thenReturn(false);
+    when(aiSettingsService.getOllamaExtraParams()).thenReturn("{}");
 
     view =
         new AiSettingsView(
@@ -179,5 +183,16 @@ class AiSettingsViewTest extends AbstractViewTest {
     Details gemini = _get(view, Details.class, spec -> spec.withId("settings-section-gemini"));
     _get(gemini, Checkbox.class, spec -> spec.withLabel("Enabled"));
     _get(gemini, TextField.class, spec -> spec.withLabel("Model Name"));
+  }
+
+  @Test
+  @DisplayName("Ollama section contains the expected fields including optional parameters")
+  void ollamaSection_containsExpectedFields() {
+    Details ollama = _get(view, Details.class, spec -> spec.withId("settings-section-ollama"));
+    _get(ollama, TextField.class, spec -> spec.withLabel("Base URL"));
+    _get(ollama, TextField.class, spec -> spec.withLabel("Model"));
+    _get(ollama, NumberField.class, spec -> spec.withLabel("Max Tokens"));
+    _get(ollama, Checkbox.class, spec -> spec.withLabel("Disable Thinking"));
+    _get(ollama, TextArea.class, spec -> spec.withLabel("Extra Request Parameters (JSON)"));
   }
 }

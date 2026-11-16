@@ -174,4 +174,33 @@ public class AiSettingsService {
         .map(GameSetting::getValue)
         .orElse("llama3.2:1b");
   }
+
+  public int getOllamaMaxTokens() {
+    return gameSettingService
+        .findById("AI_OLLAMA_MAX_TOKENS")
+        .map(gs -> parseIntSafe(gs.getValue(), 4096))
+        .orElse(4096);
+  }
+
+  public boolean isOllamaDisableThinking() {
+    return gameSettingService
+        .findById("AI_OLLAMA_DISABLE_THINKING")
+        .map(gs -> Boolean.parseBoolean(gs.getValue()))
+        .orElse(false);
+  }
+
+  public String getOllamaExtraParams() {
+    return gameSettingService
+        .findById("AI_OLLAMA_EXTRA_PARAMS")
+        .map(GameSetting::getValue)
+        .orElse("{}");
+  }
+
+  private static int parseIntSafe(final String value, final int fallback) {
+    try {
+      return Integer.parseInt(value.trim());
+    } catch (NumberFormatException e) {
+      return fallback;
+    }
+  }
 }
