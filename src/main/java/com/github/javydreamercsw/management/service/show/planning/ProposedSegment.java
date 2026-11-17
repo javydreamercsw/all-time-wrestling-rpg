@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.Data;
-import lombok.Setter;
 
 @Data
 public class ProposedSegment {
@@ -52,12 +51,16 @@ public class ProposedSegment {
   private Long titleId;
 
   /**
-   * Titles attached to this row. Copy-on-assign (the manual setter below, which also suppresses
-   * Lombok's bare setter): callers pass immutable sets ({@code Set.of(...)}, combo values) and
-   * downstream title resolution mutates the collection — a by-reference immutable set crashes that
-   * mutation (ATW-wbch).
+   * Titles attached to this row. Copy-on-assign: callers pass immutable sets ({@code Set.of(...)},
+   * combo values) and downstream title resolution mutates the collection — a by-reference immutable
+   * set crashes that mutation.
    */
-  @Setter private Set<Title> titles = new HashSet<>();
+  private Set<Title> titles = new HashSet<>();
+
+  @SuppressWarnings("unused")
+  public void setTitles(Set<Title> titles) {
+    this.titles = titles == null ? new HashSet<>() : new HashSet<>(titles);
+  }
 
   private List<String> rules;
   private String refereeName;
