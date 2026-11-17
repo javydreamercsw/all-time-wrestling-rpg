@@ -48,6 +48,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.util.AopTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
@@ -344,7 +345,7 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
         ShowBookingService.class.getDeclaredMethod("getHighHeatStipulation", int.class, Set.class);
     method.setAccessible(true);
     // Invoke on the AOP target: the transactional proxy shell carries null fields.
-    Object target = org.springframework.test.util.AopTestUtils.getTargetObject(showBookingService);
+    Object target = AopTestUtils.getTargetObject(showBookingService);
 
     // Heat 55 affords the 50-rated rule but not the 80-rated one.
     @SuppressWarnings("unchecked")
