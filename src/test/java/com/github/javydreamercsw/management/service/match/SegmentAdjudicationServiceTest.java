@@ -1399,4 +1399,59 @@ class SegmentAdjudicationServiceTest {
     // The booked draw is authoritative — the reported winner must not be backfilled.
     verify(segment, never()).setWinners(anyList());
   }
+
+  @Test
+  void blowoffVent_firesAfterAdjudication_whenStipulationIsExplosive() {
+    // An EXPLOSIVE-tier stipulation match vents the tagged rivalry's heat after adjudication
+    // (climax-then-finale: the feud cools into the resolution-eligible INTENSE band). Regular
+    // show: resolution attempts are off (setting default), so the vent is observable cleanly.
+    SegmentRule barbwire = mock(SegmentRule.class);
+    when(barbwire.getIntensityRating()).thenReturn(90);
+    when(barbwire.getName()).thenReturn("Barbwire Exploding Deathmatch");
+    when(segment.getSegmentRules()).thenReturn(Set.of(barbwire));
+    when(segment.getRivalryId()).thenReturn(42L);
+    when(feudService.getActiveFeudsForWrestler(anyLong())).thenReturn(List.of());
+    when(gameSettingService.getRivalryBlowoffHeatVent()).thenReturn(30);
+    Rivalry activeRivalry = mock(Rivalry.class);
+    when(activeRivalry.getId()).thenReturn(42L);
+    when(activeRivalry.getIsActive()).thenReturn(true);
+    when(rivalryService.getRivalryById(42L)).thenReturn(Optional.of(activeRivalry));
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    // Targeted heat (+5) first, then the vent (-30) as a separate event.
+    verify(rivalryService).addHeat(eq(42L), eq(5), anyString());
+    verify(rivalryService).addHeat(eq(42L), eq(-30), anyString());
+  }
+
+  @Test
+  void blowoffVent_skipped_whenNoRuleReachesExplosiveFloor() {
+    // A mid-tier stipulation (rating < 75) is not a blowoff — no vent.
+    SegmentRule cage = mock(SegmentRule.class);
+    when(cage.getIntensityRating()).thenReturn(60);
+    when(cage.getName()).thenReturn("Cage");
+    when(segment.getSegmentRules()).thenReturn(Set.of(cage));
+    when(segment.getRivalryId()).thenReturn(42L);
+    when(feudService.getActiveFeudsForWrestler(anyLong())).thenReturn(List.of());
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    verify(rivalryService).addHeat(eq(42L), eq(5), anyString()); // targeted heat only
+    verify(rivalryService, never()).addHeat(anyLong(), eq(-30), anyString());
+  }
+
+  @Test
+  void blowoffVent_skipped_whenSegmentHasNoTaggedRivalry() {
+    // Stipulation matches are rivalry-backed by validateCard; a null rivalryId logs and skips
+    // rather than venting an unknown rivalry.
+    SegmentRule barbwire = mock(SegmentRule.class);
+    when(barbwire.getIntensityRating()).thenReturn(90);
+    when(barbwire.getName()).thenReturn("Barbwire Exploding Deathmatch");
+    when(segment.getSegmentRules()).thenReturn(Set.of(barbwire));
+    when(feudService.getActiveFeudsForWrestler(anyLong())).thenReturn(List.of());
+
+    segmentAdjudicationService.adjudicateMatch(segment);
+
+    verify(rivalryService, never()).addHeat(anyLong(), anyInt(), anyString());
+  }
 }

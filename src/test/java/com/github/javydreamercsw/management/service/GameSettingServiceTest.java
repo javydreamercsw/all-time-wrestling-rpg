@@ -706,4 +706,30 @@ class GameSettingServiceTest {
         .isPresent()
         .contains(globalKey);
   }
+
+  @Test
+  void rivalryHeatCeiling_missing_returnsDefault100() {
+    assertThat(service.getRivalryHeatCeiling()).isEqualTo(100);
+  }
+
+  @Test
+  void rivalryHeatCeiling_configured_returnsStoredValue() {
+    Mockito.when(repository.findGlobal(GameSettingService.RIVALRY_HEAT_CEILING_KEY))
+        .thenReturn(Optional.of(setting(GameSettingService.RIVALRY_HEAT_CEILING_KEY, "80")));
+
+    assertThat(service.getRivalryHeatCeiling()).isEqualTo(80);
+  }
+
+  @Test
+  void rivalryBlowoffHeatVent_missing_returnsDefault30() {
+    assertThat(service.getRivalryBlowoffHeatVent()).isEqualTo(30);
+  }
+
+  @Test
+  void rivalryBlowoffHeatVent_configured_returnsStoredValue() {
+    Mockito.when(repository.findGlobal(GameSettingService.RIVALRY_BLOWOFF_HEAT_VENT_KEY))
+        .thenReturn(Optional.of(setting(GameSettingService.RIVALRY_BLOWOFF_HEAT_VENT_KEY, "40")));
+
+    assertThat(service.getRivalryBlowoffHeatVent()).isEqualTo(40);
+  }
 }
