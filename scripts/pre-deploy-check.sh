@@ -2,11 +2,9 @@
 #
 # Gated deploy of the production WAR to the local Tomcat.
 #
-# Born from the 2026-11-16 deploy outage (ATW-oe9h + duplicate Flyway V142):
-# a red post-merge CI run sat unnoticed for two hours while a broken WAR was
-# built by hand and copied into webapps/. This script runs every check that
-# has bitten a deploy before, in order, and only touches webapps/ if all of
-# them pass:
+# A red post-merge CI run once sat unnoticed while a broken WAR was built by
+# hand and copied into webapps/. This script runs every check that has bitten
+# a deploy before, in order, and only touches webapps/ if all of them pass:
 #   1. Builds -Pwar,production by default. A -Pwar-only build ships Vaadin
 #      dev mode, which hangs a cold Tomcat start (DevModeUsageStatistics).
 #   2. ReleasedMigrationChecksumTest — released-script checksums, version
