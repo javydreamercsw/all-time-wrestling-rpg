@@ -31,7 +31,6 @@ import com.github.javydreamercsw.base.ai.SegmentNarrationController;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
-import com.github.javydreamercsw.management.controller.show.ShowController;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.feud.FeudScript;
@@ -57,6 +56,7 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentRound;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.event.inbox.AdjudicationProgressBroadcaster;
 import com.github.javydreamercsw.management.service.GameClock;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.ai.AiOnboardingService;
@@ -101,7 +101,6 @@ import com.github.mvysny.kaributesting.v10.LocatorJ;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Paragraph;
@@ -146,7 +145,7 @@ class ShowDetailViewTest extends AbstractViewTest {
   @Mock private SegmentNarrationServiceFactory segmentNarrationServiceFactory;
   @Mock private Environment env;
   @Mock private SegmentNarrationController segmentNarrationController;
-  @Mock private ShowController showController;
+  @Mock private AdjudicationProgressBroadcaster adjudicationProgressBroadcaster;
   @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
   @Mock private UniverseRepository universeRepository;
   @Mock private UniverseContextService universeContextService;
@@ -401,7 +400,9 @@ class ShowDetailViewTest extends AbstractViewTest {
             new ShowService.AdjudicationPreFlight(
                 List.of("Match 1 — Wrestler A vs Wrestler B (no winner)"),
                 List.of("Match 1 — Wrestler A vs Wrestler B"),
-                true));
+                true,
+                List.of(),
+                1));
     Mockito.when(segmentRepository.findByShow(any(Show.class))).thenReturn(List.of());
 
     ShowDetailView view = buildView(mock(SecurityUtils.class));
@@ -409,10 +410,10 @@ class ShowDetailViewTest extends AbstractViewTest {
 
     ReflectionTestUtils.invokeMethod(view, "confirmThenAdjudicate", show);
 
-    ConfirmDialog dialog = LocatorJ._get(ConfirmDialog.class);
-    // Vaadin 25's ConfirmDialog exposes button labels as element properties, not getters.
-    assertThat(dialog.getElement().getProperty("confirmText")).isEqualTo("Adjudicate Anyway");
-    assertThat(dialog.getElement().getProperty("cancelText")).isEqualTo("Go Back");
+    AdjudicationPreFlightDialog dialog = LocatorJ._get(AdjudicationPreFlightDialog.class);
+    // The custom dialog exposes its actions as footer Buttons (not ConfirmDialog properties).
+    assertThat(findButtonText(dialog, "Adjudicate Anyway")).isNotNull();
+    assertThat(findButtonText(dialog, "Go Back")).isNotNull();
     StringBuilder dialogText = new StringBuilder();
     collectComponentText(dialog, dialogText);
     assertThat(dialogText.toString()).contains("AI narration will be generated for 1 segment(s)");
@@ -422,6 +423,17 @@ class ShowDetailViewTest extends AbstractViewTest {
     ListBox<String> narrateList = findListBox(dialog);
     assertThat(narrateList).isNotNull();
     assertThat(narrateList.getElement().getStyle().get("overflowY")).isEqualTo("auto");
+  }
+
+  /**
+   * Finds a button by exact text anywhere in the current UI (dialog slots included); null when
+   * absent.
+   */
+  private static Button findButtonText(Component root, String text) {
+    return LocatorJ._find(Button.class).stream()
+        .filter(b -> text.equals(b.getText()))
+        .findFirst()
+        .orElse(null);
   }
 
   private static ListBox<String> findListBox(Component root) {
@@ -461,7 +473,7 @@ class ShowDetailViewTest extends AbstractViewTest {
     Mockito.when(showService.getAdjudicationPreFlight(51L))
         .thenReturn(
             new ShowService.AdjudicationPreFlight(
-                List.of("Match 1 — no winner"), List.of("Match 1"), true));
+                List.of("Match 1 — no winner"), List.of("Match 1"), true, List.of(), 1));
     Mockito.when(segmentRepository.findByShow(any(Show.class))).thenReturn(List.of());
 
     ShowDetailView view = buildView(mock(SecurityUtils.class));
@@ -470,12 +482,12 @@ class ShowDetailViewTest extends AbstractViewTest {
     ReflectionTestUtils.invokeMethod(view, "confirmThenAdjudicate", show);
 
     // The dialog is open and wired for cancellation; no adjudication has started.
-    ConfirmDialog dialog = LocatorJ._get(ConfirmDialog.class);
+    AdjudicationPreFlightDialog dialog = LocatorJ._get(AdjudicationPreFlightDialog.class);
     assertThat(dialog.isOpened()).isTrue();
-    // Vaadin 25 ConfirmDialog has no button getters — the cancel wiring is verified by
-    // the absence of any adjudication call before a confirm event (the E2E covers the
-    // full browser cancel/confirm interaction).
-    Mockito.verify(showController, Mockito.never()).adjudicateShow(Mockito.anyLong());
+    // Vaadin has no server-side accessor for the footer button wiring; the cancel path is
+    // verified by the absence of any adjudication call before a confirm event (the E2E
+    // covers the full browser cancel/confirm interaction).
+    Mockito.verify(showService, Mockito.never()).adjudicateShow(Mockito.anyLong());
   }
 
   @Test
@@ -494,7 +506,7 @@ class ShowDetailViewTest extends AbstractViewTest {
     Mockito.when(showService.getAdjudicationPreFlight(52L))
         .thenReturn(
             new ShowService.AdjudicationPreFlight(
-                List.of("Match 1 — no winner"), List.of("Match 1"), true));
+                List.of("Match 1 — no winner"), List.of("Match 1"), true, List.of(), 1));
     Mockito.when(segmentRepository.findByShow(any(Show.class))).thenReturn(List.of());
 
     ShowDetailView view = buildView(mock(SecurityUtils.class));
@@ -502,18 +514,24 @@ class ShowDetailViewTest extends AbstractViewTest {
 
     // First click opens the dialog and disables the Adjudicate button.
     ReflectionTestUtils.invokeMethod(view, "confirmThenAdjudicate", show);
-    assertThat(LocatorJ._find(ConfirmDialog.class).stream().filter(ConfirmDialog::isOpened).count())
+    assertThat(
+            LocatorJ._find(AdjudicationPreFlightDialog.class).stream()
+                .filter(Dialog::isOpened)
+                .count())
         .isEqualTo(1);
 
     // Go Back re-enables the button (its cancel listener) without starting adjudication; a
     // second click then opens a fresh dialog — still exactly one at a time.
-    LocatorJ._get(ConfirmDialog.class).setOpened(false);
-    Mockito.verify(showController, Mockito.never()).adjudicateShow(Mockito.anyLong());
+    LocatorJ._get(AdjudicationPreFlightDialog.class).setOpened(false);
+    Mockito.verify(showService, Mockito.never()).adjudicateShow(Mockito.anyLong());
 
     ReflectionTestUtils.invokeMethod(view, "confirmThenAdjudicate", show);
-    assertThat(LocatorJ._find(ConfirmDialog.class).stream().filter(ConfirmDialog::isOpened).count())
+    assertThat(
+            LocatorJ._find(AdjudicationPreFlightDialog.class).stream()
+                .filter(Dialog::isOpened)
+                .count())
         .isEqualTo(1);
-    Mockito.verify(showController, Mockito.never()).adjudicateShow(Mockito.anyLong());
+    Mockito.verify(showService, Mockito.never()).adjudicateShow(Mockito.anyLong());
   }
 
   @Test
@@ -532,7 +550,7 @@ class ShowDetailViewTest extends AbstractViewTest {
     Mockito.when(showService.getAdjudicationPreFlight(52L))
         .thenReturn(
             new ShowService.AdjudicationPreFlight(
-                List.of(), List.of("Match 1 — Wrestler A vs Wrestler B"), false));
+                List.of(), List.of("Match 1 — Wrestler A vs Wrestler B"), false, List.of(), 1));
     Mockito.when(segmentRepository.findByShow(any(Show.class))).thenReturn(List.of());
 
     ShowDetailView view = buildView(mock(SecurityUtils.class));
@@ -540,15 +558,15 @@ class ShowDetailViewTest extends AbstractViewTest {
 
     ReflectionTestUtils.invokeMethod(view, "confirmThenAdjudicate", show);
 
-    ConfirmDialog dialog = LocatorJ._get(ConfirmDialog.class);
-    assertThat(dialog.getElement().getProperty("confirmText")).isEqualTo("Adjudicate");
+    AdjudicationPreFlightDialog dialog = LocatorJ._get(AdjudicationPreFlightDialog.class);
+    assertThat(findButtonText(dialog, "Adjudicate")).isNotNull();
     StringBuilder dialogText = new StringBuilder();
     collectComponentText(dialog, dialogText);
     String text = dialogText.toString();
     assertThat(text).contains("No AI narration provider is configured");
     assertThat(text).contains("booked descriptions");
     assertThat(text).doesNotContain("AI narration will be generated");
-    assertThat(text).doesNotContain("Adjudicate Anyway");
+    assertThat(findButtonText(dialog, "Adjudicate Anyway")).isNull();
   }
 
   @Test
@@ -709,7 +727,7 @@ class ShowDetailViewTest extends AbstractViewTest {
         titleService,
         rivalryService,
         segmentNarrationController,
-        showController,
+        adjudicationProgressBroadcaster,
         matchFulfillmentRepository,
         universeRepository,
         commentaryTeamRepository,

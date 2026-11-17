@@ -23,6 +23,8 @@ import com.github.javydreamercsw.management.domain.campaign.CampaignRepository;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
 import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
+import com.github.javydreamercsw.management.domain.league.MatchFulfillment;
+import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.season.Season;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
@@ -41,6 +43,7 @@ import com.github.javydreamercsw.management.domain.world.ArenaRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
+import com.github.javydreamercsw.management.event.ShowAdjudicationProgressEvent;
 import com.github.javydreamercsw.management.event.dto.ShowFinalizedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.gm.GmModeService;
@@ -89,6 +92,7 @@ public class ShowService {
   private final ShowTemplateRepository showTemplateRepository;
   private final UniverseRepository universeRepository;
   private final LeagueRepository leagueRepository;
+  private final MatchFulfillmentRepository matchFulfillmentRepository;
   private final Clock clock;
   private final SegmentAdjudicationService segmentAdjudicationService;
   private final SegmentRepository segmentRepository;
@@ -114,6 +118,7 @@ public class ShowService {
       final ShowTemplateRepository showTemplateRepository,
       final UniverseRepository universeRepository,
       final LeagueRepository leagueRepository,
+      final MatchFulfillmentRepository matchFulfillmentRepository,
       final Clock clock,
       final SegmentAdjudicationService segmentAdjudicationService,
       final SegmentRepository segmentRepository,
@@ -137,6 +142,7 @@ public class ShowService {
     this.showTemplateRepository = showTemplateRepository;
     this.universeRepository = universeRepository;
     this.leagueRepository = leagueRepository;
+    this.matchFulfillmentRepository = matchFulfillmentRepository;
     this.clock = clock;
     this.segmentAdjudicationService = segmentAdjudicationService;
     this.segmentRepository = segmentRepository;
@@ -546,9 +552,18 @@ public class ShowService {
 
     List<String> missingWinnerWarnings = new ArrayList<>();
     List<String> toNarrate = new ArrayList<>();
+    List<String> playerSegments = new ArrayList<>();
+    int pendingSegmentCount = 0;
+    Set<Long> playerWrestlerIds = findPlayerWrestlerIds(show);
     for (Segment segment : segmentRepository.findByShow(show)) {
       if (segment.getAdjudicationStatus() != AdjudicationStatus.PENDING) {
         continue;
+      }
+      pendingSegmentCount++;
+      if (involvesPlayer(segment, playerWrestlerIds)) {
+        playerSegments.add(
+            "Segment %d: %s — involves player-controlled wrestler(s)"
+                .formatted(segment.getSegmentOrder(), describeSegment(segment)));
       }
       if (!segment.isNarrationGenerated()) {
         toNarrate.add(
@@ -567,7 +582,45 @@ public class ShowService {
     return new AdjudicationPreFlight(
         missingWinnerWarnings,
         toNarrate,
-        segmentNarrationGenerationService.isNarrationProviderAvailable());
+        segmentNarrationGenerationService.isNarrationProviderAvailable(),
+        playerSegments,
+        pendingSegmentCount);
+  }
+
+  /** IDs of participants on this show's segments flagged as player-controlled. */
+  private Set<Long> findPlayerWrestlerIds(@NonNull final Show show) {
+    return segmentRepository.findByShow(show).stream()
+        .flatMap(s -> s.getWrestlers().stream())
+        .filter(w -> Boolean.TRUE.equals(w.getIsPlayer()))
+        .map(Wrestler::getId)
+        .collect(Collectors.toSet());
+  }
+
+  /** Whether any of the segment's participants is a player-controlled wrestler (team-aware). */
+  private boolean involvesPlayer(
+      @NonNull final Segment segment, @NonNull final Set<Long> playerWrestlerIds) {
+    return segment.getWrestlers().stream().anyMatch(w -> playerWrestlerIds.contains(w.getId()));
+  }
+
+  /**
+   * Whether this run should EXCLUDE the segment because it involves player-controlled wrestlers.
+   * True only when the player's outcome is still theirs to make: no league fulfillment exists for
+   * the segment, or it is still PENDING_RESULTS (the player hasn't reported). A SUBMITTED (or
+   * FINALIZED) fulfillment means the player already exercised their agency — the league finalize
+   * flow depends on adjudicating that segment to honor the reported winner, so excluding it would
+   * wedge the show at PENDING forever.
+   */
+  private boolean excludesPlayerSegment(
+      @NonNull final Segment segment,
+      @NonNull final Set<Long> playerWrestlerIds,
+      final boolean includePlayerSegments) {
+    if (includePlayerSegments || !involvesPlayer(segment, playerWrestlerIds)) {
+      return false;
+    }
+    return matchFulfillmentRepository
+        .findBySegment(segment)
+        .map(f -> f.getStatus() == MatchFulfillment.FulfillmentStatus.PENDING_RESULTS)
+        .orElse(true);
   }
 
   private String describeSegment(@NonNull final Segment segment) {
@@ -579,12 +632,30 @@ public class ShowService {
   /**
    * Pre-adjudication summary shown in the ShowDetailView confirm dialog. {@code
    * narrationProviderAvailable} lets the dialog say up front when narration will be skipped (no AI
-   * provider configured) instead of promising it in the to-narrate list.
+   * provider configured) instead of promising it in the to-narrate list. {@code playerSegments}
+   * lists segments involving player-controlled wrestlers — excluded by default unless the user
+   * confirms inclusion. {@code pendingSegmentCount} counts ALL pending segments so the dialog can
+   * warn when exclusion leaves nothing to adjudicate.
    */
   public record AdjudicationPreFlight(
       List<String> missingWinnerWarnings,
       List<String> toNarrate,
-      boolean narrationProviderAvailable) {}
+      boolean narrationProviderAvailable,
+      List<String> playerSegments,
+      int pendingSegmentCount) {}
+
+  /** Outcome of one adjudication (or narration-only retry) run, for the progress overlay. */
+  public record AdjudicationResult(
+      /** Segments the narration pass actually attempted (post filters). */
+      int attemptedNarrationCount,
+      /** Narrations that succeeded. */
+      int narratedCount,
+      /** Segments whose narration failed (marks persisted; retryable narration-only). */
+      List<Long> failedSegmentIds,
+      /** Segments excluded this run because they involve player-controlled wrestlers. */
+      List<Long> skippedPlayerSegmentIds,
+      /** Segments adjudicated this run (always 0 for a narration-only retry). */
+      int adjudicatedCount) {}
 
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
@@ -592,10 +663,52 @@ public class ShowService {
       value = {CacheConfig.SHOWS_CACHE, CacheConfig.CALENDAR_CACHE},
       allEntries = true)
   public void adjudicateShow(@NonNull final Long showId) {
+    adjudicateShow(showId, false);
+  }
+
+  /**
+   * Adjudicates the show: narration pass, outcomes, recovery, news. Segments involving
+   * player-controlled wrestlers are excluded by default ({@code includePlayerSegments=false}) —
+   * their outcomes are the player's story to tell; they stay PENDING. Excluded segments block
+   * {@code finalizeShowIfComplete} (all-segments-ADJUDICATED gate) until a later run includes them.
+   *
+   * @param includePlayerSegments true only after the user explicitly confirmed inclusion
+   *     (pre-flight dialog)
+   */
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  @CacheEvict(
+      value = {CacheConfig.SHOWS_CACHE, CacheConfig.CALENDAR_CACHE},
+      allEntries = true)
+  public AdjudicationResult adjudicateShow(
+      @NonNull final Long showId, final boolean includePlayerSegments) {
     Show show =
         showRepository
             .findById(showId)
             .orElseThrow(() -> new IllegalArgumentException("Show not found: " + showId));
+
+    // Player-controlled participants on this show — excluded from BOTH loops by default.
+    Set<Long> playerWrestlerIds = findPlayerWrestlerIds(show);
+    List<Segment> pendingSegments =
+        segmentRepository.findByShow(show).stream()
+            .filter(segment -> segment.getAdjudicationStatus() == AdjudicationStatus.PENDING)
+            .toList();
+    List<Segment> narratableSegments =
+        pendingSegments.stream()
+            .filter(s -> !excludesPlayerSegment(s, playerWrestlerIds, includePlayerSegments))
+            .toList();
+    List<Long> skippedPlayerSegmentIds =
+        pendingSegments.stream()
+            .filter(s -> excludesPlayerSegment(s, playerWrestlerIds, includePlayerSegments))
+            .map(Segment::getId)
+            .toList();
+    if (!skippedPlayerSegmentIds.isEmpty()) {
+      log.info(
+          "Adjudicating show '{}' excluding {} player-controlled segment(s): {}",
+          show.getName(),
+          skippedPlayerSegmentIds.size(),
+          skippedPlayerSegmentIds);
+    }
 
     Set<Long> participatingWrestlerIds = new HashSet<>();
 
@@ -604,29 +717,44 @@ public class ShowService {
     // flow). Post-show recovery must only roll for wrestlers who actually rested.
     // (ATW-binc follow-up: Gail Kim was adjudicated via MatchView before "Adjudicate
     // Fans" ran, fell out of the participant set, and got healed as if she rested.)
+    // A run that excludes player segments must not treat excluded players as having
+    // wrestled, and must not roll recovery for them (their segment didn't happen here).
     segmentRepository
         .findByShow(show)
         .forEach(
             segment -> {
-              if (!WellKnownSegmentType.PROMO.matches(segment.getSegmentType())) {
+              if (!WellKnownSegmentType.PROMO.matches(segment.getSegmentType())
+                  && !excludesPlayerSegment(segment, playerWrestlerIds, includePlayerSegments)) {
                 segment
                     .getParticipants()
                     .forEach(p -> participatingWrestlerIds.add(p.getWrestler().getId()));
               }
             });
+    if (!includePlayerSegments) {
+      participatingWrestlerIds.addAll(playerWrestlerIds);
+    }
 
     // Narration phase (2.13.0): generate full narrations for pending segments still
     // carrying only the AI-planning brief description. Each segment commits in its own
     // transaction (REQUIRES_NEW) before adjudication starts, so news generation below
     // works from real narrations. AI failure never blocks the show: warn and continue.
-    List<Segment> pendingSegments =
-        segmentRepository.findByShow(show).stream()
-            .filter(segment -> segment.getAdjudicationStatus() == AdjudicationStatus.PENDING)
-            .toList();
-    for (Segment pending : pendingSegments) {
-      if (pending.isNarrationGenerated()) {
-        continue;
-      }
+    List<Segment> segmentsToNarrate =
+        narratableSegments.stream().filter(s -> !s.isNarrationGenerated()).toList();
+    List<Long> failedSegmentIds = new ArrayList<>();
+    int narratedCount = 0;
+    int narrationTarget = segmentsToNarrate.size();
+    eventPublisher.publishEvent(
+        new ShowAdjudicationProgressEvent(
+            this,
+            showId,
+            ShowAdjudicationProgressEvent.Phase.NARRATION,
+            0,
+            narrationTarget,
+            narrationTarget > 0
+                ? describeSegment(segmentsToNarrate.get(0))
+                : "Nothing to narrate"));
+    int narrationIndex = 0;
+    for (Segment pending : segmentsToNarrate) {
       try {
         SegmentNarrationGenerationService.GeneratedNarration generated =
             segmentNarrationGenerationService.generateForSegment(pending.getId());
@@ -645,6 +773,7 @@ public class ShowService {
             pending.setReferee(generated.referee());
             pending.setRefereeAwarenessLevel(generated.refereeAwareness());
           }
+          narratedCount++;
         }
       } catch (Exception e) {
         log.warn(
@@ -652,24 +781,78 @@ public class ShowService {
                 + " description: {}",
             pending.getId(),
             e.getMessage());
+        String failureMessage =
+            e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+        segmentNarrationGenerationService.recordNarrationFailure(pending.getId(), failureMessage);
+        // recordNarrationFailure committed in its own REQUIRES_NEW transaction, but the outer
+        // persistence context still holds narrationLastError=null for this entity — and the
+        // adjudication loop below saves the same row with ADJUDICATED. Hibernate's full-column
+        // UPDATE would clobber the committed mark on flush, so mirror it in memory here too.
+        // (Mirroring is safe: unlike a re-read on MySQL REPEATABLE READ, this writes forward.)
+        pending.setNarrationLastError(failureMessage);
+        failedSegmentIds.add(pending.getId());
       }
+      narrationIndex++;
+      final String label = describeSegment(pending);
+      eventPublisher.publishEvent(
+          new ShowAdjudicationProgressEvent(
+              this,
+              showId,
+              ShowAdjudicationProgressEvent.Phase.NARRATION,
+              narrationIndex,
+              narrationTarget,
+              label));
     }
 
-    segmentRepository.findByShow(show).stream()
-        .filter(segment -> segment.getAdjudicationStatus() == AdjudicationStatus.PENDING)
-        .forEach(
-            segment -> {
-              segmentAdjudicationService.adjudicateMatch(segment);
-              if (!WellKnownSegmentType.PROMO.matches(segment.getSegmentType())) {
-                segment.getWrestlers().forEach(w -> participatingWrestlerIds.add(w.getId()));
-              }
-              segment.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
-              segmentRepository.save(segment);
-            });
+    List<Segment> segmentsToAdjudicate =
+        segmentRepository.findByShow(show).stream()
+            .filter(segment -> segment.getAdjudicationStatus() == AdjudicationStatus.PENDING)
+            .filter(
+                segment ->
+                    !excludesPlayerSegment(segment, playerWrestlerIds, includePlayerSegments))
+            .toList();
+    int adjudicationTarget = segmentsToAdjudicate.size();
+    eventPublisher.publishEvent(
+        new ShowAdjudicationProgressEvent(
+            this,
+            showId,
+            ShowAdjudicationProgressEvent.Phase.ADJUDICATION,
+            0,
+            adjudicationTarget,
+            adjudicationTarget > 0
+                ? describeSegment(segmentsToAdjudicate.get(0))
+                : "Nothing to adjudicate"));
+    int adjudicationIndex = 0;
+    for (Segment segment : segmentsToAdjudicate) {
+      segmentAdjudicationService.adjudicateMatch(segment);
+      if (!WellKnownSegmentType.PROMO.matches(segment.getSegmentType())) {
+        segment.getWrestlers().forEach(w -> participatingWrestlerIds.add(w.getId()));
+      }
+      segment.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
+      segmentRepository.save(segment);
+      adjudicationIndex++;
+      final String label = describeSegment(segment);
+      eventPublisher.publishEvent(
+          new ShowAdjudicationProgressEvent(
+              this,
+              showId,
+              ShowAdjudicationProgressEvent.Phase.ADJUDICATION,
+              adjudicationIndex,
+              adjudicationTarget,
+              label));
+    }
 
     // All segments are now ADJUDICATED — compute attendance and quality score.
     // finalizeShowIfComplete must be called here (not from inside adjudicateMatch) because
     // the adjudicationStatus is set to ADJUDICATED after adjudicateMatch returns.
+    eventPublisher.publishEvent(
+        new ShowAdjudicationProgressEvent(
+            this,
+            showId,
+            ShowAdjudicationProgressEvent.Phase.FINALIZING,
+            0,
+            0,
+            "Computing attendance and quality"));
     finalizeShowIfComplete(show);
 
     // Campaign universes handle healing exclusively through BackstageActionService (RECOVERY).
@@ -720,6 +903,86 @@ public class ShowService {
     gmModeService.processShowUpdates(show, participatingWrestlerIds);
 
     eventPublisher.publishEvent(new AdjudicationCompletedEvent(this, show));
+    return new AdjudicationResult(
+        segmentsToNarrate.size(),
+        narratedCount,
+        List.copyOf(failedSegmentIds),
+        List.copyOf(skippedPlayerSegmentIds),
+        segmentsToAdjudicate.size());
+  }
+
+  /**
+   * Re-runs NARRATION ONLY for the given segments (the "Retry failed" path). Never adjudicates:
+   * failed segments were already adjudicated by the original run — re-running outcomes would
+   * double-apply fan/title effects. Clears each segment's narration failure mark on success via
+   * {@code generateForSegment}'s own REQUIRES_NEW transaction.
+   *
+   * <p>Ids that don't belong to this show or whose narration already exists are silently ignored.
+   */
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  public AdjudicationResult retryNarration(
+      @NonNull final Long showId, @NonNull final List<Long> segmentIds) {
+    Show show =
+        showRepository
+            .findById(showId)
+            .orElseThrow(() -> new IllegalArgumentException("Show not found: " + showId));
+
+    List<Long> retryableIds =
+        segmentIds.stream()
+            .filter(
+                id ->
+                    segmentRepository
+                        .findById(id)
+                        .map(
+                            s ->
+                                s.getShow() != null
+                                    && showId.equals(s.getShow().getId())
+                                    && !s.isNarrationGenerated())
+                        .orElse(false))
+            .toList();
+
+    List<Long> failedSegmentIds = new ArrayList<>();
+    int narratedCount = 0;
+    int retryTarget = retryableIds.size();
+    eventPublisher.publishEvent(
+        new ShowAdjudicationProgressEvent(
+            this,
+            showId,
+            ShowAdjudicationProgressEvent.Phase.RETRY,
+            0,
+            retryTarget,
+            retryTarget > 0 ? "Retrying narration" : "Nothing to retry"));
+    int retryIndex = 0;
+    for (Long segmentId : retryableIds) {
+      try {
+        SegmentNarrationGenerationService.GeneratedNarration generated =
+            segmentNarrationGenerationService.generateForSegment(segmentId);
+        if (generated != null) {
+          narratedCount++;
+        }
+      } catch (Exception e) {
+        log.warn(
+            "Narration retry failed for segment {} — keeping the failure mark: {}",
+            segmentId,
+            e.getMessage());
+        segmentNarrationGenerationService.recordNarrationFailure(
+            segmentId, e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName());
+        failedSegmentIds.add(segmentId);
+      }
+      retryIndex++;
+      final String label = "Segment " + segmentId;
+      eventPublisher.publishEvent(
+          new ShowAdjudicationProgressEvent(
+              this,
+              showId,
+              ShowAdjudicationProgressEvent.Phase.RETRY,
+              retryIndex,
+              retryTarget,
+              label));
+    }
+    return new AdjudicationResult(
+        retryableIds.size(), narratedCount, List.copyOf(failedSegmentIds), List.of(), 0);
   }
 
   @PreAuthorize("isAuthenticated()")

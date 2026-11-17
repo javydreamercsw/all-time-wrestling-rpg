@@ -567,11 +567,10 @@ public class LeagueDocsE2ETest extends AbstractE2ETest {
     clickElement(driver.findElement(By.id("show-name-button-" + show.getId())));
     waitForVaadinElement(driver, By.id("segments-grid"));
     clickElement(By.id("adjudicate-show-btn"));
-    // 2.13.0: adjudication now goes through a pre-flight ConfirmDialog — confirm it.
-    waitForVaadinElement(driver, By.xpath("//vaadin-confirm-dialog[@opened]"));
-    clickElement(
-        driver.findElement(
-            By.xpath("//vaadin-confirm-dialog[@opened]//vaadin-button[@slot='confirm-button']")));
+    // 2.13.0 / ATW-v0vh: adjudication goes through the custom pre-flight Dialog — confirm it
+    // via its stable button id (Vaadin wraps button text, so text() xpaths are brittle).
+    waitForVaadinElement(driver, By.id("adjudicate-confirm-btn"));
+    clickElement(driver.findElement(By.id("adjudicate-confirm-btn")));
     waitForNotification("Fan adjudication completed!");
   }
 }

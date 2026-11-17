@@ -84,7 +84,18 @@ class ShowControllerTest extends AbstractControllerTest {
   void testAdjudicateShow() throws Exception {
     mockMvc.perform(post("/api/shows/1/adjudicate").with(csrf())).andExpect(status().isOk());
 
-    verify(showService, times(1)).adjudicateShow(1L);
+    // ATW-v0vh: the endpoint defaults to excluding player-controlled segments.
+    verify(showService, times(1)).adjudicateShow(1L, false);
+  }
+
+  @Test
+  @WithMockUser(roles = "ADMIN")
+  void testAdjudicateShow_includePlayerSegments() throws Exception {
+    mockMvc
+        .perform(post("/api/shows/1/adjudicate?includePlayerSegments=true").with(csrf()))
+        .andExpect(status().isOk());
+
+    verify(showService, times(1)).adjudicateShow(1L, true);
   }
 
   @Test

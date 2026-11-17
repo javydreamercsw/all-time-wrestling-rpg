@@ -114,6 +114,14 @@ public class Segment extends AbstractEntity<Long> {
   @Column(name = "narration_generated", nullable = false)
   private boolean narrationGenerated = false;
 
+  /**
+   * Why the last narration attempt failed (provider error message, truncated); null when the last
+   * attempt succeeded or none was attempted. Not set when generation was merely skipped (no
+   * provider configured) — only on an actual failure. Cleared on the next successful narration.
+   */
+  @Column(name = "narration_last_error", length = 512)
+  private String narrationLastError;
+
   // Segment rules (many-to-many relationship)
   @ManyToMany(fetch = FetchType.EAGER)
   @JoinTable(

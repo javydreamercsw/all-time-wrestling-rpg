@@ -100,10 +100,14 @@ class ShowAdjudicationDocsE2ETest extends AbstractDocsE2ETest {
   }
 
   private Wrestler seedWrestler(String name) {
+    return seedWrestler(name, false);
+  }
+
+  private Wrestler seedWrestler(String name, boolean isPlayer) {
     Wrestler w = new Wrestler();
     w.setName(name + " " + System.nanoTime());
     w.setActive(true);
-    w.setIsPlayer(false);
+    w.setIsPlayer(isPlayer);
     w.setGender(Gender.MALE);
     return wrestlerRepository.saveAndFlush(w);
   }
@@ -118,7 +122,8 @@ class ShowAdjudicationDocsE2ETest extends AbstractDocsE2ETest {
         wait.until(ExpectedConditions.elementToBeClickable(By.id("adjudicate-show-btn")));
     clickElement(adjudicateButton);
 
-    wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-confirm-dialog")));
+    // ATW-v0vh: the pre-flight is now a custom Dialog (vaadin-dialog), not a ConfirmDialog.
+    wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-dialog")));
 
     documentFeature(
         "Booker",
@@ -126,5 +131,37 @@ class ShowAdjudicationDocsE2ETest extends AbstractDocsE2ETest {
         "Adjudicating a show: AI narration is generated for pending segments and the booker"
             + " is warned about matches without a winner before confirming.",
         "show-adjudication-dialog");
+  }
+
+  @Test
+  public void testCaptureAdjudicationDialogWithPlayerSegments() {
+    // ATW-v0vh: a player-controlled wrestler on the card adds the Exclude/Include choice.
+    Wrestler player = seedWrestler("Docs Adjudication Player", true);
+    SegmentType singlesType =
+        segmentTypeRepository.findByCode(WellKnownSegmentType.ONE_ON_ONE.getCode()).orElseThrow();
+    Segment playerSegment = new Segment();
+    playerSegment.setShow(testShow);
+    playerSegment.setSegmentType(singlesType);
+    playerSegment.setAdjudicationStatus(AdjudicationStatus.PENDING);
+    playerSegment.addParticipant(player);
+    playerSegment.addParticipant(
+        wrestlerRepository.saveAndFlush(seedWrestler("Docs Adjudication Opponent")));
+    segmentRepository.saveAndFlush(playerSegment);
+
+    driver.get(
+        "http://localhost:" + serverPort + getContextPath() + "/show-detail/" + testShow.getId());
+
+    WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
+    WebElement adjudicateButton =
+        wait.until(ExpectedConditions.elementToBeClickable(By.id("adjudicate-show-btn")));
+    clickElement(adjudicateButton);
+    wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-dialog")));
+
+    documentFeature(
+        "Booker",
+        "Adjudicate Show — player segments",
+        "Segments involving player-controlled wrestlers are excluded by default; the booker"
+            + " can include them after reviewing the list.",
+        "show-adjudication-dialog-player-segments");
   }
 }

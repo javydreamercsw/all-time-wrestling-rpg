@@ -132,6 +132,9 @@ class ShowAdjudicationNarrationFailureIT extends ManagementIntegrationTest {
     // and the brief description the AI planning wrote was not clobbered.
     assertThat(after.isNarrationGenerated()).isFalse();
     assertThat(after.getNarration()).isEqualTo(briefNarration);
+    // ATW-v0vh: a skip (no provider) is NOT a failure — no failure mark is recorded, so the
+    // show view's Narration column must not flag this segment.
+    assertThat(after.getNarrationLastError()).isNull();
   }
 
   private ProposedSegment singles(String w1, String w2) {
