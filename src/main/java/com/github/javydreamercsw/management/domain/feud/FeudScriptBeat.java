@@ -132,21 +132,13 @@ public class FeudScriptBeat extends AbstractEntity<Long> {
 
   /** Titles at stake when this beat is a title match. EAGER: rendered on detached arc grids. */
   @ManyToMany(fetch = FetchType.EAGER)
+  @Setter
   @JoinTable(
       name = "feud_script_beat_title",
       joinColumns = @JoinColumn(name = "beat_id"),
       inverseJoinColumns = @JoinColumn(name = "title_id"))
   @JsonIgnoreProperties({"titleReigns", "challengers"})
   private Set<Title> titles = new HashSet<>();
-
-  /**
-   * Copy-on-assign: editors assign Vaadin multiselect values (immutable sets) while {@code
-   * FeudScriptService} mutates the collection via {@link #getTitles()}, so the setter must copy
-   * instead of aliasing the caller's set.
-   */
-  public void setTitles(Set<Title> titles) {
-    this.titles = titles == null ? new HashSet<>() : new HashSet<>(titles);
-  }
 
   /**
    * External (non-feud) wrestlers involved in this beat only. EAGER because beats render in

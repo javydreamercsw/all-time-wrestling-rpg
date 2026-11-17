@@ -192,15 +192,6 @@ public class Segment extends AbstractEntity<Long> {
   @JsonIgnore
   private Set<Title> titles = new HashSet<>();
 
-  /**
-   * Copy-on-assign: callers pass immutable sets (planner proposals, Vaadin multiselect values)
-   * while title resolution mutates the collection via {@link #getTitles()}, so the setter must copy
-   * instead of aliasing the caller's set.
-   */
-  public void setTitles(Set<Title> titles) {
-    this.titles = titles == null ? new HashSet<>() : new HashSet<>(titles);
-  }
-
   @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "referee_id")
   private Npc referee;

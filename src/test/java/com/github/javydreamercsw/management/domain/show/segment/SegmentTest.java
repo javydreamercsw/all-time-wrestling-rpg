@@ -18,10 +18,13 @@ package com.github.javydreamercsw.management.domain.show.segment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 /** Unit tests for {@link Segment} result and narration-generated state. */
@@ -43,6 +46,23 @@ class SegmentTest {
     Segment segment = new Segment();
     assertEquals(SegmentResult.WINNERS, segment.getResult());
     assertFalse(segment.isNarrationGenerated());
+  }
+
+  @Test
+  void setTitlesCopiesImmutableCallerSet() {
+    // Approval and UI flows mutate the segment's titles via getTitles().add(...), so a
+    // by-reference immutable set from the caller (Set.of(...) in the planner, Vaadin
+    // multiselect values in the views) would make setTitles alias it and .add() throw
+    // UnsupportedOperationException.
+    Segment segment = new Segment();
+    Title title = new Title();
+    Set<Title> immutable = Set.of(title);
+
+    segment.setTitles(immutable);
+
+    assertNotSame(immutable, segment.getTitles(), "setTitles must copy, not alias");
+    assertTrue(segment.getTitles().contains(title));
+    segment.getTitles().add(new Title()); // must not throw
   }
 
   @Test

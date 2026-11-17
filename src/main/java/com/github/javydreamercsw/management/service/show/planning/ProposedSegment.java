@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.Data;
+import lombok.Setter;
 
 @Data
 public class ProposedSegment {
@@ -55,12 +56,8 @@ public class ProposedSegment {
    * combo values) and downstream title resolution mutates the collection — a by-reference immutable
    * set crashes that mutation.
    */
+  @Setter(onMethod_ = {@SuppressWarnings("unused")})
   private Set<Title> titles = new HashSet<>();
-
-  @SuppressWarnings("unused")
-  public void setTitles(Set<Title> titles) {
-    this.titles = titles == null ? new HashSet<>() : new HashSet<>(titles);
-  }
 
   private List<String> rules;
   private String refereeName;
