@@ -138,7 +138,9 @@ step "Checking CI status for commit $(git rev-parse --short HEAD)"
 sha="$(git rev-parse HEAD)"
 summary="$(
   gh run list --commit "$sha" --limit 15 --json status,conclusion \
-    --jq '{completed: [.[] | select(.status=="completed")] | length, red: [.[] | select(.status=="completed") | select(.conclusion!="success" and .conclusion!="skipped" and .conclusion!="neutral")] | length}' 2>/dev/null
+    --jq '{completed: [.[] | select(.status=="completed")] | length,
+           red: [.[] | select(.status=="completed") | select(.conclusion!="success" and .conclusion!="skipped" and .conclusion!="neutral")] | length,
+           pending: [.[] | select(.status!="completed")] | length}' 2>/dev/null
 )" || summary=""
 if [ -z "$summary" ]; then
   echo "  WARNING: could not query GitHub Actions (offline or unauthenticated) — continuing without the CI gate."
@@ -146,7 +148,14 @@ else
   echo "  $summary"
   case "$summary" in
     *'"red":0'*)
-      echo "  CI has no failed runs for this commit."
+      if [ "${ALLOW_PENDING_CI:-0}" = "1" ]; then
+        echo "  ALLOW_PENDING_CI=1 — continuing despite pending CI runs."
+      elif echo "$summary" | grep -qE '"pending":[1-9]'; then
+        die "CI is still running for commit $(git rev-parse --short HEAD) — a pass is not a verdict yet.
+  Wait: gh run watch <run-id>   (or)   Override: ALLOW_PENDING_CI=1 scripts/pre-deploy-check.sh $*"
+      else
+        echo "  CI has no failed runs for this commit."
+      fi
       ;;
     *)
       if [ "${ALLOW_RED_CI:-0}" != "1" ]; then

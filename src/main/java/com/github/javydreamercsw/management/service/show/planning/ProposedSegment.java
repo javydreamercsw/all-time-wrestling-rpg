@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.Data;
-import lombok.Setter;
 
 @Data
 public class ProposedSegment {
@@ -54,10 +53,14 @@ public class ProposedSegment {
   /**
    * Titles attached to this row. Copy-on-assign: callers pass immutable sets ({@code Set.of(...)},
    * combo values) and downstream title resolution mutates the collection — a by-reference immutable
-   * set crashes that mutation.
+   * set crashes that mutation. This file is excluded from the rewrite plugin because its
+   * UseLombokSetter recipe deletes any manual setter on a Lombok-managed class.
    */
-  @Setter(onMethod_ = {@SuppressWarnings("unused")})
   private Set<Title> titles = new HashSet<>();
+
+  public void setTitles(Set<Title> titles) {
+    this.titles = titles == null ? new HashSet<>() : new HashSet<>(titles);
+  }
 
   private List<String> rules;
   private String refereeName;

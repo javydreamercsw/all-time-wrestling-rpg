@@ -141,6 +141,16 @@ public class FeudScriptBeat extends AbstractEntity<Long> {
   private Set<Title> titles = new HashSet<>();
 
   /**
+   * Copy-on-assign: editors assign Vaadin multiselect values (immutable sets) while {@code
+   * FeudScriptService} mutates the collection via {@link #getTitles()}, so the setter must copy
+   * instead of aliasing the caller's set. This file is excluded from the rewrite plugin because its
+   * UseLombokSetter recipe deletes any manual setter on a Lombok-managed class.
+   */
+  public void setTitles(Set<Title> titles) {
+    this.titles = titles == null ? new HashSet<>() : new HashSet<>(titles);
+  }
+
+  /**
    * External (non-feud) wrestlers involved in this beat only. EAGER because beats render in
    * detached grids and are loaded via a native query that cannot carry an {@code @EntityGraph};
    * cardinality is tiny (a few externals per beat).

@@ -725,6 +725,13 @@
           <exclusions>
             <exclusion>**/*.groovy</exclusion>
             <exclusion>**/*.yml</exclusion>
+            <!-- Entities whose manual setters perform a defensive copy (immutable caller sets
+                 are aliased by bare assignment and later mutated). UseLombokSetter treats any
+                 manual setX on a Lombok-managed class as replaceable and deletes the copy,
+                 silently reintroducing UnsupportedOperationException at approval time. -->
+            <exclusion>**/domain/show/segment/Segment.java</exclusion>
+            <exclusion>**/domain/feud/FeudScriptBeat.java</exclusion>
+            <exclusion>**/service/show/planning/ProposedSegment.java</exclusion>
           </exclusions>
           <activeRecipes>
             <recipe>org.openrewrite.staticanalysis.NeedBraces</recipe>
