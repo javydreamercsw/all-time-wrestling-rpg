@@ -45,7 +45,7 @@ class SegmentRuleServiceIT extends ManagementIntegrationTest {
     verify(segmentRuleRepository, times(1)).findAll();
 
     segmentRuleService.createOrUpdateRule(
-        "Test Rule IT", "Test Description", false, false, BumpAddition.NONE);
+        "Test Rule IT", "Test Description", 0, false, BumpAddition.NONE);
 
     segmentRuleService.findAll();
     verify(segmentRuleRepository, times(2)).findAll();
@@ -61,7 +61,7 @@ class SegmentRuleServiceIT extends ManagementIntegrationTest {
 
     SegmentRule saved =
         segmentRuleService.createOrUpdateRule(
-            "IT Cage", "IT Cage match", true, true, BumpAddition.ALL, "BASE_GAME", guide);
+            "IT Cage", "IT Cage match", 0, true, BumpAddition.ALL, "BASE_GAME", guide);
 
     assertThat(saved.getGuide()).isNotNull();
     assertThat(saved.getGuide().solo().overview()).isEqualTo("overview");
@@ -78,13 +78,13 @@ class SegmentRuleServiceIT extends ManagementIntegrationTest {
 
     SegmentRule first =
         segmentRuleService.createOrUpdateRule(
-            "IT No DQ", "No DQ", false, true, BumpAddition.ALL, "BASE_GAME", guide);
+            "IT No DQ", "No DQ", 0, true, BumpAddition.ALL, "BASE_GAME", guide);
     String hashAfterFirst = first.getGuideHash();
 
     // Same content — should return without save
     SegmentRule second =
         segmentRuleService.createOrUpdateRule(
-            "IT No DQ", "No DQ", false, true, BumpAddition.ALL, "BASE_GAME", guide);
+            "IT No DQ", "No DQ", 0, true, BumpAddition.ALL, "BASE_GAME", guide);
 
     assertThat(second.getGuideHash()).isEqualTo(hashAfterFirst);
     verify(segmentRuleRepository, times(1)).save(ArgumentMatchers.any());
@@ -100,7 +100,7 @@ class SegmentRuleServiceIT extends ManagementIntegrationTest {
 
     SegmentRule v1 =
         segmentRuleService.createOrUpdateRule(
-            "IT Extreme", "Extreme", true, true, BumpAddition.ALL, "BASE_GAME", guideV1);
+            "IT Extreme", "Extreme", 0, true, BumpAddition.ALL, "BASE_GAME", guideV1);
 
     SegmentRuleVariantGuide soloV2 =
         new SegmentRuleVariantGuide(
@@ -109,7 +109,7 @@ class SegmentRuleServiceIT extends ManagementIntegrationTest {
 
     SegmentRule v2 =
         segmentRuleService.createOrUpdateRule(
-            "IT Extreme", "Extreme", true, true, BumpAddition.ALL, "BASE_GAME", guideV2);
+            "IT Extreme", "Extreme", 0, true, BumpAddition.ALL, "BASE_GAME", guideV2);
 
     assertThat(v2.getGuideHash()).isNotEqualTo(v1.getGuideHash());
     assertThat(v2.getGuide().solo().overview()).isEqualTo("updated overview");

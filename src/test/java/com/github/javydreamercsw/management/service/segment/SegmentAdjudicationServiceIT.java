@@ -193,7 +193,7 @@ class SegmentAdjudicationServiceIT extends AbstractMockUserIntegrationTest {
       rule.setName("Submission");
       rule.setDescription("Submission Match");
       rule.setBumpAddition(BumpAddition.LOSERS);
-      rule.setRequiresHighHeat(false);
+      rule.setIntensityRating(0);
       segmentRuleRepository.save(rule);
     }
 
@@ -402,7 +402,7 @@ class SegmentAdjudicationServiceIT extends AbstractMockUserIntegrationTest {
       rule.setName("No DQ");
       rule.setDescription("No Disqualification Match");
       rule.setBumpAddition(BumpAddition.ALL);
-      rule.setRequiresHighHeat(false);
+      rule.setIntensityRating(0);
       segmentRuleRepository.save(rule);
     }
 

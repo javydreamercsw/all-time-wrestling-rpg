@@ -40,14 +40,14 @@ class RivalryClassifierTest {
   void mustBook_belowPleEligibleHeat() {
     assertEquals(
         RivalryClassifier.MUST_BOOK,
-        RivalryClassifier.classify(rivalry(13, "Tag Team"), false, false, false));
+        RivalryClassifier.classify(rivalry(35, "Tag Team"), false, false, false));
   }
 
   @Test
   void pleResolutionEligible_midHeat() {
     assertEquals(
         RivalryClassifier.PLE_RESOLUTION_ELIGIBLE,
-        RivalryClassifier.classify(rivalry(26, "Free-for-All"), false, false, false));
+        RivalryClassifier.classify(rivalry(62, "Free-for-All"), false, false, false));
   }
 
   @Test
@@ -70,7 +70,7 @@ class RivalryClassifierTest {
   void stipulationRequired_maxHeatOnPle() {
     assertEquals(
         RivalryClassifier.STIPULATION_REQUIRED,
-        RivalryClassifier.classify(rivalry(35, "One on One"), false, false, true));
+        RivalryClassifier.classify(rivalry(85, "One on One"), false, false, true));
   }
 
   @Test
@@ -85,7 +85,7 @@ class RivalryClassifierTest {
     // On a PLE the heat rules take over (cooldown is a weekly format guard).
     assertEquals(
         RivalryClassifier.STIPULATION_REQUIRED,
-        RivalryClassifier.classify(rivalry(35, "Promo"), false, false, true));
+        RivalryClassifier.classify(rivalry(85, "Promo"), false, false, true));
   }
 
   @Test

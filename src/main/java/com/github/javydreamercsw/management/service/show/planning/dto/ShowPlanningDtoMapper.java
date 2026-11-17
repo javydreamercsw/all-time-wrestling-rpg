@@ -56,7 +56,7 @@ public class ShowPlanningDtoMapper {
         context.getRecentSegments().stream().map(this::toDto).collect(Collectors.toList()));
     dto.setCurrentRivalries(
         context.getCurrentRivalries().stream()
-            .filter(r -> r.getHeat() >= 10)
+            .filter(r -> r.getHeat() >= 25)
             .map(this::toDto)
             .collect(Collectors.toList()));
     dto.setShowTemplate(context.getShowTemplate());
@@ -130,6 +130,9 @@ public class ShowPlanningDtoMapper {
               .collect(Collectors.toList()));
     }
     dto.setSummary(segment.getSummary());
+    // Rule names on the segment — makes past stipulations visible to the planner (anti-repeat).
+    dto.setRules(
+        segment.getSegmentRules().stream().map(SegmentRule::getName).collect(Collectors.toList()));
     return dto;
   }
 

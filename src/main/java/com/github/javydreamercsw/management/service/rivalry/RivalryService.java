@@ -145,7 +145,7 @@ public class RivalryService {
     return Optional.of(rivalryRepository.saveAndFlush(rivalry));
   }
 
-  /** Add heat to a rivalry. */
+  /** Add heat to a rivalry (clamped to the heat ceiling, stamped with kayfabe time). */
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @CacheEvict(value = CacheConfig.RIVALRIES_CACHE, allEntries = true)
@@ -156,7 +156,11 @@ public class RivalryService {
         .map(
             rivalry -> {
               int oldHeat = rivalry.getHeat();
-              rivalry.addHeat(heatGain, reason);
+              rivalry.addHeat(
+                  heatGain,
+                  reason,
+                  gameSettingService.getRivalryHeatCeiling(),
+                  gameClock.gameNowStaggered());
               Rivalry savedRivalry = rivalryRepository.saveAndFlush(rivalry);
               // Publish event
               eventPublisher.publishEvent(
@@ -258,7 +262,8 @@ public class RivalryService {
     int roll2 = wrestler2Roll;
     int total = roll1 + roll2;
 
-    boolean resolved = rivalry.attemptResolution(roll1, roll2, threshold, minHeat);
+    boolean resolved =
+        rivalry.attemptResolution(roll1, roll2, threshold, minHeat, gameClock.gameNowStaggered());
 
     if (resolved) {
       // Rivalry.attemptResolution() already ends the rivalry and records the
@@ -325,7 +330,8 @@ public class RivalryService {
       rivalry.endRivalry(
           attempt >= 3 && total <= gameSettingService.getRivalryResolutionThresholdPle()
               ? "Resolved after third PLE match"
-              : "Resolved by PLE resolution roll");
+              : "Resolved by PLE resolution roll",
+          gameClock.gameNowStaggered());
       rivalryRepository.saveAndFlush(rivalry);
       eventPublisher.publishEvent(new RivalryCompletedEvent(this, rivalry));
     } else {
@@ -351,7 +357,7 @@ public class RivalryService {
         .filter(Rivalry::getIsActive)
         .map(
             rivalry -> {
-              rivalry.endRivalry(reason);
+              rivalry.endRivalry(reason, gameClock.gameNowStaggered());
               return rivalryRepository.saveAndFlush(rivalry);
             });
   }

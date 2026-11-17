@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-11-09T19:58:21Z",
+  "generatedAt" : "2026-11-16T22:34:35Z",
   "domains" : {
     "achievement" : {
       "ABILENE_BLESS_YOUR_HEART" : "9288b567c2091fd69215816044e405d85ce777337a348e6396f2e8b3028c3abb",
@@ -1430,26 +1430,26 @@
       "Weapon Slide" : "dffb446757cdf1721ec2946048690778113332d3e61bbc8133337b073f00cf7b"
     },
     "segment_rule" : {
-      "Barbwire Exploding Deathmatch" : "8dc00da6e962906599817c160f90448fc9b1d10b9cb21d2bdd5d6b14d27bc38a",
-      "Cage" : "9f4028f4cab1a4e8ece1cab2365e4037afb4d67aebd81c01bddd6de1baaf23ef",
-      "Casket Match" : "b3c429e94a829ff897174b78728289ca6880ebf362d6c0ea16d3fe985a9c483e",
-      "Elimination" : "c2eaf91eebf8c27c9d8d563a3728f14c85bdee7bdf2b34f2656e4142221aff59",
-      "Faction Beatdown" : "ea9d23a1ad84abefe6d9f309a6e8667c8bcdc59dc343ad074cf66c08768a0f13",
-      "Free-For-All" : "1de777405b9656b8bb7156f07ee182ed02c584367cf7a8c8d7671002822aed1e",
-      "GM Office Confrontation" : "448ad71c00dffebfb68c475b38f58557a49a920b7256a704f0baf8188384a497",
-      "Gauntlet" : "b0af3edf64183163d79af80f9e525d22a75fec96ba6a97b3fef32fa938005648",
-      "I Quit Match" : "20cc70ebef2a4546ce9d56a0db6b13647611772934db54d2b4889dd718a14716",
-      "Ladder Match" : "8a69d744754680c75df2d282e76593e9a6862283ca8bfe979fbb50f4ca9cbde9",
-      "Last Man Standing" : "dd5fbc48f41ee350e6732941066ef936fdb7bca06d2c70bf65a4b68f6943d086",
-      "No DQ" : "c1d1a8dc389df05f6328e720e4de6b4a7974f4a77dc4bcaa0a3bb5353e6ea90a",
-      "Normal" : "5ec7fd94b102ee0aa2cdc5e206f05e7b9644784a2bed3ef841daa876e6c994de",
-      "Over the Top Rope Elimination" : "2fc375f0cd47304e3f146e6dd7069b38eef979b4a94e7dc7479cd9cd10998662",
-      "Performance Review" : "d38a32b4e393e33ff09f4b45bbfc1ce5d433e9d3767c63de4a77ea4c098045c7",
-      "Promo" : "f92a62b0dfee4f6cc9562782227625e1c374840d757827312b0eaa4b65f170c8",
-      "Submission" : "08ff0f1fa1aa379edd47713529c2f666a4c9c0a8d3cf006e3ac31f110fba8a37",
-      "Survivor War Match" : "6ef049de8fdffb2c477b45848ba1f68bfa0dcb0b3b8b954deb502e9fa36a7472",
-      "Tables, Ladders and Chairs (TLC)" : "6cc132dcbf57789facb1daaef4fa89418793f7a6764d7f92d591e64878804f52",
-      "\uD83E\uDE96 War Games" : "8d350977cacc3fe8e721ad66d1cd7bc7090e2cdf9776c04f3ec912429b318bb4"
+      "Barbwire Exploding Deathmatch" : "a4ffdbe44c53e68c656c41204df853bf5d58e038cda5f5ed367203e397536a04",
+      "Cage" : "c1a3b901f253fef67c16f00590232ff13b76c1675a61fe72fb762ed2de8c1c29",
+      "Casket Match" : "50d821de1d39512305a5412e751e8892e62f0b86719409c1a64a9601e2353c52",
+      "Elimination" : "3ee352dc7a6b67ed44d549e2e393332ae597048bfeeb68d64a61d25421acf198",
+      "Faction Beatdown" : "a91c69d78135a7b98fc51b86cc7b5dde020005ed1d48175d01c5db04b2068b24",
+      "Free-For-All" : "f02f3bd2559402c3e326f2b1858c5fa74ecc5ac2a4c4856f17aa326332ed9c86",
+      "GM Office Confrontation" : "e6ea280463b9431cdf7855ea5599cda614eb7189dda8e092db8b02aab4075617",
+      "Gauntlet" : "8ee756ebbffc9b1398eaa27141cbeab51f41fa402ba0e6c05684a7ab3ad4450e",
+      "I Quit Match" : "ca9066c22f89cbe7833045f6b7eec165bc388259b60a4f4fcc63b76e86e40fb2",
+      "Ladder Match" : "1385a8a8eb8de4c23b58d5ff65a6af505cffd92d285dbd1f7a167a17e01cbb28",
+      "Last Man Standing" : "3430d41b61d19fe3034a07521e7d56e006bb943b95316f09b15ab94af48e2088",
+      "No DQ" : "d04b48dacb1f4a9ccc1a8829319f5724ada0265285dec2fe2255ae8b9e409770",
+      "Normal" : "46b10fc849c70cfec77447241102ee66e23295225698be82790deb9583dd3892",
+      "Over the Top Rope Elimination" : "bec763aaf00313252f21b19597f382df18548c2161a2f9fc0ce051db0b7f76b8",
+      "Performance Review" : "935583f37bf2b96fdad54fe261699de76eaca7dbe5c2d9a6feb4c43aefd059d7",
+      "Promo" : "241da770294ff7e173ff6e7c0802e7ab0660f696af194a5681a9349a5c7fd524",
+      "Submission" : "96c518c1a25841375ece95d14c0d25bba6ca98c35c20f9b0c9e7f13503eab60e",
+      "Survivor War Match" : "aa5848aa3fb4a01836c491b92ce430d426855362ae824adb9d1b2c8fe40c908a",
+      "Tables, Ladders and Chairs (TLC)" : "c02e3e0c25f76ef2ec5d94279448757c02da0efb289777bbd2cdaa2908348bfc",
+      "\uD83E\uDE96 War Games" : "01fa516a9283821664e0bce2376cb6821d2e69df402d1ee34446e658e5236106"
     },
     "segment_type" : {
       "Abu Dhabi Rumble" : "dd153f2f0b0335bcfaed77b4f78d8d079424a3c2c0bdf1f23ac749294923ce78",

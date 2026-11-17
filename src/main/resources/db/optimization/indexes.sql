@@ -176,8 +176,8 @@ CREATE INDEX IF NOT EXISTS idx_show_template_type ON show_template(show_type_id)
 -- Index for match stipulation name searches
 CREATE INDEX IF NOT EXISTS idx_segment_rule_name ON segment_rule(name);
 
--- Index for high heat match stipulations
-CREATE INDEX IF NOT EXISTS idx_segment_rule_high_heat ON segment_rule(requires_high_heat);
+-- Index for intensity rating lookups (tier filtering)
+CREATE INDEX IF NOT EXISTS idx_segment_rule_intensity_rating ON segment_rule(intensity_rating);
 
 -- ==================== SEGMENT TYPE TABLE INDEXES ====================
 

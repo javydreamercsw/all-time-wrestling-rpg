@@ -61,8 +61,8 @@ class ShowPlanningPromptBuilderTest {
     type.setDescription("A wrestling match.");
     when(segmentTypeService.findAll()).thenReturn(List.of(type));
     when(holidayService.getHolidayTheme(any(Instant.class))).thenReturn(Optional.empty());
-    when(segmentRuleService.getHighHeatRules()).thenReturn(List.of());
-    when(segmentRuleService.getStandardRules()).thenReturn(List.of());
+    when(segmentRuleService.findAll()).thenReturn(List.of());
+    when(segmentRuleService.findAll()).thenReturn(List.of());
   }
 
   @Test
@@ -371,12 +371,12 @@ class ShowPlanningPromptBuilderTest {
   void build_highHeatRivalry_regularShow_classifiedAsPleResolutionRequired() {
     ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
     ctx.setPremiumLiveEvent(false);
-    ctx.setCurrentRivalries(List.of(rivalryWithHeat(42)));
+    ctx.setCurrentRivalries(List.of(rivalryWithHeat(89)));
     String prompt = builder.build(ctx);
     // Check the rivalry assignment line specifically, not the legend (which lists both terms)
     assertTrue(
         prompt.contains("Classification: PLE_RESOLUTION_REQUIRED"),
-        "Heat ≥ 30 on regular show must be assigned PLE_RESOLUTION_REQUIRED");
+        "Heat ≥ 75 on regular show must be assigned PLE_RESOLUTION_REQUIRED");
     assertFalse(
         prompt.contains("Classification: STIPULATION_REQUIRED"),
         "Rivalry must not be assigned STIPULATION_REQUIRED on a regular show");
@@ -386,7 +386,7 @@ class ShowPlanningPromptBuilderTest {
   void build_lastSegmentWasPromo_classifiedAsPromoCooldown() {
     ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
     ctx.setPremiumLiveEvent(false);
-    ShowPlanningRivalryDTO rivalry = rivalryWithHeat(42);
+    ShowPlanningRivalryDTO rivalry = rivalryWithHeat(89);
     rivalry.setLastSegmentType("Promo");
     ctx.setCurrentRivalries(List.of(rivalry));
     String prompt = builder.build(ctx);
@@ -402,7 +402,7 @@ class ShowPlanningPromptBuilderTest {
   void build_lastSegmentWasMatch_noPromoCooldown() {
     ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
     ctx.setPremiumLiveEvent(false);
-    ShowPlanningRivalryDTO rivalry = rivalryWithHeat(42);
+    ShowPlanningRivalryDTO rivalry = rivalryWithHeat(89);
     rivalry.setLastSegmentType("One on One");
     ctx.setCurrentRivalries(List.of(rivalry));
     String prompt = builder.build(ctx);
@@ -416,7 +416,7 @@ class ShowPlanningPromptBuilderTest {
   void build_lastSegmentWasPromo_onPle_stillRequiresStipulation() {
     ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
     ctx.setPremiumLiveEvent(true);
-    ShowPlanningRivalryDTO rivalry = rivalryWithHeat(42);
+    ShowPlanningRivalryDTO rivalry = rivalryWithHeat(89);
     rivalry.setLastSegmentType("Promo");
     ctx.setCurrentRivalries(List.of(rivalry));
     String prompt = builder.build(ctx);
@@ -430,12 +430,12 @@ class ShowPlanningPromptBuilderTest {
   void build_highHeatRivalry_ple_classifiedAsStipulationRequired() {
     ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
     ctx.setPremiumLiveEvent(true);
-    ctx.setCurrentRivalries(List.of(rivalryWithHeat(42)));
+    ctx.setCurrentRivalries(List.of(rivalryWithHeat(89)));
     String prompt = builder.build(ctx);
     // Check the rivalry assignment line specifically, not the legend (which lists both terms)
     assertTrue(
         prompt.contains("Classification: STIPULATION_REQUIRED"),
-        "Heat ≥ 30 on PLE must be assigned STIPULATION_REQUIRED");
+        "Heat ≥ 75 on PLE must be assigned STIPULATION_REQUIRED");
     assertFalse(
         prompt.contains("Classification: PLE_RESOLUTION_REQUIRED"),
         "Rivalry must not be assigned PLE_RESOLUTION_REQUIRED on a PLE");
@@ -462,7 +462,7 @@ class ShowPlanningPromptBuilderTest {
     SegmentRule standardRule = new SegmentRule();
     standardRule.setName("Iron Man");
     standardRule.setDescription("60-minute time limit, most falls wins.");
-    when(segmentRuleService.getStandardRules()).thenReturn(List.of(standardRule));
+    when(segmentRuleService.findAll()).thenReturn(List.of(standardRule));
 
     ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
     String prompt = builder.build(ctx);
@@ -482,12 +482,13 @@ class ShowPlanningPromptBuilderTest {
   void build_stipulationRequired_promptInstructsRulesMustContainHighHeatRule() {
     ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
     ctx.setPremiumLiveEvent(true);
-    ctx.setCurrentRivalries(List.of(rivalryWithHeat(35)));
+    ctx.setCurrentRivalries(List.of(rivalryWithHeat(85)));
 
     SegmentRule cageRule = new SegmentRule();
     cageRule.setName("Steel Cage");
     cageRule.setDescription("A match fought within a steel cage.");
-    when(segmentRuleService.getHighHeatRules()).thenReturn(List.of(cageRule));
+    cageRule.setIntensityRating(85);
+    when(segmentRuleService.findAll()).thenReturn(List.of(cageRule));
 
     String prompt = builder.build(ctx);
 

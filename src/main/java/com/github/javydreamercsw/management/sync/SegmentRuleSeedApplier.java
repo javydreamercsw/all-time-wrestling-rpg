@@ -128,7 +128,7 @@ public class SegmentRuleSeedApplier implements SeedDomainApplier {
     String value = decision.getNewValue();
     switch (decision.getFieldName()) {
       case "description" -> rule.setDescription(value);
-      case "requiresHighHeat" -> rule.setRequiresHighHeat(Boolean.parseBoolean(value));
+      case "intensityRating" -> rule.setIntensityRating(Integer.parseInt(value));
       case "noDq" -> rule.setNoDq(Boolean.parseBoolean(value));
       case "allowsRefereeStopage" -> rule.setAllowsRefereeStopage(Boolean.parseBoolean(value));
       case "bumpAddition" ->

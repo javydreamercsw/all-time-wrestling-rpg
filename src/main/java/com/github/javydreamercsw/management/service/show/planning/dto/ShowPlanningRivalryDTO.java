@@ -32,4 +32,13 @@ public class ShowPlanningRivalryDTO {
    * been booked. Drives the PROMO_COOLDOWN classification.
    */
   private String lastSegmentType;
+
+  /**
+   * Rule names on the rivalry's most recent completed segment (stipulation memory for anti-repeat
+   * stipulation picking); empty when never booked. Derived from segment history at context build.
+   */
+  private List<String> lastRuleNames = List.of();
+
+  /** Number of completed segments advancing this rivalry (rotation counter for stipulations). */
+  private int completedSegmentCount;
 }

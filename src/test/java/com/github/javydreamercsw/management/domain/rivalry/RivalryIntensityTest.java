@@ -39,16 +39,16 @@ class RivalryIntensityTest {
   @DisplayName("Should determine correct intensity from heat")
   @CsvSource({
     "0, SIMMERING",
-    "5, SIMMERING",
-    "9, SIMMERING",
-    "10, HEATED",
-    "15, HEATED",
-    "19, HEATED",
-    "20, INTENSE",
-    "25, INTENSE",
-    "29, INTENSE",
-    "30, EXPLOSIVE",
-    "35, EXPLOSIVE",
+    "12, SIMMERING",
+    "24, SIMMERING",
+    "25, HEATED",
+    "37, HEATED",
+    "49, HEATED",
+    "50, INTENSE",
+    "62, INTENSE",
+    "74, INTENSE",
+    "75, EXPLOSIVE",
+    "90, EXPLOSIVE",
     "100, EXPLOSIVE"
   })
   void shouldDetermineCorrectIntensityFromHeat(
@@ -64,10 +64,10 @@ class RivalryIntensityTest {
     assertThat(simmering.getDisplayName()).isEqualTo("Simmering");
     assertThat(simmering.getEmoji()).isEqualTo("😐");
     assertThat(simmering.getMinHeat()).isEqualTo(0);
-    assertThat(simmering.getMaxHeat()).isEqualTo(9);
+    assertThat(simmering.getMaxHeat()).isEqualTo(24);
     assertThat(simmering.getDescription()).contains("Early stages");
     assertThat(simmering.getDisplayWithEmoji()).isEqualTo("😐 Simmering");
-    assertThat(simmering.getHeatRangeDisplay()).isEqualTo("0-9 heat");
+    assertThat(simmering.getHeatRangeDisplay()).isEqualTo("0-24 heat");
   }
 
   @Test
@@ -77,11 +77,11 @@ class RivalryIntensityTest {
 
     assertThat(heated.getDisplayName()).isEqualTo("Heated");
     assertThat(heated.getEmoji()).isEqualTo("🔥");
-    assertThat(heated.getMinHeat()).isEqualTo(10);
-    assertThat(heated.getMaxHeat()).isEqualTo(19);
+    assertThat(heated.getMinHeat()).isEqualTo(25);
+    assertThat(heated.getMaxHeat()).isEqualTo(49);
     assertThat(heated.getDescription()).contains("Must wrestle at next show");
     assertThat(heated.getDisplayWithEmoji()).isEqualTo("🔥 Heated");
-    assertThat(heated.getHeatRangeDisplay()).isEqualTo("10-19 heat");
+    assertThat(heated.getHeatRangeDisplay()).isEqualTo("25-49 heat");
   }
 
   @Test
@@ -91,11 +91,11 @@ class RivalryIntensityTest {
 
     assertThat(intense.getDisplayName()).isEqualTo("Intense");
     assertThat(intense.getEmoji()).isEqualTo("💥");
-    assertThat(intense.getMinHeat()).isEqualTo(20);
-    assertThat(intense.getMaxHeat()).isEqualTo(29);
+    assertThat(intense.getMinHeat()).isEqualTo(50);
+    assertThat(intense.getMaxHeat()).isEqualTo(74);
     assertThat(intense.getDescription()).contains("Can attempt resolution");
     assertThat(intense.getDisplayWithEmoji()).isEqualTo("💥 Intense");
-    assertThat(intense.getHeatRangeDisplay()).isEqualTo("20-29 heat");
+    assertThat(intense.getHeatRangeDisplay()).isEqualTo("50-74 heat");
   }
 
   @Test
@@ -105,11 +105,11 @@ class RivalryIntensityTest {
 
     assertThat(explosive.getDisplayName()).isEqualTo("Explosive");
     assertThat(explosive.getEmoji()).isEqualTo("🌋");
-    assertThat(explosive.getMinHeat()).isEqualTo(30);
-    assertThat(explosive.getMaxHeat()).isEqualTo(Integer.MAX_VALUE);
+    assertThat(explosive.getMinHeat()).isEqualTo(75);
+    assertThat(explosive.getMaxHeat()).isEqualTo(100);
     assertThat(explosive.getDescription()).contains("Requires rule segment");
     assertThat(explosive.getDisplayWithEmoji()).isEqualTo("🌋 Explosive");
-    assertThat(explosive.getHeatRangeDisplay()).isEqualTo("30+ heat");
+    assertThat(explosive.getHeatRangeDisplay()).isEqualTo("75-100 heat");
   }
 
   @ParameterizedTest
@@ -156,7 +156,7 @@ class RivalryIntensityTest {
     RivalryIntensity[] intensities = RivalryIntensity.values();
 
     for (int i = 1; i < intensities.length; i++) {
-      if (intensities[i - 1].getMaxHeat() != Integer.MAX_VALUE) {
+      if (intensities[i - 1].getMaxHeat() != 100) {
         assertThat(intensities[i].getMinHeat())
             .as("No gap should exist between %s and %s", intensities[i - 1], intensities[i])
             .isEqualTo(intensities[i - 1].getMaxHeat() + 1);
@@ -168,12 +168,12 @@ class RivalryIntensityTest {
   @DisplayName("Should handle edge case heat values")
   void shouldHandleEdgeCaseHeatValues() {
     // Test exact boundaries
-    assertThat(RivalryIntensity.fromHeat(9)).isEqualTo(RivalryIntensity.SIMMERING);
-    assertThat(RivalryIntensity.fromHeat(10)).isEqualTo(RivalryIntensity.HEATED);
-    assertThat(RivalryIntensity.fromHeat(19)).isEqualTo(RivalryIntensity.HEATED);
-    assertThat(RivalryIntensity.fromHeat(20)).isEqualTo(RivalryIntensity.INTENSE);
-    assertThat(RivalryIntensity.fromHeat(29)).isEqualTo(RivalryIntensity.INTENSE);
-    assertThat(RivalryIntensity.fromHeat(30)).isEqualTo(RivalryIntensity.EXPLOSIVE);
+    assertThat(RivalryIntensity.fromHeat(24)).isEqualTo(RivalryIntensity.SIMMERING);
+    assertThat(RivalryIntensity.fromHeat(25)).isEqualTo(RivalryIntensity.HEATED);
+    assertThat(RivalryIntensity.fromHeat(49)).isEqualTo(RivalryIntensity.HEATED);
+    assertThat(RivalryIntensity.fromHeat(50)).isEqualTo(RivalryIntensity.INTENSE);
+    assertThat(RivalryIntensity.fromHeat(74)).isEqualTo(RivalryIntensity.INTENSE);
+    assertThat(RivalryIntensity.fromHeat(75)).isEqualTo(RivalryIntensity.EXPLOSIVE);
   }
 
   @Test
@@ -186,9 +186,17 @@ class RivalryIntensityTest {
   @Test
   @DisplayName("Should handle negative heat values")
   void shouldHandleNegativeHeatValues() {
-    // Negative heat should default to SIMMERING (lowest intensity)
+    // Negative heat clamps to SIMMERING (lowest intensity)
     assertThat(RivalryIntensity.fromHeat(-1))
-        .isEqualTo(RivalryIntensity.EXPLOSIVE); // Falls through to fallback
+        .isEqualTo(RivalryIntensity.SIMMERING); // fromHeat clamps at 0
+  }
+
+  @Test
+  @DisplayName("isAtLeast compares by band order")
+  void shouldCompareByOrdinal() {
+    assertThat(RivalryIntensity.EXPLOSIVE.isAtLeast(RivalryIntensity.INTENSE)).isTrue();
+    assertThat(RivalryIntensity.INTENSE.isAtLeast(RivalryIntensity.EXPLOSIVE)).isFalse();
+    assertThat(RivalryIntensity.SIMMERING.isAtLeast(RivalryIntensity.SIMMERING)).isTrue();
   }
 
   @Test

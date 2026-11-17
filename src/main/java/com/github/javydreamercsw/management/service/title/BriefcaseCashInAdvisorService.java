@@ -62,7 +62,7 @@ public class BriefcaseCashInAdvisorService {
    * Rivalry heat at which the advisor proposes a RUN_IN (mid-match cash-in, ATW-qsm9) instead of a
    * PLANNED one: a feud this hot justifies interrupting the champion's match itself.
    */
-  static final int RUN_IN_HEAT_THRESHOLD = 70;
+  static final int RUN_IN_HEAT_THRESHOLD = 85;
 
   /** Maximum score: 35 urgency + 25 heat + 20 prestige + 15 staleness + 5 PLE. */
   private static final int MAX_SCORE = 100;

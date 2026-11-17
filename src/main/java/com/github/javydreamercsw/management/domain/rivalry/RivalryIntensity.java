@@ -20,17 +20,17 @@ import lombok.Getter;
 
 /** Represents the intensity levels of a rivalry based on heat in the ATW RPG system. */
 public enum RivalryIntensity {
-  /** 0-9 heat - Early stages, building tension */
-  SIMMERING("Simmering", 0, 9, "Early stages, building tension", "😐"),
+  /** 0-24 heat - Early stages, building tension */
+  SIMMERING("Simmering", 0, 24, "Early stages, building tension", "😐"),
 
-  /** 10-19 heat - Must wrestle at next show */
-  HEATED("Heated", 10, 19, "Must wrestle at next show", "🔥"),
+  /** 25-49 heat - Must wrestle at next show */
+  HEATED("Heated", 25, 49, "Must wrestle at next show", "🔥"),
 
-  /** 20-29 heat - Can attempt resolution with dice roll */
-  INTENSE("Intense", 20, 29, "Can attempt resolution with dice roll", "💥"),
+  /** 50-74 heat - Can attempt resolution with dice roll */
+  INTENSE("Intense", 50, 74, "Can attempt resolution with dice roll", "💥"),
 
-  /** 30+ heat - Requires rule segment */
-  EXPLOSIVE("Explosive", 30, Integer.MAX_VALUE, "Requires rule segment", "🌋");
+  /** 75+ heat - Requires rule segment */
+  EXPLOSIVE("Explosive", 75, 100, "Requires rule segment", "🌋");
 
   @Getter private final String displayName;
   @Getter private final int minHeat;
@@ -51,14 +51,22 @@ public enum RivalryIntensity {
     this.emoji = emoji;
   }
 
-  /** Get the intensity level for a given heat value. */
+  /** Get the intensity level for a given heat value (clamped to the 0-100 scale). */
   public static RivalryIntensity fromHeat(final int heat) {
+    if (heat <= 0) {
+      return SIMMERING;
+    }
     for (RivalryIntensity intensity : values()) {
       if (heat >= intensity.minHeat && heat <= intensity.maxHeat) {
         return intensity;
       }
     }
-    return EXPLOSIVE; // Fallback for very high heat
+    return EXPLOSIVE; // Fallback for heat above the scale cap
+  }
+
+  /** Check if this intensity is at least as high as the given one (enum-order comparison). */
+  public boolean isAtLeast(final RivalryIntensity other) {
+    return ordinal() >= other.ordinal();
   }
 
   /** Check if this intensity requires wrestlers to fight at next show. */
@@ -93,9 +101,6 @@ public enum RivalryIntensity {
 
   /** Get heat range display. */
   public String getHeatRangeDisplay() {
-    if (maxHeat == Integer.MAX_VALUE) {
-      return minHeat + "+ heat";
-    }
     return minHeat + "-" + maxHeat + " heat";
   }
 }

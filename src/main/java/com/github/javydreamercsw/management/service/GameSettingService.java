@@ -461,6 +461,34 @@ public class GameSettingService {
     saveInternal(CONTENDER_MATCH_HEAT_BONUS_KEY, String.valueOf(heatBonus));
   }
 
+  /** Maximum rivalry heat on the 0-100 scale (clamps future heat additions). */
+  public static final String RIVALRY_HEAT_CEILING_KEY = "rivalry.heat_ceiling";
+
+  /** Heat vented when an EXPLOSIVE-tier blowoff stipulation match adjudicates. */
+  public static final String RIVALRY_BLOWOFF_HEAT_VENT_KEY = "rivalry.blowoff_heat_vent";
+
+  @PreAuthorize("permitAll()")
+  public int getRivalryHeatCeiling() {
+    return resolveValue(RIVALRY_HEAT_CEILING_KEY).map(Integer::parseInt).orElse(100);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public void setRivalryHeatCeiling(final int ceiling) {
+    saveInternal(RIVALRY_HEAT_CEILING_KEY, String.valueOf(ceiling));
+  }
+
+  @PreAuthorize("permitAll()")
+  public int getRivalryBlowoffHeatVent() {
+    return resolveValue(RIVALRY_BLOWOFF_HEAT_VENT_KEY).map(Integer::parseInt).orElse(30);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public void setRivalryBlowoffHeatVent(final int vent) {
+    saveInternal(RIVALRY_BLOWOFF_HEAT_VENT_KEY, String.valueOf(vent));
+  }
+
   @PreAuthorize("permitAll()")
   public double getContenderMatchFanMultiplier() {
     return resolveValue(CONTENDER_MATCH_FAN_MULTIPLIER_KEY).map(Double::parseDouble).orElse(1.5);

@@ -144,8 +144,14 @@ public class RivalryDecayService {
     }
   }
 
+  /**
+   * Date of the last heat event that actually changed the heat — 0-change events (failed resolution
+   * attempts, lifecycle markers) don't count as activity, so a feud that keeps failing resolution
+   * rolls still cools down.
+   */
   private Instant latestHeatEventDate(final Rivalry rivalry) {
     return rivalry.getHeatEvents().stream()
+        .filter(e -> e.getHeatChange() != null && e.getHeatChange() != 0)
         .map(HeatEvent::getEventDate)
         .max(Instant::compareTo)
         .orElse(null);

@@ -300,7 +300,7 @@ public class PromoBookingService {
   private PromoType selectRivalryPromoType(final int heat) {
     List<PromoType> availablePromos = new ArrayList<>();
 
-    if (heat >= 25) {
+    if (heat >= 65) {
       // High heat - intense confrontations
       availablePromos.addAll(
           getPromoTypesByNames(
@@ -308,7 +308,7 @@ public class PromoBookingService {
                   PromoType.CONFRONTATION_PROMO,
                   PromoType.CONTRACT_SIGNING,
                   PromoType.CHALLENGE_ISSUED)));
-    } else if (heat >= 15) {
+    } else if (heat >= 40) {
       // Medium heat - building tension
       availablePromos.addAll(
           getPromoTypesByNames(
