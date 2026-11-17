@@ -291,7 +291,7 @@ class ChallengeListViewTest extends AbstractViewTest {
   void buildChallengePage_rendersAllSections() {
     ChallengeDTO challenge =
         ChallengeDTO.builder()
-            .id("week_11_deadly_combat_year_5")
+            .id("custom_s1_13_deadly_combat_year_5")
             .weekNumber(11)
             .season("Season 1")
             .title("Deadly Combat — Year Five: The Gauntlet")
