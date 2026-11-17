@@ -1154,7 +1154,7 @@ public class DataMigrationService {
         INSERT INTO segment_rule (segment_rule_id, name, description, \
         intensity_rating, creation_date) VALUES (?, ?, ?, ?, ?)\
         """;
-    // Source schema varies: a legacy (pre-V173) source carries the requires_high_heat boolean,
+    // Source schema varies: a legacy (pre-V174) source carries the requires_high_heat boolean,
     // a current source already carries intensity_rating. Detect once and select accordingly.
     boolean legacyBooleanSource;
     try (Statement probe = sourceConnection.createStatement();
@@ -1185,7 +1185,7 @@ public class DataMigrationService {
         targetStatement.setString(2, resultSet.getString("name"));
         targetStatement.setString(3, resultSet.getString("description"));
         if (legacyBooleanSource) {
-          // Legacy source: map the boolean the same way the V173/V142 migration does (seed names
+          // Legacy source: map the boolean the same way the V174/V143 migration does (seed names
           // get their real rating via the sync).
           targetStatement.setInt(4, resultSet.getBoolean("requires_high_heat") ? 75 : 0);
         } else {

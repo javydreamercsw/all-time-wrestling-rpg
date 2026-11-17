@@ -27,6 +27,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -165,6 +167,55 @@ class ReleasedMigrationChecksumTest {
               + "\n\nFill the gaps by adding the missing migration versions."
               + " Gaps in released (historical) versions are allowed but unreleased ones must be"
               + " sequential to ensure correct upgrade order.");
+    }
+  }
+
+  /**
+   * Verifies no two migration scripts share the same version number within a dialect.
+   *
+   * <p>Flyway refuses to start when two scripts resolve to the same version ("Found more than one
+   * migration with version N"), which blocks the entire application context — as happened on the
+   * 2.13.0 deployment when two feature branches each added a V142. Per-branch CI cannot see the
+   * collision (each branch has only one of the two files), so this test catches it as soon as both
+   * land on the same tree, naming the offending files.
+   */
+  @ParameterizedTest(name = "{0}")
+  @ValueSource(strings = {"h2", "mysql"})
+  void migration_versions_must_be_unique(String dbType) throws Exception {
+    Path migrationDir = Paths.get("src/main/resources/db/migration", dbType);
+
+    Map<Integer, List<String>> filesByVersion = new TreeMap<>();
+    try (var files = Files.list(migrationDir)) {
+      files
+          .map(p -> p.getFileName().toString())
+          .filter(name -> name.matches("V[0-9]+__.*\\.sql"))
+          .forEach(
+              name -> {
+                int version = Integer.parseInt(name.replaceAll("V([0-9]+)__.*", "$1"));
+                filesByVersion.computeIfAbsent(version, v -> new ArrayList<>()).add(name);
+              });
+    }
+
+    List<String> collisions = new ArrayList<>();
+    filesByVersion.forEach(
+        (version, names) -> {
+          if (names.size() > 1) {
+            collisions.add("V" + version + ": " + String.join(", ", names));
+          }
+        });
+
+    if (!collisions.isEmpty()) {
+      fail(
+          "["
+              + dbType
+              + "] Multiple migration scripts share a version number ("
+              + collisions.size()
+              + " collision(s)):\n\n"
+              + String.join("\n", collisions)
+              + "\n\nFlyway fails deployment with \"Found more than one migration with version"
+              + " N\". Renumber one of the scripts to the next available version, keeping the"
+              + " unreleased sequence gap-free (see the gap test above). Never renumber a script"
+              + " at or below the .released version.");
     }
   }
 
