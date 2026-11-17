@@ -217,7 +217,9 @@ public class ShowController {
 
   @Operation(
       summary = "Adjudicate a show",
-      description = "Adjudicates all pending segments in a show.")
+      description =
+          "Adjudicates all pending segments in a show. Segments involving player-controlled"
+              + " wrestlers are EXCLUDED unless includePlayerSegments=true.")
   @ApiResponses(
       value = {
         @ApiResponse(responseCode = "200", description = "Show adjudicated successfully"),
@@ -225,8 +227,11 @@ public class ShowController {
       })
   @PostMapping("/{id}/adjudicate")
   public ResponseEntity<Void> adjudicateShow(
-      @Parameter(description = "Show ID") @PathVariable final Long id) {
-    showService.adjudicateShow(id);
+      @Parameter(description = "Show ID") @PathVariable final Long id,
+      @Parameter(description = "Also adjudicate segments involving player-controlled wrestlers")
+          @RequestParam(required = false, defaultValue = "false")
+          final boolean includePlayerSegments) {
+    showService.adjudicateShow(id, includePlayerSegments);
     return ResponseEntity.ok().build();
   }
 

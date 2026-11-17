@@ -121,6 +121,7 @@ public class SegmentNarrationGenerationService {
     }
     segment.setNarration(narration);
     segment.setNarrationGenerated(true);
+    segment.setNarrationLastError(null);
 
     String summary = null;
     if (segment.getSummary() == null || segment.getSummary().isBlank()) {
@@ -139,6 +140,27 @@ public class SegmentNarrationGenerationService {
         summary,
         segment.getReferee(),
         segment.getReferee() != null ? segment.getRefereeAwarenessLevel() : 0);
+  }
+
+  /**
+   * Records why narration failed for the segment, in its own committed transaction (REQUIRES_NEW)
+   * so the mark survives an outer-transaction rollback — mirroring {@link #generateForSegment}'s
+   * durability. Not set for skips (no provider / empty result): only for actual failures.
+   *
+   * <p>Deliberately does NOT touch the caller's managed entity: on MySQL the outer REPEATABLE READ
+   * snapshot would not see this commit anyway (see generateForSegment's Javadoc).
+   */
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public void recordNarrationFailure(@NonNull final Long segmentId, @NonNull final String message) {
+    Segment segment = segmentRepository.findById(segmentId).orElse(null);
+    if (segment == null) {
+      log.warn("Cannot record narration failure: segment {} not found", segmentId);
+      return;
+    }
+    String truncated = message.length() > 512 ? message.substring(0, 512) : message;
+    segment.setNarrationLastError(truncated);
+    segmentRepository.save(segment);
+    log.info("Recorded narration failure mark for segment {}", segmentId);
   }
 
   /**

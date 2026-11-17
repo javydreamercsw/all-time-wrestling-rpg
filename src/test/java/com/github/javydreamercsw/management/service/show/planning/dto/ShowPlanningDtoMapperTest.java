@@ -30,9 +30,11 @@ import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule
 import com.github.javydreamercsw.management.domain.show.segment.type.PromoType;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.github.javydreamercsw.management.service.show.planning.ShowPlanningChampionship;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Set;
@@ -221,5 +223,38 @@ class ShowPlanningDtoMapperTest {
 
     // Then
     assertEquals("MALE", dto.getGender());
+  }
+
+  @Test
+  void toChampionshipDto_rankingServiceUnavailable_returnsEmptyRankedNames() {
+    // The ATW-wbch field bug: challenger picks ignored rankings. The mapper pulls the real
+    // top-5 from RankingService; when the ranking service throws (transient DB issues), the
+    // empty-list catch keeps planning alive instead of crashing the context build.
+    Title title = new Title();
+    title.setId(42L);
+    title.setName("ATW Intertemporal");
+
+    Wrestler champion = Wrestler.builder().build();
+    champion.setName("Junkyard Dog");
+    Wrestler contender = Wrestler.builder().build();
+    contender.setName("Kamala");
+
+    ShowPlanningChampionship championship = new ShowPlanningChampionship();
+    championship.setTitle(title);
+    championship.getChampions().add(champion);
+    championship.getContenders().add(contender);
+
+    // The test class mocks only ShowService, so the mapper's RankingService dependency is
+    // null here — exactly the degraded shape: getRankedContenders throws, the catch swallows
+    // it, and planning continues with an empty ranked list.
+    ShowPlanningChampionshipDTO dto = mapper.toDto(championship);
+
+    assertEquals("ATW Intertemporal", dto.getChampionshipName());
+    assertEquals(42L, dto.getTitleId());
+    assertEquals("Junkyard Dog", dto.getChampionName());
+    assertEquals("Kamala", dto.getContenderName());
+    assertTrue(
+        dto.getRankedContenderNames().isEmpty(),
+        "A failing ranking service degrades to an empty ranked list");
   }
 }

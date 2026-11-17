@@ -35,6 +35,7 @@ import com.github.javydreamercsw.management.service.universe.UniverseSettingsSer
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.*;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -65,7 +66,7 @@ class SegmentRuleServiceTest {
     rule1 = new SegmentRule();
     rule1.setName("No DQ");
     rule1.setDescription("No disqualification match");
-    rule1.setRequiresHighHeat(true);
+    rule1.setIntensityRating(60);
     rule1.setNoDq(true);
     rule1.setBumpAddition(BumpAddition.NONE);
     rule1.setExpansionCode("BASE_GAME");
@@ -73,7 +74,7 @@ class SegmentRuleServiceTest {
     rule2 = new SegmentRule();
     rule2.setName("Standard");
     rule2.setDescription("Standard match rules");
-    rule2.setRequiresHighHeat(false);
+    rule2.setIntensityRating(0);
     rule2.setNoDq(false);
     rule2.setBumpAddition(BumpAddition.NONE);
     rule2.setExpansionCode("BASE_GAME");
@@ -107,43 +108,49 @@ class SegmentRuleServiceTest {
   }
 
   @Test
-  void getHighHeatRules_returnsList() {
-    when(segmentRuleRepository.findSuitableForHighHeat()).thenReturn(List.of(rule1));
+  void getStipulationRulesForHeat_affordableRulesOnly_sortedRatingDesc() {
+    rule1.setIntensityRating(80);
+    SegmentRule cheap = new SegmentRule();
+    cheap.setName("Cage");
+    cheap.setDescription("cage");
+    cheap.setIntensityRating(60);
+    cheap.setActive(true);
+    when(segmentRuleRepository.findAll()).thenReturn(List.of(rule1, cheap, rule2));
 
-    List<SegmentRule> result = segmentRuleService.getHighHeatRules();
+    // heat 85 affords both stipulations; heat 60 affords only the Cage
+    List<SegmentRule> rich = segmentRuleService.getStipulationRulesForHeat(85);
+    List<SegmentRule> poor = segmentRuleService.getStipulationRulesForHeat(60);
 
-    assertThat(result).hasSize(1).contains(rule1);
-    verify(segmentRuleRepository).findSuitableForHighHeat();
+    Assertions.assertThat(rich).containsExactly(rule1, cheap); // rating DESC
+    Assertions.assertThat(poor).containsExactly(cheap);
   }
 
   @Test
-  void getHighHeatRules_noHighHeatRules_returnsEmptyList() {
-    when(segmentRuleRepository.findSuitableForHighHeat()).thenReturn(Collections.emptyList());
+  void getStipulationRulesForHeat_noStipulations_returnsEmptyList() {
+    when(segmentRuleRepository.findAll()).thenReturn(Collections.emptyList());
 
-    List<SegmentRule> result = segmentRuleService.getHighHeatRules();
+    List<SegmentRule> result = segmentRuleService.getStipulationRulesForHeat(100);
+
+    Assertions.assertThat(result).isEmpty();
+  }
+
+  @Test
+  void findAll_returnsCachedCatalog() {
+    when(segmentRuleRepository.findAll()).thenReturn(List.of(rule1, rule2));
+
+    List<SegmentRule> result = segmentRuleService.findAll();
+
+    assertThat(result).containsExactlyInAnyOrder(rule1, rule2);
+    verify(segmentRuleRepository).findAll();
+  }
+
+  @Test
+  void findAll_emptyCatalog_returnsEmptyList() {
+    when(segmentRuleRepository.findAll()).thenReturn(Collections.emptyList());
+
+    List<SegmentRule> result = segmentRuleService.findAll();
 
     assertThat(result).isEmpty();
-    verify(segmentRuleRepository).findSuitableForHighHeat();
-  }
-
-  @Test
-  void getStandardRules_returnsList() {
-    when(segmentRuleRepository.findStandardRules()).thenReturn(List.of(rule2));
-
-    List<SegmentRule> result = segmentRuleService.getStandardRules();
-
-    assertThat(result).hasSize(1).contains(rule2);
-    verify(segmentRuleRepository).findStandardRules();
-  }
-
-  @Test
-  void getStandardRules_noStandardRules_returnsEmptyList() {
-    when(segmentRuleRepository.findStandardRules()).thenReturn(Collections.emptyList());
-
-    List<SegmentRule> result = segmentRuleService.getStandardRules();
-
-    assertThat(result).isEmpty();
-    verify(segmentRuleRepository).findStandardRules();
   }
 
   @Test
@@ -151,11 +158,11 @@ class SegmentRuleServiceTest {
     when(segmentRuleRepository.existsByName("Steel Cage")).thenReturn(false);
     when(segmentRuleRepository.save(any(SegmentRule.class))).thenAnswer(inv -> inv.getArgument(0));
 
-    SegmentRule result = segmentRuleService.createRule("Steel Cage", "Steel cage match", true);
+    SegmentRule result = segmentRuleService.createRule("Steel Cage", "Steel cage match", 60);
 
     assertThat(result.getName()).isEqualTo("Steel Cage");
     assertThat(result.getDescription()).isEqualTo("Steel cage match");
-    assertThat(result.getRequiresHighHeat()).isTrue();
+    assertThat(result.getIntensityRating()).isEqualTo(60);
     verify(segmentRuleRepository).existsByName("Steel Cage");
     verify(segmentRuleRepository).save(any(SegmentRule.class));
   }
@@ -164,7 +171,7 @@ class SegmentRuleServiceTest {
   void createRule_duplicateName_throwsIllegalArgumentException() {
     when(segmentRuleRepository.existsByName("No DQ")).thenReturn(true);
 
-    assertThatThrownBy(() -> segmentRuleService.createRule("No DQ", "No DQ match", true))
+    assertThatThrownBy(() -> segmentRuleService.createRule("No DQ", "No DQ match", 25))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("No DQ");
   }
@@ -177,11 +184,11 @@ class SegmentRuleServiceTest {
     when(segmentRuleRepository.save(any(SegmentRule.class))).thenAnswer(inv -> inv.getArgument(0));
 
     SegmentRule result =
-        segmentRuleService.updateRule(1L, "Updated Name", "Updated description", false);
+        segmentRuleService.updateRule(1L, "Updated Name", "Updated description", 60);
 
     assertThat(result.getName()).isEqualTo("Updated Name");
     assertThat(result.getDescription()).isEqualTo("Updated description");
-    assertThat(result.getRequiresHighHeat()).isFalse();
+    assertThat(result.getIntensityRating()).isEqualTo(60);
     verify(segmentRuleRepository).findById(1L);
     verify(segmentRuleRepository).save(any(SegmentRule.class));
   }
@@ -190,7 +197,7 @@ class SegmentRuleServiceTest {
   void updateRule_nonExistentId_throwsIllegalArgumentException() {
     when(segmentRuleRepository.findById(99L)).thenReturn(Optional.empty());
 
-    assertThatThrownBy(() -> segmentRuleService.updateRule(99L, "Name", "Desc", false))
+    assertThatThrownBy(() -> segmentRuleService.updateRule(99L, "Name", "Desc", 25))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("99");
   }
@@ -255,7 +262,7 @@ class SegmentRuleServiceTest {
 
     SegmentRule result =
         segmentRuleService.createOrUpdateRule(
-            "Ladder Match", "Ladder match stipulation", false, false, BumpAddition.NONE);
+            "Ladder Match", "Ladder match stipulation", 0, false, BumpAddition.NONE);
 
     assertThat(result.getName()).isEqualTo("Ladder Match");
     assertThat(result.getDescription()).isEqualTo("Ladder match stipulation");
@@ -265,7 +272,7 @@ class SegmentRuleServiceTest {
   @Test
   void createOrUpdateRule_existingRuleUnchanged_returnsExistingWithoutSave() {
     rule2.setDescription("Standard match rules");
-    rule2.setRequiresHighHeat(false);
+    rule2.setIntensityRating(0);
     rule2.setNoDq(false);
     rule2.setBumpAddition(BumpAddition.NONE);
     rule2.setExpansionCode("BASE_GAME");
@@ -273,7 +280,7 @@ class SegmentRuleServiceTest {
 
     SegmentRule result =
         segmentRuleService.createOrUpdateRule(
-            "Standard", "Standard match rules", false, false, BumpAddition.NONE);
+            "Standard", "Standard match rules", 0, false, BumpAddition.NONE);
 
     assertThat(result).isSameAs(rule2);
   }
@@ -281,7 +288,7 @@ class SegmentRuleServiceTest {
   @Test
   void createOrUpdateRule_existingRuleChanged_updatesRule() {
     rule2.setDescription("Old description");
-    rule2.setRequiresHighHeat(false);
+    rule2.setIntensityRating(0);
     rule2.setNoDq(false);
     rule2.setBumpAddition(BumpAddition.NONE);
     when(segmentRuleRepository.findByName("Standard")).thenReturn(Optional.of(rule2));
@@ -289,7 +296,7 @@ class SegmentRuleServiceTest {
 
     SegmentRule result =
         segmentRuleService.createOrUpdateRule(
-            "Standard", "New description", false, false, BumpAddition.NONE);
+            "Standard", "New description", 0, false, BumpAddition.NONE);
 
     assertThat(result.getDescription()).isEqualTo("New description");
     verify(segmentRuleRepository).save(rule2);
@@ -362,7 +369,7 @@ class SegmentRuleServiceTest {
 
     SegmentRule result =
         segmentRuleService.createOrUpdateRule(
-            "Cage", "Cage match", true, true, BumpAddition.ALL, "BASE_GAME", guide);
+            "Cage", "Cage match", 0, true, BumpAddition.ALL, "BASE_GAME", guide);
 
     assertThat(result.getGuide()).isEqualTo(guide);
     assertThat(result.getGuideHash()).isNotBlank();
@@ -382,7 +389,7 @@ class SegmentRuleServiceTest {
     SegmentRule existing = new SegmentRule();
     existing.setName("Cage");
     existing.setDescription("Cage match");
-    existing.setRequiresHighHeat(true);
+    existing.setIntensityRating(60);
     existing.setNoDq(true);
     existing.setBumpAddition(BumpAddition.ALL);
     existing.setExpansionCode("BASE_GAME");
@@ -396,7 +403,7 @@ class SegmentRuleServiceTest {
 
     SegmentRule result =
         segmentRuleService.createOrUpdateRule(
-            "Cage", "Cage match", true, true, BumpAddition.ALL, "BASE_GAME", newGuide);
+            "Cage", "Cage match", 0, true, BumpAddition.ALL, "BASE_GAME", newGuide);
 
     assertThat(result.getGuide()).isEqualTo(newGuide);
     assertThat(result.getGuideHash()).isNotEqualTo("oldhash");
@@ -420,7 +427,7 @@ class SegmentRuleServiceTest {
     SegmentRule existing = new SegmentRule();
     existing.setName("Cage");
     existing.setDescription("Cage match");
-    existing.setRequiresHighHeat(true);
+    existing.setIntensityRating(60);
     existing.setNoDq(true);
     existing.setBumpAddition(BumpAddition.ALL);
     existing.setExpansionCode("BASE_GAME");
@@ -430,7 +437,7 @@ class SegmentRuleServiceTest {
     when(segmentRuleRepository.findByName("Cage")).thenReturn(Optional.of(existing));
 
     segmentRuleService.createOrUpdateRule(
-        "Cage", "Cage match", true, true, BumpAddition.ALL, "BASE_GAME", guide);
+        "Cage", "Cage match", 60, true, BumpAddition.ALL, "BASE_GAME", guide);
 
     verify(segmentRuleRepository, Mockito.never()).save(any());
   }
@@ -444,7 +451,7 @@ class SegmentRuleServiceTest {
     baseRule.setExpansionCode("BASE_GAME");
     baseRule.setDescription("Base version");
     baseRule.setNoDq(false);
-    baseRule.setRequiresHighHeat(false);
+    baseRule.setIntensityRating(0);
     baseRule.setBumpAddition(BumpAddition.NONE);
 
     SegmentRule v2Rule = new SegmentRule();
@@ -452,7 +459,7 @@ class SegmentRuleServiceTest {
     v2Rule.setExpansionCode("LADDER_V2");
     v2Rule.setDescription("Enhanced version");
     v2Rule.setNoDq(false);
-    v2Rule.setRequiresHighHeat(false);
+    v2Rule.setIntensityRating(0);
     v2Rule.setBumpAddition(BumpAddition.NONE);
 
     Mockito.when(expansionService.getEnabledExpansionCodes())
@@ -475,7 +482,7 @@ class SegmentRuleServiceTest {
     customRule.setExpansionCode("CUSTOM");
     customRule.setDescription("Custom variant");
     customRule.setNoDq(false);
-    customRule.setRequiresHighHeat(false);
+    customRule.setIntensityRating(0);
     customRule.setBumpAddition(BumpAddition.NONE);
 
     SegmentRule officialRule = new SegmentRule();
@@ -483,7 +490,7 @@ class SegmentRuleServiceTest {
     officialRule.setExpansionCode("BASE_GAME");
     officialRule.setDescription("Official");
     officialRule.setNoDq(false);
-    officialRule.setRequiresHighHeat(false);
+    officialRule.setIntensityRating(0);
     officialRule.setBumpAddition(BumpAddition.NONE);
 
     when(segmentRuleRepository.findAll()).thenReturn(List.of(customRule, officialRule));
@@ -503,7 +510,7 @@ class SegmentRuleServiceTest {
         segmentRuleService.createOrUpdateRule(
             "Last Man Standing",
             "No referee stoppage allowed",
-            false,
+            0,
             false,
             BumpAddition.NONE,
             "BASE_GAME",

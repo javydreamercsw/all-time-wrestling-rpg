@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -64,7 +65,7 @@ class SegmentRuleSyncTest {
   private static String ruleFingerprint(SegmentRule sr) {
     return VERIFY_SUPPORT.fingerprint(
         sr.getDescription(),
-        sr.getRequiresHighHeat(),
+        String.valueOf(sr.getIntensityRating()),
         sr.getNoDq(),
         sr.isAllowsRefereeStopage(),
         sr.getBumpAddition() == null ? null : sr.getBumpAddition().name(),
@@ -76,7 +77,7 @@ class SegmentRuleSyncTest {
     SegmentRule sr = new SegmentRule();
     sr.setName(name);
     sr.setDescription(description);
-    sr.setRequiresHighHeat(false);
+    sr.setIntensityRating(0);
     sr.setNoDq(false);
     sr.setAllowsRefereeStopage(true);
     sr.setBumpAddition(BumpAddition.NONE);
@@ -95,7 +96,7 @@ class SegmentRuleSyncTest {
     when(segmentRuleService.createOrUpdateRule(
             anyString(),
             anyString(),
-            anyBoolean(),
+            anyInt(),
             anyBoolean(),
             any(),
             anyString(),
@@ -116,7 +117,7 @@ class SegmentRuleSyncTest {
         .createOrUpdateRule(
             eq("Normal"),
             anyString(),
-            anyBoolean(),
+            anyInt(),
             anyBoolean(),
             any(),
             anyString(),
@@ -142,7 +143,7 @@ class SegmentRuleSyncTest {
     when(segmentRuleService.createOrUpdateRule(
             anyString(),
             anyString(),
-            anyBoolean(),
+            anyInt(),
             anyBoolean(),
             any(),
             anyString(),
@@ -160,7 +161,7 @@ class SegmentRuleSyncTest {
         .createOrUpdateRule(
             eq("Normal"),
             anyString(),
-            anyBoolean(),
+            anyInt(),
             anyBoolean(),
             any(),
             anyString(),
@@ -170,7 +171,7 @@ class SegmentRuleSyncTest {
         .createOrUpdateRule(
             eq("Elimination"),
             anyString(),
-            anyBoolean(),
+            anyInt(),
             anyBoolean(),
             any(),
             anyString(),
@@ -196,7 +197,7 @@ class SegmentRuleSyncTest {
         .createOrUpdateRule(
             eq("Legacy Rule"),
             anyString(),
-            anyBoolean(),
+            anyInt(),
             anyBoolean(),
             any(),
             anyString(),
@@ -220,7 +221,7 @@ class SegmentRuleSyncTest {
     when(segmentRuleService.createOrUpdateRule(
             anyString(),
             anyString(),
-            anyBoolean(),
+            anyInt(),
             anyBoolean(),
             any(),
             anyString(),
@@ -256,7 +257,7 @@ class SegmentRuleSyncTest {
     when(segmentRuleService.createOrUpdateRule(
             anyString(),
             anyString(),
-            anyBoolean(),
+            anyInt(),
             anyBoolean(),
             any(),
             anyString(),
@@ -309,11 +310,12 @@ class SegmentRuleSyncTest {
             "Elimination Match: Participants are eliminated individually by pinfall or submission"
                 + " until only one wrestler or team remains.");
     tier2row.setExpansionCode("CUSTOM"); // the real seed ships this expansion for Elimination
+    tier2row.setIntensityRating(30); // matches the incoming seed (only bumpAddition collides)
     tier2row.setBumpAddition(BumpAddition.NONE);
     tier2row.setSeedFingerprint(
         VERIFY_SUPPORT.fingerprint(
             tier2row.getDescription(),
-            tier2row.getRequiresHighHeat(),
+            String.valueOf(tier2row.getIntensityRating()),
             tier2row.getNoDq(),
             tier2row.isAllowsRefereeStopage(),
             BumpAddition.LOSERS.name(),
@@ -325,7 +327,7 @@ class SegmentRuleSyncTest {
     when(segmentRuleService.createOrUpdateRule(
             anyString(),
             anyString(),
-            anyBoolean(),
+            anyInt(),
             anyBoolean(),
             any(),
             anyString(),
@@ -338,7 +340,7 @@ class SegmentRuleSyncTest {
               String name = inv.getArgument(0);
               SegmentRule target = "Normal".equals(name) ? tier1row : tier2row;
               target.setDescription(inv.getArgument(1));
-              target.setRequiresHighHeat(inv.getArgument(2));
+              target.setIntensityRating(inv.getArgument(2));
               target.setNoDq(inv.getArgument(3));
               target.setBumpAddition(inv.getArgument(4));
               target.setExpansionCode(inv.getArgument(5));

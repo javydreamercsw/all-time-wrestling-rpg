@@ -23,7 +23,6 @@ import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
-import com.github.javydreamercsw.management.controller.show.ShowController;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
@@ -48,6 +47,7 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
+import com.github.javydreamercsw.management.event.inbox.AdjudicationProgressBroadcaster;
 import com.github.javydreamercsw.management.service.GameClock;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.drama.DramaEventService;
@@ -79,18 +79,20 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.ViewContext;
+import com.github.javydreamercsw.management.ui.component.AdjudicationProgressOverlay;
 import com.github.javydreamercsw.management.ui.component.CommentaryComponent;
 import com.github.javydreamercsw.management.ui.view.match.QrCodeDialog;
 import com.github.javydreamercsw.management.ui.view.segment.NarrationDialog;
 import com.github.javydreamercsw.management.util.StarRenderer;
+import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.combobox.MultiSelectComboBox;
-import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
@@ -106,7 +108,6 @@ import com.vaadin.flow.component.html.Paragraph;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.listbox.ListBox;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
@@ -166,7 +167,7 @@ public class ShowDetailView extends Main
   private final ShowPlanningService showPlanningService;
   private final SegmentNarrationServiceFactory segmentNarrationServiceFactory;
   private final SegmentNarrationController segmentNarrationController;
-  private final ShowController showController;
+  private final AdjudicationProgressBroadcaster adjudicationProgressBroadcaster;
   private final MatchFulfillmentRepository matchFulfillmentRepository;
   private final UniverseRepository universeRepository;
   private final UniverseContextService universeContextService;
@@ -201,6 +202,12 @@ public class ShowDetailView extends Main
 
   private boolean orderDirty = false;
 
+  /** Floating progress card for adjudication/retry runs; fed by the progress broadcaster. */
+  private AdjudicationProgressOverlay adjudicationOverlay;
+
+  private Registration adjudicationProgressRegistration;
+  private ShowService.AdjudicationResult lastAdjudicationResult;
+
   private final NotificationService notificationService;
   private final ShowExportService exportService;
   private final LeagueRepository leagueRepository;
@@ -220,7 +227,7 @@ public class ShowDetailView extends Main
       final TitleService titleService,
       final RivalryService rivalryService,
       final SegmentNarrationController segmentNarrationController,
-      final ShowController showController,
+      final AdjudicationProgressBroadcaster adjudicationProgressBroadcaster,
       final MatchFulfillmentRepository matchFulfillmentRepository,
       final UniverseRepository universeRepository,
       final CommentaryTeamRepository commentaryTeamRepository,
@@ -245,7 +252,7 @@ public class ShowDetailView extends Main
     this.showPlanningService = showContextFacade.getShowPlanningService();
     this.segmentNarrationServiceFactory = showFacade.getNarrationFactory();
     this.segmentNarrationController = segmentNarrationController;
-    this.showController = showController;
+    this.adjudicationProgressBroadcaster = adjudicationProgressBroadcaster;
     this.matchFulfillmentRepository = matchFulfillmentRepository;
     this.universeRepository = universeRepository;
     this.universeContextService = viewContext.getUniverseContextService();
@@ -297,6 +304,36 @@ public class ShowDetailView extends Main
 
     add(new ViewToolbar("Show Details", ViewToolbar.group(headerLayout)));
     add(contentLayout);
+
+    // Floating progress card — created once; events reach it via the broadcaster registration
+    // in onAttach. Null-safe for Karibu-constructed views where the broadcaster may be absent.
+    adjudicationOverlay = new AdjudicationProgressOverlay();
+    add(adjudicationOverlay);
+  }
+
+  @Override
+  protected void onAttach(AttachEvent attachEvent) {
+    super.onAttach(attachEvent);
+    if (adjudicationProgressBroadcaster != null) {
+      adjudicationProgressRegistration =
+          adjudicationProgressBroadcaster.register(
+              event -> {
+                UI ui = getUI().orElse(null);
+                if (ui == null || !ui.isAttached()) {
+                  return;
+                }
+                ui.access(() -> adjudicationOverlay.onProgress(event));
+              });
+    }
+  }
+
+  @Override
+  protected void onDetach(DetachEvent detachEvent) {
+    if (adjudicationProgressRegistration != null) {
+      adjudicationProgressRegistration.remove();
+      adjudicationProgressRegistration = null;
+    }
+    super.onDetach(detachEvent);
   }
 
   @Override
@@ -1198,6 +1235,25 @@ public class ShowDetailView extends Main
         .setSortable(false)
         .setFlexGrow(4);
 
+    // Narration status column (ATW-v0vh): a warning icon for segments whose last narration
+    // attempt failed — persisted on the segment, so it survives reloads. Per-row retry is the
+    // existing Narrate action (NarrationDialog clears the mark on success).
+    grid.addComponentColumn(
+            segment -> {
+              if (segment.getNarrationLastError() == null) {
+                return new Span("");
+              }
+              Icon failedIcon = new Icon(VaadinIcon.WARNING);
+              failedIcon.setColor("var(--lumo-error-text-color)");
+              failedIcon.setId("narration-failed-" + segment.getId());
+              Tooltip.forComponent(failedIcon).setText(segment.getNarrationLastError());
+              return failedIcon;
+            })
+        .setHeader("Narration")
+        .setSortable(false)
+        .setAutoWidth(true)
+        .setFlexGrow(0);
+
     // Winner column — shows the declared outcome (draw / no contest) when booked
     grid.addComponentColumn(
             segment -> {
@@ -1824,7 +1880,7 @@ public class ShowDetailView extends Main
                   .toList();
           boolean hotRivalryNeedsStipulation =
               rivalryService.getActiveRivalries().stream()
-                  .filter(r -> r.getHeat() >= 30)
+                  .filter(r -> r.getHeat() >= 75)
                   .anyMatch(
                       r ->
                           selectedNames.contains(r.getWrestler1().getName())
@@ -2303,111 +2359,150 @@ public class ShowDetailView extends Main
   }
 
   /**
-   * Pre-flight for adjudication: asks the service what would happen, shows one confirm dialog with
-   * the to-narrate list (info) and the missing-winner list (warning), and only then starts the
-   * async adjudication. A pre-flight failure never blocks — adjudication proceeds directly.
+   * Pre-flight for adjudication: asks the service what would happen, shows one dialog with the
+   * to-narrate list (info), the missing-winner list (warning), and the player-controlled segment
+   * Exclude/Include choice (exclude is the default), and only then starts the async adjudication. A
+   * pre-flight failure never blocks — adjudication proceeds directly, still excluding player
+   * segments (the safe default).
    */
   private void confirmThenAdjudicate(@NonNull final Show show) {
-    // Guard against double-click during the pre-flight .join() opening two ConfirmDialogs
+    // Guard against double-click during the pre-flight .join() opening two dialogs
     // (ATW-b08p): disable on entry; the pre-flight's early paths re-adjudicate directly (their
     // callee disables the button again), and the dialog's "Go Back" re-enables it. The button
     // can be absent in reconstructed views (tests) — the guard is then a no-op.
     if (adjudicateButton != null) {
       adjudicateButton.setEnabled(false);
     }
-    List<String> missingWinnerWarnings;
-    List<String> toNarrate;
-    boolean narrationProviderAvailable;
+    ShowService.AdjudicationPreFlight preFlight;
     try {
-      ShowService.AdjudicationPreFlight preFlight =
+      preFlight =
           GeneralSecurityUtils.runAsAdminAsync(
                   () -> showService.getAdjudicationPreFlight(show.getId()))
               .join();
-      missingWinnerWarnings = preFlight.missingWinnerWarnings();
-      toNarrate = preFlight.toNarrate();
-      narrationProviderAvailable = preFlight.narrationProviderAvailable();
     } catch (Exception e) {
       log.warn("Adjudication pre-flight failed — adjudicating without the advisory", e);
-      adjudicateShow(show);
+      adjudicateShow(show, false);
       return;
     }
-    if (missingWinnerWarnings.isEmpty() && toNarrate.isEmpty()) {
-      adjudicateShow(show);
+    if (preFlight.missingWinnerWarnings().isEmpty()
+        && preFlight.toNarrate().isEmpty()
+        && preFlight.playerSegments().isEmpty()) {
+      adjudicateShow(show, false);
       return;
     }
-    ConfirmDialog dialog = new ConfirmDialog();
-    dialog.setHeader("Adjudicate Show");
-    // Plain Div flow (not VerticalLayout): ConfirmDialog's content slot is a fixed-height
-    // flex area — a VerticalLayout child collapses and its items overlap each other.
-    Div content = new Div();
-    if (!toNarrate.isEmpty() && narrationProviderAvailable) {
-      Paragraph narrateIntro =
-          new Paragraph(
-              "AI narration will be generated for "
-                  + toNarrate.size()
-                  + " segment(s) before adjudication:");
-      narrateIntro.addClassNames(LumoUtility.TextColor.SECONDARY);
-      content.add(narrateIntro);
-      ListBox<String> narrateList = new ListBox<>();
-      narrateList.setItems(toNarrate);
-      narrateList.setMaxHeight("320px");
-      // ListBox doesn't scroll by itself inside ConfirmDialog's fixed-height content area —
-      // without overflow the tail items paint over whatever renders below (seen in sandbox).
-      narrateList.getElement().getStyle().set("overflowY", "auto");
-      content.add(narrateList);
-    } else if (!toNarrate.isEmpty()) {
-      // No provider: say what actually happens instead of promising narration (ATW-ktta).
-      Paragraph noProviderNote =
-          new Paragraph(
-              "No AI narration provider is configured. "
-                  + toNarrate.size()
-                  + " segment(s) will be adjudicated with their booked descriptions.");
-      noProviderNote.addClassNames(LumoUtility.TextColor.SECONDARY);
-      content.add(noProviderNote);
-    }
-    if (!missingWinnerWarnings.isEmpty()) {
-      Paragraph warningIntro =
-          new Paragraph("These segments have no winner selected — they will be recorded as draws:");
-      warningIntro.addClassNames(LumoUtility.TextColor.ERROR);
-      content.add(warningIntro);
-      ListBox<String> warningList = new ListBox<>();
-      warningList.setItems(missingWinnerWarnings);
-      warningList.setMaxHeight("320px");
-      warningList.getElement().getStyle().set("overflowY", "auto");
-      content.add(warningList);
-    }
-    dialog.add(content);
-    dialog.setCancelable(true);
-    dialog.setCancelText("Go Back");
-    dialog.setConfirmText(missingWinnerWarnings.isEmpty() ? "Adjudicate" : "Adjudicate Anyway");
-    dialog.setConfirmButtonTheme(missingWinnerWarnings.isEmpty() ? "primary" : "primary error");
-    dialog.addConfirmListener(e -> adjudicateShow(show));
-    dialog.addCancelListener(
-        e -> {
-          if (adjudicateButton != null) {
-            adjudicateButton.setEnabled(true);
-          }
-        });
-    dialog.open();
+    new AdjudicationPreFlightDialog(
+            preFlight,
+            new AdjudicationPreFlightDialog.Callbacks() {
+              @Override
+              public void onConfirm(boolean includePlayerSegments) {
+                adjudicateShow(show, includePlayerSegments);
+              }
+
+              @Override
+              public void onCancel() {
+                if (adjudicateButton != null) {
+                  adjudicateButton.setEnabled(true);
+                }
+              }
+            })
+        .open();
   }
 
-  private void adjudicateShow(@NonNull final Show show) {
-    adjudicateButton.setEnabled(false);
-    addSegmentButton.setEnabled(false);
+  /**
+   * Starts the async adjudication run for the show with the chosen player-segment handling. The
+   * floating overlay shows per-segment progress (fed by {@link AdjudicationProgressBroadcaster});
+   * the terminal result arrives on the CompletableFuture, not the events.
+   */
+  private void adjudicateShow(@NonNull final Show show, final boolean includePlayerSegments) {
+    if (adjudicateButton != null) {
+      adjudicateButton.setEnabled(false);
+    }
+    if (addSegmentButton != null) {
+      addSegmentButton.setEnabled(false);
+    }
     UI ui = UI.getCurrent();
-    GeneralSecurityUtils.runAsAdminAsync(() -> showController.adjudicateShow(show.getId()))
-        .thenRun(
-            () ->
+    if (adjudicationOverlay != null) {
+      adjudicationOverlay.show();
+    }
+    GeneralSecurityUtils.runAsAdminAsync(
+            () -> showService.adjudicateShow(show.getId(), includePlayerSegments))
+        .thenAccept(
+            result ->
                 ui.access(
                     () -> {
+                      lastAdjudicationResult = result;
+                      if (adjudicationProgressBroadcaster != null) {
+                        adjudicationProgressBroadcaster.clear(show.getId());
+                      }
                       notificationService.showSuccess("Fan adjudication completed!");
                       refreshSegmentsGrid();
+                      if (adjudicationOverlay != null) {
+                        adjudicationOverlay.onCompleted(
+                            result, this::retryFailedNarration, () -> adjudicationOverlay.hide());
+                      }
                     }))
         .exceptionally(
             ex -> {
               log.error("Error adjudicating show", ex);
               ui.access(
-                  () -> notificationService.showError("Adjudication failed: " + ex.getMessage()));
+                  () -> {
+                    if (adjudicationProgressBroadcaster != null) {
+                      adjudicationProgressBroadcaster.clear(show.getId());
+                    }
+                    notificationService.showError("Adjudication failed: " + ex.getMessage());
+                    if (adjudicationOverlay != null) {
+                      adjudicationOverlay.onRunFailed(
+                          ex.getMessage(), () -> adjudicationOverlay.hide());
+                    }
+                  });
+              return null;
+            });
+  }
+
+  /** Overlay "Retry failed" action: narration-only rerun for the last result's failed ids. */
+  private void retryFailedNarration() {
+    if (lastAdjudicationResult == null
+        || lastAdjudicationResult.failedSegmentIds().isEmpty()
+        || currentShowId == null) {
+      return;
+    }
+    List<Long> failedIds = List.copyOf(lastAdjudicationResult.failedSegmentIds());
+    UI ui = UI.getCurrent();
+    GeneralSecurityUtils.runAsAdminAsync(() -> showService.retryNarration(currentShowId, failedIds))
+        .thenAccept(
+            result ->
+                ui.access(
+                    () -> {
+                      lastAdjudicationResult = result;
+                      if (adjudicationProgressBroadcaster != null) {
+                        adjudicationProgressBroadcaster.clear(currentShowId);
+                      }
+                      refreshSegmentsGrid();
+                      if (adjudicationOverlay != null) {
+                        adjudicationOverlay.onCompleted(
+                            result, this::retryFailedNarration, () -> adjudicationOverlay.hide());
+                      }
+                      notificationService.showSuccess(
+                          "Narration retry finished: "
+                              + result.narratedCount()
+                              + " succeeded"
+                              + (result.failedSegmentIds().isEmpty()
+                                  ? ""
+                                  : " — " + result.failedSegmentIds().size() + " still failing"));
+                    }))
+        .exceptionally(
+            ex -> {
+              log.error("Error retrying narration", ex);
+              ui.access(
+                  () -> {
+                    if (adjudicationProgressBroadcaster != null) {
+                      adjudicationProgressBroadcaster.clear(currentShowId);
+                    }
+                    if (adjudicationOverlay != null) {
+                      adjudicationOverlay.onRunFailed(
+                          ex.getMessage(), () -> adjudicationOverlay.hide());
+                    }
+                  });
               return null;
             });
   }

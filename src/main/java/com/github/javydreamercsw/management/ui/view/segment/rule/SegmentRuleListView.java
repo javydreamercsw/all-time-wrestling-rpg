@@ -37,6 +37,7 @@ import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
@@ -120,12 +121,17 @@ public class SegmentRuleListView extends Main {
     segmentRuleGrid
         .addComponentColumn(
             segmentRule -> {
-              Checkbox checkbox = new Checkbox();
-              checkbox.setValue(segmentRule.getRequiresHighHeat());
-              checkbox.setReadOnly(true); // Make it read-only
-              return checkbox;
+              Span badge =
+                  new Span(
+                      segmentRule.getMinimumIntensity().getDisplayWithEmoji()
+                          + " ("
+                          + segmentRule.getIntensityRating()
+                          + ")");
+              return badge;
             })
-        .setHeader("Requires High Heat")
+        .setHeader("Intensity")
+        .setComparator(Comparator.comparingInt(SegmentRule::getIntensityRating))
+        .setTooltipGenerator(segmentRule -> "Minimum rivalry heat required to book this rule")
         .setSortable(true);
 
     segmentRuleGrid
@@ -212,7 +218,12 @@ public class SegmentRuleListView extends Main {
     editName.setWidthFull();
     TextArea editDescription = new TextArea("Description");
     editDescription.setWidthFull();
-    Checkbox editRequiresHighHeat = new Checkbox("Requires High Heat");
+    IntegerField editIntensityRating = new IntegerField("Intensity Rating (0-100)");
+    editIntensityRating.setMin(0);
+    editIntensityRating.setMax(100);
+    editIntensityRating.setStepButtonsVisible(true);
+    editIntensityRating.setHelperText(
+        "Minimum rivalry heat required to book this rule (0 = always available)");
     Checkbox editNoDq = new Checkbox("No DQ");
     ComboBox<BumpAddition> bumpAdditionComboBox = new ComboBox<>("Bump Addition");
     bumpAdditionComboBox.setItems(
@@ -227,8 +238,12 @@ public class SegmentRuleListView extends Main {
         .bind(SegmentRule::getName, SegmentRule::setName);
     binder.forField(editDescription).bind(SegmentRule::getDescription, SegmentRule::setDescription);
     binder
-        .forField(editRequiresHighHeat)
-        .bind(SegmentRule::getRequiresHighHeat, SegmentRule::setRequiresHighHeat);
+        .forField(editIntensityRating)
+        .withConverter(
+            value -> value == null ? 0 : value,
+            value -> value,
+            "Intensity rating must be a number between 0 and 100")
+        .bind(SegmentRule::getIntensityRating, SegmentRule::setIntensityRating);
     binder.forField(editNoDq).bind(SegmentRule::getNoDq, SegmentRule::setNoDq);
     binder
         .forField(bumpAdditionComboBox)
@@ -247,7 +262,7 @@ public class SegmentRuleListView extends Main {
         new VerticalLayout(
             editName,
             editDescription,
-            editRequiresHighHeat,
+            editIntensityRating,
             editNoDq,
             bumpAdditionComboBox,
             buttons);
@@ -265,7 +280,7 @@ public class SegmentRuleListView extends Main {
         segmentRuleService.createOrUpdateRule(
             editingSegmentRule.getName(),
             editingSegmentRule.getDescription(),
-            editingSegmentRule.getRequiresHighHeat(),
+            editingSegmentRule.getIntensityRating(),
             editingSegmentRule.getNoDq(),
             editingSegmentRule.getBumpAddition(),
             editingSegmentRule.getId() == null ? "CUSTOM" : editingSegmentRule.getExpansionCode());

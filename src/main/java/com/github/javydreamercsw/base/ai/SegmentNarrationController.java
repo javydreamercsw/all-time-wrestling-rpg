@@ -159,6 +159,22 @@ public class SegmentNarrationController {
       } else {
         service = serviceFactory.getServiceByProvider(provider);
         if (service == null) {
+          // Name-matched but unavailable (e.g. Ollama without a base URL configured): the
+          // distinction matters — the user picked a real provider whose setup is incomplete.
+          boolean known =
+              serviceFactory.getAvailableServices().stream()
+                  .anyMatch(
+                      info -> info.providerName().toLowerCase().contains(provider.toLowerCase()));
+          if (known) {
+            return ResponseEntity.badRequest()
+                .body(
+                    Map.of(
+                        "error",
+                        "Provider '"
+                            + provider
+                            + "' exists but is not configured/available — check its settings"
+                            + " (e.g. Ollama needs AI_OLLAMA_BASE_URL in AI Settings)"));
+          }
           return ResponseEntity.badRequest()
               .body(Map.of("error", "Provider '" + provider + "' not available or not found"));
         }

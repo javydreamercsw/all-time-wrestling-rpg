@@ -424,15 +424,27 @@ public class ShowPlanningService {
     }
 
     // Stamp each rivalry with its most recent completed segment type: the prompt builder uses
-    // it to classify PROMO_COOLDOWN feuds whose last appearance was a Promo.
+    // it to classify PROMO_COOLDOWN feuds whose last appearance was a Promo. The same query
+    // also feeds the stipulation memory (lastRuleNames — anti-repeat) and the rotation
+    // counter (completedSegmentCount) the local planner's stipulation pick consumes.
     if (dto.getCurrentRivalries() != null) {
       dto.getCurrentRivalries()
           .forEach(
-              rivalryDto ->
-                  segmentRepository.findCompletedByRivalryId(rivalryDto.getId()).stream()
-                      .findFirst()
-                      .map(seg -> seg.getSegmentType().getName())
-                      .ifPresent(rivalryDto::setLastSegmentType));
+              rivalryDto -> {
+                List<Segment> completed =
+                    segmentRepository.findCompletedByRivalryId(rivalryDto.getId());
+                completed.stream()
+                    .findFirst()
+                    .ifPresent(
+                        seg ->
+                            rivalryDto.setLastRuleNames(
+                                seg.getSegmentRules().stream().map(SegmentRule::getName).toList()));
+                rivalryDto.setCompletedSegmentCount(completed.size());
+                completed.stream()
+                    .findFirst()
+                    .map(seg -> seg.getSegmentType().getName())
+                    .ifPresent(rivalryDto::setLastSegmentType);
+              });
     }
 
     List<String> dramaLines =
@@ -557,7 +569,7 @@ public class ShowPlanningService {
       @NonNull final List<ProposedSegment> proposedSegments,
       @NonNull final List<Rivalry> activeRivalries) {
     return activeRivalries.stream()
-        .filter(r -> r.getHeat() >= 10)
+        .filter(r -> r.getHeat() >= 25)
         .filter(r -> !isRivalryCovered(r, proposedSegments))
         .sorted(Comparator.comparingInt(Rivalry::getHeat).reversed())
         .collect(Collectors.toList());
@@ -580,7 +592,7 @@ public class ShowPlanningService {
     List<String> warnings = new ArrayList<>();
 
     List<Rivalry> requiredRivalries =
-        activeRivalries.stream().filter(r -> r.getHeat() >= 10).toList();
+        activeRivalries.stream().filter(r -> r.getHeat() >= 25).toList();
 
     // Title-on-the-line and #1-contender designation are mutually exclusive segment states:
     // a segment with both flags would adjudicate as a title change AND rotate the contender —
@@ -611,7 +623,7 @@ public class ShowPlanningService {
                 + " (heat="
                 + rivalry.getHeat()
                 + ")");
-      } else if (rivalry.getHeat() >= 30) {
+      } else if (rivalry.getHeat() >= 75) {
         Optional<ProposedSegment> matchingSegment = findCoveringSegment(rivalry, proposedSegments);
         matchingSegment.ifPresent(
             seg -> {
@@ -625,6 +637,48 @@ public class ShowPlanningService {
                         + " (heat="
                         + rivalry.getHeat()
                         + ")");
+              } else {
+                // STIPULATION_RATING guard: a stipulation is only legal when the rivalry's heat
+                // can afford it — the authoritative version of the planner's rating gate.
+                seg.getRules().stream()
+                    .map(segmentRuleRepository::findByName)
+                    .flatMap(Optional::stream)
+                    .filter(rule -> !rule.isBookableAtHeat(rivalry.getHeat()))
+                    .forEach(
+                        rule ->
+                            errors.add(
+                                "STIPULATION_RATING: "
+                                    + w1
+                                    + " vs "
+                                    + w2
+                                    + " (heat="
+                                    + rivalry.getHeat()
+                                    + ") cannot book '"
+                                    + rule.getName()
+                                    + "' (requires heat "
+                                    + rule.getIntensityRating()
+                                    + ")"));
+                // STIPULATION_REPEAT warning: repeating the feud's last stipulation is the
+                // Barbwire-three-weeks-running pattern. Deliberate blowoff rematches stay
+                // possible — this is advisory, mirroring MUST_BOOK.
+                boolean lastRulesOverlap =
+                    segmentRepository.findCompletedByRivalryId(rivalry.getId()).stream()
+                        .findFirst()
+                        .map(
+                            last ->
+                                last.getSegmentRules().stream()
+                                    .map(SegmentRule::getName)
+                                    .anyMatch(seg.getRules()::contains))
+                        .orElse(false);
+                if (lastRulesOverlap) {
+                  warnings.add(
+                      "STIPULATION_REPEAT: "
+                          + w1
+                          + " vs "
+                          + w2
+                          + " repeats the stipulation from its most recent show — vary the"
+                          + " stipulation or make this a deliberate blowoff rematch");
+                }
               }
             });
       }
@@ -987,7 +1041,16 @@ public class ShowPlanningService {
       segment.setSegmentOrder(currentSegmentCount + i + 1);
       segment.setIsTitleSegment(proposedSegment.getIsTitleSegment());
       if (proposedSegment.getTitles() != null && !proposedSegment.getTitles().isEmpty()) {
+        // Segment.setTitles copies on assign, so even immutable caller sets are safe to
+        // mutate below (title resolution, contender resolution).
         segment.setTitles(proposedSegment.getTitles());
+      }
+      if (proposedSegment.getTitleId() != null) {
+        // Local-planner championship defense (ATW-wbch): resolve the defended title by id —
+        // the real champion is on this segment, unlike the narration AI's invented context.
+        titleService
+            .getTitleById(proposedSegment.getTitleId())
+            .ifPresent(title -> segment.getTitles().add(title));
       }
       if (Boolean.TRUE.equals(proposedSegment.getIsContenderMatch())) {
         segment.setContenderMatch(true);

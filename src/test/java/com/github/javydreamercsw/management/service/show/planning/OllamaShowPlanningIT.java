@@ -23,7 +23,9 @@ import com.github.javydreamercsw.base.ai.ollama.OllamaSegmentNarrationService;
 import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.HolidayService;
+import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRosterEntryDTO;
 import java.time.Instant;
@@ -70,11 +72,18 @@ class OllamaShowPlanningIT extends ManagementIntegrationTest {
   @Autowired private OllamaSegmentNarrationService ollamaService;
   @Autowired private HolidayService holidayService;
 
+  @Autowired private SegmentRuleService segmentRuleService;
+
+  @Autowired private GameSettingService gameSettingService;
+
   /**
    * ShowPlanningAiService wired to a factory containing ONLY the Ollama provider. This sidesteps
    * MockSegmentNarrationService, which is {@code @Primary} under the "test" profile and would
    * otherwise win the factory's priority ordering. (ATW-hndr: alternatively add an "Ollama"
    * ProviderPriority above Mock in SegmentNarrationServiceFactory and use the context bean.)
+   *
+   * <p>The local planner flag is OFF here: this IT exercises the legacy AI-booking path against a
+   * real LLM (ATW-wbch keeps the legacy flow behind the game setting for exactly this purpose).
    */
   private ShowPlanningAiService aiService;
 
@@ -83,13 +92,16 @@ class OllamaShowPlanningIT extends ManagementIntegrationTest {
 
   @BeforeEach
   void setUpAiService() {
+    gameSettingService.setShowPlanningLocalPlannerEnabled(false);
     aiService =
         new ShowPlanningAiService(
             new SegmentNarrationServiceFactory(List.of(ollamaService)),
             objectMapper,
             segmentTypeService,
             segmentRuleService,
-            holidayService);
+            holidayService,
+            new LocalShowPlanner(new WeeklyParticipationTracker(), segmentRuleService),
+            gameSettingService);
   }
 
   @Test

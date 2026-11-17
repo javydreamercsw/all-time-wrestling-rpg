@@ -141,21 +141,19 @@ class ShowAdjudicationE2ETest extends AbstractE2ETest {
         wait.until(ExpectedConditions.elementToBeClickable(By.id("adjudicate-show-btn")));
     clickElement(adjudicateButton);
 
-    // The pre-flight confirm dialog appears with the missing-winner warning.
-    wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-confirm-dialog")));
+    // The pre-flight dialog appears with the missing-winner warning (ATW-v0vh: custom Dialog).
+    wait.until(ExpectedConditions.presenceOfElementLocated(By.tagName("vaadin-dialog")));
     String dialogText =
-        wait.until(
-                ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-confirm-dialog")))
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.tagName("vaadin-dialog")))
             .getText();
     assertTrue(
         dialogText.contains("no winner selected"),
         "pre-flight dialog must warn about the winnerless match, got: " + dialogText);
 
     // Confirm — the flow proceeds (narration generation via Mock + adjudication).
+    // The button is found by id: Vaadin wraps button label text, so text() xpaths are brittle.
     WebElement confirmButton =
-        wait.until(
-            ExpectedConditions.presenceOfElementLocated(
-                By.xpath("//vaadin-confirm-dialog//vaadin-button[text()='Adjudicate Anyway']")));
+        wait.until(ExpectedConditions.elementToBeClickable(By.id("adjudicate-confirm-btn")));
     clickElement(confirmButton);
 
     // Wait for adjudication to complete: segments become ADJUDICATED and the button

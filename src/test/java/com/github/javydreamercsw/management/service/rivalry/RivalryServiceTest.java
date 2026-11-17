@@ -79,8 +79,10 @@ class RivalryServiceTest {
   @BeforeEach
   public void setUp() {
     lenient().when(gameClock.gameNow()).thenReturn(Instant.parse("2024-01-01T00:00:00Z"));
+    lenient().when(gameClock.gameNowStaggered()).thenReturn(Instant.parse("2024-01-01T00:00:00Z"));
     lenient().when(gameSettingService.getRivalryResolutionThresholdPle()).thenReturn(30);
     lenient().when(gameSettingService.getRivalryResolutionMinHeat()).thenReturn(10);
+    lenient().when(gameSettingService.getRivalryHeatCeiling()).thenReturn(100);
     Universe defaultUniverse = Mockito.mock(Universe.class);
     lenient().when(universeRepository.findById(1L)).thenReturn(Optional.of(defaultUniverse));
   }
@@ -540,13 +542,13 @@ class RivalryServiceTest {
   @DisplayName("Should get rivalries by intensity")
   void shouldGetRivalriesByIntensity() {
     // Given
-    when(rivalryRepository.findByHeatRange(10, 19)).thenReturn(List.of());
+    when(rivalryRepository.findByHeatRange(25, 49)).thenReturn(List.of());
 
     // When
     List<Rivalry> result = rivalryService.getRivalriesByIntensity(RivalryIntensity.HEATED);
 
     // Then
-    verify(rivalryRepository).findByHeatRange(10, 19);
+    verify(rivalryRepository).findByHeatRange(25, 49);
   }
 
   @Test
@@ -575,7 +577,7 @@ class RivalryServiceTest {
     // Given
     Wrestler wrestler1 = createWrestler("Wrestler 1", 1L);
     Wrestler wrestler2 = createWrestler("Wrestler 2", 2L);
-    Rivalry rivalry = createRivalry(wrestler1, wrestler2, 25);
+    Rivalry rivalry = createRivalry(wrestler1, wrestler2, 55);
 
     when(rivalryRepository.findById(1L)).thenReturn(Optional.of(rivalry));
 
@@ -586,7 +588,7 @@ class RivalryServiceTest {
     assertThat(result).isNotNull();
     assertThat(result.wrestler1Name()).isEqualTo("Wrestler 1");
     assertThat(result.wrestler2Name()).isEqualTo("Wrestler 2");
-    assertThat(result.heat()).isEqualTo(25);
+    assertThat(result.heat()).isEqualTo(55);
     assertThat(result.intensity()).isEqualTo(RivalryIntensity.INTENSE);
     assertThat(result.canAttemptResolution()).isTrue();
     assertThat(result.isActive()).isTrue();

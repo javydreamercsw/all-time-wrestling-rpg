@@ -114,6 +114,13 @@ public class GameSettingService {
   public static final String BRIEFCASE_NPC_CASH_IN_ENABLED_KEY = "briefcase.npc_cash_in_enabled";
 
   /**
+   * Local show planner (ATW-wbch): when true, show planning builds the card deterministically and
+   * the AI only narrates the fixed slots; when false, the legacy AI-booking flow runs (the AI
+   * proposes participants, sanitized by the drop passes). Default: true.
+   */
+  public static final String SHOW_PLANNING_LOCAL_PLANNER_KEY = "show.planning.local_planner";
+
+  /**
    * Keys that are strictly per-universe credentials. Each universe configures its own; a BLANK
    * universe-scoped row does not shadow a working global credential (blank falls through — beads
    * ATW-p2y2). Reading without an active universe returns empty.
@@ -454,6 +461,34 @@ public class GameSettingService {
     saveInternal(CONTENDER_MATCH_HEAT_BONUS_KEY, String.valueOf(heatBonus));
   }
 
+  /** Maximum rivalry heat on the 0-100 scale (clamps future heat additions). */
+  public static final String RIVALRY_HEAT_CEILING_KEY = "rivalry.heat_ceiling";
+
+  /** Heat vented when an EXPLOSIVE-tier blowoff stipulation match adjudicates. */
+  public static final String RIVALRY_BLOWOFF_HEAT_VENT_KEY = "rivalry.blowoff_heat_vent";
+
+  @PreAuthorize("permitAll()")
+  public int getRivalryHeatCeiling() {
+    return resolveValue(RIVALRY_HEAT_CEILING_KEY).map(Integer::parseInt).orElse(100);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public void setRivalryHeatCeiling(final int ceiling) {
+    saveInternal(RIVALRY_HEAT_CEILING_KEY, String.valueOf(ceiling));
+  }
+
+  @PreAuthorize("permitAll()")
+  public int getRivalryBlowoffHeatVent() {
+    return resolveValue(RIVALRY_BLOWOFF_HEAT_VENT_KEY).map(Integer::parseInt).orElse(30);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public void setRivalryBlowoffHeatVent(final int vent) {
+    saveInternal(RIVALRY_BLOWOFF_HEAT_VENT_KEY, String.valueOf(vent));
+  }
+
   @PreAuthorize("permitAll()")
   public double getContenderMatchFanMultiplier() {
     return resolveValue(CONTENDER_MATCH_FAN_MULTIPLIER_KEY).map(Double::parseDouble).orElse(1.5);
@@ -502,6 +537,18 @@ public class GameSettingService {
   @PreAuthorize("permitAll()")
   public boolean isNpcBriefcaseCashInEnabled() {
     return resolveValue(BRIEFCASE_NPC_CASH_IN_ENABLED_KEY).map(Boolean::parseBoolean).orElse(true);
+  }
+
+  /** Whether show planning books the card locally (AI narrates only). Default: true. */
+  @PreAuthorize("permitAll()")
+  public boolean isShowPlanningLocalPlannerEnabled() {
+    return resolveValue(SHOW_PLANNING_LOCAL_PLANNER_KEY).map(Boolean::parseBoolean).orElse(true);
+  }
+
+  @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public void setShowPlanningLocalPlannerEnabled(final boolean enabled) {
+    saveInternal(SHOW_PLANNING_LOCAL_PLANNER_KEY, String.valueOf(enabled));
   }
 
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_SYSTEM')")

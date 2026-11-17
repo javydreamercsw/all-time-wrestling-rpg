@@ -29,12 +29,14 @@ import com.github.javydreamercsw.management.service.HolidayService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.planning.dto.FeudScriptBeatDTO;
+import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningChampionshipDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRivalryDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRosterEntryDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningSegmentDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.TournamentSlotPreviewDTO;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,8 +61,8 @@ class ShowPlanningPromptBuilderTest {
     type.setDescription("A wrestling match.");
     when(segmentTypeService.findAll()).thenReturn(List.of(type));
     when(holidayService.getHolidayTheme(any(Instant.class))).thenReturn(Optional.empty());
-    when(segmentRuleService.getHighHeatRules()).thenReturn(List.of());
-    when(segmentRuleService.getStandardRules()).thenReturn(List.of());
+    when(segmentRuleService.findAll()).thenReturn(List.of());
+    when(segmentRuleService.findAll()).thenReturn(List.of());
   }
 
   @Test
@@ -369,12 +371,12 @@ class ShowPlanningPromptBuilderTest {
   void build_highHeatRivalry_regularShow_classifiedAsPleResolutionRequired() {
     ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
     ctx.setPremiumLiveEvent(false);
-    ctx.setCurrentRivalries(List.of(rivalryWithHeat(42)));
+    ctx.setCurrentRivalries(List.of(rivalryWithHeat(89)));
     String prompt = builder.build(ctx);
     // Check the rivalry assignment line specifically, not the legend (which lists both terms)
     assertTrue(
         prompt.contains("Classification: PLE_RESOLUTION_REQUIRED"),
-        "Heat ≥ 30 on regular show must be assigned PLE_RESOLUTION_REQUIRED");
+        "Heat ≥ 75 on regular show must be assigned PLE_RESOLUTION_REQUIRED");
     assertFalse(
         prompt.contains("Classification: STIPULATION_REQUIRED"),
         "Rivalry must not be assigned STIPULATION_REQUIRED on a regular show");
@@ -384,7 +386,7 @@ class ShowPlanningPromptBuilderTest {
   void build_lastSegmentWasPromo_classifiedAsPromoCooldown() {
     ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
     ctx.setPremiumLiveEvent(false);
-    ShowPlanningRivalryDTO rivalry = rivalryWithHeat(42);
+    ShowPlanningRivalryDTO rivalry = rivalryWithHeat(89);
     rivalry.setLastSegmentType("Promo");
     ctx.setCurrentRivalries(List.of(rivalry));
     String prompt = builder.build(ctx);
@@ -400,7 +402,7 @@ class ShowPlanningPromptBuilderTest {
   void build_lastSegmentWasMatch_noPromoCooldown() {
     ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
     ctx.setPremiumLiveEvent(false);
-    ShowPlanningRivalryDTO rivalry = rivalryWithHeat(42);
+    ShowPlanningRivalryDTO rivalry = rivalryWithHeat(89);
     rivalry.setLastSegmentType("One on One");
     ctx.setCurrentRivalries(List.of(rivalry));
     String prompt = builder.build(ctx);
@@ -414,7 +416,7 @@ class ShowPlanningPromptBuilderTest {
   void build_lastSegmentWasPromo_onPle_stillRequiresStipulation() {
     ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
     ctx.setPremiumLiveEvent(true);
-    ShowPlanningRivalryDTO rivalry = rivalryWithHeat(42);
+    ShowPlanningRivalryDTO rivalry = rivalryWithHeat(89);
     rivalry.setLastSegmentType("Promo");
     ctx.setCurrentRivalries(List.of(rivalry));
     String prompt = builder.build(ctx);
@@ -428,12 +430,12 @@ class ShowPlanningPromptBuilderTest {
   void build_highHeatRivalry_ple_classifiedAsStipulationRequired() {
     ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
     ctx.setPremiumLiveEvent(true);
-    ctx.setCurrentRivalries(List.of(rivalryWithHeat(42)));
+    ctx.setCurrentRivalries(List.of(rivalryWithHeat(89)));
     String prompt = builder.build(ctx);
     // Check the rivalry assignment line specifically, not the legend (which lists both terms)
     assertTrue(
         prompt.contains("Classification: STIPULATION_REQUIRED"),
-        "Heat ≥ 30 on PLE must be assigned STIPULATION_REQUIRED");
+        "Heat ≥ 75 on PLE must be assigned STIPULATION_REQUIRED");
     assertFalse(
         prompt.contains("Classification: PLE_RESOLUTION_REQUIRED"),
         "Rivalry must not be assigned PLE_RESOLUTION_REQUIRED on a PLE");
@@ -460,7 +462,7 @@ class ShowPlanningPromptBuilderTest {
     SegmentRule standardRule = new SegmentRule();
     standardRule.setName("Iron Man");
     standardRule.setDescription("60-minute time limit, most falls wins.");
-    when(segmentRuleService.getStandardRules()).thenReturn(List.of(standardRule));
+    when(segmentRuleService.findAll()).thenReturn(List.of(standardRule));
 
     ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
     String prompt = builder.build(ctx);
@@ -480,12 +482,13 @@ class ShowPlanningPromptBuilderTest {
   void build_stipulationRequired_promptInstructsRulesMustContainHighHeatRule() {
     ShowPlanningContextDTO ctx = contextWithTemplate(1, 0);
     ctx.setPremiumLiveEvent(true);
-    ctx.setCurrentRivalries(List.of(rivalryWithHeat(35)));
+    ctx.setCurrentRivalries(List.of(rivalryWithHeat(85)));
 
     SegmentRule cageRule = new SegmentRule();
     cageRule.setName("Steel Cage");
     cageRule.setDescription("A match fought within a steel cage.");
-    when(segmentRuleService.getHighHeatRules()).thenReturn(List.of(cageRule));
+    cageRule.setIntensityRating(85);
+    when(segmentRuleService.findAll()).thenReturn(List.of(cageRule));
 
     String prompt = builder.build(ctx);
 
@@ -816,5 +819,153 @@ class ShowPlanningPromptBuilderTest {
     String prompt = builder.build(ctx);
 
     assertFalse(prompt.contains("Trophy Honors"));
+  }
+
+  // ── Narration prompt championship pins (ATW-wbch field bug: narrator crowned Johnny All
+  // Time champion while Junkyard Dog holds the belt) ──────────────────────────────
+
+  private ProposedSegment matchRow(String a, String b) {
+    ProposedSegment segment = new ProposedSegment();
+    segment.setType("One on One");
+    segment.setTeams(
+        new ArrayList<>(List.of(new ArrayList<>(List.of(a)), new ArrayList<>(List.of(b)))));
+    return segment;
+  }
+
+  private ShowPlanningContextDTO narrationContext() {
+    ShowPlanningContextDTO context = contextWithTemplate(2, 1);
+    ShowPlanningChampionshipDTO title = new ShowPlanningChampionshipDTO();
+    title.setChampionshipName("ATW Intertemporal");
+    title.setTitleId(42L);
+    title.setChampionName("Junkyard Dog");
+    title.setDaysSinceLastDefense(20L);
+    context.setChampionships(new ArrayList<>(List.of(title)));
+    return context;
+  }
+
+  @Test
+  void narrationPrompt_nonTitleRowWithChampion_labelsChampionAndNotOnTheLine() {
+    // JYD appears in a NON-title match: the row itself must carry his championship fact and
+    // state the title is not on the line — a weak local model can then never crown his
+    // opponent instead.
+    ShowPlanningContextDTO context = narrationContext();
+
+    String prompt =
+        builder.buildNarrationPrompt(context, List.of(matchRow("Junkyard Dog", "Johnny All Time")));
+
+    assertTrue(
+        prompt.contains("Junkyard Dog is the reigning ATW Intertemporal champion"),
+        "Champion must be labeled on the row itself");
+    assertTrue(
+        prompt.contains("NOT a title match"),
+        "Non-defense rows must say the title isn't on the line");
+    assertFalse(
+        prompt.contains("Johnny All Time is the reigning"), "The opponent must never be crowned");
+  }
+
+  @Test
+  void narrationPrompt_titleDefenseRow_statesChampionExclusively() {
+    ShowPlanningContextDTO context = narrationContext();
+    ProposedSegment defense = matchRow("Junkyard Dog", "Kamala");
+    defense.setIsTitleSegment(true);
+    defense.setTitleId(42L);
+
+    String prompt = builder.buildNarrationPrompt(context, List.of(defense));
+
+    assertTrue(
+        prompt.contains("THIS IS A TITLE DEFENSE: ATW Intertemporal"),
+        "Defense rows must carry the championship fact inline");
+    assertTrue(
+        prompt.contains("ONLY Junkyard Dog may be called champion"),
+        "The defense must pin the championship to the real champion");
+    assertFalse(prompt.contains("Kamala is the reigning"), "The challenger must never be crowned");
+  }
+
+  // ── Narration prompt context sections ────────────────────────────────────────
+
+  @Test
+  void narrationPrompt_includesRivalriesChampionshipsAndRecentStory() {
+    // The color sections (rivalries, championships, recent beats) only append when their
+    // context lists are non-empty — this test drives all three plus the show date line.
+    ShowPlanningContextDTO context = narrationContext();
+    ShowPlanningRivalryDTO rivalry = new ShowPlanningRivalryDTO();
+    rivalry.setName("Blood Feud");
+    rivalry.setHeat(35);
+    rivalry.setParticipants(List.of("Junkyard Dog", "Kamala"));
+    context.setCurrentRivalries(List.of(rivalry));
+    ShowPlanningSegmentDTO recent = new ShowPlanningSegmentDTO();
+    recent.setSummary("Kamala ambushed Junkyard Dog during a contract signing.");
+    context.setRecentSegments(List.of(recent));
+
+    String prompt =
+        builder.buildNarrationPrompt(context, List.of(matchRow("Junkyard Dog", "Kamala")));
+
+    assertTrue(prompt.contains("Show Date:"), "Show date appears when set");
+    assertTrue(prompt.contains("Active Rivalries (for storyline color):"));
+    assertTrue(prompt.contains("Blood Feud (heat 35)"));
+    assertTrue(prompt.contains("Championships (background color ONLY"));
+    assertTrue(prompt.contains("ATW Intertemporal — champion: Junkyard Dog"));
+    assertTrue(prompt.contains("Recent story beats (last 3 weeks, for continuity):"));
+    assertTrue(prompt.contains("Kamala ambushed Junkyard Dog during a contract signing."));
+  }
+
+  @Test
+  void narrationPrompt_emptyContextOmitsOptionalSections() {
+    // Null rivalry/championship/recent lists leave the optional sections out entirely.
+    ShowPlanningContextDTO context = contextWithTemplate(1, 0);
+    String prompt = builder.buildNarrationPrompt(context, List.of(matchRow("A", "B")));
+
+    assertFalse(prompt.contains("Active Rivalries"), "No rivalries, no rivalry section");
+    assertFalse(prompt.contains("Championships"), "No championships, no championship section");
+    assertFalse(prompt.contains("Recent story beats"), "No recent segments, no story section");
+  }
+
+  @Test
+  void narrationPrompt_rowWithRules_showsThemInline() {
+    ShowPlanningContextDTO context = contextWithTemplate(1, 0);
+    ProposedSegment stipulated = matchRow("A", "B");
+    stipulated.setRules(List.of("Steel Cage", "No DQ"));
+
+    String prompt = builder.buildNarrationPrompt(context, List.of(stipulated));
+
+    assertTrue(prompt.contains("Rules: Steel Cage, No DQ"), "Row rules render inline");
+  }
+
+  @Test
+  void narrationPrompt_tagRow_rendersParticipantsWithAmpersandsAndVs() {
+    // Team formatting: teammates join with " & ", opposing teams with " vs ".
+    ShowPlanningContextDTO context = contextWithTemplate(1, 0);
+    ProposedSegment tag = new ProposedSegment();
+    tag.setType("Tag Team");
+    tag.setTeams(
+        new ArrayList<>(
+            List.of(
+                new ArrayList<>(List.of("A One", "A Two")),
+                new ArrayList<>(List.of("B One", "B Two")))));
+
+    String prompt = builder.buildNarrationPrompt(context, List.of(tag));
+
+    assertTrue(prompt.contains("A One & A Two vs B One & B Two"), "Tag row renders both teams");
+  }
+
+  @Test
+  void narrationPrompt_rowWithSummary_carriesContextLine() {
+    ShowPlanningContextDTO context = contextWithTemplate(1, 0);
+    ProposedSegment row = matchRow("A", "B");
+    row.setSummary("Grudge match born of last week's count-out.");
+
+    String prompt = builder.buildNarrationPrompt(context, List.of(row));
+
+    assertTrue(prompt.contains("Context: Grudge match born of last week's count-out."));
+  }
+
+  @Test
+  void narrationPrompt_showDateNull_omitsDateLine() {
+    ShowPlanningContextDTO context = contextWithTemplate(1, 0);
+    context.setShowDate(null);
+
+    String prompt = builder.buildNarrationPrompt(context, List.of(matchRow("A", "B")));
+
+    assertFalse(prompt.contains("Show Date:"), "A null show date omits the date line");
   }
 }

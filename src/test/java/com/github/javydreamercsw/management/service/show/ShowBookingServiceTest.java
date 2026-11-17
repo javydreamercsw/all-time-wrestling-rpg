@@ -40,6 +40,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,6 +48,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.util.AopTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
@@ -84,12 +86,12 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
 
     // Create rules used by the booking service
     segmentRuleService.createOrUpdateRule(
-        "Standard Match", "Standard rules", false, false, BumpAddition.NONE);
+        "Standard Match", "Standard rules", 0, false, BumpAddition.NONE);
     segmentRuleService.createOrUpdateRule(
-        "Rivalry Segment", "Rivalry rules", false, false, BumpAddition.NONE);
-    segmentRuleService.createOrUpdateRule("PPV Segment", "PPV rules", true, true, BumpAddition.ALL);
+        "Rivalry Segment", "Rivalry rules", 0, false, BumpAddition.NONE);
+    segmentRuleService.createOrUpdateRule("PPV Segment", "PPV rules", 0, true, BumpAddition.ALL);
     segmentRuleService.createOrUpdateRule(
-        "Steel Cage Segment", "Cage rules", true, true, BumpAddition.ALL);
+        "Steel Cage Segment", "Cage rules", 0, true, BumpAddition.ALL);
 
     for (int i = 0; i < 15; i++) {
       wrestlerService.createWrestler(
@@ -331,5 +333,48 @@ class ShowBookingServiceTest extends ManagementIntegrationTest {
       assertThat(segment.getWrestlers()).isNotEmpty();
       assertThat(segment.getIsNpcGenerated()).isTrue();
     }
+  }
+
+  @Test
+  @DisplayName("High-heat stipulation picks the highest affordable rule, tier-driven")
+  void highHeatStipulation_tierDriven_escalatesWithHeat() throws Exception {
+    // The private getHighHeatStipulation drives the escalation ladder: mid heat → a rule at or
+    // below the heat; EXPLOSIVE heat → the top-rated affordable rule. Reflection keeps this a
+    // unit-level check without booking a full show.
+    var method =
+        ShowBookingService.class.getDeclaredMethod("getHighHeatStipulation", int.class, Set.class);
+    method.setAccessible(true);
+    // Invoke on the AOP target: the transactional proxy shell carries null fields.
+    Object target = AopTestUtils.getTargetObject(showBookingService);
+
+    // Heat 55 affords the 50-rated rule but not the 80-rated one.
+    @SuppressWarnings("unchecked")
+    String midPick = (String) method.invoke(target, 55, Set.of());
+    assertThat(midPick)
+        .isIn("Submission", "Free-For-All", "Cage", "Ladder Match", "Standard Match");
+
+    // Heat 85 affords the 85 band (TLC / War Games tie) and the 80 band.
+    @SuppressWarnings("unchecked")
+    String topPick = (String) method.invoke(target, 85, Set.of());
+    assertThat(topPick).isNotEqualTo("Standard Match");
+    assertThat(topPick)
+        .isIn(
+            "I Quit Match",
+            "Last Man Standing",
+            "Survivor War Match",
+            "Tables, Ladders and Chairs (TLC)",
+            "🪖 War Games");
+
+    // Exclusion: ruling out one affordable rule leaves its tier sibling.
+    Set<String> excludedOne = Set.of("Submission");
+    @SuppressWarnings("unchecked")
+    String excluded = (String) method.invoke(target, 50, excludedOne);
+    assertThat(excluded).isEqualTo("Free-For-All");
+
+    // Fallback: excluding EVERYTHING affordable repeats by design (soft anti-repeat).
+    Set<String> allMid = Set.of("Submission", "Free-For-All");
+    @SuppressWarnings("unchecked")
+    String fallback = (String) method.invoke(target, 50, allMid);
+    assertThat(fallback).isIn(allMid);
   }
 }
