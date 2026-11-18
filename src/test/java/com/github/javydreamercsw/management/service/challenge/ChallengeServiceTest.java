@@ -110,15 +110,23 @@ class ChallengeServiceTest {
     assertTrue(weeks.contains(3));
   }
 
+  /**
+   * Community challenges carry no scheduled week. The Deadly Combat arc is the one exception — it
+   * ships as custom-classified Season 1 weekly content, so exactly those entries carry week numbers
+   * 7 through 11.
+   */
   @Test
-  void customChallengesHaveNullWeekNumber() {
+  void customWeekNumbersAppearOnlyOnTheDeadlyCombatArc() {
     service
         .getCustomChallenges()
         .forEach(
             c ->
-                assertFalse(
+                assertEquals(
+                    c.getId().contains("deadly_combat"),
                     c.getWeekNumber() != null,
-                    "Custom challenge should have null weekNumber: " + c.getId()));
+                    "Custom challenges must be weekless unless they belong to the Deadly Combat"
+                        + " arc: "
+                        + c.getId()));
   }
 
   @Test
@@ -151,8 +159,8 @@ class ChallengeServiceTest {
 
   /**
    * OMZ's biography names the covert Siberian prison tournament "Deadly Combat" that he won five
-   * consecutive years. The weekly-challenge arc ships one challenge per tournament year, so all
-   * five must be present with ascending week numbers 7 through 11.
+   * consecutive years. The arc ships one challenge per tournament year as custom-classified Season
+   * 1 weekly content, so all five must be present with ascending week numbers 7 through 11.
    */
   @Test
   void deadlyCombatArcShipsAllFiveTournamentYears() {
@@ -161,7 +169,7 @@ class ChallengeServiceTest {
       final int year = week - 6;
       ChallengeDTO challenge =
           service
-              .getChallenge("week_%02d_deadly_combat_year_%d".formatted(week, year))
+              .getChallenge("custom_s1_%02d_deadly_combat_year_%d".formatted(week + 2, year))
               .orElseThrow(
                   () ->
                       new AssertionError(
@@ -187,7 +195,8 @@ class ChallengeServiceTest {
             .mapToObj(
                 week ->
                     service
-                        .getChallenge("week_%02d_deadly_combat_year_%d".formatted(week, week - 6))
+                        .getChallenge(
+                            "custom_s1_%02d_deadly_combat_year_%d".formatted(week + 2, week - 6))
                         .orElseThrow()
                         .getDifficulty())
             .toList();
@@ -212,7 +221,8 @@ class ChallengeServiceTest {
         .mapToObj(
             week ->
                 service
-                    .getChallenge("week_%02d_deadly_combat_year_%d".formatted(week, week - 6))
+                    .getChallenge(
+                        "custom_s1_%02d_deadly_combat_year_%d".formatted(week + 2, week - 6))
                     .orElseThrow())
         .forEach(
             challenge -> {
@@ -225,10 +235,10 @@ class ChallengeServiceTest {
             });
   }
 
-  /** The gauntlet finale faces three returning champions across two expansions. */
+  /** The gauntlet finale draws all four opponents from the Extreme roster. */
   @Test
-  void deadlyCombatFinaleRequiresBothExpansionsOfItsOpponents() {
-    ChallengeDTO finale = service.getChallenge("week_11_deadly_combat_year_5").orElseThrow();
+  void deadlyCombatFinaleRequiresExtremeExpansion() {
+    ChallengeDTO finale = service.getChallenge("custom_s1_13_deadly_combat_year_5").orElseThrow();
     assertEquals("Gauntlet", finale.getMatchType());
     // Extreme-only arc: every opponent comes from the Extreme roster, so RUMBLE is NOT required.
     assertTrue(finale.getRequiredExpansions().contains("EXTREME"));
