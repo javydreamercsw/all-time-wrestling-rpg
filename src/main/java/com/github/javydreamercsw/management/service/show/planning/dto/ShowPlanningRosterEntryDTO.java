@@ -28,5 +28,4 @@ public class ShowPlanningRosterEntryDTO {
   private WrestlerTier tier;
   private Long fans;
   private String alignment;
-  private boolean injured;
 }

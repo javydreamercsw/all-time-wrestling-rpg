@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2025 Software Consulting Dreams LLC
+* Copyright (C) 2026 Software Consulting Dreams LLC
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -14,17 +14,19 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.service.show.planning;
-
-import lombok.Data;
+package com.github.javydreamercsw.management.sync.review;
 
 /**
- * Represents the heat (rivalry intensity) between two wrestlers. This is used to inform the AI
- * about ongoing feuds when planning shows.
+ * The four outcomes an administrator can choose for a seed-data collision detected by the
+ * seed-update review feature.
  */
-@Data
-public class ShowPlanningWrestlerHeat {
-  private String wrestlerName;
-  private String opponentName;
-  private int heat;
+public enum SeedFieldDecision {
+  /** Keep the database's current value; the incoming seed value is discarded. */
+  KEEP_MINE,
+  /** Adopt the incoming seed value; the database's current value is overwritten. */
+  USE_NEW,
+  /** Keep the database's current value and mark it as custom (no longer seed-owned). */
+  KEEP_AS_CUSTOM,
+  /** Remove the database row; the seed no longer carries it. */
+  REMOVE
 }

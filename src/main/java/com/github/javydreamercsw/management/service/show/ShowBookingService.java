@@ -599,7 +599,7 @@ public class ShowBookingService {
     List<Segment> segments = new ArrayList<>();
     List<Rivalry> highHeatRivalries =
         rivalryService.getActiveRivalries().stream()
-            .filter(rivalry -> rivalry.getHeat() >= 15) // High heat rivalries
+            .filter(rivalry -> rivalry.getHeat() >= 40) // HEATED mid-band: escalation booking pool
             .toList();
 
     int bookedSegments = 0;
@@ -780,63 +780,24 @@ public class ShowBookingService {
     }
   }
 
-  /** Get appropriate rule for high-heat rivalries using database-driven rule selection. */
+  /**
+   * Get appropriate rule for high-heat rivalries: tier-driven from the intensity catalog — a rule
+   * is eligible when its rating is at the INTENSE floor or higher and the rivalry's heat can afford
+   * it (rating ≤ heat). Excludes already-used rule names when alternatives exist; picks the highest
+   * affordable rating, breaking ties randomly. Replaces the old hardcoded name-list ladder (whose
+   * names mostly didn't exist in the DB) and its random fallback.
+   */
   private String getHighHeatStipulation(final int heat, final Set<String> existingRuleNames) {
-    List<String> availableStipulations = new ArrayList<>();
-
-    if (heat >= 30) {
-      // Extreme heat - get the most dangerous stipulations from database
-      availableStipulations.addAll(
-          getStipulationsByNames(
-              List.of(
-                  "Steel Cage Segment",
-                  "Hell in a Cell",
-                  "Last Man Standing",
-                  "I Quit Segment",
-                  "Hardcore Segment",
-                  "Buried Alive Segment",
-                  "Inferno Segment"),
-              existingRuleNames));
-    } else if (heat >= 20) {
-      // High heat - get intense stipulations from database
-      availableStipulations.addAll(
-          getStipulationsByNames(
-              List.of(
-                  "No Disqualification",
-                  "Falls Count Anywhere",
-                  "Steel Cage Segment",
-                  "Submission Segment",
-                  "Iron Man Segment",
-                  "Ladder Segment",
-                  "Tables Segment"),
-              existingRuleNames));
-    } else {
-      // Medium heat - get standard enhanced segments from database
-      availableStipulations.addAll(
-          getStipulationsByNames(
-              List.of(
-                  "No Count Out", "No Disqualification", "Submission Segment", "Chairs Segment"),
-              existingRuleNames));
-    }
-
-    // If no specific stipulations found, fall back to high heat rules from database
-    if (availableStipulations.isEmpty()) {
-      List<SegmentRule> highHeatRules = segmentRuleService.getHighHeatRules();
-      if (!highHeatRules.isEmpty()) {
-        SegmentRule selectedRule = highHeatRules.get(random.nextInt(highHeatRules.size()));
-        return selectedRule.getName();
-      }
-      // Ultimate fallback
+    List<SegmentRule> eligible = segmentRuleService.getStipulationRulesForHeat(heat);
+    if (eligible.isEmpty()) {
       return "Standard Match";
     }
-
-    return availableStipulations.get(random.nextInt(availableStipulations.size()));
-  }
-
-  /** Get rule names from database, filtering out non-existent ones. */
-  private List<String> getStipulationsByNames(
-      final List<String> requestedNames, final Set<String> existingRuleNames) {
-    return requestedNames.stream().filter(existingRuleNames::contains).toList();
+    List<SegmentRule> fresh =
+        eligible.stream().filter(r -> !existingRuleNames.contains(r.getName())).toList();
+    List<SegmentRule> pool = fresh.isEmpty() ? eligible : fresh;
+    int top = pool.stream().mapToInt(SegmentRule::getIntensityRating).max().orElse(0);
+    List<SegmentRule> tied = pool.stream().filter(r -> r.getIntensityRating() == top).toList();
+    return tied.get(random.nextInt(tied.size())).getName();
   }
 
   /** Get all segments for a specific show. */

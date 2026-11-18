@@ -109,10 +109,14 @@ class EntityImageE2ETest extends AbstractE2ETest {
 
   @Test
   void testChampionshipImage() {
-    // ATW Extreme is selected by default (alphabetically first in championships.json)
+    // beads ATW-r6zt: the dropdown now defaults to the highest-tier championship (tier-desc
+    // ordering), so the test selects its target explicitly instead of assuming which entry the
+    // view loads first — default-selection drift must not break image-resolution verification.
     navigateTo("championship-rankings");
 
     WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+
+    selectFromVaadinComboBox("championship-combo-box", "ATW Extreme");
 
     // Check image resolution
     WebElement image =

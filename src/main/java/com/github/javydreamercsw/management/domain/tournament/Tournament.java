@@ -226,4 +226,12 @@ public class Tournament extends AbstractEntity<Long> {
   @Enumerated(EnumType.STRING)
   @Column(name = "recurrence", nullable = false, length = 16)
   private TournamentRecurrence recurrence = TournamentRecurrence.NONE;
+
+  /**
+   * Seed verify mode: SHA-256 over the seed-owned field values as shipped by the seed payload. NULL
+   * means a pre-fingerprint-era (legacy) row, a booker-created instance, or a later-edition row the
+   * catalog sync did not write (the sync stamps only the catalog's own code-keyed rows).
+   */
+  @Column(name = "seed_fingerprint", length = 64)
+  private String seedFingerprint;
 }

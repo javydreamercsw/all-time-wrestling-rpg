@@ -29,6 +29,10 @@ public class AiGeneratedSegmentDTO {
   private String type; // e.g., "match", "promo", "interview", "angle"
   private String description;
   private String outcome;
+
+  /** Optional declared result: WINNERS (default) / DRAW / NO_CONTEST. */
+  private String result;
+
   private String notes;
   private List<String> participants;
   private List<List<String>> teams;

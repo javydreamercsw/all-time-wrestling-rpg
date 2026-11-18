@@ -70,6 +70,13 @@ public class Achievement extends AbstractEntity<Long> {
   @Size(max = 2000) private String unlockCondition;
 
   /**
+   * Seed verify mode: SHA-256 over the seed-owned field values as shipped by the seed payload. NULL
+   * means a pre-fingerprint-era (legacy) or user-created row.
+   */
+  @Column(name = "seed_fingerprint", length = 64)
+  private String seedFingerprint;
+
+  /**
    * Copies the content-authored fields from {@code source} onto this achievement — used when
    * upserting an existing achievement from achievements.json or a remote content pack. Identity
    * fields ({@code id}, {@code key}) are left untouched. Single source of truth for which fields a

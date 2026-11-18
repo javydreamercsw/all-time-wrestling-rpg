@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.segment;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.config.CacheConfig;
+import com.github.javydreamercsw.management.domain.rivalry.RivalryIntensity;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpAddition;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRulePlayGuide;
@@ -89,31 +90,23 @@ public class SegmentRuleService {
   }
 
   /**
-   * Get segment rules suitable for high-heat rivalries.
+   * Get stipulation rules bookable at the given rivalry heat: rules rated at or below the heat and
+   * at the INTENSE floor or higher (the stipulation band). Sorted rating DESC, then name — the
+   * highest-rated affordable rule comes first.
    *
-   * @return List of segment rules appropriate for intense rivalries
+   * @param heat the rivalry's current heat (0-100)
+   * @return eligible stipulation rules, highest rating first
    */
   @PreAuthorize("isAuthenticated()")
-  @Cacheable(value = CacheConfig.SEGMENT_RULES_CACHE, key = "'highHeat'")
-  public List<SegmentRule> getHighHeatRules() {
-    Set<String> enabled = enabledExpansionCodes();
-    return deduplicateByPriority(
-        segmentRuleRepository.findSuitableForHighHeat().stream()
-            .filter(r -> r.getExpansionCode() == null || enabled.contains(r.getExpansionCode())));
-  }
-
-  /**
-   * Get standard segment rules (not requiring high heat).
-   *
-   * @return List of standard segment rules
-   */
-  @PreAuthorize("isAuthenticated()")
-  @Cacheable(value = CacheConfig.SEGMENT_RULES_CACHE, key = "'standard'")
-  public List<SegmentRule> getStandardRules() {
-    Set<String> enabled = enabledExpansionCodes();
-    return deduplicateByPriority(
-        segmentRuleRepository.findStandardRules().stream()
-            .filter(r -> r.getExpansionCode() == null || enabled.contains(r.getExpansionCode())));
+  public List<SegmentRule> getStipulationRulesForHeat(final int heat) {
+    return findAll().stream()
+        .filter(r -> r.getIntensityRating() >= RivalryIntensity.INTENSE.getMinHeat())
+        .filter(r -> r.getIntensityRating() <= heat)
+        .sorted(
+            Comparator.comparingInt(SegmentRule::getIntensityRating)
+                .reversed()
+                .thenComparing(SegmentRule::getName))
+        .collect(Collectors.toList());
   }
 
   /**
@@ -121,7 +114,7 @@ public class SegmentRuleService {
    *
    * @param name The name of the segment rule
    * @param description Optional description of the rule
-   * @param requiresHighHeat Whether this rule requires high heat to be used
+   * @param intensityRating Minimum rivalry heat (0-100) required to book this rule
    * @return The created segment rule
    */
   @Transactional
@@ -129,9 +122,7 @@ public class SegmentRuleService {
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
   @CacheEvict(value = CacheConfig.SEGMENT_RULES_CACHE, allEntries = true)
   public SegmentRule createRule(
-      @NonNull final String name,
-      @NonNull final String description,
-      final boolean requiresHighHeat) {
+      @NonNull final String name, @NonNull final String description, final int intensityRating) {
     if (segmentRuleRepository.existsByName(name)) {
       throw new IllegalArgumentException("Segment rule with name '" + name + "' already exists");
     }
@@ -139,7 +130,7 @@ public class SegmentRuleService {
     SegmentRule rule = new SegmentRule();
     rule.setName(name);
     rule.setDescription(description);
-    rule.setRequiresHighHeat(requiresHighHeat);
+    rule.setIntensityRating(intensityRating);
 
     SegmentRule savedRule = segmentRuleRepository.save(rule);
     log.info("Created new segment rule: {}", savedRule.getName());
@@ -152,7 +143,7 @@ public class SegmentRuleService {
    * @param id The ID of the segment rule to update
    * @param name New name (optional)
    * @param description New description (optional)
-   * @param requiresHighHeat New high heat requirement (optional)
+   * @param intensityRating New intensity rating (optional)
    * @return The updated segment rule
    */
   @Transactional
@@ -163,7 +154,7 @@ public class SegmentRuleService {
       @NonNull final Long id,
       @NonNull final String name,
       @NonNull final String description,
-      @NonNull final Boolean requiresHighHeat) {
+      final int intensityRating) {
     SegmentRule rule =
         segmentRuleRepository
             .findById(id)
@@ -179,7 +170,7 @@ public class SegmentRuleService {
 
     rule.setDescription(description);
 
-    rule.setRequiresHighHeat(requiresHighHeat);
+    rule.setIntensityRating(intensityRating);
 
     SegmentRule savedRule = segmentRuleRepository.save(rule);
     log.info("Updated segment rule: {}", savedRule.getName());
@@ -214,7 +205,7 @@ public class SegmentRuleService {
    *
    * @param name Name of the segment rule
    * @param description Description of the segment rule
-   * @param requiresHighHeat Whether this rule requires high heat
+   * @param intensityRating Minimum rivalry heat (0-100) required to book this rule
    * @return The created or updated segment rule
    */
   @Transactional
@@ -224,11 +215,11 @@ public class SegmentRuleService {
   public SegmentRule createOrUpdateRule(
       @NonNull final String name,
       final String description,
-      final boolean requiresHighHeat,
+      final int intensityRating,
       final boolean noDq,
       final BumpAddition bumpAddition) {
     return createOrUpdateRule(
-        name, description, requiresHighHeat, noDq, bumpAddition, "BASE_GAME", null);
+        name, description, intensityRating, noDq, bumpAddition, "BASE_GAME", null);
   }
 
   @Transactional
@@ -238,12 +229,12 @@ public class SegmentRuleService {
   public SegmentRule createOrUpdateRule(
       @NonNull final String name,
       final String description,
-      final boolean requiresHighHeat,
+      final int intensityRating,
       final boolean noDq,
       final BumpAddition bumpAddition,
       final String expansionCode) {
     return createOrUpdateRule(
-        name, description, requiresHighHeat, noDq, bumpAddition, expansionCode, null);
+        name, description, intensityRating, noDq, bumpAddition, expansionCode, null);
   }
 
   @PreAuthorize("isAuthenticated()")
@@ -286,6 +277,13 @@ public class SegmentRuleService {
               r.setActive(active);
               segmentRuleRepository.save(r);
             });
+  }
+
+  /** Persists a segment rule row, e.g. after the seed sync stamps its fingerprint. */
+  @Transactional
+  @CacheEvict(value = CacheConfig.SEGMENT_RULES_CACHE, allEntries = true)
+  public SegmentRule saveRule(SegmentRule rule) {
+    return segmentRuleRepository.save(rule);
   }
 
   /**
@@ -331,7 +329,10 @@ public class SegmentRuleService {
                         : b))
         .values()
         .stream()
-        .sorted(Comparator.comparing(SegmentRule::getName))
+        .sorted(
+            Comparator.comparingInt(SegmentRule::getIntensityRating)
+                .reversed()
+                .thenComparing(SegmentRule::getName))
         .collect(Collectors.toList());
   }
 
@@ -346,13 +347,13 @@ public class SegmentRuleService {
   public SegmentRule createOrUpdateRule(
       @NonNull final String name,
       final String description,
-      final boolean requiresHighHeat,
+      final int intensityRating,
       final boolean noDq,
       final BumpAddition bumpAddition,
       final String expansionCode,
       final SegmentRulePlayGuide guide) {
     return createOrUpdateRule(
-        name, description, requiresHighHeat, noDq, bumpAddition, expansionCode, guide, true);
+        name, description, intensityRating, noDq, bumpAddition, expansionCode, guide, true);
   }
 
   @Transactional
@@ -362,7 +363,7 @@ public class SegmentRuleService {
   public SegmentRule createOrUpdateRule(
       @NonNull final String name,
       final String description,
-      final boolean requiresHighHeat,
+      final int intensityRating,
       final boolean noDq,
       final BumpAddition bumpAddition,
       final String expansionCode,
@@ -375,7 +376,7 @@ public class SegmentRuleService {
       SegmentRule sr = existingOpt.get();
       boolean guideChanged = !Objects.equals(sr.getGuideHash(), incomingHash);
       if (Objects.equals(sr.getDescription(), description)
-          && sr.getRequiresHighHeat() == requiresHighHeat
+          && sr.getIntensityRating() == intensityRating
           && sr.getNoDq() == noDq
           && sr.isAllowsRefereeStopage() == allowsRefereeStopage
           && sr.getBumpAddition() == bumpAddition
@@ -384,7 +385,7 @@ public class SegmentRuleService {
         return sr;
       }
       sr.setDescription(description);
-      sr.setRequiresHighHeat(requiresHighHeat);
+      sr.setIntensityRating(intensityRating);
       sr.setNoDq(noDq);
       sr.setAllowsRefereeStopage(allowsRefereeStopage);
       sr.setBumpAddition(bumpAddition);
@@ -401,7 +402,7 @@ public class SegmentRuleService {
     log.debug("Creating new segment rule: {}", name);
     segmentRule.setName(name);
     segmentRule.setDescription(description);
-    segmentRule.setRequiresHighHeat(requiresHighHeat);
+    segmentRule.setIntensityRating(intensityRating);
     segmentRule.setNoDq(noDq);
     segmentRule.setAllowsRefereeStopage(allowsRefereeStopage);
     segmentRule.setBumpAddition(bumpAddition);

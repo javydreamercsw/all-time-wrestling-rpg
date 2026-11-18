@@ -18,6 +18,7 @@ package com.github.javydreamercsw.management.service.rivalry;
 
 import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.sync.review.SeedReviewGate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -40,9 +41,19 @@ public class RivalryRetentionScheduler {
 
   private final RivalryService rivalryService;
   private final GameSettingService gameSettingService;
+  private final SeedReviewGate seedReviewGate;
 
   @Scheduled(cron = "0 10 3 * * *")
   public void runRetentionPurge() {
+    // Seed-update review gate: scheduled gameplay writes stay frozen while seed collisions
+    // are undecided.
+    if (seedReviewGate.isUp()) {
+      log.info(
+          "Rivalry retention purge skipped: seed-update review gate is up ({} pending"
+              + " decision(s)).",
+          seedReviewGate.pendingCount());
+      return;
+    }
     GeneralSecurityUtils.runAsAdmin(
         () -> {
           int retentionDays = gameSettingService.getRivalryRetentionDays();

@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -92,7 +93,7 @@ class SegmentRuleListViewTest extends AbstractViewTest {
 
     verify(segmentRuleService)
         .createOrUpdateRule(
-            eq("My Custom Rule"), any(), anyBoolean(), anyBoolean(), any(), eq("CUSTOM"));
+            eq("My Custom Rule"), any(), anyInt(), anyBoolean(), any(), eq("CUSTOM"));
     assertFalse(dialog.isOpened(), "Dialog should close after save");
   }
 
@@ -114,15 +115,14 @@ class SegmentRuleListViewTest extends AbstractViewTest {
 
     verify(segmentRuleService)
         .createOrUpdateRule(
-            eq("Ladder Match"), any(), anyBoolean(), anyBoolean(), any(), eq("BASE_GAME"));
+            eq("Ladder Match"), any(), anyInt(), anyBoolean(), any(), eq("BASE_GAME"));
     assertFalse(dialog.isOpened(), "Dialog should close after update");
   }
 
   @Test
   @DisplayName("Failed save keeps the dialog open")
   void saveFailure_keepsDialogOpen() {
-    when(segmentRuleService.createOrUpdateRule(
-            any(), any(), anyBoolean(), anyBoolean(), any(), any()))
+    when(segmentRuleService.createOrUpdateRule(any(), any(), anyInt(), anyBoolean(), any(), any()))
         .thenThrow(new RuntimeException("DB down"));
 
     view.openEditDialogForTest(new SegmentRule());
@@ -144,7 +144,7 @@ class SegmentRuleListViewTest extends AbstractViewTest {
     _get(UI.getCurrent(), Button.class, spec -> spec.withText("Save")).click();
 
     verify(segmentRuleService, Mockito.never())
-        .createOrUpdateRule(any(), any(), anyBoolean(), anyBoolean(), any(), any());
+        .createOrUpdateRule(any(), any(), anyInt(), anyBoolean(), any(), any());
     Dialog dialog = _get(UI.getCurrent(), Dialog.class);
     assertTrue(dialog.isOpened(), "Dialog should stay open on validation failure");
   }
@@ -161,11 +161,6 @@ class SegmentRuleListViewTest extends AbstractViewTest {
 
     verify(segmentRuleService)
         .createOrUpdateRule(
-            eq("Bump Rule"),
-            any(),
-            anyBoolean(),
-            anyBoolean(),
-            eq(BumpAddition.NONE),
-            eq("CUSTOM"));
+            eq("Bump Rule"), any(), anyInt(), anyBoolean(), eq(BumpAddition.NONE), eq("CUSTOM"));
   }
 }

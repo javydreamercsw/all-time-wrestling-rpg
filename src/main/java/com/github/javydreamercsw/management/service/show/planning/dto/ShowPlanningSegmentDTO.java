@@ -26,9 +26,16 @@ public class ShowPlanningSegmentDTO {
   private String segmentType;
   private String name;
   private String showName;
+
+  /** True when the source show is a premium live event — PLE matches don't block the week. */
+  private boolean premiumLiveEvent;
+
   private Instant showDate;
   private Instant segmentDate;
   private List<String> participants;
   private List<String> winners;
   private String summary;
+
+  /** Rule (stipulation) names attached to the segment; empty for ruleless segments. */
+  private List<String> rules = List.of();
 }

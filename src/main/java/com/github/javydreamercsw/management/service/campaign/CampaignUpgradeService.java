@@ -28,7 +28,6 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
-import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
@@ -49,10 +48,13 @@ public class CampaignUpgradeService {
   private final WrestlerService wrestlerService;
   private final WrestlerStateRepository wrestlerStateRepository;
 
-  @PostConstruct
-  public void init() {
-    loadUpgrades();
-  }
+  // NOTE (beads ATW-26sy): this service deliberately carries NO @PostConstruct boot load. The
+  // former init() ran loadUpgrades() — deleteAllInBatch + reseed — on EVERY boot in EVERY mode,
+  // destroying admin-customized campaign_upgrade rows before the sync's protection (top-up +
+  // seed-review detection) ever saw them; re-created rows re-stamped at seed values, so tier-1/2
+  // review semantics could never protect a real edit. The seed write path is now exclusively
+  // CampaignUpgradeSync.sync(): FULL mode calls loadUpgrades() (a deliberate full refresh),
+  // non-FULL modes top up only missing rows.
 
   public void loadUpgrades() {
     log.debug("Loading campaign upgrades...");

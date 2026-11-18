@@ -23,4 +23,7 @@ public interface AccountAchievementRepository
     extends JpaRepository<AccountAchievement, AccountAchievementId> {
 
   List<AccountAchievement> findByAccountIdOrderByUnlockedAtDesc(Long accountId);
+
+  /** Unlocks of a given achievement (seed-review removal dependent check). */
+  List<AccountAchievement> findByAchievement(Achievement achievement);
 }

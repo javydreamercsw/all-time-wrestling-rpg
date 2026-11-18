@@ -129,6 +129,13 @@ public class SegmentTypeService {
         .collect(Collectors.toList());
   }
 
+  /** Persists a segment type row, e.g. after the seed sync stamps its fingerprint. */
+  @Transactional
+  @CacheEvict(value = CacheConfig.SEGMENT_TYPES_CACHE, allEntries = true)
+  public SegmentType saveSegmentType(SegmentType segmentType) {
+    return segmentTypeRepository.save(segmentType);
+  }
+
   @Transactional
   @PreAuthorize(
       "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")

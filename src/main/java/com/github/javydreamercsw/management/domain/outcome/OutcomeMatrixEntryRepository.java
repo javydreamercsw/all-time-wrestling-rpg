@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.domain.outcome;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 public interface OutcomeMatrixEntryRepository extends JpaRepository<OutcomeMatrixEntry, Long> {
 
@@ -27,4 +28,14 @@ public interface OutcomeMatrixEntryRepository extends JpaRepository<OutcomeMatri
   List<OutcomeMatrixEntry> findByMatrix(OutcomeMatrix matrix);
 
   List<OutcomeMatrixEntry> findByMatrixOrderByDiceRollAsc(OutcomeMatrix matrix);
+
+  /**
+   * Every entry with its matrix and redirect target eagerly loaded — the seed-provenance manifest
+   * generator and the version-change detection pass re-hash rows outside a Hibernate session
+   * ({@code matrix} and {@code redirectToMatrix} are LAZY and the redirect target's name is part of
+   * the entry domain's fingerprint).
+   */
+  @Query(
+      "SELECT e FROM OutcomeMatrixEntry e JOIN FETCH e.matrix LEFT JOIN FETCH e.redirectToMatrix")
+  List<OutcomeMatrixEntry> findAllWithMatrixAndRedirect();
 }

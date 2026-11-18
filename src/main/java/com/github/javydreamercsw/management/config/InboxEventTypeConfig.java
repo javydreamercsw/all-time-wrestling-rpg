@@ -170,4 +170,9 @@ public class InboxEventTypeConfig {
   public InboxEventType briefcaseCashedIn() {
     return new InboxEventType("BRIEFCASE_CASHED_IN", "Briefcase Cashed In");
   }
+
+  @Bean
+  public InboxEventType seedUpdateReviewPending() {
+    return new InboxEventType("SEED_UPDATE_REVIEW_PENDING", "Seed Update Review Pending");
+  }
 }

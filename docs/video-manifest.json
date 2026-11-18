@@ -405,5 +405,12 @@
     "description": "Back on the arc card, beats remain editable until they play out on a show. When a scripted segment completes, its beat is marked completed automatically — once every beat is done, the arc completes itself and the feud is over.",
     "videoPath": "videos/booker-story-arc-workflow.mp4",
     "order": 0
+  }, {
+    "id": "admin-admin-seed-update-review-workflow",
+    "category": "Admin",
+    "title": "Seed Update Review",
+    "description": "Apply writes the whole batch in one transaction and the review freeze lifts immediately — the app is back to normal. Kept fields re-collide only if a future release changes them again, so every upgrade lands as a short, focused review instead of silent overwrites.",
+    "videoPath": "videos/admin-seed-update-review-workflow.mp4",
+    "order": 0
   } ]
 }

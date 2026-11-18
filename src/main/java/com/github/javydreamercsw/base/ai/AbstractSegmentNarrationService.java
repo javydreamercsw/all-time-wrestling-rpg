@@ -22,7 +22,10 @@ import com.github.javydreamercsw.management.service.performance.PerformanceMonit
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import lombok.Getter;
 import lombok.NonNull;
@@ -387,12 +390,33 @@ public abstract class AbstractSegmentNarrationService implements SegmentNarratio
       }
     }
 
+    // Surface the DEEPEST underlying failure in the message — the cause chain never reaches
+    // the UI (the controller maps error = e.getMessage()), so without this the user sees only
+    // "All retry policies exhausted" and can't tell high-demand from auth from config issues.
+    // lastException is often an intermediate "Max retries exceeded" wrapper; walk to the root
+    // cause, whose message carries the provider's actual reason.
+    String detail = lastException == null ? "" : ": " + rootCauseMessage(lastException);
     throw new AIServiceException(
         503,
         "Service Unavailable",
         getProviderName(),
-        "All retry policies exhausted for " + getProviderName(),
+        "All retry policies exhausted for " + getProviderName() + detail,
         lastException);
+  }
+
+  /** Deepest non-null message in the cause chain (cycle-safe). */
+  private static String rootCauseMessage(@NonNull Throwable throwable) {
+    Throwable current = throwable;
+    String message = current.getMessage();
+    Set<Throwable> seen = Collections.newSetFromMap(new IdentityHashMap<>());
+    seen.add(current);
+    while (current.getCause() != null && seen.add(current.getCause())) {
+      current = current.getCause();
+      if (current.getMessage() != null && !current.getMessage().isBlank()) {
+        message = current.getMessage();
+      }
+    }
+    return message;
   }
 
   /** Executes the AI provider call with a specific retry policy. */

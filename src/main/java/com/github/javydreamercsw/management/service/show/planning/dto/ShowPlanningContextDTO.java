@@ -68,4 +68,11 @@ public class ShowPlanningContextDTO {
    * from the card is visible instead of silent.
    */
   private List<String> excludedBeatWarnings = new ArrayList<>();
+
+  /**
+   * Wrestlers excluded from the bookable roster for this show (active injury or condition below the
+   * rest threshold — ATW-1nyv). Every context channel has been scrubbed of them; UIs surface the
+   * list so a missing wrestler is visible instead of silent.
+   */
+  private List<String> unavailableWrestlerNames = new ArrayList<>();
 }

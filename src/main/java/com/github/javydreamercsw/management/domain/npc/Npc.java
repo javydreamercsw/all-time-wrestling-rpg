@@ -87,6 +87,13 @@ public class Npc extends AbstractEntity<Long> {
   @Builder.Default
   private Map<String, Object> attributes = new HashMap<>();
 
+  /**
+   * Seed verify mode: SHA-256 over the seed-owned field values as shipped by the seed payload. NULL
+   * means a pre-fingerprint-era (legacy) or user-created row.
+   */
+  @Column(name = "seed_fingerprint", length = 64)
+  private String seedFingerprint;
+
   @PrePersist
   protected void onCreate() {
     if (expansionCode == null) {

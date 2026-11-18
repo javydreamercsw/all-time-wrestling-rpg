@@ -473,6 +473,11 @@ The **Share QR Code** feature generates a scannable QR code so players can open 
 
 2. **Update the `Caddyfile`** in the project root — replace `192.168.4.47` with your actual LAN IP if it has changed:
 	```
+	{
+		local_certs
+		default_sni 192.168.4.47
+	}
+
 	https://192.168.4.47:443 {
 		reverse_proxy localhost:8080 {
 			header_up X-Forwarded-Proto https
@@ -481,6 +486,8 @@ The **Share QR Code** feature generates a scannable QR code so players can open 
 		}
 	}
 	```
+
+	> **`default_sni` is required.** Phones scanning QR codes connect by IP literal, and TLS clients never send the Server Name Indication extension for IP addresses (RFC 6066). Without `default_sni`, Caddy has no certificate to select for those handshakes and rejects them — the phone shows a connection error even though Caddy is running and the certificate is valid. The repo `Caddyfile` uses `default_sni {$LAN_IP:localhost}` so it also works when `LAN_IP` is not exported.
 
 3. **Install Caddy's local CA** so your Mac trusts the certificate:
 	```bash
@@ -508,6 +515,16 @@ caddy start --config /opt/homebrew/etc/tomcat/Caddyfile
 The app is then reachable at:
 - `https://localhost/atw-rpg` — from this machine
 - `https://<your-lan-ip>/atw-rpg` — from phones on the same network
+
+#### QR code URLs
+
+The **Share QR Code** feature encodes `https://<your-lan-ip>/atw-rpg/...` URLs. When Tomcat runs behind Caddy, set `QR_BASE_URL` (exported by `docker/tomcat/setenv.sh`, which also detects the LAN IP and starts Caddy) so the app does not fall back to guessing:
+
+```
+export QR_BASE_URL="https://<your-lan-ip>/atw-rpg"
+```
+
+The value must include the `/atw-rpg` context path (the WAR deploys as `atw-rpg.war`); QR dialogs append routes like `/match/{id}` directly to it. Without the override, `UrlUtil` encodes `http://<lan-ip>:8080/atw-rpg/...` — which phones can't reach when HSTS has previously pinned the LAN IP to HTTPS, and which fails with `net::ERR_TOO_MANY_RETRIES` once that HTTP URL gets TLS-upgraded against Tomcat's plain-HTTP port.
 
 ### Code Quality
 

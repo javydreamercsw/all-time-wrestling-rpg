@@ -19,8 +19,10 @@ package com.github.javydreamercsw.management.service.show.planning;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.title.BriefcaseCashInMode;
+import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.HolidayService;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
@@ -34,6 +36,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -55,6 +58,8 @@ public class ShowPlanningAiService {
   private final SegmentRuleService segmentRuleService;
   private final HolidayService holidayService;
   private final ShowPlanningPromptBuilder promptBuilder;
+  private final LocalShowPlanner localShowPlanner;
+  private final GameSettingService gameSettingService;
 
   @Autowired
   ShowPlanningAiService(
@@ -62,12 +67,16 @@ public class ShowPlanningAiService {
       final ObjectMapper objectMapper,
       final SegmentTypeService segmentTypeService,
       final SegmentRuleService segmentRuleService,
-      final HolidayService holidayService) {
+      final HolidayService holidayService,
+      final LocalShowPlanner localShowPlanner,
+      final GameSettingService gameSettingService) {
     this.narrationServiceFactory = narrationServiceFactory;
     this.objectMapper = objectMapper;
     this.segmentTypeService = segmentTypeService;
     this.segmentRuleService = segmentRuleService;
     this.holidayService = holidayService;
+    this.localShowPlanner = localShowPlanner;
+    this.gameSettingService = gameSettingService;
     this.promptBuilder =
         new ShowPlanningPromptBuilder(segmentTypeService, segmentRuleService, holidayService);
   }
@@ -85,26 +94,128 @@ public class ShowPlanningAiService {
     int freeMatches = Math.max(0, expectedMatches - claimed[0]);
     int freePromos = Math.max(0, expectedPromos - claimed[1]);
     if (freeMatches == 0 && freePromos == 0) {
-      // Every slot on this card is pre-determined (scripted beats + tournament brackets). The AI
-      // has nothing to propose — skip the call entirely; the deterministic passes build the card.
+      // Every slot on this card is pre-determined (scripted beats + tournament brackets). No
+      // booking pass needed — the deterministic passes build the card; narration still runs.
       log.info(
-          "All match/promo slots on this card are pre-determined ({} claim(s)) — skipping the AI"
-              + " call",
+          "All match/promo slots on this card are pre-determined ({} claim(s)) — deterministic"
+              + " passes build the card",
           claimed[0] + claimed[1]);
       ProposedShow proposedShow = new ProposedShow();
       applyScriptedBeats(proposedShow, context);
       applyTournamentSlots(proposedShow, context);
       applyBriefcaseProposals(proposedShow, context);
+      if (gameSettingService.isShowPlanningLocalPlannerEnabled()) {
+        narrateFixedCard(proposedShow, context);
+      }
       applyDefaultRules(proposedShow);
       return proposedShow;
     }
+    if (gameSettingService.isShowPlanningLocalPlannerEnabled()) {
+      return planShowLocally(context, freeMatches, freePromos, claimed);
+    }
     ProposedShow proposedShow = planShowWithAi(context);
     dropPromoCooldownProposals(proposedShow, context);
+    dropHolderPromoProposals(proposedShow, context);
+    dropDuplicateMatchBookings(proposedShow);
     applyScriptedBeats(proposedShow, context);
     applyTournamentSlots(proposedShow, context);
     applyBriefcaseProposals(proposedShow, context);
     applyDefaultRules(proposedShow);
     return proposedShow;
+  }
+
+  /**
+   * Local-planner flow (ATW-wbch): the deterministic claims land first, the {@link
+   * LocalShowPlanner} fills the free slots, and the AI narrates the fixed card in one call. The
+   * AI's output maps description → narration and outcome → summary on the SAME rows — the card's
+   * participants/types/rules are never touched by the AI.
+   */
+  private ProposedShow planShowLocally(
+      @NonNull final ShowPlanningContextDTO context,
+      int freeMatches,
+      int freePromos,
+      int[] claimed) {
+    ProposedShow proposedShow = new ProposedShow();
+    applyScriptedBeats(proposedShow, context);
+    applyTournamentSlots(proposedShow, context);
+    applyBriefcaseProposals(proposedShow, context);
+
+    // Claimed wrestler names (normalized) off the deterministic rows already on the card.
+    Set<String> claimedNames = new HashSet<>();
+    proposedShow
+        .getSegments()
+        .forEach(
+            row ->
+                rowNamesOf(row).forEach(name -> claimedNames.add(name.toLowerCase(Locale.ROOT))));
+
+    List<ProposedSegment> planned =
+        localShowPlanner.plan(context, freeMatches, freePromos, claimedNames);
+    proposedShow.getSegments().addAll(planned);
+    // Heat-based stipulations land BEFORE narration so the prompt shows the final rules.
+    localShowPlanner.applyHeatBasedStipulations(proposedShow.getSegments(), context);
+    log.info(
+        "Local planner flow: {} deterministic + {} planned row(s) on the card ({} free slots)",
+        proposedShow.getSegments().size() - planned.size(),
+        planned.size(),
+        freeMatches + freePromos);
+
+    narrateFixedCard(proposedShow, context);
+    applyDefaultRules(proposedShow);
+    return proposedShow;
+  }
+
+  /**
+   * One narration call over the assembled card: the AI writes description/outcome per slot; the
+   * mapping back keeps every booking field untouched. Any AI failure (unavailable provider, bad
+   * JSON, wrong length) leaves the card as-is — summaries already carry the planner's context so
+   * the booker can still read the card.
+   */
+  private void narrateFixedCard(
+      @NonNull final ProposedShow proposedShow, @NonNull final ShowPlanningContextDTO context) {
+    List<ProposedSegment> segments = proposedShow.getSegments();
+    if (segments.isEmpty() || narrationServiceFactory.getBestAvailableService() == null) {
+      return;
+    }
+    try {
+      String prompt = promptBuilder.buildNarrationPrompt(context, segments);
+      String aiResponse = narrationServiceFactory.generateText(prompt);
+      if (aiResponse == null || aiResponse.trim().isEmpty()) {
+        log.warn("Narration call returned empty — card keeps planner summaries");
+        return;
+      }
+      String jsonString = extractJsonArray(aiResponse);
+      if (jsonString == null) {
+        log.warn("Narration response contained no JSON array — card keeps planner summaries");
+        return;
+      }
+      List<AiGeneratedSegmentDTO> narrations =
+          objectMapper.readValue(
+              jsonString,
+              objectMapper
+                  .getTypeFactory()
+                  .constructCollectionType(List.class, AiGeneratedSegmentDTO.class));
+      if (narrations.size() != segments.size()) {
+        log.warn(
+            "Narration response covered {} of {} segments — mismatch, card keeps planner"
+                + " summaries",
+            narrations.size(),
+            segments.size());
+        return;
+      }
+      for (int i = 0; i < narrations.size(); i++) {
+        AiGeneratedSegmentDTO narration = narrations.get(i);
+        ProposedSegment segment = segments.get(i);
+        if (narration.getDescription() != null && !narration.getDescription().isBlank()) {
+          segment.setNarration(narration.getDescription());
+        }
+        if (narration.getOutcome() != null && !narration.getOutcome().isBlank()) {
+          segment.setSummary(narration.getOutcome());
+        }
+      }
+      log.info("AI narration applied to {} segment(s)", segments.size());
+    } catch (Exception e) {
+      log.warn("AI narration failed — card keeps planner summaries: {}", e.getMessage());
+    }
   }
 
   /**
@@ -171,6 +282,108 @@ public class ShowPlanningAiService {
         segment.getTeams().stream().flatMap(List::stream).collect(Collectors.toSet());
     return rowNames.contains(rivalry.getParticipants().get(0))
         && rowNames.contains(rivalry.getParticipants().get(1));
+  }
+
+  /**
+   * Deterministic briefcase-holder promo guard (ATW-eqo0, extending ATW-u1hr): prompts are advisory
+   * — the AI keeps funneling held-briefcase holders into Promos ("hypes up his impending cash-in")
+   * instead of building the program with matches. Drop AI-proposed Promo rows naming a current
+   * holder, mirroring the cooldown drop pass. Runs BEFORE the deterministic passes so
+   * booker-mandated, tournament, and briefcase rows are never touched — and so the briefcase pass's
+   * champion-on-card check sees the match rows the AI must book instead.
+   */
+  private void dropHolderPromoProposals(
+      @NonNull final ProposedShow proposedShow, @NonNull final ShowPlanningContextDTO context) {
+    Set<String> holders = holderNamesOf(context);
+    if (holders.isEmpty() || proposedShow.getSegments().isEmpty()) {
+      return;
+    }
+    List<ProposedSegment> kept = new ArrayList<>();
+    int dropped = 0;
+    for (ProposedSegment segment : proposedShow.getSegments()) {
+      Set<String> rowNames = rowNamesOf(segment);
+      boolean holderPromo = isPromoRow(segment) && rowNames.stream().anyMatch(holders::contains);
+      if (holderPromo) {
+        dropped++;
+        log.warn(
+            "Dropped AI-proposed Promo naming briefcase holder(s) {} — a holder builds toward"
+                + " the cash-in with matches, not another talking segment (ATW-u1hr)",
+            rowNames.stream().filter(holders::contains).collect(Collectors.joining(", ")));
+      } else {
+        kept.add(segment);
+      }
+    }
+    if (dropped > 0) {
+      proposedShow.setSegments(kept);
+    }
+  }
+
+  /** Held-briefcase holder names parsed from the context's "holder — case" lines. */
+  private Set<String> holderNamesOf(ShowPlanningContextDTO context) {
+    if (context.getHeldBriefcases() == null) {
+      return Set.of();
+    }
+    return context.getHeldBriefcases().stream()
+        .filter(line -> line != null && line.contains("—"))
+        .map(line -> line.substring(0, line.indexOf('—')).trim())
+        .filter(name -> !name.isEmpty())
+        .collect(Collectors.toSet());
+  }
+
+  /** Participant names on a proposed row, null-safe and blank-free. */
+  private Set<String> rowNamesOf(ProposedSegment segment) {
+    if (segment.getTeams() == null) {
+      return Set.of();
+    }
+    return segment.getTeams().stream()
+        .filter(Objects::nonNull)
+        .flatMap(List::stream)
+        .filter(name -> name != null && !name.isBlank())
+        .map(String::trim)
+        .collect(Collectors.toSet());
+  }
+
+  /**
+   * Deterministic one-match-per-day guard (ATW-eqo0): prompts are advisory — the AI double-books
+   * wrestlers across match rows even with 30+ available names, sometimes narrating the double duty
+   * in the segment description itself. A wrestler may appear in at most ONE match (non-promo row)
+   * per card; the first match row claiming them wins and later overlapping match rows are dropped
+   * whole (a match missing a side is unsalvageable). Promos and backstage segments never count —
+   * the prompt's calendar rule only restricts matches. Runs BEFORE the deterministic passes so
+   * scripted beats, tournament slots, and briefcase rows are never touched.
+   */
+  private void dropDuplicateMatchBookings(@NonNull final ProposedShow proposedShow) {
+    if (proposedShow.getSegments().isEmpty()) {
+      return;
+    }
+    Set<String> bookedWrestlers = new HashSet<>();
+    List<ProposedSegment> kept = new ArrayList<>();
+    int dropped = 0;
+    for (ProposedSegment segment : proposedShow.getSegments()) {
+      if (isPromoRow(segment)) {
+        kept.add(segment);
+        continue;
+      }
+      Set<String> rowNames = rowNamesOf(segment);
+      // Case-insensitive: the AI capitalizes inconsistently across rows.
+      Set<String> claimed =
+          rowNames.stream().map(name -> name.toLowerCase(Locale.ROOT)).collect(Collectors.toSet());
+      List<String> alreadyBooked =
+          claimed.stream().filter(bookedWrestlers::contains).collect(Collectors.toList());
+      if (alreadyBooked.isEmpty()) {
+        bookedWrestlers.addAll(claimed);
+        kept.add(segment);
+      } else {
+        dropped++;
+        log.warn(
+            "Dropped AI-proposed match re-booking {} — a wrestler may appear in only one match"
+                + " per card (ATW-eqo0)",
+            String.join(", ", alreadyBooked));
+      }
+    }
+    if (dropped > 0) {
+      proposedShow.setSegments(kept);
+    }
   }
 
   /**
@@ -591,6 +804,19 @@ public class ShowPlanningAiService {
     return names;
   }
 
+  /** Parses the AI's optional declared-result value; anything unknown defaults to WINNERS. */
+  private SegmentResult parseDeclaredResult(final String declaredResult) {
+    if (declaredResult == null || declaredResult.isBlank()) {
+      return SegmentResult.WINNERS;
+    }
+    try {
+      return SegmentResult.valueOf(declaredResult.trim().toUpperCase());
+    } catch (IllegalArgumentException e) {
+      log.warn("AI proposed unknown result '{}', defaulting to WINNERS", declaredResult);
+      return SegmentResult.WINNERS;
+    }
+  }
+
   private ProposedShow planShowWithAi(@NonNull final ShowPlanningContextDTO context) {
     if (narrationServiceFactory.getBestAvailableService() == null) {
       log.warn("No AI service available for show planning.");
@@ -637,6 +863,7 @@ public class ShowPlanningAiService {
                     segment.setSummary(dto.getOutcome());
                     segment.setNotes(dto.getNotes());
                     segment.setRivalryId(dto.getRivalryId());
+                    segment.setResult(parseDeclaredResult(dto.getResult()));
                     if (dto.getRules() != null && !dto.getRules().isEmpty()) {
                       segment.setRules(dto.getRules());
                     }

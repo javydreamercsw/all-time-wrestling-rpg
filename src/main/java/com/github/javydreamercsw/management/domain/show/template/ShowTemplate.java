@@ -123,6 +123,13 @@ public class ShowTemplate extends AbstractEntity<Long> {
   private boolean isActive = true;
 
   /**
+   * Seed verify mode: SHA-256 over the seed-owned field values as shipped by the seed payload. NULL
+   * means a pre-fingerprint-era (legacy) or user-created row.
+   */
+  @Column(name = "seed_fingerprint", length = 64)
+  private String seedFingerprint;
+
+  /**
    * Segment type/rule assignments for this template (ATW-0331): event-only types the AI may use on
    * this template's shows, encouraged rules (AI preference) and auto-attach rules (deterministic
    * merge at proposal approval). Edited in the template admin view.

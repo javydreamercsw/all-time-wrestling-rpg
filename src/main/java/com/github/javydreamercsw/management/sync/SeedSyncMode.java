@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2025 Software Consulting Dreams LLC
+* Copyright (C) 2026 Software Consulting Dreams LLC
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -14,14 +14,14 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <www.gnu.org>.
 */
-package com.github.javydreamercsw.management.service.show.planning.dto;
+package com.github.javydreamercsw.management.sync;
 
-import lombok.Data;
-
-/** DTO representing the heat (rivalry intensity) between two wrestlers. */
-@Data
-public class ShowPlanningWrestlerHeatDTO {
-  private String wrestlerName;
-  private String opponentName;
-  private int heat;
+/** Seed sync execution mode derived from {@code data.initializer.skip-if-not-empty}. */
+public enum SeedSyncMode {
+  /** Full sync: update existing rows to match the seed. */
+  FULL,
+  /** Protect mode: top up missing entries, never re-save existing rows. */
+  PROTECT,
+  /** Verify mode: top up missing entries, reconcile seed-owned fields of fingerprint-clean rows. */
+  VERIFY
 }

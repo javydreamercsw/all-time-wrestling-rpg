@@ -28,12 +28,15 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.ai.SegmentNarrationService;
+import com.github.javydreamercsw.base.ai.SegmentNarrationServiceFactory;
 import com.github.javydreamercsw.base.domain.account.Account;
 import com.github.javydreamercsw.base.security.CustomUserDetails;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.service.theme.ThemeService;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
+import com.github.javydreamercsw.management.event.inbox.AiSettingsChangeBroadcaster;
 import com.github.javydreamercsw.management.event.inbox.InboxUpdateBroadcaster;
 import com.github.javydreamercsw.management.event.inbox.InboxUpdateEvent;
 import com.github.javydreamercsw.management.event.inbox.OpenProfileDrawerBroadcaster;
@@ -83,6 +86,8 @@ class MainLayoutTest extends AbstractViewTest {
   @Mock private TutorialService tutorialService;
   @Mock private OpenProfileDrawerBroadcaster openProfileDrawerBroadcaster;
   @Mock private ShowFacade showFacade;
+  @Mock private SegmentNarrationServiceFactory narrationServiceFactory;
+  @Mock private AiSettingsChangeBroadcaster aiSettingsChangeBroadcaster;
 
   @BeforeEach
   void setup() {
@@ -112,7 +117,9 @@ class MainLayoutTest extends AbstractViewTest {
             inboxService,
             tutorialService,
             openProfileDrawerBroadcaster,
-            showFacade);
+            showFacade,
+            narrationServiceFactory,
+            aiSettingsChangeBroadcaster);
     UI.getCurrent().add(layout);
     return layout;
   }
@@ -303,5 +310,98 @@ class MainLayoutTest extends AbstractViewTest {
 
     Dialog dialog = _get(Dialog.class);
     assertThat(dialog).isInstanceOf(SegmentQrPickerDialog.class);
+  }
+
+  // ── Global AI provider availability indicator (ATW-ftnb) ──────────────────
+
+  @Test
+  @DisplayName("No available AI provider: booker sees amber indicator with warning tooltip")
+  void aiIndicator_noProvider_amberWithWarningTooltip() {
+    when(securityUtils.isAuthenticated()).thenReturn(true);
+    when(securityUtils.getCurrentUsername()).thenReturn("booker");
+    when(securityUtils.isBooker()).thenReturn(true);
+    when(narrationServiceFactory.getAvailableServicesInPriorityOrder())
+        .thenReturn(Collections.emptyList());
+
+    MainLayout layout = createLayout();
+
+    Button indicator = _get(layout, Button.class, spec -> spec.withId("ai-availability-indicator"));
+    assertTrue(indicator.isVisible());
+    assertThat(indicator.getTooltip().getText())
+        .isEqualTo("No AI provider configured - narration disabled");
+  }
+
+  @Test
+  @DisplayName("Provider available: indicator tooltip names the highest-priority provider")
+  void aiIndicator_providerAvailable_tooltipNamesProvider() {
+    when(securityUtils.isAuthenticated()).thenReturn(true);
+    when(securityUtils.getCurrentUsername()).thenReturn("booker");
+    when(securityUtils.isBooker()).thenReturn(true);
+    SegmentNarrationService service = mock(SegmentNarrationService.class);
+    when(service.getProviderName()).thenReturn("Google Gemini");
+    when(narrationServiceFactory.getAvailableServicesInPriorityOrder())
+        .thenReturn(List.of(service));
+
+    MainLayout layout = createLayout();
+
+    Button indicator = _get(layout, Button.class, spec -> spec.withId("ai-availability-indicator"));
+    assertThat(indicator.getTooltip().getText()).isEqualTo("AI narration: Google Gemini");
+  }
+
+  @Test
+  @DisplayName("Viewer role does not see the AI indicator")
+  void aiIndicator_viewerHidden() {
+    when(securityUtils.isAuthenticated()).thenReturn(true);
+    when(securityUtils.getCurrentUsername()).thenReturn("viewer");
+    when(securityUtils.isBooker()).thenReturn(false);
+    when(securityUtils.isAdmin()).thenReturn(false);
+
+    MainLayout layout = createLayout();
+
+    List<Button> indicators =
+        _find(layout, Button.class, spec -> spec.withId("ai-availability-indicator"));
+    assertThat(indicators).isEmpty();
+  }
+
+  @Test
+  @DisplayName("Admin without booker role still sees the indicator (admin implies booker)")
+  void aiIndicator_adminVisible() {
+    when(securityUtils.isAuthenticated()).thenReturn(true);
+    when(securityUtils.getCurrentUsername()).thenReturn("admin");
+    when(securityUtils.isAdmin()).thenReturn(true);
+    when(narrationServiceFactory.getAvailableServicesInPriorityOrder())
+        .thenReturn(Collections.emptyList());
+
+    MainLayout layout = createLayout();
+
+    Button indicator = _get(layout, Button.class, spec -> spec.withId("ai-availability-indicator"));
+    assertTrue(indicator.isVisible());
+  }
+
+  @Test
+  @DisplayName("AI settings change broadcast refreshes the indicator without page reload")
+  void aiSettingsBroadcast_refreshesIndicatorState() {
+    when(securityUtils.isAuthenticated()).thenReturn(true);
+    when(securityUtils.getCurrentUsername()).thenReturn("booker");
+    when(securityUtils.isBooker()).thenReturn(true);
+    when(narrationServiceFactory.getAvailableServicesInPriorityOrder())
+        .thenReturn(Collections.emptyList());
+
+    MainLayout layout = createLayout();
+
+    ArgumentCaptor<Consumer<Void>> captor = ArgumentCaptor.forClass(Consumer.class);
+    verify(aiSettingsChangeBroadcaster).register(captor.capture());
+
+    // Provider becomes available; the broadcast must re-query the factory and flip the tooltip.
+    SegmentNarrationService service = mock(SegmentNarrationService.class);
+    when(service.getProviderName()).thenReturn("Ollama");
+    when(narrationServiceFactory.getAvailableServicesInPriorityOrder())
+        .thenReturn(List.of(service));
+
+    captor.getValue().accept(null);
+    MockVaadin.clientRoundtrip();
+
+    Button indicator = _get(layout, Button.class, spec -> spec.withId("ai-availability-indicator"));
+    assertThat(indicator.getTooltip().getText()).isEqualTo("AI narration: Ollama");
   }
 }

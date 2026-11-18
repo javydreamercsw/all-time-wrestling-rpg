@@ -783,6 +783,38 @@ public class WrestlerService {
   /** Outcome of an NPC post-show recovery roll. */
   public record NpcRecoveryResult(int successes, boolean injuryHealed, int bumpsHealed) {}
 
+  /**
+   * Whether the wrestler is bookable for a show in the given universe: no active injury and
+   * physical condition at or above {@code conditionThreshold} (ATW-1nyv).
+   *
+   * <p>Canonical availability predicate — the AI planning scrub, the approval-time warning pass,
+   * the briefcase cash-in advisor, and the tournament booking funnel all consult this one method so
+   * no two layers can disagree about who is out. A healed injury is history and never blocks. A
+   * wrestler with no condition data yet counts as available (nothing to judge them below).
+   *
+   * @param wrestlerId the wrestler to check (null-safe: a null id reads as unavailable)
+   * @param universeId the universe the show belongs to
+   * @param conditionThreshold the minimum physical condition from the game settings
+   * @return {@code true} when the wrestler may be booked this show
+   */
+  public boolean isAvailableForBooking(
+      @Nullable final Long wrestlerId,
+      @Nullable final Long universeId,
+      final int conditionThreshold) {
+    if (wrestlerId == null || universeId == null) {
+      return false;
+    }
+    if (!injuryService.getActiveInjuriesForWrestler(wrestlerId, universeId).isEmpty()) {
+      return false;
+    }
+    // Read-only: a missing state (no condition data yet) cannot be judged below-threshold —
+    // treat as available rather than minting state rows from an availability probe.
+    return wrestlerStateRepository
+        .findByWrestlerIdAndUniverseId(wrestlerId, universeId)
+        .map(state -> state.getPhysicalCondition() >= conditionThreshold)
+        .orElse(true);
+  }
+
   @Caching(
       evict = {
         @CacheEvict(value = CacheConfig.WRESTLERS_CACHE, key = "#wrestlerId"),

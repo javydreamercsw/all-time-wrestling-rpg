@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.domain.show.segment.rule;
 
 import com.github.javydreamercsw.base.domain.AbstractEntity;
+import com.github.javydreamercsw.management.domain.rivalry.RivalryIntensity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
@@ -61,8 +62,13 @@ public class SegmentRule extends AbstractEntity<Long> {
   @Column(name = "description")
   private String description;
 
-  @Column(name = "requires_high_heat", nullable = false)
-  private Boolean requiresHighHeat = false;
+  /**
+   * Minimum rivalry heat (0-100) required to book this rule. The rivalry-intensity band
+   * (SIMMERING/HEATED/INTENSE/EXPLOSIVE) is always derived from this rating, so band rebalances
+   * never require rule data changes.
+   */
+  @Column(name = "intensity_rating", nullable = false)
+  private int intensityRating = 0;
 
   @Column(name = "no_dq", nullable = false)
   private Boolean noDq = false;
@@ -88,6 +94,13 @@ public class SegmentRule extends AbstractEntity<Long> {
   @Column(name = "rules_hash", length = 64)
   @Nullable private String guideHash;
 
+  /**
+   * Seed verify mode: SHA-256 over the seed-owned field values as shipped by the seed payload. NULL
+   * means a pre-fingerprint-era (legacy) or user-created row.
+   */
+  @Column(name = "seed_fingerprint", length = 64)
+  private String seedFingerprint;
+
   @Column(name = "is_active", nullable = false)
   private boolean isActive = true;
 
@@ -98,20 +111,23 @@ public class SegmentRule extends AbstractEntity<Long> {
       creationDate = Instant.now();
     }
 
-    if (requiresHighHeat == null) {
-      requiresHighHeat = false;
-    }
     if (noDq == null) {
       noDq = false;
     }
     if (bumpAddition == null) {
       bumpAddition = BumpAddition.NONE;
     }
+    intensityRating = Math.max(0, Math.min(100, intensityRating));
   }
 
-  /** Check if this rule is suitable for high-heat rivalries. */
-  public boolean isSuitableForHighHeat() {
-    return requiresHighHeat != null && requiresHighHeat;
+  /** Get the rivalry-intensity band this rule's rating falls into (derived, never stored). */
+  @NonNull public RivalryIntensity getMinimumIntensity() {
+    return RivalryIntensity.fromHeat(intensityRating);
+  }
+
+  /** Check if this rule is bookable for a rivalry at the given heat. */
+  public boolean isBookableAtHeat(final int heat) {
+    return heat >= intensityRating;
   }
 
   @NonNull @Override

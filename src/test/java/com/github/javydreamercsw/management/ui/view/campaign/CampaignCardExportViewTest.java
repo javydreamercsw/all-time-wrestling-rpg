@@ -167,7 +167,7 @@ class CampaignCardExportViewTest {
     rule.setDescription("No way out.");
     rule.setExpansionCode("CUSTOM");
     rule.setNoDq(true);
-    rule.setRequiresHighHeat(true);
+    rule.setIntensityRating(85);
     rule.setAllowsRefereeStopage(false);
     rule.setBumpAddition(BumpAddition.ALL);
 
@@ -176,7 +176,7 @@ class CampaignCardExportViewTest {
     assertThat(card.getElement().getTextRecursively())
         .contains("SEGMENT RULE")
         .contains("NO DQ")
-        .contains("HIGH HEAT")
+        .contains("🌋 Explosive")
         .contains("NO REF STOPPAGE")
         .contains("BUMPS: ALL");
   }
@@ -189,7 +189,7 @@ class CampaignCardExportViewTest {
     rule.setDescription("Nothing special.");
     rule.setExpansionCode("CUSTOM");
     rule.setNoDq(false);
-    rule.setRequiresHighHeat(false);
+    rule.setIntensityRating(0);
     rule.setBumpAddition(BumpAddition.NONE);
 
     Div card = CampaignCardExportView.buildSegmentRuleCard(rule);
@@ -197,7 +197,7 @@ class CampaignCardExportViewTest {
     assertThat(card.getElement().getTextRecursively())
         .contains("Standard Match")
         .doesNotContain("NO DQ")
-        .doesNotContain("HIGH HEAT")
+        .doesNotContain("🌋")
         .doesNotContain("BUMPS:");
   }
 

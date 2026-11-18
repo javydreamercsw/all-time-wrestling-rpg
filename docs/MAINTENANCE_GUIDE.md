@@ -246,7 +246,7 @@ The "Share QR Code" button in Match Detail and Show Detail views generates a URL
 
 `UrlUtil.getNetworkUrl()` resolves the URL in this order:
 
-1. **`QR_BASE_URL` environment variable** — if set, used verbatim. This is the most reliable option for any deployment.
+1. **`QR_BASE_URL` environment variable** — if set, used verbatim. This is the most reliable option for any deployment. It must include the servlet context path when the app is not at the root (the WAR deploys as `atw-rpg.war`, so use `https://<lan-ip>/atw-rpg`); QR dialogs append routes like `/match/{id}` directly to the value.
 2. **`X-Forwarded-Host` / `X-Forwarded-Proto` request headers** — used when the app sits behind a reverse proxy that injects these headers (Caddy, nginx, Tomcat `RemoteIpValve`).
 3. **LAN IP auto-detection** — replaces `localhost`/`127.0.0.1` in the servlet request URL with the machine's first site-local IPv4 address. Works for direct (non-proxied) local deployments.
 4. **Cached value** — when called from a WebSocket/push thread (no HTTP context), the URL computed during the last real HTTP request is reused.
@@ -286,6 +286,15 @@ Set `QR_BASE_URL` to your Railway public domain in the service's environment var
 ```
 QR_BASE_URL=https://your-app.railway.app
 ```
+
+### Caddy LAN proxy (phones see `net::ERR_TOO_MANY_RETRIES`)
+
+Caddy terminates HTTPS for QR sharing on port 443. Two failure modes to check when phones cannot open QR links while `https://localhost/atw-rpg` works from the server itself:
+
+1. **Caddy is not running.** It is only started by `bin/setenv.sh` at Tomcat startup (and by `relink.sh` on this deployment) — if it dies, nothing restarts it. Verify with `lsof -nP -iTCP:443 -sTCP:LISTEN`.
+2. **Missing `default_sni`.** Phones connect by IP literal, and TLS clients never send the SNI extension for IP addresses (RFC 6066). Without `default_sni` in the Caddyfile's global options block, Caddy rejects those handshakes even with a valid IP-SAN certificate in storage — while `https://localhost` keeps working, because `localhost` handshakes do carry SNI. Add `default_sni {$LAN_IP:localhost}` (see the bundled `Caddyfile`) and run `caddy reload`.
+
+Also note: the app sends `Strict-Transport-Security: max-age=31536000; includeSubDomains` on responses served through the proxy. Once a phone has loaded the app over HTTPS, its browser will force-HTTPS any later `http://<lan-ip>:<port>` URL — including QR URLs encoding plain HTTP on Tomcat's 8080 port, which then fails with `net::ERR_TOO_MANY_RETRIES` (TLS handshake against a plain-HTTP port). Set `QR_BASE_URL` so freshly generated QR codes use the correct `https://<lan-ip>/atw-rpg` form.
 
 ### Reverse proxy (Caddy / nginx)
 

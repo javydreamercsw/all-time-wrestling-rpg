@@ -49,6 +49,13 @@ public class CardSet extends AbstractEntity<Long> {
   @JsonProperty("set_code")
   private String code;
 
+  /**
+   * Seed verify mode: SHA-256 over the seed-owned field values as shipped by the seed payload. NULL
+   * means a pre-fingerprint-era (legacy) or user-created row.
+   */
+  @Column(name = "seed_fingerprint", length = 64)
+  private String seedFingerprint;
+
   @Column(name = "creation_date", nullable = false)
   private Instant creationDate;
 

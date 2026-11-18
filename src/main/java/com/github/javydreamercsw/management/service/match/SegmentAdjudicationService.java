@@ -23,9 +23,11 @@ import com.github.javydreamercsw.management.domain.feud.MultiWrestlerFeud;
 import com.github.javydreamercsw.management.domain.league.*;
 import com.github.javydreamercsw.management.domain.outcome.OutcomeMatrixCategory;
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
+import com.github.javydreamercsw.management.domain.rivalry.RivalryIntensity;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.show.segment.rule.BumpSource;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
@@ -324,12 +326,17 @@ public class SegmentAdjudicationService {
   @Transactional
   private void adjudicateMatchInternal(@NonNull final Segment segment, final double multiplier) {
     // Process match fulfillment first so that a player-reported winner is reflected
-    // in the winners/losers lists used by every downstream method.
+    // in the winners/losers lists used by every downstream method. A segment with a
+    // booked non-WINNERS result (draw/no-contest) is authoritative — player-reported
+    // winners are ignored for those (owner decision: players cannot enter results
+    // on booked draws/no-contests).
     matchFulfillmentRepository
         .findBySegment(segment)
         .ifPresent(
             fulfillment -> {
-              if (fulfillment.getReportedWinner() != null && segment.getWinners().isEmpty()) {
+              if (fulfillment.getReportedWinner() != null
+                  && segment.getResult() == SegmentResult.WINNERS
+                  && segment.getWinners().isEmpty()) {
                 segment.setWinners(List.of(fulfillment.getReportedWinner()));
               }
               fulfillment.setStatus(MatchFulfillment.FulfillmentStatus.FINALIZED);
@@ -378,6 +385,9 @@ public class SegmentAdjudicationService {
     applyFactionAffinity(segment, winners, universeId);
     applyHeatToRivaltiesAndFeuds(segment, segment.getWrestlers(), universeId);
     resolveRivalriesAndFeuds(segment, winners);
+    // The blowoff vent runs AFTER resolution: the dice roll should see full heat, then the
+    // survivor cools into the resolution-eligible band for the finale.
+    applyBlowoffHeatVent(segment);
     triggerAchievements(segment, winners);
 
     if (showService != null) {
@@ -408,10 +418,17 @@ public class SegmentAdjudicationService {
       List<LeagueRoster> toSave = new ArrayList<>();
       List<Wrestler> wrestlersToSave = new ArrayList<>();
       if (winners.isEmpty()) {
+        SegmentResult result = segment.getResult();
         for (Wrestler w : segment.getWrestlers()) {
           LeagueRoster roster = rosterByWrestlerId.get(w.getId());
           if (roster != null) {
-            roster.setDraws(roster.getDraws() + 1);
+            if (result == SegmentResult.NO_CONTEST) {
+              // A booked no-contest is not a draw: it lands on its own counter.
+              roster.setNoContests(roster.getNoContests() + 1);
+            } else {
+              // Declared draws and legacy empty-winner segments both count as draws.
+              roster.setDraws(roster.getDraws() + 1);
+            }
             toSave.add(roster);
           }
         }
@@ -896,15 +913,19 @@ public class SegmentAdjudicationService {
       @NonNull final Segment segment,
       @NonNull final List<Wrestler> participants,
       @NonNull final Long universeId) {
-    // If the AI tagged a specific rivalry, boost its heat directly before the generic pair-scan.
+    // If the AI tagged a specific rivalry, boost its heat directly. Its wrestler pair is captured
+    // so the generic pair-scan below skips it — a tagged segment heats its rivalry exactly once
+    // (the old code added the targeted boost AND the pair-scan heat to the same rivalry).
+    Long taggedWrestler1Id = null;
+    Long taggedWrestler2Id = null;
     if (segment.getRivalryId() != null) {
       // Same-faction rivalries are modeling errors (e.g. two stablemates at 117 heat): heating
       // them keeps the planner proposing stablemate matches forever, and heat decay never fires
       // because every segment re-heats them. Parity with the generic pair-scan's faction-mate
       // skip below. An unloadable rivalry (deleted) keeps today's behavior — addHeat no-ops.
+      var taggedRivalryOpt = rivalryService.getRivalryByIdWithWrestlers(segment.getRivalryId());
       boolean factionMates =
-          rivalryService
-              .getRivalryByIdWithWrestlers(segment.getRivalryId())
+          taggedRivalryOpt
               .map(
                   rivalry ->
                       areFactionMates(rivalry.getWrestler1(), rivalry.getWrestler2(), universeId))
@@ -914,7 +935,13 @@ public class SegmentAdjudicationService {
             "Skipping targeted heat for rivalry {} — participants are faction-mates",
             segment.getRivalryId());
       } else {
-        int targetedHeat = segment.getShow().isPremiumLiveEvent() ? 3 : 2;
+        // Contender-match bonus folds into the targeted branch (it used to stack on top via the
+        // pair-scan). A tagged promo now nets +5/+8 instead of the old +6/+7 mixed stack.
+        int targetedHeat =
+            (segment.getShow().isPremiumLiveEvent() ? 8 : 5)
+                + (segment.isContenderMatch()
+                    ? gameSettingService.getContenderMatchHeatBonus()
+                    : 0);
         rivalryService.addHeat(
             segment.getRivalryId(),
             targetedHeat,
@@ -924,6 +951,8 @@ public class SegmentAdjudicationService {
             targetedHeat,
             segment.getRivalryId(),
             segment.getId());
+        taggedWrestler1Id = taggedRivalryOpt.map(r -> r.getWrestler1().getId()).orElse(null);
+        taggedWrestler2Id = taggedRivalryOpt.map(r -> r.getWrestler2().getId()).orElse(null);
       }
     }
 
@@ -931,7 +960,7 @@ public class SegmentAdjudicationService {
     String segmentTypeCode = segment.getSegmentType().getCode();
     boolean isPromo = WellKnownSegmentType.PROMO.matches(segment.getSegmentType());
     boolean isAiTargeted = segment.getRivalryId() != null;
-    final int heat = isPromo ? 4 : 1;
+    final int heat = isPromo ? 10 : 3;
 
     // Skip all-pairs heat addition for Rumbles to avoid performance issues,
     // excessive rivalry creation, and because determining eliminations from
@@ -941,6 +970,13 @@ public class SegmentAdjudicationService {
         for (int j = i + 1; j < participants.size(); j++) {
           Wrestler wi = participants.get(i);
           Wrestler wj = participants.get(j);
+          // The AI-targeted rivalry was already heated once above — skip its pair here.
+          boolean isTaggedPair =
+              (wi.getId().equals(taggedWrestler1Id) && wj.getId().equals(taggedWrestler2Id))
+                  || (wi.getId().equals(taggedWrestler2Id) && wj.getId().equals(taggedWrestler1Id));
+          if (isTaggedPair) {
+            continue;
+          }
           Faction fi = wi.getState(universeId).map(WrestlerState::getFaction).orElse(null);
           Faction fj = wj.getState(universeId).map(WrestlerState::getFaction).orElse(null);
           if (fi != null && fi.equals(fj)) {
@@ -966,8 +1002,9 @@ public class SegmentAdjudicationService {
                         rivalryService.addHeat(
                             r.getId(), heat, "From segment: " + segmentTypeCode));
           }
-          if (segment.isContenderMatch()) {
-            // Contender matches are high-stakes: boost any established rivalry further.
+          if (segment.isContenderMatch() && !isAiTargeted) {
+            // Contender matches are high-stakes: boost any established rivalry further. For the
+            // AI-targeted rivalry the bonus is already folded into the targeted branch above.
             rivalryService
                 .getRivalryBetweenWrestlers(wi.getId(), wj.getId())
                 .ifPresent(
@@ -1001,6 +1038,47 @@ public class SegmentAdjudicationService {
             feud.getId(), heat, "From segment: " + segment.getSegmentType().getName());
       }
     }
+  }
+
+  /**
+   * Blowoff cooling: when a segment carries an EXPLOSIVE-tier stipulation (any rule rated 75+),
+   * vent the tagged rivalry's heat after adjudication. The vent lands the feud in the INTENSE band,
+   * which is resolution-eligible — the climax-then-finale arc. One vent per segment; vents fire
+   * only for rivalry-backed segments (stipulation-required matches are rivalry-backed by
+   * validateCard, so a null rivalryId just logs and skips).
+   */
+  private void applyBlowoffHeatVent(@NonNull final Segment segment) {
+    int maxRating =
+        segment.getSegmentRules().stream()
+            .mapToInt(SegmentRule::getIntensityRating)
+            .max()
+            .orElse(0);
+    if (maxRating < RivalryIntensity.EXPLOSIVE.getMinHeat()) {
+      return;
+    }
+    if (segment.getRivalryId() == null) {
+      log.debug(
+          "EXPLOSIVE stipulation on segment {} has no tagged rivalry — no blowoff vent",
+          segment.getId());
+      return;
+    }
+    int vent = gameSettingService.getRivalryBlowoffHeatVent();
+    rivalryService
+        .getRivalryById(segment.getRivalryId())
+        .filter(Rivalry::getIsActive)
+        .ifPresent(
+            rivalry -> {
+              rivalryService.addHeat(
+                  rivalry.getId(), -vent, "Blowoff: " + segment.getSegmentType().getName());
+              log.info(
+                  "Blowoff vent: -{} heat on rivalry {} from {}",
+                  vent,
+                  rivalry.getId(),
+                  segment.getSegmentRules().stream()
+                      .filter(r -> r.getIntensityRating() >= 75)
+                      .map(SegmentRule::getName)
+                      .collect(Collectors.joining(", ")));
+            });
   }
 
   private void resolveRivalriesAndFeuds(

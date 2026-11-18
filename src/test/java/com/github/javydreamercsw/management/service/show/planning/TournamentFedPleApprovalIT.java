@@ -165,9 +165,10 @@ class TournamentFedPleApprovalIT extends AbstractTournamentFedPleIT {
   @Test
   @DisplayName("A card failing validation is rejected before any booking")
   void approval_validationStillApplies() {
-    // Deterministic validation failure: a heat>=30 rivalry must be booked with a stipulation
-    // when it appears on the card (STIPULATION_REQUIRED). The paired tournament type satisfies
-    // the MUST_BOOK coverage, so the error fires and the whole approval rolls back.
+    // Deterministic validation failure: an EXPLOSIVE-heat rivalry (>= 75 on the 0-100 scale)
+    // must be booked with a stipulation when it appears on the card (STIPULATION_REQUIRED).
+    // The paired tournament type satisfies the MUST_BOOK coverage, so the error fires and the
+    // whole approval rolls back.
     Rivalry rivalry =
         rivalryService
             .createRivalry(
@@ -176,7 +177,7 @@ class TournamentFedPleApprovalIT extends AbstractTournamentFedPleIT {
                 "IT fixture rivalry",
                 universe.getId())
             .orElseThrow();
-    rivalryService.addHeat(rivalry.getId(), 30, "IT fixture heat");
+    rivalryService.addHeat(rivalry.getId(), 85, "IT fixture heat");
     ProposedSegment rumble =
         singles(roster.get(4).getName(), roster.get(5).getName(), roster.get(4).getName());
     rumble.setType(eventType.getName());

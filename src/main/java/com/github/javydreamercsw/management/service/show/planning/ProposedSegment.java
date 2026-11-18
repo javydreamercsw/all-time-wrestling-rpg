@@ -16,13 +16,13 @@
 */
 package com.github.javydreamercsw.management.service.show.planning;
 
+import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.title.BriefcaseCashInMode;
 import com.github.javydreamercsw.management.domain.title.Title;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.Data;
-import lombok.Setter;
 
 @Data
 public class ProposedSegment {
@@ -37,10 +37,31 @@ public class ProposedSegment {
   private Boolean isTitleSegment = false;
   private Boolean isContenderMatch = false;
 
+  /** Declared result (WINNERS default; DRAW / NO_CONTEST are booked calls). */
+  private SegmentResult result = SegmentResult.WINNERS;
+
   /** Title id whose #1 contender is decided by this segment (resolved at approval time). */
   private Long contenderTitleId;
 
-  @Setter private Set<Title> titles = new HashSet<>();
+  /**
+   * Title id defended by this segment (champion vs. contender) — resolved to the Title entity at
+   * approval time. The local planner sets it on championship-defense rows so the card defends the
+   * REAL champion instead of the narration AI inventing one.
+   */
+  private Long titleId;
+
+  /**
+   * Titles attached to this row. Copy-on-assign: callers pass immutable sets ({@code Set.of(...)},
+   * combo values) and downstream title resolution mutates the collection — a by-reference immutable
+   * set crashes that mutation. This file is excluded from the rewrite plugin because its
+   * UseLombokSetter recipe deletes any manual setter on a Lombok-managed class.
+   */
+  private Set<Title> titles = new HashSet<>();
+
+  public void setTitles(Set<Title> titles) {
+    this.titles = titles == null ? new HashSet<>() : new HashSet<>(titles);
+  }
+
   private List<String> rules;
   private String refereeName;
 

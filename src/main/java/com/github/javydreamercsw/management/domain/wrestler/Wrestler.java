@@ -125,6 +125,13 @@ public class Wrestler extends AbstractEntity<Long> {
   @Builder.Default
   private String expansionCode = "BASE_GAME";
 
+  /**
+   * Seed verify mode: SHA-256 over the seed-owned field values as shipped by the seed payload. NULL
+   * means a pre-fingerprint-era (legacy) or user-created row.
+   */
+  @Column(name = "seed_fingerprint", length = 64)
+  private String seedFingerprint;
+
   // ==================== CAMPAIGN ATTRIBUTES ====================
   @Column(name = "drive")
   @Min(1) @Max(6) @Builder.Default
