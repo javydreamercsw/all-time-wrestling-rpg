@@ -412,5 +412,26 @@
     "description": "Apply writes the whole batch in one transaction and the review freeze lifts immediately — the app is back to normal. Kept fields re-collide only if a future release changes them again, so every upgrade lands as a short, focused review instead of silent overwrites.",
     "videoPath": "videos/admin-seed-update-review-workflow.mp4",
     "order": 0
+  }, {
+    "id": "game-mechanics-mechanic-briefcase-cash-in-video",
+    "category": "Game Mechanics",
+    "title": "Briefcase Cash-In Walkthrough",
+    "description": "In this seeded universe no championship currently has a reigning champion, so the dialog stays closed — the Cash In precondition is an active title with a reigning champion. In a universe with championships on the line, the dialog lists every eligible title and show here.",
+    "videoPath": "videos/mechanic-briefcase-cash-in-video.mp4",
+    "order": 0
+  }, {
+    "id": "booker-booker-tournament-fed-ple-workflow",
+    "category": "Booker",
+    "title": "Tournament-Fed PLE Segments",
+    "description": "Once the final is decided, the next approval of a paired show books the winner showcase — the champion against the highest-seeded wrestler they eliminated. If the tournament can't supply participants at any point, the show falls back to AI-proposed entrants instead of failing.",
+    "videoPath": "videos/booker-tournament-fed-ple-workflow.mp4",
+    "order": 0
+  }, {
+    "id": "booker-booker-tournament-creation-wizard",
+    "category": "Booker",
+    "title": "Tournament Creation Wizard",
+    "description": "With Auto seeding, a live match-up preview shows exactly the round-1 pairings Create will commit — top seed vs bottom seed — before anything is saved. Create generates the bracket-ready tournament and opens its detail view, where seeds can still be reordered or wrestlers swapped until Start.",
+    "videoPath": "videos/booker-tournament-creation-wizard.mp4",
+    "order": 0
   } ]
 }
