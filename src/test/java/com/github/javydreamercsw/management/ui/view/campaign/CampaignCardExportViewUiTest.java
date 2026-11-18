@@ -40,6 +40,7 @@ import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.ShowFacade;
 import com.github.javydreamercsw.management.service.title.TitleService;
+import com.github.javydreamercsw.management.ui.component.PrintableCardSupport;
 import com.github.javydreamercsw.management.ui.view.campaign.CampaignCardExportView.CustomKind;
 import com.github.javydreamercsw.management.ui.view.campaign.CampaignCardExportView.ExportCategory;
 import com.github.mvysny.kaributesting.v10.MockVaadin;
@@ -56,6 +57,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
 /**
  * Instance-level tests for {@link CampaignCardExportView}: toolbar wiring, category switching and
@@ -410,5 +413,44 @@ class CampaignCardExportViewUiTest {
 
     assertThat(_get(view, Button.class, spec -> spec.withText("Print Cards")).isEnabled())
         .isFalse();
+  }
+
+  @Test
+  @DisplayName("Chapter print suggests the chapter title as the PDF filename")
+  void print_chapter_suggestsChapterTitleAsFilename() {
+    CampaignCardExportView view = createView();
+
+    try (MockedStatic<PrintableCardSupport> mocked =
+        Mockito.mockStatic(PrintableCardSupport.class)) {
+      _get(view, Button.class, spec -> spec.withText("Print Cards")).click();
+
+      mocked.verify(() -> PrintableCardSupport.print("Test Campaign"));
+    }
+  }
+
+  @Test
+  @DisplayName("Custom-content print suggests the kind label as the PDF filename")
+  void print_customKind_suggestsKindLabelAsFilename() {
+    // A custom NPC must exist so the kind renders cards and enables the print button.
+    Npc custom =
+        Npc.builder()
+            .name("Samuel Winters")
+            .npcType("Referee")
+            .gender(Gender.MALE)
+            .alignment(AlignmentType.FACE)
+            .expansionCode("CUSTOM")
+            .build();
+    when(npcService.findAllUnfiltered()).thenReturn(List.of(custom));
+
+    CampaignCardExportView view = createView();
+    categoryCombo(view).setValue(ExportCategory.CUSTOM_CONTENT);
+    kindCombo(view).setValue(CustomKind.NPCS);
+
+    try (MockedStatic<PrintableCardSupport> mocked =
+        Mockito.mockStatic(PrintableCardSupport.class)) {
+      _get(view, Button.class, spec -> spec.withText("Print Cards")).click();
+
+      mocked.verify(() -> PrintableCardSupport.print("NPCs"));
+    }
   }
 }
