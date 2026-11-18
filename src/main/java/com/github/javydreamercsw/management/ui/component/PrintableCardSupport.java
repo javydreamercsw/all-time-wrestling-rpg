@@ -64,6 +64,21 @@ public final class PrintableCardSupport {
     UI.getCurrent().getPage().executeJs("window.print()");
   }
 
+  /**
+   * Triggers the browser print dialog and suggests {@code suggestedFilename} as the default PDF
+   * name: browsers derive the "Save as PDF" filename from {@code document.title}, so the title is
+   * swapped in before printing and restored once the (blocking) dialog closes.
+   */
+  public static void print(String suggestedFilename) {
+    UI.getCurrent()
+        .getPage()
+        .executeJs(
+            "const prev = document.title;"
+                + "document.title = $0;"
+                + "try { window.print(); } finally { document.title = prev; }",
+            suggestedFilename != null ? suggestedFilename : "");
+  }
+
   /** Builds the standard card header: a type label above the card name. */
   public static Div cardHeader(String headerClass, String typeLabel, String name) {
     Div header = new Div();
