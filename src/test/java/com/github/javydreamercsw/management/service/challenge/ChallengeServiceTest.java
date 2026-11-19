@@ -375,4 +375,34 @@ class ChallengeServiceTest {
     assertEquals("Sgt. Slaughter", slaughter.getRequiredWrestlerNames().getFirst());
     assertEquals("CHALLENGE_CUSTOM_S2_05", slaughter.getAchievementKey());
   }
+
+  /**
+   * The grind opens at HARD: Cardona's deathmatch crown defense (ATW-byhj part 2), the tag-format
+   * Bulldogs reunion (ATW-usk9 part 1), and Slaughter's traitor turn with the crowd against him
+   * (ATW-xl1k act 2).
+   */
+  @Test
+  void seasonTwoGrindOpensWithDeathmatchBulldogsAndTraitor() {
+    ChallengeDTO cardona =
+        service.getChallenge("custom_s2_06_belt_collector_deathmatch").orElseThrow();
+    assertEquals(Difficulty.MEDIUM, cardona.getDifficulty());
+    assertEquals("Barbwire Exploding Deathmatch", cardona.getMatchType());
+    assertEquals("Matt Cardona", cardona.getRequiredWrestlerNames().getFirst());
+    assertEquals("Sabu", cardona.getRequiredWrestlerNames().getLast());
+    assertTrue(cardona.getRequiredExpansions().contains("EXTREME"));
+    assertEquals("CHALLENGE_CUSTOM_S2_06", cardona.getAchievementKey());
+
+    ChallengeDTO bulldogs = service.getChallenge("custom_s2_07_bulldogs_reunion").orElseThrow();
+    assertEquals(Difficulty.MEDIUM, bulldogs.getDifficulty());
+    assertEquals("Elimination", bulldogs.getMatchType());
+    assertEquals("The British Bulldog", bulldogs.getRequiredWrestlerNames().getFirst());
+    assertEquals("Dynamite Kid", bulldogs.getRequiredWrestlerNames().getLast());
+    assertEquals("CHALLENGE_CUSTOM_S2_07", bulldogs.getAchievementKey());
+
+    ChallengeDTO traitor = service.getChallenge("custom_s2_08_slaughter_traitor").orElseThrow();
+    assertEquals(Difficulty.HARD, traitor.getDifficulty());
+    assertEquals("Cage", traitor.getMatchType());
+    assertEquals("Sgt. Slaughter", traitor.getRequiredWrestlerNames().getFirst());
+    assertEquals("CHALLENGE_CUSTOM_S2_08", traitor.getAchievementKey());
+  }
 }
