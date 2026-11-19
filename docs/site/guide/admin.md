@@ -201,3 +201,55 @@ After a version upgrade, seed-data changes that would overwrite your customizati
 ![Seed Update Review](/screenshots/admin-seed-review-tree.png)
 
 ---
+
+## Video Walkthroughs
+
+### MySQL Data Migration Wizard
+
+Migration complete — all data is now in MySQL and verified. Restart the application with the MySQL Spring profile (spring.profiles.active=mysql) to run in production mode against the new database.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/data-transfer-full-wizard.mp4" type="video/mp4">
+</video>
+
+---
+
+### Account Management Walkthrough
+
+New Account dialog — username and email are required; password is set on first login or by the admin. Roles can be combined: a Booker who also plays in leagues needs both the Booker and Player roles.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/account-list-walkthrough.mp4" type="video/mp4">
+</video>
+
+---
+
+### Universe Management Walkthrough
+
+Create Universe dialog — name is required; type controls which game rules apply. Standard uses the default ATW ruleset; Fantasy enables league drafts; Historical locks the roster to a specific era.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/universe-list-walkthrough.mp4" type="video/mp4">
+</video>
+
+---
+
+### Inviting Members to a Universe
+
+When someone follows the link and submits a request, click Requests to review it. Approve to add them as a member, Reject to decline, or Block to prevent future requests from that account.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/universe-member-onboarding.mp4" type="video/mp4">
+</video>
+
+---
+
+### Seed Update Review
+
+Apply writes the whole batch in one transaction and the review freeze lifts immediately — the app is back to normal. Kept fields re-collide only if a future release changes them again, so every upgrade lands as a short, focused review instead of silent overwrites.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/admin-seed-update-review-workflow.mp4" type="video/mp4">
+</video>
+
+---
