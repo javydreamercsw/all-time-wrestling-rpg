@@ -305,4 +305,27 @@ class ChallengeServiceTest {
                         + c.getAchievementKey()
                         + "' not found in any shipped achievements file"));
   }
+
+  /**
+   * Every Season 2 challenge (custom_s2_*) references a key in the global catalog, and the season
+   * carries its completion achievement — ChallengeCompletionService derives
+   * CHALLENGE_SEASON_2_COMPLETE from the "Season 2" season label.
+   */
+  @Test
+  void seasonTwoAchievementKeysShipInGlobalCatalog() throws Exception {
+    Set<String> keys = new HashSet<>();
+    try (InputStream is = getClass().getResourceAsStream("/achievements.json")) {
+      new ObjectMapper()
+          .readValue(is, new TypeReference<List<Map<String, Object>>>() {}).stream()
+              .map(a -> (String) a.get("key"))
+              .forEach(keys::add);
+    }
+    IntStream.rangeClosed(1, 22)
+        .forEach(
+            i ->
+                assertTrue(
+                    keys.contains("CHALLENGE_CUSTOM_S2_%02d".formatted(i)),
+                    "missing CHALLENGE_CUSTOM_S2_%02d".formatted(i)));
+    assertTrue(keys.contains("CHALLENGE_SEASON_2_COMPLETE"));
+  }
 }
