@@ -432,4 +432,17 @@ class ChallengeServiceTest {
     assertEquals("Sgt. Slaughter", redemption.getRequiredWrestlerNames().getFirst());
     assertEquals("CHALLENGE_CUSTOM_S2_11", redemption.getAchievementKey());
   }
+
+  /**
+   * The proving ground changes the pressure's shape: not per-match modifiers but across-match
+   * compounding stakes — Shumba's gauntlet streak where one loss erases everything (ATW-0ubw).
+   */
+  @Test
+  void seasonTwoProvingGroundShipsTheUnbestedStreak() {
+    ChallengeDTO shumba = service.getChallenge("custom_s2_12_shumba_unbested").orElseThrow();
+    assertEquals(Difficulty.HARD, shumba.getDifficulty());
+    assertEquals("Gauntlet", shumba.getMatchType());
+    assertEquals("Mukundi Shumba", shumba.getRequiredWrestlerNames().getFirst());
+    assertEquals("CHALLENGE_CUSTOM_S2_12", shumba.getAchievementKey());
+  }
 }

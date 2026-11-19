@@ -218,4 +218,24 @@
   "imageUrl": null,
   "notes": "Slot 11 of Season 2 and act 3 of the Slaughter arc (ATW-xl1k): the redemption finale inverting act 2's hostile crowd.",
   "active": true
+}, {
+  "id": "custom_s2_12_shumba_unbested",
+  "weekNumber": null,
+  "season": "Season 2",
+  "title": "Mukundi Shumba — The Unbested",
+  "flavorText": "Legend has it that when The Lion was born by the Zambezi River in 992 AD, he did not cry — he let out a roar that made the ground tremble. Standing 6'6 and 290 pounds of raw power, Shumba is probably the strongest man who has ever lived, and he bested 2,321 opponents during his lifetime without ever suffering defeat. But his kingdom fell, his people were conquered and enslaved, and the man who was never bested was forgotten by history. Now awoken millenniums later, he has a new mission: he will roar again, and this time the entire world will break.",
+  "productLine": "Base Game",
+  "expansionCode": "CUSTOM",
+  "requiredExpansions": [ "BASE_GAME" ],
+  "requiredWrestlerNames": [ "Mukundi Shumba" ],
+  "difficulty": "HARD",
+  "objective": "Win a gauntlet without a single loss — the streak that history forgot.",
+  "setupInstructions": "Set up a Gauntlet match playing as Mukundi Shumba. Each stage is one of the 2,321 — the streak is not a record to chase but a birthright to reclaim.",
+  "matchType": "Gauntlet",
+  "conditions": [ "Play as Mukundi Shumba through every gauntlet stage — one loss anywhere erases the streak, and the streak is everything.", "2,321 opponents were bested without defeat; match that composure — no stage may end by countout or disqualification in your favor, only by your own two hands." ],
+  "modifiers": [ ],
+  "achievementKey": "CHALLENGE_CUSTOM_S2_12",
+  "imageUrl": null,
+  "notes": "Slot 12 of Season 2, the proving ground (ATW-0ubw): pressure changes shape — not modifiers in one match but compounding stakes across a streak. The vindication: the roar returns, and he and his people are remembered forever.",
+  "active": true
 } ]
