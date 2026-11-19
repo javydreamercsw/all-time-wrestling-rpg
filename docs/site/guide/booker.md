@@ -210,6 +210,22 @@ Round robin tournaments score every match: a win earns 2 points, a draw 1, a los
 
 ---
 
+## Adjudicate Show
+
+Adjudicating a show: AI narration is generated for pending segments and the booker is warned about matches without a winner before confirming.
+
+![Adjudicate Show](/screenshots/show-adjudication-dialog.png)
+
+---
+
+## Adjudicate Show — player segments
+
+Segments involving player-controlled wrestlers are excluded by default; the booker can include them after reviewing the list.
+
+![Adjudicate Show — player segments](/screenshots/show-adjudication-dialog-player-segments.png)
+
+---
+
 ## Dashboard with News Ticker
 
 Latest headlines and rumors are visible directly on the booker dashboard.
@@ -239,5 +255,77 @@ Bring your matches to life with AI-generated or manual narration. The Story Dire
 View a complete history of all booked shows. Click on any show to view its detailed results, ratings, and match history.
 
 ![Show History](/screenshots/booker-show-history.png)
+
+---
+
+## Video Walkthroughs
+
+### Show Card Validation Walkthrough
+
+After the booker confirms, the segments are saved to the show. Each approved segment enters the adjudication pipeline — the match engine resolves outcomes, updates wrestler stats, and the AI generates narration ready for broadcast.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/booker-show-planning-card-validation-walkthrough.mp4" type="video/mp4">
+</video>
+
+---
+
+### Show Calendar Walkthrough
+
+Shows scheduled in future months appear here as soon as they're created in the Show List. Plan your entire PPV season at a glance — weekly shows, special events, and pay-per-view dates all land on the same calendar.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/show-calendar-walkthrough.mp4" type="video/mp4">
+</video>
+
+---
+
+### Season Awards Ceremony
+
+The Awards Ceremony section lists each award winner: Wrestler of the Year (most wins), Most Improved (highest fan growth), and Most Decorated (most title reigns). Winners automatically receive fan bonuses when the season ends.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/booker-season-awards-workflow.mp4" type="video/mp4">
+</video>
+
+---
+
+### Tournament Bracket Generator
+
+The tournament engine supports Single Elimination and Round Robin formats. Single Elimination generates one round at a time, perfect for big multi-week events. Round Robin pre-builds all match-ups so every entrant faces every other entrant before a winner is determined.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/booker-tournament-bracket-workflow.mp4" type="video/mp4">
+</video>
+
+---
+
+### Story Arc Scripting
+
+Back on the arc card, beats remain editable until they play out on a show. When a scripted segment completes, its beat is marked completed automatically — once every beat is done, the arc completes itself and the feud is over.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/booker-story-arc-workflow.mp4" type="video/mp4">
+</video>
+
+---
+
+### Tournament-Fed PLE Segments
+
+Once the final is decided, the next approval of a paired show books the winner showcase — the champion against the highest-seeded wrestler they eliminated. If the tournament can't supply participants at any point, the show falls back to AI-proposed entrants instead of failing.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/booker-tournament-fed-ple-workflow.mp4" type="video/mp4">
+</video>
+
+---
+
+### Tournament Creation Wizard
+
+With Auto seeding, a live match-up preview shows exactly the round-1 pairings Create will commit — top seed vs bottom seed — before anything is saved. Create generates the bracket-ready tournament and opens its detail view, where seeds can still be reordered or wrestlers swapped until Start.
+
+<video controls width="100%" style="border-radius:8px;margin-bottom:1rem">
+  <source src="https://javydreamercsw.github.io/all-time-wrestling-rpg/videos/booker-tournament-creation-wizard.mp4" type="video/mp4">
+</video>
 
 ---

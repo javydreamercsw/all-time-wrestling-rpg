@@ -52,6 +52,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import org.jspecify.annotations.Nullable;
@@ -132,7 +133,7 @@ public class FeudScriptBeat extends AbstractEntity<Long> {
 
   /** Titles at stake when this beat is a title match. EAGER: rendered on detached arc grids. */
   @ManyToMany(fetch = FetchType.EAGER)
-  @Setter
+  @Setter(AccessLevel.NONE)
   @JoinTable(
       name = "feud_script_beat_title",
       joinColumns = @JoinColumn(name = "beat_id"),

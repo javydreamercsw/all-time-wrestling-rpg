@@ -673,7 +673,7 @@ public class ChallengeListView extends VerticalLayout {
     if (printArea.getParent().isEmpty()) {
       add(printArea);
     }
-    PrintableCardSupport.print();
+    PrintableCardSupport.print(scope);
   }
 
   /**

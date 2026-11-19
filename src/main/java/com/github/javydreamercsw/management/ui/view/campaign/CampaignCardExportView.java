@@ -146,7 +146,9 @@ public class CampaignCardExportView extends VerticalLayout implements HasDynamic
   }
 
   private void print() {
-    PrintableCardSupport.print();
+    // The print-title text doubles as the suggested PDF filename: browsers derive the
+    // Save-as-PDF default from document.title, which print(String) swaps in.
+    PrintableCardSupport.print(printTitle.getText());
   }
 
   private void buildUi() {

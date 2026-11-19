@@ -34,6 +34,7 @@ import com.github.javydreamercsw.management.service.challenge.ChallengeCompletio
 import com.github.javydreamercsw.management.service.challenge.ChallengeService;
 import com.github.javydreamercsw.management.service.challenge.ChallengeUpdateService;
 import com.github.javydreamercsw.management.service.expansion.ExpansionService;
+import com.github.javydreamercsw.management.ui.component.PrintableCardSupport;
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -49,6 +50,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
 class ChallengeListViewTest extends AbstractViewTest {
 
@@ -496,5 +499,58 @@ class ChallengeListViewTest extends AbstractViewTest {
                 .anyMatch(
                     ch -> "campaign-card-print-area".equals(ch.getElement().getAttribute("id"))))
         .isFalse();
+  }
+
+  @Test
+  @DisplayName("single-challenge print suggests the challenge title as the PDF filename")
+  void printSelection_singleChallenge_suggestsTitleAsFilename() {
+    when(securityUtils.isAdmin()).thenReturn(true);
+    ChallengeDTO a =
+        ChallengeDTO.builder()
+            .id("w1")
+            .weekNumber(1)
+            .season("Season 1")
+            .title("First Challenge")
+            .expansionCode("EXTREME")
+            .build();
+    ChallengeListView view = buildView(List.of(a), List.of());
+
+    try (MockedStatic<PrintableCardSupport> mocked =
+        Mockito.mockStatic(PrintableCardSupport.class)) {
+      view.printSelection(List.of(a));
+
+      mocked.verify(() -> PrintableCardSupport.print("First Challenge"));
+    }
+  }
+
+  @Test
+  @DisplayName("batch print suggests the filter scope as the PDF filename")
+  void printSelection_batch_suggestsScopeAsFilename() {
+    when(securityUtils.isAdmin()).thenReturn(true);
+    ChallengeDTO a =
+        ChallengeDTO.builder()
+            .id("w1")
+            .weekNumber(1)
+            .season("Season 1")
+            .title("First Challenge")
+            .expansionCode("EXTREME")
+            .build();
+    ChallengeDTO b =
+        ChallengeDTO.builder()
+            .id("w2")
+            .weekNumber(1)
+            .season("Season 1")
+            .title("Second Challenge")
+            .expansionCode("EXTREME")
+            .build();
+    ChallengeListView view = buildView(List.of(a, b), List.of());
+
+    try (MockedStatic<PrintableCardSupport> mocked =
+        Mockito.mockStatic(PrintableCardSupport.class)) {
+      view.printSelection(List.of(a, b));
+
+      // Batch prints use the shared scope heading as the suggested filename.
+      mocked.verify(() -> PrintableCardSupport.print("Weekly Challenges"));
+    }
   }
 }
