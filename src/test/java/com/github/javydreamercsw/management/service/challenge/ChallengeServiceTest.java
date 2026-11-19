@@ -483,4 +483,39 @@ class ChallengeServiceTest {
       assertEquals("CHALLENGE_CUSTOM_S2_%02d".formatted(slot), challenge.getAchievementKey());
     }
   }
+
+  /**
+   * The finale ships the Rise and Fall of Oda Tsurugi as five acts (ATW-u0x5) closing Season 2: the
+   * Yakuza years, the fire and redemption, the Okada obsession, the snap on the concrete slab, and
+   * the cyborg's banned-for-life rampage — the season's only LEGENDARY at its climax.
+   */
+  @Test
+  void seasonTwoFinaleShipsAllFiveOdaActs() {
+    List<Difficulty> expected =
+        List.of(
+            Difficulty.MEDIUM,
+            Difficulty.MEDIUM,
+            Difficulty.HARD,
+            Difficulty.HARD,
+            Difficulty.LEGENDARY);
+    List<Difficulty> actual =
+        IntStream.rangeClosed(18, 22)
+            .mapToObj(
+                slot ->
+                    service
+                        .getChallenge("custom_s2_%02d_oda_act_%d".formatted(slot, slot - 17))
+                        .orElseThrow())
+            .map(ChallengeDTO::getDifficulty)
+            .toList();
+    assertEquals(expected, actual);
+
+    for (int slot = 18; slot < 22 + 1; slot++) {
+      final int act = slot - 17;
+      ChallengeDTO challenge =
+          service.getChallenge("custom_s2_%02d_oda_act_%d".formatted(slot, act)).orElseThrow();
+      assertEquals("Season 2", challenge.getSeason());
+      assertEquals("Oda Tsurugi", challenge.getRequiredWrestlerNames().getFirst());
+      assertEquals("CHALLENGE_CUSTOM_S2_%02d".formatted(slot), challenge.getAchievementKey());
+    }
+  }
 }
