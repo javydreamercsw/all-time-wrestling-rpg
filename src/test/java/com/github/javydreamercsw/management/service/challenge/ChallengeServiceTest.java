@@ -38,6 +38,7 @@ import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
@@ -45,10 +46,20 @@ class ChallengeServiceTest {
 
   private ChallengeService service;
 
+  /**
+   * The service's filesystem tier reads the platform content dir under {@code user.home} and
+   * overrides classpath content by ID — on a developer machine that has used the app's
+   * challenge-download feature, downloaded copies would silently shadow the shipped files these
+   * tests exist to pin. Redirecting {@code user.home} to a scratch dir makes the suite hermetic: it
+   * always tests exactly the shipped content.
+   */
   @BeforeEach
-  void setUp() {
+  void setUp(@TempDir Path tempHome) throws IOException {
+    Path originalHome = Path.of(System.getProperty("user.home"));
+    System.setProperty("user.home", tempHome.toString());
     service = new ChallengeService(new ObjectMapper(), new PathMatchingResourcePatternResolver());
     service.init();
+    System.setProperty("user.home", originalHome.toString());
   }
 
   @Test
@@ -332,8 +343,8 @@ class ChallengeServiceTest {
   // ── Season 2: custom challenge season (slots 1-22) ─────────────────────────
 
   /**
-   * The on-ramp opens the season with two EASY slots: the inverted survive-the-Beast objective
-   * (ATW-yuem) and Cardona's King of the Indies opener (ATW-byhj part 1).
+   * The on-ramp opens the season with two EASY slots: the inverted survive-the-Beast objective and
+   * Cardona's King of the Indies opener.
    */
   @Test
   void seasonTwoOnRampShipsSurvivalAndIndiesChallenges() {
@@ -351,9 +362,8 @@ class ChallengeServiceTest {
   }
 
   /**
-   * Rising action raises every slot to MEDIUM: Raven's Flock interference wall (ATW-wfux),
-   * Pillman's random-modifier variance (ATW-q46r), and Slaughter's crowd-heat debut (ATW-xl1k act
-   * 1).
+   * Rising action raises every slot to MEDIUM: Raven's Flock interference wall, Pillman's
+   * random-modifier variance, and Slaughter's crowd-heat debut.
    */
   @Test
   void seasonTwoRisingActionShipsFlockCannonAndHero() {
@@ -377,9 +387,8 @@ class ChallengeServiceTest {
   }
 
   /**
-   * The grind opens at HARD: Cardona's deathmatch crown defense (ATW-byhj part 2), the tag-format
-   * Bulldogs reunion (ATW-usk9 part 1), and Slaughter's traitor turn with the crowd against him
-   * (ATW-xl1k act 2).
+   * The grind opens at HARD: Cardona's deathmatch crown defense, the tag-format Bulldogs reunion,
+   * and Slaughter's traitor turn with the crowd against him .
    */
   @Test
   void seasonTwoGrindOpensWithDeathmatchBulldogsAndTraitor() {
@@ -407,9 +416,8 @@ class ChallengeServiceTest {
   }
 
   /**
-   * The grind closes at HARD across all three slots: Davey Boy's elusive world title (ATW-usk9 part
-   * 2), Cardona's multi-title gauntlet (ATW-byhj part 3), and Slaughter's redemption finale
-   * (ATW-xl1k act 3).
+   * The grind closes at HARD across all three slots: Davey Boy's elusive world title, Cardona's
+   * multi-title gauntlet, and Slaughter's redemption finale .
    */
   @Test
   void seasonTwoGrindClosesWithTitleGauntletAndRedemption() {
@@ -435,7 +443,7 @@ class ChallengeServiceTest {
 
   /**
    * The proving ground changes the pressure's shape: not per-match modifiers but across-match
-   * compounding stakes — Shumba's gauntlet streak where one loss erases everything (ATW-0ubw).
+   * compounding stakes — Shumba's gauntlet streak where one loss erases everything.
    */
   @Test
   void seasonTwoProvingGroundShipsTheUnbestedStreak() {
@@ -447,9 +455,9 @@ class ChallengeServiceTest {
   }
 
   /**
-   * The myth movement ships the Epic of Gilgamesh as five tablets (ATW-ecjw): tyrant of Uruk,
-   * Enkidu's challenge, the redemption, the quest, and the Second Coming — escalating MEDIUM to
-   * HARD across the arc, the longest ramp before the finale.
+   * The myth movement ships the Epic of Gilgamesh as five tablets: tyrant of Uruk, Enkidu's
+   * challenge, the redemption, the quest, and the Second Coming — escalating MEDIUM to HARD across
+   * the arc, the longest ramp before the finale.
    */
   @Test
   void seasonTwoGilgameshShipsAllFiveTablets() {
@@ -485,9 +493,9 @@ class ChallengeServiceTest {
   }
 
   /**
-   * The finale ships the Rise and Fall of Oda Tsurugi as five acts (ATW-u0x5) closing Season 2: the
-   * Yakuza years, the fire and redemption, the Okada obsession, the snap on the concrete slab, and
-   * the cyborg's banned-for-life rampage — the season's only LEGENDARY at its climax.
+   * The finale ships the Rise and Fall of Oda Tsurugi as five acts closing Season 2: the Yakuza
+   * years, the fire and redemption, the Okada obsession, the snap on the concrete slab, and the
+   * cyborg's banned-for-life rampage — the season's only LEGENDARY at its climax.
    */
   @Test
   void seasonTwoFinaleShipsAllFiveOdaActs() {
@@ -597,6 +605,37 @@ class ChallengeServiceTest {
                   "CHALLENGE_CUSTOM_S2_%02d".formatted(slotNumber),
                   c.getAchievementKey(),
                   "Achievement key mismatch for " + c.getId());
+            });
+  }
+
+  /**
+   * Every shipped challenge's matchType must resolve to a shipped SegmentRule name — the detail
+   * dialog links to the in-app match-info page by exact name match, so a renamed rule would
+   * otherwise kill the link silently while per-arc tests (which hard-code the expected strings)
+   * stay green.
+   */
+  @Test
+  void everyShippedChallengeMatchTypeResolvesToAShippedSegmentRule() throws Exception {
+    Set<String> shippedRuleNames = new HashSet<>();
+    try (InputStream is = getClass().getResourceAsStream("/segment_rules.json")) {
+      new ObjectMapper()
+          .readValue(is, new TypeReference<List<Map<String, Object>>>() {}).stream()
+              .map(r -> (String) r.get("name"))
+              .forEach(shippedRuleNames::add);
+    }
+    service
+        .getAllChallenges()
+        .forEach(
+            challenge -> {
+              if (challenge.getMatchType() == null) {
+                return; // null is legal: standard matches with no special rule
+              }
+              assertTrue(
+                  shippedRuleNames.contains(challenge.getMatchType()),
+                  challenge.getId()
+                      + " matchType '"
+                      + challenge.getMatchType()
+                      + "' does not match any shipped SegmentRule name");
             });
   }
 }

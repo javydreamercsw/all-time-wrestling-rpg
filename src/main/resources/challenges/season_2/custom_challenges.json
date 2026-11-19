@@ -36,7 +36,7 @@
   "modifiers": [ ],
   "achievementKey": "CHALLENGE_CUSTOM_S2_02",
   "imageUrl": null,
-  "notes": "Slot 2 of Season 2 and part one of three of the Belt Collector arc (ATW-byhj). Part two goes hardcore, part three goes gauntlet.",
+  "notes": "Slot 2 of Season 2 and part one of three of the Belt Collector arc. Part two goes hardcore, part three goes gauntlet.",
   "active": true
 }, {
   "id": "custom_s2_03_raven_flock",
@@ -96,7 +96,7 @@
   "modifiers": [ ],
   "achievementKey": "CHALLENGE_CUSTOM_S2_05",
   "imageUrl": null,
-  "notes": "Slot 5 of Season 2 and act 1 of the Slaughter rise-fall-redemption arc (ATW-xl1k): the hero the crowd loves, before act 2 turns them.",
+  "notes": "Slot 5 of Season 2 and act 1 of the Slaughter rise-fall-redemption arc: the hero the crowd loves, before act 2 turns them.",
   "active": true
 }, {
   "id": "custom_s2_06_belt_collector_deathmatch",
@@ -116,7 +116,7 @@
   "modifiers": [ ],
   "achievementKey": "CHALLENGE_CUSTOM_S2_06",
   "imageUrl": null,
-  "notes": "Slot 6 of Season 2 and part two of three of the Belt Collector arc (ATW-byhj): the hardcore middle chapter.",
+  "notes": "Slot 6 of Season 2 and part two of three of the Belt Collector arc: the hardcore middle chapter.",
   "active": true
 }, {
   "id": "custom_s2_07_bulldogs_reunion",
@@ -136,7 +136,7 @@
   "modifiers": [ ],
   "achievementKey": "CHALLENGE_CUSTOM_S2_07",
   "imageUrl": null,
-  "notes": "Slot 7 of Season 2 and part one of the Bulldogs arc (ATW-usk9): the tag-format debut, deliberately below the HARD tier.",
+  "notes": "Slot 7 of Season 2 and part one of the Bulldogs arc: the tag-format debut, deliberately below the HARD tier.",
   "active": true
 }, {
   "id": "custom_s2_08_slaughter_traitor",
@@ -156,7 +156,7 @@
   "modifiers": [ "Hostile territory: the first time your opponent's health falls below half, they gain +2 [[momentum]] — the crowd's energy feeds them instead." ],
   "achievementKey": "CHALLENGE_CUSTOM_S2_08",
   "imageUrl": null,
-  "notes": "Slot 8 of Season 2 and act 2 of the Slaughter arc (ATW-xl1k): act 1's crowd-heat lesson inverted — win while they turn.",
+  "notes": "Slot 8 of Season 2 and act 2 of the Slaughter arc: act 1's crowd-heat lesson inverted — win while they turn.",
   "active": true
 }, {
   "id": "custom_s2_09_bulldogs_world_title",
@@ -176,7 +176,7 @@
   "modifiers": [ ],
   "achievementKey": "CHALLENGE_CUSTOM_S2_09",
   "imageUrl": null,
-  "notes": "Slot 9 of Season 2 and part two of the Bulldogs arc (ATW-usk9): the tag arc pays off its own lore.",
+  "notes": "Slot 9 of Season 2 and part two of the Bulldogs arc: the tag arc pays off its own lore.",
   "active": true
 }, {
   "id": "custom_s2_10_belt_collector_one_belt",
@@ -196,7 +196,7 @@
   "modifiers": [ ],
   "achievementKey": "CHALLENGE_CUSTOM_S2_10",
   "imageUrl": null,
-  "notes": "Slot 10 of Season 2 and the Belt Collector arc finale (ATW-byhj): the 8-title lore as a meta-objective.",
+  "notes": "Slot 10 of Season 2 and the Belt Collector arc finale: the 8-title lore as a meta-objective.",
   "active": true
 }, {
   "id": "custom_s2_11_slaughter_redemption",
@@ -216,7 +216,7 @@
   "modifiers": [ "Winning them back: each successful strike you land after your health falls below half grants +1 [[momentum]] — the crowd rallies behind a comeback, and the comeback fuels the rally." ],
   "achievementKey": "CHALLENGE_CUSTOM_S2_11",
   "imageUrl": null,
-  "notes": "Slot 11 of Season 2 and act 3 of the Slaughter arc (ATW-xl1k): the redemption finale inverting act 2's hostile crowd.",
+  "notes": "Slot 11 of Season 2 and act 3 of the Slaughter arc: the redemption finale inverting act 2's hostile crowd.",
   "active": true
 }, {
   "id": "custom_s2_12_shumba_unbested",
@@ -236,7 +236,7 @@
   "modifiers": [ ],
   "achievementKey": "CHALLENGE_CUSTOM_S2_12",
   "imageUrl": null,
-  "notes": "Slot 12 of Season 2, the proving ground (ATW-0ubw): pressure changes shape — not modifiers in one match but compounding stakes across a streak. The vindication: the roar returns, and he and his people are remembered forever.",
+  "notes": "Slot 12 of Season 2, the proving ground: pressure changes shape — not modifiers in one match but compounding stakes across a streak. The vindication: the roar returns, and he and his people are remembered forever.",
   "active": true
 }, {
   "id": "custom_s2_13_gilgamesh_tablet_1",
@@ -256,7 +256,7 @@
   "modifiers": [ ],
   "achievementKey": "CHALLENGE_CUSTOM_S2_13",
   "imageUrl": null,
-  "notes": "Slot 13 of Season 2, Tablet I of the myth movement (ATW-ecjw). The arc: tyrant -> challenge -> redemption -> quest -> second coming, ending as Ruler of Uruk, Ruler of All Time.",
+  "notes": "Slot 13 of Season 2, Tablet I of the myth movement. The arc: tyrant -> challenge -> redemption -> quest -> second coming, ending as Ruler of Uruk, Ruler of All Time.",
   "active": true
 }, {
   "id": "custom_s2_14_gilgamesh_tablet_2",
@@ -276,7 +276,7 @@
   "modifiers": [ ],
   "achievementKey": "CHALLENGE_CUSTOM_S2_14",
   "imageUrl": null,
-  "notes": "Slot 14 of Season 2, Tablet II of the myth movement (ATW-ecjw): the match where the tyrant finally met his equal.",
+  "notes": "Slot 14 of Season 2, Tablet II of the myth movement: the match where the tyrant finally met his equal.",
   "active": true
 }, {
   "id": "custom_s2_15_gilgamesh_tablet_3",
@@ -296,7 +296,7 @@
   "modifiers": [ ],
   "achievementKey": "CHALLENGE_CUSTOM_S2_15",
   "imageUrl": null,
-  "notes": "Slot 15 of Season 2, Tablet III of the myth movement (ATW-ecjw): the friendship's payoff — strength in service of justice.",
+  "notes": "Slot 15 of Season 2, Tablet III of the myth movement: the friendship's payoff — strength in service of justice.",
   "active": true
 }, {
   "id": "custom_s2_16_gilgamesh_tablet_4",
@@ -316,7 +316,7 @@
   "modifiers": [ ],
   "achievementKey": "CHALLENGE_CUSTOM_S2_16",
   "imageUrl": null,
-  "notes": "Slot 16 of Season 2, Tablet IV of the myth movement (ATW-ecjw): endurance as the crucible of the redeemed king.",
+  "notes": "Slot 16 of Season 2, Tablet IV of the myth movement: endurance as the crucible of the redeemed king.",
   "active": true
 }, {
   "id": "custom_s2_17_gilgamesh_tablet_5",
@@ -336,7 +336,7 @@
   "modifiers": [ ],
   "achievementKey": "CHALLENGE_CUSTOM_S2_17",
   "imageUrl": null,
-  "notes": "Slot 17 of Season 2, Tablet V and the myth movement finale (ATW-ecjw): Ruler of Uruk, Ruler of All Time.",
+  "notes": "Slot 17 of Season 2, Tablet V and the myth movement finale: Ruler of Uruk, Ruler of All Time.",
   "active": true
 }, {
   "id": "custom_s2_18_oda_act_1",
@@ -356,7 +356,7 @@
   "modifiers": [ ],
   "achievementKey": "CHALLENGE_CUSTOM_S2_18",
   "imageUrl": null,
-  "notes": "Slot 18 of Season 2, Act I of the season finale arc (ATW-u0x5). Five acts close Season 2: Yakuza years -> the fire -> the obsession -> the snap -> the cyborg.",
+  "notes": "Slot 18 of Season 2, Act I of the season finale arc. Five acts close Season 2: Yakuza years -> the fire -> the obsession -> the snap -> the cyborg.",
   "active": true
 }, {
   "id": "custom_s2_19_oda_act_2",
@@ -376,7 +376,7 @@
   "modifiers": [ ],
   "achievementKey": "CHALLENGE_CUSTOM_S2_19",
   "imageUrl": null,
-  "notes": "Slot 19 of Season 2, Act II of the finale arc (ATW-u0x5): the redemption act between the street and the obsession.",
+  "notes": "Slot 19 of Season 2, Act II of the finale arc: the redemption act between the street and the obsession.",
   "active": true
 }, {
   "id": "custom_s2_20_oda_act_3",
@@ -396,7 +396,7 @@
   "modifiers": [ ],
   "achievementKey": "CHALLENGE_CUSTOM_S2_20",
   "imageUrl": null,
-  "notes": "Slot 20 of Season 2, Act III of the finale arc (ATW-u0x5): the obsession that broke him begins here.",
+  "notes": "Slot 20 of Season 2, Act III of the finale arc: the obsession that broke him begins here.",
   "active": true
 }, {
   "id": "custom_s2_21_oda_act_4",
@@ -416,7 +416,7 @@
   "modifiers": [ ],
   "achievementKey": "CHALLENGE_CUSTOM_S2_21",
   "imageUrl": null,
-  "notes": "Slot 21 of Season 2, Act IV of the finale arc (ATW-u0x5): the most hated night in wrestling, and the point of no return.",
+  "notes": "Slot 21 of Season 2, Act IV of the finale arc: the most hated night in wrestling, and the point of no return.",
   "active": true
 }, {
   "id": "custom_s2_22_oda_act_5",
@@ -436,6 +436,6 @@
   "modifiers": [ "Cyborg body: Oda never loses [[stamina]] from suplexes — banned technology does not tire.", "What is a god to a non-believer: once per match, when Oda would be defeated, he immediately makes one free attack instead — the god ignores death once.", "Immense strength, speed, resilience: Oda gains +1 extra [[momentum]] from every successful strike — the machine learns with every blow." ],
   "achievementKey": "CHALLENGE_CUSTOM_S2_22",
   "imageUrl": null,
-  "notes": "Slot 22 of Season 2, Act V and the season climax (ATW-u0x5): the only LEGENDARY of the year — banned technology, banned for life.",
+  "notes": "Slot 22 of Season 2, Act V and the season climax: the only LEGENDARY of the year — banned technology, banned for life.",
   "active": true
 } ]
