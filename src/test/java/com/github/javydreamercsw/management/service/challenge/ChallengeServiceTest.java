@@ -349,4 +349,30 @@ class ChallengeServiceTest {
     assertEquals(Difficulty.EASY, cardona.getDifficulty());
     assertEquals("CHALLENGE_CUSTOM_S2_02", cardona.getAchievementKey());
   }
+
+  /**
+   * Rising action raises every slot to MEDIUM: Raven's Flock interference wall (ATW-wfux),
+   * Pillman's random-modifier variance (ATW-q46r), and Slaughter's crowd-heat debut (ATW-xl1k act
+   * 1).
+   */
+  @Test
+  void seasonTwoRisingActionShipsFlockCannonAndHero() {
+    ChallengeDTO raven = service.getChallenge("custom_s2_03_raven_flock").orElseThrow();
+    assertEquals(Difficulty.MEDIUM, raven.getDifficulty());
+    assertEquals("No DQ", raven.getMatchType());
+    assertEquals("Raven", raven.getRequiredWrestlerNames().getFirst());
+    assertEquals("CHALLENGE_CUSTOM_S2_03", raven.getAchievementKey());
+
+    ChallengeDTO pillman = service.getChallenge("custom_s2_04_loose_cannon").orElseThrow();
+    assertEquals(Difficulty.MEDIUM, pillman.getDifficulty());
+    assertEquals("No DQ", pillman.getMatchType());
+    assertEquals("Brian Pillman", pillman.getRequiredWrestlerNames().getFirst());
+    assertEquals("CHALLENGE_CUSTOM_S2_04", pillman.getAchievementKey());
+
+    ChallengeDTO slaughter = service.getChallenge("custom_s2_05_slaughter_hero").orElseThrow();
+    assertEquals(Difficulty.MEDIUM, slaughter.getDifficulty());
+    assertEquals("Submission", slaughter.getMatchType());
+    assertEquals("Sgt. Slaughter", slaughter.getRequiredWrestlerNames().getFirst());
+    assertEquals("CHALLENGE_CUSTOM_S2_05", slaughter.getAchievementKey());
+  }
 }
