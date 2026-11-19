@@ -1072,5 +1072,19 @@
     "description": "Round robin tournaments score every match: a win earns 2 points, a draw 1, a loss 0 — nobody is eliminated, everyone plays everyone. The live standings table ranks entrants by points, breaking ties head-to-head (results among the tied group) and then by seed. When the final round completes, the points leader is crowned the tournament winner automatically.",
     "imagePath": "screenshots/booker-tournament-round-robin-standings.png",
     "order": 0
+  }, {
+    "id": "booker-show-adjudication-dialog",
+    "category": "Booker",
+    "title": "Adjudicate Show",
+    "description": "Adjudicating a show: AI narration is generated for pending segments and the booker is warned about matches without a winner before confirming.",
+    "imagePath": "screenshots/show-adjudication-dialog.png",
+    "order": 0
+  }, {
+    "id": "booker-show-adjudication-dialog-player-segments",
+    "category": "Booker",
+    "title": "Adjudicate Show — player segments",
+    "description": "Segments involving player-controlled wrestlers are excluded by default; the booker can include them after reviewing the list.",
+    "imagePath": "screenshots/show-adjudication-dialog-player-segments.png",
+    "order": 0
   } ]
 }
