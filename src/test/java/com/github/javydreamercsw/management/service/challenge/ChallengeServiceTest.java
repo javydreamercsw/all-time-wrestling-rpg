@@ -445,4 +445,42 @@ class ChallengeServiceTest {
     assertEquals("Mukundi Shumba", shumba.getRequiredWrestlerNames().getFirst());
     assertEquals("CHALLENGE_CUSTOM_S2_12", shumba.getAchievementKey());
   }
+
+  /**
+   * The myth movement ships the Epic of Gilgamesh as five tablets (ATW-ecjw): tyrant of Uruk,
+   * Enkidu's challenge, the redemption, the quest, and the Second Coming — escalating MEDIUM to
+   * HARD across the arc, the longest ramp before the finale.
+   */
+  @Test
+  void seasonTwoGilgameshShipsAllFiveTablets() {
+    List<Difficulty> expected =
+        List.of(
+            Difficulty.MEDIUM,
+            Difficulty.MEDIUM,
+            Difficulty.HARD,
+            Difficulty.HARD,
+            Difficulty.HARD);
+    List<Difficulty> actual =
+        IntStream.rangeClosed(13, 17)
+            .mapToObj(
+                slot ->
+                    service
+                        .getChallenge(
+                            "custom_s2_%02d_gilgamesh_tablet_%d".formatted(slot, slot - 12))
+                        .orElseThrow())
+            .map(ChallengeDTO::getDifficulty)
+            .toList();
+    assertEquals(expected, actual);
+
+    for (int slot = 13; slot < 17 + 1; slot++) {
+      final int tablet = slot - 12;
+      ChallengeDTO challenge =
+          service
+              .getChallenge("custom_s2_%02d_gilgamesh_tablet_%d".formatted(slot, tablet))
+              .orElseThrow();
+      assertEquals("Season 2", challenge.getSeason());
+      assertEquals("Gilgamesh", challenge.getRequiredWrestlerNames().getFirst());
+      assertEquals("CHALLENGE_CUSTOM_S2_%02d".formatted(slot), challenge.getAchievementKey());
+    }
+  }
 }
