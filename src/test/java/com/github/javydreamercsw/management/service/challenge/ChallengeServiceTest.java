@@ -518,4 +518,85 @@ class ChallengeServiceTest {
       assertEquals("CHALLENGE_CUSTOM_S2_%02d".formatted(slot), challenge.getAchievementKey());
     }
   }
+
+  /**
+   * The whole season ships as one escalating ladder — EASY on-ramp through MEDIUM rising action,
+   * the HARD grind and proving ground, the myth movement's ramp, and the finale's LEGENDARY climax.
+   * Every slot must be present in canonical order.
+   */
+  @Test
+  void seasonTwoShipsTheCompleteTwentyTwoSlotLadder() {
+    List<String> seasonTwoIds =
+        List.of(
+            "custom_s2_01_beast_survive",
+            "custom_s2_02_belt_collector_indies",
+            "custom_s2_03_raven_flock",
+            "custom_s2_04_loose_cannon",
+            "custom_s2_05_slaughter_hero",
+            "custom_s2_06_belt_collector_deathmatch",
+            "custom_s2_07_bulldogs_reunion",
+            "custom_s2_08_slaughter_traitor",
+            "custom_s2_09_bulldogs_world_title",
+            "custom_s2_10_belt_collector_one_belt",
+            "custom_s2_11_slaughter_redemption",
+            "custom_s2_12_shumba_unbested",
+            "custom_s2_13_gilgamesh_tablet_1",
+            "custom_s2_14_gilgamesh_tablet_2",
+            "custom_s2_15_gilgamesh_tablet_3",
+            "custom_s2_16_gilgamesh_tablet_4",
+            "custom_s2_17_gilgamesh_tablet_5",
+            "custom_s2_18_oda_act_1",
+            "custom_s2_19_oda_act_2",
+            "custom_s2_20_oda_act_3",
+            "custom_s2_21_oda_act_4",
+            "custom_s2_22_oda_act_5");
+    List<Difficulty> expected =
+        List.of(
+            Difficulty.EASY,
+            Difficulty.EASY, // on-ramp
+            Difficulty.MEDIUM,
+            Difficulty.MEDIUM,
+            Difficulty.MEDIUM,
+            Difficulty.MEDIUM,
+            Difficulty.MEDIUM, // rising action
+            Difficulty.HARD,
+            Difficulty.HARD,
+            Difficulty.HARD,
+            Difficulty.HARD, // the grind
+            Difficulty.HARD, // proving ground
+            Difficulty.MEDIUM,
+            Difficulty.MEDIUM,
+            Difficulty.HARD,
+            Difficulty.HARD,
+            Difficulty.HARD, // the myth
+            Difficulty.MEDIUM,
+            Difficulty.MEDIUM,
+            Difficulty.HARD,
+            Difficulty.HARD,
+            Difficulty.LEGENDARY); // finale
+    List<Difficulty> actual =
+        seasonTwoIds.stream()
+            .map(id -> service.getChallenge(id).orElseThrow())
+            .map(ChallengeDTO::getDifficulty)
+            .toList();
+    assertEquals(expected, actual);
+  }
+
+  /** Every Season 2 challenge's achievement key is its slot number — no gaps, no collisions. */
+  @Test
+  void seasonTwoAchievementKeysCoverEverySlot() {
+    service.getAllChallenges().stream()
+        .filter(c -> c.getId().startsWith("custom_s2_"))
+        .forEach(
+            c -> {
+              java.util.regex.Matcher slot =
+                  java.util.regex.Pattern.compile("^custom_s2_(\\d{2})_").matcher(c.getId());
+              assertTrue(slot.find(), "Season 2 ID lacks slot prefix: " + c.getId());
+              int slotNumber = Integer.parseInt(slot.group(1));
+              assertEquals(
+                  "CHALLENGE_CUSTOM_S2_%02d".formatted(slotNumber),
+                  c.getAchievementKey(),
+                  "Achievement key mismatch for " + c.getId());
+            });
+  }
 }
