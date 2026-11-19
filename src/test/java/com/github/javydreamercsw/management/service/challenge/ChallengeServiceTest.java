@@ -35,6 +35,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -597,8 +599,8 @@ class ChallengeServiceTest {
         .filter(c -> c.getId().startsWith("custom_s2_"))
         .forEach(
             c -> {
-              java.util.regex.Matcher slot =
-                  java.util.regex.Pattern.compile("^custom_s2_(\\d{2})_").matcher(c.getId());
+              Matcher slot =
+                  Pattern.compile("^custom_s2_(\\d{2})_").matcher(c.getId());
               assertTrue(slot.find(), "Season 2 ID lacks slot prefix: " + c.getId());
               int slotNumber = Integer.parseInt(slot.group(1));
               assertEquals(
