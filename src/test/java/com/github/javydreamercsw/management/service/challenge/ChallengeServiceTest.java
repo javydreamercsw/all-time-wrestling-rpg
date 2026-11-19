@@ -328,4 +328,25 @@ class ChallengeServiceTest {
                     "missing CHALLENGE_CUSTOM_S2_%02d".formatted(i)));
     assertTrue(keys.contains("CHALLENGE_SEASON_2_COMPLETE"));
   }
+
+  // ── Season 2: custom challenge season (slots 1-22) ─────────────────────────
+
+  /**
+   * The on-ramp opens the season with two EASY slots: the inverted survive-the-Beast objective
+   * (ATW-yuem) and Cardona's King of the Indies opener (ATW-byhj part 1).
+   */
+  @Test
+  void seasonTwoOnRampShipsSurvivalAndIndiesChallenges() {
+    ChallengeDTO beast = service.getChallenge("custom_s2_01_beast_survive").orElseThrow();
+    assertEquals("Season 2", beast.getSeason());
+    assertEquals("CUSTOM", beast.getExpansionCode());
+    assertEquals(Difficulty.EASY, beast.getDifficulty());
+    assertEquals("Last Man Standing", beast.getMatchType());
+    assertEquals("The Beast", beast.getRequiredWrestlerNames().getFirst());
+    assertEquals("CHALLENGE_CUSTOM_S2_01", beast.getAchievementKey());
+
+    ChallengeDTO cardona = service.getChallenge("custom_s2_02_belt_collector_indies").orElseThrow();
+    assertEquals(Difficulty.EASY, cardona.getDifficulty());
+    assertEquals("CHALLENGE_CUSTOM_S2_02", cardona.getAchievementKey());
+  }
 }
