@@ -118,13 +118,13 @@ class NPCSegmentResolutionServiceTest extends ManagementIntegrationTest {
 
     // Create segment rules for testing
     segmentRuleService.createOrUpdateRule(
-        "Steel Cage Match", "Steel cage segment with no escape", false, false, BumpAddition.NONE);
+        "Steel Cage Match", "Steel cage segment with no escape", 0, false, BumpAddition.NONE);
     segmentRuleService.createOrUpdateRule(
-        "Test Match", "Generic Test Match for various scenarios", false, false, BumpAddition.NONE);
+        "Test Match", "Generic Test Match for various scenarios", 0, false, BumpAddition.NONE);
     segmentRuleService.createOrUpdateRule(
-        "Triple Threat Match", "Triple Threat Match", false, false, BumpAddition.NONE);
+        "Triple Threat Match", "Triple Threat Match", 0, false, BumpAddition.NONE);
     segmentRuleService.createOrUpdateRule(
-        "Injury Test", "Injury Test Match", false, false, BumpAddition.NONE);
+        "Injury Test", "Injury Test Match", 0, false, BumpAddition.NONE);
 
     // Create test show
     ShowType showType = showTypeRepository.findByName("Weekly").orElseThrow();

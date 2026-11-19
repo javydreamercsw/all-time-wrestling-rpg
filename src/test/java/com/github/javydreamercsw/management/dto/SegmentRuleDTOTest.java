@@ -33,7 +33,7 @@ class SegmentRuleDTOTest {
         {
           "name": "Cage",
           "description": "Steel Cage Match",
-          "requiresHighHeat": true,
+          "intensityRating": 60,
           "noDq": true,
           "bumpAddition": "ALL",
           "expansion_code": "BASE_GAME",
@@ -54,7 +54,7 @@ class SegmentRuleDTOTest {
     SegmentRuleDTO dto = mapper.readValue(json, SegmentRuleDTO.class);
 
     assertThat(dto.getName()).isEqualTo("Cage");
-    assertThat(dto.isRequiresHighHeat()).isTrue();
+    assertThat(dto.getIntensityRating()).isEqualTo(60);
     assertThat(dto.getBumpAddition()).isEqualTo(BumpAddition.ALL);
     assertThat(dto.getGuide()).isNotNull();
     assertThat(dto.getGuide().solo()).isNotNull();
@@ -72,7 +72,7 @@ class SegmentRuleDTOTest {
         {
           "name": "Normal",
           "description": "Standard match",
-          "requiresHighHeat": false,
+          "intensityRating": 0,
           "noDq": false,
           "bumpAddition": "NONE"
         }
@@ -91,7 +91,7 @@ class SegmentRuleDTOTest {
         {
           "name": "Extreme",
           "description": "Extreme rules",
-          "requiresHighHeat": true,
+          "intensityRating": 60,
           "noDq": true,
           "bumpAddition": "ALL",
           "guide": {

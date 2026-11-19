@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.management.domain.campaign.Difficulty;
 import com.github.javydreamercsw.management.dto.challenge.ChallengeDTO;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -34,6 +35,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.Resource;
@@ -108,15 +110,23 @@ class ChallengeServiceTest {
     assertTrue(weeks.contains(3));
   }
 
+  /**
+   * Community challenges carry no scheduled week. The Deadly Combat arc is the one exception — it
+   * ships as custom-classified Season 1 weekly content, so exactly those entries carry week numbers
+   * 7 through 11.
+   */
   @Test
-  void customChallengesHaveNullWeekNumber() {
+  void customWeekNumbersAppearOnlyOnTheDeadlyCombatArc() {
     service
         .getCustomChallenges()
         .forEach(
             c ->
-                assertFalse(
+                assertEquals(
+                    c.getId().contains("deadly_combat"),
                     c.getWeekNumber() != null,
-                    "Custom challenge should have null weekNumber: " + c.getId()));
+                    "Custom challenges must be weekless unless they belong to the Deadly Combat"
+                        + " arc: "
+                        + c.getId()));
   }
 
   @Test
@@ -143,6 +153,100 @@ class ChallengeServiceTest {
     ChallengeDTO c3 = service.getChallenge("week_02_broken_neck").orElseThrow();
     assertFalse(c3.getModifiers().isEmpty());
     assertTrue(c3.getNotes() != null && !c3.getNotes().isBlank());
+  }
+
+  // ── Deadly Combat: OMZ's covert-tournament arc (weeks 7-11) ────────────────
+
+  /**
+   * OMZ's biography names the covert Siberian prison tournament "Deadly Combat" that he won five
+   * consecutive years. The arc ships one challenge per tournament year as custom-classified Season
+   * 1 weekly content, so all five must be present with ascending week numbers 7 through 11.
+   */
+  @Test
+  void deadlyCombatArcShipsAllFiveTournamentYears() {
+    for (int week = 7; week < 11 + 1; week++) {
+      final int weekNum = week;
+      final int year = week - 6;
+      ChallengeDTO challenge =
+          service
+              .getChallenge("custom_s1_%02d_deadly_combat_year_%d".formatted(week + 2, year))
+              .orElseThrow(
+                  () ->
+                      new AssertionError(
+                          "Deadly Combat year " + year + " (week " + weekNum + ") is missing"));
+      assertEquals("Season 1", challenge.getSeason());
+      assertEquals(week, challenge.getWeekNumber());
+      assertEquals("OMZ", challenge.getRequiredWrestlerNames().getFirst());
+    }
+  }
+
+  /**
+   * The arc escalates through the tournament years: MEDIUM Year One, then HARD from Year Two on —
+   * the finale card is HARD with the LEGENDARY tier expressed in its rules text (the Warden's
+   * cruelty modifiers).
+   */
+  @Test
+  void deadlyCombatDifficultyEscalatesAcrossTheArc() {
+    List<Difficulty> expected =
+        List.of(
+            Difficulty.MEDIUM, Difficulty.HARD, Difficulty.HARD, Difficulty.HARD, Difficulty.HARD);
+    List<Difficulty> actual =
+        IntStream.rangeClosed(7, 11)
+            .mapToObj(
+                week ->
+                    service
+                        .getChallenge(
+                            "custom_s1_%02d_deadly_combat_year_%d".formatted(week + 2, week - 6))
+                        .orElseThrow()
+                        .getDifficulty())
+            .toList();
+    assertEquals(expected, actual);
+  }
+
+  /**
+   * Every match type must resolve to a shipped SegmentRule name — the detail dialog links to the
+   * in-app match-info page by exact name match. The arc leans on Extreme-style rules per the issue:
+   * Barbwire Exploding Deathmatch, Last Man Standing, Cage, I Quit Match, and a Gauntlet finale.
+   */
+  @Test
+  void deadlyCombatMatchTypesResolveToShippedSegmentRules() throws Exception {
+    Set<String> shippedRuleNames = new HashSet<>();
+    try (InputStream is = getClass().getResourceAsStream("/segment_rules.json")) {
+      new ObjectMapper()
+          .readValue(is, new TypeReference<List<Map<String, Object>>>() {}).stream()
+              .map(r -> (String) r.get("name"))
+              .forEach(shippedRuleNames::add);
+    }
+    IntStream.rangeClosed(7, 11)
+        .mapToObj(
+            week ->
+                service
+                    .getChallenge(
+                        "custom_s1_%02d_deadly_combat_year_%d".formatted(week + 2, week - 6))
+                    .orElseThrow())
+        .forEach(
+            challenge -> {
+              assertTrue(
+                  shippedRuleNames.contains(challenge.getMatchType()),
+                  challenge.getId()
+                      + " matchType '"
+                      + challenge.getMatchType()
+                      + "' does not match any shipped SegmentRule name");
+            });
+  }
+
+  /** The gauntlet finale draws all four opponents from the Extreme roster. */
+  @Test
+  void deadlyCombatFinaleRequiresExtremeExpansion() {
+    ChallengeDTO finale = service.getChallenge("custom_s1_13_deadly_combat_year_5").orElseThrow();
+    assertEquals("Gauntlet", finale.getMatchType());
+    // Extreme-only arc: every opponent comes from the Extreme roster, so RUMBLE is NOT required.
+    assertTrue(finale.getRequiredExpansions().contains("EXTREME"));
+    assertTrue(
+        !finale.getRequiredExpansions().contains("RUMBLE"),
+        "RUMBLE is not part of the Extreme-only arc");
+    assertTrue(finale.getRequiredWrestlerNames().size() >= 4, "OMZ plus gauntlet opponents");
+    assertFalse(finale.getModifiers().isEmpty(), "gauntlet needs between-match modifiers");
   }
 
   @Test

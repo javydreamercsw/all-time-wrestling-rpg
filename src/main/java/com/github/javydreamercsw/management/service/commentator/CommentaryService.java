@@ -144,4 +144,10 @@ public class CommentaryService {
         .filter(c -> c.getNpc().getName().equals(npcName))
         .findFirst();
   }
+
+  public Optional<CommentaryTeam> findTeamByName(@NonNull final String teamName) {
+    return commentaryTeamRepository.findAll().stream()
+        .filter(t -> t.getName().equals(teamName))
+        .findFirst();
+  }
 }

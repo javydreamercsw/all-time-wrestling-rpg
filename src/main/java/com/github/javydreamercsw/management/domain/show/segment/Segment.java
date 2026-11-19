@@ -101,6 +101,27 @@ public class Segment extends AbstractEntity<Long> {
   @Column(name = "adjudication_status", nullable = false)
   private AdjudicationStatus adjudicationStatus;
 
+  /** Declared result. WINNERS means decided by winner flags; DRAW/NO_CONTEST are booked calls. */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "result", nullable = false)
+  private SegmentResult result = SegmentResult.WINNERS;
+
+  /**
+   * True once the final narration exists — either AI-generated (adjudication flow, MatchView,
+   * NarrationDialog) or hand-typed. The narration column otherwise holds the AI-planning brief
+   * description, which is not narration.
+   */
+  @Column(name = "narration_generated", nullable = false)
+  private boolean narrationGenerated = false;
+
+  /**
+   * Why the last narration attempt failed (provider error message, truncated); null when the last
+   * attempt succeeded or none was attempted. Not set when generation was merely skipped (no
+   * provider configured) — only on an actual failure. Cleared on the next successful narration.
+   */
+  @Column(name = "narration_last_error", length = 512)
+  private String narrationLastError;
+
   // Segment rules (many-to-many relationship)
   @ManyToMany(fetch = FetchType.EAGER)
   @JoinTable(
@@ -163,12 +184,23 @@ public class Segment extends AbstractEntity<Long> {
   private Set<SegmentParticipant> participants = new HashSet<>();
 
   @ManyToMany(fetch = FetchType.EAGER)
+  @Setter
   @JoinTable(
       name = "segment_title",
       joinColumns = @JoinColumn(name = "segment_id"),
       inverseJoinColumns = @JoinColumn(name = "title_id"))
   @JsonIgnore
   private Set<Title> titles = new HashSet<>();
+
+  /**
+   * Copy-on-assign: callers pass immutable sets (planner proposals, Vaadin multiselect values)
+   * while title resolution mutates the collection via {@link #getTitles()}, so the setter must copy
+   * instead of aliasing the caller's set. This file is excluded from the rewrite plugin because its
+   * UseLombokSetter recipe deletes any manual setter on a Lombok-managed class.
+   */
+  public void setTitles(Set<Title> titles) {
+    this.titles = titles == null ? new HashSet<>() : new HashSet<>(titles);
+  }
 
   @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "referee_id")
@@ -273,6 +305,17 @@ public class Segment extends AbstractEntity<Long> {
       }
     }
     this.status = SegmentStatus.COMPLETED;
+  }
+
+  /**
+   * Declares the segment's result. For DRAW or NO_CONTEST this also clears all winner flags — a
+   * booked draw/no-contest must not carry winners. WINNERS leaves the flags untouched.
+   */
+  public void declareResult(final SegmentResult declaredResult) {
+    this.result = declaredResult != null ? declaredResult : SegmentResult.WINNERS;
+    if (this.result != SegmentResult.WINNERS) {
+      setWinners(null);
+    }
   }
 
   public void syncParticipants(final List<Wrestler> newParticipantWrestlers) {

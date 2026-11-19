@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
 import lombok.Data;
 
 @Data
@@ -30,4 +31,7 @@ public class NpcDTO {
 
   private String alignment;
   private Integer awareness;
+
+  // Seeded since ATW-jbyo; MALE stays the entity default when the JSON omits it.
+  private Gender gender;
 }

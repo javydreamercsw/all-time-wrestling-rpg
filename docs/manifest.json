@@ -56,6 +56,13 @@
     "imagePath": "screenshots/admin-expansion-management.png",
     "order": 170
   }, {
+    "id": "admin-admin-seed-review-tree",
+    "category": "Admin",
+    "title": "Seed Update Review",
+    "description": "After a version upgrade, seed-data changes that would overwrite your customizations are parked here instead of applied silently. Decisions group by domain and entity: field rows show the current value vs. the incoming one with a Keep mine / Use new choice per field, and removed-from-source entities show a Keep as custom / Remove choice. 'Approve Everything' shortcuts the field conflicts (removals always need a per-entity decision), and 'Apply decisions & unlock the app' writes the whole batch and lifts the review freeze.",
+    "imagePath": "screenshots/admin-seed-review-tree.png",
+    "order": 180
+  }, {
     "id": "game-mechanics-mechanic-wear-and-tear",
     "category": "Game Mechanics",
     "title": "Persistent Wear & Tear",
@@ -1064,6 +1071,20 @@
     "title": "Tournament — Round Robin Standings",
     "description": "Round robin tournaments score every match: a win earns 2 points, a draw 1, a loss 0 — nobody is eliminated, everyone plays everyone. The live standings table ranks entrants by points, breaking ties head-to-head (results among the tied group) and then by seed. When the final round completes, the points leader is crowned the tournament winner automatically.",
     "imagePath": "screenshots/booker-tournament-round-robin-standings.png",
+    "order": 0
+  }, {
+    "id": "booker-show-adjudication-dialog",
+    "category": "Booker",
+    "title": "Adjudicate Show",
+    "description": "Adjudicating a show: AI narration is generated for pending segments and the booker is warned about matches without a winner before confirming.",
+    "imagePath": "screenshots/show-adjudication-dialog.png",
+    "order": 0
+  }, {
+    "id": "booker-show-adjudication-dialog-player-segments",
+    "category": "Booker",
+    "title": "Adjudicate Show — player segments",
+    "description": "Segments involving player-controlled wrestlers are excluded by default; the booker can include them after reviewing the list.",
+    "imagePath": "screenshots/show-adjudication-dialog-player-segments.png",
     "order": 0
   } ]
 }

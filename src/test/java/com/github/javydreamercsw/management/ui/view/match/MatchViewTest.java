@@ -53,6 +53,7 @@ import com.github.javydreamercsw.management.domain.npc.Npc;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentParticipant;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.title.Title;
@@ -281,6 +282,10 @@ class MatchViewTest extends AbstractViewTest {
     _click(_get(Button.class, spec -> spec.withId("save-narration-button")));
 
     assertEquals("Updated narration", segment.getNarration());
+    // 2.13.0 review fix: hand-typed narration is final — adjudication must not
+    // overwrite it, so the save marks the segment as narrated.
+    assertTrue(
+        segment.isNarrationGenerated(), "saving hand-typed narration must set narrationGenerated");
 
     MultiSelectComboBox<Wrestler> winnersComboBox =
         _get(MultiSelectComboBox.class, spec -> spec.withId("winners-combobox"));
@@ -292,6 +297,122 @@ class MatchViewTest extends AbstractViewTest {
 
     assertEquals(1, segment.getWinners().size());
     assertEquals(wrestler1, segment.getWinners().get(0));
+  }
+
+  @Test
+  void bookedDraw_disablesResultEntry() {
+    // 2.13.0 (ATW-ktta): a booked DRAW/NO_CONTEST is authoritative — the result radio,
+    // winners combo, and save button must all be disabled so nobody re-enters a result.
+    Segment segment = new Segment();
+    segment.setId(1L);
+    segment.declareResult(SegmentResult.DRAW);
+    Show show = new Show();
+    show.setName("Test Show");
+    segment.setShow(show);
+    SegmentType segmentType = new SegmentType();
+    segmentType.setName("Test Match");
+    segment.setSegmentType(segmentType);
+
+    Universe universe = new Universe();
+    universe.setId(1L);
+    universe.setName("Default");
+
+    Wrestler wrestler1 = new Wrestler();
+    wrestler1.setName("Test Wrestler 1");
+    wrestler1.setId(1L);
+    wrestler1
+        .getWrestlerStates()
+        .add(WrestlerState.builder().wrestler(wrestler1).universe(universe).build());
+
+    SegmentParticipant participant1 = new SegmentParticipant();
+    participant1.setSegment(segment);
+    participant1.setWrestler(wrestler1);
+    participant1.setIsWinner(false);
+    segment.getParticipants().add(participant1);
+
+    when(securityUtils.isBooker()).thenReturn(true);
+    when(segmentService.findByIdWithDetails(1L)).thenReturn(Optional.of(segment));
+    lenient().when(wrestlerService.findById(1L)).thenReturn(Optional.of(wrestler1));
+    lenient()
+        .when(wrestlerService.getOrCreateState(anyLong(), eq(1L)))
+        .thenReturn(wrestler1.getState(1L).orElseThrow());
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "1"));
+
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    RadioButtonGroup<SegmentResult> resultRadio =
+        _get(RadioButtonGroup.class, spec -> spec.withId("match-result-radio"));
+    assertTrue(
+        resultRadio.getValue() == SegmentResult.DRAW, "result radio must show the booked DRAW");
+    assertFalse(resultRadio.isEnabled(), "booked result radio must be disabled");
+    MultiSelectComboBox<Wrestler> winnersComboBox =
+        _get(MultiSelectComboBox.class, spec -> spec.withId("winners-combobox"));
+    assertFalse(winnersComboBox.isEnabled(), "winners combo must be disabled for booked DRAW");
+    Button saveButton = _get(Button.class, spec -> spec.withId("save-winners-button"));
+    assertFalse(saveButton.isEnabled(), "save button must be disabled for booked DRAW");
+  }
+
+  @Test
+  void resultRadioChange_togglesWinnersComboEnabledState() {
+    // 2.13.0 (coverage gap): picking Draw/No Contest must disable and clear the
+    // winners combo; switching back to Winners re-enables it.
+    Segment segment = new Segment();
+    segment.setId(1L);
+    Show show = new Show();
+    show.setName("Test Show");
+    segment.setShow(show);
+    SegmentType segmentType = new SegmentType();
+    segmentType.setName("Test Match");
+    segment.setSegmentType(segmentType);
+
+    Universe universe = new Universe();
+    universe.setId(1L);
+    universe.setName("Default");
+
+    Wrestler wrestler1 = new Wrestler();
+    wrestler1.setName("Test Wrestler 1");
+    wrestler1.setId(1L);
+    wrestler1
+        .getWrestlerStates()
+        .add(WrestlerState.builder().wrestler(wrestler1).universe(universe).build());
+
+    SegmentParticipant participant1 = new SegmentParticipant();
+    participant1.setSegment(segment);
+    participant1.setWrestler(wrestler1);
+    participant1.setIsWinner(false);
+    segment.getParticipants().add(participant1);
+
+    when(securityUtils.isBooker()).thenReturn(true);
+    when(segmentService.findByIdWithDetails(1L)).thenReturn(Optional.of(segment));
+    lenient().when(wrestlerService.findById(1L)).thenReturn(Optional.of(wrestler1));
+    lenient()
+        .when(wrestlerService.getOrCreateState(anyLong(), eq(1L)))
+        .thenReturn(wrestler1.getState(1L).orElseThrow());
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "1"));
+
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    RadioButtonGroup<SegmentResult> resultRadio =
+        _get(RadioButtonGroup.class, spec -> spec.withId("match-result-radio"));
+    MultiSelectComboBox<Wrestler> winnersComboBox =
+        _get(MultiSelectComboBox.class, spec -> spec.withId("winners-combobox"));
+
+    // Booked default is WINNERS — combo enabled.
+    assertTrue(winnersComboBox.isEnabled(), "combo starts enabled for WINNERS");
+
+    // Pick DRAW: combo disables and clears.
+    resultRadio.setValue(SegmentResult.DRAW);
+    assertFalse(winnersComboBox.isEnabled(), "combo must disable when Draw is picked");
+
+    // Back to WINNERS: combo re-enables.
+    resultRadio.setValue(SegmentResult.WINNERS);
+    assertTrue(winnersComboBox.isEnabled(), "combo must re-enable when Winners is picked");
   }
 
   @Test
@@ -479,6 +600,7 @@ class MatchViewTest extends AbstractViewTest {
 
     when(segmentService.findByIdWithDetails(1L)).thenReturn(Optional.of(segment));
     when(npcService.findAllByType("Referee")).thenReturn(List.of(referee));
+    when(npcService.pickUnusedReferee(any(), any())).thenReturn(referee);
     when(npcService.getAwareness(referee)).thenReturn(75);
     when(segmentService.updateSegment(any())).thenAnswer(inv -> inv.getArgument(0));
     when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.empty());
@@ -560,6 +682,9 @@ class MatchViewTest extends AbstractViewTest {
     when(segmentService.findByIdWithDetails(5L)).thenReturn(Optional.of(segment));
     when(npcService.findAllByType("Referee")).thenReturn(List.of(bookedRef, freeRef));
     when(segmentService.getSegmentsByShow(show)).thenReturn(List.of(sibling, segment));
+    // The avoid-double-booking selection logic lives in NpcService (covered there);
+    // here the view just delegates with the sibling referees it collected.
+    when(npcService.pickUnusedReferee(any(), any())).thenReturn(freeRef);
     when(npcService.getAwareness(freeRef)).thenReturn(60);
     when(segmentService.updateSegment(any())).thenAnswer(inv -> inv.getArgument(0));
     when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.empty());
@@ -594,6 +719,8 @@ class MatchViewTest extends AbstractViewTest {
     when(segmentService.findByIdWithDetails(6L)).thenReturn(Optional.of(segment));
     when(npcService.findAllByType("Referee")).thenReturn(List.of(onlyRef));
     when(segmentService.getSegmentsByShow(show)).thenReturn(List.of(sibling, segment));
+    // Full-pool fallback happens inside NpcService.pickUnusedReferee (covered there).
+    when(npcService.pickUnusedReferee(any(), any())).thenReturn(onlyRef);
     when(npcService.getAwareness(onlyRef)).thenReturn(60);
     when(segmentService.updateSegment(any())).thenAnswer(inv -> inv.getArgument(0));
     when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.empty());
@@ -637,6 +764,7 @@ class MatchViewTest extends AbstractViewTest {
 
       when(segmentService.findByIdWithDetails(4L)).thenReturn(Optional.of(segment));
       when(npcService.findAllByType("Referee")).thenReturn(List.of(referee));
+      when(npcService.pickUnusedReferee(any(), any())).thenReturn(referee);
       when(npcService.getAwareness(referee)).thenReturn(80);
       // Mock updateSegment to return the same segment (simulates a successful save)
       when(segmentService.updateSegment(any())).thenAnswer(inv -> inv.getArgument(0));

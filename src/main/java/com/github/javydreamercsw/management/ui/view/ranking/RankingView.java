@@ -27,13 +27,12 @@ import com.github.javydreamercsw.management.dto.ranking.TitleReignDTO;
 import com.github.javydreamercsw.management.service.ranking.RankingService;
 import com.github.javydreamercsw.management.service.ranking.TierBoundaryService;
 import com.github.javydreamercsw.management.ui.component.HistoryTimelineComponent;
-import com.github.javydreamercsw.management.ui.component.ReignCardComponent;
+import com.github.javydreamercsw.management.ui.component.ReignHistoryPanel;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Image;
@@ -81,9 +80,19 @@ public class RankingView extends Main {
 
     ComboBox<ChampionshipDTO> championshipComboBox = new ComboBox<>("Championship");
     championshipComboBox.setId("championship-combo-box");
+    // beads ATW-r6zt: tier first (world-level = highest tier on top), then gender (MALE before
+    // FEMALE), then name — a title ladder reads top-down, not alphabetically.
+    Comparator<ChampionshipDTO> championshipOrder =
+        Comparator.comparing(
+                ChampionshipDTO::getTier, Comparator.nullsLast(Comparator.naturalOrder()))
+            .reversed()
+            .thenComparing(
+                c -> c.getGender() == Gender.FEMALE ? 1 : 0) // MALE (and unset) before FEMALE
+            .thenComparing(
+                ChampionshipDTO::getName, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER));
     List<ChampionshipDTO> championships =
         rankingService.getChampionships().stream()
-            .sorted(Comparator.comparing(ChampionshipDTO::getName))
+            .sorted(championshipOrder)
             .collect(Collectors.toList());
     championshipComboBox.setItems(championships);
     championshipComboBox.setItemLabelGenerator(ChampionshipDTO::getName);
@@ -93,9 +102,10 @@ public class RankingView extends Main {
           updateView(currentChampionship);
         });
 
-    // Select the first championship by default
+    // Select the first championship by default — now the highest-tier title, not alphabetically
+    // first.
     championships.stream()
-        .min(Comparator.comparing(ChampionshipDTO::getName))
+        .findFirst()
         .ifPresent(
             championship -> {
               championshipComboBox.setValue(championship);
@@ -308,12 +318,10 @@ public class RankingView extends Main {
     if (history.isEmpty()) {
       historyLayout.add("No history available.");
     } else {
+      // Both variants window the reigns lazily (ATW-3a0t): the strip and the card grid render
+      // only the newest reigns initially; older history loads on demand.
       historyLayout.add(new HistoryTimelineComponent(history));
-      Div cardsContainer = new Div();
-      cardsContainer.addClassNames(
-          LumoUtility.Display.FLEX, LumoUtility.FlexWrap.WRAP, LumoUtility.Gap.SMALL);
-      history.forEach(reign -> cardsContainer.add(new ReignCardComponent(reign)));
-      historyLayout.add(cardsContainer);
+      historyLayout.add(new ReignHistoryPanel(history));
     }
   }
 }

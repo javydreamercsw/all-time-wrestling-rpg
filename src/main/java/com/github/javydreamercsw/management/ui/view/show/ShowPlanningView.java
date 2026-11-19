@@ -37,6 +37,7 @@ import com.github.javydreamercsw.management.service.show.ShowFacade;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import com.github.javydreamercsw.management.service.show.planning.CardValidationResult;
 import com.github.javydreamercsw.management.service.show.planning.ProposedSegment;
+import com.github.javydreamercsw.management.service.show.planning.ProposedShow;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningAiService;
 import com.github.javydreamercsw.management.service.show.planning.ShowPlanningService;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningContextDTO;
@@ -76,7 +77,6 @@ import jakarta.annotation.security.RolesAllowed;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -117,6 +117,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
   private final Details contextDetails;
   private final Grid<ProposedSegment> proposedSegmentsGrid;
   private final VerticalLayout excludedBeatsWarnings;
+  private final VerticalLayout unavailableWrestlerWarnings;
   private final Image templateImage;
   private final Button approveButton;
   private final Button proposeSegmentsButton;
@@ -419,6 +420,14 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     excludedBeatsWarnings.setId("excluded-beats-warnings");
     excludedBeatsWarnings.setVisible(false);
 
+    // Booker-facing warning for wrestlers scrubbed from the planning context (ATW-1nyv):
+    // injured/low-condition roster members the AI cannot book. Same style as beat warnings.
+    unavailableWrestlerWarnings = new VerticalLayout();
+    unavailableWrestlerWarnings.setSpacing(false);
+    unavailableWrestlerWarnings.setPadding(false);
+    unavailableWrestlerWarnings.setId("unavailable-wrestler-warnings");
+    unavailableWrestlerWarnings.setVisible(false);
+
     VerticalLayout leftSide =
         new VerticalLayout(
             new H2("Show Planning"),
@@ -427,6 +436,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
             new Paragraph("1. Pick a show, then let the AI draft a card you can edit."),
             proposeSegmentsButton,
             excludedBeatsWarnings,
+            unavailableWrestlerWarnings,
             contextDetails);
     leftSide.setPadding(false);
 
@@ -465,6 +475,33 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
       excludedBeatsWarnings.add(line);
     }
     excludedBeatsWarnings.setVisible(true);
+  }
+
+  /**
+   * Renders one warning line per wrestler scrubbed from the planning context (active injury or
+   * condition below the rest threshold — ATW-1nyv), so the booker sees a missing roster member
+   * instead of a silent absence. Empty list hides the block. Must be called on the UI thread.
+   */
+  private void showUnavailableWrestlerWarnings(final List<String> names) {
+    unavailableWrestlerWarnings.removeAll();
+    if (names == null || names.isEmpty()) {
+      unavailableWrestlerWarnings.setVisible(false);
+      return;
+    }
+    Span header =
+        new Span(
+            "Wrestlers NOT bookable this show (active injury or low condition) — they have been"
+                + " removed from all AI planning context:");
+    header.addClassNames(LumoUtility.FontWeight.SEMIBOLD, LumoUtility.FontSize.SMALL);
+    header.getStyle().set("color", "var(--lumo-warning-text-color)");
+    unavailableWrestlerWarnings.add(header);
+    for (String name : names) {
+      Span line = new Span(name);
+      line.addClassNames(LumoUtility.FontSize.SMALL);
+      line.getStyle().set("color", "var(--lumo-warning-text-color)");
+      unavailableWrestlerWarnings.add(line);
+    }
+    unavailableWrestlerWarnings.setVisible(true);
   }
 
   private void navigateToShowDetail() {
@@ -553,15 +590,18 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
             () -> {
               ShowPlanningContextDTO context = showPlanningService.getShowPlanningContext(show);
               // Capture plain data (not components) off-thread; rendering happens in ui.access.
-              List<String> beatWarnings = List.copyOf(context.getExcludedBeatWarnings());
-              return Map.entry(showPlanningAiService.planShow(context), beatWarnings);
+              return new ProposalResult(
+                  showPlanningAiService.planShow(context),
+                  List.copyOf(context.getExcludedBeatWarnings()),
+                  List.copyOf(context.getUnavailableWrestlerNames()));
             })
         .thenAccept(
             applied ->
                 ui.access(
                     () -> {
-                      showExcludedBeatWarnings(applied.getValue());
-                      segments = applied.getKey().getSegments();
+                      showExcludedBeatWarnings(applied.beatWarnings());
+                      showUnavailableWrestlerWarnings(applied.unavailableWrestlers());
+                      segments = applied.plan().getSegments();
                       proposedSegmentsGrid.setItems(segments);
                       approveButton.setEnabled(!segments.isEmpty());
                       notificationService.showSuccess(
@@ -591,7 +631,9 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
 
     CardValidationResult validation;
     try {
-      validation = showPlanningService.validateCard(segments);
+      // Show-aware overload (ATW-1nyv): rivalries whose participants are all unavailable
+      // (injury/rest) don't generate MUST_BOOK pressure for a card they cannot legally join.
+      validation = showPlanningService.validateCard(show, segments);
     } catch (Exception e) {
       log.error("Error validating card", e);
       notificationService.showError("Failed to validate card: " + e.getMessage());
@@ -607,7 +649,50 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
       showMustBookWarningDialog(show, validation.getWarnings());
       return;
     }
-    checkTournamentPayoffWarningThenApprove(show);
+    checkInjuryWarningThenApprove(show);
+  }
+
+  /**
+   * Before approving, warn when the card books an unavailable wrestler — active injury or condition
+   * below the rest threshold (ATW-1nyv). Advisory: an injury angle is a legitimate booking, so the
+   * booker can approve anyway. Chains into the tournament-payoff check.
+   */
+  private void checkInjuryWarningThenApprove(final Show show) {
+    List<String> injuryWarnings;
+    try {
+      injuryWarnings =
+          GeneralSecurityUtils.runAsAdminAsync(
+                  () -> showPlanningService.injuredParticipantWarnings(show, segments))
+              .join();
+    } catch (Exception e) {
+      log.warn("Unavailable-participant pre-flight failed — approving without the advisory", e);
+      checkTournamentPayoffWarningThenApprove(show);
+      return;
+    }
+    if (injuryWarnings == null || injuryWarnings.isEmpty()) {
+      checkTournamentPayoffWarningThenApprove(show);
+      return;
+    }
+    ConfirmDialog dialog = new ConfirmDialog();
+    dialog.setHeader("Unavailable Wrestlers Booked (" + injuryWarnings.size() + ")");
+    VerticalLayout content = new VerticalLayout();
+    content.setPadding(false);
+    content.add(
+        new Paragraph(
+            "These segments book wrestlers who are currently unavailable (active injury or"
+                + " condition below the rest threshold). Booking them anyway may risk aggravating"
+                + " the injury — consider swapping in an available wrestler."));
+    ListBox<String> warningList = new ListBox<>();
+    warningList.setItems(injuryWarnings);
+    warningList.setHeight("200px");
+    content.add(warningList);
+    dialog.add(content);
+    dialog.setCancelable(true);
+    dialog.setCancelText("Go Back");
+    dialog.setConfirmText("Approve Anyway");
+    dialog.setConfirmButtonTheme("primary success");
+    dialog.addConfirmListener(e -> checkTournamentPayoffWarningThenApprove(show));
+    dialog.open();
   }
 
   /**
@@ -705,7 +790,7 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
     dialog.setCancelText("Go Back");
     dialog.setConfirmText("Approve Anyway");
     dialog.setConfirmButtonTheme("primary success");
-    dialog.addConfirmListener(e -> doApprove(show));
+    dialog.addConfirmListener(e -> checkInjuryWarningThenApprove(show));
     dialog.open();
   }
 
@@ -762,4 +847,8 @@ public class ShowPlanningView extends Main implements HasUrlParameter<Long> {
               });
     }
   }
+
+  /** AI proposal outcome plus the plain-data warnings captured off-thread for UI rendering. */
+  private record ProposalResult(
+      ProposedShow plan, List<String> beatWarnings, List<String> unavailableWrestlers) {}
 }

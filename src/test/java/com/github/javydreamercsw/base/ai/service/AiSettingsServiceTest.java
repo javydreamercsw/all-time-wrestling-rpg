@@ -103,6 +103,27 @@ class AiSettingsServiceTest {
     assertThat(aiSettingsService.getGeminiModelName()).isEqualTo("gemini-3.5-flash-lite");
   }
 
+  @Test
+  void getOllamaMaxTokens_noSetting_returns4096() {
+    when(gameSettingService.findById("AI_OLLAMA_MAX_TOKENS")).thenReturn(Optional.empty());
+
+    assertThat(aiSettingsService.getOllamaMaxTokens()).isEqualTo(4096);
+  }
+
+  @Test
+  void isOllamaDisableThinking_noSetting_returnsFalse() {
+    when(gameSettingService.findById("AI_OLLAMA_DISABLE_THINKING")).thenReturn(Optional.empty());
+
+    assertThat(aiSettingsService.isOllamaDisableThinking()).isFalse();
+  }
+
+  @Test
+  void getOllamaExtraParams_noSetting_returnsEmptyObject() {
+    when(gameSettingService.findById("AI_OLLAMA_EXTRA_PARAMS")).thenReturn(Optional.empty());
+
+    assertThat(aiSettingsService.getOllamaExtraParams()).isEqualTo("{}");
+  }
+
   // ----------------------------------------------------------------
   // Group B — setting present, returns parsed value
   // ----------------------------------------------------------------
@@ -155,5 +176,47 @@ class AiSettingsServiceTest {
     when(gameSettingService.findById("AI_OPENAI_TEMPERATURE")).thenReturn(Optional.of(gameSetting));
 
     assertThat(aiSettingsService.getOpenAITemperature()).isEqualTo(0.5f);
+  }
+
+  @Test
+  void getOllamaMaxTokens_settingPresent_returnsValue() {
+    GameSetting gameSetting = new GameSetting();
+    gameSetting.setSettingKey("AI_OLLAMA_MAX_TOKENS");
+    gameSetting.setValue("16384");
+    when(gameSettingService.findById("AI_OLLAMA_MAX_TOKENS")).thenReturn(Optional.of(gameSetting));
+
+    assertThat(aiSettingsService.getOllamaMaxTokens()).isEqualTo(16384);
+  }
+
+  @Test
+  void getOllamaMaxTokens_garbageValue_returnsDefault() {
+    GameSetting gameSetting = new GameSetting();
+    gameSetting.setSettingKey("AI_OLLAMA_MAX_TOKENS");
+    gameSetting.setValue("not-a-number");
+    when(gameSettingService.findById("AI_OLLAMA_MAX_TOKENS")).thenReturn(Optional.of(gameSetting));
+
+    assertThat(aiSettingsService.getOllamaMaxTokens()).isEqualTo(4096);
+  }
+
+  @Test
+  void isOllamaDisableThinking_settingPresent_returnsTrue() {
+    GameSetting gameSetting = new GameSetting();
+    gameSetting.setSettingKey("AI_OLLAMA_DISABLE_THINKING");
+    gameSetting.setValue("true");
+    when(gameSettingService.findById("AI_OLLAMA_DISABLE_THINKING"))
+        .thenReturn(Optional.of(gameSetting));
+
+    assertThat(aiSettingsService.isOllamaDisableThinking()).isTrue();
+  }
+
+  @Test
+  void getOllamaExtraParams_settingPresent_returnsValue() {
+    GameSetting gameSetting = new GameSetting();
+    gameSetting.setSettingKey("AI_OLLAMA_EXTRA_PARAMS");
+    gameSetting.setValue("{\"seed\":42}");
+    when(gameSettingService.findById("AI_OLLAMA_EXTRA_PARAMS"))
+        .thenReturn(Optional.of(gameSetting));
+
+    assertThat(aiSettingsService.getOllamaExtraParams()).isEqualTo("{\"seed\":42}");
   }
 }

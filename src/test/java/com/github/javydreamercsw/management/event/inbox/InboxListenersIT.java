@@ -27,6 +27,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.Role;
+import com.github.javydreamercsw.base.domain.account.RoleName;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.inbox.InboxEventType;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
@@ -42,6 +44,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerStateRepository;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
 import com.github.javydreamercsw.management.event.ChampionshipChangeEvent;
+import com.github.javydreamercsw.management.event.SeedUpdateReviewPendingEvent;
 import com.github.javydreamercsw.management.event.dto.FanAwardedEvent;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpEvent;
 import com.github.javydreamercsw.management.event.dto.WrestlerBumpHealedEvent;
@@ -111,6 +114,9 @@ public class InboxListenersIT extends ManagementIntegrationTest {
 
   @Autowired
   @Qualifier("wrestlerBumpHealed") private InboxEventType wrestlerBumpHealed;
+
+  @Autowired
+  @Qualifier("seedUpdateReviewPending") private InboxEventType seedUpdateReviewPending;
 
   @MockitoBean private InboxService inboxService;
   @MockitoBean private InboxUpdateBroadcaster inboxUpdateBroadcaster;
@@ -416,6 +422,52 @@ public class InboxListenersIT extends ManagementIntegrationTest {
     assertFalse(
         targets.stream().anyMatch(t -> t.type() == InboxItemTarget.TargetType.ACCOUNT),
         "NPC wrestler (no account) must not produce an ACCOUNT target");
+  }
+
+  @Test
+  void testSeedUpdateReviewPendingEventCreatesBatchedAdminInboxItem() {
+    // Seed-update review feature: one batched event per boot after the detection phase parks
+    // collisions — the listener must turn it into a single ACTION_REQUIRED admin inbox item with
+    // the batched count in the message (extended in PR 4: notifyPending() gained its production
+    // caller in the version-change wiring).
+    Account admin = accountRepository.save(new Account("admin1", "password1", "admin1@test.com"));
+    // Grant the ADMIN role so the listener's findAllByRoles_Name(ADMIN) finds this account.
+    Role adminRole = roleRepository.findByName(RoleName.ADMIN).orElseThrow();
+    admin.addRole(adminRole);
+    accountRepository.save(admin);
+
+    SeedUpdateReviewPendingEvent event = new SeedUpdateReviewPendingEvent(this, 4, "2.13.0");
+    eventPublisher.publishEvent(event);
+
+    ArgumentCaptor<InboxEventType> eventTypeCaptor = ArgumentCaptor.forClass(InboxEventType.class);
+    ArgumentCaptor<String> subjectCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
+    ArgumentCaptor<InboxItem.Urgency> urgencyCaptor =
+        ArgumentCaptor.forClass(InboxItem.Urgency.class);
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<InboxService.TargetInfo>> targetsCaptor =
+        ArgumentCaptor.forClass(List.class);
+
+    verify(inboxService, times(1))
+        .createInboxItem(
+            eventTypeCaptor.capture(),
+            subjectCaptor.capture(),
+            messageCaptor.capture(),
+            urgencyCaptor.capture(),
+            targetsCaptor.capture());
+
+    assertEquals(seedUpdateReviewPending, eventTypeCaptor.getValue());
+    assertEquals("Seed Update Review", subjectCaptor.getValue());
+    assertEquals("4 seed data decisions pending from v2.13.0 update.", messageCaptor.getValue());
+    assertEquals(InboxItem.Urgency.ACTION_REQUIRED, urgencyCaptor.getValue());
+    List<InboxService.TargetInfo> targets = targetsCaptor.getValue();
+    assertTrue(
+        targets.stream()
+            .anyMatch(
+                t ->
+                    t.type() == InboxItemTarget.TargetType.ACCOUNT
+                        && t.targetId().equals(admin.getId().toString())),
+        "the ADMIN account must be an ACCOUNT target — inbox items without one are invisible");
   }
 
   private static void assertContainsWrestlerTarget(

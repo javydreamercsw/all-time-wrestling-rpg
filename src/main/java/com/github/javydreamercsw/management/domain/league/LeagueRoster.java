@@ -64,4 +64,5 @@ public class LeagueRoster {
   private int wins = 0;
   private int losses = 0;
   private int draws = 0;
+  private int noContests = 0;
 }

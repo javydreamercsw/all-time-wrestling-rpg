@@ -85,6 +85,9 @@ public interface FactionRivalryRepository
   @Query("SELECT fr FROM FactionRivalry fr WHERE fr.isActive = true AND fr.heat >= 30")
   List<FactionRivalry> findRivalriesRequiringStipulationMatches();
 
+  /** Rivalries involving the faction on either side (seed-review removal guard). */
+  List<FactionRivalry> findByFaction1OrFaction2(Faction faction1, Faction faction2);
+
   /** Find rivalries by heat level range. */
   @Query(
       """

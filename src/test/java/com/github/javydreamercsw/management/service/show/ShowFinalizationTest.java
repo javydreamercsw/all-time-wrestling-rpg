@@ -28,6 +28,7 @@ import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRep
 import com.github.javydreamercsw.management.domain.league.League;
 import com.github.javydreamercsw.management.domain.league.LeagueRepository;
 import com.github.javydreamercsw.management.domain.league.LeagueRosterRepository;
+import com.github.javydreamercsw.management.domain.league.MatchFulfillmentRepository;
 import com.github.javydreamercsw.management.domain.season.SeasonRepository;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.ShowRepository;
@@ -52,6 +53,7 @@ import com.github.javydreamercsw.management.service.gm.GmModeService;
 import com.github.javydreamercsw.management.service.legacy.LegacyService;
 import com.github.javydreamercsw.management.service.match.SegmentAdjudicationService;
 import com.github.javydreamercsw.management.service.news.NewsGenerationService;
+import com.github.javydreamercsw.management.service.segment.SegmentNarrationGenerationService;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.math.BigDecimal;
@@ -81,6 +83,7 @@ class ShowFinalizationTest {
   @Mock private UniverseRepository universeRepository;
   @Mock private SegmentRepository segmentRepository;
   @Mock private LeagueRepository leagueRepository;
+  @Mock private MatchFulfillmentRepository matchFulfillmentRepository;
   @Mock private WrestlerService wrestlerService;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private SegmentAdjudicationService segmentAdjudicationService;
@@ -97,6 +100,7 @@ class ShowFinalizationTest {
   @Mock private CampaignRepository campaignRepository;
   @Mock private ShowQualityService showQualityService;
   @Mock private TournamentService tournamentService;
+  @Mock private SegmentNarrationGenerationService segmentNarrationGenerationService;
 
   private ShowService showService;
 
@@ -111,6 +115,7 @@ class ShowFinalizationTest {
             showTemplateRepository,
             universeRepository,
             leagueRepository,
+            matchFulfillmentRepository,
             Clock.systemUTC(),
             segmentAdjudicationService,
             segmentRepository,
@@ -125,7 +130,8 @@ class ShowFinalizationTest {
             arenaRepository,
             gmModeService,
             showQualityService,
-            tournamentService);
+            tournamentService,
+            segmentNarrationGenerationService);
 
     when(showRepository.save(any(Show.class))).thenAnswer(inv -> inv.getArgument(0));
   }

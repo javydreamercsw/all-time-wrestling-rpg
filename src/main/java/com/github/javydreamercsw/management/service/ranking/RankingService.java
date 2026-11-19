@@ -326,6 +326,7 @@ public class RankingService {
         .name(title.getName())
         .imageUrl(resolveTitleImage(title))
         .tier(title.getTier())
+        .gender(title.getGender())
         .build();
   }
 

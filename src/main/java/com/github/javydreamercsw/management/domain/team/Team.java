@@ -140,6 +140,14 @@ public class Team extends AbstractEntity<Long> {
   @Column(name = "disbanded_date")
   private Instant disbandedDate;
 
+  /**
+   * Per-row seed provenance stamp (seed-update review feature): the hash of the row's seed-owned
+   * fields as the last seed write left them. NULL = pre-fingerprint-era (legacy) or user-created
+   * row.
+   */
+  @Column(name = "seed_fingerprint", length = 64)
+  private String seedFingerprint;
+
   /** Ensure default values before persisting. */
   @PrePersist
   @PreUpdate

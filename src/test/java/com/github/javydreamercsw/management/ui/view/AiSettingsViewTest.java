@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.ui.view;
 
+import static com.github.mvysny.kaributesting.v10.HasValueUtilsKt._setValue;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._find;
 import static com.github.mvysny.kaributesting.v10.LocatorJ._get;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -25,6 +26,7 @@ import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
+import com.github.javydreamercsw.management.event.inbox.AiSettingsChangeBroadcaster;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
@@ -33,6 +35,7 @@ import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.NumberField;
+import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import java.util.List;
 import java.util.Optional;
@@ -41,6 +44,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 
 class AiSettingsViewTest extends AbstractViewTest {
 
@@ -74,8 +78,16 @@ class AiSettingsViewTest extends AbstractViewTest {
     when(aiSettingsService.getPollinationsApiKey()).thenReturn("");
     when(aiSettingsService.getOllamaBaseUrl()).thenReturn("");
     when(aiSettingsService.getOllamaModel()).thenReturn("llama3.2:1b");
+    when(aiSettingsService.getOllamaMaxTokens()).thenReturn(4096);
+    when(aiSettingsService.isOllamaDisableThinking()).thenReturn(false);
+    when(aiSettingsService.getOllamaExtraParams()).thenReturn("{}");
 
-    view = new AiSettingsView(aiSettingsService, gameSettingService, notificationService);
+    view =
+        new AiSettingsView(
+            aiSettingsService,
+            gameSettingService,
+            notificationService,
+            Mockito.mock(AiSettingsChangeBroadcaster.class));
     UI.getCurrent().add(view);
   }
 
@@ -172,5 +184,53 @@ class AiSettingsViewTest extends AbstractViewTest {
     Details gemini = _get(view, Details.class, spec -> spec.withId("settings-section-gemini"));
     _get(gemini, Checkbox.class, spec -> spec.withLabel("Enabled"));
     _get(gemini, TextField.class, spec -> spec.withLabel("Model Name"));
+  }
+
+  @Test
+  @DisplayName("Ollama section contains the expected fields including optional parameters")
+  void ollamaSection_containsExpectedFields() {
+    Details ollama = _get(view, Details.class, spec -> spec.withId("settings-section-ollama"));
+    _get(ollama, TextField.class, spec -> spec.withLabel("Base URL"));
+    _get(ollama, TextField.class, spec -> spec.withLabel("Model"));
+    _get(ollama, NumberField.class, spec -> spec.withLabel("Max Tokens"));
+    _get(ollama, Checkbox.class, spec -> spec.withLabel("Disable Thinking"));
+    _get(ollama, TextArea.class, spec -> spec.withLabel("Extra Request Parameters (JSON)"));
+  }
+
+  // ── NumberField client-side edits (ATW-x6c1) ───────────────────────────────
+
+  @Test
+  @DisplayName("Clearing a NumberField from the client saves nothing and does not throw")
+  void numberField_clearedFromClient_noSaveNoException() {
+    NumberField timeout =
+        _get(view, NumberField.class, spec -> spec.withLabel("Timeout (seconds)"));
+
+    Mockito.clearInvocations(gameSettingService);
+    _setValue(timeout, null, true); // simulate the user clearing the field
+
+    Mockito.verifyNoInteractions(gameSettingService);
+  }
+
+  @Test
+  @DisplayName("Editing a NumberField from the client saves the new value")
+  void numberField_editedFromClient_savesValue() {
+    NumberField timeout =
+        _get(view, NumberField.class, spec -> spec.withLabel("Timeout (seconds)"));
+
+    Mockito.clearInvocations(gameSettingService);
+    _setValue(timeout, 600.0, true); // simulate a client-side edit
+
+    Mockito.verify(gameSettingService).save("AI_TIMEOUT", "600");
+  }
+
+  @Test
+  @DisplayName("Clearing the OpenAI temperature field from the client never saves 'null'")
+  void openAITemperature_clearedFromClient_noSaveNoException() {
+    NumberField temperature = _get(view, NumberField.class, spec -> spec.withLabel("Temperature"));
+
+    Mockito.clearInvocations(gameSettingService);
+    _setValue(temperature, null, true); // pre-fix this saved the literal string "null"
+
+    Mockito.verifyNoInteractions(gameSettingService);
   }
 }

@@ -152,14 +152,17 @@ public class LeagueDashboardView extends Main implements HasUrlParameter<Long> {
         .setHeader("Record (W-L-D)")
         .setSortable(true);
     standingsGrid
-        .addColumn(r -> r.getWins() * 2 + r.getDraws())
+        // No-contests score like draws (owner ruling, ATW-91ky): 1 point each. The record
+        // column stays W-L-D — points are the only place no-contests surface.
+        .addColumn(r -> r.getWins() * 2 + r.getDraws() + r.getNoContests())
         .setHeader("Points")
         .setSortable(true);
 
     List<LeagueRoster> rosters =
         leagueRosterRepository.findByLeagueWithWrestlerStates(league).stream()
             .sorted(
-                Comparator.<LeagueRoster>comparingInt(r -> r.getWins() * 2 + r.getDraws())
+                Comparator.<LeagueRoster>comparingInt(
+                        r -> r.getWins() * 2 + r.getDraws() + r.getNoContests())
                     .reversed()
                     .thenComparingInt(LeagueRoster::getLosses))
             .toList();

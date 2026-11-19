@@ -499,12 +499,18 @@ public class FeudScriptCard extends VerticalLayout {
         .setFlexGrow(2);
     matchGrid
         .addColumn(
-            s ->
-                s.getWinners().isEmpty()
-                    ? "—"
-                    : s.getWinners().stream()
-                        .map(Wrestler::getName)
-                        .collect(Collectors.joining(", ")))
+            s -> {
+              if (!s.getWinners().isEmpty()) {
+                return s.getWinners().stream()
+                    .map(Wrestler::getName)
+                    .collect(Collectors.joining(", "));
+              }
+              return switch (s.getResult()) {
+                case DRAW -> "Draw";
+                case NO_CONTEST -> "No Contest";
+                default -> "—";
+              };
+            })
         .setHeader("Winner")
         .setFlexGrow(1);
     matchGrid.setHeight("16em");

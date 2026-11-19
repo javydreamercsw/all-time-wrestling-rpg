@@ -22,4 +22,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface DataMigrationHistoryRepository extends JpaRepository<DataMigrationHistory, Long> {
 
   Optional<DataMigrationHistory> findByMigrationId(String migrationId);
+
+  /**
+   * The most recently recorded migration row — its {@code app_version} is the last recorded app
+   * version (all rows written during one boot carry that boot's version). Ordered by recorded
+   * timestamp, not by a version-string comparison, which would not hold across version schemes.
+   */
+  Optional<DataMigrationHistory> findTopByOrderByExecutedAtDesc();
 }

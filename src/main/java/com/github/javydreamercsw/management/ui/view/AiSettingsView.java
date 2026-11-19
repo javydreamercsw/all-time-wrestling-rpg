@@ -16,8 +16,10 @@
 */
 package com.github.javydreamercsw.management.ui.view;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.base.ai.service.AiSettingsService;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
+import com.github.javydreamercsw.management.event.inbox.AiSettingsChangeBroadcaster;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.details.Details;
@@ -26,6 +28,7 @@ import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.NumberField;
 import com.vaadin.flow.component.textfield.PasswordField;
+import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.spring.annotation.UIScope;
@@ -44,6 +47,7 @@ public class AiSettingsView extends VerticalLayout {
   private final AiSettingsService aiSettingsService;
   private final GameSettingService gameSettingService;
   private final NotificationService notificationService;
+  private final transient AiSettingsChangeBroadcaster aiSettingsChangeBroadcaster;
 
   private Checkbox aiProviderAuto;
   private NumberField aiTimeout;
@@ -74,10 +78,12 @@ public class AiSettingsView extends VerticalLayout {
   public AiSettingsView(
       final AiSettingsService aiSettingsService,
       final GameSettingService gameSettingService,
-      final NotificationService notificationService) {
+      final NotificationService notificationService,
+      final AiSettingsChangeBroadcaster aiSettingsChangeBroadcaster) {
     this.aiSettingsService = aiSettingsService;
     this.gameSettingService = gameSettingService;
     this.notificationService = notificationService;
+    this.aiSettingsChangeBroadcaster = aiSettingsChangeBroadcaster;
     init();
   }
 
@@ -94,7 +100,7 @@ public class AiSettingsView extends VerticalLayout {
     aiTimeout.setValue((double) aiSettingsService.getAiTimeout());
     aiTimeout.addValueChangeListener(
         event -> {
-          if (event.isFromClient()) {
+          if (event.isFromClient() && event.getValue() != null) {
             saveSetting("AI_TIMEOUT", String.valueOf(event.getValue().intValue()));
           }
         });
@@ -151,7 +157,7 @@ public class AiSettingsView extends VerticalLayout {
     openAIMaxTokens.setValue((double) aiSettingsService.getOpenAIMaxTokens());
     openAIMaxTokens.addValueChangeListener(
         event -> {
-          if (event.isFromClient()) {
+          if (event.isFromClient() && event.getValue() != null) {
             saveSetting("AI_OPENAI_MAX_TOKENS", String.valueOf(event.getValue().intValue()));
           }
         });
@@ -159,7 +165,7 @@ public class AiSettingsView extends VerticalLayout {
     openAITemperature.setValue((double) aiSettingsService.getOpenAITemperature());
     openAITemperature.addValueChangeListener(
         event -> {
-          if (event.isFromClient()) {
+          if (event.isFromClient() && event.getValue() != null) {
             saveSetting("AI_OPENAI_TEMPERATURE", String.valueOf(event.getValue()));
           }
         });
@@ -287,7 +293,65 @@ public class AiSettingsView extends VerticalLayout {
           }
         });
 
-    ollamaSettingsLayout.add(ollamaBaseUrl, ollamaModel);
+    NumberField ollamaMaxTokens = new NumberField("Max Tokens");
+    ollamaMaxTokens.setId("ollama-max-tokens");
+    ollamaMaxTokens.setValue((double) aiSettingsService.getOllamaMaxTokens());
+    ollamaMaxTokens.setMin(1.0);
+    ollamaMaxTokens.setHelperText(
+        "Max output tokens. Reasoning (\"thinking\") tokens count toward this limit. "
+            + "Env var OLLAMA_MAX_TOKENS takes priority.");
+    ollamaMaxTokens.addValueChangeListener(
+        event -> {
+          if (event.isFromClient() && event.getValue() != null) {
+            saveSetting("AI_OLLAMA_MAX_TOKENS", String.valueOf(event.getValue().intValue()));
+          }
+        });
+
+    Checkbox ollamaDisableThinking =
+        new Checkbox("Disable Thinking", aiSettingsService.isOllamaDisableThinking());
+    ollamaDisableThinking.setId("ollama-disable-thinking");
+    ollamaDisableThinking.setHelperText(
+        "Appends /no_think to the system prompt (Qwen3-family hybrid models). "
+            + "Stops hidden reasoning from consuming the token budget; harmless for other models. "
+            + "Env var OLLAMA_DISABLE_THINKING takes priority.");
+    ollamaDisableThinking.addValueChangeListener(
+        event -> {
+          if (event.isFromClient()) {
+            saveSetting("AI_OLLAMA_DISABLE_THINKING", String.valueOf(event.getValue()));
+          }
+        });
+
+    TextArea ollamaExtraParams =
+        new TextArea(
+            "Extra Request Parameters (JSON)", aiSettingsService.getOllamaExtraParams(), "");
+    ollamaExtraParams.setId("ollama-extra-params");
+    ollamaExtraParams.setHelperText(
+        "JSON object merged into the Ollama request body; values here override the defaults above."
+            + " Keys 'model' and 'messages' are reserved and ignored. UI setting only (no env"
+            + " var).");
+    ollamaExtraParams.addValueChangeListener(
+        event -> {
+          if (!event.isFromClient()) {
+            return;
+          }
+          String value = event.getValue() == null ? "" : event.getValue().trim();
+          ObjectMapper mapper = new ObjectMapper();
+          try {
+            if (!mapper.readTree(value).isObject()) {
+              throw new IllegalArgumentException("Not a JSON object");
+            }
+            ollamaExtraParams.setInvalid(false);
+            saveSetting("AI_OLLAMA_EXTRA_PARAMS", value);
+          } catch (Exception e) {
+            ollamaExtraParams.setInvalid(true);
+            ollamaExtraParams.setErrorMessage("Not a valid JSON object");
+            notificationService.showError(
+                "AI_OLLAMA_EXTRA_PARAMS must be a valid JSON object — not saved");
+          }
+        });
+
+    ollamaSettingsLayout.add(
+        ollamaBaseUrl, ollamaModel, ollamaMaxTokens, ollamaDisableThinking, ollamaExtraParams);
 
     // ── Collapsible sections ─────────────────────────────────────────────────
     add(
@@ -327,5 +391,7 @@ public class AiSettingsView extends VerticalLayout {
     }
     gameSettingService.save(key, value);
     notificationService.showSuccess("Setting '" + key + "' updated!");
+    // Provider availability may have changed — refresh the global indicator everywhere (ATW-ftnb).
+    aiSettingsChangeBroadcaster.broadcast();
   }
 }

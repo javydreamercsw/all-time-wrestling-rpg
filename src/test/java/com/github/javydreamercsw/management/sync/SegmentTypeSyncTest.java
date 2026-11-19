@@ -17,7 +17,9 @@
 package com.github.javydreamercsw.management.sync;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -31,8 +33,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.dto.SegmentTypeDTO;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
+import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
+import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,11 +55,22 @@ class SegmentTypeSyncTest {
 
   @Mock private SegmentTypeService segmentTypeService;
 
+  @Mock private SeedUpdateReviewService seedReviewService;
+
+  private static final SeedSyncSupport VERIFY_SUPPORT = new SeedSyncSupport("verify");
+
+  private static final SeedProvenanceManifest EMPTY_MANIFEST = SeedProvenanceManifest.empty();
+
   private SegmentTypeSync sync;
 
   @BeforeEach
   void setUp() {
-    sync = new SegmentTypeSync("false", segmentTypeService, new ObjectMapper());
+    sync = sync("false");
+  }
+
+  private SegmentTypeSync sync(String mode) {
+    return new SegmentTypeSync(
+        mode, segmentTypeService, new ObjectMapper(), seedReviewService, EMPTY_MANIFEST);
   }
 
   @Test
@@ -103,7 +120,7 @@ class SegmentTypeSyncTest {
 
   @Test
   void sync_skipsWhenNotEmptyAndSkipFlagSet() {
-    SegmentTypeSync skipSync = new SegmentTypeSync("true", segmentTypeService, new ObjectMapper());
+    SegmentTypeSync skipSync = sync("true");
     when(segmentTypeService.count()).thenReturn(5L);
     when(segmentTypeService.findAll())
         .thenReturn(
@@ -130,7 +147,7 @@ class SegmentTypeSyncTest {
 
   @Test
   void sync_topUpInsertsNothingWhenCatalogComplete() {
-    SegmentTypeSync skipSync = new SegmentTypeSync("true", segmentTypeService, new ObjectMapper());
+    SegmentTypeSync skipSync = sync("true");
     when(segmentTypeService.count()).thenReturn(7L);
     when(segmentTypeService.findAll())
         .thenReturn(
@@ -154,8 +171,7 @@ class SegmentTypeSyncTest {
   void verifyMode_reconciledRowIsRestampedAndPersisted() {
     // Regression: the clean-row refresh previously saved through the service without persisting
     // a re-stamp — the DB kept the old fingerprint and the next pass froze the row.
-    SegmentTypeSync verifySync =
-        new SegmentTypeSync("verify", segmentTypeService, new ObjectMapper());
+    SegmentTypeSync verifySync = sync("verify");
     when(segmentTypeService.count()).thenReturn(1L);
 
     SegmentType clean = segmentType("Promo");
@@ -191,13 +207,15 @@ class SegmentTypeSyncTest {
         "the persisted row is the refreshed Promo");
   }
 
+  /** Trios's segment_types.json description, verbatim (the tier-2 fixture aligns to it). */
+  static final String SEED_TRIOS_DESCRIPTION =
+      "Team-based wrestling match between two three-wrestler teams with tag-in/tag-out mechanics";
+
   private static SegmentType segmentType(String name) {
     SegmentType st = new SegmentType();
     st.setName(name);
     return st;
   }
-
-  private static final SeedSyncSupport VERIFY_SUPPORT = new SeedSyncSupport("verify");
 
   private static String segmentTypeFingerprint(SegmentType st) {
     return VERIFY_SUPPORT.fingerprint(
@@ -210,8 +228,7 @@ class SegmentTypeSyncTest {
 
   @Test
   void verifyMode_reconcilesCleanRowAndPreservesEditedRow() {
-    SegmentTypeSync verifySync =
-        new SegmentTypeSync("verify", segmentTypeService, new ObjectMapper());
+    SegmentTypeSync verifySync = sync("verify");
     when(segmentTypeService.count()).thenReturn(2L);
 
     // Clean: "Promo" as an older release's seed write left it (guide-less), description since
@@ -253,8 +270,7 @@ class SegmentTypeSyncTest {
 
   @Test
   void verifyMode_adoptsLegacyRowWhenFieldsMatchSeed() {
-    SegmentTypeSync verifySync =
-        new SegmentTypeSync("verify", segmentTypeService, new ObjectMapper());
+    SegmentTypeSync verifySync = sync("verify");
     when(segmentTypeService.count()).thenReturn(1L);
 
     // Legacy: no stamp; fields equal what the seed write would produce for a guide-less entry.
@@ -271,5 +287,146 @@ class SegmentTypeSyncTest {
         segmentTypeFingerprint(legacy),
         legacy.getSeedFingerprint(),
         "legacy row matching the seed must be adopted (fingerprint stamped, no-op refresh)");
+  }
+
+  // ── Version-change detection (seed-update review, PR 4 Step 4 three-tier pin) ──
+
+  @Test
+  void versionChangeBootsParkCollisions() {
+    // THREE-TIER pin, end-to-end through the wired pipeline. Segment types are stamped as the
+    // previous release's seed write left them; the incoming seed (segment_types.json) supplies
+    // the new values through the sync's normal resource path. "Promo" is the tier-1 row
+    // (description stale vs the stamp, seed current), "Trios" the tier-2 row (admin-tuned code
+    // vs the stamp's seed value), "One on One" the tier-3 row (admin eventOnly edit the seed
+    // doesn't touch).
+    SegmentType tier1row = segmentType("Promo");
+    tier1row.setDescription("stale description from an older release");
+    tier1row.setExpansionCode("BASE_GAME");
+    tier1row.setGuideHash(null);
+    tier1row.setCode("promo");
+    tier1row.setSeedFingerprint(segmentTypeFingerprint(tier1row));
+
+    SegmentType tier2row = segmentType("Trios");
+    tier2row.setDescription(SEED_TRIOS_DESCRIPTION); // matches the seed so only `code` collides
+    tier2row.setExpansionCode("BASE_GAME");
+    tier2row.setGuideHash(null);
+    tier2row.setCode("trios_v1"); // the PREVIOUS release's seed code
+    tier2row.setSeedFingerprint(segmentTypeFingerprint(tier2row));
+    tier2row.setCode("admin_renamed_code"); // admin edit AFTER the stamp → dirty row
+
+    SegmentType tier3row = segmentType("One on One");
+    tier3row.setDescription("Traditional singles wrestling match between two competitors");
+    tier3row.setExpansionCode("BASE_GAME");
+    tier3row.setGuideHash(null);
+    tier3row.setCode("one_on_one");
+    tier3row.setSeedFingerprint(segmentTypeFingerprint(tier3row));
+    tier3row.setEventOnly(true); // admin edit AFTER the stamp; the seed leaves eventOnly unset
+
+    when(segmentTypeService.count()).thenReturn(3L);
+    when(segmentTypeService.findAllForAdmin()).thenReturn(List.of(tier1row, tier2row, tier3row));
+
+    Set<String> parkedCoordinates = new HashSet<>();
+    SeedUpdateReviewService parking = Mockito.mock(SeedUpdateReviewService.class);
+    Mockito.doAnswer(
+            inv -> {
+              parkedCoordinates.add(inv.getArgument(1) + "|" + inv.getArgument(3));
+              return null;
+            })
+        .when(parking)
+        .parkFieldConflict(
+            anyString(), anyString(), anyString(), anyString(), any(), any(), anyString());
+
+    SegmentTypeSync detectionSync =
+        new SegmentTypeSync(
+            "true", segmentTypeService, new ObjectMapper(), parking, EMPTY_MANIFEST);
+    detectionSync.detectVersionChangeCollisions();
+
+    // Tier 1: the untouched description updated silently to the NEW seed value.
+    assertEquals(
+        "Non-wrestling segment for storyline development and character work",
+        tier1row.getDescription(),
+        "tier 1: untouched field with a changed seed value must update silently");
+    // Tier 2: the admin's code kept its value; the row parked the collision.
+    assertEquals(
+        "admin_renamed_code", tier2row.getCode(), "tier 2: admin edit must keep its value");
+    // Tier 3: the admin eventOnly edit preserved (the seed doesn't declare it → PRESERVE_EDIT).
+    assertTrue(tier3row.isEventOnly(), "tier 3: admin edit must be preserved");
+    assertEquals(
+        Set.of(SegmentTypeSync.entityKeyFor("Trios") + "|code"),
+        parkedCoordinates,
+        "exactly the one tier-2 collision parked; tier-1 and tier-3 fields never park");
+  }
+
+  @Test
+  void normalBootBehaviorUnchanged() {
+    // Normal boot pin: FULL-mode detection is inert, and the pre-existing verify behavior still
+    // holds with the new constructor dependencies.
+    SegmentTypeSync fullSync = sync("false");
+    when(segmentTypeService.count()).thenReturn(7L);
+
+    fullSync.detectVersionChangeCollisions(); // FULL mode → inert
+
+    Mockito.verifyNoInteractions(seedReviewService);
+    verify(segmentTypeService, Mockito.never()).saveSegmentType(any());
+  }
+
+  // ── Guide reload helpers (beads ATW-md1i) ───────────────────────────────────
+
+  @Test
+  void reloadSeedGuideReturnsTheSeedPayloadForAKnownType() {
+    SegmentTypeSync typeSync = sync("true");
+
+    var guide = typeSync.reloadSeedGuide("One on One").orElseThrow();
+
+    assertNotNull(guide, "'One on One' ships a guide in segment_types.json");
+    assertEquals(
+        typeSync.guideHashForGuide(guide),
+        typeSync.guideHashForGuide(guide),
+        "hash is deterministic");
+  }
+
+  @Test
+  void reloadSeedGuideIsEmptyForUnseededTypeNames() {
+    SegmentTypeSync typeSync = sync("true");
+
+    assertTrue(typeSync.reloadSeedGuide("Admin Custom Type").isEmpty());
+  }
+
+  @Test
+  void guideHashForGuideIsNullForANullPayload() {
+    SegmentTypeSync typeSync = sync("true");
+
+    assertNull(typeSync.guideHashForGuide(null), "no payload → no hash (mirrors the seed write)");
+  }
+
+  @Test
+  void fullModeRestampsStaleFingerprintUnconditionally() {
+    // beads ATW-sytl: the FULL branch must re-stamp after field updates even when the row already
+    // carries a (stale) stamp — CardSync parity. Otherwise a future seed change updates fields
+    // but leaves the stale stamp, and a later switch to verify flags the row as
+    // "modified after seeding" forever, blocking its fast path.
+    SegmentTypeSync fullSync = sync("false");
+    SegmentType stale = segmentType("One on One");
+    stale.setSeedFingerprint("stale-fingerprint-from-an-older-release");
+    // The FULL loop iterates every seed entry; unstubbed names would return null and NPE.
+    // Last arg is a boxed Boolean that the seed JSON may leave null — any(), not anyBoolean().
+    when(segmentTypeService.createOrUpdateSegmentType(
+            anyString(), any(), any(), any(), any(), any()))
+        .thenAnswer(
+            inv -> {
+              if ("One on One".equals(inv.getArgument(0))) {
+                return stale;
+              }
+              return segmentType(inv.getArgument(0));
+            });
+
+    fullSync.sync(); // FULL mode: straight into loadSegmentTypes(true)
+
+    verify(segmentTypeService).saveSegmentType(stale);
+    assertEquals(
+        segmentTypeFingerprint(stale),
+        stale.getSeedFingerprint(),
+        "FULL mode must replace the stale stamp with the current fingerprint");
+    assertNotEquals("stale-fingerprint-from-an-older-release", stale.getSeedFingerprint());
   }
 }

@@ -98,6 +98,10 @@ class LeagueDashboardViewTest extends AbstractViewTest {
     }
 
     private LeagueRoster rosterEntry(String name, int wins, int losses, int draws) {
+      return rosterEntry(name, wins, losses, draws, 0);
+    }
+
+    private LeagueRoster rosterEntry(String name, int wins, int losses, int draws, int noContests) {
       Wrestler w = new Wrestler();
       w.setName(name);
       Account owner = new Account();
@@ -108,6 +112,7 @@ class LeagueDashboardViewTest extends AbstractViewTest {
       r.setWins(wins);
       r.setLosses(losses);
       r.setDraws(draws);
+      r.setNoContests(noContests);
       return r;
     }
 
@@ -137,6 +142,62 @@ class LeagueDashboardViewTest extends AbstractViewTest {
           "Loser",
           items.get(items.size() - 1).getWrestler().getName(),
           "Lowest-wins entry should be last");
+    }
+
+    @Test
+    @DisplayName("No-contests earn a point like a draw (owner ruling on ATW-91ky)")
+    void noContestsEarnPointsLikeDraws() {
+      // 2 wins + 3 draws = 7 points; 2 wins + 3 no-contests must also score 7 — the record
+      // column stays W-L-D, so points are the only place no-contests surface.
+      LeagueRoster drawRow = rosterEntry("DrawRow", 2, 1, 3);
+      LeagueRoster noContestRow = rosterEntry("NoContestRow", 2, 1, 0, 3);
+
+      when(leagueRosterRepository.findByLeagueWithWrestlerStates(any()))
+          .thenReturn(List.of(noContestRow, drawRow));
+
+      LeagueDashboardView sortView =
+          new LeagueDashboardView(
+              leagueService, showService, leagueRosterRepository, leagueMembershipRepository);
+      sortView.setParameter(null, 2L);
+      UI.getCurrent().add(sortView);
+
+      @SuppressWarnings("unchecked")
+      Grid<LeagueRoster> grid = (Grid<LeagueRoster>) _get(sortView, Grid.class);
+      List<LeagueRoster> items = grid.getListDataView().getItems().toList();
+
+      // Equal points → the tie breaks on losses (equal here), so insertion order is preserved
+      // by the stable sort — proving the two rows scored identically.
+      assertEquals(
+          "NoContestRow", items.get(0).getWrestler().getName(), "No-contest row ties with draws");
+      assertEquals("DrawRow", items.get(1).getWrestler().getName(), "Draw row stays alongside");
+    }
+
+    @Test
+    @DisplayName("No-contests break ties in the standings sort")
+    void noContestsBreakTiesLikeDraws() {
+      // 2 wins + 1 draw (5 pts) vs 2 wins + 1 no-contest (5 pts under the ruling) vs
+      // 2 wins + 0 extras (4 pts): the no-contest row must outrank the bare row.
+      LeagueRoster bareRow = rosterEntry("BareRow", 2, 1, 0);
+      LeagueRoster noContestRow = rosterEntry("NoContestRow", 2, 1, 0, 1);
+
+      when(leagueRosterRepository.findByLeagueWithWrestlerStates(any()))
+          .thenReturn(List.of(bareRow, noContestRow));
+
+      LeagueDashboardView sortView =
+          new LeagueDashboardView(
+              leagueService, showService, leagueRosterRepository, leagueMembershipRepository);
+      sortView.setParameter(null, 2L);
+      UI.getCurrent().add(sortView);
+
+      @SuppressWarnings("unchecked")
+      Grid<LeagueRoster> grid = (Grid<LeagueRoster>) _get(sortView, Grid.class);
+      List<LeagueRoster> items = grid.getListDataView().getItems().toList();
+
+      assertEquals(
+          "NoContestRow",
+          items.get(0).getWrestler().getName(),
+          "No-contest row must outrank the equal-record row with none");
+      assertEquals("BareRow", items.get(1).getWrestler().getName());
     }
   }
 }

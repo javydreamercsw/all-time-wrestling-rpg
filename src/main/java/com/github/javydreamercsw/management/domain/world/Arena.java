@@ -87,6 +87,14 @@ public class Arena extends AbstractEntity<Long> {
   @Builder.Default
   private Set<String> environmentalTraits = new HashSet<>();
 
+  /**
+   * Per-row seed provenance stamp (seed-update review feature): the hash of the row's seed-owned
+   * fields as the last seed write left them. NULL = pre-fingerprint-era (legacy) or user-created
+   * row.
+   */
+  @Column(name = "seed_fingerprint", length = 64)
+  private String seedFingerprint;
+
   public enum AlignmentBias {
     FACE_FAVORABLE("Face Favorable"),
     HEEL_FAVORABLE("Heel Favorable"),

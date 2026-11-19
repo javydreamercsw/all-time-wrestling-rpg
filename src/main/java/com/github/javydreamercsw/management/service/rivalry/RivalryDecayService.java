@@ -21,6 +21,7 @@ import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.rivalry.RivalryRepository;
 import com.github.javydreamercsw.management.service.GameClock;
 import com.github.javydreamercsw.management.service.GameSettingService;
+import com.github.javydreamercsw.management.sync.review.SeedReviewGate;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -41,11 +42,21 @@ public class RivalryDecayService {
   private final RivalryRepository rivalryRepository;
   private final GameSettingService gameSettingService;
   private final GameClock gameClock;
+  private final SeedReviewGate seedReviewGate;
 
   /** Runs nightly to apply heat decay and auto-close stale rivalries. */
   @Scheduled(cron = "0 0 3 * * *")
   @Transactional
   public void runDailyMaintenance() {
+    // Seed-update review gate: scheduled gameplay writes stay frozen while seed collisions
+    // are undecided.
+    if (seedReviewGate.isUp()) {
+      log.info(
+          "Rivalry daily maintenance skipped: seed-update review gate is up ({} pending"
+              + " decision(s)).",
+          seedReviewGate.pendingCount());
+      return;
+    }
     elevateToSystem();
     try {
       applyHeatDecay();
@@ -133,8 +144,14 @@ public class RivalryDecayService {
     }
   }
 
+  /**
+   * Date of the last heat event that actually changed the heat — 0-change events (failed resolution
+   * attempts, lifecycle markers) don't count as activity, so a feud that keeps failing resolution
+   * rolls still cools down.
+   */
   private Instant latestHeatEventDate(final Rivalry rivalry) {
     return rivalry.getHeatEvents().stream()
+        .filter(e -> e.getHeatChange() != null && e.getHeatChange() != 0)
         .map(HeatEvent::getEventDate)
         .max(Instant::compareTo)
         .orElse(null);

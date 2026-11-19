@@ -336,6 +336,7 @@ cmd_start() {
     SPRING_DATASOURCE_URL="jdbc:mysql://${MYSQL_HOST}:3306/${SANDBOX_DB}"
     SPRING_DATASOURCE_USERNAME="$db_user"
     PORT="$CANDIDATE_PORT"
+    DATA_INITIALIZER_SKIP_IF_NOT_EMPTY="${SANDBOX_SKIP_IF_NOT_EMPTY:-true}"
   )
   [ -n "$db_pwd" ] && env_vars+=(SPRING_DATASOURCE_PASSWORD="$db_pwd")
   env "${env_vars[@]}" nohup java -jar "$jar" > "$LOG_FILE" 2>&1 &

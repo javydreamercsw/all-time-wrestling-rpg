@@ -25,7 +25,10 @@ import lombok.Data;
 public class SegmentRuleDTO {
   private String name;
   private String description;
-  private boolean requiresHighHeat;
+
+  /** Minimum rivalry heat (0-100) required to book this rule. */
+  private int intensityRating;
+
   private boolean noDq;
   private boolean allowsRefereeStopage = true;
   private BumpAddition bumpAddition;

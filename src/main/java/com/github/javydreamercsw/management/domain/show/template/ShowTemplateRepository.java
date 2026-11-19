@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.domain.show.template;
 
+import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import java.util.List;
 import java.util.Optional;
@@ -48,6 +49,9 @@ public interface ShowTemplateRepository extends JpaRepository<ShowTemplate, Long
    * @return true if a template with this name exists
    */
   boolean existsByName(String name);
+
+  /** Whether any show template fields the given commentary team (seed-review removal guard). */
+  boolean existsByCommentaryTeam(CommentaryTeam commentaryTeam);
 
   /**
    * Find all show templates with pagination.

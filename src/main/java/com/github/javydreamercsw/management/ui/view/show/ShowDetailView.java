@@ -23,7 +23,6 @@ import com.github.javydreamercsw.base.security.GeneralSecurityUtils;
 import com.github.javydreamercsw.base.security.SecurityUtils;
 import com.github.javydreamercsw.base.ui.component.ViewToolbar;
 import com.github.javydreamercsw.base.ui.service.NotificationService;
-import com.github.javydreamercsw.management.controller.show.ShowController;
 import com.github.javydreamercsw.management.domain.AdjudicationStatus;
 import com.github.javydreamercsw.management.domain.campaign.AlignmentType;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
@@ -36,6 +35,7 @@ import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.export.ShowExportService;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
 import com.github.javydreamercsw.management.domain.show.segment.SegmentRepository;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.show.segment.rule.SegmentRule;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
@@ -47,6 +47,7 @@ import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
 import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.event.AdjudicationCompletedEvent;
+import com.github.javydreamercsw.management.event.inbox.AdjudicationProgressBroadcaster;
 import com.github.javydreamercsw.management.service.GameClock;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.drama.DramaEventService;
@@ -78,11 +79,14 @@ import com.github.javydreamercsw.management.service.wrestler.WrestlerFacade;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerStatsService;
 import com.github.javydreamercsw.management.ui.ViewContext;
+import com.github.javydreamercsw.management.ui.component.AdjudicationProgressOverlay;
 import com.github.javydreamercsw.management.ui.component.CommentaryComponent;
 import com.github.javydreamercsw.management.ui.view.match.QrCodeDialog;
 import com.github.javydreamercsw.management.ui.view.segment.NarrationDialog;
 import com.github.javydreamercsw.management.util.StarRenderer;
+import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -163,7 +167,7 @@ public class ShowDetailView extends Main
   private final ShowPlanningService showPlanningService;
   private final SegmentNarrationServiceFactory segmentNarrationServiceFactory;
   private final SegmentNarrationController segmentNarrationController;
-  private final ShowController showController;
+  private final AdjudicationProgressBroadcaster adjudicationProgressBroadcaster;
   private final MatchFulfillmentRepository matchFulfillmentRepository;
   private final UniverseRepository universeRepository;
   private final UniverseContextService universeContextService;
@@ -198,6 +202,12 @@ public class ShowDetailView extends Main
 
   private boolean orderDirty = false;
 
+  /** Floating progress card for adjudication/retry runs; fed by the progress broadcaster. */
+  private AdjudicationProgressOverlay adjudicationOverlay;
+
+  private Registration adjudicationProgressRegistration;
+  private ShowService.AdjudicationResult lastAdjudicationResult;
+
   private final NotificationService notificationService;
   private final ShowExportService exportService;
   private final LeagueRepository leagueRepository;
@@ -217,7 +227,7 @@ public class ShowDetailView extends Main
       final TitleService titleService,
       final RivalryService rivalryService,
       final SegmentNarrationController segmentNarrationController,
-      final ShowController showController,
+      final AdjudicationProgressBroadcaster adjudicationProgressBroadcaster,
       final MatchFulfillmentRepository matchFulfillmentRepository,
       final UniverseRepository universeRepository,
       final CommentaryTeamRepository commentaryTeamRepository,
@@ -242,7 +252,7 @@ public class ShowDetailView extends Main
     this.showPlanningService = showContextFacade.getShowPlanningService();
     this.segmentNarrationServiceFactory = showFacade.getNarrationFactory();
     this.segmentNarrationController = segmentNarrationController;
-    this.showController = showController;
+    this.adjudicationProgressBroadcaster = adjudicationProgressBroadcaster;
     this.matchFulfillmentRepository = matchFulfillmentRepository;
     this.universeRepository = universeRepository;
     this.universeContextService = viewContext.getUniverseContextService();
@@ -294,6 +304,36 @@ public class ShowDetailView extends Main
 
     add(new ViewToolbar("Show Details", ViewToolbar.group(headerLayout)));
     add(contentLayout);
+
+    // Floating progress card — created once; events reach it via the broadcaster registration
+    // in onAttach. Null-safe for Karibu-constructed views where the broadcaster may be absent.
+    adjudicationOverlay = new AdjudicationProgressOverlay();
+    add(adjudicationOverlay);
+  }
+
+  @Override
+  protected void onAttach(AttachEvent attachEvent) {
+    super.onAttach(attachEvent);
+    if (adjudicationProgressBroadcaster != null) {
+      adjudicationProgressRegistration =
+          adjudicationProgressBroadcaster.register(
+              event -> {
+                UI ui = getUI().orElse(null);
+                if (ui == null || !ui.isAttached()) {
+                  return;
+                }
+                ui.access(() -> adjudicationOverlay.onProgress(event));
+              });
+    }
+  }
+
+  @Override
+  protected void onDetach(DetachEvent detachEvent) {
+    if (adjudicationProgressRegistration != null) {
+      adjudicationProgressRegistration.remove();
+      adjudicationProgressRegistration = null;
+    }
+    super.onDetach(detachEvent);
   }
 
   @Override
@@ -699,7 +739,7 @@ public class ShowDetailView extends Main
     adjudicateButton = new Button("Adjudicate Fans", new Icon(VaadinIcon.GROUP));
     adjudicateButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
     adjudicateButton.setId("adjudicate-show-btn");
-    adjudicateButton.addClickListener(e -> adjudicateShow(show));
+    adjudicateButton.addClickListener(e -> confirmThenAdjudicate(show));
 
     boolean hasPendingSegments =
         segmentRepository.findByShow(show).stream()
@@ -970,6 +1010,23 @@ public class ShowDetailView extends Main
           .set("color", "var(--lumo-success-text-color)")
           .set("margin-top", "var(--lumo-space-xs)");
       card.add(winners);
+    } else if (segment.getResult() == SegmentResult.DRAW) {
+      Span draw = new Span("🤝 Draw");
+      draw.addClassNames(LumoUtility.FontWeight.SEMIBOLD);
+      draw.getStyle()
+          .set("display", "block")
+          .set("color", "var(--lumo-tertiary-text-color)")
+          .set("margin-top", "var(--lumo-space-xs)");
+      card.add(draw);
+    } else if (segment.getResult() == SegmentResult.NO_CONTEST) {
+      Span noContest = new Span("🚫 No Contest");
+      noContest.addClassNames(LumoUtility.FontWeight.SEMIBOLD);
+      noContest
+          .getStyle()
+          .set("display", "block")
+          .set("color", "var(--lumo-error-text-color)")
+          .set("margin-top", "var(--lumo-space-xs)");
+      card.add(noContest);
     }
 
     // League status
@@ -1178,12 +1235,41 @@ public class ShowDetailView extends Main
         .setSortable(false)
         .setFlexGrow(4);
 
-    // Winner column
-    grid.addColumn(
+    // Narration status column (ATW-v0vh): a warning icon for segments whose last narration
+    // attempt failed — persisted on the segment, so it survives reloads. Per-row retry is the
+    // existing Narrate action (NarrationDialog clears the mark on success).
+    grid.addComponentColumn(
             segment -> {
+              if (segment.getNarrationLastError() == null) {
+                return new Span("");
+              }
+              Icon failedIcon = new Icon(VaadinIcon.WARNING);
+              failedIcon.setColor("var(--lumo-error-text-color)");
+              failedIcon.setId("narration-failed-" + segment.getId());
+              Tooltip.forComponent(failedIcon).setText(segment.getNarrationLastError());
+              return failedIcon;
+            })
+        .setHeader("Narration")
+        .setSortable(false)
+        .setAutoWidth(true)
+        .setFlexGrow(0);
+
+    // Winner column — shows the declared outcome (draw / no contest) when booked
+    grid.addComponentColumn(
+            segment -> {
+              Span cell = new Span();
               List<String> winnerNames =
                   segment.getWinners().stream().map(Wrestler::getName).toList();
-              return String.join(", ", winnerNames);
+              if (!winnerNames.isEmpty()) {
+                cell.setText(String.join(", ", winnerNames));
+              } else if (segment.getResult() == SegmentResult.DRAW) {
+                cell.setText("🤝 Draw");
+                cell.getStyle().set("color", "var(--lumo-tertiary-text-color)");
+              } else if (segment.getResult() == SegmentResult.NO_CONTEST) {
+                cell.setText("🚫 No Contest");
+                cell.getStyle().set("color", "var(--lumo-error-text-color)");
+              }
+              return (Component) cell;
             })
         .setHeader("Winner(s)")
         .setSortable(false)
@@ -1413,48 +1499,7 @@ public class ShowDetailView extends Main
     narrateButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
     narrateButton.setTooltipText("Generate AI Narration");
     narrateButton.setId("generate-narration-button-" + segment.getId());
-    narrateButton.addClickListener(
-        e -> {
-          final UI ui = UI.getCurrent();
-          GeneralSecurityUtils.runAsAdminAsync(
-                  () ->
-                      NarrationDialog.PreloadedData.load(
-                          segmentService,
-                          npcService,
-                          wrestlerStatsService,
-                          universeContextService,
-                          segment))
-              .thenAccept(
-                  preloaded ->
-                      ui.access(
-                          () ->
-                              new NarrationDialog(
-                                      preloaded,
-                                      wrestlerService,
-                                      showService,
-                                      segmentService,
-                                      updatedSegment -> refreshSegmentsGrid(),
-                                      rivalryService,
-                                      segmentNarrationController,
-                                      segmentNarrationServiceFactory,
-                                      ringsideActionService,
-                                      relationshipService,
-                                      universeContextService,
-                                      notificationService,
-                                      wrestlerStatsService,
-                                      dramaEventService,
-                                      titleOpportunityService,
-                                      trophyReignService,
-                                      viewContext)
-                                  .open()))
-              .exceptionally(
-                  ex -> {
-                    log.error("Error loading narration dialog data", ex);
-                    ui.access(
-                        () -> notificationService.showError("Failed to open narration dialog."));
-                    return null;
-                  });
-        });
+    narrateButton.addClickListener(e -> openNarrationDialog(segment));
 
     Button editButton = new Button("Edit", new Icon(VaadinIcon.EDIT));
     editButton.addThemeVariants(ButtonVariant.LUMO_TERTIARY_INLINE);
@@ -1493,6 +1538,48 @@ public class ShowDetailView extends Main
 
     return new VerticalLayout(
         summaryButton, narrateButton, editButton, deleteButton, qrButton, infoButton);
+  }
+
+  /** Opens the narration dialog with preloaded context (extracted for testability). */
+  private void openNarrationDialog(@NonNull Segment segment) {
+    final UI ui = UI.getCurrent();
+    GeneralSecurityUtils.runAsAdminAsync(
+            () ->
+                NarrationDialog.PreloadedData.load(
+                    segmentService,
+                    npcService,
+                    wrestlerStatsService,
+                    universeContextService,
+                    segment))
+        .thenAccept(
+            preloaded ->
+                ui.access(
+                    () ->
+                        new NarrationDialog(
+                                preloaded,
+                                wrestlerService,
+                                showService,
+                                segmentService,
+                                updatedSegment -> refreshSegmentsGrid(),
+                                rivalryService,
+                                segmentNarrationController,
+                                segmentNarrationServiceFactory,
+                                ringsideActionService,
+                                relationshipService,
+                                universeContextService,
+                                notificationService,
+                                wrestlerStatsService,
+                                dramaEventService,
+                                titleOpportunityService,
+                                trophyReignService,
+                                viewContext)
+                            .open()))
+        .exceptionally(
+            ex -> {
+              log.error("Error loading narration dialog data", ex);
+              ui.access(() -> notificationService.showError("Failed to open narration dialog."));
+              return null;
+            });
   }
 
   private void generateSummary(@NonNull Segment segment) {
@@ -1793,7 +1880,7 @@ public class ShowDetailView extends Main
                   .toList();
           boolean hotRivalryNeedsStipulation =
               rivalryService.getActiveRivalries().stream()
-                  .filter(r -> r.getHeat() >= 30)
+                  .filter(r -> r.getHeat() >= 75)
                   .anyMatch(
                       r ->
                           selectedNames.contains(r.getWrestler1().getName())
@@ -1990,8 +2077,14 @@ public class ShowDetailView extends Main
                       Segment seg = (Segment) result[0];
                       EditSegmentDialog.PreloadedData preloaded =
                           (EditSegmentDialog.PreloadedData) result[1];
+                      // Tournament-bound segments stay resolvable: non-admin bookers can't
+                      // book a draw/no-contest on them from the edit dialog. Admins may
+                      // always edit (owner decision).
+                      boolean tournamentBound =
+                          tournamentMatchRepository.findBySegmentId(seg.getId()).isPresent()
+                              && !securityUtils.isAdmin();
                       EditSegmentDialog.SegmentDialogData initial =
-                          EditSegmentDialog.SegmentDialogData.from(seg);
+                          EditSegmentDialog.SegmentDialogData.from(seg, tournamentBound);
 
                       EditSegmentDialog[] dialogHolder = new EditSegmentDialog[1];
                       dialogHolder[0] =
@@ -2058,7 +2151,13 @@ public class ShowDetailView extends Main
                                 seg.syncSegmentRules(new ArrayList<>(saveData.rules()));
                                 seg.setAdjudicationStatus(AdjudicationStatus.PENDING);
                                 seg.setSegmentType(saveData.segmentType());
-                                if (saveData.winners() != null) {
+                                // Declared result first: DRAW/NO_CONTEST clear any winner flags.
+                                seg.declareResult(
+                                    saveData.result() != null
+                                        ? saveData.result()
+                                        : SegmentResult.WINNERS);
+                                if (saveData.winners() != null
+                                    && seg.getResult() == SegmentResult.WINNERS) {
                                   seg.setWinners(new ArrayList<>(saveData.winners()));
                                 }
                                 // Async DB write
@@ -2259,23 +2358,151 @@ public class ShowDetailView extends Main
     }
   }
 
-  private void adjudicateShow(@NonNull final Show show) {
-    adjudicateButton.setEnabled(false);
-    addSegmentButton.setEnabled(false);
+  /**
+   * Pre-flight for adjudication: asks the service what would happen, shows one dialog with the
+   * to-narrate list (info), the missing-winner list (warning), and the player-controlled segment
+   * Exclude/Include choice (exclude is the default), and only then starts the async adjudication. A
+   * pre-flight failure never blocks — adjudication proceeds directly, still excluding player
+   * segments (the safe default).
+   */
+  private void confirmThenAdjudicate(@NonNull final Show show) {
+    // Guard against double-click during the pre-flight .join() opening two dialogs
+    // (ATW-b08p): disable on entry; the pre-flight's early paths re-adjudicate directly (their
+    // callee disables the button again), and the dialog's "Go Back" re-enables it. The button
+    // can be absent in reconstructed views (tests) — the guard is then a no-op.
+    if (adjudicateButton != null) {
+      adjudicateButton.setEnabled(false);
+    }
+    ShowService.AdjudicationPreFlight preFlight;
+    try {
+      preFlight =
+          GeneralSecurityUtils.runAsAdminAsync(
+                  () -> showService.getAdjudicationPreFlight(show.getId()))
+              .join();
+    } catch (Exception e) {
+      log.warn("Adjudication pre-flight failed — adjudicating without the advisory", e);
+      adjudicateShow(show, false);
+      return;
+    }
+    if (preFlight.missingWinnerWarnings().isEmpty()
+        && preFlight.toNarrate().isEmpty()
+        && preFlight.playerSegments().isEmpty()) {
+      adjudicateShow(show, false);
+      return;
+    }
+    new AdjudicationPreFlightDialog(
+            preFlight,
+            new AdjudicationPreFlightDialog.Callbacks() {
+              @Override
+              public void onConfirm(boolean includePlayerSegments) {
+                adjudicateShow(show, includePlayerSegments);
+              }
+
+              @Override
+              public void onCancel() {
+                if (adjudicateButton != null) {
+                  adjudicateButton.setEnabled(true);
+                }
+              }
+            })
+        .open();
+  }
+
+  /**
+   * Starts the async adjudication run for the show with the chosen player-segment handling. The
+   * floating overlay shows per-segment progress (fed by {@link AdjudicationProgressBroadcaster});
+   * the terminal result arrives on the CompletableFuture, not the events.
+   */
+  private void adjudicateShow(@NonNull final Show show, final boolean includePlayerSegments) {
+    if (adjudicateButton != null) {
+      adjudicateButton.setEnabled(false);
+    }
+    if (addSegmentButton != null) {
+      addSegmentButton.setEnabled(false);
+    }
     UI ui = UI.getCurrent();
-    GeneralSecurityUtils.runAsAdminAsync(() -> showController.adjudicateShow(show.getId()))
-        .thenRun(
-            () ->
+    if (adjudicationOverlay != null) {
+      adjudicationOverlay.show();
+    }
+    GeneralSecurityUtils.runAsAdminAsync(
+            () -> showService.adjudicateShow(show.getId(), includePlayerSegments))
+        .thenAccept(
+            result ->
                 ui.access(
                     () -> {
+                      lastAdjudicationResult = result;
+                      if (adjudicationProgressBroadcaster != null) {
+                        adjudicationProgressBroadcaster.clear(show.getId());
+                      }
                       notificationService.showSuccess("Fan adjudication completed!");
                       refreshSegmentsGrid();
+                      if (adjudicationOverlay != null) {
+                        adjudicationOverlay.onCompleted(
+                            result, this::retryFailedNarration, () -> adjudicationOverlay.hide());
+                      }
                     }))
         .exceptionally(
             ex -> {
               log.error("Error adjudicating show", ex);
               ui.access(
-                  () -> notificationService.showError("Adjudication failed: " + ex.getMessage()));
+                  () -> {
+                    if (adjudicationProgressBroadcaster != null) {
+                      adjudicationProgressBroadcaster.clear(show.getId());
+                    }
+                    notificationService.showError("Adjudication failed: " + ex.getMessage());
+                    if (adjudicationOverlay != null) {
+                      adjudicationOverlay.onRunFailed(
+                          ex.getMessage(), () -> adjudicationOverlay.hide());
+                    }
+                  });
+              return null;
+            });
+  }
+
+  /** Overlay "Retry failed" action: narration-only rerun for the last result's failed ids. */
+  private void retryFailedNarration() {
+    if (lastAdjudicationResult == null
+        || lastAdjudicationResult.failedSegmentIds().isEmpty()
+        || currentShowId == null) {
+      return;
+    }
+    List<Long> failedIds = List.copyOf(lastAdjudicationResult.failedSegmentIds());
+    UI ui = UI.getCurrent();
+    GeneralSecurityUtils.runAsAdminAsync(() -> showService.retryNarration(currentShowId, failedIds))
+        .thenAccept(
+            result ->
+                ui.access(
+                    () -> {
+                      lastAdjudicationResult = result;
+                      if (adjudicationProgressBroadcaster != null) {
+                        adjudicationProgressBroadcaster.clear(currentShowId);
+                      }
+                      refreshSegmentsGrid();
+                      if (adjudicationOverlay != null) {
+                        adjudicationOverlay.onCompleted(
+                            result, this::retryFailedNarration, () -> adjudicationOverlay.hide());
+                      }
+                      notificationService.showSuccess(
+                          "Narration retry finished: "
+                              + result.narratedCount()
+                              + " succeeded"
+                              + (result.failedSegmentIds().isEmpty()
+                                  ? ""
+                                  : " — " + result.failedSegmentIds().size() + " still failing"));
+                    }))
+        .exceptionally(
+            ex -> {
+              log.error("Error retrying narration", ex);
+              ui.access(
+                  () -> {
+                    if (adjudicationProgressBroadcaster != null) {
+                      adjudicationProgressBroadcaster.clear(currentShowId);
+                    }
+                    if (adjudicationOverlay != null) {
+                      adjudicationOverlay.onRunFailed(
+                          ex.getMessage(), () -> adjudicationOverlay.hide());
+                    }
+                  });
               return null;
             });
   }

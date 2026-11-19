@@ -421,7 +421,7 @@ class ShowQualityServiceTest {
     hotFeud.setCrowdNoiseLevel(15);
 
     Rivalry rivalry = new Rivalry();
-    rivalry.setHeat(40); // ≥ 30 → high-stakes
+    rivalry.setHeat(100); // ≥ 75 → high-stakes (EXPLOSIVE band on the 0-100 scale)
     when(rivalryService.getRivalryById(99L)).thenReturn(Optional.of(rivalry));
     when(promoBookingService.isPromoSegment(hotFeud)).thenReturn(false);
     when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(anyLong(), anyLong()))
@@ -429,7 +429,7 @@ class ShowQualityServiceTest {
 
     service.computeAndPersist(show, List.of(hotFeud));
 
-    // Heat 40 → +16, performance 15*0.40=6 → 22, floor lifts to 60.
+    // Heat 100 → +20 (cap), performance 15*0.40=6 → 26, floor lifts to 60.
     assertThat(hotFeud.getSegmentRating()).isEqualTo(60);
   }
 
@@ -458,7 +458,7 @@ class ShowQualityServiceTest {
     segment.setCrowdNoiseLevel(90);
 
     Rivalry rivalry = new Rivalry();
-    rivalry.setHeat(50); // max → +20
+    rivalry.setHeat(100); // max → +20 (capped at the 0-100 scale ceiling)
     when(rivalryService.getRivalryById(99L)).thenReturn(Optional.of(rivalry));
     when(promoBookingService.isPromoSegment(segment)).thenReturn(false);
     when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(anyLong(), anyLong()))
@@ -502,7 +502,7 @@ class ShowQualityServiceTest {
     segment.setCrowdNoiseLevel(70);
 
     Rivalry rivalry = new Rivalry();
-    rivalry.setHeat(20); // +8 — below the 30 high-stakes heat threshold, so no floor applies
+    rivalry.setHeat(50); // +10 — below the 75 high-stakes heat threshold, so no floor applies
     when(rivalryService.getRivalryById(99L)).thenReturn(Optional.of(rivalry));
     when(promoBookingService.isPromoSegment(segment)).thenReturn(false);
     when(wrestlerStateRepository.findByWrestlerIdAndUniverseId(anyLong(), anyLong()))
@@ -514,8 +514,8 @@ class ShowQualityServiceTest {
     service.computeAndPersist(show, List.of(segment));
     int secondPass = segment.getSegmentRating();
 
-    // 8 heat + 70*0.40=28 performance = 36, stable across passes (no compounding).
-    assertThat(firstPass).isEqualTo(36);
+    // 10 heat + 70*0.40=28 performance = 38, stable across passes (no compounding).
+    assertThat(firstPass).isEqualTo(38);
     assertThat(secondPass).isEqualTo(firstPass);
   }
 
