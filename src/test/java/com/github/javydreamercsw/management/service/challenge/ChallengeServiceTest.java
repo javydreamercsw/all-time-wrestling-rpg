@@ -405,4 +405,31 @@ class ChallengeServiceTest {
     assertEquals("Sgt. Slaughter", traitor.getRequiredWrestlerNames().getFirst());
     assertEquals("CHALLENGE_CUSTOM_S2_08", traitor.getAchievementKey());
   }
+
+  /**
+   * The grind closes at HARD across all three slots: Davey Boy's elusive world title (ATW-usk9 part
+   * 2), Cardona's multi-title gauntlet (ATW-byhj part 3), and Slaughter's redemption finale
+   * (ATW-xl1k act 3).
+   */
+  @Test
+  void seasonTwoGrindClosesWithTitleGauntletAndRedemption() {
+    ChallengeDTO daveyBoy = service.getChallenge("custom_s2_09_bulldogs_world_title").orElseThrow();
+    assertEquals(Difficulty.HARD, daveyBoy.getDifficulty());
+    assertEquals("Normal", daveyBoy.getMatchType());
+    assertEquals("The British Bulldog", daveyBoy.getRequiredWrestlerNames().getFirst());
+    assertEquals("CHALLENGE_CUSTOM_S2_09", daveyBoy.getAchievementKey());
+
+    ChallengeDTO oneBelt =
+        service.getChallenge("custom_s2_10_belt_collector_one_belt").orElseThrow();
+    assertEquals(Difficulty.HARD, oneBelt.getDifficulty());
+    assertEquals("Gauntlet", oneBelt.getMatchType());
+    assertEquals("CHALLENGE_CUSTOM_S2_10", oneBelt.getAchievementKey());
+
+    ChallengeDTO redemption =
+        service.getChallenge("custom_s2_11_slaughter_redemption").orElseThrow();
+    assertEquals(Difficulty.HARD, redemption.getDifficulty());
+    assertEquals("No DQ", redemption.getMatchType());
+    assertEquals("Sgt. Slaughter", redemption.getRequiredWrestlerNames().getFirst());
+    assertEquals("CHALLENGE_CUSTOM_S2_11", redemption.getAchievementKey());
+  }
 }
