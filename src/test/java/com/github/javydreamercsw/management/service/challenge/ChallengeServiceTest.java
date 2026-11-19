@@ -599,8 +599,7 @@ class ChallengeServiceTest {
         .filter(c -> c.getId().startsWith("custom_s2_"))
         .forEach(
             c -> {
-              Matcher slot =
-                  Pattern.compile("^custom_s2_(\\d{2})_").matcher(c.getId());
+              Matcher slot = Pattern.compile("^custom_s2_(\\d{2})_").matcher(c.getId());
               assertTrue(slot.find(), "Season 2 ID lacks slot prefix: " + c.getId());
               int slotNumber = Integer.parseInt(slot.group(1));
               assertEquals(
