@@ -25,6 +25,7 @@ import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.javydreamercsw.management.config.JacksonConfig;
 import com.github.javydreamercsw.management.domain.card.CardSet;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.dto.*;
@@ -56,7 +57,9 @@ class DataInitializerTest {
   @Mock private SeedReviewDetectionOrchestrator seedReviewDetectionOrchestrator;
 
   private DataInitializer dataInitializer;
-  private final ObjectMapper objectMapper = new ObjectMapper();
+
+  /** Production mapper config — tolerates comments in hand-maintained seed files. */
+  private final ObjectMapper objectMapper = new JacksonConfig().objectMapper();
 
   @BeforeEach
   void setUp() {
@@ -128,7 +131,9 @@ class DataInitializerTest {
           PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
           Resource[] resources = resolver.getResources("classpath*:cards/*.json");
           for (Resource resource : resources) {
-            new ObjectMapper()
+            // Validate with the production mapper config (tolerates seed-file comments)
+            new JacksonConfig()
+                .objectMapper()
                 .readValue(resource.getInputStream(), new TypeReference<List<CardDTO>>() {});
           }
         });
@@ -138,10 +143,9 @@ class DataInitializerTest {
   void validateDecksJson() {
     assertDoesNotThrow(
         () -> {
-          new ObjectMapper()
-              .readValue(
-                  new ClassPathResource("decks.json").getInputStream(),
-                  new TypeReference<List<DeckDTO>>() {});
+          objectMapper.readValue(
+              new ClassPathResource("decks.json").getInputStream(),
+              new TypeReference<List<DeckDTO>>() {});
         });
   }
 
@@ -149,10 +153,9 @@ class DataInitializerTest {
   void validateChampionshipsJson() {
     assertDoesNotThrow(
         () -> {
-          new ObjectMapper()
-              .readValue(
-                  new ClassPathResource("championships.json").getInputStream(),
-                  new TypeReference<List<TitleDTO>>() {});
+          objectMapper.readValue(
+              new ClassPathResource("championships.json").getInputStream(),
+              new TypeReference<List<TitleDTO>>() {});
         });
   }
 
@@ -160,10 +163,9 @@ class DataInitializerTest {
   void validateSetsJson() {
     assertDoesNotThrow(
         () -> {
-          new ObjectMapper()
-              .readValue(
-                  new ClassPathResource("sets.json").getInputStream(),
-                  new TypeReference<List<CardSet>>() {});
+          objectMapper.readValue(
+              new ClassPathResource("sets.json").getInputStream(),
+              new TypeReference<List<CardSet>>() {});
         });
   }
 
@@ -171,10 +173,9 @@ class DataInitializerTest {
   void validateShowTemplatesJson() {
     assertDoesNotThrow(
         () -> {
-          new ObjectMapper()
-              .readValue(
-                  new ClassPathResource("show_templates.json").getInputStream(),
-                  new TypeReference<List<ShowTemplateDTO>>() {});
+          objectMapper.readValue(
+              new ClassPathResource("show_templates.json").getInputStream(),
+              new TypeReference<List<ShowTemplateDTO>>() {});
         });
   }
 
@@ -182,10 +183,9 @@ class DataInitializerTest {
   void validateShowTypesJson() {
     assertDoesNotThrow(
         () -> {
-          new ObjectMapper()
-              .readValue(
-                  new ClassPathResource("show_types.json").getInputStream(),
-                  new TypeReference<List<ShowType>>() {});
+          objectMapper.readValue(
+              new ClassPathResource("show_types.json").getInputStream(),
+              new TypeReference<List<ShowType>>() {});
         });
   }
 
@@ -193,10 +193,9 @@ class DataInitializerTest {
   void validateSegmentRulesJson() {
     assertDoesNotThrow(
         () -> {
-          new ObjectMapper()
-              .readValue(
-                  new ClassPathResource("segment_rules.json").getInputStream(),
-                  new TypeReference<List<SegmentRuleDTO>>() {});
+          objectMapper.readValue(
+              new ClassPathResource("segment_rules.json").getInputStream(),
+              new TypeReference<List<SegmentRuleDTO>>() {});
         });
   }
 
@@ -204,10 +203,9 @@ class DataInitializerTest {
   void validateSegmentTypesJson() {
     assertDoesNotThrow(
         () -> {
-          new ObjectMapper()
-              .readValue(
-                  new ClassPathResource("segment_types.json").getInputStream(),
-                  new TypeReference<List<SegmentTypeDTO>>() {});
+          objectMapper.readValue(
+              new ClassPathResource("segment_types.json").getInputStream(),
+              new TypeReference<List<SegmentTypeDTO>>() {});
         });
   }
 
@@ -215,10 +213,9 @@ class DataInitializerTest {
   void validateNpcsJson() {
     assertDoesNotThrow(
         () -> {
-          new ObjectMapper()
-              .readValue(
-                  new ClassPathResource("npcs.json").getInputStream(),
-                  new TypeReference<List<NpcDTO>>() {});
+          objectMapper.readValue(
+              new ClassPathResource("npcs.json").getInputStream(),
+              new TypeReference<List<NpcDTO>>() {});
         });
   }
 
@@ -226,10 +223,9 @@ class DataInitializerTest {
   void validateFactionsJson() {
     assertDoesNotThrow(
         () -> {
-          new ObjectMapper()
-              .readValue(
-                  new ClassPathResource("factions.json").getInputStream(),
-                  new TypeReference<List<FactionImportDTO>>() {});
+          objectMapper.readValue(
+              new ClassPathResource("factions.json").getInputStream(),
+              new TypeReference<List<FactionImportDTO>>() {});
         });
   }
 
@@ -237,10 +233,9 @@ class DataInitializerTest {
   void validateTeamsJson() {
     assertDoesNotThrow(
         () -> {
-          new ObjectMapper()
-              .readValue(
-                  new ClassPathResource("teams.json").getInputStream(),
-                  new TypeReference<List<TeamImportDTO>>() {});
+          objectMapper.readValue(
+              new ClassPathResource("teams.json").getInputStream(),
+              new TypeReference<List<TeamImportDTO>>() {});
         });
   }
 
@@ -248,10 +243,9 @@ class DataInitializerTest {
   void validateCampaignAbilityCardsJson() {
     assertDoesNotThrow(
         () -> {
-          new ObjectMapper()
-              .readValue(
-                  new ClassPathResource("campaign_ability_cards.json").getInputStream(),
-                  new TypeReference<List<CampaignAbilityCardDTO>>() {});
+          objectMapper.readValue(
+              new ClassPathResource("campaign_ability_cards.json").getInputStream(),
+              new TypeReference<List<CampaignAbilityCardDTO>>() {});
         });
   }
 
@@ -259,10 +253,9 @@ class DataInitializerTest {
   void validateStatusCardsJson() {
     assertDoesNotThrow(
         () -> {
-          new ObjectMapper()
-              .readValue(
-                  new ClassPathResource("status_cards.json").getInputStream(),
-                  new TypeReference<List<StatusCardDTO>>() {});
+          objectMapper.readValue(
+              new ClassPathResource("status_cards.json").getInputStream(),
+              new TypeReference<List<StatusCardDTO>>() {});
         });
   }
 
@@ -270,10 +263,9 @@ class DataInitializerTest {
   void validateRelationshipsJson() {
     assertDoesNotThrow(
         () -> {
-          new ObjectMapper()
-              .readValue(
-                  new ClassPathResource("relationships.json").getInputStream(),
-                  new TypeReference<List<RelationshipImportDTO>>() {});
+          objectMapper.readValue(
+              new ClassPathResource("relationships.json").getInputStream(),
+              new TypeReference<List<RelationshipImportDTO>>() {});
         });
   }
 
@@ -333,9 +325,8 @@ class DataInitializerTest {
           PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
           Resource[] resources = resolver.getResources("classpath*:wrestlers*.json");
           for (Resource resource : resources) {
-            new ObjectMapper()
-                .readValue(
-                    resource.getInputStream(), new TypeReference<List<WrestlerImportDTO>>() {});
+            objectMapper.readValue(
+                resource.getInputStream(), new TypeReference<List<WrestlerImportDTO>>() {});
           }
         });
   }

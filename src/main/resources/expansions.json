@@ -35,6 +35,10 @@
   "expansion_code": "HURT_BUSINESS",
   "priority": 10
 }, {
+  "name": "Jeff Hardy Expansion",
+  "expansion_code": "JEFF_HARDY",
+  "priority": 10
+}, {
   "name": "Custom Content",
   "expansion_code": "CUSTOM",
   "priority": 0

@@ -57,6 +57,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -184,7 +185,7 @@ public class Segment extends AbstractEntity<Long> {
   private Set<SegmentParticipant> participants = new HashSet<>();
 
   @ManyToMany(fetch = FetchType.EAGER)
-  @Setter
+  @Setter(AccessLevel.NONE)
   @JoinTable(
       name = "segment_title",
       joinColumns = @JoinColumn(name = "segment_id"),

@@ -17,6 +17,7 @@
 package com.github.javydreamercsw.management.ui.view.show;
 
 import com.github.javydreamercsw.management.service.show.ShowService;
+import com.vaadin.flow.component.ModalityMode;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -55,7 +56,7 @@ public class AdjudicationPreFlightDialog extends Dialog {
       ShowService.AdjudicationPreFlight preFlight, Callbacks callbacks) {
     this.callbacks = callbacks;
     setHeaderTitle("Adjudicate Show");
-    setModal(true);
+    setModality(ModalityMode.STRICT);
     setCloseOnEsc(false);
     setCloseOnOutsideClick(false);
 
