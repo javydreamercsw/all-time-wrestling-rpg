@@ -49,6 +49,50 @@ if [ -n "$jdk_target" ] && [ -n "$jdk_prev" ] && [ "$jdk_target" != "$jdk_prev" 
     changed=1
 fi
 
+# Detect the LAN IP once; used by the keystore refresh below and exported for
+# the Caddyfile's {$LAN_IP} placeholders (site block + default_sni). This
+# agent does not inherit the env setenv.sh gives Tomcat.
+LAN_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null)
+[ -n "$LAN_IP" ] && export LAN_IP
+
+# Keep the Tomcat LAN TLS keystore in sync with the current LAN IP (QR-code
+# sharing on 8443). The keystore's leaf certificate carries the LAN IP in its
+# SAN; when DHCP hands the Mac a different address, phones fail the TLS
+# handshake until the cert is re-issued. Re-sign the leaf from the Caddy
+# local root CA (the same CA phones trust) and count it as a change so the
+# restart below reloads the keystore — the restart also re-runs setenv.sh,
+# which re-detects QR_BASE_URL from the new IP.
+keystore=/opt/homebrew/etc/tomcat/atw-lan.p12
+caddy_ca="$HOME/Library/Application Support/Caddy/pki/authorities/local"
+if [ -n "$LAN_IP" ] && [ -f "$keystore" ] && [ -f "$caddy_ca/root.key" ]; then
+    cert_ip=$(openssl pkcs12 -in "$keystore" -passin pass:changeit -nokeys 2>/dev/null \
+        | openssl x509 -noout -text 2>/dev/null \
+        | sed -n 's/.*IP Address:\([0-9.]*\).*/\1/p' | head -1)
+    if [ -n "$cert_ip" ] && [ "$cert_ip" != "$LAN_IP" ]; then
+        tmp=$(mktemp -d "${TMPDIR:-/tmp}/atw-lan-cert.XXXXXX")
+        if openssl genrsa -out "$tmp/atw-lan.key" 2048 2>/dev/null \
+           && openssl req -new -key "$tmp/atw-lan.key" -out "$tmp/atw-lan.csr" \
+                -subj "/CN=$LAN_IP/O=ATW RPG" 2>/dev/null \
+           && printf '%s\n' "basicConstraints=CA:FALSE" \
+                "keyUsage=digitalSignature,keyEncipherment" \
+                "extendedKeyUsage=serverAuth" \
+                "subjectAltName=IP:$LAN_IP,DNS:localhost" > "$tmp/atw-lan.ext" \
+           && openssl x509 -req -in "$tmp/atw-lan.csr" \
+                -CA "$caddy_ca/root.crt" -CAkey "$caddy_ca/root.key" -CAcreateserial \
+                -out "$tmp/atw-lan.crt" -days 3650 -sha256 -extfile "$tmp/atw-lan.ext" 2>/dev/null \
+           && openssl pkcs12 -export -out "$tmp/atw-lan.p12" -inkey "$tmp/atw-lan.key" \
+                -in "$tmp/atw-lan.crt" -certfile "$caddy_ca/root.crt" \
+                -passout pass:changeit 2>/dev/null \
+           && [ "$(cat "$tmp/atw-lan.p12" | wc -c)" -gt 0 ]; then
+            cp "$keystore" "$keystore.bak"
+            mv "$tmp/atw-lan.p12" "$keystore"
+            echo "LAN IP changed ($cert_ip -> $LAN_IP): reissued $keystore, restarting Tomcat"
+            changed=1
+        fi
+        rm -rf "$tmp"
+    fi
+fi
+
 # Restart the service only if something actually changed. State is recorded
 # after the restart decision: if this script dies between kickstart and the
 # write, the next fire still sees the old target and retries (one extra
@@ -63,11 +107,6 @@ fi
 
 # Start Caddy reverse proxy if the config is present (provides HTTPS over LAN for QR code sharing)
 # Use absolute paths: launchd runs this without the Homebrew PATH (caddy used to fail with 127).
-# Export LAN_IP first: the Caddyfile uses {$LAN_IP} placeholders (site block +
-# default_sni), and this agent does not inherit the env setenv.sh gives Tomcat.
-LAN_IP=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null)
-[ -n "$LAN_IP" ] && export LAN_IP
-
 CADDYFILE=/opt/homebrew/etc/tomcat/Caddyfile
 if [ -f "$CADDYFILE" ]; then
     /opt/homebrew/bin/caddy stop 2>/dev/null || true

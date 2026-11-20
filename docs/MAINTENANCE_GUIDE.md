@@ -290,6 +290,25 @@ whether Homebrew repoints the symlink or replaces the Cellar version directory.
 
 To pin the JDK against surprise upgrades instead: `brew pin openjdk`.
 
+### LAN IP changes and the TLS keystore
+
+The Tomcat connector serving QR URLs on 8443 presents a certificate whose SAN carries the LAN
+IP (`conf/atw-lan.p12`, signed by the Caddy local root CA that phones trust). When DHCP hands
+the Mac a different address, phones fail the TLS handshake against the stale cert — Chrome
+reports `ERR_TOO_MANY_RETRIES` after repeated failed attempts.
+
+`relink.sh` closes this loop automatically on every fire (each boot, plus Homebrew changes):
+it extracts the IP from the keystore's certificate SAN, compares it with the current LAN IP,
+and on mismatch re-issues the leaf from the Caddy root CA (new key, SAN `IP:<current>,
+DNS:localhost`, 10-year validity), swaps the keystore in place (previous copy kept as
+`atw-lan.p12.bak`), and restarts Tomcat so the connector reloads it. The restart also re-runs
+`setenv.sh`, which re-derives `QR_BASE_URL` from the new IP — so QR URLs stay consistent with
+the certificate.
+
+The phone must still trust the Caddy root CA once; after that, IP changes are fully
+self-healing. To re-issue manually instead: see `scripts/prod-relink.sh` for the exact
+openssl sequence.
+
 ### Deploying or updating these files
 
 ```bash
