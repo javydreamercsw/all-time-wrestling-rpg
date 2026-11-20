@@ -238,6 +238,79 @@ Or to skip sync methods only when data already exists:
 
 ---
 
+## Production Deployment on macOS (Homebrew Tomcat + launchd)
+
+This site runs Tomcat under `launchd` as a LaunchAgent, with all mutable configuration kept
+outside the Homebrew prefix so `brew upgrade` cannot clobber it. Canonical copies of every
+file described here live in `scripts/`:
+
+| Repo file (`scripts/`) | Deployed as | Purpose |
+|---|---|---|
+| `prod-tomcat-launchd.plist` | `~/Library/LaunchAgents/tomcat.plist` | Runs `/opt/homebrew/opt/tomcat/bin/catalina run` with `KeepAlive` — keeps Tomcat alive across crashes and reboots. |
+| `prod-relink-launchd.plist` | `~/Library/LaunchAgents/com.atwrpg.relink-tomcat.plist` | Watches the Homebrew `tomcat` and `openjdk` trees; fires `relink.sh` on any change. |
+| `prod-relink.sh` | `/opt/homebrew/etc/tomcat/relink.sh` | Re-establishes symlinks after a Homebrew upgrade and restarts Tomcat only when something actually changed. |
+
+`setenv.sh` (deployed as `/opt/homebrew/etc/tomcat/setenv.sh`, symlinked into Tomcat's `bin/`)
+is environment-specific — database credentials, `SPRING_PROFILES_ACTIVE`, `QR_BASE_URL`,
+`CATALINA_TMPDIR` — and is intentionally **not** tracked in the repository.
+
+### How the pieces fit together
+
+1. `tomcat.plist` starts Tomcat at login and restarts it if it dies (`KeepAlive`).
+2. `com.atwrpg.relink-tomcat` fires `relink.sh` whenever anything under `/opt/homebrew/opt/tomcat`
+   or the OpenJDK trees changes (Homebrew upgrades replace those trees).
+3. `relink.sh` re-points the `setenv.sh` and `webapps` symlinks at `/opt/homebrew/etc/tomcat/…`,
+   restarts Tomcat **only if a symlink or the JDK changed**, and (re)starts Caddy for LAN HTTPS
+   QR sharing.
+
+`CATALINA_TMPDIR` deliberately points at `/opt/homebrew/etc/tomcat/temp` (outside the Homebrew
+prefix): Tomcat's tree is a launchd `WatchPath`, and apps writing transient temp files under it
+would restart the whole server on every QR render.
+
+### JDK upgrades and the lazy-ATW failure mode
+
+A running JVM maps its core native libraries at startup and keeps them working even after
+Homebrew deletes the files (`brew upgrade openjdk` swaps `Cellar/openjdk/<version>` behind the
+`/opt/homebrew/opt/openjdk` symlink). But the AWT natives (`libawt.dylib`) load **lazily**, on
+first use of `BufferedImage` — which on this site means the first "Share QR Code" click. A
+Tomcat process that started on the old JDK keeps serving fine until then, then fails with:
+
+```
+java.lang.UnsatisfiedLinkError: no awt in system library path:
+/opt/homebrew/Cellar/openjdk/<old-version>/libexec/openjdk.jdk/Contents/Home/lib
+```
+
+`relink.sh` handles this by comparing `/opt/homebrew/opt/openjdk`'s symlink target against the
+target recorded on the previous run (state file `~/.atwrpg/openjdk-target`). A changed target
+restarts Tomcat so the JVM starts fresh on the new JDK. The first run (no state file yet) only
+records the current target without restarting, and the state is written after the restart
+decision, so an interrupted run retries on the next fire. The watch paths cover both
+`/opt/homebrew/opt/openjdk` and `/opt/homebrew/Cellar/openjdk` so the agent fires
+whether Homebrew repoints the symlink or replaces the Cellar version directory.
+
+To pin the JDK against surprise upgrades instead: `brew pin openjdk`.
+
+### Deploying or updating these files
+
+```bash
+# 1. Copy the deployed files into place
+cp scripts/prod-tomcat-launchd.plist ~/Library/LaunchAgents/tomcat.plist
+cp scripts/prod-relink-launchd.plist ~/Library/LaunchAgents/com.atwrpg.relink-tomcat.plist
+cp scripts/prod-relink.sh /opt/homebrew/etc/tomcat/relink.sh
+chmod +x /opt/homebrew/etc/tomcat/relink.sh
+
+# 2. Reload the agents after any plist change
+launchctl bootout gui/$(id -u)/com.atwrpg.relink-tomcat 2>/dev/null || true
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.atwrpg.relink-tomcat.plist
+launchctl bootout gui/$(id -u)/tomcat 2>/dev/null || true
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/tomcat.plist
+```
+
+Manual restart without a Homebrew change: `launchctl kickstart -k gui/$(id -u)/tomcat`
+(note: this drops active user sessions).
+
+---
+
 ## QR Code Share URL Configuration
 
 The "Share QR Code" button in Match Detail and Show Detail views generates a URL encoded into the QR image. For the QR code to be scannable from a phone on your network, that URL must use the machine's LAN IP (or public hostname) — not `localhost`.
