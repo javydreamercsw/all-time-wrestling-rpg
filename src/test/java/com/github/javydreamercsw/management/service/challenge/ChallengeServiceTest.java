@@ -35,9 +35,12 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
@@ -45,10 +48,20 @@ class ChallengeServiceTest {
 
   private ChallengeService service;
 
+  /**
+   * The service's filesystem tier reads the platform content dir under {@code user.home} and
+   * overrides classpath content by ID — on a developer machine that has used the app's
+   * challenge-download feature, downloaded copies would silently shadow the shipped files these
+   * tests exist to pin. Redirecting {@code user.home} to a scratch dir makes the suite hermetic: it
+   * always tests exactly the shipped content.
+   */
   @BeforeEach
-  void setUp() {
+  void setUp(@TempDir Path tempHome) throws IOException {
+    Path originalHome = Path.of(System.getProperty("user.home"));
+    System.setProperty("user.home", tempHome.toString());
     service = new ChallengeService(new ObjectMapper(), new PathMatchingResourcePatternResolver());
     service.init();
+    System.setProperty("user.home", originalHome.toString());
   }
 
   @Test
@@ -304,5 +317,326 @@ class ChallengeServiceTest {
                         + "' has achievementKey '"
                         + c.getAchievementKey()
                         + "' not found in any shipped achievements file"));
+  }
+
+  /**
+   * Every Season 2 challenge (custom_s2_*) references a key in the global catalog, and the season
+   * carries its completion achievement — ChallengeCompletionService derives
+   * CHALLENGE_SEASON_2_COMPLETE from the "Season 2" season label.
+   */
+  @Test
+  void seasonTwoAchievementKeysShipInGlobalCatalog() throws Exception {
+    Set<String> keys = new HashSet<>();
+    try (InputStream is = getClass().getResourceAsStream("/achievements.json")) {
+      new ObjectMapper()
+          .readValue(is, new TypeReference<List<Map<String, Object>>>() {}).stream()
+              .map(a -> (String) a.get("key"))
+              .forEach(keys::add);
+    }
+    IntStream.rangeClosed(1, 22)
+        .forEach(
+            i ->
+                assertTrue(
+                    keys.contains("CHALLENGE_CUSTOM_S2_%02d".formatted(i)),
+                    "missing CHALLENGE_CUSTOM_S2_%02d".formatted(i)));
+    assertTrue(keys.contains("CHALLENGE_SEASON_2_COMPLETE"));
+  }
+
+  // ── Season 2: custom challenge season (slots 1-22) ─────────────────────────
+
+  /**
+   * The on-ramp opens the season with two EASY slots: the inverted survive-the-Beast objective and
+   * Cardona's King of the Indies opener.
+   */
+  @Test
+  void seasonTwoOnRampShipsSurvivalAndIndiesChallenges() {
+    ChallengeDTO beast = service.getChallenge("custom_s2_01_beast_survive").orElseThrow();
+    assertEquals("Season 2", beast.getSeason());
+    assertEquals("CUSTOM", beast.getExpansionCode());
+    assertEquals(Difficulty.EASY, beast.getDifficulty());
+    assertEquals("Last Man Standing", beast.getMatchType());
+    assertEquals("The Beast", beast.getRequiredWrestlerNames().getFirst());
+    assertEquals("CHALLENGE_CUSTOM_S2_01", beast.getAchievementKey());
+
+    ChallengeDTO cardona = service.getChallenge("custom_s2_02_belt_collector_indies").orElseThrow();
+    assertEquals(Difficulty.EASY, cardona.getDifficulty());
+    assertEquals("CHALLENGE_CUSTOM_S2_02", cardona.getAchievementKey());
+  }
+
+  /**
+   * Rising action raises every slot to MEDIUM: Raven's Flock interference wall, Pillman's
+   * random-modifier variance, and Slaughter's crowd-heat debut.
+   */
+  @Test
+  void seasonTwoRisingActionShipsFlockCannonAndHero() {
+    ChallengeDTO raven = service.getChallenge("custom_s2_03_raven_flock").orElseThrow();
+    assertEquals(Difficulty.MEDIUM, raven.getDifficulty());
+    assertEquals("No DQ", raven.getMatchType());
+    assertEquals("Raven", raven.getRequiredWrestlerNames().getFirst());
+    assertEquals("CHALLENGE_CUSTOM_S2_03", raven.getAchievementKey());
+
+    ChallengeDTO pillman = service.getChallenge("custom_s2_04_loose_cannon").orElseThrow();
+    assertEquals(Difficulty.MEDIUM, pillman.getDifficulty());
+    assertEquals("No DQ", pillman.getMatchType());
+    assertEquals("Brian Pillman", pillman.getRequiredWrestlerNames().getFirst());
+    assertEquals("CHALLENGE_CUSTOM_S2_04", pillman.getAchievementKey());
+
+    ChallengeDTO slaughter = service.getChallenge("custom_s2_05_slaughter_hero").orElseThrow();
+    assertEquals(Difficulty.MEDIUM, slaughter.getDifficulty());
+    assertEquals("Submission", slaughter.getMatchType());
+    assertEquals("Sgt. Slaughter", slaughter.getRequiredWrestlerNames().getFirst());
+    assertEquals("CHALLENGE_CUSTOM_S2_05", slaughter.getAchievementKey());
+  }
+
+  /**
+   * The grind opens at HARD: Cardona's deathmatch crown defense, the tag-format Bulldogs reunion,
+   * and Slaughter's traitor turn with the crowd against him .
+   */
+  @Test
+  void seasonTwoGrindOpensWithDeathmatchBulldogsAndTraitor() {
+    ChallengeDTO cardona =
+        service.getChallenge("custom_s2_06_belt_collector_deathmatch").orElseThrow();
+    assertEquals(Difficulty.MEDIUM, cardona.getDifficulty());
+    assertEquals("Barbwire Exploding Deathmatch", cardona.getMatchType());
+    assertEquals("Matt Cardona", cardona.getRequiredWrestlerNames().getFirst());
+    assertEquals("Sabu", cardona.getRequiredWrestlerNames().getLast());
+    assertTrue(cardona.getRequiredExpansions().contains("EXTREME"));
+    assertEquals("CHALLENGE_CUSTOM_S2_06", cardona.getAchievementKey());
+
+    ChallengeDTO bulldogs = service.getChallenge("custom_s2_07_bulldogs_reunion").orElseThrow();
+    assertEquals(Difficulty.MEDIUM, bulldogs.getDifficulty());
+    assertEquals("Elimination", bulldogs.getMatchType());
+    assertEquals("The British Bulldog", bulldogs.getRequiredWrestlerNames().getFirst());
+    assertEquals("Dynamite Kid", bulldogs.getRequiredWrestlerNames().getLast());
+    assertEquals("CHALLENGE_CUSTOM_S2_07", bulldogs.getAchievementKey());
+
+    ChallengeDTO traitor = service.getChallenge("custom_s2_08_slaughter_traitor").orElseThrow();
+    assertEquals(Difficulty.HARD, traitor.getDifficulty());
+    assertEquals("Cage", traitor.getMatchType());
+    assertEquals("Sgt. Slaughter", traitor.getRequiredWrestlerNames().getFirst());
+    assertEquals("CHALLENGE_CUSTOM_S2_08", traitor.getAchievementKey());
+  }
+
+  /**
+   * The grind closes at HARD across all three slots: Davey Boy's elusive world title, Cardona's
+   * multi-title gauntlet, and Slaughter's redemption finale .
+   */
+  @Test
+  void seasonTwoGrindClosesWithTitleGauntletAndRedemption() {
+    ChallengeDTO daveyBoy = service.getChallenge("custom_s2_09_bulldogs_world_title").orElseThrow();
+    assertEquals(Difficulty.HARD, daveyBoy.getDifficulty());
+    assertEquals("Normal", daveyBoy.getMatchType());
+    assertEquals("The British Bulldog", daveyBoy.getRequiredWrestlerNames().getFirst());
+    assertEquals("CHALLENGE_CUSTOM_S2_09", daveyBoy.getAchievementKey());
+
+    ChallengeDTO oneBelt =
+        service.getChallenge("custom_s2_10_belt_collector_one_belt").orElseThrow();
+    assertEquals(Difficulty.HARD, oneBelt.getDifficulty());
+    assertEquals("Gauntlet", oneBelt.getMatchType());
+    assertEquals("CHALLENGE_CUSTOM_S2_10", oneBelt.getAchievementKey());
+
+    ChallengeDTO redemption =
+        service.getChallenge("custom_s2_11_slaughter_redemption").orElseThrow();
+    assertEquals(Difficulty.HARD, redemption.getDifficulty());
+    assertEquals("No DQ", redemption.getMatchType());
+    assertEquals("Sgt. Slaughter", redemption.getRequiredWrestlerNames().getFirst());
+    assertEquals("CHALLENGE_CUSTOM_S2_11", redemption.getAchievementKey());
+  }
+
+  /**
+   * The proving ground changes the pressure's shape: not per-match modifiers but across-match
+   * compounding stakes — Shumba's gauntlet streak where one loss erases everything.
+   */
+  @Test
+  void seasonTwoProvingGroundShipsTheUnbestedStreak() {
+    ChallengeDTO shumba = service.getChallenge("custom_s2_12_shumba_unbested").orElseThrow();
+    assertEquals(Difficulty.HARD, shumba.getDifficulty());
+    assertEquals("Gauntlet", shumba.getMatchType());
+    assertEquals("Mukundi Shumba", shumba.getRequiredWrestlerNames().getFirst());
+    assertEquals("CHALLENGE_CUSTOM_S2_12", shumba.getAchievementKey());
+  }
+
+  /**
+   * The myth movement ships the Epic of Gilgamesh as five tablets: tyrant of Uruk, Enkidu's
+   * challenge, the redemption, the quest, and the Second Coming — escalating MEDIUM to HARD across
+   * the arc, the longest ramp before the finale.
+   */
+  @Test
+  void seasonTwoGilgameshShipsAllFiveTablets() {
+    List<Difficulty> expected =
+        List.of(
+            Difficulty.MEDIUM,
+            Difficulty.MEDIUM,
+            Difficulty.HARD,
+            Difficulty.HARD,
+            Difficulty.HARD);
+    List<Difficulty> actual =
+        IntStream.rangeClosed(13, 17)
+            .mapToObj(
+                slot ->
+                    service
+                        .getChallenge(
+                            "custom_s2_%02d_gilgamesh_tablet_%d".formatted(slot, slot - 12))
+                        .orElseThrow())
+            .map(ChallengeDTO::getDifficulty)
+            .toList();
+    assertEquals(expected, actual);
+
+    for (int slot = 13; slot < 17 + 1; slot++) {
+      final int tablet = slot - 12;
+      ChallengeDTO challenge =
+          service
+              .getChallenge("custom_s2_%02d_gilgamesh_tablet_%d".formatted(slot, tablet))
+              .orElseThrow();
+      assertEquals("Season 2", challenge.getSeason());
+      assertEquals("Gilgamesh", challenge.getRequiredWrestlerNames().getFirst());
+      assertEquals("CHALLENGE_CUSTOM_S2_%02d".formatted(slot), challenge.getAchievementKey());
+    }
+  }
+
+  /**
+   * The finale ships the Rise and Fall of Oda Tsurugi as five acts closing Season 2: the Yakuza
+   * years, the fire and redemption, the Okada obsession, the snap on the concrete slab, and the
+   * cyborg's banned-for-life rampage — the season's only LEGENDARY at its climax.
+   */
+  @Test
+  void seasonTwoFinaleShipsAllFiveOdaActs() {
+    List<Difficulty> expected =
+        List.of(
+            Difficulty.MEDIUM,
+            Difficulty.MEDIUM,
+            Difficulty.HARD,
+            Difficulty.HARD,
+            Difficulty.LEGENDARY);
+    List<Difficulty> actual =
+        IntStream.rangeClosed(18, 22)
+            .mapToObj(
+                slot ->
+                    service
+                        .getChallenge("custom_s2_%02d_oda_act_%d".formatted(slot, slot - 17))
+                        .orElseThrow())
+            .map(ChallengeDTO::getDifficulty)
+            .toList();
+    assertEquals(expected, actual);
+
+    for (int slot = 18; slot < 22 + 1; slot++) {
+      final int act = slot - 17;
+      ChallengeDTO challenge =
+          service.getChallenge("custom_s2_%02d_oda_act_%d".formatted(slot, act)).orElseThrow();
+      assertEquals("Season 2", challenge.getSeason());
+      assertEquals("Oda Tsurugi", challenge.getRequiredWrestlerNames().getFirst());
+      assertEquals("CHALLENGE_CUSTOM_S2_%02d".formatted(slot), challenge.getAchievementKey());
+    }
+  }
+
+  /**
+   * The whole season ships as one escalating ladder — EASY on-ramp through MEDIUM rising action,
+   * the HARD grind and proving ground, the myth movement's ramp, and the finale's LEGENDARY climax.
+   * Every slot must be present in canonical order.
+   */
+  @Test
+  void seasonTwoShipsTheCompleteTwentyTwoSlotLadder() {
+    List<String> seasonTwoIds =
+        List.of(
+            "custom_s2_01_beast_survive",
+            "custom_s2_02_belt_collector_indies",
+            "custom_s2_03_raven_flock",
+            "custom_s2_04_loose_cannon",
+            "custom_s2_05_slaughter_hero",
+            "custom_s2_06_belt_collector_deathmatch",
+            "custom_s2_07_bulldogs_reunion",
+            "custom_s2_08_slaughter_traitor",
+            "custom_s2_09_bulldogs_world_title",
+            "custom_s2_10_belt_collector_one_belt",
+            "custom_s2_11_slaughter_redemption",
+            "custom_s2_12_shumba_unbested",
+            "custom_s2_13_gilgamesh_tablet_1",
+            "custom_s2_14_gilgamesh_tablet_2",
+            "custom_s2_15_gilgamesh_tablet_3",
+            "custom_s2_16_gilgamesh_tablet_4",
+            "custom_s2_17_gilgamesh_tablet_5",
+            "custom_s2_18_oda_act_1",
+            "custom_s2_19_oda_act_2",
+            "custom_s2_20_oda_act_3",
+            "custom_s2_21_oda_act_4",
+            "custom_s2_22_oda_act_5");
+    List<Difficulty> expected =
+        List.of(
+            Difficulty.EASY,
+            Difficulty.EASY, // on-ramp
+            Difficulty.MEDIUM,
+            Difficulty.MEDIUM,
+            Difficulty.MEDIUM,
+            Difficulty.MEDIUM,
+            Difficulty.MEDIUM, // rising action
+            Difficulty.HARD,
+            Difficulty.HARD,
+            Difficulty.HARD,
+            Difficulty.HARD, // the grind
+            Difficulty.HARD, // proving ground
+            Difficulty.MEDIUM,
+            Difficulty.MEDIUM,
+            Difficulty.HARD,
+            Difficulty.HARD,
+            Difficulty.HARD, // the myth
+            Difficulty.MEDIUM,
+            Difficulty.MEDIUM,
+            Difficulty.HARD,
+            Difficulty.HARD,
+            Difficulty.LEGENDARY); // finale
+    List<Difficulty> actual =
+        seasonTwoIds.stream()
+            .map(id -> service.getChallenge(id).orElseThrow())
+            .map(ChallengeDTO::getDifficulty)
+            .toList();
+    assertEquals(expected, actual);
+  }
+
+  /** Every Season 2 challenge's achievement key is its slot number — no gaps, no collisions. */
+  @Test
+  void seasonTwoAchievementKeysCoverEverySlot() {
+    service.getAllChallenges().stream()
+        .filter(c -> c.getId().startsWith("custom_s2_"))
+        .forEach(
+            c -> {
+              Matcher slot = Pattern.compile("^custom_s2_(\\d{2})_").matcher(c.getId());
+              assertTrue(slot.find(), "Season 2 ID lacks slot prefix: " + c.getId());
+              int slotNumber = Integer.parseInt(slot.group(1));
+              assertEquals(
+                  "CHALLENGE_CUSTOM_S2_%02d".formatted(slotNumber),
+                  c.getAchievementKey(),
+                  "Achievement key mismatch for " + c.getId());
+            });
+  }
+
+  /**
+   * Every shipped challenge's matchType must resolve to a shipped SegmentRule name — the detail
+   * dialog links to the in-app match-info page by exact name match, so a renamed rule would
+   * otherwise kill the link silently while per-arc tests (which hard-code the expected strings)
+   * stay green.
+   */
+  @Test
+  void everyShippedChallengeMatchTypeResolvesToAShippedSegmentRule() throws Exception {
+    Set<String> shippedRuleNames = new HashSet<>();
+    try (InputStream is = getClass().getResourceAsStream("/segment_rules.json")) {
+      new ObjectMapper()
+          .readValue(is, new TypeReference<List<Map<String, Object>>>() {}).stream()
+              .map(r -> (String) r.get("name"))
+              .forEach(shippedRuleNames::add);
+    }
+    service
+        .getAllChallenges()
+        .forEach(
+            challenge -> {
+              if (challenge.getMatchType() == null) {
+                return; // null is legal: standard matches with no special rule
+              }
+              assertTrue(
+                  shippedRuleNames.contains(challenge.getMatchType()),
+                  challenge.getId()
+                      + " matchType '"
+                      + challenge.getMatchType()
+                      + "' does not match any shipped SegmentRule name");
+            });
   }
 }

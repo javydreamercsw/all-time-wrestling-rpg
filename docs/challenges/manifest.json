@@ -28,5 +28,9 @@
     "id": "season_1_custom",
     "jsonUrl": "https://javydreamercsw.github.io/all-time-wrestling-rpg/challenges/season_1/custom_challenges.json",
     "images": [ ]
+  }, {
+    "id": "season_2_custom",
+    "jsonUrl": "https://javydreamercsw.github.io/all-time-wrestling-rpg/challenges/season_2/custom_challenges.json",
+    "images": [ ]
   } ]
 }

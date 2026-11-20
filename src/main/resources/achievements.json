@@ -1547,4 +1547,142 @@
   "xpValue": 1000,
   "category": "SPECIAL_EVENT",
   "unlockCondition": "binding.hasVariable('deadlyCombatWins') && deadlyCombatWins >= 5"
+}, {
+  "key": "CHALLENGE_CUSTOM_S2_01",
+  "name": "Survivor of The Beast",
+  "description": "Completed the \"You Don't Beat The Beast — You Survive Her\" challenge",
+  "xpValue": 50,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_CUSTOM_S2_02",
+  "name": "King of the Indies",
+  "description": "Completed the \"Belt Collector — King of the Indies\" challenge",
+  "xpValue": 50,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_CUSTOM_S2_03",
+  "name": "Flock Buster",
+  "description": "Completed the \"Raven — What About Me?\" challenge",
+  "xpValue": 50,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_CUSTOM_S2_04",
+  "name": "Loose Cannon Tamer",
+  "description": "Completed the \"Brian Pillman — Loose Cannon\" challenge",
+  "xpValue": 50,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_CUSTOM_S2_05",
+  "name": "The Hero's Walk",
+  "description": "Completed the \"Sgt. Slaughter — The Hero\" challenge",
+  "xpValue": 50,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_CUSTOM_S2_06",
+  "name": "Deathmatch King Slayer",
+  "description": "Completed the \"Belt Collector — Deathmatch King\" challenge",
+  "xpValue": 50,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_CUSTOM_S2_07",
+  "name": "Reunion Booked",
+  "description": "Completed the \"The British Bulldogs — Reform the Team\" challenge",
+  "xpValue": 50,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_CUSTOM_S2_08",
+  "name": "Through The Crowd's Boos",
+  "description": "Completed the \"Sgt. Slaughter — The Traitor Turn\" challenge",
+  "xpValue": 50,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_CUSTOM_S2_09",
+  "name": "One Blemish No More",
+  "description": "Completed the \"The British Bulldog — One Blemish No More\" challenge",
+  "xpValue": 50,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_CUSTOM_S2_10",
+  "name": "One Belt to Rule Them All",
+  "description": "Completed the \"Belt Collector — One Belt to Rule Them All\" challenge",
+  "xpValue": 50,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_CUSTOM_S2_11",
+  "name": "Redeemed",
+  "description": "Completed the \"Sgt. Slaughter — Redemption\" challenge",
+  "xpValue": 50,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_CUSTOM_S2_12",
+  "name": "Still Unbested",
+  "description": "Completed the \"Mukundi Shumba — The Unbested\" challenge",
+  "xpValue": 50,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_CUSTOM_S2_13",
+  "name": "Tablet I Read",
+  "description": "Completed \"The Epic of Gilgamesh — Tablet I: The Tyrant of Uruk\"",
+  "xpValue": 50,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_CUSTOM_S2_14",
+  "name": "Tablet II Read",
+  "description": "Completed \"The Epic of Gilgamesh — Tablet II: The Challenge\"",
+  "xpValue": 50,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_CUSTOM_S2_15",
+  "name": "Tablet III Read",
+  "description": "Completed \"The Epic of Gilgamesh — Tablet III: The Redemption\"",
+  "xpValue": 50,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_CUSTOM_S2_16",
+  "name": "Tablet IV Read",
+  "description": "Completed \"The Epic of Gilgamesh — Tablet IV: The Quest\"",
+  "xpValue": 50,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_CUSTOM_S2_17",
+  "name": "Tablet V Read",
+  "description": "Completed \"The Epic of Gilgamesh — Tablet V: The Second Coming\"",
+  "xpValue": 50,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_CUSTOM_S2_18",
+  "name": "Yakuza Years Survivor",
+  "description": "Completed \"The Rise and Fall of Oda Tsurugi — Act I: The Yakuza Years\"",
+  "xpValue": 50,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_CUSTOM_S2_19",
+  "name": "Risen From The Fire",
+  "description": "Completed \"The Rise and Fall of Oda Tsurugi — Act II: The Fire\"",
+  "xpValue": 50,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_CUSTOM_S2_20",
+  "name": "Shadow Broken",
+  "description": "Completed \"The Rise and Fall of Oda Tsurugi — Act III: The Okada Obsession\"",
+  "xpValue": 50,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_CUSTOM_S2_21",
+  "name": "The Snap Witnessed",
+  "description": "Completed \"The Rise and Fall of Oda Tsurugi — Act IV: The Snap\"",
+  "xpValue": 50,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_CUSTOM_S2_22",
+  "name": "Banned For Life",
+  "description": "Completed \"The Rise and Fall of Oda Tsurugi — Act V: The Cyborg — Banned for Life\"",
+  "xpValue": 50,
+  "category": "CHALLENGE"
+}, {
+  "key": "CHALLENGE_SEASON_2_COMPLETE",
+  "name": "Season 2 Champion",
+  "description": "Completed every Season 2 challenge",
+  "xpValue": 250,
+  "category": "CHALLENGE"
 } ]
