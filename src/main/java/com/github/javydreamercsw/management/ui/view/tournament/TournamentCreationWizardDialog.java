@@ -563,10 +563,33 @@ public class TournamentCreationWizardDialog extends Dialog {
     refreshTeamPickers.run();
 
     MultiSelectComboBox<Wrestler> wrestlerPicker = new MultiSelectComboBox<>("Select Wrestlers");
-    wrestlerPicker.setItems(wrestlerFacade.getWrestlerService().getAllWrestlers());
     wrestlerPicker.setItemLabelGenerator(Wrestler::getName);
     wrestlerPicker.setWidthFull();
     wrestlerPicker.setVisible(false);
+
+    // Manual seeding offers the same pool seedAuto draws from — for a contender-deciding pick,
+    // that is the ranking-gated pool, so the entry path never rejects a wizard-picked wrestler.
+    // Rebuilt whenever the payoff-relevant fields change; a probe Tournament carries the
+    // in-progress configuration to the service overload.
+    Tournament seedingScope = new Tournament();
+    Runnable refreshWrestlerPicker =
+        () -> {
+          seedingScope.setLinkedTitle(titleCombo.getValue());
+          seedingScope.setGender(genderCombo.getValue());
+          seedingScope.setContenderDeciding(
+              "Winner becomes #1 contender".equals(payoffMode.getValue()));
+          wrestlerPicker.setItems(
+              tournamentService.findEligibleWrestlersSortedByFans(
+                  seedingScope,
+                  universeContextService.getCurrentUniverse().map(Universe::getId).orElse(1L)));
+        };
+    wrestlerPicker.setItems(
+        tournamentService.findEligibleWrestlersSortedByFans(
+            seedingScope,
+            universeContextService.getCurrentUniverse().map(Universe::getId).orElse(1L)));
+    payoffMode.addValueChangeListener(e -> refreshWrestlerPicker.run());
+    titleCombo.addValueChangeListener(e -> refreshWrestlerPicker.run());
+    genderCombo.addValueChangeListener(e -> refreshWrestlerPicker.run());
 
     seedingMode.addValueChangeListener(
         e -> {
@@ -600,12 +623,12 @@ public class TournamentCreationWizardDialog extends Dialog {
             return;
           }
           // Fans walk the lazy wrestlerStates collection — rank inside the service's
-          // transaction instead of touching detached entities here.
+          // transaction instead of touching detached entities here. Tournament-scoped overload:
+          // a contender-deciding preview shows only wrestlers the entry gate accepts.
           List<Wrestler> pool =
               new ArrayList<>(
                   tournamentService.findEligibleWrestlersSortedByFans(
-                      titleCombo.getValue(),
-                      genderCombo.getValue(),
+                      seedingScope,
                       universeContextService.getCurrentUniverse().map(Universe::getId).orElse(1L)));
           int take = Math.min(entrants, pool.size());
           StringBuilder sb = new StringBuilder();

@@ -224,6 +224,69 @@ class TournamentServiceTest {
   }
 
   @Test
+  @DisplayName(
+      "Auto-seeding a contender-deciding tournament skips unranked wrestlers instead of"
+          + " failing mid-loop")
+  void seedsContenderDecidingTournamentWithRankedWrestlersOnly() {
+    Tournament tournament = tournament(null);
+    tournament.setContenderDeciding(true);
+    Title title = new Title();
+    title.setId(7L);
+    title.setName("ATW World");
+    title.setChampionshipType(ChampionshipType.SINGLE);
+    tournament.setLinkedTitle(title);
+    Wrestler ranked = wrestler("Ranked Star", 1L);
+    Wrestler rankedSecond = wrestler("Second Star", 3L);
+    Wrestler unranked = wrestler("Unranked Jobber", 2L);
+    when(wrestlerRepository.findAllByActiveTrue())
+        .thenReturn(List.of(ranked, unranked, rankedSecond));
+    when(entryRepository.findByTournamentIdOrderBySeedAsc(1L)).thenReturn(List.of());
+    when(entryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    // The gate: the unranked high-fan wrestler fails ranking criteria.
+    when(contenderSelectionService.contendersMissingRankingCriteria(eq(title), any()))
+        .thenAnswer(
+            inv -> {
+              @SuppressWarnings("unchecked")
+              java.util.Collection<Wrestler> candidates =
+                  (java.util.Collection<Wrestler>) inv.getArgument(1);
+              return candidates.stream().filter(w -> w.getId() == 2L).toList();
+            });
+
+    List<TournamentEntry> entries = service.seedAuto(tournament, 2, null);
+
+    // The unranked wrestler is filtered from the pool before seeding, not rejected mid-loop.
+    assertThat(entries)
+        .extracting(TournamentEntry::getWrestler)
+        .containsExactly(ranked, rankedSecond);
+  }
+
+  @Test
+  @DisplayName("A replacement entrant in a contender-deciding tournament is ranking-gated")
+  void rejectsUnrankedReplacementInContenderDecidingTournament() {
+    Tournament tournament = tournament(null);
+    tournament.setContenderDeciding(true);
+    Title title = new Title();
+    title.setId(7L);
+    title.setName("ATW World");
+    title.setChampionshipType(ChampionshipType.SINGLE);
+    tournament.setLinkedTitle(title);
+    Wrestler outgoing = wrestler("Outgoing", 1L);
+    Wrestler unranked = wrestler("Unranked Jobber", 2L);
+    TournamentEntry entry =
+        TournamentEntry.builder().tournament(tournament).wrestler(outgoing).seed(1).build();
+    entry.setId(11L);
+    when(entryRepository.findById(11L)).thenReturn(Optional.of(entry));
+    when(tournamentRepository.findById(1L)).thenReturn(Optional.of(tournament));
+    when(wrestlerRepository.findById(2L)).thenReturn(Optional.of(unranked));
+    when(contenderSelectionService.contendersMissingRankingCriteria(eq(title), any()))
+        .thenReturn(List.of(unranked));
+
+    assertThatThrownBy(() -> service.replaceEntrant(1L, 11L, 2L))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("ranking criteria");
+  }
+
+  @Test
   @DisplayName("A team cannot enter a team tournament of a different size")
   void rejectsTeamWhenSizeMismatchesTournament() {
     Tournament tournament = tournament(TeamSize.DUO);

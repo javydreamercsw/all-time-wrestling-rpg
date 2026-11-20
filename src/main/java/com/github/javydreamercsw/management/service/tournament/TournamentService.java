@@ -1101,8 +1101,8 @@ public class TournamentService {
       return teamEntries;
     }
     List<Wrestler> pool =
-        findEligibleWrestlersSortedByFans(
-            tournament.getLinkedTitle(), tournament.getGender(), universeId);
+        contenderDecidingPool(
+            tournament, tournament.getLinkedTitle(), tournament.getGender(), universeId);
     if (pool.size() < fmt.getMinEntrants()) {
       throw new IllegalStateException(
           "Not enough eligible wrestlers to seed '"
@@ -1125,6 +1125,52 @@ public class TournamentService {
     }
     List<Wrestler> active = pool.stream().limit(effective).toList();
     return seedWith(tournament, active);
+  }
+
+  /**
+   * The eligible pool for a contender-deciding tournament: ranking-gated like {@code addEntry}.
+   * Unranked wrestlers are filtered out before seeding rather than rejected mid-loop — seeding is
+   * atomic, so one unranked entrant would otherwise roll back the whole field.
+   */
+  private List<Wrestler> contenderDecidingPool(
+      Tournament tournament, Title linkedTitle, Gender gender, Long universeId) {
+    List<Wrestler> pool = findEligibleWrestlersSortedByFans(linkedTitle, gender, universeId);
+    if (!tournament.isContenderDeciding()
+        || linkedTitle == null
+        || linkedTitle.getChampionshipType() != ChampionshipType.SINGLE) {
+      return pool;
+    }
+    List<Wrestler> ranked = rankingEligibleSubset(linkedTitle, pool);
+    if (ranked.size() < pool.size()) {
+      log.debug(
+          "Excluded {} unranked wrestler(s) from the contender-deciding pool of '{}'",
+          pool.size() - ranked.size(),
+          tournament.getName());
+    }
+    return ranked;
+  }
+
+  /** The subset of the pool meeting ranking criteria for the title (single batch check). */
+  public List<Wrestler> rankingEligibleSubset(Title linkedTitle, List<Wrestler> pool) {
+    Set<Long> missingIds =
+        contenderSelectionService.contendersMissingRankingCriteria(linkedTitle, pool).stream()
+            .map(Wrestler::getId)
+            .collect(Collectors.toSet());
+    return pool.stream().filter(w -> !missingIds.contains(w.getId())).toList();
+  }
+
+  /**
+   * Eligibility pool scoped to a tournament — the {@link #findEligibleWrestlersSortedByFans(Title,
+   * Gender, Long)} pool, narrowed to ranking-eligible wrestlers when the tournament is
+   * contender-deciding (the same gate {@code addEntry} enforces). Every seeding preview and
+   * pre-flight count must use this overload: showing or counting wrestlers the entry path would
+   * reject turns seeding into a mid-loop failure.
+   */
+  @Transactional(readOnly = true)
+  @PreAuthorize("isAuthenticated()")
+  public List<Wrestler> findEligibleWrestlersSortedByFans(Tournament tournament, Long universeId) {
+    return contenderDecidingPool(
+        tournament, tournament.getLinkedTitle(), tournament.getGender(), universeId);
   }
 
   /**
@@ -1611,6 +1657,22 @@ public class TournamentService {
     if (entryRepository.existsByTournamentIdAndWrestlerId(tournamentId, newWrestlerId)) {
       throw new IllegalStateException(
           replacement.getName() + " is already entered in this tournament");
+    }
+    // Same gate as addEntry: a replacement must meet ranking criteria for a contender-deciding
+    // tournament — the replace dialog otherwise offers unranked wrestlers the entry path rejects.
+    if (t.isContenderDeciding()
+        && t.getLinkedTitle() != null
+        && t.getLinkedTitle().getChampionshipType() == ChampionshipType.SINGLE) {
+      List<Wrestler> missing =
+          contenderSelectionService.contendersMissingRankingCriteria(
+              t.getLinkedTitle(), List.of(replacement));
+      if (!missing.isEmpty()) {
+        throw new IllegalStateException(
+            replacement.getName()
+                + " does not meet ranking criteria for the '"
+                + t.getLinkedTitle().getName()
+                + "' contender-deciding tournament");
+      }
     }
     entry.setWrestler(replacement);
     entryRepository.save(entry);

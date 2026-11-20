@@ -191,7 +191,7 @@ class TournamentTemplateBookingServiceTest {
     lenient().when(tournamentService.hasEntries(5L)).thenReturn(false);
     // Eligibility pre-flight passes (10 available >= min 2) before seedAuto is attempted.
     lenient()
-        .when(tournamentService.findEligibleWrestlersSortedByFans(any(), any(), eq(1L)))
+        .when(tournamentService.findEligibleWrestlersSortedByFans(any(Tournament.class), eq(1L)))
         .thenReturn(List.of(alice, bob, wrestler(3L, "Cara"), wrestler(4L, "Dave")));
     // seedAuto does not touch the in-memory collection — simulate by leaving the caller's
     // instance empty and having the refresh return the seeded, bracketed instance.
@@ -233,7 +233,7 @@ class TournamentTemplateBookingServiceTest {
     lenient().when(format.getMinEntrants()).thenReturn(4);
     lenient().when(tournamentService.hasEntries(5L)).thenReturn(false);
     lenient()
-        .when(tournamentService.findEligibleWrestlersSortedByFans(any(), any(), eq(1L)))
+        .when(tournamentService.findEligibleWrestlersSortedByFans(any(Tournament.class), eq(1L)))
         .thenReturn(List.of(alice, bob));
 
     assertTrue(
@@ -320,6 +320,9 @@ class TournamentTemplateBookingServiceTest {
     created.setFormatId("SINGLE_ELIMINATION");
     created.setStatus(TournamentStatus.SCHEDULED);
     when(tournamentService.findFormat("SINGLE_ELIMINATION")).thenReturn(Optional.of(format));
+    // Spec-created tournaments are classic title-on-the-line (contenderDeciding=false), so the
+    // pre-flight uses the non-gated 3-arg pool — the tournament-scoped overload only narrows
+    // contender-deciding tournaments.
     lenient()
         .when(tournamentService.findEligibleWrestlersSortedByFans(any(), any(), eq(1L)))
         .thenReturn(roster(8));
@@ -374,7 +377,7 @@ class TournamentTemplateBookingServiceTest {
         .thenReturn(Optional.of(format));
     lenient().when(tournamentService.hasEntries(51L)).thenReturn(false);
     lenient()
-        .when(tournamentService.findEligibleWrestlersSortedByFans(any(), any(), eq(1L)))
+        .when(tournamentService.findEligibleWrestlersSortedByFans(any(Tournament.class), eq(1L)))
         .thenReturn(roster(8));
     lenient().when(tournamentService.findByIdWithDetails(51L)).thenReturn(Optional.of(existing));
 
@@ -406,7 +409,7 @@ class TournamentTemplateBookingServiceTest {
     ShowTemplateSegmentAssignment row = specAssignment(template);
     when(tournamentService.findFormat("SINGLE_ELIMINATION")).thenReturn(Optional.of(format));
     lenient()
-        .when(tournamentService.findEligibleWrestlersSortedByFans(any(), any(), eq(1L)))
+        .when(tournamentService.findEligibleWrestlersSortedByFans(any(Tournament.class), eq(1L)))
         .thenReturn(List.of(alice, bob));
 
     assertTrue(
@@ -428,7 +431,7 @@ class TournamentTemplateBookingServiceTest {
         .thenReturn(Optional.of(format));
     lenient().when(tournamentService.hasEntries(5L)).thenReturn(false);
     lenient()
-        .when(tournamentService.findEligibleWrestlersSortedByFans(any(), any(), eq(1L)))
+        .when(tournamentService.findEligibleWrestlersSortedByFans(any(Tournament.class), eq(1L)))
         .thenReturn(roster(8));
     lenient()
         .when(tournamentService.findByIdWithDetails(5L))
@@ -1413,7 +1416,7 @@ class TournamentTemplateBookingServiceTest {
     when(pacingService.planFor(tournament, ple)).thenReturn(plan);
     when(tournamentService.findFormat("SINGLE_ELIMINATION")).thenReturn(Optional.of(format));
     when(tournamentService.hasEntries(5L)).thenReturn(false);
-    when(tournamentService.findEligibleWrestlersSortedByFans(any(), any(), eq(1L)))
+    when(tournamentService.findEligibleWrestlersSortedByFans(any(Tournament.class), eq(1L)))
         .thenReturn(List.of(alice, bob, wrestler(3L, "Cara"), wrestler(4L, "Dave")));
     when(tournamentService.findByIdWithDetails(5L)).thenReturn(Optional.of(tournament));
     when(tournamentService.startTournament(tournament))
@@ -1572,7 +1575,7 @@ class TournamentTemplateBookingServiceTest {
         .thenReturn(Optional.of(format));
     lenient().when(tournamentService.hasEntries(5L)).thenReturn(false);
     lenient()
-        .when(tournamentService.findEligibleWrestlersSortedByFans(any(), any(), eq(1L)))
+        .when(tournamentService.findEligibleWrestlersSortedByFans(any(Tournament.class), eq(1L)))
         .thenReturn(List.of(alice, bob, wrestler(3L, "Cara"), wrestler(4L, "Dave")));
     TournamentEntry aliceEntry = entry(alice, 1, TournamentEntryStatus.ACTIVE);
     TournamentEntry bobEntry = entry(bob, 2, TournamentEntryStatus.ACTIVE);
@@ -3138,7 +3141,7 @@ class TournamentTemplateBookingServiceTest {
         .thenReturn(Optional.of(format));
     lenient().when(tournamentService.hasEntries(5L)).thenReturn(false);
     lenient()
-        .when(tournamentService.findEligibleWrestlersSortedByFans(any(), any(), eq(1L)))
+        .when(tournamentService.findEligibleWrestlersSortedByFans(any(Tournament.class), eq(1L)))
         .thenReturn(List.of(alice, bob, wrestler(3L, "Cara"), wrestler(4L, "Dave")));
     when(tournamentService.startTournament(tournament)).thenReturn(tournament);
 
@@ -3166,7 +3169,7 @@ class TournamentTemplateBookingServiceTest {
         .thenReturn(Optional.of(format));
     lenient().when(tournamentService.hasEntries(5L)).thenReturn(false);
     lenient()
-        .when(tournamentService.findEligibleWrestlersSortedByFans(any(), any(), eq(1L)))
+        .when(tournamentService.findEligibleWrestlersSortedByFans(any(Tournament.class), eq(1L)))
         .thenReturn(List.of()); // nobody eligible
 
     assertEquals(0, service.autoStartScheduledTournamentsForNextPle(adjudicated));
