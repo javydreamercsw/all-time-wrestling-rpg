@@ -34,6 +34,7 @@ import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
@@ -193,6 +194,40 @@ class ShowTemplateListViewTest extends AbstractViewTest {
     SegmentRule r = new SegmentRule();
     r.setName(name);
     return r;
+  }
+
+  @Test
+  @DisplayName("A contender-deciding assignment row round-trips its title (ATW-9ub4)")
+  void saveTemplate_syncsContenderDecidingAssignment() {
+    ShowTemplate template = new ShowTemplate();
+    template.setId(12L);
+    template.setName("All Time Rumble");
+    template.setShowType(showType("PLE"));
+    when(showTemplateService.getTemplateWithAssignments(12L)).thenReturn(Optional.of(template));
+
+    SegmentType rumble = new SegmentType();
+    rumble.setId(1L);
+    rumble.setName("Abu Dhabi Rumble");
+    Title world = new Title();
+    world.setId(77L);
+    world.setName("ATW World");
+
+    view.openEditDialogForTest(template);
+    ShowTemplateSegmentAssignment row = new ShowTemplateSegmentAssignment();
+    row.setSegmentType(rumble);
+    row.setContenderTitle(world);
+    row.setMode(ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH);
+    view.addAssignmentRowForTest(row);
+    view.saveTemplateForTest();
+
+    Mockito.verify(showTemplateService)
+        .syncSegmentAssignments(
+            ArgumentMatchers.eq(12L),
+            ArgumentMatchers.argThat(
+                rows ->
+                    rows.size() == 1
+                        && rows.get(0).getContenderTitle() == world
+                        && "Abu Dhabi Rumble".equals(rows.get(0).getSegmentType().getName())));
   }
 
   @Test
