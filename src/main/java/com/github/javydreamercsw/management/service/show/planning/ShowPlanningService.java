@@ -56,6 +56,7 @@ import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanni
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRivalryDTO;
 import com.github.javydreamercsw.management.service.show.planning.dto.TournamentSlotPreviewDTO;
 import com.github.javydreamercsw.management.service.title.BriefcaseCashInAdvisorService;
+import com.github.javydreamercsw.management.service.title.ContenderSelectionService;
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.tournament.TournamentTemplateBookingService;
@@ -111,6 +112,7 @@ public class ShowPlanningService {
   private final TitleOpportunityService titleOpportunityService;
   private final TrophyReignService trophyReignService;
   private final BriefcaseCashInAdvisorService briefcaseCashInAdvisorService;
+  private final ContenderSelectionService contenderSelectionService;
 
   @Transactional
   @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER')")
@@ -731,7 +733,50 @@ public class ShowPlanningService {
       }
     }
 
+    // Ranking-criteria gate (ATW-9ub4): to PARTICIPATE in a #1 contender match a wrestler must
+    // meet the title's ranking criteria (ranked, or already a designated challenger). Skipped
+    // for tournament/briefcase-sourced rows — their participants were gated at entry, and a
+    // mid-tournament ranking shift must not strand the payoff.
+    for (ProposedSegment segment : proposedSegments) {
+      if (!Boolean.TRUE.equals(segment.getIsContenderMatch())
+          || segment.getContenderTitleId() == null
+          || segment.getSource() != null
+              && (segment.getSource().startsWith("Tournament")
+                  || segment.getSource().startsWith("Briefcase"))) {
+        continue;
+      }
+      titleService
+          .getTitleById(segment.getContenderTitleId())
+          .ifPresent(
+              title -> {
+                List<Wrestler> participants = resolveParticipants(segment);
+                List<Wrestler> missing =
+                    contenderSelectionService.contendersMissingRankingCriteria(title, participants);
+                for (Wrestler wrestler : missing) {
+                  errors.add(
+                      wrestler.getName()
+                          + " does not meet ranking criteria for a #1 contender match for '"
+                          + title.getName()
+                          + "'");
+                }
+              });
+    }
+
     return new CardValidationResult(errors, warnings);
+  }
+
+  /** Resolves a proposed segment's participants to wrestlers (by name; blank entries skipped). */
+  private List<Wrestler> resolveParticipants(@NonNull final ProposedSegment segment) {
+    if (segment.getTeams() == null) {
+      return List.of();
+    }
+    return segment.getTeams().stream()
+        .filter(Objects::nonNull)
+        .flatMap(List::stream)
+        .filter(name -> name != null && !name.isBlank())
+        .map(name -> wrestlerRepository.findByName(name.trim()))
+        .flatMap(Optional::stream)
+        .toList();
   }
 
   /** True when the proposed segment's type resolves to the well-known Promo type. */

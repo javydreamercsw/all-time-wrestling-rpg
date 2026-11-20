@@ -28,6 +28,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
@@ -74,6 +75,7 @@ import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanni
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningDtoMapper;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRivalryDTO;
 import com.github.javydreamercsw.management.service.title.BriefcaseCashInAdvisorService;
+import com.github.javydreamercsw.management.service.title.ContenderSelectionService;
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.tournament.TournamentTemplateBookingService;
@@ -123,6 +125,7 @@ class ShowPlanningServiceTest {
   @Mock private ShowTemplateRepository showTemplateRepository;
   @Mock private TournamentTemplateBookingService tournamentTemplateBookingService;
   @Mock private TitleOpportunityService titleOpportunityService;
+  @Mock private ContenderSelectionService contenderSelectionService;
 
   @Mock private BriefcaseCashInAdvisorService briefcaseCashInAdvisorService;
 
@@ -1815,6 +1818,96 @@ class ShowPlanningServiceTest {
     CardValidationResult result = showPlanningService.validateCard(List.of(good), List.of());
 
     assertTrue(result.isValid(), "Contender flag alone is the desired state");
+  }
+
+  @Test
+  void validateCard_contenderMatch_unrankedParticipant_isError() {
+    // Given — a #1 contender match whose participant does not appear in the title's rankings
+    // (tier filter with fallback) and is not a designated challenger: the AI must not book
+    // wrestlers with no ranking claim into contender-deciding matches.
+    Title title = new Title();
+    title.setId(77L);
+    title.setName("ATW World");
+    when(titleService.getTitleById(77L)).thenReturn(Optional.of(title));
+    doReturn(List.of())
+        .when(contenderSelectionService)
+        .contendersMissingRankingCriteria(any(), any());
+    when(contenderSelectionService.contendersMissingRankingCriteria(eq(title), any()))
+        .thenAnswer(
+            inv -> {
+              List<Wrestler> participants = inv.getArgument(1);
+              return participants; // everyone fails
+            });
+
+    ProposedSegment bad = new ProposedSegment();
+    bad.setType("One on One");
+    bad.setIsTitleSegment(false);
+    bad.setIsContenderMatch(true);
+    bad.setContenderTitleId(77L);
+    bad.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+    when(wrestlerRepository.findByName("Wrestler A"))
+        .thenReturn(Optional.of(wrestlerNamed(1L, "Wrestler A")));
+    when(wrestlerRepository.findByName("Wrestler B"))
+        .thenReturn(Optional.of(wrestlerNamed(2L, "Wrestler B")));
+
+    CardValidationResult result = showPlanningService.validateCard(List.of(bad), List.of());
+
+    assertFalse(result.isValid(), "Unranked contender-match participants are a hard error");
+    assertTrue(
+        result.getErrors().getFirst().contains("ranking criteria"),
+        "The error must name the ranking-criteria gate");
+  }
+
+  @Test
+  void validateCard_contenderMatch_rankedParticipant_noError() {
+    Title title = new Title();
+    title.setId(77L);
+    title.setName("ATW World");
+    when(titleService.getTitleById(77L)).thenReturn(Optional.of(title));
+    when(contenderSelectionService.contendersMissingRankingCriteria(eq(title), any()))
+        .thenReturn(List.of()); // everyone passes
+
+    ProposedSegment good = new ProposedSegment();
+    good.setType("One on One");
+    good.setIsTitleSegment(false);
+    good.setIsContenderMatch(true);
+    good.setContenderTitleId(77L);
+    good.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+    when(wrestlerRepository.findByName("Wrestler A"))
+        .thenReturn(Optional.of(wrestlerNamed(1L, "Wrestler A")));
+    when(wrestlerRepository.findByName("Wrestler B"))
+        .thenReturn(Optional.of(wrestlerNamed(2L, "Wrestler B")));
+
+    CardValidationResult result = showPlanningService.validateCard(List.of(good), List.of());
+
+    assertTrue(result.isValid(), "Ranked participants pass the gate");
+  }
+
+  @Test
+  void validateCard_contenderMatch_tournamentSource_skipsGate() {
+    // Tournament-fed payoff rows are entry-gated at tournament creation — mid-tournament
+    // ranking shifts must not strand the final.
+    Title title = new Title();
+    title.setId(77L);
+    title.setName("ATW World");
+    when(titleService.getTitleById(77L)).thenReturn(Optional.of(title));
+
+    ProposedSegment tournamentRow = new ProposedSegment();
+    tournamentRow.setType("One on One");
+    tournamentRow.setIsTitleSegment(false);
+    tournamentRow.setIsContenderMatch(true);
+    tournamentRow.setContenderTitleId(77L);
+    tournamentRow.setSource("Tournament");
+    tournamentRow.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+    when(wrestlerRepository.findByName("Wrestler A"))
+        .thenReturn(Optional.of(wrestlerNamed(1L, "Wrestler A")));
+    when(wrestlerRepository.findByName("Wrestler B"))
+        .thenReturn(Optional.of(wrestlerNamed(2L, "Wrestler B")));
+
+    CardValidationResult result =
+        showPlanningService.validateCard(List.of(tournamentRow), List.of());
+
+    assertTrue(result.isValid(), "Tournament-sourced rows bypass the ranking gate");
   }
 
   @Test
