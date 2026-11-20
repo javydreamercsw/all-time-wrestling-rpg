@@ -388,6 +388,15 @@ Caddy terminates HTTPS for QR sharing on port 443. Two failure modes to check wh
 
 Also note: the app sends `Strict-Transport-Security: max-age=31536000; includeSubDomains` on responses served through the proxy. Once a phone has loaded the app over HTTPS, its browser will force-HTTPS any later `http://<lan-ip>:<port>` URL — including QR URLs encoding plain HTTP on Tomcat's 8080 port, which then fails with `net::ERR_TOO_MANY_RETRIES` (TLS handshake against a plain-HTTP port). Set `QR_BASE_URL` so freshly generated QR codes use the correct `https://<lan-ip>/atw-rpg` form.
 
+### iOS: `ERR_TOO_MANY_RETRIES` in one browser only
+
+`ERR_TOO_MANY_RETRIES` is a connection-level failure: the phone cannot complete a TCP connection to the server, so nothing reaches Tomcat's logs (the access log only records completed HTTP requests — its silence proves nothing about server health). Before touching server config, isolate which layer fails:
+
+1. **Try a second browser on the phone.** If the URL loads in Firefox but not Chrome (or vice versa), the server is fine — the problem is per-app on the phone.
+2. **iOS Local Network permission.** iOS gates connections to LAN addresses (`192.168.x.x`) behind a per-app permission: Settings → Privacy & Security → Local Network. An iOS update can reset these grants; the blocked app's connections then fail silently, and Chrome retries until it reports `ERR_TOO_MANY_RETRIES`. Re-enable the browser's toggle (or trigger the prompt by opening any LAN URL once) to fix.
+
+Server-side order of elimination for the same error, when *every* browser fails: check the served certificate's SAN matches the current LAN IP (`openssl s_client -connect <lan-ip>:8443 | openssl x509 -noout -ext subjectAltName` — on this deployment `relink.sh` re-issues it automatically on DHCP changes), then the macOS Application Firewall's entry for the running java binary (each `brew upgrade openjdk` changes the binary path and the old firewall entry no longer applies; System Settings → Network → Firewall, since CLI changes are refused on MDM-managed Macs).
+
 ### Reverse proxy (Caddy / nginx)
 
 Ensure your proxy forwards `X-Forwarded-Host` and `X-Forwarded-Proto` headers and that `server.forward-headers-strategy=native` is set in `application-prod.properties` (it already is). The app will then reconstruct the correct public URL automatically.
