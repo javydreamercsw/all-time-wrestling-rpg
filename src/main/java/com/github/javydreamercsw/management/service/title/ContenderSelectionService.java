@@ -20,13 +20,21 @@ import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerTitleCooldown;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerTitleCooldownRepository;
 import com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO;
 import com.github.javydreamercsw.management.event.ContenderDesignatedEvent;
 import com.github.javydreamercsw.management.event.ContenderTieDetectedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.ranking.RankingService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +48,11 @@ import org.springframework.transaction.annotation.Transactional;
  * contender is picked from the rankings; when the top-ranked wrestlers are too close to call, a
  * tie-breaker match is suggested instead. All thresholds are configurable via {@link
  * GameSettingService}.
+ *
+ * <p>Two designation paths: {@link #designateAsContender} for implicit picks from the rankings
+ * (tier-gated at the sink), and {@link #designateEarnedContender} for shots earned in the ring —
+ * contender-deciding wins and champion-slayer wins — which bypass the tier gate but still respect
+ * the failed-challenge cooldown.
  */
 @Service
 @Slf4j
@@ -51,6 +64,8 @@ public class ContenderSelectionService {
   private final GameSettingService gameSettingService;
   private final WrestlerRepository wrestlerRepository;
   private final ApplicationEventPublisher eventPublisher;
+  private final WrestlerTitleCooldownRepository cooldownRepository;
+  private final WrestlerService wrestlerService;
 
   /**
    * Designates the given wrestler as the #1 contender for the title and publishes a {@link
@@ -80,6 +95,118 @@ public class ContenderSelectionService {
           result.message());
     }
     return result.success();
+  }
+
+  /**
+   * Designates the winner of an earned shot (contender-deciding win) as the title's #1 contender,
+   * bypassing the tier percentile gate but still respecting the failed-challenge cooldown. A
+   * wrestler on cooldown for this title cannot be designated even by winning.
+   *
+   * @param title the title being contended for
+   * @param wrestler the winner of the contender-deciding match
+   * @return true when the wrestler was registered as the #1 contender
+   */
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  @Transactional
+  public boolean designateEarnedContender(
+      @NonNull final Title title, @NonNull final Wrestler wrestler) {
+    if (isOnCooldown(title, wrestler)) {
+      log.info(
+          "{} is on failed-challenge cooldown for {} — earned shot not granted",
+          wrestler.getName(),
+          title.getName());
+      return false;
+    }
+    TitleService.ChallengeResult result =
+        titleService.grantEarnedChallengerStatus(title.getId(), wrestler.getId(), true);
+    if (result.success()) {
+      log.info(
+          "{} earned the #1 contender spot for {} (contender-deciding win)",
+          wrestler.getName(),
+          title.getName());
+      eventPublisher.publishEvent(new ContenderDesignatedEvent(this, title, wrestler));
+    } else {
+      log.warn(
+          "Could not grant earned contender status to {} for {}: {}",
+          wrestler.getName(),
+          title.getName(),
+          result.message());
+    }
+    return result.success();
+  }
+
+  /**
+   * Makes the winner over the reigning champion available as a challenger for the champion's title
+   * (champion-slayer rule): appends them to the challenger list without displacing the current #1
+   * contender. Respects the failed-challenge cooldown. No designation event — the champion-defeated
+   * notification covers visibility.
+   *
+   * @param title the champion's title
+   * @param winner the wrestler who beat the champion
+   * @return true when the winner was appended to the challenger list
+   */
+  @Transactional
+  public boolean grantChampionSlayerAvailability(
+      @NonNull final Title title, @NonNull final Wrestler winner) {
+    if (isOnCooldown(title, winner)) {
+      log.info(
+          "{} is on failed-challenge cooldown for {} — champion-slayer availability not granted",
+          winner.getName(),
+          title.getName());
+      return false;
+    }
+    TitleService.ChallengeResult result =
+        titleService.grantEarnedChallengerStatus(title.getId(), winner.getId(), false);
+    if (result.success()) {
+      log.info(
+          "{} is now available as a challenger for {} (defeated the champion in a non-title"
+              + " match)",
+          winner.getName(),
+          title.getName());
+    } else {
+      log.debug(
+          "Champion-slayer availability not granted to {} for {}: {}",
+          winner.getName(),
+          title.getName(),
+          result.message());
+    }
+    return result.success();
+  }
+
+  /**
+   * Booking-gate input: which of the given participants do NOT meet the ranking criteria to contend
+   * for the title. A participant passes when they appear in the computed rankings (tier filter with
+   * the all-comers fallback) or are already a designated challenger (earned shots stay eligible).
+   * On-cooldown wrestlers still pass — the cooldown blocks designation, not participation.
+   */
+  public List<Wrestler> contendersMissingRankingCriteria(
+      @NonNull final Title title, @NonNull final Collection<Wrestler> participants) {
+    Set<Long> eligibleIds = new HashSet<>();
+    rankingService.getRankedContenders(title.getId()).stream()
+        .filter(RankedWrestlerDTO.class::isInstance)
+        .map(RankedWrestlerDTO.class::cast)
+        .map(RankedWrestlerDTO::getId)
+        .forEach(eligibleIds::add);
+    title.getChallengers().forEach(challenger -> eligibleIds.add(challenger.getId()));
+    return participants.stream().filter(w -> !eligibleIds.contains(w.getId())).toList();
+  }
+
+  /** Failed-challenge cooldown check (same arithmetic as RankingService's DTO annotation). */
+  private boolean isOnCooldown(@NonNull final Title title, @NonNull final Wrestler wrestler) {
+    if (title.getUniverse() == null) {
+      return false;
+    }
+    WrestlerState state =
+        wrestlerService.getOrCreateState(wrestler.getId(), title.getUniverse().getId());
+    if (state == null || state.getId() == null) {
+      return false;
+    }
+    int cooldownDefenses = gameSettingService.getContenderFailedChallengeCooldownDefenses();
+    Optional<WrestlerTitleCooldown> cooldown =
+        cooldownRepository.findByWrestlerState_IdAndTitle_Id(state.getId(), title.getId());
+    return cooldown.isPresent()
+        && title.getDefenseCount() - cooldown.get().getDefenseCountAtChallenge() < cooldownDefenses;
   }
 
   /**
