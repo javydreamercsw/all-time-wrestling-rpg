@@ -19,6 +19,7 @@ package com.github.javydreamercsw.management.service.legacy;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.javydreamercsw.base.domain.account.Account;
+import com.github.javydreamercsw.base.domain.account.Achievement;
 import com.github.javydreamercsw.base.domain.account.AchievementRepository;
 import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
@@ -85,5 +86,86 @@ class AchievementScriptingIT extends AbstractMockUserIntegrationTest {
         .as("ELITE_SCOUT is a script-only achievement (achievements.json), no Java trigger exists")
         .anyMatch(a -> "ELITE_SCOUT".equals(a.getKey()));
     assertThat(achievementRepository.findByKey("ELITE_SCOUT")).isPresent();
+  }
+
+  /**
+   * "Win a world championship" achievements must not unlock on a lower-tier reign. The shipped
+   * condition once checked {@code reigns?.any { it.currentReign }} — true for ANY current title —
+   * so Bobby Lashley's ATW Tag Team reign (CONTENDER tier) falsely awarded The Almighty. The fix
+   * constrains the condition to MAIN_EVENTER-tier titles, which is what the in-game "world
+   * championship" designation is.
+   */
+  @Test
+  void updateLegacyScore_lashleyHoldingOnlyNonWorldTitle_doesNotUnlockTheAlmighty() {
+    Account account = new Account("almighty_it_user", "P@ssword123", "almighty@example.com");
+    account = accountRepository.save(account);
+
+    Wrestler lashley = Wrestler.builder().build();
+    lashley.setName("Bobby Lashley");
+    lashley.setAccount(account);
+    wrestlerRepository.save(lashley);
+
+    // A tag-team championship: TEAM type, below the world-title (MAIN_EVENTER) tier —
+    // exactly the production shape that falsely unlocked the achievement.
+    Title tagTitle =
+        titleService.createTitle(
+            "IT Tag Team",
+            "Tag team championship",
+            WrestlerTier.CONTENDER,
+            ChampionshipType.TEAM,
+            defaultUniverse.getId());
+    tagTitle.awardTitleTo(List.of(lashley), Instant.now());
+    titleRepository.save(tagTitle);
+
+    entityManager.flush();
+    entityManager.clear();
+
+    legacyService.updateLegacyScore(accountRepository.findById(account.getId()).orElseThrow());
+
+    Account reloaded = accountRepository.findById(account.getId()).orElseThrow();
+    assertThat(
+            reloaded.getAchievements().stream()
+                .map(Achievement::getKey)
+                .filter(k -> k.startsWith("LASHLEY_"))
+                .toList())
+        .as(
+            "LASHLEY_THE_ALMIGHTY promises 'a world championship' — a tag-team reign must not"
+                + " unlock it")
+        .isEmpty();
+  }
+
+  /**
+   * The positive half of the same contract: a MAIN_EVENTER-tier reign is a world championship and
+   * unlocks The Almighty as described.
+   */
+  @Test
+  void updateLegacyScore_lashleyHoldingWorldTitle_unlocksTheAlmighty() {
+    Account account = new Account("almighty_world_it_user", "P@ssword123", "almightyw@example.com");
+    account = accountRepository.save(account);
+
+    Wrestler lashley = Wrestler.builder().build();
+    lashley.setName("Bobby Lashley");
+    lashley.setAccount(account);
+    wrestlerRepository.save(lashley);
+
+    Title worldTitle =
+        titleService.createTitle(
+            "IT World",
+            "World championship",
+            WrestlerTier.MAIN_EVENTER,
+            ChampionshipType.SINGLE,
+            defaultUniverse.getId());
+    worldTitle.awardTitleTo(List.of(lashley), Instant.now());
+    titleRepository.save(worldTitle);
+
+    entityManager.flush();
+    entityManager.clear();
+
+    legacyService.updateLegacyScore(accountRepository.findById(account.getId()).orElseThrow());
+
+    Account reloaded = accountRepository.findById(account.getId()).orElseThrow();
+    assertThat(reloaded.getAchievements())
+        .as("A MAIN_EVENTER-tier reign is a world championship — The Almighty unlocks")
+        .anyMatch(a -> "LASHLEY_THE_ALMIGHTY".equals(a.getKey()));
   }
 }
