@@ -169,6 +169,35 @@ jobs:
             git push -u origin "release/${{ github.event.inputs.version }}"
           fi
 
+      - name: Guard against flattened history
+        # git-cliff builds the changelog from per-PR commits on the release
+        # branch. If the release→main PR gets squash-merged instead of left
+        # to merge_to_main's --no-ff merge, the entire release lands on main
+        # as one "Release X.Y.Z (#N)" commit and the branch gets recreated
+        # from that flattened history — release notes then render only the
+        # previous release's stragglers. A feat/fix count alone
+        # cannot detect this (stragglers satisfy it; chores-only releases
+        # legitimately have zero). The squash commit's subject is the exact
+        # fingerprint of the flattened path — no other commit matches it.
+        if: steps.release_type.outputs.is_rc != 'true'
+        run: |
+          git fetch --tags origin --quiet
+          LAST_TAG=$(git describe --tags --abbrev=0 --match 'v[0-9]*' 2>/dev/null || true)
+          if [ -z "$LAST_TAG" ]; then
+            echo "No previous tag found — skipping flattened-history guard."
+            exit 0
+          fi
+          SQUASH=$(git rev-list --count --extended-regexp \
+            --grep='^Release [0-9]+\.[0-9]+\.[0-9]+ \(#[0-9]+\)$' "${LAST_TAG}..HEAD")
+          if [ "$SQUASH" -gt 0 ]; then
+            echo "::error::Found a squash-merged release PR commit between ${LAST_TAG} and HEAD."
+            echo "::error::The release history is flattened: git-cliff cannot build notes from it."
+            echo "::error::Fix: merge the release→main PR with a merge commit (never squash), and"
+            echo "::error::dispatch this workflow from the release branch, not main."
+            exit 1
+          fi
+          echo "Flattened-history guard passed: no squash-merged release PR between ${LAST_TAG} and HEAD."
+
       - name: Update POM version
         run: mvn versions:set -DnewVersion=${{ github.event.inputs.version }} -DgenerateBackupPoms=false
 

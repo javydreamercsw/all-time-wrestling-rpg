@@ -238,6 +238,98 @@ Or to skip sync methods only when data already exists:
 
 ---
 
+## Production Deployment on macOS (Homebrew Tomcat + launchd)
+
+This site runs Tomcat under `launchd` as a LaunchAgent, with all mutable configuration kept
+outside the Homebrew prefix so `brew upgrade` cannot clobber it. Canonical copies of every
+file described here live in `scripts/`:
+
+|   Repo file (`scripts/`)    |                       Deployed as                       |                                                      Purpose                                                       |
+|-----------------------------|---------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------|
+| `prod-tomcat-launchd.plist` | `~/Library/LaunchAgents/tomcat.plist`                   | Runs `/opt/homebrew/opt/tomcat/bin/catalina run` with `KeepAlive` — keeps Tomcat alive across crashes and reboots. |
+| `prod-relink-launchd.plist` | `~/Library/LaunchAgents/com.atwrpg.relink-tomcat.plist` | Watches the Homebrew `tomcat` and `openjdk` trees; fires `relink.sh` on any change.                                |
+| `prod-relink.sh`            | `/opt/homebrew/etc/tomcat/relink.sh`                    | Re-establishes symlinks after a Homebrew upgrade and restarts Tomcat only when something actually changed.         |
+
+`setenv.sh` (deployed as `/opt/homebrew/etc/tomcat/setenv.sh`, symlinked into Tomcat's `bin/`)
+is environment-specific — database credentials, `SPRING_PROFILES_ACTIVE`, `QR_BASE_URL`,
+`CATALINA_TMPDIR` — and is intentionally **not** tracked in the repository.
+
+### How the pieces fit together
+
+1. `tomcat.plist` starts Tomcat at login and restarts it if it dies (`KeepAlive`).
+2. `com.atwrpg.relink-tomcat` fires `relink.sh` whenever anything under `/opt/homebrew/opt/tomcat`
+   or the OpenJDK trees changes (Homebrew upgrades replace those trees).
+3. `relink.sh` re-points the `setenv.sh` and `webapps` symlinks at `/opt/homebrew/etc/tomcat/…`,
+   restarts Tomcat **only if a symlink or the JDK changed**, and (re)starts Caddy for LAN HTTPS
+   QR sharing.
+
+`CATALINA_TMPDIR` deliberately points at `/opt/homebrew/etc/tomcat/temp` (outside the Homebrew
+prefix): Tomcat's tree is a launchd `WatchPath`, and apps writing transient temp files under it
+would restart the whole server on every QR render.
+
+### JDK upgrades and the lazy-ATW failure mode
+
+A running JVM maps its core native libraries at startup and keeps them working even after
+Homebrew deletes the files (`brew upgrade openjdk` swaps `Cellar/openjdk/<version>` behind the
+`/opt/homebrew/opt/openjdk` symlink). But the AWT natives (`libawt.dylib`) load **lazily**, on
+first use of `BufferedImage` — which on this site means the first "Share QR Code" click. A
+Tomcat process that started on the old JDK keeps serving fine until then, then fails with:
+
+```
+java.lang.UnsatisfiedLinkError: no awt in system library path:
+/opt/homebrew/Cellar/openjdk/<old-version>/libexec/openjdk.jdk/Contents/Home/lib
+```
+
+`relink.sh` handles this by comparing `/opt/homebrew/opt/openjdk`'s symlink target against the
+target recorded on the previous run (state file `~/.atwrpg/openjdk-target`). A changed target
+restarts Tomcat so the JVM starts fresh on the new JDK. The first run (no state file yet) only
+records the current target without restarting, and the state is written after the restart
+decision, so an interrupted run retries on the next fire. The watch paths cover both
+`/opt/homebrew/opt/openjdk` and `/opt/homebrew/Cellar/openjdk` so the agent fires
+whether Homebrew repoints the symlink or replaces the Cellar version directory.
+
+To pin the JDK against surprise upgrades instead: `brew pin openjdk`.
+
+### LAN IP changes and the TLS keystore
+
+The Tomcat connector serving QR URLs on 8443 presents a certificate whose SAN carries the LAN
+IP (`conf/atw-lan.p12`, signed by the Caddy local root CA that phones trust). When DHCP hands
+the Mac a different address, phones fail the TLS handshake against the stale cert — Chrome
+reports `ERR_TOO_MANY_RETRIES` after repeated failed attempts.
+
+`relink.sh` closes this loop automatically on every fire (each boot, plus Homebrew changes):
+it extracts the IP from the keystore's certificate SAN, compares it with the current LAN IP,
+and on mismatch re-issues the leaf from the Caddy root CA (new key, SAN `IP:<current>,
+DNS:localhost`, 10-year validity), swaps the keystore in place (previous copy kept as
+`atw-lan.p12.bak`), and restarts Tomcat so the connector reloads it. The restart also re-runs
+`setenv.sh`, which re-derives `QR_BASE_URL` from the new IP — so QR URLs stay consistent with
+the certificate.
+
+The phone must still trust the Caddy root CA once; after that, IP changes are fully
+self-healing. To re-issue manually instead: see `scripts/prod-relink.sh` for the exact
+openssl sequence.
+
+### Deploying or updating these files
+
+```bash
+# 1. Copy the deployed files into place
+cp scripts/prod-tomcat-launchd.plist ~/Library/LaunchAgents/tomcat.plist
+cp scripts/prod-relink-launchd.plist ~/Library/LaunchAgents/com.atwrpg.relink-tomcat.plist
+cp scripts/prod-relink.sh /opt/homebrew/etc/tomcat/relink.sh
+chmod +x /opt/homebrew/etc/tomcat/relink.sh
+
+# 2. Reload the agents after any plist change
+launchctl bootout gui/$(id -u)/com.atwrpg.relink-tomcat 2>/dev/null || true
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.atwrpg.relink-tomcat.plist
+launchctl bootout gui/$(id -u)/tomcat 2>/dev/null || true
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/tomcat.plist
+```
+
+Manual restart without a Homebrew change: `launchctl kickstart -k gui/$(id -u)/tomcat`
+(note: this drops active user sessions).
+
+---
+
 ## QR Code Share URL Configuration
 
 The "Share QR Code" button in Match Detail and Show Detail views generates a URL encoded into the QR image. For the QR code to be scannable from a phone on your network, that URL must use the machine's LAN IP (or public hostname) — not `localhost`.
@@ -295,6 +387,15 @@ Caddy terminates HTTPS for QR sharing on port 443. Two failure modes to check wh
 2. **Missing `default_sni`.** Phones connect by IP literal, and TLS clients never send the SNI extension for IP addresses (RFC 6066). Without `default_sni` in the Caddyfile's global options block, Caddy rejects those handshakes even with a valid IP-SAN certificate in storage — while `https://localhost` keeps working, because `localhost` handshakes do carry SNI. Add `default_sni {$LAN_IP:localhost}` (see the bundled `Caddyfile`) and run `caddy reload`.
 
 Also note: the app sends `Strict-Transport-Security: max-age=31536000; includeSubDomains` on responses served through the proxy. Once a phone has loaded the app over HTTPS, its browser will force-HTTPS any later `http://<lan-ip>:<port>` URL — including QR URLs encoding plain HTTP on Tomcat's 8080 port, which then fails with `net::ERR_TOO_MANY_RETRIES` (TLS handshake against a plain-HTTP port). Set `QR_BASE_URL` so freshly generated QR codes use the correct `https://<lan-ip>/atw-rpg` form.
+
+### iOS: `ERR_TOO_MANY_RETRIES` in one browser only
+
+`ERR_TOO_MANY_RETRIES` is a connection-level failure: the phone cannot complete a TCP connection to the server, so nothing reaches Tomcat's logs (the access log only records completed HTTP requests — its silence proves nothing about server health). Before touching server config, isolate which layer fails:
+
+1. **Try a second browser on the phone.** If the URL loads in Firefox but not Chrome (or vice versa), the server is fine — the problem is per-app on the phone.
+2. **iOS Local Network permission.** iOS gates connections to LAN addresses (`192.168.x.x`) behind a per-app permission: Settings → Privacy & Security → Local Network. An iOS update can reset these grants; the blocked app's connections then fail silently, and Chrome retries until it reports `ERR_TOO_MANY_RETRIES`. Re-enable the browser's toggle (or trigger the prompt by opening any LAN URL once) to fix.
+
+Server-side order of elimination for the same error, when *every* browser fails: check the served certificate's SAN matches the current LAN IP (`openssl s_client -connect <lan-ip>:8443 | openssl x509 -noout -ext subjectAltName` — on this deployment `relink.sh` re-issues it automatically on DHCP changes), then the macOS Application Firewall's entry for the running java binary (each `brew upgrade openjdk` changes the binary path and the old firewall entry no longer applies; System Settings → Network → Firewall, since CLI changes are refused on MDM-managed Macs).
 
 ### Reverse proxy (Caddy / nginx)
 

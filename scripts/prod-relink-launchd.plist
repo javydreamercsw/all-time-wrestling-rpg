@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Deployed as ~/Library/LaunchAgents/com.atwrpg.relink-tomcat.plist.
+     Watches the Homebrew tomcat and openjdk trees; the relink script only
+     restarts Tomcat when a symlink or the JDK target actually changed. -->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.atwrpg.relink-tomcat</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/opt/homebrew/etc/tomcat/relink.sh</string>
+    </array>
+    <key>WatchPaths</key>
+    <array>
+        <string>/opt/homebrew/opt/tomcat</string>
+        <string>/opt/homebrew/opt/openjdk</string>
+        <string>/opt/homebrew/Cellar/openjdk</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+</dict>
+</plist>
