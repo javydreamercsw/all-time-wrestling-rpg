@@ -643,7 +643,7 @@
   "description": "Have Bobby Lashley win a world championship",
   "xpValue": 750,
   "category": "CHAMPIONSHIP",
-  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('lashley') && w.reigns?.any { r -> r.currentReign } }"
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('lashley') && w.reigns?.any { r -> r.currentReign && r.title?.tier?.name() == 'MAIN_EVENTER' } }"
 }, {
   "key": "LASHLEY_HURT_LOCK",
   "name": "Hurt Lock",
@@ -706,7 +706,7 @@
   "description": "Have Dynamite Kid win a world championship",
   "xpValue": 1000,
   "category": "CHAMPIONSHIP",
-  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('dynamite') && w.reigns?.any { r -> r.currentReign } }"
+  "unlockCondition": "wrestlers?.any { w -> w.name?.toLowerCase()?.contains('dynamite') && w.reigns?.any { r -> r.currentReign && r.title?.tier?.name() == 'MAIN_EVENTER' } }"
 }, {
   "key": "DYNAMITE_AND_BULLDOG",
   "name": "Dynamite & Bulldog",
