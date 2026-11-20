@@ -1176,6 +1176,28 @@ public class ShowPlanningService {
               segment.getSegmentType().getName());
           segment.syncSegmentRules(merged);
         }
+
+        // Contender-deciding assignments: a row declaring contenderTitle flags its matching
+        // segments as #1 contender determinations (e.g. the Rumble on the All Time Rumble PLE).
+        // The title attaches but is NOT on the line — adjudication designates the winner as the
+        // title's next #1 contender. Title segments and tournament-fed contender payoffs already
+        // carry their own contender/title semantics and are left untouched.
+        managedTemplate.getSegmentAssignments().stream()
+            .filter(a -> a.getContenderTitle() != null)
+            .filter(a -> matchesSegment(a, segment))
+            .findFirst()
+            .ifPresent(
+                a -> {
+                  if (!Boolean.TRUE.equals(segment.getIsTitleSegment())
+                      && !segment.isContenderMatch()) {
+                    segment.setContenderMatch(true);
+                    segment.getTitles().add(a.getContenderTitle());
+                    log.info(
+                        "Segment '{}' decides the #1 contender for '{}' (template assignment)",
+                        segment.getSegmentType().getName(),
+                        a.getContenderTitle().getName());
+                  }
+                });
       }
       segmentsToSave.add(segment);
     }
@@ -1529,6 +1551,26 @@ public class ShowPlanningService {
                 name != null
                     && !name.isBlank()
                     && wrestlerRepository.findByName(name.trim()).isPresent());
+  }
+
+  /**
+   * Whether a template assignment targets a segment: type-paired rows match the segment's type,
+   * rule-only rows match any of the segment's rules, type+rule rows must match both. Mirrors the
+   * targeting semantics of the AUTO_ATTACH rule merge above.
+   */
+  private boolean matchesSegment(
+      @NonNull final ShowTemplateSegmentAssignment assignment, @NonNull final Segment segment) {
+    boolean typeMatches =
+        assignment.getSegmentType() == null
+            || (segment.getSegmentType() != null
+                && assignment.getSegmentType().getId().equals(segment.getSegmentType().getId()));
+    boolean ruleMatches =
+        assignment.getSegmentRule() == null
+            || segment.getSegmentRules().stream()
+                .anyMatch(r -> r.getId().equals(assignment.getSegmentRule().getId()));
+    return assignment.getSegmentType() != null || assignment.getSegmentRule() != null
+        ? typeMatches && ruleMatches
+        : false;
   }
 
   /** Team ids resolved from names; null when any named wrestler has no id (not persisted). */

@@ -292,6 +292,116 @@ class ShowPlanningServiceTest {
   }
 
   @Test
+  void testApproveSegments_contenderDecidingAssignment_wiresContenderMatchAndTitle() {
+    // A PLE template declaring "the Abu Dhabi Rumble decides the #1 contender for the
+    // ATW World title" — the assignment carries contenderTitle (the January All Time
+    // Rumble case) and approval must wire contenderMatch + attach the title so
+    // adjudication designates the winner.
+    SegmentType rumbleType = new SegmentType();
+    rumbleType.setId(10L);
+    rumbleType.setName("Abu Dhabi Rumble");
+    when(segmentTypeService.findByName("Abu Dhabi Rumble")).thenReturn(Optional.of(rumbleType));
+
+    Title worldTitle = new Title();
+    worldTitle.setId(77L);
+    worldTitle.setName("ATW World");
+    worldTitle.setChampionshipType(ChampionshipType.SINGLE);
+
+    ShowType pleType = new ShowType();
+    pleType.setName("PLE");
+    ShowTemplate template = new ShowTemplate();
+    template.setId(5L);
+    template.setName("All Time Rumble");
+    template.setShowType(pleType);
+    ShowTemplateSegmentAssignment assignment = new ShowTemplateSegmentAssignment();
+    assignment.setTemplate(template);
+    assignment.setSegmentType(rumbleType);
+    assignment.setContenderTitle(worldTitle);
+    assignment.setMode(ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH);
+    template.getSegmentAssignments().add(assignment);
+    show.setTemplate(template);
+
+    ProposedSegment proposed = new ProposedSegment();
+    proposed.setType("Abu Dhabi Rumble");
+    proposed.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+    proposed.setWinners(List.of("Wrestler A"));
+
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+    when(wrestlerRepository.findByName("Wrestler A"))
+        .thenReturn(Optional.of(wrestlerNamed(1L, "Wrestler A")));
+    when(wrestlerRepository.findByName("Wrestler B"))
+        .thenReturn(Optional.of(wrestlerNamed(2L, "Wrestler B")));
+
+    showPlanningService.approveSegments(show, List.of(proposed));
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Segment>> segmentsCaptor = ArgumentCaptor.forClass(List.class);
+    verify(segmentRepository).saveAll(segmentsCaptor.capture());
+    Segment saved = segmentsCaptor.getValue().get(0);
+    assertTrue(
+        saved.isContenderMatch(),
+        "A contender-deciding assignment must flag the segment as a contender match");
+    assertEquals(1, saved.getTitles().size(), "The configured title must attach to the segment");
+    assertEquals("ATW World", saved.getTitles().iterator().next().getName());
+    assertFalse(
+        saved.getIsTitleSegment(),
+        "The title is NOT on the line — the winner becomes the #1 contender");
+  }
+
+  @Test
+  void testApproveSegments_contenderDecidingAssignment_skipsTitleSegmentsAndExistingFlags() {
+    // An approved segment that is already a title segment (or already a contender match) keeps
+    // its own semantics — the assignment must not downgrade a title match to a contender match.
+    SegmentType rumbleType = new SegmentType();
+    rumbleType.setId(10L);
+    rumbleType.setName("Abu Dhabi Rumble");
+    when(segmentTypeService.findByName("Abu Dhabi Rumble")).thenReturn(Optional.of(rumbleType));
+
+    Title worldTitle = new Title();
+    worldTitle.setId(77L);
+    worldTitle.setName("ATW World");
+
+    ShowType pleType = new ShowType();
+    pleType.setName("PLE");
+    ShowTemplate template = new ShowTemplate();
+    template.setId(5L);
+    template.setName("All Time Rumble");
+    template.setShowType(pleType);
+    ShowTemplateSegmentAssignment assignment = new ShowTemplateSegmentAssignment();
+    assignment.setTemplate(template);
+    assignment.setSegmentType(rumbleType);
+    assignment.setContenderTitle(worldTitle);
+    assignment.setMode(ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH);
+    template.getSegmentAssignments().add(assignment);
+    show.setTemplate(template);
+
+    ProposedSegment titleRumble = new ProposedSegment();
+    titleRumble.setType("Abu Dhabi Rumble");
+    titleRumble.setIsTitleSegment(true);
+    titleRumble.setTitles(Set.of(worldTitle));
+    titleRumble.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+    titleRumble.setWinners(List.of("Wrestler A"));
+
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+    when(wrestlerRepository.findByName("Wrestler A"))
+        .thenReturn(Optional.of(wrestlerNamed(1L, "Wrestler A")));
+    when(wrestlerRepository.findByName("Wrestler B"))
+        .thenReturn(Optional.of(wrestlerNamed(2L, "Wrestler B")));
+
+    showPlanningService.approveSegments(show, List.of(titleRumble));
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Segment>> segmentsCaptor = ArgumentCaptor.forClass(List.class);
+    verify(segmentRepository).saveAll(segmentsCaptor.capture());
+    Segment saved = segmentsCaptor.getValue().get(0);
+    assertTrue(
+        saved.getIsTitleSegment(),
+        "An approved title segment must stay a title segment — the assignment never downgrades it");
+    assertFalse(
+        saved.isContenderMatch(), "A title segment must not also be flagged as a contender match");
+  }
+
+  @Test
   void testApproveSegments_ruleOnlyAutoAttach_appliesToAllMatchesAndDedupes() {
     SegmentType singles = new SegmentType();
     singles.setId(30L);
