@@ -52,6 +52,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.show.ShowBookingService;
 import com.github.javydreamercsw.management.service.show.ShowSegmentReservationService;
+import com.github.javydreamercsw.management.service.title.ContenderSelectionService;
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import jakarta.annotation.Nullable;
 import java.time.LocalDate;
@@ -94,6 +95,7 @@ public class TournamentService {
   private final TrophyReignRepository trophyReignRepository;
   private final TrophyReignService trophyReignService;
   private final List<TournamentFormat> formats;
+  private final ContenderSelectionService contenderSelectionService;
 
   private TournamentFormatContext formatContext() {
     return new TournamentFormatContext(roundRepository, matchRepository);
@@ -951,6 +953,22 @@ public class TournamentService {
     if (entryRepository.existsByTournamentIdAndWrestlerId(tournament.getId(), wrestler.getId())) {
       throw new IllegalStateException(
           wrestler.getName() + " is already entered in this tournament");
+    }
+    // Contender-deciding finals are #1 contender matches (ATW-9ub4): entry is ranking-gated.
+    // Other tournament kinds (briefcase, trophy, championship) are deliberately not gated.
+    if (tournament.isContenderDeciding()
+        && tournament.getLinkedTitle() != null
+        && tournament.getLinkedTitle().getChampionshipType() == ChampionshipType.SINGLE) {
+      List<Wrestler> missing =
+          contenderSelectionService.contendersMissingRankingCriteria(
+              tournament.getLinkedTitle(), List.of(wrestler));
+      if (!missing.isEmpty()) {
+        throw new IllegalStateException(
+            wrestler.getName()
+                + " does not meet ranking criteria for the '"
+                + tournament.getLinkedTitle().getName()
+                + "' contender-deciding tournament");
+      }
     }
     TournamentEntry entry =
         TournamentEntry.builder().tournament(tournament).wrestler(wrestler).seed(seed).build();

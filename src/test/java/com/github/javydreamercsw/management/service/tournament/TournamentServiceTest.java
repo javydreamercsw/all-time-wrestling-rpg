@@ -61,6 +61,7 @@ import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.service.show.ShowBookingService;
 import com.github.javydreamercsw.management.service.show.ShowSegmentReservationService;
+import com.github.javydreamercsw.management.service.title.ContenderSelectionService;
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -101,6 +102,7 @@ class TournamentServiceTest {
   @Mock private TrophyReignRepository trophyReignRepository;
   @Mock private TrophyReignService trophyReignService;
   @Mock private TournamentFormat format;
+  @Mock private ContenderSelectionService contenderSelectionService;
 
   private TournamentService service;
 
@@ -129,7 +131,8 @@ class TournamentServiceTest {
             titleOpportunityService,
             trophyReignRepository,
             trophyReignService,
-            List.of(format));
+            List.of(format),
+            contenderSelectionService);
   }
 
   @Test
@@ -161,6 +164,63 @@ class TournamentServiceTest {
     assertThatThrownBy(() -> service.addEntry(tournament, duo, 1))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("singles");
+  }
+
+  // ── Contender-deciding entry gate (ATW-9ub4) ──────────────────────────────
+
+  @Test
+  @DisplayName("An unranked wrestler cannot enter a contender-deciding tournament")
+  void rejectsUnrankedEntryInContenderDecidingTournament() {
+    Tournament tournament = tournament(null);
+    tournament.setContenderDeciding(true);
+    Title title = new Title();
+    title.setId(7L);
+    title.setName("ATW World");
+    title.setChampionshipType(ChampionshipType.SINGLE);
+    tournament.setLinkedTitle(title);
+    Wrestler entrant = wrestler("Curt Hennig", 5L);
+
+    when(contenderSelectionService.contendersMissingRankingCriteria(eq(title), any()))
+        .thenReturn(List.of(entrant));
+
+    assertThatThrownBy(() -> service.addEntry(tournament, entrant, 1))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("ranking criteria");
+  }
+
+  @Test
+  @DisplayName("A ranked wrestler can enter a contender-deciding tournament")
+  void acceptsRankedEntryInContenderDecidingTournament() {
+    Tournament tournament = tournament(null);
+    tournament.setContenderDeciding(true);
+    Title title = new Title();
+    title.setId(7L);
+    title.setName("ATW World");
+    title.setChampionshipType(ChampionshipType.SINGLE);
+    tournament.setLinkedTitle(title);
+    Wrestler entrant = wrestler("Curt Hennig", 5L);
+    when(entryRepository.existsByTournamentIdAndWrestlerId(1L, 5L)).thenReturn(false);
+    when(entryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    when(contenderSelectionService.contendersMissingRankingCriteria(eq(title), any()))
+        .thenReturn(List.of());
+
+    TournamentEntry entry = service.addEntry(tournament, entrant, 1);
+
+    assertThat(entry.getWrestler()).isSameAs(entrant);
+  }
+
+  @Test
+  @DisplayName("A non-contender-deciding tournament entry is not ranking-gated")
+  void regularTournamentEntrySkipsRankingGate() {
+    Tournament tournament = tournament(null);
+    Wrestler entrant = wrestler("Curt Hennig", 5L);
+    when(entryRepository.existsByTournamentIdAndWrestlerId(1L, 5L)).thenReturn(false);
+    when(entryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    TournamentEntry entry = service.addEntry(tournament, entrant, 1);
+
+    assertThat(entry.getWrestler()).isSameAs(entrant);
+    verify(contenderSelectionService, never()).contendersMissingRankingCriteria(any(), any());
   }
 
   @Test
