@@ -244,11 +244,11 @@ This site runs Tomcat under `launchd` as a LaunchAgent, with all mutable configu
 outside the Homebrew prefix so `brew upgrade` cannot clobber it. Canonical copies of every
 file described here live in `scripts/`:
 
-| Repo file (`scripts/`) | Deployed as | Purpose |
-|---|---|---|
-| `prod-tomcat-launchd.plist` | `~/Library/LaunchAgents/tomcat.plist` | Runs `/opt/homebrew/opt/tomcat/bin/catalina run` with `KeepAlive` — keeps Tomcat alive across crashes and reboots. |
-| `prod-relink-launchd.plist` | `~/Library/LaunchAgents/com.atwrpg.relink-tomcat.plist` | Watches the Homebrew `tomcat` and `openjdk` trees; fires `relink.sh` on any change. |
-| `prod-relink.sh` | `/opt/homebrew/etc/tomcat/relink.sh` | Re-establishes symlinks after a Homebrew upgrade and restarts Tomcat only when something actually changed. |
+|   Repo file (`scripts/`)    |                       Deployed as                       |                                                      Purpose                                                       |
+|-----------------------------|---------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------|
+| `prod-tomcat-launchd.plist` | `~/Library/LaunchAgents/tomcat.plist`                   | Runs `/opt/homebrew/opt/tomcat/bin/catalina run` with `KeepAlive` — keeps Tomcat alive across crashes and reboots. |
+| `prod-relink-launchd.plist` | `~/Library/LaunchAgents/com.atwrpg.relink-tomcat.plist` | Watches the Homebrew `tomcat` and `openjdk` trees; fires `relink.sh` on any change.                                |
+| `prod-relink.sh`            | `/opt/homebrew/etc/tomcat/relink.sh`                    | Re-establishes symlinks after a Homebrew upgrade and restarts Tomcat only when something actually changed.         |
 
 `setenv.sh` (deployed as `/opt/homebrew/etc/tomcat/setenv.sh`, symlinked into Tomcat's `bin/`)
 is environment-specific — database credentials, `SPRING_PROFILES_ACTIVE`, `QR_BASE_URL`,
