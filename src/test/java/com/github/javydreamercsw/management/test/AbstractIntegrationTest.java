@@ -375,7 +375,18 @@ public abstract class AbstractIntegrationTest {
    * (E2E setups especially) may have none.
    */
   protected void clearContenderTitleReferences() {
-    transactionTemplate.executeWithoutResult(
+    // The re-seeded assignment insert may be sitting UNCOMMITTED in the caller's active test
+    // transaction (@Transactional ITs: dataInitializer.init() joins it), so this UPDATE must run
+    // on the same connection to see that row — a REQUIRES_NEW transaction would read only
+    // committed state, affect 0 rows, and leave the FK blocking the caller's title delete.
+    // A fresh REQUIRED template joins the active tx when there is one (ITs) and creates one when
+    // there is none (E2E setups); the shared transactionTemplate is mutated by
+    // clearAllRepositories and must not be relied on here.
+    entityManager.flush();
+    entityManager.clear();
+    TransactionTemplate joining =
+        new TransactionTemplate(transactionTemplate.getTransactionManager());
+    joining.executeWithoutResult(
         status ->
             entityManager
                 .createNativeQuery(
@@ -393,8 +404,12 @@ public abstract class AbstractIntegrationTest {
         TestUtils.setDefaultUniverse(newUniverse);
         universeContextService.setCurrentUniverse(newUniverse);
       } catch (DataIntegrityViolationException e) {
-        universeRepository
-            .findByName("Default Universe")
+        // findAll+filter, not findByName: the cleaner's swallowed-failure path can leave two
+        // "Default Universe" rows behind (a partially-successful delete pass), and the unique
+        // query would throw NonUniqueResultException in every fixture that resolves by name.
+        universeRepository.findAll().stream()
+            .filter(u -> "Default Universe".equals(u.getName()))
+            .findFirst()
             .ifPresent(
                 u -> {
                   this.defaultUniverse = u;
