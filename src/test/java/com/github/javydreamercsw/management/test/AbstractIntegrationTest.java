@@ -375,23 +375,25 @@ public abstract class AbstractIntegrationTest {
    * (E2E setups especially) may have none.
    */
   protected void clearContenderTitleReferences() {
-    // The re-seeded assignment insert may be sitting UNCOMMITTED in the caller's active test
-    // transaction (@Transactional ITs: dataInitializer.init() joins it), so this UPDATE must run
-    // on the same connection to see that row — a REQUIRES_NEW transaction would read only
-    // committed state, affect 0 rows, and leave the FK blocking the caller's title delete.
-    // A fresh REQUIRED template joins the active tx when there is one (ITs) and creates one when
-    // there is none (E2E setups); the shared transactionTemplate is mutated by
+    // Everything must run INSIDE the joining transaction: the re-seeded assignment insert may be
+    // sitting UNCOMMITTED in the caller's active test transaction (@Transactional ITs:
+    // dataInitializer.init() joins it), so the flush and UPDATE must run on that same connection
+    // — a REQUIRES_NEW transaction would read only committed state, affect 0 rows, and leave the
+    // FK blocking the caller's title delete. And when no transaction exists (E2E setups), a bare
+    // entityManager.flush() throws TransactionRequiredException, so it must ride inside the one
+    // the REQUIRED template opens. The shared transactionTemplate is mutated by
     // clearAllRepositories and must not be relied on here.
-    entityManager.flush();
-    entityManager.clear();
     TransactionTemplate joining =
         new TransactionTemplate(transactionTemplate.getTransactionManager());
     joining.executeWithoutResult(
-        status ->
-            entityManager
-                .createNativeQuery(
-                    "UPDATE show_template_segment_assignment SET contender_title_id = NULL")
-                .executeUpdate());
+        status -> {
+          entityManager.flush();
+          entityManager.clear();
+          entityManager
+              .createNativeQuery(
+                  "UPDATE show_template_segment_assignment SET contender_title_id = NULL")
+              .executeUpdate();
+        });
   }
 
   protected void ensureDefaultUniverseExists() {
