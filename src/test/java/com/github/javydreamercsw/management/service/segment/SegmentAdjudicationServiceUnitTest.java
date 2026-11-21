@@ -16,6 +16,7 @@
 */
 package com.github.javydreamercsw.management.service.segment;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -37,13 +38,17 @@ import com.github.javydreamercsw.management.domain.league.MatchFulfillmentReposi
 import com.github.javydreamercsw.management.domain.rivalry.Rivalry;
 import com.github.javydreamercsw.management.domain.show.Show;
 import com.github.javydreamercsw.management.domain.show.segment.Segment;
+import com.github.javydreamercsw.management.domain.show.segment.SegmentResult;
 import com.github.javydreamercsw.management.domain.show.segment.type.SegmentType;
 import com.github.javydreamercsw.management.domain.show.segment.type.WellKnownSegmentType;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.event.ChampionDefeatedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.campaign.WrestlerStatusService;
 import com.github.javydreamercsw.management.service.faction.FactionService;
@@ -62,15 +67,19 @@ import com.github.javydreamercsw.management.service.world.ArenaService;
 import com.github.javydreamercsw.management.service.world.LocationService;
 import com.github.javydreamercsw.management.service.wrestler.RetirementService;
 import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -249,7 +258,10 @@ class SegmentAdjudicationServiceUnitTest {
 
     adjudicationService.adjudicateMatch(matchSegment);
 
-    verify(contenderSelectionService).designateAsContender(title, wrestler1);
+    // ATW-9ub4: a contender-match win is an EARNED shot — it routes through the earned path
+    // (tier gate bypassed, cooldown enforced) instead of the implicit tier-gated designation.
+    verify(contenderSelectionService).designateEarnedContender(title, wrestler1);
+    verify(contenderSelectionService, never()).designateAsContender(any(), any());
     verify(contenderSelectionService, never()).autoSelectNextContender(any());
   }
 
@@ -299,6 +311,215 @@ class SegmentAdjudicationServiceUnitTest {
     matchSegment.setWinners(List.of(wrestler1));
 
     assertDoesNotThrow(() -> adjudicationService.adjudicateMatch(matchSegment));
+  }
+
+  // ── Champion-slayer availability (ATW-9ub4) ────────────────────────────────
+
+  @Test
+  void testAdjudicateMatch_NonTitleWinOverChampion_grantsAvailability() {
+    // Lashley case: beating the reigning ATW World champion in a NON-title match appends the
+    // winner as a challenger for the champion's title.
+    ContenderSelectionService contenderSelectionService = mock(ContenderSelectionService.class);
+    adjudicationService.setContenderSelectionService(contenderSelectionService);
+    TitleRepository titleRepository = mock(TitleRepository.class);
+    adjudicationService.setTitleRepository(titleRepository);
+
+    Universe universe = new Universe();
+    universe.setId(1L);
+    Show show = matchSegment.getShow();
+    show.setUniverse(universe);
+
+    Title worldTitle = new Title();
+    worldTitle.setId(7L);
+    worldTitle.setName("ATW World");
+    worldTitle.setChampionshipType(ChampionshipType.SINGLE);
+    worldTitle.setIsActive(true);
+    worldTitle.setUniverse(universe);
+    worldTitle.awardTitleTo(List.of(wrestler2), Instant.now());
+
+    when(titleRepository.findTitlesHeldByWrestler(wrestler2, 1L)).thenReturn(List.of(worldTitle));
+    when(contenderSelectionService.grantChampionSlayerAvailability(worldTitle, wrestler1))
+        .thenReturn(true);
+
+    ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
+    ReflectionTestUtils.setField(adjudicationService, "eventPublisher", eventPublisher);
+
+    matchSegment.setWinners(List.of(wrestler1));
+
+    adjudicationService.adjudicateMatch(matchSegment);
+
+    verify(contenderSelectionService).grantChampionSlayerAvailability(worldTitle, wrestler1);
+    ArgumentCaptor<ApplicationEvent> eventCaptor = ArgumentCaptor.forClass(ApplicationEvent.class);
+    verify(eventPublisher).publishEvent(eventCaptor.capture());
+    assertThat(eventCaptor.getValue()).isInstanceOf(ChampionDefeatedEvent.class);
+    ChampionDefeatedEvent event = (ChampionDefeatedEvent) eventCaptor.getValue();
+    assertThat(event.getChampion()).isEqualTo(wrestler2);
+    assertThat(event.getWinner()).isEqualTo(wrestler1);
+    assertThat(event.getTitle()).isEqualTo(worldTitle);
+  }
+
+  @Test
+  void testAdjudicateMatch_TitleSegmentWin_noChampionSlayerGrant() {
+    // Title matches are handled by applyTitleChange — no champion-slayer duplication.
+    ContenderSelectionService contenderSelectionService = mock(ContenderSelectionService.class);
+    adjudicationService.setContenderSelectionService(contenderSelectionService);
+    TitleRepository titleRepository = mock(TitleRepository.class);
+    adjudicationService.setTitleRepository(titleRepository);
+    ReflectionTestUtils.setField(
+        adjudicationService, "eventPublisher", mock(ApplicationEventPublisher.class));
+
+    Universe universe = new Universe();
+    universe.setId(1L);
+    matchSegment.getShow().setUniverse(universe);
+
+    Title worldTitle = new Title();
+    worldTitle.setId(7L);
+    worldTitle.setName("ATW World");
+    worldTitle.setChampionshipType(ChampionshipType.SINGLE);
+    worldTitle.setIsActive(true);
+    worldTitle.setUniverse(universe);
+    worldTitle.awardTitleTo(List.of(wrestler2), Instant.now());
+
+    // The code must never consult this for a title segment — lenient because it stays unused.
+    lenient()
+        .when(titleRepository.findTitlesHeldByWrestler(wrestler2, 1L))
+        .thenReturn(List.of(worldTitle));
+
+    matchSegment.setIsTitleSegment(true);
+    matchSegment.getTitles().add(worldTitle);
+    matchSegment.setWinners(List.of(wrestler1));
+
+    adjudicationService.adjudicateMatch(matchSegment);
+
+    verify(contenderSelectionService, never()).grantChampionSlayerAvailability(any(), any());
+  }
+
+  @Test
+  void testAdjudicateMatch_TeamTitleChampion_noChampionSlayerGrant() {
+    // TEAM-type titles are out of scope for the champion-slayer rule.
+    ContenderSelectionService contenderSelectionService = mock(ContenderSelectionService.class);
+    adjudicationService.setContenderSelectionService(contenderSelectionService);
+    TitleRepository titleRepository = mock(TitleRepository.class);
+    adjudicationService.setTitleRepository(titleRepository);
+
+    Universe universe = new Universe();
+    universe.setId(1L);
+    matchSegment.getShow().setUniverse(universe);
+
+    Title tagTitle = new Title();
+    tagTitle.setId(8L);
+    tagTitle.setName("Tag Team");
+    tagTitle.setChampionshipType(ChampionshipType.TEAM);
+    tagTitle.setIsActive(true);
+    tagTitle.setUniverse(universe);
+    tagTitle.awardTitleTo(List.of(wrestler2), Instant.now());
+
+    when(titleRepository.findTitlesHeldByWrestler(wrestler2, 1L)).thenReturn(List.of(tagTitle));
+
+    matchSegment.setWinners(List.of(wrestler1));
+
+    adjudicationService.adjudicateMatch(matchSegment);
+
+    verify(contenderSelectionService, never()).grantChampionSlayerAvailability(any(), any());
+  }
+
+  @Test
+  void testAdjudicateMatch_NoUniverse_noChampionSlayerGrant() {
+    // A show without a universe cannot scope champion-title lookups — the rule quietly skips.
+    ContenderSelectionService contenderSelectionService = mock(ContenderSelectionService.class);
+    adjudicationService.setContenderSelectionService(contenderSelectionService);
+    TitleRepository titleRepository = mock(TitleRepository.class);
+    adjudicationService.setTitleRepository(titleRepository);
+    matchSegment.getShow().setUniverse(null);
+    matchSegment.setWinners(List.of(wrestler1));
+
+    adjudicationService.adjudicateMatch(matchSegment);
+
+    verify(titleRepository, never()).findTitlesHeldByWrestler(any(), any());
+    verify(contenderSelectionService, never()).grantChampionSlayerAvailability(any(), any());
+  }
+
+  @Test
+  void testAdjudicateMatch_championSlayerFailure_neverFailsAdjudication() {
+    // Failure-isolation contract: a grant problem logs and swallows — adjudication completes.
+    ContenderSelectionService contenderSelectionService = mock(ContenderSelectionService.class);
+    adjudicationService.setContenderSelectionService(contenderSelectionService);
+    TitleRepository titleRepository = mock(TitleRepository.class);
+    adjudicationService.setTitleRepository(titleRepository);
+
+    Universe universe = new Universe();
+    universe.setId(1L);
+    matchSegment.getShow().setUniverse(universe);
+
+    Title worldTitle = new Title();
+    worldTitle.setId(7L);
+    worldTitle.setName("ATW World");
+    worldTitle.setChampionshipType(ChampionshipType.SINGLE);
+    worldTitle.setIsActive(true);
+    worldTitle.setUniverse(universe);
+    worldTitle.awardTitleTo(List.of(wrestler2), Instant.now());
+    when(titleRepository.findTitlesHeldByWrestler(wrestler2, 1L))
+        .thenThrow(new IllegalStateException("ranking lookup exploded"));
+
+    matchSegment.setWinners(List.of(wrestler1));
+
+    Assertions.assertDoesNotThrow(() -> adjudicationService.adjudicateMatch(matchSegment));
+    verify(contenderSelectionService, never()).grantChampionSlayerAvailability(any(), any());
+  }
+
+  @Test
+  void testAdjudicateMatch_Draw_noChampionSlayerGrant() {
+    // Booked draws (empty winners) fire nothing.
+    ContenderSelectionService contenderSelectionService = mock(ContenderSelectionService.class);
+    adjudicationService.setContenderSelectionService(contenderSelectionService);
+    TitleRepository titleRepository = mock(TitleRepository.class);
+    adjudicationService.setTitleRepository(titleRepository);
+
+    Universe universe = new Universe();
+    universe.setId(1L);
+    matchSegment.getShow().setUniverse(universe);
+
+    matchSegment.declareResult(SegmentResult.DRAW);
+
+    adjudicationService.adjudicateMatch(matchSegment);
+
+    verify(contenderSelectionService, never()).grantChampionSlayerAvailability(any(), any());
+  }
+
+  @Test
+  void testAdjudicateMatch_OtherUniverseChampion_noChampionSlayerGrant() {
+    // A champion of a title in ANOTHER universe grants nothing here.
+    ContenderSelectionService contenderSelectionService = mock(ContenderSelectionService.class);
+    adjudicationService.setContenderSelectionService(contenderSelectionService);
+    TitleRepository titleRepository = mock(TitleRepository.class);
+    adjudicationService.setTitleRepository(titleRepository);
+
+    Universe otherUniverse = new Universe();
+    otherUniverse.setId(2L);
+    matchSegment
+        .getShow()
+        .setUniverse(
+            new Universe() {
+              {
+                setId(1L);
+              }
+            });
+
+    Title otherTitle = new Title();
+    otherTitle.setId(9L);
+    otherTitle.setName("Other Universe Title");
+    otherTitle.setChampionshipType(ChampionshipType.SINGLE);
+    otherTitle.setIsActive(true);
+    otherTitle.setUniverse(otherUniverse);
+    otherTitle.awardTitleTo(List.of(wrestler2), Instant.now());
+
+    when(titleRepository.findTitlesHeldByWrestler(wrestler2, 1L)).thenReturn(List.of(otherTitle));
+
+    matchSegment.setWinners(List.of(wrestler1));
+
+    adjudicationService.adjudicateMatch(matchSegment);
+
+    verify(contenderSelectionService, never()).grantChampionSlayerAvailability(any(), any());
   }
 
   // ── Rivalry/feud resolution (ATW-buyh) ─────────────────────────────────────

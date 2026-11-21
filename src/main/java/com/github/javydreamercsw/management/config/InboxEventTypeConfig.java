@@ -157,6 +157,11 @@ public class InboxEventTypeConfig {
   }
 
   @Bean
+  public InboxEventType championDefeated() {
+    return new InboxEventType("CHAMPION_DEFEATED", "Champion Defeated");
+  }
+
+  @Bean
   public InboxEventType contenderTieDetected() {
     return new InboxEventType("CONTENDER_TIE_DETECTED", "Contender Tie Detected");
   }

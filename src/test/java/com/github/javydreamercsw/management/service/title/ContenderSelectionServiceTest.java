@@ -18,20 +18,27 @@ package com.github.javydreamercsw.management.service.title;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.universe.Universe;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerTitleCooldown;
+import com.github.javydreamercsw.management.domain.wrestler.WrestlerTitleCooldownRepository;
 import com.github.javydreamercsw.management.dto.ranking.RankedWrestlerDTO;
 import com.github.javydreamercsw.management.event.ContenderDesignatedEvent;
 import com.github.javydreamercsw.management.event.ContenderTieDetectedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
 import com.github.javydreamercsw.management.service.ranking.RankingService;
+import com.github.javydreamercsw.management.service.wrestler.WrestlerService;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,6 +61,8 @@ class ContenderSelectionServiceTest {
   @Mock private GameSettingService gameSettingService;
   @Mock private WrestlerRepository wrestlerRepository;
   @Mock private ApplicationEventPublisher eventPublisher;
+  @Mock private WrestlerTitleCooldownRepository cooldownRepository;
+  @Mock private WrestlerService wrestlerService;
 
   private ContenderSelectionService service;
 
@@ -64,12 +73,21 @@ class ContenderSelectionServiceTest {
   void setUp() {
     service =
         new ContenderSelectionService(
-            titleService, rankingService, gameSettingService, wrestlerRepository, eventPublisher);
+            titleService,
+            rankingService,
+            gameSettingService,
+            wrestlerRepository,
+            eventPublisher,
+            cooldownRepository,
+            wrestlerService);
 
     title = new Title();
     title.setId(1L);
     title.setName("World Title");
     title.setChampionshipType(ChampionshipType.SINGLE);
+    Universe universe = new Universe();
+    universe.setId(1L);
+    title.setUniverse(universe);
 
     wrestler = new Wrestler();
     wrestler.setId(10L);
@@ -77,6 +95,9 @@ class ContenderSelectionServiceTest {
 
     when(gameSettingService.isContenderAutoSelectEnabled()).thenReturn(true);
     when(gameSettingService.getContenderTieThresholdPercent()).thenReturn(10);
+    when(gameSettingService.getContenderFailedChallengeCooldownDefenses()).thenReturn(2);
+    when(wrestlerService.getOrCreateState(10L, 1L))
+        .thenReturn(WrestlerState.builder().id(55L).tier(WrestlerTier.MIDCARDER).build());
   }
 
   private RankedWrestlerDTO ranked(final long id, final String name, final long fans) {
@@ -101,6 +122,169 @@ class ContenderSelectionServiceTest {
     ContenderDesignatedEvent event = (ContenderDesignatedEvent) captor.getValue();
     assertThat(event.getContender()).isEqualTo(wrestler);
     assertThat(event.getTitle()).isEqualTo(title);
+  }
+
+  // =====================================================================
+  // designateEarnedContender (ATW-9ub4) — earned shots bypass the tier gate
+  // =====================================================================
+
+  @Test
+  void designateEarnedContender_delegatesToEarnedSinkAndPublishesEvent() {
+    when(titleService.grantEarnedChallengerStatus(1L, 10L, true))
+        .thenReturn(new TitleService.ChallengeResult(true, "ok"));
+
+    boolean result = service.designateEarnedContender(title, wrestler);
+
+    assertThat(result).isTrue();
+    ArgumentCaptor<ApplicationEvent> captor = ArgumentCaptor.forClass(ApplicationEvent.class);
+    verify(eventPublisher).publishEvent(captor.capture());
+    assertThat(captor.getValue()).isInstanceOf(ContenderDesignatedEvent.class);
+  }
+
+  @Test
+  void designateEarnedContender_sinkRejects_noEventAndReturnsFalse() {
+    when(titleService.grantEarnedChallengerStatus(1L, 10L, true))
+        .thenReturn(new TitleService.ChallengeResult(false, "not active"));
+
+    boolean result = service.designateEarnedContender(title, wrestler);
+
+    assertThat(result).isFalse();
+    verify(eventPublisher, never()).publishEvent(any(ContenderDesignatedEvent.class));
+  }
+
+  @Test
+  void designateEarnedContender_onCooldown_skipsDesignation() {
+    // The failed-challenge cooldown blocks even earned shots (product decision).
+    // Stubs: state id 55, cooldown stamped at defense 0, title defenseCount 0 (< threshold 2).
+    title.setDefenseCount(0);
+    when(cooldownRepository.findByWrestlerState_IdAndTitle_Id(55L, 1L))
+        .thenReturn(
+            Optional.of(WrestlerTitleCooldown.builder().defenseCountAtChallenge(0L).build()));
+
+    boolean result = service.designateEarnedContender(title, wrestler);
+
+    assertThat(result).isFalse();
+    verify(titleService, never()).grantEarnedChallengerStatus(any(), any(), anyBoolean());
+  }
+
+  @Test
+  void designateEarnedContender_cooldownExpired_designates() {
+    // 4 defenses since the failed challenge vs. threshold 2 — cooldown expired.
+    // Stubs from setUp: state id 55; cooldown row stamped at defense 0.
+    title.setDefenseCount(4);
+    when(cooldownRepository.findByWrestlerState_IdAndTitle_Id(55L, 1L))
+        .thenReturn(
+            Optional.of(WrestlerTitleCooldown.builder().defenseCountAtChallenge(0L).build()));
+    when(titleService.grantEarnedChallengerStatus(1L, 10L, true))
+        .thenReturn(new TitleService.ChallengeResult(true, "ok"));
+
+    boolean result = service.designateEarnedContender(title, wrestler);
+
+    assertThat(result).isTrue();
+    verify(titleService).grantEarnedChallengerStatus(1L, 10L, true);
+  }
+
+  @Test
+  void isOnCooldown_nullUniverseTitle_treatsAsNotOnCooldown() {
+    // A title without a universe has no state to look up — the guard treats the wrestler as
+    // eligible rather than blocking (the earned sink separately rejects the grant).
+    title.setUniverse(null);
+    when(titleService.grantEarnedChallengerStatus(1L, 10L, true))
+        .thenReturn(new TitleService.ChallengeResult(true, "ok"));
+
+    boolean result = service.designateEarnedContender(title, wrestler);
+
+    assertThat(result).isTrue();
+    verify(cooldownRepository, never()).findByWrestlerState_IdAndTitle_Id(any(), any());
+  }
+
+  @Test
+  void isOnCooldown_unresolvableState_treatsAsNotOnCooldown() {
+    // getOrCreateState returned a state with no id (not persisted) — no cooldown row can exist.
+    when(wrestlerService.getOrCreateState(10L, 1L))
+        .thenReturn(WrestlerState.builder().tier(WrestlerTier.MIDCARDER).build());
+    when(titleService.grantEarnedChallengerStatus(1L, 10L, true))
+        .thenReturn(new TitleService.ChallengeResult(true, "ok"));
+
+    boolean result = service.designateEarnedContender(title, wrestler);
+
+    assertThat(result).isTrue();
+    verify(cooldownRepository, never()).findByWrestlerState_IdAndTitle_Id(any(), any());
+  }
+
+  // =====================================================================
+  // grantChampionSlayerAvailability (ATW-9ub4) — append, not sole
+  // =====================================================================
+
+  @Test
+  void grantChampionSlayerAvailability_appendsViaEarnedSink() {
+    when(titleService.grantEarnedChallengerStatus(1L, 10L, false))
+        .thenReturn(new TitleService.ChallengeResult(true, "added"));
+
+    boolean result = service.grantChampionSlayerAvailability(title, wrestler);
+
+    assertThat(result).isTrue();
+    verify(titleService).grantEarnedChallengerStatus(1L, 10L, false);
+    verify(eventPublisher, never()).publishEvent(any(ContenderDesignatedEvent.class));
+  }
+
+  @Test
+  void grantChampionSlayerAvailability_onCooldown_skips() {
+    // Stubs from setUp: state id 55, threshold 2; cooldown stamped at 0 with defenseCount 0.
+    title.setDefenseCount(0);
+    when(cooldownRepository.findByWrestlerState_IdAndTitle_Id(55L, 1L))
+        .thenReturn(
+            Optional.of(WrestlerTitleCooldown.builder().defenseCountAtChallenge(0L).build()));
+
+    boolean result = service.grantChampionSlayerAvailability(title, wrestler);
+
+    assertThat(result).isFalse();
+    verify(titleService, never()).grantEarnedChallengerStatus(any(), any(), anyBoolean());
+  }
+
+  @Test
+  void grantChampionSlayerAvailability_alreadyChallenger_isNoOp() {
+    // M3: the champion lost a contender-deciding segment they entered — the winner was already
+    // designated #1 contender this segment. Re-granting would fire a redundant second event.
+    title.addChallenger(wrestler);
+
+    boolean result = service.grantChampionSlayerAvailability(title, wrestler);
+
+    assertThat(result).isFalse();
+    verify(titleService, never()).grantEarnedChallengerStatus(any(), any(), anyBoolean());
+  }
+
+  // =====================================================================
+  // contendersMissingRankingCriteria (ATW-9ub4) — booking gate input
+  // =====================================================================
+
+  @Test
+  void contendersMissingRankingCriteria_rankedWrestler_passes() {
+    doReturn(List.of(ranked(10L, "Top", 100_000L))).when(rankingService).getRankedContenders(1L);
+
+    List<Wrestler> missing = service.contendersMissingRankingCriteria(title, List.of(wrestler));
+
+    assertThat(missing).isEmpty();
+  }
+
+  @Test
+  void contendersMissingRankingCriteria_unrankedWrestler_fails() {
+    doReturn(List.of(ranked(99L, "Other", 100_000L))).when(rankingService).getRankedContenders(1L);
+
+    List<Wrestler> missing = service.contendersMissingRankingCriteria(title, List.of(wrestler));
+
+    assertThat(missing).containsExactly(wrestler);
+  }
+
+  @Test
+  void contendersMissingRankingCriteria_currentChallenger_passesEvenIfUnranked() {
+    // Earned challengers stay eligible to contend even when the percentile rankings exclude them.
+    doReturn(List.of()).when(rankingService).getRankedContenders(1L);
+    title.addChallenger(wrestler);
+
+    List<Wrestler> missing = service.contendersMissingRankingCriteria(title, List.of(wrestler));
+
+    assertThat(missing).isEmpty();
   }
 
   @Test

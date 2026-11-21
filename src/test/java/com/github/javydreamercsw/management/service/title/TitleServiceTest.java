@@ -511,6 +511,88 @@ class TitleServiceTest {
   }
 
   // =====================================================================
+  // grantEarnedChallengerStatus (ATW-9ub4) — earned shots bypass the tier gate
+  // =====================================================================
+
+  @Test
+  void grantEarnedChallengerStatus_belowTierWrestler_succeedsAsSoleContender() {
+    // The Rumble winner is a MIDCARDER; the title is MAIN_EVENTER. The normal tier gate would
+    // reject them — the earned path exists precisely for this.
+    title.setGender(null);
+    wrestlerState.setTier(WrestlerTier.MIDCARDER);
+    Wrestler previous = new Wrestler();
+    previous.setId(2L);
+    previous.setName("Previous Contender");
+    title.addChallenger(previous);
+
+    when(titleRepository.findById(100L)).thenReturn(Optional.of(title));
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
+
+    TitleService.ChallengeResult result = titleService.grantEarnedChallengerStatus(100L, 1L, true);
+
+    assertThat(result.success()).isTrue();
+    assertThat(title.getChallengers()).containsExactly(wrestler);
+    verify(titleRepository).save(title);
+  }
+
+  @Test
+  void grantEarnedChallengerStatus_appendMode_keepsExistingContender() {
+    Wrestler previous = new Wrestler();
+    previous.setId(2L);
+    previous.setName("Previous Contender");
+    title.addChallenger(previous);
+    title.setGender(null);
+
+    when(titleRepository.findById(100L)).thenReturn(Optional.of(title));
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
+
+    TitleService.ChallengeResult result = titleService.grantEarnedChallengerStatus(100L, 1L, false);
+
+    assertThat(result.success()).isTrue();
+    assertThat(title.getChallengers()).containsExactlyInAnyOrder(previous, wrestler);
+  }
+
+  @Test
+  void grantEarnedChallengerStatus_genderMismatch_stillRejected() {
+    title.setGender(Gender.FEMALE); // fixture wrestler is MALE
+
+    when(titleRepository.findById(100L)).thenReturn(Optional.of(title));
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
+
+    TitleService.ChallengeResult result = titleService.grantEarnedChallengerStatus(100L, 1L, true);
+
+    assertThat(result.success()).isFalse();
+    assertThat(title.getChallengers()).isEmpty();
+  }
+
+  @Test
+  void grantEarnedChallengerStatus_currentChampion_rejected() {
+    title.setGender(null);
+    title.awardTitleTo(List.of(wrestler), Instant.now(clock));
+
+    when(titleRepository.findById(100L)).thenReturn(Optional.of(title));
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
+
+    TitleService.ChallengeResult result = titleService.grantEarnedChallengerStatus(100L, 1L, true);
+
+    assertThat(result.success()).isFalse();
+  }
+
+  @Test
+  void grantEarnedChallengerStatus_inactiveWrestler_rejected() {
+    title.setGender(null);
+    wrestler.setActive(false);
+
+    when(titleRepository.findById(100L)).thenReturn(Optional.of(title));
+    when(wrestlerRepository.findById(1L)).thenReturn(Optional.of(wrestler));
+
+    TitleService.ChallengeResult result = titleService.grantEarnedChallengerStatus(100L, 1L, true);
+
+    assertThat(result.success()).isFalse();
+    assertThat(title.getChallengers()).isEmpty();
+  }
+
+  // =====================================================================
   // awardTitleTo
   // =====================================================================
 

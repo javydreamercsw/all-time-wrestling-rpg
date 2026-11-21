@@ -351,9 +351,8 @@ public class RankingService {
           cooldownRepository.findByWrestlerState_IdAndTitle_Id(
               state.getId(), titleForCooldown.getId());
       if (cooldown.isPresent()) {
-        long defensesSince =
-            titleForCooldown.getDefenseCount() - cooldown.get().getDefenseCountAtChallenge();
-        long remaining = cooldownDefenses - defensesSince;
+        long remaining =
+            cooldown.get().defensesRemaining(titleForCooldown.getDefenseCount(), cooldownDefenses);
         if (remaining > 0) {
           onCooldown = true;
           defensesUntilEligible = remaining;

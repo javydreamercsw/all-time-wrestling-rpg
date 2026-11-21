@@ -573,15 +573,14 @@ public class TournamentDetailView extends VerticalLayout implements BeforeEnterO
 
     ComboBox<Wrestler> picker = new ComboBox<>("New wrestler");
     // Offer the eligible pool minus anyone already entered — the service rejects duplicates,
-    // but showing them as choices would guarantee an error after selection.
+    // but showing them as choices would guarantee an error after selection. Tournament-scoped
+    // overload: a contender-deciding tournament never offers wrestlers its entry gate rejects.
     Set<Long> enteredIds = new HashSet<>();
     tournament.getEntries().forEach(e -> enteredIds.add(e.entrantId()));
     picker.setItems(
         tournamentService
             .findEligibleWrestlersSortedByFans(
-                tournament.getLinkedTitle(),
-                tournament.getGender(),
-                universeContextService.getCurrentUniverseId())
+                tournament, universeContextService.getCurrentUniverseId())
             .stream()
             .filter(w -> !enteredIds.contains(w.getId()))
             .toList());

@@ -37,6 +37,7 @@ import com.github.javydreamercsw.management.domain.team.TeamRepository;
 import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.title.TitleReign;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntry;
 import com.github.javydreamercsw.management.domain.tournament.TournamentEntryStatus;
 import com.github.javydreamercsw.management.domain.tournament.TournamentMatch;
@@ -47,6 +48,7 @@ import com.github.javydreamercsw.management.domain.world.Location;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
+import com.github.javydreamercsw.management.event.ChampionDefeatedEvent;
 import com.github.javydreamercsw.management.event.ChampionshipChangeEvent;
 import com.github.javydreamercsw.management.event.ChampionshipDefendedEvent;
 import com.github.javydreamercsw.management.service.GameSettingService;
@@ -146,6 +148,11 @@ public class SegmentAdjudicationService {
   // when null (unit tests).
   @Setter(onMethod_ = {@Autowired})
   private ContenderSelectionService contenderSelectionService;
+
+  // Field-injected for the same reason — null-safe, champion-slayer detection is skipped
+  // when null (unit tests).
+  @Setter(onMethod_ = {@Autowired})
+  private TitleRepository titleRepository;
 
   // Field-injected for the same reason — null-safe, briefcase grants are skipped when null
   // (unit tests). Lazy because TitleOpportunityService depends on NPCSegmentResolutionService,
@@ -365,6 +372,7 @@ public class SegmentAdjudicationService {
     Map<Title, Optional<TitleReign>> reignsBefore = snapshotCurrentReigns(segment);
     applyTitleChange(segment, winners, losers);
     applyContenderOutcomes(segment, winners);
+    applyChampionSlayerOutcomes(segment, winners);
     applyBriefcaseOutcomes(segment, winners);
     applyTeamPayoffOutcomes(segment, winners, reignsBefore);
     // Advisor-booked ambush (ATW-2b9u): carry the champion's same-show wear into the ambush
@@ -576,15 +584,61 @@ public class SegmentAdjudicationService {
         || WellKnownSegmentType.PROMO.matches(segment.getSegmentType())) {
       return;
     }
-    // Contender match (title not on the line): the winner is the new #1 contender.
+    // Contender match (title not on the line): the winner EARNED the #1 contender spot —
+    // designation bypasses the tier gate (cooldown is enforced inside the earned path).
     if (segment.isContenderMatch() && !segment.getIsTitleSegment() && !winners.isEmpty()) {
       for (Title title : segment.getTitles()) {
-        contenderSelectionService.designateAsContender(title, winners.get(0));
+        contenderSelectionService.designateEarnedContender(title, winners.get(0));
       }
     }
     // After a title defence or title change, rotate to the next contender.
     if (segment.getIsTitleSegment()) {
       segment.getTitles().forEach(contenderSelectionService::autoSelectNextContender);
+    }
+  }
+
+  /**
+   * Champion-slayer rule (ATW-9ub4): beating the reigning champion of an active SINGLE-type title
+   * in a NON-title match makes the winner available as a challenger for that title — appended to
+   * the challenger list, never displacing the designated #1 contender. Title segments are excluded
+   * (applyTitleChange owns their outcomes); empty winner lists (booked draws/no-contests) fire
+   * nothing. Null-safe (unit tests) and failure-isolated — a grant problem never fails
+   * adjudication.
+   */
+  private void applyChampionSlayerOutcomes(
+      @NonNull final Segment segment, @NonNull final List<Wrestler> winners) {
+    if (contenderSelectionService == null
+        || titleRepository == null
+        || WellKnownSegmentType.PROMO.matches(segment.getSegmentType())
+        || Boolean.TRUE.equals(segment.getIsTitleSegment())
+        || winners.isEmpty()) {
+      return;
+    }
+    try {
+      Long universeId =
+          segment.getShow().getUniverse() != null ? segment.getShow().getUniverse().getId() : null;
+      if (universeId == null) {
+        return;
+      }
+      List<Wrestler> losers = new ArrayList<>(segment.getWrestlers());
+      losers.removeAll(winners);
+      for (Wrestler loser : losers) {
+        for (Title title : titleRepository.findTitlesHeldByWrestler(loser, universeId)) {
+          if (!title.getIsActive()
+              || title.getChampionshipType() != ChampionshipType.SINGLE
+              || title.getUniverse() == null
+              || !universeId.equals(title.getUniverse().getId())) {
+            continue;
+          }
+          if (contenderSelectionService.grantChampionSlayerAvailability(title, winners.get(0))) {
+            eventPublisher.publishEvent(
+                new ChampionDefeatedEvent(this, title, loser, winners.get(0)));
+          }
+        }
+      }
+    } catch (Exception e) {
+      log.error(
+          "Champion-slayer grant after adjudication failed for segment {}", segment.getId(), e);
     }
   }
 

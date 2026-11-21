@@ -23,7 +23,10 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.javydreamercsw.base.ai.SegmentNarrationConfig;
@@ -82,6 +85,7 @@ import com.github.javydreamercsw.management.service.show.planning.ShowPlanningSe
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.team.TeamService;
+import com.github.javydreamercsw.management.service.title.ContenderSelectionService;
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
@@ -163,6 +167,7 @@ class ShowDetailViewTest extends AbstractViewTest {
   @Mock private TournamentMatchRepository tournamentMatchRepository;
   @Mock private TournamentService tournamentService;
   @Mock private TournamentTemplateBookingService tournamentTemplateBookingService;
+  @Mock private ContenderSelectionService contenderSelectionService;
 
   @BeforeEach
   public void setUp() {
@@ -221,6 +226,103 @@ class ShowDetailViewTest extends AbstractViewTest {
 
       assertEquals(AdjudicationStatus.PENDING, segment.getAdjudicationStatus());
     }
+  }
+
+  @Test
+  void testContenderMatchSaveShowsRankingWarning() {
+    try (MockedStatic<Notification> mocked = Mockito.mockStatic(Notification.class)) {
+      mocked
+          .when(() -> Notification.show(anyString(), anyInt(), any(Notification.Position.class)))
+          .thenReturn(mock(Notification.class));
+
+      ShowType showType = new ShowType();
+      showType.setName("Test Show Type");
+      showType.setDescription("Test Description");
+
+      Show show = new Show();
+      show.setName("Test Show");
+      show.setDescription("Test Description");
+      show.setType(showType);
+
+      SegmentType segmentType = new SegmentType();
+      segmentType.setName("Test Segment Type");
+
+      Segment segment = new Segment();
+      segment.setId(10L);
+      segment.setShow(show);
+      segment.setAdjudicationStatus(AdjudicationStatus.ADJUDICATED);
+      segment.setSegmentType(segmentType);
+      segment.setContenderMatch(true);
+      when(segmentService.updateSegment(any(Segment.class))).thenReturn(segment);
+
+      Wrestler wrestler1 = new Wrestler();
+      wrestler1.setId(1L);
+      wrestler1.setName("Wrestler 1");
+
+      Wrestler wrestler2 = new Wrestler();
+      wrestler2.setId(2L);
+      wrestler2.setName("Wrestler 2");
+
+      Title world = new Title();
+      world.setId(7L);
+      world.setName("ATW World");
+      segment.getTitles().add(world);
+
+      when(contenderSelectionService.contendersMissingRankingCriteria(
+              eq(world), any(Collection.class)))
+          .thenReturn(List.of(wrestler1));
+
+      ShowDetailView showDetailView = buildView(mock(SecurityUtils.class));
+      Map<Integer, List<Wrestler>> teamMap = new LinkedHashMap<>();
+      teamMap.put(1, List.of(wrestler1));
+      teamMap.put(2, List.of(wrestler2));
+      ReflectionTestUtils.invokeMethod(
+          showDetailView,
+          "validateAndSaveSegment",
+          show,
+          segmentType,
+          teamMap,
+          Collections.emptySet(),
+          Collections.emptySet(),
+          segment);
+
+      verify(notificationService).showWarning(contains("Ranking warning"));
+      verify(contenderSelectionService)
+          .contendersMissingRankingCriteria(eq(world), any(Collection.class));
+    }
+  }
+
+  @Test
+  void testEditDialogContenderMatchWarnsOnRankingCriteria() {
+    // The edit-segment dialog's save callback delegates to warnIfContenderMatchMissingRanking —
+    // the raw-SegmentService save path must show the same ranking advisory as the add path.
+    ShowDetailView showDetailView = buildView(mock(SecurityUtils.class));
+
+    Segment contenderMatch = new Segment();
+    contenderMatch.setContenderMatch(true);
+    Title world = new Title();
+    world.setId(7L);
+    world.setName("ATW World");
+    contenderMatch.getTitles().add(world);
+    Wrestler unranked = new Wrestler();
+    unranked.setId(3L);
+    unranked.setName("Unranked Jobber");
+    when(contenderSelectionService.contendersMissingRankingCriteria(eq(world), any()))
+        .thenReturn(List.of(unranked));
+
+    ReflectionTestUtils.invokeMethod(
+        showDetailView, "warnIfContenderMatchMissingRanking", contenderMatch, List.of(unranked));
+    verify(notificationService).showWarning(contains("Ranking warning"));
+
+    // A non-contender segment never consults the gate.
+    Mockito.clearInvocations(contenderSelectionService, notificationService);
+    Segment plainSegment = new Segment();
+    plainSegment.setContenderMatch(false);
+    ReflectionTestUtils.invokeMethod(
+        showDetailView, "warnIfContenderMatchMissingRanking", plainSegment, List.of(unranked));
+    verify(contenderSelectionService, Mockito.never())
+        .contendersMissingRankingCriteria(any(), any());
+    verify(notificationService, Mockito.never()).showWarning(anyString());
   }
 
   @Test
@@ -685,7 +787,8 @@ class ShowDetailViewTest extends AbstractViewTest {
             narrationParserService,
             npcService,
             mock(DramaEventService.class),
-            feudScriptService);
+            feudScriptService,
+            contenderSelectionService);
     ShowContextFacade showContextFacade =
         new ShowContextFacade(
             showTypeService,
