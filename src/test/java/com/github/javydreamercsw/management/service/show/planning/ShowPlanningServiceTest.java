@@ -28,6 +28,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
@@ -74,6 +75,7 @@ import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanni
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningDtoMapper;
 import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanningRivalryDTO;
 import com.github.javydreamercsw.management.service.title.BriefcaseCashInAdvisorService;
+import com.github.javydreamercsw.management.service.title.ContenderSelectionService;
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.tournament.TournamentTemplateBookingService;
@@ -123,6 +125,7 @@ class ShowPlanningServiceTest {
   @Mock private ShowTemplateRepository showTemplateRepository;
   @Mock private TournamentTemplateBookingService tournamentTemplateBookingService;
   @Mock private TitleOpportunityService titleOpportunityService;
+  @Mock private ContenderSelectionService contenderSelectionService;
 
   @Mock private BriefcaseCashInAdvisorService briefcaseCashInAdvisorService;
 
@@ -289,6 +292,116 @@ class ShowPlanningServiceTest {
         saved.getSegmentRules().size(),
         "Type-paired AUTO_ATTACH rule must merge at approval time");
     assertEquals("Rumble Rules", saved.getSegmentRules().iterator().next().getName());
+  }
+
+  @Test
+  void testApproveSegments_contenderDecidingAssignment_wiresContenderMatchAndTitle() {
+    // A PLE template declaring "the Abu Dhabi Rumble decides the #1 contender for the
+    // ATW World title" — the assignment carries contenderTitle (the January All Time
+    // Rumble case) and approval must wire contenderMatch + attach the title so
+    // adjudication designates the winner.
+    SegmentType rumbleType = new SegmentType();
+    rumbleType.setId(10L);
+    rumbleType.setName("Abu Dhabi Rumble");
+    when(segmentTypeService.findByName("Abu Dhabi Rumble")).thenReturn(Optional.of(rumbleType));
+
+    Title worldTitle = new Title();
+    worldTitle.setId(77L);
+    worldTitle.setName("ATW World");
+    worldTitle.setChampionshipType(ChampionshipType.SINGLE);
+
+    ShowType pleType = new ShowType();
+    pleType.setName("PLE");
+    ShowTemplate template = new ShowTemplate();
+    template.setId(5L);
+    template.setName("All Time Rumble");
+    template.setShowType(pleType);
+    ShowTemplateSegmentAssignment assignment = new ShowTemplateSegmentAssignment();
+    assignment.setTemplate(template);
+    assignment.setSegmentType(rumbleType);
+    assignment.setContenderTitle(worldTitle);
+    assignment.setMode(ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH);
+    template.getSegmentAssignments().add(assignment);
+    show.setTemplate(template);
+
+    ProposedSegment proposed = new ProposedSegment();
+    proposed.setType("Abu Dhabi Rumble");
+    proposed.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+    proposed.setWinners(List.of("Wrestler A"));
+
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+    when(wrestlerRepository.findByName("Wrestler A"))
+        .thenReturn(Optional.of(wrestlerNamed(1L, "Wrestler A")));
+    when(wrestlerRepository.findByName("Wrestler B"))
+        .thenReturn(Optional.of(wrestlerNamed(2L, "Wrestler B")));
+
+    showPlanningService.approveSegments(show, List.of(proposed));
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Segment>> segmentsCaptor = ArgumentCaptor.forClass(List.class);
+    verify(segmentRepository).saveAll(segmentsCaptor.capture());
+    Segment saved = segmentsCaptor.getValue().get(0);
+    assertTrue(
+        saved.isContenderMatch(),
+        "A contender-deciding assignment must flag the segment as a contender match");
+    assertEquals(1, saved.getTitles().size(), "The configured title must attach to the segment");
+    assertEquals("ATW World", saved.getTitles().iterator().next().getName());
+    assertFalse(
+        saved.getIsTitleSegment(),
+        "The title is NOT on the line — the winner becomes the #1 contender");
+  }
+
+  @Test
+  void testApproveSegments_contenderDecidingAssignment_skipsTitleSegmentsAndExistingFlags() {
+    // An approved segment that is already a title segment (or already a contender match) keeps
+    // its own semantics — the assignment must not downgrade a title match to a contender match.
+    SegmentType rumbleType = new SegmentType();
+    rumbleType.setId(10L);
+    rumbleType.setName("Abu Dhabi Rumble");
+    when(segmentTypeService.findByName("Abu Dhabi Rumble")).thenReturn(Optional.of(rumbleType));
+
+    Title worldTitle = new Title();
+    worldTitle.setId(77L);
+    worldTitle.setName("ATW World");
+
+    ShowType pleType = new ShowType();
+    pleType.setName("PLE");
+    ShowTemplate template = new ShowTemplate();
+    template.setId(5L);
+    template.setName("All Time Rumble");
+    template.setShowType(pleType);
+    ShowTemplateSegmentAssignment assignment = new ShowTemplateSegmentAssignment();
+    assignment.setTemplate(template);
+    assignment.setSegmentType(rumbleType);
+    assignment.setContenderTitle(worldTitle);
+    assignment.setMode(ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH);
+    template.getSegmentAssignments().add(assignment);
+    show.setTemplate(template);
+
+    ProposedSegment titleRumble = new ProposedSegment();
+    titleRumble.setType("Abu Dhabi Rumble");
+    titleRumble.setIsTitleSegment(true);
+    titleRumble.setTitles(Set.of(worldTitle));
+    titleRumble.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+    titleRumble.setWinners(List.of("Wrestler A"));
+
+    when(segmentRepository.findByShow(show)).thenReturn(List.of());
+    when(wrestlerRepository.findByName("Wrestler A"))
+        .thenReturn(Optional.of(wrestlerNamed(1L, "Wrestler A")));
+    when(wrestlerRepository.findByName("Wrestler B"))
+        .thenReturn(Optional.of(wrestlerNamed(2L, "Wrestler B")));
+
+    showPlanningService.approveSegments(show, List.of(titleRumble));
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Segment>> segmentsCaptor = ArgumentCaptor.forClass(List.class);
+    verify(segmentRepository).saveAll(segmentsCaptor.capture());
+    Segment saved = segmentsCaptor.getValue().get(0);
+    assertTrue(
+        saved.getIsTitleSegment(),
+        "An approved title segment must stay a title segment — the assignment never downgrades it");
+    assertFalse(
+        saved.isContenderMatch(), "A title segment must not also be flagged as a contender match");
   }
 
   @Test
@@ -1705,6 +1818,142 @@ class ShowPlanningServiceTest {
     CardValidationResult result = showPlanningService.validateCard(List.of(good), List.of());
 
     assertTrue(result.isValid(), "Contender flag alone is the desired state");
+  }
+
+  @Test
+  void validateCard_contenderMatch_unrankedParticipant_isError() {
+    // Given — a #1 contender match whose participant does not appear in the title's rankings
+    // (tier filter with fallback) and is not a designated challenger: the AI must not book
+    // wrestlers with no ranking claim into contender-deciding matches.
+    Title title = new Title();
+    title.setId(77L);
+    title.setName("ATW World");
+    when(titleService.getTitleById(77L)).thenReturn(Optional.of(title));
+    doReturn(List.of())
+        .when(contenderSelectionService)
+        .contendersMissingRankingCriteria(any(), any());
+    when(contenderSelectionService.contendersMissingRankingCriteria(eq(title), any()))
+        .thenAnswer(
+            inv -> {
+              List<Wrestler> participants = inv.getArgument(1);
+              return participants; // everyone fails
+            });
+
+    ProposedSegment bad = new ProposedSegment();
+    bad.setType("One on One");
+    bad.setIsTitleSegment(false);
+    bad.setIsContenderMatch(true);
+    bad.setContenderTitleId(77L);
+    bad.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+    when(wrestlerRepository.findByName("Wrestler A"))
+        .thenReturn(Optional.of(wrestlerNamed(1L, "Wrestler A")));
+    when(wrestlerRepository.findByName("Wrestler B"))
+        .thenReturn(Optional.of(wrestlerNamed(2L, "Wrestler B")));
+
+    CardValidationResult result = showPlanningService.validateCard(List.of(bad), List.of());
+
+    assertFalse(result.isValid(), "Unranked contender-match participants are a hard error");
+    assertTrue(
+        result.getErrors().getFirst().contains("ranking criteria"),
+        "The error must name the ranking-criteria gate");
+  }
+
+  @Test
+  void validateCard_contenderMatch_rankedParticipant_noError() {
+    Title title = new Title();
+    title.setId(77L);
+    title.setName("ATW World");
+    when(titleService.getTitleById(77L)).thenReturn(Optional.of(title));
+    when(contenderSelectionService.contendersMissingRankingCriteria(eq(title), any()))
+        .thenReturn(List.of()); // everyone passes
+
+    ProposedSegment good = new ProposedSegment();
+    good.setType("One on One");
+    good.setIsTitleSegment(false);
+    good.setIsContenderMatch(true);
+    good.setContenderTitleId(77L);
+    good.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+    when(wrestlerRepository.findByName("Wrestler A"))
+        .thenReturn(Optional.of(wrestlerNamed(1L, "Wrestler A")));
+    when(wrestlerRepository.findByName("Wrestler B"))
+        .thenReturn(Optional.of(wrestlerNamed(2L, "Wrestler B")));
+
+    CardValidationResult result = showPlanningService.validateCard(List.of(good), List.of());
+
+    assertTrue(result.isValid(), "Ranked participants pass the gate");
+  }
+
+  @Test
+  void validateCard_contenderMatch_tournamentSource_skipsGate() {
+    // Tournament-fed payoff rows are entry-gated at tournament creation — mid-tournament
+    // ranking shifts must not strand the final.
+    Title title = new Title();
+    title.setId(77L);
+    title.setName("ATW World");
+    when(titleService.getTitleById(77L)).thenReturn(Optional.of(title));
+
+    ProposedSegment tournamentRow = new ProposedSegment();
+    tournamentRow.setType("One on One");
+    tournamentRow.setIsTitleSegment(false);
+    tournamentRow.setIsContenderMatch(true);
+    tournamentRow.setContenderTitleId(77L);
+    tournamentRow.setSource("Tournament");
+    tournamentRow.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+    when(wrestlerRepository.findByName("Wrestler A"))
+        .thenReturn(Optional.of(wrestlerNamed(1L, "Wrestler A")));
+    when(wrestlerRepository.findByName("Wrestler B"))
+        .thenReturn(Optional.of(wrestlerNamed(2L, "Wrestler B")));
+
+    CardValidationResult result =
+        showPlanningService.validateCard(List.of(tournamentRow), List.of());
+
+    assertTrue(result.isValid(), "Tournament-sourced rows bypass the ranking gate");
+  }
+
+  @Test
+  void validateCard_contenderMatch_briefcaseSource_skipsGate() {
+    // Mirror of the tournament exemption: briefcase payoffs gate at cash-in, not at booking.
+    Title title = new Title();
+    title.setId(77L);
+    title.setName("ATW World");
+    when(titleService.getTitleById(77L)).thenReturn(Optional.of(title));
+
+    ProposedSegment briefcaseRow = new ProposedSegment();
+    briefcaseRow.setType("One on One");
+    briefcaseRow.setIsTitleSegment(false);
+    briefcaseRow.setIsContenderMatch(true);
+    briefcaseRow.setContenderTitleId(77L);
+    briefcaseRow.setSource("Briefcase");
+    briefcaseRow.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+
+    CardValidationResult result =
+        showPlanningService.validateCard(List.of(briefcaseRow), List.of());
+
+    assertTrue(result.isValid(), "Briefcase-sourced rows bypass the ranking gate");
+  }
+
+  @Test
+  void validateCard_contenderMatch_unresolvableNames_gateSilentlyPasses() {
+    // M2 deferred-minor coverage: names that resolve to nobody leave the participant list empty,
+    // so the gate has no one to reject — the later approval-time participant resolution is what
+    // surfaces the error. Pinned so the silent-pass behavior is a documented decision.
+    Title title = new Title();
+    title.setId(77L);
+    title.setName("ATW World");
+    when(titleService.getTitleById(77L)).thenReturn(Optional.of(title));
+
+    ProposedSegment ghost = new ProposedSegment();
+    ghost.setType("One on One");
+    ghost.setIsTitleSegment(false);
+    ghost.setIsContenderMatch(true);
+    ghost.setContenderTitleId(77L);
+    ghost.setTeams(List.of(List.of("Ghost A"), List.of("Ghost B")));
+    when(wrestlerRepository.findByName("Ghost A")).thenReturn(Optional.empty());
+    when(wrestlerRepository.findByName("Ghost B")).thenReturn(Optional.empty());
+
+    CardValidationResult result = showPlanningService.validateCard(List.of(ghost), List.of());
+
+    assertTrue(result.isValid(), "No resolvable participants means no gate rejections");
   }
 
   @Test

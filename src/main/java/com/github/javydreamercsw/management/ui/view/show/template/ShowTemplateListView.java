@@ -32,6 +32,7 @@ import com.github.javydreamercsw.management.domain.show.template.RecurrenceType;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplate;
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
+import com.github.javydreamercsw.management.domain.title.ChampionshipType;
 import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
@@ -136,6 +137,7 @@ public class ShowTemplateListView extends Main {
   private ComboBox<SegmentRule> assignmentSpecFinalRuleCombo;
   private MultiSelectComboBox<SegmentRule> assignmentSpecAllowedRulesCombo;
   private ComboBox<Title> assignmentSpecTitleCombo;
+  private ComboBox<Title> assignmentContenderTitleCombo;
   private List<Component> assignmentSpecFields;
 
   final TextField nameFilter;
@@ -600,6 +602,11 @@ public class ShowTemplateListView extends Main {
         .setHeader("Tournament")
         .setAutoWidth(true);
     assignmentGrid.addColumn(a -> a.getMode().name()).setHeader("Mode").setAutoWidth(true);
+    assignmentGrid
+        .addColumn(
+            a -> a.getContenderTitle() != null ? "#1 → " + a.getContenderTitle().getName() : "—")
+        .setHeader("Contender")
+        .setAutoWidth(true);
     assignmentGrid.addComponentColumn(
         row -> {
           Button remove = new Button(new Icon(VaadinIcon.TRASH));
@@ -699,6 +706,7 @@ public class ShowTemplateListView extends Main {
               row.setSegmentRule(rule);
               row.setTournament(tournament);
               applySpecFields(row);
+              row.setContenderTitle(assignmentContenderTitleCombo.getValue());
               row.setMode(
                   assignmentModeCombo.getValue() != null
                       ? assignmentModeCombo.getValue()
@@ -706,6 +714,7 @@ public class ShowTemplateListView extends Main {
               dialogAssignments.add(row);
               assignmentGrid.getListDataView().refreshAll();
               clearSpecFields();
+              assignmentContenderTitleCombo.clear();
             });
     addAssignmentBtn.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
     addAssignmentBtn.setVisible(securityUtils.canEdit());
@@ -715,7 +724,8 @@ public class ShowTemplateListView extends Main {
             assignmentTypeCombo,
             assignmentRuleCombo,
             assignmentTournamentCombo,
-            assignmentModeCombo);
+            assignmentModeCombo,
+            assignmentContenderTitleCombo);
     assignmentPicker.setWidthFull();
     assignmentPicker.setAlignItems(FlexComponent.Alignment.END);
     VerticalLayout specSection = new VerticalLayout(assignmentSpecFields.toArray(new Component[0]));
@@ -904,6 +914,18 @@ public class ShowTemplateListView extends Main {
     assignmentSpecTitleCombo.setPlaceholder("Optional");
     assignmentSpecTitleCombo.setClearButtonVisible(true);
 
+    // Contender-deciding declaration (ATW-9ub4): segments matching this row decide the #1
+    // contender for the chosen title (e.g. the Rumble on the All Time Rumble PLE).
+    assignmentContenderTitleCombo = new ComboBox<>("Decides #1 Contender For");
+    assignmentContenderTitleCombo.setItems(
+        wrestlerFacade.getTitleService().findAll().stream()
+            .filter(t -> t.getChampionshipType() == ChampionshipType.SINGLE)
+            .toList());
+    assignmentContenderTitleCombo.setItemLabelGenerator(Title::getName);
+    assignmentContenderTitleCombo.setWidthFull();
+    assignmentContenderTitleCombo.setPlaceholder("Optional (earned shot for the winner)");
+    assignmentContenderTitleCombo.setClearButtonVisible(true);
+
     assignmentSpecFields =
         List.of(
             new Span("Tournament spec (name + format create the instance on first use)"),
@@ -996,6 +1018,7 @@ public class ShowTemplateListView extends Main {
                           copy.setSpecFinalRule(a.getSpecFinalRule());
                           copy.setSpecTitle(a.getSpecTitle());
                           copy.getSpecAllowedRules().addAll(a.getSpecAllowedRules());
+                          copy.setContenderTitle(a.getContenderTitle());
                           copy.setMode(a.getMode());
                           dialogAssignments.add(copy);
                         }));
@@ -1118,6 +1141,12 @@ public class ShowTemplateListView extends Main {
     row.setSegmentRule(rule);
     row.setTournament(tournament);
     row.setMode(mode);
+    dialogAssignments.add(row);
+    assignmentGrid.getListDataView().refreshAll();
+  }
+
+  /** Test hook: add a fully-built assignment row (any shape) to the dialog's grid. */
+  void addAssignmentRowForTest(@NonNull final ShowTemplateSegmentAssignment row) {
     dialogAssignments.add(row);
     assignmentGrid.getListDataView().refreshAll();
   }

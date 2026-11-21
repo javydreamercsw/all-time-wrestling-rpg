@@ -80,9 +80,12 @@ class BriefcaseNpcCashInApprovalIT extends ManagementIntegrationTest {
 
   @BeforeEach
   void setUpFixture() {
+    // findAll+filter, not findByName: the cleaner's swallowed-failure path can leave two
+    // "Default Universe" rows behind, and the unique query would throw NonUniqueResultException.
     universe =
-        universeRepository
-            .findByName("Default Universe")
+        universeRepository.findAll().stream()
+            .filter(u -> "Default Universe".equals(u.getName()))
+            .findFirst()
             .orElseThrow(() -> new IllegalStateException("Default Universe missing from test DB"));
 
     champion = seedNpc("Briefcase IT Champ");

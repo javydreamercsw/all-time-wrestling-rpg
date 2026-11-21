@@ -54,6 +54,8 @@ import org.jspecify.annotations.Nullable;
  *   <li>type+rule+AUTO_ATTACH — the rule attaches whenever that type is used
  *   <li>rule-only+AUTO_ATTACH — the rule attaches to every approved match segment
  *   <li>rule-only+ENCOURAGED — the AI prefers the rule
+ *   <li>any row with {@code contenderTitle} — its matching segments decide the #1 contender for
+ *       that title (approval wires contenderMatch + the title; adjudication designates the winner)
  * </ul>
  */
 @Entity
@@ -121,6 +123,15 @@ public class ShowTemplateSegmentAssignment extends AbstractEntity<Long> {
   @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "spec_title_id")
   @Nullable private Title specTitle;
+
+  /**
+   * Optional title whose #1 contender is decided by this row's segments (contender-deciding
+   * configuration). Type-paired rows flag that segment type; rule-only rows flag every segment
+   * carrying the rule. Null = the row does not decide a contender.
+   */
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "contender_title_id")
+  @Nullable private Title contenderTitle;
 
   /**
    * Allowed-rules pool for bracket rounds ({@link SegmentRule} is name-keyed, hence the join

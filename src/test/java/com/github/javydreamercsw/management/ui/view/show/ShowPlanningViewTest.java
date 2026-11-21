@@ -61,6 +61,7 @@ import com.github.javydreamercsw.management.service.show.planning.dto.ShowPlanni
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.team.TeamService;
+import com.github.javydreamercsw.management.service.title.ContenderSelectionService;
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
@@ -131,7 +132,8 @@ class ShowPlanningViewTest extends AbstractViewTest {
             mock(NarrationParserService.class),
             npcService,
             mock(DramaEventService.class),
-            mock(FeudScriptService.class));
+            mock(FeudScriptService.class),
+            mock(ContenderSelectionService.class));
     ShowContextFacade showContextFacade =
         new ShowContextFacade(
             mock(ShowTypeService.class),

@@ -122,6 +122,8 @@ public class PlayerViewE2ETest extends AbstractE2ETest {
     rivalryRepository.deleteAll();
     inboxRepository.deleteAll();
     showRepository.deleteAll();
+    // Seed assignments may reference titles (Abu Dhabi Rumble -> ATW World): detach first.
+    clearContenderTitleReferences();
     titleChampionRepository.deleteAll();
     wrestlerRepository.deleteAll();
   }

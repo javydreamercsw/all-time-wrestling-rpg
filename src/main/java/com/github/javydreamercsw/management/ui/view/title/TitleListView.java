@@ -53,6 +53,7 @@ import jakarta.annotation.security.PermitAll;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -179,33 +180,40 @@ public class TitleListView extends Main {
               MultiSelectComboBox<Wrestler> challengerComboBox =
                   new MultiSelectComboBox<>("Challengers");
               assert title.getId() != null;
+              // Union the tier-eligible pool with the title's current challengers: an EARNED
+              // (contender-deciding win / champion-slayer) challenger below the title tier must
+              // stay visible and removable — a tier-filtered list hides them and breaks the
+              // removal diff below.
               List<Wrestler> eligibleChallengers =
                   titleService
                       .getEligibleChallengersFast(allWrestlersCache, challengerStateMap, title)
                       .stream()
                       .sorted(Comparator.comparing(Wrestler::getName))
                       .collect(Collectors.toList());
-              challengerComboBox.setItems(eligibleChallengers);
+              List<Wrestler> currentChallengers = title.getChallengers();
+              List<Wrestler> comboItems =
+                  new ArrayList<>(
+                      eligibleChallengers.stream()
+                          .filter(w -> !currentChallengers.contains(w))
+                          .toList());
+              comboItems.addAll(currentChallengers);
+              comboItems.sort(Comparator.comparing(Wrestler::getName));
+              challengerComboBox.setItems(comboItems);
               challengerComboBox.setItemLabelGenerator(Wrestler::getName);
               challengerComboBox.setWidthFull();
               challengerComboBox.setClearButtonVisible(true); // Allow clearing the field
               challengerComboBox.setEnabled(securityUtils.canEdit());
 
               // Set initial value to the current challengers
-              List<Wrestler> currentChallengers = title.getChallengers();
-              challengerComboBox.setValue(
-                  eligibleChallengers.stream()
-                      .filter(currentChallengers::contains)
-                      .collect(Collectors.toSet()));
+              challengerComboBox.setValue(new HashSet<>(currentChallengers));
 
               challengerComboBox.addValueChangeListener(
                   event -> {
-                    // Determine added and removed challengers
+                    // Determine added and removed challengers — against the FULL current
+                    // challenger list (not the tier-filtered one), so removing an earned
+                    // below-tier challenger is detected.
                     var selected = event.getValue();
-                    var old =
-                        eligibleChallengers.stream()
-                            .filter(currentChallengers::contains)
-                            .collect(Collectors.toSet());
+                    var old = new HashSet<>(currentChallengers);
 
                     var added =
                         selected.stream().filter(w -> !old.contains(w)).collect(Collectors.toSet());

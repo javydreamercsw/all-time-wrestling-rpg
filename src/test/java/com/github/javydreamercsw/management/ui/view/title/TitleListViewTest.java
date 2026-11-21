@@ -309,6 +309,35 @@ class TitleListViewTest extends AbstractViewTest {
   }
 
   @Test
+  void challengerDropdown_includesEarnedBelowTierChallenger() {
+    // ATW-9ub4: a designated (earned) challenger below the title tier must appear in the
+    // dropdown — the tier-filtered eligible list alone would hide them, and the removal diff
+    // would never detect deselecting them.
+    testTitle.addChallenger(otherWrestler); // MIDCARDER vs MAIN_EVENTER title
+
+    Grid.Column<Title> challengerColumn =
+        titleListView.grid.getColumns().stream()
+            .filter(col -> "Challengers".equals(col.getHeaderText()))
+            .findFirst()
+            .orElse(null);
+    assertNotNull(challengerColumn);
+
+    ComponentRenderer<MultiSelectComboBox<Wrestler>, Title> renderer =
+        (ComponentRenderer<MultiSelectComboBox<Wrestler>, Title>) challengerColumn.getRenderer();
+    MultiSelectComboBox<Wrestler> challengerComboBox = renderer.createComponent(testTitle);
+
+    List<Wrestler> items =
+        challengerComboBox.getDataProvider().fetch(new Query<>()).collect(Collectors.toList());
+    assertTrue(
+        items.contains(otherWrestler),
+        "An earned below-tier challenger must stay visible in the Challengers dropdown");
+    // Their preselection also survives: the initial value comes from the same union list.
+    assertTrue(
+        challengerComboBox.getValue().contains(otherWrestler),
+        "The earned challenger must be preselected as a current challenger");
+  }
+
+  @Test
   void gridShouldShowRankingsAndDefenseFreqColumns() {
     List<String> headers =
         titleListView.grid.getColumns().stream()

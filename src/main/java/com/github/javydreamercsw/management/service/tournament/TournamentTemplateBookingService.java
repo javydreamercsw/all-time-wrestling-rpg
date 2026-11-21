@@ -1636,8 +1636,9 @@ public class TournamentTemplateBookingService {
     if (!tournamentService.hasEntries(tournament.getId())) {
       int eligible =
           tournamentService
-              .findEligibleWrestlersSortedByFans(
-                  tournament.getLinkedTitle(), tournament.getGender(), universeId(show))
+              // Tournament-scoped overload: a contender-deciding tournament's pre-flight counts
+              // only wrestlers its entry gate would accept, or seedAuto fails mid-loop.
+              .findEligibleWrestlersSortedByFans(tournament, universeId(show))
               .size();
       // A STRICT plan (spec count / catalog preset) requires eligibility to cover it — a preset
       // asking for 8 gets 8, or nothing; a smaller bracket would quietly rewrite the booker's

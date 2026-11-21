@@ -40,12 +40,14 @@ import com.github.javydreamercsw.management.domain.show.template.ShowTemplateRep
 import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSegmentAssignment;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
+import com.github.javydreamercsw.management.domain.title.Title;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRepository;
 import com.github.javydreamercsw.management.dto.ShowTemplateDTO;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
+import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
 import com.github.javydreamercsw.management.sync.review.SeedUpdateReviewService;
 import java.io.IOException;
@@ -81,6 +83,7 @@ class ShowTemplateSyncTest {
   @Mock private SegmentTypeService segmentTypeService;
   @Mock private SegmentRuleService segmentRuleService;
   @Mock private TournamentRepository tournamentRepository;
+  @Mock private TitleService titleService;
 
   @Mock private SeedUpdateReviewService seedReviewService;
 
@@ -144,6 +147,7 @@ class ShowTemplateSyncTest {
         segmentTypeService,
         segmentRuleService,
         tournamentRepository,
+        titleService,
         new ObjectMapper(),
         seedReviewService,
         EMPTY_MANIFEST) {
@@ -179,6 +183,68 @@ class ShowTemplateSyncTest {
     assertThat(captor.getValue().get(0).getSegmentType()).isEqualTo(rumble);
     assertThat(captor.getValue().get(0).getMode())
         .isEqualTo(ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH);
+  }
+
+  @Test
+  @DisplayName(
+      "Sync resolves contenderTitleName onto the assignment row (title seeds before templates)")
+  void sync_seedsContenderTitleByName() {
+    // The Abu Dhabi Rumble decides the ATW World #1 contender (ATW-9ub4): the seed row carries
+    // the championship NAME; ChampionshipSync (@Order 140) precedes ShowTemplateSync (@Order 145)
+    // so the reference resolves at seed time. Unknown names skip with a warning, like targets.
+    SegmentType rumble = new SegmentType();
+    rumble.setName("Abu Dhabi Rumble");
+    when(segmentTypeService.findByName("Abu Dhabi Rumble")).thenReturn(Optional.of(rumble));
+    Title world = new Title();
+    world.setId(7L);
+    world.setName("ATW World");
+    when(titleService.findByName("ATW World")).thenReturn(Optional.of(world));
+    ShowTemplateDTO dto = new ShowTemplateDTO();
+    dto.setName("All Time Rumble");
+    dto.setShowTypeName("Premium Live Event (PLE)");
+    ShowTemplateDTO.AssignmentDTO assignment = new ShowTemplateDTO.AssignmentDTO();
+    assignment.setSegmentTypeName("Abu Dhabi Rumble");
+    assignment.setContenderTitleName("ATW World");
+    assignment.setMode("AUTO_ATTACH");
+    dto.setAssignments(List.of(assignment));
+    sync = syncOver(List.of(dto));
+
+    sync.sync();
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<ShowTemplateSegmentAssignment>> captor =
+        ArgumentCaptor.forClass(List.class);
+    verify(showTemplateService).syncSegmentAssignments(eq(9L), captor.capture());
+    assertThat(captor.getValue()).hasSize(1);
+    assertThat(captor.getValue().get(0).getContenderTitle()).isEqualTo(world);
+  }
+
+  @Test
+  @DisplayName("Unknown contender title names skip with a warning — row still seeds")
+  void sync_unknownContenderTitle_skipsTitleOnly() {
+    SegmentType rumble = new SegmentType();
+    rumble.setName("Abu Dhabi Rumble");
+    when(segmentTypeService.findByName("Abu Dhabi Rumble")).thenReturn(Optional.of(rumble));
+    when(titleService.findByName("Ghost Title")).thenReturn(Optional.empty());
+    ShowTemplateDTO dto = new ShowTemplateDTO();
+    dto.setName("Rumble PLE");
+    dto.setShowTypeName("Premium Live Event (PLE)");
+    ShowTemplateDTO.AssignmentDTO assignment = new ShowTemplateDTO.AssignmentDTO();
+    assignment.setSegmentTypeName("Abu Dhabi Rumble");
+    assignment.setContenderTitleName("Ghost Title");
+    assignment.setMode("AUTO_ATTACH");
+    dto.setAssignments(List.of(assignment));
+    sync = syncOver(List.of(dto));
+
+    sync.sync();
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<ShowTemplateSegmentAssignment>> captor =
+        ArgumentCaptor.forClass(List.class);
+    verify(showTemplateService).syncSegmentAssignments(eq(9L), captor.capture());
+    assertThat(captor.getValue()).hasSize(1);
+    assertThat(captor.getValue().get(0).getContenderTitle()).isNull();
+    assertThat(captor.getValue().get(0).getSegmentType()).isEqualTo(rumble);
   }
 
   @Test
@@ -382,6 +448,7 @@ class ShowTemplateSyncTest {
             segmentTypeService,
             segmentRuleService,
             tournamentRepository,
+            titleService,
             new ObjectMapper(),
             seedReviewService,
             EMPTY_MANIFEST) {
@@ -482,7 +549,7 @@ class ShowTemplateSyncTest {
     tier2row.setDescription(SEED_TIMELESS_DESCRIPTION); // matches the seed
     tier2row.setDurationDays(1);
     tier2row.setRecurrenceType(RecurrenceType.WEEKLY);
-    tier2row.setDayOfWeek(DayOfWeek.FRIDAY);
+    tier2row.setDayOfWeek(DayOfWeek.MONDAY);
     tier2row.setExpectedMatches(9); // not seed-owned for Timeless (no seed key) — PRESERVE_EDIT
     tier2row.setDurationDays(2); // admin edit AFTER the stamp → the one parked field (seed says 1)
     tier2row.setSeedFingerprint(
@@ -496,7 +563,7 @@ class ShowTemplateSyncTest {
             null,
             1,
             "WEEKLY",
-            "FRIDAY",
+            "MONDAY",
             null,
             null,
             null,
@@ -528,6 +595,7 @@ class ShowTemplateSyncTest {
             segmentTypeService,
             segmentRuleService,
             tournamentRepository,
+            titleService,
             new ObjectMapper(),
             parking,
             EMPTY_MANIFEST);
@@ -589,7 +657,7 @@ class ShowTemplateSyncTest {
     timeless.setDescription(SEED_TIMELESS_DESCRIPTION);
     timeless.setDurationDays(1);
     timeless.setRecurrenceType(RecurrenceType.WEEKLY);
-    timeless.setDayOfWeek(DayOfWeek.FRIDAY);
+    timeless.setDayOfWeek(DayOfWeek.MONDAY);
     timeless.setExpectedMatches(9); // the seed ships no value — it silently updates into null
     timeless.setSeedFingerprint(
         VERIFY_SUPPORT.fingerprint(
@@ -600,7 +668,7 @@ class ShowTemplateSyncTest {
             null,
             1,
             "WEEKLY",
-            "FRIDAY",
+            "MONDAY",
             null,
             null,
             null,
@@ -623,6 +691,7 @@ class ShowTemplateSyncTest {
             segmentTypeService,
             segmentRuleService,
             tournamentRepository,
+            titleService,
             new ObjectMapper(),
             parking,
             EMPTY_MANIFEST);
@@ -632,7 +701,7 @@ class ShowTemplateSyncTest {
     Assertions.assertThat(continuum.getCommentaryTeam()).isEqualTo(ghostTeam);
     Assertions.assertThat(continuum.getDurationDays()).isEqualTo(1);
     Assertions.assertThat(continuum.getRecurrenceType()).isEqualTo(RecurrenceType.WEEKLY);
-    Assertions.assertThat(continuum.getDayOfWeek()).isEqualTo(DayOfWeek.MONDAY);
+    Assertions.assertThat(continuum.getDayOfWeek()).isEqualTo(DayOfWeek.FRIDAY);
     Assertions.assertThat(continuum.getRequiredExpansions()).isEmpty();
     // Timeless: the seed drops expectedMatches (ships null), so the clean row's stale 9 is a
     // SILENT_UPDATE into null — the null-write arm of the expectedMatches silent writer. The
@@ -709,6 +778,7 @@ class ShowTemplateSyncTest {
             segmentTypeService,
             segmentRuleService,
             tournamentRepository,
+            titleService,
             new ObjectMapper(),
             Mockito.mock(SeedUpdateReviewService.class),
             EMPTY_MANIFEST) {
@@ -741,6 +811,7 @@ class ShowTemplateSyncTest {
             segmentTypeService,
             segmentRuleService,
             tournamentRepository,
+            titleService,
             new ObjectMapper(),
             seedReviewService,
             EMPTY_MANIFEST);

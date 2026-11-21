@@ -95,6 +95,8 @@ public class TitleSkillE2ETest extends AbstractE2ETest {
               title.getChallengers().clear();
               titleRepository.save(title);
             });
+    // Seed assignments may reference titles (Abu Dhabi Rumble -> ATW World): detach first.
+    clearContenderTitleReferences();
     titleRepository.deleteAll();
     // Step 4: delete wrestlers (no remaining FK violations)
     wrestlerRepository.deleteAll();

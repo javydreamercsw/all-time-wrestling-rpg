@@ -105,6 +105,8 @@ public class PlayerDashboardDocsE2ETest extends AbstractDocsE2ETest {
     showRepository.deleteAll();
     seasonRepository.deleteAll();
     titleReignRepository.deleteAll();
+    // Seed assignments may reference titles (Abu Dhabi Rumble -> ATW World): detach first.
+    clearContenderTitleReferences();
     titleRepository.deleteAll();
     wrestlerRepository.deleteAll();
 

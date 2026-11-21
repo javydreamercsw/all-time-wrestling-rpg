@@ -58,6 +58,7 @@ import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerState;
 import com.github.javydreamercsw.management.service.show.ShowBookingService;
 import com.github.javydreamercsw.management.service.show.ShowSegmentReservationService;
+import com.github.javydreamercsw.management.service.title.ContenderSelectionService;
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -93,6 +94,7 @@ class BracketTournamentServiceTest {
   @Mock private TitleOpportunityService titleOpportunityService;
   @Mock private TrophyReignRepository trophyReignRepository;
   @Mock private TrophyReignService trophyReignService;
+  @Mock private ContenderSelectionService contenderSelectionService;
 
   private TournamentService tournamentService;
 
@@ -123,7 +125,8 @@ class BracketTournamentServiceTest {
             titleOpportunityService,
             trophyReignRepository,
             trophyReignService,
-            List.of(format));
+            List.of(format),
+            contenderSelectionService);
 
     tournament = new Tournament();
     tournament.setId(1L);

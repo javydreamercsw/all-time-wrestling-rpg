@@ -69,6 +69,7 @@ import com.github.javydreamercsw.management.service.show.planning.ShowPlanningSe
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
 import com.github.javydreamercsw.management.service.show.type.ShowTypeService;
 import com.github.javydreamercsw.management.service.team.TeamService;
+import com.github.javydreamercsw.management.service.title.ContenderSelectionService;
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.service.tournament.TournamentService;
@@ -123,6 +124,7 @@ import jakarta.annotation.security.PermitAll;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -156,6 +158,7 @@ public class ShowDetailView extends Main
   private final SegmentTypeService segmentTypeService;
   private final SegmentRuleService segmentRuleService;
   private final NpcService npcService;
+  private final ContenderSelectionService contenderSelectionService;
   private final WrestlerService wrestlerService;
   private final WrestlerStatsService wrestlerStatsService;
   private final TitleOpportunityService titleOpportunityService;
@@ -241,6 +244,7 @@ public class ShowDetailView extends Main
     this.segmentTypeService = showFacade.getSegmentTypeService();
     this.segmentRuleService = showFacade.getSegmentRuleService();
     this.npcService = showFacade.getNpcService();
+    this.contenderSelectionService = showFacade.getContenderSelectionService();
     this.wrestlerService = wrestlerFacade.getWrestlerService();
     this.wrestlerStatsService = wrestlerFacade.getWrestlerStatsService();
     this.titleOpportunityService = wrestlerFacade.getTitleOpportunityService();
@@ -2138,6 +2142,10 @@ public class ShowDetailView extends Main
                                 }
                                 // In-memory sync (no DB)
                                 seg.syncParticipants(saveData.teams());
+                                // Same ranking advisory the add path shows — the edit dialog
+                                // saves via raw SegmentService, so without this a booker could
+                                // swap an unranked wrestler into a #1 contender match silently.
+                                warnIfContenderMatchMissingRanking(seg, wrestlers);
                                 if (saveData.finalHealthValues() != null
                                     && !saveData.finalHealthValues().isEmpty()) {
                                   for (var p : seg.getParticipants()) {
@@ -2259,6 +2267,39 @@ public class ShowDetailView extends Main
     confirmDialog.open();
   }
 
+  /**
+   * Ranking-criteria advisory (ATW-9ub4): a booker MAY book anyone into a #1 contender match, but
+   * participants who fail the title's ranking criteria (ranked, or already a designated challenger)
+   * get a warning — the booker decides whether to proceed. Non-blocking by design; shared by both
+   * segment save paths (add-segment dialog and edit-segment dialog).
+   */
+  private void warnOnRankingCriteria(Collection<Title> titles, Collection<Wrestler> wrestlers) {
+    for (Title title : titles) {
+      List<Wrestler> missing =
+          contenderSelectionService.contendersMissingRankingCriteria(
+              title, new ArrayList<>(wrestlers));
+      if (!missing.isEmpty()) {
+        notificationService.showWarning(
+            "Ranking warning: "
+                + missing.stream().map(Wrestler::getName).collect(Collectors.joining(", "))
+                + " do not meet ranking criteria for a #1 contender match for '"
+                + title.getName()
+                + "'");
+      }
+    }
+  }
+
+  /**
+   * Edit-path advisory seam: the edit-segment dialog's save callback delegates here so both save
+   * paths share the ranking check. Package-private for unit testing (the callback itself sits
+   * inside an async dialog flow).
+   */
+  void warnIfContenderMatchMissingRanking(Segment seg, Collection<Wrestler> wrestlers) {
+    if (Boolean.TRUE.equals(seg.isContenderMatch())) {
+      warnOnRankingCriteria(seg.getTitles(), wrestlers);
+    }
+  }
+
   private boolean validateAndSaveSegment(
       @NonNull final Show show,
       final SegmentType segmentType,
@@ -2298,6 +2339,11 @@ public class ShowDetailView extends Main
           return false;
         }
       }
+    }
+
+    // Ranking-criteria advisory — see warnOnRankingCriteria.
+    if (segmentToUpdate != null && Boolean.TRUE.equals(segmentToUpdate.isContenderMatch())) {
+      warnOnRankingCriteria(segmentToUpdate.getTitles(), wrestlers);
     }
 
     try {

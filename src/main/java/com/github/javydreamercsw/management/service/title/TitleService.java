@@ -614,6 +614,34 @@ public class TitleService {
   @Transactional
   public ChallengeResult setSoleChallenger(
       @NonNull final Long titleId, @NonNull final Long wrestlerId) {
+    return assignChallenger(titleId, wrestlerId, true, false);
+  }
+
+  /**
+   * Grants a challenger status earned inside the ring — a contender-deciding win (Rumble,
+   * contender-deciding tournament, configured contender-deciding segment) or defeating the reigning
+   * champion in a non-title match. Bypasses the tier gate (that gate exists to filter implicit
+   * picks, not earned shots) but still enforces gender, universe, active status, and the
+   * not-already-champion guard. Callers enforce the failed-challenge cooldown before delegating
+   * here.
+   *
+   * @param sole true replaces the challenger list (the #1 contender designation); false appends
+   *     (earned availability without displacing the current #1)
+   */
+  @PreAuthorize(
+      "hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_BOOKER') or hasAuthority('ROLE_SYSTEM')")
+  @CacheEvict(value = CacheConfig.TITLES_CACHE, allEntries = true)
+  @Transactional
+  public ChallengeResult grantEarnedChallengerStatus(
+      @NonNull final Long titleId, @NonNull final Long wrestlerId, final boolean sole) {
+    return assignChallenger(titleId, wrestlerId, sole, true);
+  }
+
+  private ChallengeResult assignChallenger(
+      @NonNull final Long titleId,
+      @NonNull final Long wrestlerId,
+      final boolean sole,
+      final boolean bypassTierGate) {
     Optional<Title> titleOpt = titleRepository.findById(titleId);
     Optional<Wrestler> wrestlerOpt = wrestlerRepository.findById(wrestlerId);
 
@@ -627,15 +655,33 @@ public class TitleService {
     Title title = titleOpt.get();
     Wrestler wrestler = wrestlerOpt.get();
 
-    if (!isWrestlerEligible(wrestler, title)) {
+    if (bypassTierGate) {
+      if (title.getGender() != null && title.getGender() != wrestler.getGender()) {
+        return new ChallengeResult(false, "Wrestler is not eligible for this title (gender).");
+      }
+      if (title.getUniverse() == null) {
+        return new ChallengeResult(false, "Title has no universe.");
+      }
+      if (!wrestler.getActive()) {
+        return new ChallengeResult(false, "Wrestler is not active.");
+      }
+      if (title.getCurrentChampions().contains(wrestler)) {
+        return new ChallengeResult(false, "Wrestler is already a champion of this title.");
+      }
+    } else if (!isWrestlerEligible(wrestler, title)) {
       return new ChallengeResult(false, "Wrestler is not eligible for this title.");
     }
 
-    title.getChallengers().clear();
+    if (sole) {
+      title.getChallengers().clear();
+    }
     title.addChallenger(wrestler);
     titleRepository.save(title);
     return new ChallengeResult(
-        true, wrestler.getName() + " is now the #1 contender for " + title.getName());
+        true,
+        sole
+            ? wrestler.getName() + " is now the #1 contender for " + title.getName()
+            : wrestler.getName() + " has been added as a challenger for " + title.getName());
   }
 
   /**

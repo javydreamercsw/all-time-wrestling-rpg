@@ -30,6 +30,7 @@ import com.github.javydreamercsw.management.dto.ShowTemplateDTO;
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
 import com.github.javydreamercsw.management.service.show.template.ShowTemplateService;
+import com.github.javydreamercsw.management.service.title.TitleService;
 import com.github.javydreamercsw.management.sync.review.SeedCollisionDetector;
 import com.github.javydreamercsw.management.sync.review.SeedProvenanceManifest;
 import com.github.javydreamercsw.management.sync.review.SeedReviewDetectionSupport;
@@ -48,7 +49,11 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-@Order(60)
+// After ChampionshipSync (@Order 140): contender-deciding seed assignment rows resolve their
+// championship by name at seed time (the Abu Dhabi Rumble row decides the ATW World #1
+// contender, ATW-9ub4). Everything this sync resolves previously (rules 30, show types 40,
+// segment types 50, catalog tournaments 55) still precedes this order.
+@Order(145)
 public class ShowTemplateSync implements DataSyncContributor {
 
   /** Seed domain key (must match {@code SeedDomains.STAMPING_DOMAINS}). */
@@ -62,6 +67,7 @@ public class ShowTemplateSync implements DataSyncContributor {
   private final SegmentTypeService segmentTypeService;
   private final SegmentRuleService segmentRuleService;
   private final TournamentRepository tournamentRepository;
+  private final TitleService titleService;
   private final ObjectMapper objectMapper;
   private final SeedUpdateReviewService seedReviewService;
   private final SeedProvenanceManifest provenanceManifest;
@@ -76,6 +82,7 @@ public class ShowTemplateSync implements DataSyncContributor {
       final SegmentTypeService segmentTypeService,
       final SegmentRuleService segmentRuleService,
       final TournamentRepository tournamentRepository,
+      final TitleService titleService,
       final ObjectMapper objectMapper,
       final SeedUpdateReviewService seedReviewService,
       final SeedProvenanceManifest provenanceManifest) {
@@ -87,6 +94,7 @@ public class ShowTemplateSync implements DataSyncContributor {
     this.segmentTypeService = segmentTypeService;
     this.segmentRuleService = segmentRuleService;
     this.tournamentRepository = tournamentRepository;
+    this.titleService = titleService;
     this.objectMapper = objectMapper;
     this.seedReviewService = seedReviewService;
     this.provenanceManifest = provenanceManifest;
@@ -512,6 +520,21 @@ public class ShowTemplateSync implements DataSyncContributor {
                     log.warn(
                         "Segment rule '{}' not found — skipping assignment row on template '{}'",
                         assignmentDto.getSegmentRuleName(),
+                        dto.getName()));
+      }
+      if (assignmentDto.getContenderTitleName() != null) {
+        // Resolves by name like the other row targets; ChampionshipSync (@Order 140) ran before
+        // this sync (@Order 145), so seed championships resolve. Unknown names skip with a
+        // warning — the row still seeds, the booker can set the title in the template editor.
+        titleService
+            .findByName(assignmentDto.getContenderTitleName())
+            .ifPresentOrElse(
+                row::setContenderTitle,
+                () ->
+                    log.warn(
+                        "Contender title '{}' not found — contender declaration skipped on"
+                            + " template '{}'",
+                        assignmentDto.getContenderTitleName(),
                         dto.getName()));
       }
       if (assignmentDto.getTournamentCode() != null) {
