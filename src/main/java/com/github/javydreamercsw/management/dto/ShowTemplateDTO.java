@@ -61,6 +61,15 @@ public class ShowTemplateDTO {
     private String segmentRuleName;
 
     /**
+     * Championship name whose #1 contender this segment's winner becomes (e.g. "ATW World"), or
+     * null. Carried by NAME, like the spec fields — ChampionshipSync (@Order 140) runs after this
+     * sync (@Order 60), so the title reference cannot resolve at seed time; the UI editor resolves
+     * it by name when the template is edited, and seed assignment rows land as booker-owned
+     * configuration the sync never overwrites.
+     */
+    private String contenderTitleName;
+
+    /**
      * Catalog tournament code ({@code Tournament.code}, e.g. {@code deadly_combat}) to attach —
      * resolves via TournamentSync @Order(55), which runs before this sync. Mutually exclusive with
      * the spec fields below.

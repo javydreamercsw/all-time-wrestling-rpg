@@ -4,7 +4,7 @@
   "showTypeName": "Weekly",
   "commentaryTeamName": "All-Time Broadcast Team",
   "recurrenceType": "WEEKLY",
-  "dayOfWeek": "MONDAY",
+  "dayOfWeek": "FRIDAY",
   "durationDays": 1
 }, {
   "name": "Timeless",
@@ -12,7 +12,7 @@
   "showTypeName": "Weekly",
   "commentaryTeamName": "All-Time Broadcast Team",
   "recurrenceType": "WEEKLY",
-  "dayOfWeek": "FRIDAY",
+  "dayOfWeek": "MONDAY",
   "durationDays": 1
 }, {
   "name": "All Time Rumble",
@@ -27,6 +27,7 @@
   "requiredExpansions": [ "RUMBLE" ],
   "assignments": [ {
     "segmentTypeName": "Abu Dhabi Rumble",
+    "contenderTitleName": "ATW World",
     "mode": "AUTO_ATTACH"
   } ]
 }, {
@@ -39,6 +40,7 @@
   "weekOfMonth": 2,
   "month": "FEBRUARY",
   "durationDays": 1,
+  "requiredExpansions": [ "EXTREME" ],
   "assignments": [ {
     "segmentTypeName": "One on One",
     "specName": "Deadly Combat",
