@@ -367,6 +367,22 @@ public abstract class AbstractIntegrationTest {
     }
   }
 
+  /**
+   * Detaches seeded template-assignment rows from their contender titles so {@code
+   * titleRepository.deleteAll()} can run: the seeded Abu Dhabi Rumble assignment declares ATW World
+   * its contender title, and FK_ASSIGNMENT_CONTENDER_TITLE blocks deleting a referenced title.
+   * Tests that need an empty-title baseline call this first. Runs in its own transaction — callers
+   * (E2E setups especially) may have none.
+   */
+  protected void clearContenderTitleReferences() {
+    transactionTemplate.executeWithoutResult(
+        status ->
+            entityManager
+                .createNativeQuery(
+                    "UPDATE show_template_segment_assignment SET contender_title_id = NULL")
+                .executeUpdate());
+  }
+
   protected void ensureDefaultUniverseExists() {
     synchronized (AbstractIntegrationTest.class) {
       try {

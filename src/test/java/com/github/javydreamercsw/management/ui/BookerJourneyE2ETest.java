@@ -115,6 +115,8 @@ public class BookerJourneyE2ETest extends AbstractE2ETest {
     showTypeRepository.deleteAll();
     rivalryRepository.deleteAll();
     multiWrestlerFeudRepository.deleteAll();
+    // Seed assignments may reference titles (Abu Dhabi Rumble -> ATW World): detach first.
+    clearContenderTitleReferences();
     titleRepository.deleteAll();
     segmentTypeRepository.deleteAll();
 
