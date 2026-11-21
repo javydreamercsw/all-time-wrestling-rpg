@@ -71,6 +71,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -419,6 +420,50 @@ class SegmentAdjudicationServiceUnitTest {
 
     adjudicationService.adjudicateMatch(matchSegment);
 
+    verify(contenderSelectionService, never()).grantChampionSlayerAvailability(any(), any());
+  }
+
+  @Test
+  void testAdjudicateMatch_NoUniverse_noChampionSlayerGrant() {
+    // A show without a universe cannot scope champion-title lookups — the rule quietly skips.
+    ContenderSelectionService contenderSelectionService = mock(ContenderSelectionService.class);
+    adjudicationService.setContenderSelectionService(contenderSelectionService);
+    TitleRepository titleRepository = mock(TitleRepository.class);
+    adjudicationService.setTitleRepository(titleRepository);
+    matchSegment.getShow().setUniverse(null);
+    matchSegment.setWinners(List.of(wrestler1));
+
+    adjudicationService.adjudicateMatch(matchSegment);
+
+    verify(titleRepository, never()).findTitlesHeldByWrestler(any(), any());
+    verify(contenderSelectionService, never()).grantChampionSlayerAvailability(any(), any());
+  }
+
+  @Test
+  void testAdjudicateMatch_championSlayerFailure_neverFailsAdjudication() {
+    // Failure-isolation contract: a grant problem logs and swallows — adjudication completes.
+    ContenderSelectionService contenderSelectionService = mock(ContenderSelectionService.class);
+    adjudicationService.setContenderSelectionService(contenderSelectionService);
+    TitleRepository titleRepository = mock(TitleRepository.class);
+    adjudicationService.setTitleRepository(titleRepository);
+
+    Universe universe = new Universe();
+    universe.setId(1L);
+    matchSegment.getShow().setUniverse(universe);
+
+    Title worldTitle = new Title();
+    worldTitle.setId(7L);
+    worldTitle.setName("ATW World");
+    worldTitle.setChampionshipType(ChampionshipType.SINGLE);
+    worldTitle.setIsActive(true);
+    worldTitle.setUniverse(universe);
+    worldTitle.awardTitleTo(List.of(wrestler2), Instant.now());
+    when(titleRepository.findTitlesHeldByWrestler(wrestler2, 1L))
+        .thenThrow(new IllegalStateException("ranking lookup exploded"));
+
+    matchSegment.setWinners(List.of(wrestler1));
+
+    Assertions.assertDoesNotThrow(() -> adjudicationService.adjudicateMatch(matchSegment));
     verify(contenderSelectionService, never()).grantChampionSlayerAvailability(any(), any());
   }
 

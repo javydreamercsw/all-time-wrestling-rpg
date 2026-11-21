@@ -1911,6 +1911,52 @@ class ShowPlanningServiceTest {
   }
 
   @Test
+  void validateCard_contenderMatch_briefcaseSource_skipsGate() {
+    // Mirror of the tournament exemption: briefcase payoffs gate at cash-in, not at booking.
+    Title title = new Title();
+    title.setId(77L);
+    title.setName("ATW World");
+    when(titleService.getTitleById(77L)).thenReturn(Optional.of(title));
+
+    ProposedSegment briefcaseRow = new ProposedSegment();
+    briefcaseRow.setType("One on One");
+    briefcaseRow.setIsTitleSegment(false);
+    briefcaseRow.setIsContenderMatch(true);
+    briefcaseRow.setContenderTitleId(77L);
+    briefcaseRow.setSource("Briefcase");
+    briefcaseRow.setTeams(List.of(List.of("Wrestler A"), List.of("Wrestler B")));
+
+    CardValidationResult result =
+        showPlanningService.validateCard(List.of(briefcaseRow), List.of());
+
+    assertTrue(result.isValid(), "Briefcase-sourced rows bypass the ranking gate");
+  }
+
+  @Test
+  void validateCard_contenderMatch_unresolvableNames_gateSilentlyPasses() {
+    // M2 deferred-minor coverage: names that resolve to nobody leave the participant list empty,
+    // so the gate has no one to reject — the later approval-time participant resolution is what
+    // surfaces the error. Pinned so the silent-pass behavior is a documented decision.
+    Title title = new Title();
+    title.setId(77L);
+    title.setName("ATW World");
+    when(titleService.getTitleById(77L)).thenReturn(Optional.of(title));
+
+    ProposedSegment ghost = new ProposedSegment();
+    ghost.setType("One on One");
+    ghost.setIsTitleSegment(false);
+    ghost.setIsContenderMatch(true);
+    ghost.setContenderTitleId(77L);
+    ghost.setTeams(List.of(List.of("Ghost A"), List.of("Ghost B")));
+    when(wrestlerRepository.findByName("Ghost A")).thenReturn(Optional.empty());
+    when(wrestlerRepository.findByName("Ghost B")).thenReturn(Optional.empty());
+
+    CardValidationResult result = showPlanningService.validateCard(List.of(ghost), List.of());
+
+    assertTrue(result.isValid(), "No resolvable participants means no gate rejections");
+  }
+
+  @Test
   void validateCard_promoOnPromoCooldown_rivalryTagged_isError() {
     // Given — the rivalry's last completed segment was a Promo; the AI proposes another Promo
     // covering it.

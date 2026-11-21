@@ -184,6 +184,34 @@ class ContenderSelectionServiceTest {
     verify(titleService).grantEarnedChallengerStatus(1L, 10L, true);
   }
 
+  @Test
+  void isOnCooldown_nullUniverseTitle_treatsAsNotOnCooldown() {
+    // A title without a universe has no state to look up — the guard treats the wrestler as
+    // eligible rather than blocking (the earned sink separately rejects the grant).
+    title.setUniverse(null);
+    when(titleService.grantEarnedChallengerStatus(1L, 10L, true))
+        .thenReturn(new TitleService.ChallengeResult(true, "ok"));
+
+    boolean result = service.designateEarnedContender(title, wrestler);
+
+    assertThat(result).isTrue();
+    verify(cooldownRepository, never()).findByWrestlerState_IdAndTitle_Id(any(), any());
+  }
+
+  @Test
+  void isOnCooldown_unresolvableState_treatsAsNotOnCooldown() {
+    // getOrCreateState returned a state with no id (not persisted) — no cooldown row can exist.
+    when(wrestlerService.getOrCreateState(10L, 1L))
+        .thenReturn(WrestlerState.builder().tier(WrestlerTier.MIDCARDER).build());
+    when(titleService.grantEarnedChallengerStatus(1L, 10L, true))
+        .thenReturn(new TitleService.ChallengeResult(true, "ok"));
+
+    boolean result = service.designateEarnedContender(title, wrestler);
+
+    assertThat(result).isTrue();
+    verify(cooldownRepository, never()).findByWrestlerState_IdAndTitle_Id(any(), any());
+  }
+
   // =====================================================================
   // grantChampionSlayerAvailability (ATW-9ub4) — append, not sole
   // =====================================================================
