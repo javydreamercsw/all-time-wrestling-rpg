@@ -214,6 +214,18 @@ class ContenderSelectionServiceTest {
     verify(titleService, never()).grantEarnedChallengerStatus(any(), any(), anyBoolean());
   }
 
+  @Test
+  void grantChampionSlayerAvailability_alreadyChallenger_isNoOp() {
+    // M3: the champion lost a contender-deciding segment they entered — the winner was already
+    // designated #1 contender this segment. Re-granting would fire a redundant second event.
+    title.addChallenger(wrestler);
+
+    boolean result = service.grantChampionSlayerAvailability(title, wrestler);
+
+    assertThat(result).isFalse();
+    verify(titleService, never()).grantEarnedChallengerStatus(any(), any(), anyBoolean());
+  }
+
   // =====================================================================
   // contendersMissingRankingCriteria (ATW-9ub4) — booking gate input
   // =====================================================================

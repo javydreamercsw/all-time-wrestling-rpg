@@ -65,4 +65,22 @@ public class WrestlerTitleCooldown {
 
   @NotNull @Column(name = "defense_count_at_challenge", nullable = false)
   private Long defenseCountAtChallenge;
+
+  /**
+   * Defenses still standing between the wrestler and re-eligibility (0 when expired), given the
+   * title's current defense count and the configured cooldown horizon (in defenses).
+   */
+  public long defensesRemaining(long currentDefenseCount, int cooldownDefenses) {
+    return Math.max(0, cooldownDefenses - (currentDefenseCount - defenseCountAtChallenge));
+  }
+
+  /**
+   * Whether this cooldown still blocks the wrestler, given the title's current defense count and
+   * the configured cooldown horizon (in defenses). The single definition of the expiry arithmetic —
+   * RankingService's DTO annotation and ContenderSelectionService's earned-shot gate both call
+   * this, so they cannot drift.
+   */
+  public boolean isActive(long currentDefenseCount, int cooldownDefenses) {
+    return defensesRemaining(currentDefenseCount, cooldownDefenses) > 0;
+  }
 }

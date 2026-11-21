@@ -156,6 +156,17 @@ public class ContenderSelectionService {
           title.getName());
       return false;
     }
+    // A wrestler already on the challenger list gains nothing — reporting success here would
+    // fire the ChampionDefeatedEvent (and its inbox item) for a no-op append. That happens when
+    // the champion loses a contender-deciding segment they entered: applyContenderOutcomes
+    // designated the winner #1 contender earlier in the same adjudication.
+    if (title.getChallengers().contains(winner)) {
+      log.debug(
+          "{} already challenges for {} — champion-slayer availability unchanged",
+          winner.getName(),
+          title.getName());
+      return false;
+    }
     TitleService.ChallengeResult result =
         titleService.grantEarnedChallengerStatus(title.getId(), winner.getId(), false);
     if (result.success()) {
@@ -206,7 +217,7 @@ public class ContenderSelectionService {
     Optional<WrestlerTitleCooldown> cooldown =
         cooldownRepository.findByWrestlerState_IdAndTitle_Id(state.getId(), title.getId());
     return cooldown.isPresent()
-        && title.getDefenseCount() - cooldown.get().getDefenseCountAtChallenge() < cooldownDefenses;
+        && cooldown.get().isActive(title.getDefenseCount(), cooldownDefenses);
   }
 
   /**
