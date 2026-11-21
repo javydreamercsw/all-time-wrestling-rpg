@@ -36,6 +36,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 import org.springframework.context.ApplicationEventPublisher;
 
 class ChampionDefeatedInboxListenerTest {
@@ -113,6 +114,6 @@ class ChampionDefeatedInboxListenerTest {
     Assertions.assertDoesNotThrow(
         () ->
             listener.onApplicationEvent(new ChampionDefeatedEvent(this, title, champion, winner)));
-    verify(inboxService, org.mockito.Mockito.never()).save(any());
+    verify(inboxService, Mockito.never()).save(any());
   }
 }
