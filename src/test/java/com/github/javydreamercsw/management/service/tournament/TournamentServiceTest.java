@@ -65,6 +65,7 @@ import com.github.javydreamercsw.management.service.title.ContenderSelectionServ
 import com.github.javydreamercsw.management.service.title.TitleOpportunityService;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -247,8 +248,7 @@ class TournamentServiceTest {
         .thenAnswer(
             inv -> {
               @SuppressWarnings("unchecked")
-              java.util.Collection<Wrestler> candidates =
-                  (java.util.Collection<Wrestler>) inv.getArgument(1);
+              Collection<Wrestler> candidates = (Collection<Wrestler>) inv.getArgument(1);
               return candidates.stream().filter(w -> w.getId() == 2L).toList();
             });
 

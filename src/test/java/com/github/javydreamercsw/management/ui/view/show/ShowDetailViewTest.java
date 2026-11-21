@@ -315,14 +315,14 @@ class ShowDetailViewTest extends AbstractViewTest {
     verify(notificationService).showWarning(contains("Ranking warning"));
 
     // A non-contender segment never consults the gate.
-    org.mockito.Mockito.clearInvocations(contenderSelectionService, notificationService);
+    Mockito.clearInvocations(contenderSelectionService, notificationService);
     Segment plainSegment = new Segment();
     plainSegment.setContenderMatch(false);
     ReflectionTestUtils.invokeMethod(
         showDetailView, "warnIfContenderMatchMissingRanking", plainSegment, List.of(unranked));
-    verify(contenderSelectionService, org.mockito.Mockito.never())
+    verify(contenderSelectionService, Mockito.never())
         .contendersMissingRankingCriteria(any(), any());
-    verify(notificationService, org.mockito.Mockito.never()).showWarning(anyString());
+    verify(notificationService, Mockito.never()).showWarning(anyString());
   }
 
   @Test
