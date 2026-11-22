@@ -31,7 +31,8 @@
   "description": "A former gold-level combat judge from the 22nd-century Martian colony. Anika has short cropped platinum-blonde hair and wears modern gear with glowing blue trim. She is just, fast-reacting, and highly respected for her sacred adherence to universal sports ethics. She never misses a weapon shot and is known to intervene to protect injured wrestlers. 'Clean, clear, and final. That’s how I count it.'",
   "expansion_code": "CUSTOM",
   "type": "Referee",
-  "awareness": 90
+  "awareness": 90,
+  "gender": "FEMALE"
 }, {
   "name": "Tomás “Kid Whistle” Iglesias",
   "description": "A fresh-faced rookie official from the San Juan territory, barely out of his teens, with a wiry build, an oversized striped shirt, and a brand-new chrome whistle he polishes between bells. Eager, earnest, and desperate to be taken seriously, Tomás second-guesses his own eyes whenever the crowd roars, and a showboating heel can talk him out of almost any call. Illegal tactics sail right past him whenever there is a big pop to gawk at. 'Wait — was that illegal? Somebody tell me when to ring the bell.'",
