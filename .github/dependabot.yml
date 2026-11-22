@@ -16,7 +16,41 @@ updates:
       interval: "weekly"
     target-branch: "release/2.X.X"
     ignore:
-      # flow-server bundles its own vite default and reverts any newer pin on
-      # every frontend build (see ATW-qzaj). Re-enable when Vaadin ships a
-      # newer bundled vite.
+      # Every package below is version-pinned by the Java classpath, so a
+      # newer pin in package.json is silently rewritten back on every Maven
+      # build and the worktree ends up dirty with downgrades. Sources of the
+      # pins:
+      #   - com.vaadin:flow-server's bundled
+      #     com/vaadin/flow/server/frontend/dependencies/{vite,default}/package.json
+      #   - add-on @NpmPackage annotations (e.g. org.vaadin.stefan:fullcalendar2)
+      # Re-enable a package only after the pinning side moved (newer Vaadin
+      # platform / add-on version).
+      #
+      # flow-server bundled vite toolchain:
       - dependency-name: "vite"
+      - dependency-name: "@vitejs/plugin-react"
+      - dependency-name: "@rolldown/plugin-babel"
+      - dependency-name: "vite-plugin-checker"
+      - dependency-name: "rollup-plugin-*"
+      - dependency-name: "@rollup/*"
+      - dependency-name: "transform-ast"
+      - dependency-name: "magic-string"
+      - dependency-name: "@types/node"
+      - dependency-name: "@babel/*"
+      - dependency-name: "@preact/signals-react"
+      - dependency-name: "@preact/signals-react-transform"
+      # flow-server bundled defaults:
+      - dependency-name: "strip-css-comments"
+      - dependency-name: "@polymer/polymer"
+      - dependency-name: "@vaadin/common-frontend"
+      - dependency-name: "lit"
+      - dependency-name: "@typescript/native"
+      - dependency-name: "typescript"
+      # fullcalendar2 add-on pins (@NpmPackage on fullcalendar2 7.x — v8
+      # migrates to the unscoped "fullcalendar" package):
+      - dependency-name: "@fullcalendar/*"
+      - dependency-name: "moment"
+      - dependency-name: "moment-timezone"
+      # NOT ignored: @vaadin/* npm packages — dependabot bumps there align
+      # package.json with the vaadin.version BOM in pom.xml, which the build
+      # accepts; upgrade the platform via the maven ecosystem instead.
