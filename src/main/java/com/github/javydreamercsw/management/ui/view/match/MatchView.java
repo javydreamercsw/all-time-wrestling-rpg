@@ -1734,9 +1734,11 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     Title title = segment.getTitles().iterator().next();
     // An eligible HELD case for an offer: active holder. Full validation (expiry, gender,
     // division, reigning champion in the match) runs inside bookRunIn — this gate is just for
-    // showing the prompt.
+    // showing the prompt. The holder is read after the service transaction closes, so the
+    // holder-fetching variant is required: the plain list leaves the wrestler as an
+    // uninitialized lazy proxy (LazyInitializationException on getActive()).
     Optional<TitleOpportunity> candidate =
-        titleOpportunityService.findHeld().stream()
+        titleOpportunityService.findHeldWithHolder().stream()
             .filter(
                 opp ->
                     opp.getWrestler() != null && Boolean.TRUE.equals(opp.getWrestler().getActive()))
