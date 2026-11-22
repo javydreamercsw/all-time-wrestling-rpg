@@ -86,5 +86,6 @@
   "name": "Lena Voss",
   "description": "The voice of ATW. Lena Voss is a sharp, confident ring announcer whose powerful delivery electrifies the crowd with every entrance. Known for drawing out championship introductions with theatrical precision.",
   "expansion_code": "CUSTOM",
-  "type": "Announcer"
+  "type": "Announcer",
+  "gender": "FEMALE"
 } ]
