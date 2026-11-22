@@ -62,6 +62,7 @@ class RankingControllerIT extends AbstractRestControllerIT {
   @Test
   @DisplayName("GET /api/rankings/championships returns 200 and empty array when no titles exist")
   void shouldReturnEmptyListWhenNoChampionshipsExist() throws Exception {
+    clearContenderTitleReferences();
     titleRepository.deleteAll();
 
     mockMvc
@@ -74,6 +75,7 @@ class RankingControllerIT extends AbstractRestControllerIT {
   @Test
   @DisplayName("GET /api/rankings/championships returns 200 and list when titles exist")
   void shouldReturnChampionshipsWhenTitlesExist() throws Exception {
+    clearContenderTitleReferences();
     titleRepository.deleteAll();
     createTitle("World Heavyweight Championship");
     createTitle("Intercontinental Championship");
@@ -90,6 +92,7 @@ class RankingControllerIT extends AbstractRestControllerIT {
   @Test
   @DisplayName("GET /api/rankings/championships returns championship fields")
   void shouldReturnCorrectChampionshipFields() throws Exception {
+    clearContenderTitleReferences();
     titleRepository.deleteAll();
     createTitle("Singles Title IT");
 
@@ -103,6 +106,7 @@ class RankingControllerIT extends AbstractRestControllerIT {
   @Test
   @DisplayName("GET /api/rankings/championships/{id}/contenders returns 200 with contenders list")
   void shouldReturnContendersForChampionship() throws Exception {
+    clearContenderTitleReferences();
     titleRepository.deleteAll();
     savedTitle = createTitle("Contenders Title IT");
 
@@ -127,6 +131,7 @@ class RankingControllerIT extends AbstractRestControllerIT {
   @Test
   @DisplayName("GET /api/rankings/championships/{id}/champion returns 404 when no current champion")
   void shouldReturn404WhenNoCurrentChampion() throws Exception {
+    clearContenderTitleReferences();
     titleRepository.deleteAll();
     savedTitle = createTitle("Vacant Title IT");
 
@@ -138,6 +143,7 @@ class RankingControllerIT extends AbstractRestControllerIT {
   @Test
   @DisplayName("GET /api/rankings/championships/{id}/champion returns 200 with champion data")
   void shouldReturnCurrentChampionWhenTitleIsHeld() throws Exception {
+    clearContenderTitleReferences();
     titleRepository.deleteAll();
     savedTitle = createTitle("Held Title IT");
 

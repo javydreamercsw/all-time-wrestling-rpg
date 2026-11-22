@@ -4,7 +4,7 @@
   "showTypeName": "Weekly",
   "commentaryTeamName": "All-Time Broadcast Team",
   "recurrenceType": "WEEKLY",
-  "dayOfWeek": "MONDAY",
+  "dayOfWeek": "FRIDAY",
   "durationDays": 1
 }, {
   "name": "Timeless",
@@ -12,11 +12,11 @@
   "showTypeName": "Weekly",
   "commentaryTeamName": "All-Time Broadcast Team",
   "recurrenceType": "WEEKLY",
-  "dayOfWeek": "FRIDAY",
+  "dayOfWeek": "MONDAY",
   "durationDays": 1
 }, {
   "name": "All Time Rumble",
-  "description": "Massive battle royal across eras. Winner gets guaranteed shot at the ATW World Title.",
+  "description": "🗓 Ideal for: Annual Rumble-style event (think Royal Rumble) 💥 Feature Match: *The All Time Rumble* – massive battle royal across eras. Winner gets guaranteed shot at the ATW World Title.",
   "showTypeName": "Premium Live Event (PLE)",
   "commentaryTeamName": "All-Time Broadcast Team",
   "recurrenceType": "ANNUAL",
@@ -27,6 +27,7 @@
   "requiredExpansions": [ "RUMBLE" ],
   "assignments": [ {
     "segmentTypeName": "Abu Dhabi Rumble",
+    "contenderTitleName": "ATW World",
     "mode": "AUTO_ATTACH"
   } ]
 }, {
@@ -39,6 +40,7 @@
   "weekOfMonth": 2,
   "month": "FEBRUARY",
   "durationDays": 1,
+  "requiredExpansions": [ "EXTREME" ],
   "assignments": [ {
     "segmentTypeName": "One on One",
     "specName": "Deadly Combat",

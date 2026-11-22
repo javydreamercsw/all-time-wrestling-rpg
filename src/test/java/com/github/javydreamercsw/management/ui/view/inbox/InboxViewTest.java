@@ -36,6 +36,8 @@ import com.github.javydreamercsw.management.domain.inbox.InboxEventTypeRegistry;
 import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.event.inbox.InboxUpdateBroadcaster;
+import com.github.javydreamercsw.management.event.inbox.InboxUpdateEvent;
 import com.github.javydreamercsw.management.event.inbox.OpenProfileDrawerBroadcaster;
 import com.github.javydreamercsw.management.service.inbox.DirectMessageService;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
@@ -43,6 +45,7 @@ import com.github.javydreamercsw.management.service.league.MatchFulfillmentServi
 import com.github.javydreamercsw.management.ui.view.AbstractViewTest;
 import com.github.mvysny.kaributesting.v10.GridKt;
 import com.github.mvysny.kaributesting.v10.LocatorJ;
+import com.github.mvysny.kaributesting.v10.MockVaadin;
 import com.vaadin.flow.component.AbstractField;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentEvent;
@@ -55,14 +58,19 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
 import com.vaadin.flow.data.provider.Query;
+import com.vaadin.flow.shared.Registration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.data.domain.Sort;
@@ -76,6 +84,7 @@ class InboxViewTest extends AbstractViewTest {
   @Mock private SecurityUtils securityUtils;
   @Mock private OpenProfileDrawerBroadcaster openProfileDrawerBroadcaster;
   @Mock private DirectMessageService directMessageService;
+  @Mock private InboxUpdateBroadcaster inboxUpdateBroadcaster;
   @Mock private AccountRepository accountRepository;
 
   private final ObjectMapper objectMapper = new ObjectMapper();
@@ -97,7 +106,8 @@ class InboxViewTest extends AbstractViewTest {
             securityUtils,
             objectMapper,
             openProfileDrawerBroadcaster,
-            directMessageService);
+            directMessageService,
+            inboxUpdateBroadcaster);
     UI.getCurrent().add(view);
   }
 
@@ -131,7 +141,8 @@ class InboxViewTest extends AbstractViewTest {
             securityUtils,
             objectMapper,
             openProfileDrawerBroadcaster,
-            directMessageService);
+            directMessageService,
+            inboxUpdateBroadcaster);
     UI.getCurrent().add(playerView);
 
     MultiSelectComboBox<?> targetFilter = _get(playerView, MultiSelectComboBox.class);
@@ -162,7 +173,8 @@ class InboxViewTest extends AbstractViewTest {
             securityUtils,
             objectMapper,
             openProfileDrawerBroadcaster,
-            directMessageService);
+            directMessageService,
+            inboxUpdateBroadcaster);
     UI.getCurrent().add(freshView);
 
     Button markRead = _get(freshView, Button.class, spec -> spec.withText("Mark Selected as Read"));
@@ -198,7 +210,8 @@ class InboxViewTest extends AbstractViewTest {
             securityUtils,
             objectMapper,
             openProfileDrawerBroadcaster,
-            directMessageService);
+            directMessageService,
+            inboxUpdateBroadcaster);
     UI.getCurrent().add(freshView);
 
     Grid<InboxItem> grid = _get(freshView, Grid.class);
@@ -230,7 +243,8 @@ class InboxViewTest extends AbstractViewTest {
             securityUtils,
             objectMapper,
             openProfileDrawerBroadcaster,
-            directMessageService);
+            directMessageService,
+            inboxUpdateBroadcaster);
     UI.getCurrent().add(freshView);
 
     // No selection: the empty hint pane is hidden (saves phone screen space).
@@ -268,7 +282,8 @@ class InboxViewTest extends AbstractViewTest {
             securityUtils,
             objectMapper,
             openProfileDrawerBroadcaster,
-            directMessageService);
+            directMessageService,
+            inboxUpdateBroadcaster);
     UI.getCurrent().add(freshView);
 
     Grid<InboxItem> grid = _get(freshView, Grid.class);
@@ -301,7 +316,8 @@ class InboxViewTest extends AbstractViewTest {
             securityUtils,
             objectMapper,
             openProfileDrawerBroadcaster,
-            directMessageService);
+            directMessageService,
+            inboxUpdateBroadcaster);
     UI.getCurrent().add(freshView);
 
     Grid<InboxItem> grid = _get(freshView, Grid.class);
@@ -339,7 +355,8 @@ class InboxViewTest extends AbstractViewTest {
             securityUtils,
             objectMapper,
             openProfileDrawerBroadcaster,
-            directMessageService);
+            directMessageService,
+            inboxUpdateBroadcaster);
     UI.getCurrent().add(freshView);
 
     Grid<InboxItem> grid = _get(freshView, Grid.class);
@@ -376,7 +393,8 @@ class InboxViewTest extends AbstractViewTest {
             securityUtils,
             objectMapper,
             openProfileDrawerBroadcaster,
-            directMessageService);
+            directMessageService,
+            inboxUpdateBroadcaster);
     UI.getCurrent().add(freshView);
 
     Grid<InboxItem> grid = _get(freshView, Grid.class);
@@ -416,7 +434,8 @@ class InboxViewTest extends AbstractViewTest {
             securityUtils,
             objectMapper,
             openProfileDrawerBroadcaster,
-            directMessageService);
+            directMessageService,
+            inboxUpdateBroadcaster);
     UI.getCurrent().add(freshView);
 
     Grid<InboxItem> grid = _get(freshView, Grid.class);
@@ -452,7 +471,8 @@ class InboxViewTest extends AbstractViewTest {
             securityUtils,
             objectMapper,
             openProfileDrawerBroadcaster,
-            directMessageService);
+            directMessageService,
+            inboxUpdateBroadcaster);
     UI.getCurrent().add(freshView);
 
     Grid<InboxItem> grid = _get(freshView, Grid.class);
@@ -489,7 +509,8 @@ class InboxViewTest extends AbstractViewTest {
             securityUtils,
             objectMapper,
             openProfileDrawerBroadcaster,
-            directMessageService);
+            directMessageService,
+            inboxUpdateBroadcaster);
     UI.getCurrent().add(freshView);
 
     Grid<InboxItem> grid = _get(freshView, Grid.class);
@@ -522,7 +543,8 @@ class InboxViewTest extends AbstractViewTest {
             securityUtils,
             objectMapper,
             openProfileDrawerBroadcaster,
-            directMessageService);
+            directMessageService,
+            inboxUpdateBroadcaster);
     UI.getCurrent().add(adminView);
 
     // Force the grid to render the item and select it through the selection model.
@@ -573,7 +595,8 @@ class InboxViewTest extends AbstractViewTest {
             securityUtils,
             objectMapper,
             openProfileDrawerBroadcaster,
-            directMessageService);
+            directMessageService,
+            inboxUpdateBroadcaster);
     UI.getCurrent().add(readOnlyView);
 
     // karibu's locator only returns effectively-visible components, and the
@@ -610,7 +633,8 @@ class InboxViewTest extends AbstractViewTest {
             securityUtils,
             objectMapper,
             openProfileDrawerBroadcaster,
-            directMessageService);
+            directMessageService,
+            inboxUpdateBroadcaster);
     UI.getCurrent().add(adminView);
 
     Grid<InboxItem> grid = (Grid<InboxItem>) _get(adminView, Grid.class);
@@ -659,5 +683,125 @@ class InboxViewTest extends AbstractViewTest {
     } catch (ReflectiveOperationException e) {
       throw new IllegalStateException("Failed to fire checkbox click", e);
     }
+  }
+
+  /**
+   * Captures the consumer the most recently attached view registered with the broadcaster. The
+   * shared setup() view also registers, so the last registration belongs to the view under test.
+   */
+  private Consumer<InboxUpdateEvent> capturedInboxListener() {
+    ArgumentCaptor<Consumer<InboxUpdateEvent>> captor = ArgumentCaptor.forClass(Consumer.class);
+    Mockito.verify(inboxUpdateBroadcaster, Mockito.atLeastOnce()).register(captor.capture());
+    return captor.getAllValues().get(captor.getAllValues().size() - 1);
+  }
+
+  @Test
+  @DisplayName("Broadcast refreshes the grid with newly created items")
+  void inboxBroadcast_refreshesGrid_liveUpdate() throws Exception {
+    InboxItem existing = new InboxItem();
+    existing.setId(1L);
+    when(inboxService.search(any(), any(), any(), any(), any())).thenReturn(List.of(existing));
+
+    InboxView liveView = createAttachedView();
+    liveView.inboxRefreshDebounceMs = 50;
+
+    InboxItem fresh = new InboxItem();
+    fresh.setId(2L);
+    when(inboxService.search(any(), any(), any(), any(), any()))
+        .thenReturn(List.of(existing, fresh));
+
+    capturedInboxListener().accept(new InboxUpdateEvent(this));
+    Thread.sleep(200);
+    MockVaadin.clientRoundtrip();
+
+    Grid<InboxItem> grid = _get(liveView, Grid.class, spec -> spec.withId("inbox-grid"));
+    @SuppressWarnings("unchecked")
+    List<InboxItem> rows = (List<InboxItem>) grid.getDataProvider().fetch(new Query<>()).toList();
+    assertThat(rows.stream().map(InboxItem::getId)).containsExactlyInAnyOrder(1L, 2L);
+  }
+
+  @Test
+  @DisplayName("Broadcast preserves the selection across a live refresh")
+  void inboxBroadcast_preservesSelectionAcrossRefresh() throws Exception {
+    InboxItem first = new InboxItem();
+    first.setId(1L);
+    InboxItem second = new InboxItem();
+    second.setId(2L);
+    when(inboxService.search(any(), any(), any(), any(), any())).thenReturn(List.of(first, second));
+
+    InboxView liveView = createAttachedView();
+    liveView.inboxRefreshDebounceMs = 50;
+
+    Grid<InboxItem> grid = _get(liveView, Grid.class, spec -> spec.withId("inbox-grid"));
+    grid.asMultiSelect().setValue(Set.of(first));
+
+    // Fresh instances with the same ids stand in for re-fetched entities.
+    InboxItem firstReloaded = new InboxItem();
+    firstReloaded.setId(1L);
+    InboxItem secondReloaded = new InboxItem();
+    secondReloaded.setId(2L);
+    when(inboxService.search(any(), any(), any(), any(), any()))
+        .thenReturn(List.of(firstReloaded, secondReloaded));
+
+    capturedInboxListener().accept(new InboxUpdateEvent(this));
+    Thread.sleep(200);
+    MockVaadin.clientRoundtrip();
+
+    assertThat(grid.getSelectedItems().stream().map(InboxItem::getId)).containsExactly(1L);
+  }
+
+  @Test
+  @DisplayName("A burst of broadcasts collapses into a single grid refresh")
+  void inboxBroadcast_burst_singleRefresh() throws Exception {
+    when(inboxService.search(any(), any(), any(), any(), any()))
+        .thenReturn(Collections.emptyList());
+
+    InboxView liveView = createAttachedView();
+    liveView.inboxRefreshDebounceMs = 50;
+
+    Consumer<InboxUpdateEvent> listener = capturedInboxListener();
+    // Both the setup() view and this test's view searched during construction; clear that
+    // history so the assertion isolates the refreshes triggered by the burst itself.
+    Mockito.clearInvocations(inboxService);
+    for (int i = 0; i < 20; i++) {
+      listener.accept(new InboxUpdateEvent(this));
+    }
+    Thread.sleep(200);
+    MockVaadin.clientRoundtrip();
+
+    Mockito.verify(inboxService, Mockito.times(1)).search(any(), any(), any(), any(), any());
+  }
+
+  @Test
+  @DisplayName("Detaching the view unregisters the broadcaster listener")
+  void onDetach_unregistersBroadcaster() {
+    when(inboxService.search(any(), any(), any(), any(), any()))
+        .thenReturn(Collections.emptyList());
+
+    AtomicReference<Registration> registration =
+        new AtomicReference<>(Mockito.mock(Registration.class));
+    Mockito.when(inboxUpdateBroadcaster.register(any())).thenAnswer(inv -> registration.get());
+
+    InboxView liveView = createAttachedView();
+    UI.getCurrent().remove(liveView);
+
+    Mockito.verify(registration.get()).remove();
+  }
+
+  /** Builds a view whose onAttach ran against the current mock UI. */
+  private InboxView createAttachedView() {
+    InboxView v =
+        new InboxView(
+            inboxService,
+            eventTypeRegistry,
+            wrestlerRepository,
+            matchFulfillmentService,
+            securityUtils,
+            objectMapper,
+            openProfileDrawerBroadcaster,
+            directMessageService,
+            inboxUpdateBroadcaster);
+    UI.getCurrent().add(v);
+    return v;
   }
 }

@@ -19,6 +19,8 @@ package com.github.javydreamercsw.management.service.show.template;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.github.javydreamercsw.base.domain.wrestler.Gender;
+import com.github.javydreamercsw.base.domain.wrestler.WrestlerTier;
 import com.github.javydreamercsw.management.ManagementIntegrationTest;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeam;
 import com.github.javydreamercsw.management.domain.commentator.CommentaryTeamRepository;
@@ -35,9 +37,14 @@ import com.github.javydreamercsw.management.domain.show.template.ShowTemplateSeg
 import com.github.javydreamercsw.management.domain.show.type.ShowCategory;
 import com.github.javydreamercsw.management.domain.show.type.ShowType;
 import com.github.javydreamercsw.management.domain.show.type.ShowTypeRepository;
+import com.github.javydreamercsw.management.domain.title.ChampionshipType;
+import com.github.javydreamercsw.management.domain.title.Title;
+import com.github.javydreamercsw.management.domain.title.TitleRepository;
 import com.github.javydreamercsw.management.domain.tournament.Tournament;
 import com.github.javydreamercsw.management.domain.tournament.TournamentRepository;
 import com.github.javydreamercsw.management.domain.tournament.TournamentStatus;
+import com.github.javydreamercsw.management.domain.universe.Universe;
+import com.github.javydreamercsw.management.domain.universe.UniverseRepository;
 import com.github.javydreamercsw.management.service.show.ShowService;
 import java.time.Clock;
 import java.time.LocalDate;
@@ -59,6 +66,8 @@ class ShowTemplateServiceIT extends ManagementIntegrationTest {
   @Autowired private SegmentTypeRepository segmentTypeRepository;
   @Autowired private SegmentRuleRepository segmentRuleRepository;
   @Autowired private TournamentRepository tournamentRepository;
+  @Autowired private TitleRepository titleRepository;
+  @Autowired private UniverseRepository universeRepository;
   @Autowired private CommentaryTeamRepository commentaryTeamRepository;
   @Autowired private ShowRepository showRepository;
   @Autowired private SegmentRepository segmentRepository;
@@ -310,5 +319,53 @@ class ShowTemplateServiceIT extends ManagementIntegrationTest {
     assertThat(saved.getTournament().getName()).isEqualTo(tournament.getName());
     assertThat(fetched.findTournamentForSegmentType(saved.getSegmentType())).isPresent();
     assertThat(fetched.getTournamentAssignments()).hasSize(1);
+  }
+
+  @Test
+  @DisplayName(
+      "a contender-deciding row persists its title and is fetched eagerly by the fetch-join")
+  void syncSegmentAssignments_contenderTitleRow_roundTrip() {
+    Universe defaultUniverse =
+        universeRepository
+            .findById(1L)
+            .orElseGet(
+                () -> {
+                  Universe fresh = new Universe();
+                  fresh.setId(1L);
+                  fresh.setName("Default Universe");
+                  return universeRepository.saveAndFlush(fresh);
+                });
+    Title world = titleRepository.save(newTitle("ATW World " + System.nanoTime(), defaultUniverse));
+
+    SegmentType eventOnlyType = new SegmentType();
+    eventOnlyType.setName("IT Contender Type " + System.nanoTime());
+    eventOnlyType.setEventOnly(true);
+    eventOnlyType = segmentTypeRepository.save(eventOnlyType);
+
+    ShowTemplate template = createTemplate("IT Template Contender " + System.nanoTime());
+
+    ShowTemplateSegmentAssignment row = new ShowTemplateSegmentAssignment();
+    row.setSegmentType(eventOnlyType);
+    row.setContenderTitle(world);
+    row.setMode(ShowTemplateSegmentAssignment.AssignmentMode.AUTO_ATTACH);
+
+    showTemplateService.syncSegmentAssignments(template.getId(), List.of(row));
+
+    ShowTemplate fetched =
+        showTemplateService.getTemplateWithAssignments(template.getId()).orElseThrow();
+    assertThat(fetched.getSegmentAssignments()).hasSize(1);
+    ShowTemplateSegmentAssignment saved = fetched.getSegmentAssignments().get(0);
+    assertThat(saved.getContenderTitle()).isNotNull();
+    assertThat(saved.getContenderTitle().getName()).isEqualTo(world.getName());
+  }
+
+  private static Title newTitle(String name, Universe universe) {
+    Title title = new Title();
+    title.setName(name);
+    title.setGender(Gender.MALE);
+    title.setTier(WrestlerTier.MAIN_EVENTER);
+    title.setChampionshipType(ChampionshipType.SINGLE);
+    title.setUniverse(universe);
+    return title;
   }
 }

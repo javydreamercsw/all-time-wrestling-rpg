@@ -476,6 +476,7 @@ public class ShowTemplateService {
       copy.setSpecEntrantCount(row.getSpecEntrantCount());
       copy.setSpecFinalRule(row.getSpecFinalRule());
       copy.setSpecTitle(row.getSpecTitle());
+      copy.setContenderTitle(row.getContenderTitle());
       copy.setSpecAllowedRules(new ArrayList<>(row.getSpecAllowedRules()));
       copy.setMode(row.getMode());
       if (!copy.isValid()) {

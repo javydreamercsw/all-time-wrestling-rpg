@@ -1,5 +1,5 @@
 {
-  "generatedAt" : "2026-11-18T21:08:44Z",
+  "generatedAt" : "2026-11-22T21:01:17Z",
   "domains" : {
     "achievement" : {
       "ABILENE_BLESS_YOUR_HEART" : "9288b567c2091fd69215816044e405d85ce777337a348e6396f2e8b3028c3abb",
@@ -58,7 +58,7 @@
       "DRIVEN_TO_THE_TOP" : "5d270f0bcbaeebf4999e094f57f4673f080c1ca2ab89cf9d82042ce4e39c83e2",
       "DYNAMITE_AND_BULLDOG" : "60a79a7f5248ce33d8acd9a7bcc0f3b243215a6e840986fa58fe15d0527c803b",
       "DYNAMITE_CAN_ANYONE_KEEP_UP" : "db7f1c1dd8df1d3d233596b8acda4f1ab20c418bbe47ca29c0033aa860c851cb",
-      "DYNAMITE_GOLD_AT_LAST" : "dea61c881beb06b8d4f92742ea6605333247c40267f2363af9143221c9bb5bc2",
+      "DYNAMITE_GOLD_AT_LAST" : "00c1f3fc4cecb3d079a47a795df6f17e4fbc18de70ff5a1ff80ea79cca4e3aab",
       "DYNAMITE_THE_BLUEPRINT" : "ef15fe1948646c8177407cf4afe587a125f3ee789b9652c3dc59799bb5101efc",
       "EDDIE_GUERRERO_FROG_SPLASH" : "d5d75b879b8102950d5ca119dc38dd2fb2f4c599d3b5f3efd64bc34ac31235a1",
       "EDDIE_GUERRERO_LATINO_HEAT" : "8ff1f77e262b3952dec6cbfb46ac155814fc5a01e6effca873ab928ed14dbe1f",
@@ -114,7 +114,7 @@
       "KA_THE_BEST_EVER" : "7afb46d6ee2581325f109b13cfa3b841fa1a797c3cd5ac47e0918b21a6a1a84a",
       "LASHLEY_HURT_LOCK" : "543737faaa855d2505e05728088cb4c00a666d727780fca4070c8cb83b2ae6c9",
       "LASHLEY_PAIN_IS_PROFITABLE" : "55c0a481a3d84dcab58fd39a7059a59bb199c533a94ebc9abbcc4a9dacafe717",
-      "LASHLEY_THE_ALMIGHTY" : "6a616cdf030a77ccd47ab6254b78ba520ee216f6b008732eb2a8a6bd0da26d9b",
+      "LASHLEY_THE_ALMIGHTY" : "d3672d058870353a97e3f6f59294f8456d270b79a1f474eac990303d58b82d8b",
       "LASHLEY_THE_COLLECTIVE_RISES" : "ef0b123bf71a388ec656c30f976e7c79b130002d3fbc4640f191b15073e85e19",
       "LOADED_ROSTER_25" : "8f70ad403cf6b9e334a11fbbf51e0a6f9d3f53753453143d2e350585ab92b9fd",
       "MACHO_MADNESS" : "0bfc21bb54cd19e56fa4f9e6a8d5f007273b810a9324ef529040560d7dd400ed",
@@ -880,14 +880,14 @@
     },
     "npc" : {
       "Amara Diallo" : "81869b99e798b3f43252dcbafa932fdd59acea63bae85d48e28edd62f87f8f53",
-      "Anika Stroud" : "4d4eb5ce0f1d178918c894a7f246146a799ed28982182cf7150508198bee6a00",
+      "Anika Stroud" : "bc6aeef0ea0c5f4bfb92f7ae97d1d8b5d1a60150bea2db1e59bd97168c8d3ed0",
       "Beatrix “Trixie” Halvorsen" : "d20d37fd94f0954648c23aeceb12087951c9a83178362d39bcfe65196808ce0a",
       "Brother Cassian" : "ce94c4885a11fa0ac6c74885236f50a2f3fe13f2a84e47f404ab74ef41b4a386",
       "Charles" : "6a13a5f0d4a2d2e4cce0f1b41a93629e92c3a3f22901af416a43482812e02c43",
       "Colonel Mustafa" : "597d84bbde4b1da156fcb0324237722de51f52eb34c860d9764f645222b96cf4",
       "Commissioner Blake" : "26f4270632839520c063f82b46c6f3fbee9520bcc23d5cdab63ea08b3acb3201",
       "Dr. Yumi Sato" : "9f16e71288acb3afb26201eb2d32afa84a62fd6f0bbeaf57cda86415d1423de4",
-      "Lena Voss" : "a23b07b7c5a71e3e80dbaad33ec4703195964b8af4f07ca7095208409beb8f3d",
+      "Lena Voss" : "7df767242448db033bbb22e8cb19e187ce2308436b727f4566a91527c479b97d",
       "MVP" : "2325d7a4c9232f669d6b8c92baba68c4c275aee1e3f28ab1fdd25b4f2b6fb82e",
       "Reginald Fairfax III" : "57ca908fc82a8747f3962bfbebacc09b36c520aa4d2a7e3e5e1782418a238923",
       "Rezan the Resolved" : "6b5c13f9dc9d107ce2630087a9a5c8576e492495e466570c847893aecd4e67f3",
@@ -1461,10 +1461,10 @@
       "Trios" : "f739c0be4d6e9e9dc9635c3d6df85f93a78d33c0664921b0f9176924cf03e821"
     },
     "show_template" : {
-      "All Time Rumble" : "bdde8105c252f1331275d1afafe4d1cd6de85866404af0d60006ce86d03d679d",
-      "Continuum" : "94f60bd7ab0d846a2be17b6bc15439cdf1b632e584f16767ac37143c9e489f26",
-      "Timeless" : "042d82432f83063adfc265a98e7049087907f682fca65526b19f76327c480a6c",
-      "Valentine's Day Massacre" : "4e43c9d7b665732f9b5ee84ee17e86da9942358f772d89d0c79b6eee353dbb9d"
+      "All Time Rumble" : "b5303a5846f198d883a80b4c87a3d1d812fd6ba7bd4613ed1db7fb43e86e8b6d",
+      "Continuum" : "55bfa57c7f25c5d8d2b27292d92695bd82c72f92b1bf111558809da4467acbe3",
+      "Timeless" : "d43c048ed270823c5b4628790bf20460420f11103d103abb108786ece29c5195",
+      "Valentine's Day Massacre" : "a3855027913720d0b7f1d33287b22efce7ee1cda3b9f43c2652e3d88f3a32a69"
     },
     "show_type" : {
       "Premium Live Event (PLE)" : "aaf0766c3363c4b111dd50b2ba5a717c319d4ad6149e443c1debf2be90212335",

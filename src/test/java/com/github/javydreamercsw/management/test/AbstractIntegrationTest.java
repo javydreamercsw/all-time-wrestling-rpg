@@ -367,6 +367,35 @@ public abstract class AbstractIntegrationTest {
     }
   }
 
+  /**
+   * Detaches seeded template-assignment rows from their contender titles so {@code
+   * titleRepository.deleteAll()} can run: the seeded Abu Dhabi Rumble assignment declares ATW World
+   * its contender title, and FK_ASSIGNMENT_CONTENDER_TITLE blocks deleting a referenced title.
+   * Tests that need an empty-title baseline call this first. Runs in its own transaction — callers
+   * (E2E setups especially) may have none.
+   */
+  protected void clearContenderTitleReferences() {
+    // Everything must run INSIDE the joining transaction: the re-seeded assignment insert may be
+    // sitting UNCOMMITTED in the caller's active test transaction (@Transactional ITs:
+    // dataInitializer.init() joins it), so the flush and UPDATE must run on that same connection
+    // — a REQUIRES_NEW transaction would read only committed state, affect 0 rows, and leave the
+    // FK blocking the caller's title delete. And when no transaction exists (E2E setups), a bare
+    // entityManager.flush() throws TransactionRequiredException, so it must ride inside the one
+    // the REQUIRED template opens. The shared transactionTemplate is mutated by
+    // clearAllRepositories and must not be relied on here.
+    TransactionTemplate joining =
+        new TransactionTemplate(transactionTemplate.getTransactionManager());
+    joining.executeWithoutResult(
+        status -> {
+          entityManager.flush();
+          entityManager.clear();
+          entityManager
+              .createNativeQuery(
+                  "UPDATE show_template_segment_assignment SET contender_title_id = NULL")
+              .executeUpdate();
+        });
+  }
+
   protected void ensureDefaultUniverseExists() {
     synchronized (AbstractIntegrationTest.class) {
       try {
@@ -377,8 +406,12 @@ public abstract class AbstractIntegrationTest {
         TestUtils.setDefaultUniverse(newUniverse);
         universeContextService.setCurrentUniverse(newUniverse);
       } catch (DataIntegrityViolationException e) {
-        universeRepository
-            .findByName("Default Universe")
+        // findAll+filter, not findByName: the cleaner's swallowed-failure path can leave two
+        // "Default Universe" rows behind (a partially-successful delete pass), and the unique
+        // query would throw NonUniqueResultException in every fixture that resolves by name.
+        universeRepository.findAll().stream()
+            .filter(u -> "Default Universe".equals(u.getName()))
+            .findFirst()
             .ifPresent(
                 u -> {
                   this.defaultUniverse = u;

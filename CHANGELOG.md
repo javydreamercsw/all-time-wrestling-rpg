@@ -1,41 +1,95 @@
 ## [v2.13.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v2.13.0) (2026-11-18)
 ### Dependencies
 
-- parallelize unit tests with surefire forks (ATW-5jhs) (#627) ([#627](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/627))
-- **deps:** Bump @vaadin/aura from 25.3.2 to 25.3.4 (#622) ([#622](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/622))
-- **deps:** Bump @vaadin/number-field from 25.3.3 to 25.3.4 (#623) ([#623](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/623))
-- **deps:** Bump @vaadin/confirm-dialog from 25.3.2 to 25.3.4 (#624) ([#624](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/624))
-- **deps:** Bump @vaadin/text-field from 25.3.3 to 25.3.4 (#625) ([#625](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/625))
-- **deps:** Bump @vaadin/notification from 25.3.2 to 25.3.4 (#621) ([#621](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/621))
-- **deps:** Bump com.github.oshi:oshi-core from 7.7.1 to 7.7.2 (#617) ([#617](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/617))
-- **deps:** Bump com.github.oshi:oshi-core from 7.7.1 to 7.7.2 (#617)
-- **deps-dev:** Bump org.graalvm.buildtools:native-maven-plugin (#616) ([#616](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/616))
-- **deps-dev:** Bump the npm_and_yarn group across 2 directories with 1 update (#614) ([#614](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/614))
-- **deps-dev:** Bump the npm_and_yarn group across 2 directories with 1 update (#601) ([#601](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/601))
-- **deps-dev:** Bump vite (#600) ([#600](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/600))
-- **deps-dev:** Bump vite (#599) ([#599](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/599))
-- **deps-dev:** Bump com.diffplug.spotless:spotless-maven-plugin (#595) ([#595](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/595))
-- **deps-dev:** Bump org.codehaus.mojo:versions-maven-plugin (#596) ([#596](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/596))
-### Documentation
-
-- Regenerate Game Guide for v2.12.0
-- Regenerate Game Guide for v2.12.0
-- Regenerate Game Guide for v2.12.0
+- **deps:** Bump @vaadin/form-layout from 25.3.3 to 25.3.5 (#685) ([#685))
+- **deps:** Bump org.codehaus.mojo:exec-maven-plugin (#689) ([#689))
+- **deps-dev:** Bump org.codehaus.mojo:build-helper-maven-plugin (#690) ([#690))
+- **deps-dev:** Bump org.codehaus.mojo:versions-maven-plugin (#688) ([#688))
+- **deps:** Bump org.apache.maven:apache-maven from 3.10.0 to 3.10.1 (#687) ([#687))
+- **deps:** Bump org.apache.commons:commons-lang3 from 3.21.0 to 3.22.0 (#686) ([#686))
+- **deps:** Bump @vaadin/vertical-layout from 25.3.3 to 25.3.5 (#684) ([#684))
+- **deps:** Bump @vaadin/dialog from 25.3.3 to 25.3.5 (#683) ([#683))
+- **deps-dev:** Bump org.codehaus.mojo:build-helper-maven-plugin (#690)
+- **deps-dev:** Bump org.codehaus.mojo:versions-maven-plugin (#688)
+- **deps:** Bump org.apache.maven:apache-maven from 3.10.0 to 3.10.1 (#687)
+- **deps:** Bump org.apache.commons:commons-lang3 from 3.21.0 to 3.22.0 (#686)
+- **deps:** Bump @vaadin/checkbox-group from 25.3.3 to 25.3.5 (#657) ([#657))
+- **deps:** Bump @vaadin/field-highlighter from 25.3.3 to 25.3.5 (#658) ([#658))
+- **deps:** Bump @vaadin/breadcrumbs from 25.3.3 to 25.3.5 (#659) ([#659))
+- **deps:** Bump com.github.oshi:oshi-core from 7.7.2 to 7.7.3 (#660) ([#660))
+- **deps-dev:** Bump com.diffplug.spotless:spotless-maven-plugin (#661) ([#661))
+- **deps-dev:** Bump org.apache.maven.plugins:maven-surefire-plugin (#634) ([#634))
+- **deps:** Bump @vaadin/context-menu from 25.3.3 to 25.3.5 (#635) ([#635))
+- **deps:** Bump org.apache.maven.plugins:maven-failsafe-plugin (#641) ([#641))
+- **deps:** Bump @vaadin/message-list from 25.3.3 to 25.3.5 (#640) ([#640))
+- **deps:** Bump org.jacoco:jacoco-maven-plugin from 0.8.15 to 0.8.16 (#642) ([#642))
+- **deps:** Bump @vaadin/common-frontend from 0.0.24 to 0.0.25 (#639) ([#639))
+- **deps:** Bump @vaadin/horizontal-layout from 25.3.3 to 25.3.5 (#638) ([#638))
+- **deps:** Bump @fullcalendar/icalendar from 6.1.20 to 7.1.3 (#637) ([#637))
+- **deps-dev:** Bump org.graalvm.buildtools:native-maven-plugin (#636) ([#636))
+- **deps:** Bump selenium.version from 4.51.0 to 4.52.0 (#633) ([#633))
 ### Fixed bugs
 
-- **inbox:** dedup update notifications and clear stale ones after upgrade (ATW-rap2)
-- **sync:** top up missing seed entries under skip-if-not-empty gate (ATW-dn45)
-- align vite to flow-server's bundled 8.3.1 — stop the upgrade fight (ATW-qzaj)
-- sweep stale activeWrestlerId when a wrestler is reassigned between accounts
-- **docs:** escape <tournament> placeholder in docs feature description (ATW-h09t) (#628) ([#628](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/628))
+- **wrestler:** strip AI chatbot artifacts from seeded bios
+- **challenge:** move Deadly Combat arc from official to custom challenges
+- **show:** restore title-set copy setters with rewrite-plugin exclusions
+- **show:** restore copy-on-assign for title collections to stop approval crash
+- **db:** resolve duplicate Flyway V142/V173 blocking production deploy
+- **show:** post-show recovery excludes everyone who wrestled on the show (ATW-a5av)
+- **ui:** null-guard AI settings NumberField listeners (ATW-x6c1)
+- **planning:** deterministic drop passes for holder promos and double-booked matches (ATW-eqo0)
+- **booking:** gate briefcase and tournament booking paths on injury availability (ATW-1nyv)
+- **planning:** scrub injured wrestlers from all AI planning context + approval warning (ATW-1nyv)
+- **settings:** blank universe-scoped credential row falls through to the global key (ATW-p2y2) (#672) ([#672))
+- **security:** drop anyRequest from shared rules — Vaadin's deferred matchers collided (#680) ([#680))
+- **sync:** SegmentTypeSync FULL branch re-stamps unconditionally (CardSync parity) (#669) ([#669))
+- **ui,news:** adjudicate double-click guard + empty-winners fallback headline (#678) ([#678))
+- **security:** @PreAuthorize(isAuthenticated) on the three unfiltered loaders (ATW-w0bq) (#668) ([#668))
+- **build:** pre-push hook discards Flow-driven vite downgrades instead of committing them (ATW-qzaj) (#667) ([#667))
+- **title:** briefcase holders target the highest-tier eligible title and stay in match programs (#666) ([#666))
+- **ui:** championship dropdown orders by tier desc, then gender, then name (ATW-r6zt) (#665) ([#665))
+- **sync:** USE_NEW on guideHash decisions reloads the seed guide payload (ATW-md1i) (#664) ([#664))
+- **sync:** stop CampaignUpgradeService's per-boot wipe from destroying admin edits (ATW-26sy) (#663) ([#663))
+- **security:** /api/admin/** rule shadowed by preceding /api/** permitAll (ATW-fxnz) (#662) ([#662))
+- **db:** renumber colliding migration versions from 2.X.X merge
+- **sync:** top up missing seed entries under skip-if-not-empty gate (#644) ([#644))
+- **qr:** make QR sharing reachable from phones (SNI, context path, HSTS) (#631) ([#631))
+### Implemented enhancements
+
+- **campaign:** suggest scope as PDF filename when printing cards
+- **challenge:** suggest challenge title as PDF filename when printing
+- **scripts:** gated local deploy script for the production Tomcat
+- **show:** adjudication progress overlay, narration retry, player-segment exclusion (ATW-v0vh) (#694) ([#694))
+- **planning:** local show planner — deterministic booking, AI narrates only (ATW-wbch) (#691)
+- **ai:** Ollama thinking control, configurable max_tokens, extra-params escape hatch (ATW-binc)
+- **challenge:** print weekly challenges as poker-size cards (#682) ([#682))
+- **challenge:** recast Deadly Combat arc as an Extreme Edition story (#681) ([#681))
+- **sync:** NPC seed gains gender + referee data/test polish (ATW-jbyo) (#670) ([#670))
+- **league:** score no-contests like draws in league standings (#679) ([#679))
+- **ui:** global AI provider availability indicator in the main layout (#676) ([#676))
+- **ranking:** lazy windowing for championship/wrestler history graphs (#675) ([#675))
+- **challenge:** OMZ Deadly Combat weekly challenge arc (weeks 7-11) (ATW-rdoz) (#674) ([#674))
+- **sync:** add skip-if-not-empty=verify mode (fingerprint-gated seed reconcile) (#648) ([#648))
+- Adjudicate Show on-demand narration + explicit outcomes (2.13.0) (#632) ([#632))
 ### Miscellaneous
 
-- ignore vite npm bumps while flow-server pins 8.3.1 (ATW-qzaj)
+- **scripts:** trim date and issue references from deploy script header
 ### Other
 
-- keep vite 8.3.5 (flow-server 25.3.1 bundled default 8.3.1 churns it back via rewrite hook)
+- Rule intensity ratings (0-100 heat scale) + stipulation anti-repeat + heat lifecycle fixes (ATW-czai) (#696) ([#696))
+- Seed Update Review: gameplay gate (PR 2/4, ATW-9x12) (#652) ([#652))
 - Update version
+- Seed Update Review: detection + storage (PR 1/4, ATW-9x12) (#651) ([#651))
+- Revert "Seed fingerprint manifest: per-domain verify fast path (ATW-fm24) (#649)" (#650) ([#650))
+- Seed fingerprint manifest: per-domain verify fast path (ATW-fm24) (#649) ([#649))
+- Ignore plugin files
+### Tests
+
+- **sync:** PR 4 deferred-minor cleanup batch — seed-review wiring follow-ups (ATW-1rmi) (#677) ([#677))
+- **review:** seed manifest hardening — extraction WARNs + registry/generator cross-pin (#673) ([#673))
+- cover PR #632 coverage gaps in narration, news, feud card, and match view
 [Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v2.12.0...v2.13.0)
+
 ## [v2.12.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v2.12.0) (2026-10-26)
 ### Dependencies
 
@@ -72,83 +126,6 @@
 
 - keep vite 8.3.5 (flow-server 25.3.1 bundled default 8.3.1 churns it back via rewrite hook)
 - Update version
-[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v2.11.3...v2.12.0)
-## [v2.12.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v2.12.0) (2026-10-26)
-### Dependencies
-
-- parallelize unit tests with surefire forks (ATW-5jhs) (#627)
-- **deps:** Bump @vaadin/aura from 25.3.2 to 25.3.4 (#622)
-- **deps:** Bump @vaadin/number-field from 25.3.3 to 25.3.4 (#623)
-- **deps:** Bump @vaadin/confirm-dialog from 25.3.2 to 25.3.4 (#624)
-- **deps:** Bump @vaadin/text-field from 25.3.3 to 25.3.4 (#625)
-- **deps:** Bump @vaadin/notification from 25.3.2 to 25.3.4 (#621)
-- **deps:** Bump com.github.oshi:oshi-core from 7.7.1 to 7.7.2 (#617)
-- **deps:** Bump com.github.oshi:oshi-core from 7.7.1 to 7.7.2 (#617)
-- **deps-dev:** Bump org.graalvm.buildtools:native-maven-plugin (#616)
-- **deps-dev:** Bump the npm_and_yarn group across 2 directories with 1 update (#614)
-- **deps-dev:** Bump the npm_and_yarn group across 2 directories with 1 update (#601)
-- **deps-dev:** Bump vite (#600)
-- **deps-dev:** Bump vite (#599)
-- **deps-dev:** Bump com.diffplug.spotless:spotless-maven-plugin (#595)
-- **deps-dev:** Bump org.codehaus.mojo:versions-maven-plugin (#596)
-### Documentation
-
-- Regenerate Game Guide for v2.12.0
-### Fixed bugs
-
-- **inbox:** dedup update notifications and clear stale ones after upgrade (ATW-rap2)
-- **sync:** top up missing seed entries under skip-if-not-empty gate (ATW-dn45)
-- align vite to flow-server's bundled 8.3.1 — stop the upgrade fight (ATW-qzaj)
-- sweep stale activeWrestlerId when a wrestler is reassigned between accounts
-- **docs:** escape <tournament> placeholder in docs feature description (ATW-h09t) (#628)
-### Miscellaneous
-
-- ignore vite npm bumps while flow-server pins 8.3.1 (ATW-qzaj)
-### Other
-
-- keep vite 8.3.5 (flow-server 25.3.1 bundled default 8.3.1 churns it back via rewrite hook)
-- Update version
-[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v2.11.3...v2.12.0)
-## [v2.12.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v2.12.0) (2026-10-26)
-### Dependencies
-
-- parallelize unit tests with surefire forks (ATW-5jhs) (#627)
-- **deps:** Bump @vaadin/aura from 25.3.2 to 25.3.4 (#622)
-- **deps:** Bump @vaadin/number-field from 25.3.3 to 25.3.4 (#623)
-- **deps:** Bump @vaadin/confirm-dialog from 25.3.2 to 25.3.4 (#624)
-- **deps:** Bump @vaadin/text-field from 25.3.3 to 25.3.4 (#625)
-- **deps:** Bump @vaadin/notification from 25.3.2 to 25.3.4 (#621)
-- **deps:** Bump com.github.oshi:oshi-core from 7.7.1 to 7.7.2 (#617)
-- **deps:** Bump com.github.oshi:oshi-core from 7.7.1 to 7.7.2 (#617)
-- **deps-dev:** Bump org.graalvm.buildtools:native-maven-plugin (#616)
-- **deps-dev:** Bump the npm_and_yarn group across 2 directories with 1 update (#614)
-- **deps-dev:** Bump the npm_and_yarn group across 2 directories with 1 update (#601)
-- **deps-dev:** Bump vite (#600)
-- **deps-dev:** Bump vite (#599)
-- **deps-dev:** Bump com.diffplug.spotless:spotless-maven-plugin (#595)
-- **deps-dev:** Bump org.codehaus.mojo:versions-maven-plugin (#596)
-### Fixed bugs
-
-- align vite to flow-server's bundled 8.3.1 — stop the upgrade fight (ATW-qzaj)
-- sweep stale activeWrestlerId when a wrestler is reassigned between accounts
-- **docs:** escape <tournament> placeholder in docs feature description (ATW-h09t) (#628)
-- **security:** bump Spring Boot 4.1.0→4.1.2, replace stale starter-aop, dompurify 3.4.16→3.4.17 (ATW-beaa) (#626) ([#626](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/626))
-### Miscellaneous
-
-- ignore vite npm bumps while flow-server pins 8.3.1 (ATW-qzaj)
-### Other
-
-- keep vite 8.3.5 (flow-server 25.3.1 bundled default 8.3.1 churns it back via rewrite hook)
-- Update version
-- Release 2.12.0 (#593) ([#593](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/593))
-[Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v2.11.3...v2.12.0)
-## [v2.12.0](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v2.12.0) (2026-10-26)
-### Fixed bugs
-
-- **security:** bump Spring Boot 4.1.0→4.1.2, replace stale starter-aop, dompurify 3.4.16→3.4.17 (ATW-beaa) (#626) ([#626](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/626))
-### Other
-
-- Release 2.12.0 (#593) ([#593](https://github.com/javydreamercsw/all-time-wrestling-rpg/pull/593))
 [Full Changelog](https://github.com/javydreamercsw/all-time-wrestling-rpg/compare/v2.11.3...v2.12.0)
 ## [v2.11.3](https://github.com/javydreamercsw/all-time-wrestling-rpg/tree/v2.11.3) (2026-10-16)
 ### Documentation

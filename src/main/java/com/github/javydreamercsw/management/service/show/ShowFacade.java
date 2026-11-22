@@ -24,6 +24,7 @@ import com.github.javydreamercsw.management.service.segment.NarrationParserServi
 import com.github.javydreamercsw.management.service.segment.SegmentRuleService;
 import com.github.javydreamercsw.management.service.segment.SegmentService;
 import com.github.javydreamercsw.management.service.segment.type.SegmentTypeService;
+import com.github.javydreamercsw.management.service.title.ContenderSelectionService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -43,4 +44,5 @@ public class ShowFacade {
   private final NpcService npcService;
   private final DramaEventService dramaEventService;
   private final FeudScriptService feudScriptService;
+  private final ContenderSelectionService contenderSelectionService;
 }

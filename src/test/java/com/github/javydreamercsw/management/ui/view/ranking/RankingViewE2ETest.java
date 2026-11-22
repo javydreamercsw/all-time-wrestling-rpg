@@ -91,6 +91,8 @@ class RankingViewE2ETest extends AbstractE2ETest {
               t.setChampion(null);
               titleRepository.save(t);
             });
+    // Seed assignments may reference titles (Abu Dhabi Rumble -> ATW World): detach first.
+    clearContenderTitleReferences();
     titleRepository.deleteAllInBatch();
     segmentRepository.deleteAllInBatch();
     showRepository.deleteAllInBatch();

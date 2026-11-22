@@ -112,3 +112,6 @@ node/
 # Superpowers working docs (specs/plans) — local only
 docs/superpowers/
 /.superpowers/
+
+# Git worktrees (superpowers isolated workspaces)
+/.worktrees/
