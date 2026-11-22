@@ -41,6 +41,13 @@ public interface TitleOpportunityRepository extends JpaRepository<TitleOpportuni
   /** All currently HELD opportunities (booker dashboard panel, ATW-3fhh). */
   List<TitleOpportunity> findByStatus(TitleOpportunityStatus status);
 
+  /**
+   * All currently HELD opportunities with the holder resolved — for callers that read holder fields
+   * after the transaction closes (the holder is a lazy proxy on the detached entity otherwise).
+   */
+  @Query("SELECT o FROM TitleOpportunity o LEFT JOIN FETCH o.wrestler WHERE o.status = :status")
+  List<TitleOpportunity> findByStatusWithHolder(@Param("status") TitleOpportunityStatus status);
+
   /** Career-view history, newest first. */
   List<TitleOpportunity> findByWrestlerIdOrderByEarnedAtDesc(Long wrestlerId);
 
