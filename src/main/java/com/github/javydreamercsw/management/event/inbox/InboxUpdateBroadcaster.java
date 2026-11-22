@@ -25,9 +25,15 @@ import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import org.springframework.stereotype.Component;
 
+/**
+ * Pushes inbox update events to registered UI listeners. Listeners are independent consumers with
+ * no ordering guarantee between them; each is dispatched on its own virtual thread so a slow
+ * listener cannot delay delivery to the others. Listener contract: never block inside {@link
+ * #broadcast(InboxUpdateEvent)} handling — schedule work and return.
+ */
 @Component
 public class InboxUpdateBroadcaster {
-  private final ExecutorService executor = Executors.newSingleThreadExecutor();
+  private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
   private final List<Consumer<InboxUpdateEvent>> listeners = new CopyOnWriteArrayList<>();
 
   public Registration register(final Consumer<InboxUpdateEvent> listener) {

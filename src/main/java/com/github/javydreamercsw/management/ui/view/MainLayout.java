@@ -45,6 +45,7 @@ import com.github.javydreamercsw.management.service.tutorial.TutorialService;
 import com.github.javydreamercsw.management.service.tutorial.TutorialStep;
 import com.github.javydreamercsw.management.service.universe.UniverseContextService;
 import com.github.javydreamercsw.management.service.universe.UniverseMembershipService;
+import com.github.javydreamercsw.management.ui.component.DebouncedUiRunner;
 import com.github.javydreamercsw.management.ui.view.account.ProfileDrawer;
 import com.github.javydreamercsw.management.ui.view.match.SegmentQrPickerDialog;
 import com.github.javydreamercsw.management.ui.view.tutorial.TutorialStepOverlay;
@@ -80,16 +81,11 @@ import jakarta.annotation.security.PermitAll;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.info.BuildProperties;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Layout
@@ -99,13 +95,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @Slf4j
 public class MainLayout extends AppLayout implements AfterNavigationObserver {
 
-  private static final ScheduledExecutorService INBOX_NOTIF_SCHEDULER =
-      Executors.newSingleThreadScheduledExecutor(
-          r -> {
-            Thread t = new Thread(r, "inbox-notif-debounce");
-            t.setDaemon(true);
-            return t;
-          });
+  private static final int INBOX_POLL_INTERVAL_MS = 60_000;
 
   private MenuService menuService;
   private BuildProperties buildProperties;
@@ -116,8 +106,10 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
   // package-private so MainLayoutTest can shorten it without reflection
   long inboxNotifDebounceMs = 1_000L;
   private volatile long lastKnownUnreadCount = 0;
-  private volatile ScheduledFuture<?> pendingInboxNotification;
   private @Nullable SecurityUtils securityUtils;
+  private @Nullable Long inboxAccountId;
+  private DebouncedUiRunner inboxDebounceRunner;
+  private Registration pollRegistration;
   private AccountService accountService;
   private PasswordEncoder passwordEncoder;
   private ThemeService themeService;
@@ -443,17 +435,21 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
     if (inboxBadge == null || securityUtils == null) {
       return 0L;
     }
-    // Use the same direct check that @PreAuthorize("isAuthenticated()") interceptors perform.
-    // Vaadin push-handler threads do not run SecurityContextHolderFilter, so the ThreadLocal may
-    // be absent after rapid logout/login cycles; this guard matches the interceptor's own null
-    // check and prevents AuthenticationCredentialsNotFoundException from propagating.
-    var auth = SecurityContextHolder.getContext().getAuthentication();
-    if (auth == null || !auth.isAuthenticated() || !securityUtils.isAuthenticated()) {
-      inboxBadge.setVisible(false);
-      return 0L;
-    }
     Long accountId =
         securityUtils.getAuthenticatedUser().map(u -> u.getAccount().getId()).orElse(null);
+    return refreshInboxBadge(accountId);
+  }
+
+  /**
+   * Update the navbar badge from an already-resolved account id. Safe to call from non-request
+   * threads (push/poll handlers) inside {@code ui.access}: the Vaadin-aware security strategy
+   * resolves the authentication from the HTTP session, so no thread-bound security context is
+   * consulted here.
+   */
+  private long refreshInboxBadge(final Long accountId) {
+    if (inboxBadge == null) {
+      return 0L;
+    }
     if (accountId == null) {
       inboxBadge.setVisible(false);
       return 0L;
@@ -472,6 +468,11 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
       inboxBadge.setVisible(false);
       return 0L;
     }
+  }
+
+  /** Poll handler: silently re-sync the badge; never shows notifications. */
+  void onPoll() {
+    lastKnownUnreadCount = refreshInboxBadge(inboxAccountId);
   }
 
   private void openProfileDrawer() {
@@ -497,39 +498,39 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
   protected void onAttach(final AttachEvent attachEvent) {
     super.onAttach(attachEvent);
     UI ui = attachEvent.getUI();
+    if (securityUtils != null) {
+      inboxAccountId =
+          securityUtils.getAuthenticatedUser().map(u -> u.getAccount().getId()).orElse(null);
+    }
     if (inboxUpdateBroadcaster != null) { // Needed for tests
+      inboxDebounceRunner = new DebouncedUiRunner(ui, () -> inboxNotifDebounceMs);
+      final Long accountId = inboxAccountId;
       inboxUpdateBroadcasterRegistration =
           inboxUpdateBroadcaster.register(
               event -> {
                 if (!ui.isAttached()) {
                   return;
                 }
-                ScheduledFuture<?> existing = pendingInboxNotification;
-                if (existing != null) {
-                  existing.cancel(false);
-                }
-                pendingInboxNotification =
-                    INBOX_NOTIF_SCHEDULER.schedule(
-                        () -> {
-                          if (!ui.isAttached()) {
-                            return;
-                          }
-                          ui.access(
-                              () -> {
-                                long newCount = refreshInboxBadge();
-                                long delta = newCount - lastKnownUnreadCount;
-                                lastKnownUnreadCount = newCount;
-                                if (delta > 0) {
-                                  String msg =
-                                      delta == 1 ? "New inbox item!" : delta + " new inbox items!";
-                                  Notification.show(msg, 3000, Notification.Position.BOTTOM_END)
-                                      .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
-                                }
-                              });
-                        },
-                        inboxNotifDebounceMs,
-                        TimeUnit.MILLISECONDS);
+                inboxDebounceRunner.schedule(
+                    () -> {
+                      long newCount = refreshInboxBadge(accountId);
+                      long delta = newCount - lastKnownUnreadCount;
+                      lastKnownUnreadCount = newCount;
+                      if (delta > 0) {
+                        String msg = delta == 1 ? "New inbox item!" : delta + " new inbox items!";
+                        Notification.show(msg, 3000, Notification.Position.BOTTOM_END)
+                            .addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                      }
+                    });
               });
+    }
+    // A poll is a UIDL request on the XHR channel, independent of the websocket. Push remains
+    // the primary delivery path; the poll is a deliberate safety net that self-heals the badge
+    // when a websocket has died silently (a half-open socket is never detected server-side, so
+    // pushed mutations can be lost until the next client-initiated roundtrip).
+    if (inboxBadge != null && securityUtils != null && securityUtils.isAuthenticated()) {
+      ui.setPollInterval(INBOX_POLL_INTERVAL_MS);
+      pollRegistration = ui.addPollListener(event -> onPoll());
     }
     if (openProfileDrawerBroadcaster != null) {
       openProfileDrawerRegistration =
@@ -563,9 +564,12 @@ public class MainLayout extends AppLayout implements AfterNavigationObserver {
     if (aiSettingsChangeRegistration != null) {
       aiSettingsChangeRegistration.remove();
     }
-    ScheduledFuture<?> pending = pendingInboxNotification;
-    if (pending != null) {
-      pending.cancel(false);
+    if (pollRegistration != null) {
+      pollRegistration.remove();
+      pollRegistration = null;
+    }
+    if (inboxDebounceRunner != null) {
+      inboxDebounceRunner.cancelPending();
     }
   }
 

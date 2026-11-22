@@ -271,6 +271,85 @@ class MainLayoutTest extends AbstractViewTest {
   }
 
   @Test
+  @DisplayName("Broadcast updates the badge even with an empty SecurityContext (push thread)")
+  void inboxBroadcast_badgeUpdatesWithClearedSecurityContext() throws Exception {
+    Account account = new Account();
+    account.setId(1L);
+    CustomUserDetails user = new CustomUserDetails(account);
+    when(securityUtils.isAuthenticated()).thenReturn(true);
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.of(user));
+    when(inboxService.countUnread(any())).thenReturn(3L);
+
+    MainLayout layout = createLayout();
+    layout.inboxNotifDebounceMs = 50;
+
+    ArgumentCaptor<Consumer<InboxUpdateEvent>> captor = ArgumentCaptor.forClass(Consumer.class);
+    verify(inboxUpdateBroadcaster).register(captor.capture());
+    Consumer<InboxUpdateEvent> consumer = captor.getValue();
+
+    // Simulate a push-handler thread: no thread-bound authentication is available. The badge
+    // refresh must rely on the account id captured at attach time, not the security context.
+    org.springframework.security.core.context.SecurityContextHolder.clearContext();
+    when(inboxService.countUnread(any())).thenReturn(7L);
+    consumer.accept(new InboxUpdateEvent(this));
+    Thread.sleep(200);
+    MockVaadin.clientRoundtrip();
+
+    Span badge = _get(layout, Span.class, spec -> spec.withId("inbox-unread-badge"));
+    assertThat(badge.getText()).isEqualTo("7");
+    assertTrue(badge.isVisible());
+  }
+
+  @Test
+  @DisplayName("Authenticated user gets a poll interval for badge self-healing")
+  void onAttach_authenticatedUser_enablesPollInterval() {
+    UI.getCurrent().setPollInterval(-1);
+    when(securityUtils.isAuthenticated()).thenReturn(true);
+
+    createLayout();
+
+    assertThat(UI.getCurrent().getPollInterval()).isEqualTo(60_000);
+  }
+
+  @Test
+  @DisplayName("Anonymous user gets no poll interval")
+  void onAttach_anonymousUser_pollDisabled() {
+    // Poll state lives on the shared mock UI; reset it so a previous test's setting cannot leak.
+    UI.getCurrent().setPollInterval(-1);
+    when(securityUtils.isAuthenticated()).thenReturn(false);
+
+    createLayout();
+
+    assertThat(UI.getCurrent().getPollInterval()).isEqualTo(-1);
+  }
+
+  @Test
+  @DisplayName("Poll refreshes the badge silently without notifications")
+  void onPoll_refreshesBadgeWithoutNotification() {
+    Account account = new Account();
+    account.setId(1L);
+    CustomUserDetails user = new CustomUserDetails(account);
+    when(securityUtils.isAuthenticated()).thenReturn(true);
+    when(securityUtils.getAuthenticatedUser()).thenReturn(Optional.of(user));
+    when(inboxService.countUnread(any())).thenReturn(5L);
+
+    MainLayout layout = createLayout();
+
+    try (MockedStatic<Notification> mocked = Mockito.mockStatic(Notification.class)) {
+      when(inboxService.countUnread(any())).thenReturn(7L);
+      layout.onPoll();
+      MockVaadin.clientRoundtrip();
+
+      Span badge = _get(layout, Span.class, spec -> spec.withId("inbox-unread-badge"));
+      assertThat(badge.getText()).isEqualTo("7");
+      assertTrue(badge.isVisible());
+      mocked.verify(
+          () -> Notification.show(anyString(), anyInt(), any(Notification.Position.class)),
+          Mockito.never());
+    }
+  }
+
+  @Test
   @DisplayName("Share QR Code nav item is visible to authenticated users")
   void shareQrNavItem_authenticatedUser_present() {
     when(securityUtils.isAuthenticated()).thenReturn(true);
