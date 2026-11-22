@@ -25,13 +25,17 @@ import com.github.javydreamercsw.management.domain.inbox.InboxItem;
 import com.github.javydreamercsw.management.domain.inbox.InboxItemTarget;
 import com.github.javydreamercsw.management.domain.wrestler.Wrestler;
 import com.github.javydreamercsw.management.domain.wrestler.WrestlerRepository;
+import com.github.javydreamercsw.management.event.inbox.InboxUpdateBroadcaster;
 import com.github.javydreamercsw.management.event.inbox.OpenProfileDrawerBroadcaster;
 import com.github.javydreamercsw.management.service.inbox.DirectMessageService;
 import com.github.javydreamercsw.management.service.inbox.InboxService;
 import com.github.javydreamercsw.management.service.league.MatchFulfillmentService;
+import com.github.javydreamercsw.management.ui.component.DebouncedUiRunner;
 import com.github.javydreamercsw.management.ui.view.MainLayout;
 import com.github.javydreamercsw.management.ui.view.league.MatchReportDialog;
+import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -50,16 +54,22 @@ import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
+import com.vaadin.flow.data.provider.DataProvider;
+import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.data.provider.Query;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.shared.Registration;
+import jakarta.annotation.Nullable;
 import jakarta.annotation.security.PermitAll;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -92,6 +102,14 @@ public class InboxView extends VerticalLayout {
   private final Set<InboxItem> selectedItems = new HashSet<>();
   private final SecurityUtils securityUtils;
   private final DirectMessageService directMessageService;
+  private final InboxUpdateBroadcaster inboxUpdateBroadcaster;
+  private final ListDataProvider<InboxItem> gridDataProvider =
+      DataProvider.ofCollection(new ArrayList<>());
+  // package-private so InboxViewTest can shorten it without reflection
+  long inboxRefreshDebounceMs = 1_000L;
+  private @Nullable Long inboxAccountId;
+  private DebouncedUiRunner gridRefreshRunner;
+  private Registration inboxUpdateRegistration;
 
   public InboxView(
       final InboxService inboxService,
@@ -101,7 +119,8 @@ public class InboxView extends VerticalLayout {
       final SecurityUtils securityUtils,
       final ObjectMapper objectMapper,
       final OpenProfileDrawerBroadcaster openProfileDrawerBroadcaster,
-      final DirectMessageService directMessageService) {
+      final DirectMessageService directMessageService,
+      final InboxUpdateBroadcaster inboxUpdateBroadcaster) {
     this.inboxService = inboxService;
     this.eventTypeRegistry = eventTypeRegistry;
     this.wrestlerRepository = wrestlerRepository;
@@ -110,6 +129,7 @@ public class InboxView extends VerticalLayout {
     this.objectMapper = objectMapper;
     this.openProfileDrawerBroadcaster = openProfileDrawerBroadcaster;
     this.directMessageService = directMessageService;
+    this.inboxUpdateBroadcaster = inboxUpdateBroadcaster;
 
     addClassName("inbox-view");
     setSizeFull();
@@ -145,6 +165,58 @@ public class InboxView extends VerticalLayout {
                   targetFilter.setReadOnly(true);
                 }
               });
+    }
+  }
+
+  @Override
+  protected void onAttach(final AttachEvent attachEvent) {
+    super.onAttach(attachEvent);
+    inboxAccountId =
+        securityUtils.getAuthenticatedUser().map(u -> u.getAccount().getId()).orElse(null);
+    gridRefreshRunner = new DebouncedUiRunner(attachEvent.getUI(), () -> inboxRefreshDebounceMs);
+    inboxUpdateRegistration =
+        inboxUpdateBroadcaster.register(
+            event -> {
+              getUI()
+                  .filter(UI::isAttached)
+                  .ifPresent(
+                      ui ->
+                          gridRefreshRunner.schedule(
+                              () -> {
+                                refreshGridPreservingSelection();
+                              }));
+            });
+  }
+
+  @Override
+  protected void onDetach(final DetachEvent detachEvent) {
+    super.onDetach(detachEvent);
+    if (inboxUpdateRegistration != null) {
+      inboxUpdateRegistration.remove();
+      inboxUpdateRegistration = null;
+    }
+    if (gridRefreshRunner != null) {
+      gridRefreshRunner.cancelPending();
+    }
+  }
+
+  /**
+   * Re-fetch inbox items and update the grid without resetting the scroll position or losing the
+   * selection. Runs on the UI thread; not a broadcaster-listener contract to block here.
+   */
+  private void refreshGridPreservingSelection() {
+    Set<Long> selectedIds =
+        selectedItems.stream()
+            .map(InboxItem::getId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+    updateList();
+    if (!selectedIds.isEmpty()) {
+      Set<InboxItem> reselect =
+          gridDataProvider.getItems().stream()
+              .filter(item -> item.getId() != null && selectedIds.contains(item.getId()))
+              .collect(Collectors.toSet());
+      grid.asMultiSelect().setValue(reselect);
     }
   }
 
@@ -343,6 +415,8 @@ public class InboxView extends VerticalLayout {
             });
 
     grid.addItemClickListener(event -> showDetails(event.getItem()));
+
+    grid.setItems(gridDataProvider);
   }
 
   private Component createActionComponent(@NonNull final InboxItem item) {
@@ -667,14 +741,22 @@ public class InboxView extends VerticalLayout {
   }
 
   private void updateList() {
-    Long accountId =
-        securityUtils.getAuthenticatedUser().map(u -> u.getAccount().getId()).orElse(null);
-    grid.setItems(
+    Long accountId = inboxAccountId;
+    if (accountId == null) {
+      accountId =
+          securityUtils.getAuthenticatedUser().map(u -> u.getAccount().getId()).orElse(null);
+    }
+    List<InboxItem> fresh =
         inboxService.search(
             targetFilter.getValue(),
             readStatusFilter.getValue(),
             eventTypeFilter.getValue(),
             null, // hideRead removed: the Read Status filter fully controls unread visibility
-            accountId));
+            accountId);
+    // Mutate the persistent backing collection instead of calling grid.setItems(...): a fresh
+    // ItemsProvider resets the scroll position, while refreshAll() keeps the viewport anchored.
+    gridDataProvider.getItems().clear();
+    gridDataProvider.getItems().addAll(fresh);
+    gridDataProvider.refreshAll();
   }
 }
