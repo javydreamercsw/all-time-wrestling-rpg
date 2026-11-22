@@ -157,6 +157,20 @@ class TitleOpportunityServiceTest {
   // ── Grant ────────────────────────────────────────────────────────────────
 
   @Test
+  @DisplayName("findHeldWithHolder delegates to the holder-fetching repository query")
+  void findHeldWithHolder_delegatesToRepository() {
+    TitleOpportunity held = new TitleOpportunity();
+    held.setStatus(TitleOpportunityStatus.HELD);
+    when(opportunityRepository.findByStatusWithHolder(TitleOpportunityStatus.HELD))
+        .thenReturn(List.of(held));
+
+    List<TitleOpportunity> result = service.findHeldWithHolder();
+
+    assertEquals(List.of(held), result);
+    verify(opportunityRepository).findByStatusWithHolder(TitleOpportunityStatus.HELD);
+  }
+
+  @Test
   @DisplayName("Grant creates a HELD briefcase with expiry earnedAt + 365 days")
   void grantCreatesHeldOpportunity() {
     when(opportunityRepository.existsByEarnedFromTournamentId(1L)).thenReturn(false);
