@@ -1719,7 +1719,12 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
         || segment.getShow() == null) {
       return false;
     }
-    // Trigger: a wrestler at/below half their starting health in this encounter.
+    // Trigger: a wrestler at/below half their starting health in this encounter. Health is
+    // recorded only for player-controlled wrestlers, so an NPC-only match carries no signal at
+    // all — absence of health data means the half-HP condition is untestable, not unmet. A
+    // title match with a held briefcase therefore still gets the offer; the booker decides.
+    boolean anyHealthRecorded =
+        segment.getParticipants().stream().anyMatch(p -> p.getFinalHealth() != null);
     boolean halfHpReached =
         segment.getParticipants().stream()
             .anyMatch(
@@ -1728,7 +1733,7 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
                         && p.getFinalHealth() != null
                         && p.getWrestler().getStartingHealth() > 0
                         && p.getFinalHealth() * 2 <= p.getWrestler().getStartingHealth());
-    if (!halfHpReached) {
+    if (!halfHpReached && anyHealthRecorded) {
       return false;
     }
     Title title = segment.getTitles().iterator().next();
@@ -1750,13 +1755,23 @@ public class MatchView extends VerticalLayout implements BeforeEnterObserver {
     Wrestler holder = opportunity.getWrestler();
     ConfirmDialog dialog = new ConfirmDialog();
     dialog.setHeader("Briefcase run-in?");
-    dialog.setText(
-        holder.getName()
-            + " holds "
-            + opportunity.getName()
-            + ". A wrestler in this match just hit half their starting HP — did "
-            + holder.getName()
-            + " storm the ring and cash in mid-match?");
+    if (anyHealthRecorded) {
+      dialog.setText(
+          holder.getName()
+              + " holds "
+              + opportunity.getName()
+              + ". A wrestler in this match just hit half their starting HP — did "
+              + holder.getName()
+              + " storm the ring and cash in mid-match?");
+    } else {
+      dialog.setText(
+          holder.getName()
+              + " holds "
+              + opportunity.getName()
+              + " on the line in this match — did "
+              + holder.getName()
+              + " storm the ring and cash in mid-match?");
+    }
     dialog.setConfirmText("Cash in mid-match");
     dialog.setCancelText("No run-in");
     // The dialog is async; resolve the choice via the confirm listener: on confirm, book the
