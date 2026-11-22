@@ -69,6 +69,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -207,7 +208,7 @@ public class InboxView extends VerticalLayout {
     Set<Long> selectedIds =
         selectedItems.stream()
             .map(InboxItem::getId)
-            .filter(java.util.Objects::nonNull)
+            .filter(Objects::nonNull)
             .collect(Collectors.toSet());
     updateList();
     if (!selectedIds.isEmpty()) {

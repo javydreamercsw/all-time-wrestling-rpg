@@ -58,6 +58,7 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
 import com.vaadin.flow.data.provider.Query;
+import com.vaadin.flow.shared.Registration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -777,8 +778,8 @@ class InboxViewTest extends AbstractViewTest {
     when(inboxService.search(any(), any(), any(), any(), any()))
         .thenReturn(Collections.emptyList());
 
-    AtomicReference<com.vaadin.flow.shared.Registration> registration =
-        new AtomicReference<>(Mockito.mock(com.vaadin.flow.shared.Registration.class));
+    AtomicReference<Registration> registration =
+        new AtomicReference<>(Mockito.mock(Registration.class));
     Mockito.when(inboxUpdateBroadcaster.register(any())).thenAnswer(inv -> registration.get());
 
     InboxView liveView = createAttachedView();

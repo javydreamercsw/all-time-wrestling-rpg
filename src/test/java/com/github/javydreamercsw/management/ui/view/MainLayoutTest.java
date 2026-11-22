@@ -68,6 +68,7 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.springframework.data.domain.Page;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import tools.jackson.databind.node.JsonNodeFactory;
 
@@ -289,7 +290,7 @@ class MainLayoutTest extends AbstractViewTest {
 
     // Simulate a push-handler thread: no thread-bound authentication is available. The badge
     // refresh must rely on the account id captured at attach time, not the security context.
-    org.springframework.security.core.context.SecurityContextHolder.clearContext();
+    SecurityContextHolder.clearContext();
     when(inboxService.countUnread(any())).thenReturn(7L);
     consumer.accept(new InboxUpdateEvent(this));
     Thread.sleep(200);
