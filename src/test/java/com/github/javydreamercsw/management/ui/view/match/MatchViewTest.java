@@ -1615,6 +1615,93 @@ class MatchViewTest extends AbstractViewTest {
   }
 
   @Test
+  void runInTrigger_offersDialog_whenNpcMatchHasHeldCase() {
+    injectTitleOpportunityService();
+    Segment segment = buildMinimalMatchSegment(36L, "One on One");
+    Title worldTitle = new Title();
+    worldTitle.setId(11L);
+    worldTitle.setName("ATW World");
+    segment.setIsTitleSegment(true);
+    segment.setTitles(new HashSet<>(List.of(worldTitle)));
+
+    // NPC-only match: no participant has recorded final health, so the half-HP trigger has no
+    // signal to read. The offer must still go out when a HELD case exists.
+    Wrestler holder = new Wrestler();
+    holder.setId(10L);
+    holder.setName("Case Holder");
+    holder.setActive(true);
+    holder.setStartingHealth(20);
+    SegmentParticipant p = new SegmentParticipant();
+    p.setSegment(segment);
+    p.setWrestler(holder);
+    segment.getParticipants().add(p);
+
+    TitleOpportunity opportunity = new TitleOpportunity();
+    opportunity.setId(7L);
+    opportunity.setName("Time Vault briefcase");
+    opportunity.setWrestler(holder);
+
+    when(securityUtils.isBooker()).thenReturn(true);
+    lenient().when(securityUtils.isAdmin()).thenReturn(false);
+    when(titleOpportunityService.findHeldWithHolder()).thenReturn(List.of(opportunity));
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "36"));
+    when(segmentService.findByIdWithDetails(36L)).thenReturn(Optional.of(segment));
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    boolean booked =
+        ReflectionTestUtils.invokeMethod(matchView, "maybeOfferBriefcaseRunIn", (Object[]) null);
+    assertThat(booked).isFalse();
+    verify(titleOpportunityService).findHeldWithHolder();
+    List<ConfirmDialog> dialogs = _find(ConfirmDialog.class);
+    assertFalse(
+        dialogs.isEmpty(),
+        "The briefcase run-in dialog must be offered for an NPC-only title match when no"
+            + " health was recorded and a HELD case exists");
+  }
+
+  @Test
+  void runInTrigger_noDialog_whenNpcMatchHasNoHeldCase() {
+    injectTitleOpportunityService();
+    Segment segment = buildMinimalMatchSegment(37L, "One on One");
+    Title worldTitle = new Title();
+    worldTitle.setId(11L);
+    worldTitle.setName("ATW World");
+    segment.setIsTitleSegment(true);
+    segment.setTitles(new HashSet<>(List.of(worldTitle)));
+
+    Wrestler npc = new Wrestler();
+    npc.setId(10L);
+    npc.setName("NPC");
+    npc.setStartingHealth(20);
+    SegmentParticipant p = new SegmentParticipant();
+    p.setSegment(segment);
+    p.setWrestler(npc);
+    segment.getParticipants().add(p);
+
+    when(securityUtils.isBooker()).thenReturn(true);
+    lenient().when(securityUtils.isAdmin()).thenReturn(false);
+    when(titleOpportunityService.findHeldWithHolder()).thenReturn(List.of());
+
+    BeforeEnterEvent event = mock(BeforeEnterEvent.class);
+    when(event.getRouteParameters()).thenReturn(new RouteParameters("matchId", "37"));
+    when(segmentService.findByIdWithDetails(37L)).thenReturn(Optional.of(segment));
+    UI.getCurrent().add(matchView);
+    matchView.beforeEnter(event);
+
+    boolean booked =
+        ReflectionTestUtils.invokeMethod(matchView, "maybeOfferBriefcaseRunIn", (Object[]) null);
+    assertThat(booked).isFalse();
+    verify(titleOpportunityService).findHeldWithHolder();
+    List<ConfirmDialog> dialogs = _find(ConfirmDialog.class);
+    assertTrue(
+        dialogs.isEmpty(),
+        "No run-in dialog may appear when no HELD case exists, regardless of health data");
+  }
+
+  @Test
   void noAi_generateNarration_showsSetUpAiButton_opensOnboardingDialog() {
     Segment segment = buildMinimalMatchSegment(1L, "Singles Match");
     when(segmentService.findByIdWithDetails(1L)).thenReturn(Optional.of(segment));
